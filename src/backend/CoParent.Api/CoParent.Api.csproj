@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <UserSecretsId>coparent-api-dev</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CoParent.Infrastructure\CoParent.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\CoParent.Modules.Identity\CoParent.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Modules\CoParent.Modules.Families\CoParent.Modules.Families.csproj" />
+  </ItemGroup>
+</Project>
