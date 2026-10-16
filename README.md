@@ -1,4 +1,5 @@
 # Parenthesis
+n[![CI](https://github.com/esaldivar/parenthesis/actions/workflows/ci.yml/badge.svg)](https://github.com/esaldivar/parenthesis/actions/workflows/ci.yml)
 
 Parenthesis is a multi-tenant co-parenting app for separated parents: a shared calendar with PR-style mutual approvals, a family memory library with mutual deletion approval, and a safe, simple space for children.
 
