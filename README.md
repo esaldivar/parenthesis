@@ -44,7 +44,8 @@ With the API running (`http` profile port shown):
 | `http://localhost:5180/swagger` | Swagger UI (Development only) |
 | `GET http://localhost:5180/openapi/v1.json` | OpenAPI document (Development only) |
 | `GET /api/antiforgery` | Issues the `XSRF-TOKEN` cookie; send it back as `X-XSRF-TOKEN` on POST/PUT/PATCH/DELETE |
-| `POST /api/auth/register`, `/api/auth/login`, `/api/auth/logout` | Cookie sign-in (rate limited; ADR-0004) |
+| `POST /api/auth/register`, `/login`, `/logout` | Cookie sign-in (rate limited; ADR-0004). Sign-in needs a confirmed email |
+| `POST /api/auth/confirm-email`, `/resend-confirmation`, `/forgot-password`, `/reset-password` | Email confirmation and password reset. Emails appear in Mailpit at http://localhost:8025 |
 | `GET /api/me` | The signed-in user |
 
 Errors are returned as RFC 9457 `application/problem+json` with a `traceId`. Every response also carries a `trace-id` header that matches the `TraceId` in the server logs.

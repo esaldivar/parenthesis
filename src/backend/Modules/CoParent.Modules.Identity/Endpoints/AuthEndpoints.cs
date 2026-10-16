@@ -28,13 +28,18 @@ internal static class AuthEndpoints
         var anonymous = api.MapGroup("/auth").WithTags("Auth").AllowAnonymous().RequireRateLimiting(RateLimitPolicy);
         anonymous.MapPost("/register", RegisterAsync);
         anonymous.MapPost("/login", LoginAsync);
+        AccountRecoveryEndpoints.Map(anonymous);
 
         api.MapPost("/auth/logout", LogoutAsync).WithTags("Auth");
         api.MapGet("/me", MeAsync).WithTags("Me");
     }
 
     private static async Task<Results<Accepted, ValidationProblem>> RegisterAsync(
-        RegisterRequest request, UserManager<AppUser> users, TimeProvider clock)
+        RegisterRequest request,
+        UserManager<AppUser> users,
+        AccountEmails emails,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
     {
         var errors = Validate(request);
         if (errors.Count > 0)
@@ -57,9 +62,24 @@ internal static class AuthEndpoints
         var remaining = result.Errors.Where(e => e.Code is not (nameof(IdentityErrorDescriber.DuplicateEmail)
             or nameof(IdentityErrorDescriber.DuplicateUserName))).ToList();
 
-        return remaining.Count == 0
-            ? TypedResults.Accepted((string?)null)
-            : TypedResults.ValidationProblem(ToValidationErrors(remaining));
+        if (remaining.Count > 0)
+        {
+            return TypedResults.ValidationProblem(ToValidationErrors(remaining));
+        }
+
+        if (result.Succeeded)
+        {
+            await emails.SendConfirmationAsync(user, cancellationToken);
+        }
+        else if (await users.FindByEmailAsync(email) is { } existing)
+        {
+            // Tell the inbox owner, not the caller: confirmed accounts get a notice, unconfirmed ones a fresh link.
+            await (existing.EmailConfirmed
+                ? emails.SendAlreadyRegisteredAsync(existing, cancellationToken)
+                : emails.SendConfirmationAsync(existing, cancellationToken));
+        }
+
+        return TypedResults.Accepted((string?)null);
     }
 
     private static async Task<Results<NoContent, ProblemHttpResult>> LoginAsync(
@@ -118,7 +138,7 @@ internal static class AuthEndpoints
         return errors;
     }
 
-    private static Dictionary<string, string[]> ToValidationErrors(IEnumerable<IdentityError> errors) => errors
+    internal static Dictionary<string, string[]> ToValidationErrors(IEnumerable<IdentityError> errors) => errors
         .GroupBy(e => e.Code.StartsWith("Password", StringComparison.Ordinal) ? "password" : "email")
         .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray());
 }

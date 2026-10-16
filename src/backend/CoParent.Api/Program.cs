@@ -1,4 +1,5 @@
 using CoParent.Api.Hosting;
+using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Families;
 using CoParent.Modules.Identity;
@@ -12,6 +13,7 @@ var postgresConnectionString = builder.Configuration.GetConnectionString("Postgr
 builder.AddPlatformLogging();
 builder.Services
     .AddPersistence(postgresConnectionString)
+    .AddEmail()
     .AddPlatformProblemDetails()
     .AddPlatformOpenApi()
     .AddPlatformHealthChecks()

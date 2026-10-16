@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoParent.IntegrationTests.Api;
 
@@ -13,17 +15,24 @@ public sealed class ApiSession : IDisposable
 
     private string? _xsrfToken;
 
-    private ApiSession(HttpClient client) => Client = client;
+    private ApiSession(HttpClient client, FakeEmailSender emails)
+    {
+        Client = client;
+        Emails = emails;
+    }
+
+    public FakeEmailSender Emails { get; }
 
     public HttpClient Client { get; }
 
     public static async Task<ApiSession> StartAsync(WebApplicationFactory<Program> api)
     {
+        var emails = api.Services.GetRequiredService<FakeEmailSender>();
         var session = new ApiSession(api.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("https://localhost"),
             HandleCookies = true,
-        }));
+        }), emails);
         await session.RefreshAntiforgeryAsync();
         return session;
     }
@@ -51,6 +60,19 @@ public sealed class ApiSession : IDisposable
 
     public async Task<HttpResponseMessage> RegisterAsync(string email, string password = Password, string displayName = "Alex Rivera") =>
         await PostAsync("/api/auth/register", new { email, password, displayName });
+
+    /// <summary>Registers, then confirms by following the link in the confirmation email, as a user would.</summary>
+    public async Task RegisterConfirmedAsync(string email, string password = Password, string displayName = "Alex Rivera")
+    {
+        Assert.Equal(System.Net.HttpStatusCode.Accepted, (await RegisterAsync(email, password, displayName)).StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, (await ConfirmFromEmailAsync(email)).StatusCode);
+    }
+
+    public async Task<HttpResponseMessage> ConfirmFromEmailAsync(string email)
+    {
+        var query = QueryHelpers.ParseQuery(Emails.LatestLink(email, "Confirm").Query);
+        return await PostAsync("/api/auth/confirm-email", new { userId = query["userId"].ToString(), token = query["token"].ToString() });
+    }
 
     public async Task<HttpResponseMessage> LoginAsync(string email, string password = Password)
     {

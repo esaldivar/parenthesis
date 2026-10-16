@@ -1,8 +1,10 @@
+using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
 using CoParent.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
 using Respawn;
 
@@ -15,6 +17,7 @@ namespace CoParent.IntegrationTests.Api;
 public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string TestingEnvironment = "Testing";
+    public const string PublicBaseUrl = "https://app.parenthesis.test";
 
     private const string MigrationsHistoryTable = ModuleDbContextOptions.MigrationsHistoryTable;
 
@@ -76,7 +79,14 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
 
         // Every test client shares one "IP"; rate limiting has its own test with a low limit.
         builder.UseSetting("Identity:AuthRateLimit:PermitLimit", "10000");
-        builder.ConfigureServices(services => services.AddSingleton<IStartupFilter, ThrowingEndpointStartupFilter>());
+        builder.UseSetting("App:PublicBaseUrl", PublicBaseUrl);
+        builder.ConfigureServices(services =>
+        {
+            services.AddSingleton<IStartupFilter, ThrowingEndpointStartupFilter>();
+            services.RemoveAll<IEmailSender>();
+            services.AddSingleton<FakeEmailSender>();
+            services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+        });
     }
 
     public override async ValueTask DisposeAsync()
