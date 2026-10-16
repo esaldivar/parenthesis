@@ -35,10 +35,12 @@ public static class IdentityModule
                 options.Lockout.AllowedForNewUsers = true;
 
                 options.User.RequireUniqueEmail = true;
+                options.SignIn.RequireConfirmedEmail = true;
             })
             .AddEntityFrameworkStores<IdentityModuleDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
+        services.AddScoped<AccountEmails>();
 
         services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
         services.ConfigureApplicationCookie(options =>

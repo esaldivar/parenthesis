@@ -26,7 +26,7 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
     {
         var email = ApiSession.NewEmail();
 
-        Assert.Equal(HttpStatusCode.Accepted, (await _session.RegisterAsync(email, displayName: "Alex Rivera")).StatusCode);
+        await _session.RegisterConfirmedAsync(email, displayName: "Alex Rivera");
         Assert.Equal(HttpStatusCode.NoContent, (await _session.LoginAsync(email)).StatusCode);
 
         var me = await _session.GetAsync("/api/me");
@@ -42,7 +42,7 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
     public async Task Session_cookie_is_host_prefixed_secure_httponly_and_samesite_strict()
     {
         var email = ApiSession.NewEmail();
-        await _session.RegisterAsync(email);
+        await _session.RegisterConfirmedAsync(email);
 
         var login = await _session.PostAsync("/api/auth/login", new { email, password = ApiSession.Password });
         var cookie = ApiSession.FindSetCookie(login, "__Host-parenthesis")?.ToLowerInvariant();
@@ -84,7 +84,7 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
     public async Task Wrong_password_and_unknown_email_get_the_same_401()
     {
         var email = ApiSession.NewEmail();
-        await _session.RegisterAsync(email);
+        await _session.RegisterConfirmedAsync(email);
 
         var wrongPassword = await _session.LoginAsync(email, "not the right password");
         var unknownEmail = await _session.LoginAsync(ApiSession.NewEmail());
@@ -98,7 +98,7 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
     public async Task Account_locks_after_five_failed_attempts()
     {
         var email = ApiSession.NewEmail();
-        await _session.RegisterAsync(email);
+        await _session.RegisterConfirmedAsync(email);
 
         for (var attempt = 0; attempt < 5; attempt++)
         {
@@ -112,7 +112,7 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
     public async Task Logout_ends_the_session()
     {
         var email = ApiSession.NewEmail();
-        await _session.RegisterAsync(email);
+        await _session.RegisterConfirmedAsync(email);
         await _session.LoginAsync(email);
 
         Assert.Equal(HttpStatusCode.NoContent, (await _session.PostAsync("/api/auth/logout")).StatusCode);
