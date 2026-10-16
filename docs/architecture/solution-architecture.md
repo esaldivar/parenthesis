@@ -52,7 +52,7 @@ flowchart LR
 
 ## 3. Modular monolith
 
-Each module is **one .NET project** with internal folders (`Domain`, `Application`, `Infrastructure`, `Endpoints`). Everything is `internal` except a `Contracts` namespace that other modules may use. Architecture tests (NetArchTest) enforce this.
+Each module is **one .NET project** with internal folders (`Domain`, `Application`, `Infrastructure`, `Endpoints`). Everything is `internal` except a `Contracts` namespace that other modules may use. Architecture tests (`tests/CoParent.ArchitectureTests`, plain reflection) enforce this.
 
 | Module | Owns | DB schema |
 |---|---|---|

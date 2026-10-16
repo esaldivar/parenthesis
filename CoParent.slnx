@@ -15,6 +15,7 @@
     <File Path=".editorconfig" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/CoParent.ArchitectureTests/CoParent.ArchitectureTests.csproj" />
     <Project Path="tests/CoParent.IntegrationTests/CoParent.IntegrationTests.csproj" />
     <Project Path="tests/CoParent.UnitTests/CoParent.UnitTests.csproj" />
   </Folder>

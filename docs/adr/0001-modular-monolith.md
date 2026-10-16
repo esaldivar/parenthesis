@@ -10,7 +10,7 @@ The product has clear sub-domains: families, calendar, approvals, memories, mess
 - Ship one deployable ASP.NET Core host. Each module is one project. Only its `Contracts` namespace is public.
 - One PostgreSQL database with a **schema per module** and a **DbContext per module**. All contexts share one scoped `NpgsqlConnection`, so cross-module units of work can run in a single transaction.
 - Modules talk through synchronous contract interfaces (queries, in-transaction steps) and domain events published through a transactional **outbox** (side effects).
-- Boundaries are enforced by architecture tests (NetArchTest).
+- Boundaries are enforced by architecture tests (`tests/CoParent.ArchitectureTests`): only `Contracts` and the module registration class are public, so the compiler blocks cross-module access to internals.
 
 ## Alternatives considered
 - **Microservices.** Rejected: distributed transactions for approvals, operational cost, no scaling need.
