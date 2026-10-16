@@ -45,9 +45,12 @@ public sealed class ApiSession : IDisposable
         _xsrfToken = FindCookie(response, "XSRF-TOKEN") ?? throw new InvalidOperationException("No XSRF-TOKEN cookie issued.");
     }
 
-    public Task<HttpResponseMessage> PostAsync(string path, object? body = null, bool withAntiforgery = true)
+    public Task<HttpResponseMessage> PostAsync(string path, object? body = null, bool withAntiforgery = true) =>
+        SendAsync(HttpMethod.Post, path, body, withAntiforgery);
+
+    public Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object? body = null, bool withAntiforgery = true)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body ?? new { }) };
+        var request = new HttpRequestMessage(method, path) { Content = JsonContent.Create(body ?? new { }) };
         if (withAntiforgery && _xsrfToken is not null)
         {
             request.Headers.Add("X-XSRF-TOKEN", _xsrfToken);
@@ -60,6 +63,24 @@ public sealed class ApiSession : IDisposable
 
     public async Task<HttpResponseMessage> RegisterAsync(string email, string password = Password, string displayName = "Alex Rivera") =>
         await PostAsync("/api/auth/register", new { email, password, displayName });
+
+    /// <summary>A confirmed, signed-in user ready to make authenticated calls.</summary>
+    public static async Task<ApiSession> SignedInAsync(WebApplicationFactory<Program> api, string displayName = "Alex Rivera")
+    {
+        var session = await StartAsync(api);
+        var email = NewEmail();
+        await session.RegisterConfirmedAsync(email, displayName: displayName);
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, (await session.LoginAsync(email)).StatusCode);
+        return session;
+    }
+
+    public async Task<Guid> CreateFamilyAsync(string name = "Rivera Family", string timeZone = "America/Chicago")
+    {
+        var response = await PostAsync("/api/families", new { name, timeZone });
+        Assert.Equal(System.Net.HttpStatusCode.Created, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(TestContext.Current.CancellationToken))
+            .GetProperty("id").GetGuid();
+    }
 
     /// <summary>Registers, then confirms by following the link in the confirmation email, as a user would.</summary>
     public async Task RegisterConfirmedAsync(string email, string password = Password, string displayName = "Alex Rivera")

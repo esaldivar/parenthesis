@@ -44,6 +44,20 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         }
     }
 
+    /// <summary>Runs a scalar query against the API's database, for asserting on data no endpoint exposes (e.g. the audit log).</summary>
+    public async Task<T?> QueryScalarAsync<T>(string sql, params (string Name, object Value)[] parameters)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, connection);
+        foreach (var (name, value) in parameters)
+        {
+            command.Parameters.AddWithValue(name, value);
+        }
+
+        return (T?)await command.ExecuteScalarAsync();
+    }
+
     /// <summary>Deletes all application data, keeping schema and migration history.</summary>
     public async Task ResetDatabaseAsync()
     {
