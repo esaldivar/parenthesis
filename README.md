@@ -10,15 +10,26 @@ A multi-tenant co-parenting app for separated parents: a shared calendar with PR
 
 Prerequisites:
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (pinned in `global.json`)
-- Node.js 22 LTS (frontend, from PR 11)
-- Docker Desktop (local PostgreSQL, Azurite and Mailpit, from PR 2)
+- Node.js (frontend, from PR 11)
+- Docker Desktop, running
 
 ```bash
+cp .env.example .env          # local-only settings; .env is git-ignored
+docker compose up -d          # PostgreSQL 17, Azurite (blob), Mailpit (email)
+docker compose ps             # all three should report "healthy"
 dotnet build CoParent.slnx
 dotnet run --project src/backend/CoParent.Api
 ```
 
-Local infrastructure (`docker compose`), database migrations and the Angular app are added in later Milestone 1 PRs; this section grows with them.
+| Service | Address | Purpose |
+|---|---|---|
+| PostgreSQL | `localhost:5432` | Application database |
+| Azurite | `http://localhost:10000` | Azure Blob Storage emulator |
+| Mailpit | SMTP `localhost:1025`, UI http://localhost:8025 | Catches all outgoing email |
+
+`docker compose down` stops the stack. Add `-v` to also delete the local data volumes.
+
+Database migrations and the Angular app are added in later Milestone 1 PRs; this section grows with them.
 
 ## Repository layout
 

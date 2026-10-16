@@ -195,7 +195,6 @@ coparent/
 │  └─ runbooks/                   setup, deployment, break-glass
 ├─ infra/                         Bicep modules (container app, postgres, storage, kv, insights)
 ├─ docker/
-│  ├─ docker-compose.yml          postgres, azurite, mailpit (+ api for full-stack run)
 │  └─ api.Dockerfile              multi-stage: node build SPA → dotnet publish → chiseled runtime
 ├─ src/
 │  ├─ backend/
@@ -219,6 +218,7 @@ coparent/
 │  ├─ CoParent.ArchitectureTests/ module boundary + tenant-filter coverage rules
 │  └─ e2e/                        Playwright (post-MVP-1)
 ├─ tools/seed/                    synthetic demo data generator (no real data, ever)
+├─ compose.yaml  .env.example   local infra: postgres, azurite, mailpit
 ├─ CoParent.slnx  global.json  Directory.Build.props  Directory.Packages.props
 ├─ .editorconfig  .gitignore  .gitattributes
 ├─ README.md  CONTRIBUTING.md  SECURITY.md  LICENSE
