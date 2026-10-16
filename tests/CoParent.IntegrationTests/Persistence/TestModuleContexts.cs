@@ -11,8 +11,8 @@ public sealed class Note
 }
 
 /// <summary>Two stand-in modules, each with its own schema, to exercise cross-module units of work.</summary>
-public sealed class AlphaDbContext(DbContextOptions<AlphaDbContext> options, UnitOfWork unitOfWork)
-    : ModuleDbContext(options, unitOfWork), IModuleSchema
+public sealed class AlphaDbContext(DbContextOptions<AlphaDbContext> options)
+    : DbContext(options), IModuleSchema
 {
     public static string Schema => "test_alpha";
 
@@ -22,8 +22,8 @@ public sealed class AlphaDbContext(DbContextOptions<AlphaDbContext> options, Uni
         modelBuilder.HasDefaultSchema(Schema).Entity<Note>();
 }
 
-public sealed class BetaDbContext(DbContextOptions<BetaDbContext> options, UnitOfWork unitOfWork)
-    : ModuleDbContext(options, unitOfWork), IModuleSchema
+public sealed class BetaDbContext(DbContextOptions<BetaDbContext> options)
+    : DbContext(options), IModuleSchema
 {
     public static string Schema => "test_beta";
 

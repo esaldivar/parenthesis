@@ -11,7 +11,7 @@ internal static class Solution
 
     public static Assembly SharedKernel { get; } = typeof(Entity).Assembly;
 
-    public static Assembly Infrastructure { get; } = typeof(ModuleDbContext).Assembly;
+    public static Assembly Infrastructure { get; } = typeof(UnitOfWork).Assembly;
 
     public static Assembly Api { get; } = typeof(Program).Assembly;
 

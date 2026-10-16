@@ -17,23 +17,22 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped(sp => sp.GetRequiredService<NpgsqlDataSource>().CreateConnection());
         services.AddScoped<UnitOfWork>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<UnitOfWork>());
+        services.AddScoped<UnitOfWorkEnlistmentInterceptor>();
         services.AddSingleton<MigrationRunner>();
         services.AddSingleton(TimeProvider.System);
         return services;
     }
 
     /// <summary>
-    /// Registers a module DbContext on the shared connection, with its own schema, its own migrations history
-    /// table and snake_case naming. Registration order is migration order.
+    /// Registers a module DbContext on the shared connection, joined to the unit of work, with its own migrations
+    /// history table and snake_case naming. Registration order is migration order.
     /// </summary>
     public static IServiceCollection AddModuleDbContext<TContext>(this IServiceCollection services)
-        where TContext : ModuleDbContext, IModuleSchema
+        where TContext : DbContext, IModuleSchema
     {
         services.AddDbContext<TContext>((sp, options) => options
-            .UseNpgsql(
-                sp.GetRequiredService<NpgsqlConnection>(),
-                npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", TContext.Schema))
-            .UseSnakeCaseNamingConvention());
+            .UseModuleDefaults<TContext>(sp.GetRequiredService<NpgsqlConnection>())
+            .AddInterceptors(sp.GetRequiredService<UnitOfWorkEnlistmentInterceptor>()));
 
         services.AddSingleton(new ModuleDbContextRegistration(typeof(TContext), TContext.Schema));
         return services;

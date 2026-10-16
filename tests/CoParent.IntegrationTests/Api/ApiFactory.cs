@@ -16,7 +16,7 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
 {
     public const string TestingEnvironment = "Testing";
 
-    private const string MigrationsHistoryTable = "__ef_migrations_history";
+    private const string MigrationsHistoryTable = ModuleDbContextOptions.MigrationsHistoryTable;
 
     private string _connectionString = null!;
 
