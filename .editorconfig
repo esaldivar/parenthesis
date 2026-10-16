@@ -48,3 +48,8 @@ dotnet_naming_style.underscore_camel.required_prefix = _
 # Unused code
 dotnet_diagnostic.IDE0005.severity = warning   # unnecessary using
 dotnet_diagnostic.IDE0051.severity = warning   # unused private member
+
+# EF Core migrations are generated code.
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

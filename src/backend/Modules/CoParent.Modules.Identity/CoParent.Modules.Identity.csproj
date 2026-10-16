@@ -6,4 +6,11 @@
     <ProjectReference Include="..\..\CoParent.SharedKernel\CoParent.SharedKernel.csproj" />
     <ProjectReference Include="..\..\CoParent.Infrastructure\CoParent.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>

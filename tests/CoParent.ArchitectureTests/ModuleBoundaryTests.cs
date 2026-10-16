@@ -1,5 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CoParent.ArchitectureTests;
 
@@ -20,13 +22,18 @@ public class ModuleBoundaryTests
         var violations = module.GetExportedTypes()
             .Where(t => t.FullName != registration
                 && t.Namespace != contracts
-                && t.Namespace?.StartsWith(contracts + ".", StringComparison.Ordinal) != true)
+                && t.Namespace?.StartsWith(contracts + ".", StringComparison.Ordinal) != true
+                && !IsGeneratedMigrationCode(t))
             .Select(t => t.FullName)
             .ToList();
 
         Assert.True(violations.Count == 0,
             $"Make these internal or move them to {contracts}: {string.Join(", ", violations)}");
     }
+
+    /// <summary>EF Core always generates migrations and snapshots as public; they're tooling output, not module API.</summary>
+    private static bool IsGeneratedMigrationCode(Type type) =>
+        typeof(Migration).IsAssignableFrom(type) || typeof(ModelSnapshot).IsAssignableFrom(type);
 
     [Theory]
     [MemberData(nameof(Solution.ModuleNames), MemberType = typeof(Solution))]

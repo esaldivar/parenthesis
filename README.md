@@ -22,9 +22,9 @@ docker compose ps             # all three should report "healthy"
 # one-time: point the API at the local database (stored outside the repo via user-secrets)
 dotnet user-secrets set "ConnectionStrings:Postgres" "Host=localhost;Port=5432;Database=coparent;Username=coparent;Password=<POSTGRES_PASSWORD from .env>" --project src/backend/CoParent.Api
 dotnet build CoParent.slnx
+dotnet run --project src/backend/CoParent.Api -- migrate   # first run, and after pulling new migrations
 dotnet run --project src/backend/CoParent.Api
 dotnet test --solution CoParent.slnx   # unit + integration (integration tests start their own PostgreSQL container)
-dotnet run --project src/backend/CoParent.Api -- migrate   # apply all module migrations, then exit
 ```
 
 | Service | Address | Purpose |
@@ -43,10 +43,13 @@ With the API running (`http` profile port shown):
 | `GET http://localhost:5180/health/ready` | Readiness: PostgreSQL reachable; `503` otherwise |
 | `http://localhost:5180/swagger` | Swagger UI (Development only) |
 | `GET http://localhost:5180/openapi/v1.json` | OpenAPI document (Development only) |
+| `GET /api/antiforgery` | Issues the `XSRF-TOKEN` cookie; send it back as `X-XSRF-TOKEN` on POST/PUT/PATCH/DELETE |
+| `POST /api/auth/register`, `/api/auth/login`, `/api/auth/logout` | Cookie sign-in (rate limited; ADR-0004) |
+| `GET /api/me` | The signed-in user |
 
 Errors are returned as RFC 9457 `application/problem+json` with a `traceId`. Every response also carries a `trace-id` header that matches the `TraceId` in the server logs.
 
-Database migrations and the Angular app are added in later Milestone 1 PRs; this section grows with them.
+The Angular app is added later in Milestone 1; this section grows with it.
 
 ## Repository layout
 

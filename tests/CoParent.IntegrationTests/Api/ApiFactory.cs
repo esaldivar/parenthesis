@@ -16,7 +16,7 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
 {
     public const string TestingEnvironment = "Testing";
 
-    private const string MigrationsHistoryTable = "__ef_migrations_history";
+    private const string MigrationsHistoryTable = ModuleDbContextOptions.MigrationsHistoryTable;
 
     private string _connectionString = null!;
 
@@ -73,6 +73,9 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
     {
         builder.UseEnvironment(TestingEnvironment);
         builder.UseSetting("ConnectionStrings:Postgres", _connectionString);
+
+        // Every test client shares one "IP"; rate limiting has its own test with a low limit.
+        builder.UseSetting("Identity:AuthRateLimit:PermitLimit", "10000");
         builder.ConfigureServices(services => services.AddSingleton<IStartupFilter, ThrowingEndpointStartupFilter>());
     }
 

@@ -14,7 +14,8 @@ builder.Services
     .AddPersistence(postgresConnectionString)
     .AddPlatformProblemDetails()
     .AddPlatformOpenApi()
-    .AddPlatformHealthChecks();
+    .AddPlatformHealthChecks()
+    .AddPlatformAntiforgery();
 
 builder.Services
     .AddIdentityModule()
@@ -33,6 +34,9 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseTraceIdHeader();
 app.UseHttpLogging();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
@@ -40,6 +44,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapPlatformHealthChecks();
+
+// Every /api endpoint requires a signed-in user unless it opts out, and every unsafe request needs an antiforgery token.
+var api = app.MapGroup("/api")
+    .RequireAuthorization()
+    .AddEndpointFilter<AntiforgeryValidationFilter>();
+
+api.MapAntiforgeryTokenEndpoint();
+api.MapIdentityEndpoints();
 
 await app.RunAsync();
 

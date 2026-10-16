@@ -1,0 +1,81 @@
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
+
+namespace CoParent.IntegrationTests.Api;
+
+/// <summary>
+/// A browser-like client: keeps cookies over HTTPS and, like Angular, echoes the XSRF-TOKEN cookie in the
+/// X-XSRF-TOKEN header on unsafe requests.
+/// </summary>
+public sealed class ApiSession : IDisposable
+{
+    public const string Password = "correct horse battery staple";
+
+    private string? _xsrfToken;
+
+    private ApiSession(HttpClient client) => Client = client;
+
+    public HttpClient Client { get; }
+
+    public static async Task<ApiSession> StartAsync(WebApplicationFactory<Program> api)
+    {
+        var session = new ApiSession(api.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            HandleCookies = true,
+        }));
+        await session.RefreshAntiforgeryAsync();
+        return session;
+    }
+
+    /// <summary>Antiforgery tokens belong to the signed-in user, so refresh after signing in or out.</summary>
+    public async Task RefreshAntiforgeryAsync()
+    {
+        var response = await Client.GetAsync("/api/antiforgery", TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        _xsrfToken = FindCookie(response, "XSRF-TOKEN") ?? throw new InvalidOperationException("No XSRF-TOKEN cookie issued.");
+    }
+
+    public Task<HttpResponseMessage> PostAsync(string path, object? body = null, bool withAntiforgery = true)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body ?? new { }) };
+        if (withAntiforgery && _xsrfToken is not null)
+        {
+            request.Headers.Add("X-XSRF-TOKEN", _xsrfToken);
+        }
+
+        return Client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
+    public Task<HttpResponseMessage> GetAsync(string path) => Client.GetAsync(path, TestContext.Current.CancellationToken);
+
+    public async Task<HttpResponseMessage> RegisterAsync(string email, string password = Password, string displayName = "Alex Rivera") =>
+        await PostAsync("/api/auth/register", new { email, password, displayName });
+
+    public async Task<HttpResponseMessage> LoginAsync(string email, string password = Password)
+    {
+        var response = await PostAsync("/api/auth/login", new { email, password });
+        if (response.IsSuccessStatusCode)
+        {
+            await RefreshAntiforgeryAsync();
+        }
+
+        return response;
+    }
+
+    /// <summary>The raw Set-Cookie header for <paramref name="name"/>, attributes included.</summary>
+    public static string? FindSetCookie(HttpResponseMessage response, string name) =>
+        response.Headers.TryGetValues("Set-Cookie", out var values)
+            ? values.FirstOrDefault(v => v.StartsWith(name + "=", StringComparison.Ordinal))
+            : null;
+
+    public static string NewEmail() => $"parent-{Guid.NewGuid():N}@example.test";
+
+    public void Dispose() => Client.Dispose();
+
+    private static string? FindCookie(HttpResponseMessage response, string name)
+    {
+        var header = FindSetCookie(response, name);
+        return header is null ? null : Uri.UnescapeDataString(header[(name.Length + 1)..].Split(';')[0]);
+    }
+}
