@@ -52,7 +52,7 @@ Database migrations and the Angular app are added in later Milestone 1 PRs; this
 docs/           architecture, ADRs, planning, runbooks
 src/backend/    ASP.NET Core host, shared kernel, infrastructure, modules
 src/frontend/   Angular workspace (PR 11)
-tests/          unit + integration tests (xUnit v3, Testcontainers); architecture tests in PR 6
+tests/          unit, integration (xUnit v3, Testcontainers) and architecture tests
 ```
 
 ## Planning documents
