@@ -30,7 +30,14 @@ internal static class LoggingExtensions
     {
         return app.Use((context, next) =>
         {
-            context.Response.Headers[TraceIdHeader] = CurrentTraceId(context);
+            // Added when the response starts: the exception handler clears headers set earlier, and 500s are
+            // exactly when the trace id is needed.
+            var traceId = CurrentTraceId(context);
+            context.Response.OnStarting(() =>
+            {
+                context.Response.Headers[TraceIdHeader] = traceId;
+                return Task.CompletedTask;
+            });
             return next(context);
         });
     }
