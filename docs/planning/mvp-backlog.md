@@ -20,7 +20,7 @@ Size: S ≤ 1 day, M ≈ 2–3 days, L ≈ 1 week. Each item should fit in one r
 | F-01 | Repo scaffold: .slnx, Directory.Build/Packages.props, editorconfig, analyzers, README | P0 | S |
 | F-02 | docker-compose: PostgreSQL 17, Azurite, Mailpit | P0 | S |
 | F-03 | API host: ProblemDetails, health checks, OpenAPI + Swagger UI, structured logging/OpenTelemetry | P0 | S |
-| F-04 | SharedKernel + Infrastructure: Entity base, UUIDv7, `IClock`, shared connection/UoW, migration runner | P0 | M |
+| F-04 | SharedKernel + Infrastructure: Entity base, UUIDv7, `TimeProvider`, shared connection/UoW, migration runner | P0 | M |
 | F-05 | Integration test harness: WebApplicationFactory + Testcontainers, per-test DB reset (Respawn) | P0 | M |
 | F-06 | Architecture tests: module boundaries, `IFamilyScoped` must have a query filter | P0 | S |
 | F-07 | GitHub Actions CI: backend build/test, frontend lint/test/build, docker build | P0 | S |

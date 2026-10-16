@@ -1,4 +1,5 @@
 using CoParent.Api.Hosting;
+using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Families;
 using CoParent.Modules.Identity;
 
@@ -10,15 +11,23 @@ var postgresConnectionString = builder.Configuration.GetConnectionString("Postgr
 
 builder.AddPlatformLogging();
 builder.Services
+    .AddPersistence(postgresConnectionString)
     .AddPlatformProblemDetails()
     .AddPlatformOpenApi()
-    .AddPlatformHealthChecks(postgresConnectionString);
+    .AddPlatformHealthChecks();
 
 builder.Services
     .AddIdentityModule()
     .AddFamiliesModule();
 
 var app = builder.Build();
+
+// `dotnet run --project src/backend/CoParent.Api -- migrate` applies every module's migrations, then exits.
+if (args is ["migrate"])
+{
+    await app.Services.GetRequiredService<MigrationRunner>().MigrateAsync();
+    return;
+}
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -32,7 +41,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapPlatformHealthChecks();
 
-app.Run();
+await app.RunAsync();
 
 // Exposed for WebApplicationFactory in integration tests.
 public partial class Program;

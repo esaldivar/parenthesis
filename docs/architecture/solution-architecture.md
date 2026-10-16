@@ -65,7 +65,7 @@ Each module is **one .NET project** with internal folders (`Domain`, `Applicatio
 | **Notifications** | Notification inbox, SignalR push, email digests | `notifications` |
 | **Integrations** (post-MVP) | ExternalCalendarConnection, ExternalEventLink, Google sync | `integrations` |
 
-Cross-cutting building blocks (`CoParent.SharedKernel`, `CoParent.Infrastructure`): base entity types, `ITenantContext`, `IClock`, domain events, transactional outbox, audit interceptor, blob storage abstraction, EXIF stripping.
+Cross-cutting building blocks (`CoParent.SharedKernel`, `CoParent.Infrastructure`): base entity types, `ITenantContext`, `TimeProvider`, domain events, transactional outbox, audit interceptor, blob storage abstraction, EXIF stripping.
 
 ### Persistence: one database, one DbContext per module
 
@@ -200,7 +200,7 @@ coparent/
 │  ├─ backend/
 │  │  ├─ (solution + Directory.*.props live at the repo root)
 │  │  ├─ CoParent.Api/            host: Program.cs, auth, middleware, OpenAPI, hub mapping, SPA hosting
-│  │  ├─ CoParent.SharedKernel/   Entity, IFamilyScoped, Result, DomainEvent, IClock
+│  │  ├─ CoParent.SharedKernel/   Entity, IFamilyScoped, Result, DomainEvent (time via .NET TimeProvider)
 │  │  ├─ CoParent.Infrastructure/ connection/UoW, outbox, audit interceptor, blob, email, data protection
 │  │  └─ Modules/
 │  │     ├─ CoParent.Modules.Identity/
