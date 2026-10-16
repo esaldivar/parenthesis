@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using CoParent.Infrastructure.Persistence;
+using CoParent.Modules.Identity.Contracts;
 using CoParent.Modules.Identity.Domain;
 using CoParent.Modules.Identity.Endpoints;
 using CoParent.Modules.Identity.Infrastructure;
@@ -41,6 +42,7 @@ public static class IdentityModule
             .AddSignInManager()
             .AddDefaultTokenProviders();
         services.AddScoped<AccountEmails>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
 
         services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
         services.ConfigureApplicationCookie(options =>

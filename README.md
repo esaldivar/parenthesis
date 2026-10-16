@@ -47,6 +47,8 @@ With the API running (`http` profile port shown):
 | `POST /api/auth/register`, `/login`, `/logout` | Cookie sign-in (rate limited; ADR-0004). Sign-in needs a confirmed email |
 | `POST /api/auth/confirm-email`, `/resend-confirmation`, `/forgot-password`, `/reset-password` | Email confirmation and password reset. Emails appear in Mailpit at http://localhost:8025 |
 | `GET /api/me` | The signed-in user |
+| `POST /api/families`, `GET /api/me/families` | Create a family (you become a parent); list your families |
+| `GET /api/families/{familyId}` | Family details and members. Non-members get `404`, as if it didn't exist |
 
 Errors are returned as RFC 9457 `application/problem+json` with a `traceId`. Every response also carries a `trace-id` header that matches the `TraceId` in the server logs.
 

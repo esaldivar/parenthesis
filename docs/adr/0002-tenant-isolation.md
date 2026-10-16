@@ -8,7 +8,7 @@ Every family is a tenant. A data leak between families is the worst failure this
 
 ## Decision
 A shared schema with a mandatory `family_id` on every family-owned table, enforced in layers:
-1. **Route-scoped tenancy.** Family resources live under `/api/families/{familyId}/…`. An endpoint filter loads the caller's *active* membership and fills a scoped `ITenantContext`. If there's no membership, the response is **404**.
+1. **Route-scoped tenancy.** Family resources live under `/api/families/{familyId}/…`. A tenant-gate middleware (after authorization, before model binding, so a malformed body can't change the answer) loads the caller's *active* membership and fills a scoped `ITenantContext`. If there's no membership, the response is **404**.
 2. **EF Core global query filters** on every `IFamilyScoped` entity. An architecture test fails the build if an `IFamilyScoped` entity has no filter.
 3. **A SaveChanges interceptor** throws if a tracked entity's `FamilyId` differs from `ITenantContext.FamilyId`.
 4. **A cross-tenant test matrix** in integration tests covering every family-scoped endpoint.

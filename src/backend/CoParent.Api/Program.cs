@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CoParent.Api.Hosting;
 using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
@@ -11,6 +12,7 @@ var postgresConnectionString = builder.Configuration.GetConnectionString("Postgr
         "Connection string 'Postgres' is not configured. For local development, set it with dotnet user-secrets (see README).");
 
 builder.AddPlatformLogging();
+builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services
     .AddPersistence(postgresConnectionString)
     .AddEmail()
@@ -38,6 +40,7 @@ app.UseTraceIdHeader();
 app.UseHttpLogging();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseTenantGate();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
@@ -53,7 +56,10 @@ var api = app.MapGroup("/api")
     .AddEndpointFilter<AntiforgeryValidationFilter>();
 
 api.MapAntiforgeryTokenEndpoint();
+var family = api.MapFamilyScopedGroup();
+
 api.MapIdentityEndpoints();
+api.MapFamiliesEndpoints(family);
 
 await app.RunAsync();
 
