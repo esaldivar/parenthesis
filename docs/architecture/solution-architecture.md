@@ -1,7 +1,7 @@
 # Solution Architecture — Co-Parenting Family Platform
 
 > Status: **Approved** (2026-10-16).
-> Working name: **Kinship** (placeholder; `CoParent.*` used for namespaces).
+> Product name: **Parenthesis**. Code namespaces and projects use `CoParent.*`.
 
 ## 1. Architectural drivers
 
