@@ -17,6 +17,8 @@ Prerequisites:
 cp .env.example .env          # local-only settings; .env is git-ignored
 docker compose up -d          # PostgreSQL 17, Azurite (blob), Mailpit (email)
 docker compose ps             # all three should report "healthy"
+# one-time: point the API at the local database (stored outside the repo via user-secrets)
+dotnet user-secrets set "ConnectionStrings:Postgres" "Host=localhost;Port=5432;Database=coparent;Username=coparent;Password=<POSTGRES_PASSWORD from .env>" --project src/backend/CoParent.Api
 dotnet build CoParent.slnx
 dotnet run --project src/backend/CoParent.Api
 ```
@@ -28,6 +30,17 @@ dotnet run --project src/backend/CoParent.Api
 | Mailpit | SMTP `localhost:1025`, UI http://localhost:8025 | Catches all outgoing email |
 
 `docker compose down` stops the stack. Add `-v` to also delete the local data volumes.
+
+With the API running (`http` profile port shown):
+
+| Endpoint | Purpose |
+|---|---|
+| `GET http://localhost:5180/health/live` | Liveness: process is up (no dependency checks) |
+| `GET http://localhost:5180/health/ready` | Readiness: PostgreSQL reachable; `503` otherwise |
+| `http://localhost:5180/swagger` | Swagger UI (Development only) |
+| `GET http://localhost:5180/openapi/v1.json` | OpenAPI document (Development only) |
+
+Errors are returned as RFC 9457 `application/problem+json` with a `traceId`. Every response also carries a `trace-id` header that matches the `TraceId` in the server logs.
 
 Database migrations and the Angular app are added in later Milestone 1 PRs; this section grows with them.
 

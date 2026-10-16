@@ -7,4 +7,9 @@
     <ProjectReference Include="..\Modules\CoParent.Modules.Identity\CoParent.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\CoParent.Modules.Families\CoParent.Modules.Families.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+  </ItemGroup>
 </Project>
