@@ -1,6 +1,6 @@
-# Co-Parenting Family Platform (working name: Kinship)
+# Parenthesis
 
-A multi-tenant co-parenting app for separated parents: a shared calendar with PR-style mutual approvals, a family memory library with mutual deletion approval, and a safe, simple space for children.
+Parenthesis is a multi-tenant co-parenting app for separated parents: a shared calendar with PR-style mutual approvals, a family memory library with mutual deletion approval, and a safe, simple space for children.
 
 **Stack:** Angular · ASP.NET Core (.NET 10) · PostgreSQL / EF Core · ASP.NET Core Identity · SignalR · Azure (Container Apps, Blob, Key Vault) · GitHub Actions · Docker
 
