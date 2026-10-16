@@ -21,6 +21,8 @@ docker compose ps             # all three should report "healthy"
 dotnet user-secrets set "ConnectionStrings:Postgres" "Host=localhost;Port=5432;Database=coparent;Username=coparent;Password=<POSTGRES_PASSWORD from .env>" --project src/backend/CoParent.Api
 dotnet build CoParent.slnx
 dotnet run --project src/backend/CoParent.Api
+dotnet test --solution CoParent.slnx   # unit + integration (integration tests start their own PostgreSQL container)
+dotnet run --project src/backend/CoParent.Api -- migrate   # apply all module migrations, then exit
 ```
 
 | Service | Address | Purpose |
@@ -50,7 +52,7 @@ Database migrations and the Angular app are added in later Milestone 1 PRs; this
 docs/           architecture, ADRs, planning, runbooks
 src/backend/    ASP.NET Core host, shared kernel, infrastructure, modules
 src/frontend/   Angular workspace (PR 11)
-tests/          unit, integration and architecture tests (PR 4–6)
+tests/          unit + integration tests (xUnit v3, Testcontainers); architecture tests in PR 6
 ```
 
 ## Planning documents

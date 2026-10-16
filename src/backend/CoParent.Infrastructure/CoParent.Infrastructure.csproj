@@ -5,4 +5,9 @@
   <ItemGroup>
     <ProjectReference Include="..\CoParent.SharedKernel\CoParent.SharedKernel.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Npgsql.DependencyInjection" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Npgsql;
 
 namespace CoParent.Api.Hosting;
 
@@ -6,10 +7,11 @@ internal static class HealthCheckExtensions
 {
     private const string ReadyTag = "ready";
 
-    public static IServiceCollection AddPlatformHealthChecks(this IServiceCollection services, string postgresConnectionString)
+    public static IServiceCollection AddPlatformHealthChecks(this IServiceCollection services)
     {
+        // Reuses the application's NpgsqlDataSource (registered by AddPersistence) rather than a second pool.
         services.AddHealthChecks()
-            .AddNpgSql(postgresConnectionString, name: "postgres", tags: [ReadyTag]);
+            .AddNpgSql(sp => sp.GetRequiredService<NpgsqlDataSource>(), name: "postgres", tags: [ReadyTag]);
         return services;
     }
 
