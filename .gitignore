@@ -1,0 +1,32 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+coverage/
+*.trx
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# IDEs / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Secrets and local config: never commit
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+*.pfx
+*.pem
+
+# Local data volumes (docker compose)
+.data/

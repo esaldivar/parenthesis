@@ -1,0 +1,10 @@
+<Project>
+  <!-- Central package management: versions live here, projects reference packages without versions. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Packages are added by the PRs that first need them (see docs/planning/milestone-1-plan.md). -->
+  </ItemGroup>
+</Project>
