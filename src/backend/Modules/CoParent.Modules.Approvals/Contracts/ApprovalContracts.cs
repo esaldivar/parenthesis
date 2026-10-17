@@ -8,6 +8,12 @@ public static class ChangeRequestTypes
 
     /// <summary>Changing a child's existing PIN (ADR-0006). Setting the first PIN and disabling access don't need it.</summary>
     public const string ChildPinChange = "ChildPinChange";
+
+    /// <summary>A new parenting-time or holiday event (every active parent must approve).</summary>
+    public const string CalendarCreate = "CalendarCreate";
+
+    /// <summary>A new joint family event: always both parents, even before the co-parent joins.</summary>
+    public const string JointEventCreate = "JointEventCreate";
 }
 
 /// <summary>A proposal raised by a parent. The proposer's own approval is implied.</summary>

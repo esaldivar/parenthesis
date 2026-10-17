@@ -23,6 +23,7 @@ public static class FamiliesModule
         services.AddScoped<IApprovalTargetHandler, ChildCreateHandler>();
         services.AddScoped<IApprovalTargetHandler, ChildPinChangeHandler>();
         services.AddScoped<IApprovalParticipants, FamilyParticipants>();
+        services.AddScoped<IFamilyRoster, FamilyRoster>();
         services.AddScoped<IChildSessionValidator, ChildSessionValidator>();
         services.AddScoped<ChildSafetyEmails>();
         services.AddSingleton<IPasswordHasher<ChildCredential>, PasswordHasher<ChildCredential>>();
