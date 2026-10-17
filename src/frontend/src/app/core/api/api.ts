@@ -89,6 +89,74 @@ export interface ChildSession {
   readonly familyId: string;
 }
 
+// --- Milestone 3: the shared calendar (docs/design/CALENDAR_DECISIONS.md) -------------------------------------------------
+
+export type CalendarCategory =
+  | 'ParentingTime'
+  | 'Joint'
+  | 'School'
+  | 'Medical'
+  | 'Dental'
+  | 'Activity'
+  | 'Birthday'
+  | 'Holiday'
+  | 'Unavailable'
+  | 'Other';
+
+export type CalendarStatus = 'PendingApproval' | 'Confirmed' | 'Rejected' | 'Cancelled';
+
+/** Gentle, non-blocking notes about conflicts. They never block a request or reassign parenting time. */
+export type CalendarWarning =
+  | 'OverlapsCoParentUnavailable'
+  | 'CaregiverUnavailable'
+  | 'OverlapsParentingTime'
+  | 'OverlapsYourParentingTime';
+
+export interface ProposedTimes {
+  readonly title: string;
+  readonly startsAt: string;
+  readonly endsAt: string;
+  readonly allDay: boolean;
+  readonly location: string | null;
+  readonly caregiverMembershipId: string | null;
+}
+
+export interface CalendarEvent {
+  readonly id: string;
+  readonly title: string;
+  readonly category: CalendarCategory;
+  readonly startsAt: string;
+  readonly endsAt: string;
+  readonly allDay: boolean;
+  readonly location: string | null;
+  /** Only the owner sees an Unavailable event's notes; children never see notes. */
+  readonly notes: string | null;
+  readonly status: CalendarStatus;
+  readonly childIds: readonly string[];
+  readonly caregiverMembershipId: string | null;
+  readonly ownerMembershipId: string;
+  readonly confirmedBeforeCoParentJoined: boolean;
+  readonly changeRequestId: string | null;
+  /** "Confirmed · change pending": Modify shows `proposed` (before → after); Cancel awaits approval. */
+  readonly pendingChange: 'None' | 'Modify' | 'Cancel';
+  readonly proposed: ProposedTimes | null;
+  readonly warnings: readonly CalendarWarning[];
+}
+
+export interface NewCalendarEvent {
+  readonly category: CalendarCategory;
+  readonly title?: string;
+  readonly startsAt: string;
+  readonly endsAt: string;
+  readonly allDay?: boolean;
+  readonly location?: string;
+  readonly notes?: string;
+  readonly childIds?: readonly string[];
+  readonly caregiverMembershipId?: string;
+}
+
+export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'childIds'>>;
+
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -164,6 +232,19 @@ export class Api {
   pairDevice = (code: string, deviceName: string) =>
     this.call(this.http.post<{ childId: string; childFirstName: string }>('/api/device/pair', { code, deviceName }));
   childSession = () => this.call(this.http.get<ChildSession>('/api/session/child'));
+
+  // The shared calendar. A range spans at most 62 days. Children may list (they see only their confirmed events).
+  calendarEvents = (familyId: string, from: string, to: string) =>
+    this.call(this.http.get<CalendarEvent[]>(`/api/families/${familyId}/calendar/events`, { params: { from, to } }));
+  /** Parenting time, holidays and joint events come back PendingApproval with a changeRequestId. */
+  createEvent = (familyId: string, event: NewCalendarEvent) =>
+    this.call(this.http.post<CalendarEvent>(`/api/families/${familyId}/calendar/events`, event));
+  /** 200 when applied at once; 202 when it waits for the other parent (a swap is such a change). */
+  updateEvent = (familyId: string, eventId: string, change: CalendarEventChange) =>
+    this.call(this.http.patch<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`, change));
+  /** 204 when cancelled at once; 202 with the event when it waits for the other parent. */
+  cancelEvent = (familyId: string, eventId: string) =>
+    this.call(this.http.delete<CalendarEvent | null>(`/api/families/${familyId}/calendar/events/${eventId}`));
 
   private call<T>(request: import('rxjs').Observable<T>): Promise<T> {
     return firstValueFrom(request);
