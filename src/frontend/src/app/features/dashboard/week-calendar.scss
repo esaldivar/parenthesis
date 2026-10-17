@@ -135,11 +135,55 @@ ul {
 // --- Week grid --------------------------------------------------------------------------------------------------
 .grid {
   display: none;
-  grid-template-columns: var(--gutter) repeat(7, minmax(0, 1fr));
   border: 1px solid var(--color-surface-soft);
   border-radius: var(--radius-control);
   background: var(--color-canvas);
   overflow: hidden;
+}
+
+// Both parts share the same columns and reserve the scroll bar's gutter, so the day columns line up.
+.grid__top,
+.grid__body {
+  display: grid;
+  grid-template-columns: var(--gutter) repeat(7, minmax(0, 1fr));
+  scrollbar-gutter: stable;
+}
+
+.grid__top {
+  overflow: hidden;
+}
+
+// The hours scroll inside a fixed height (the whole day is there), with a scroll bar that's always shown, so the rest
+// of the dashboard stays on screen. Keyboard users can focus it and scroll with the arrow keys.
+.grid__body {
+  max-height: 20rem;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+
+  // A classic, always-visible scroll bar. Styling it opts out of auto-hiding overlay scroll bars (Edge on Windows 11,
+  // macOS); Firefox, which lacks these pseudo-elements, gets scrollbar-color instead.
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--color-surface-soft);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 3px solid var(--color-surface-soft);
+    border-radius: var(--radius-pill);
+    background: var(--color-outline);
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-color: var(--color-outline) var(--color-surface-soft);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+  }
 }
 
 .grid__corner,
@@ -531,7 +575,7 @@ ul {
 // --- Wide: the week grid replaces the agenda in Week view -----------------------------------------------------------
 @container (min-width: 720px) {
   .grid {
-    display: grid;
+    display: block;
   }
 
   .agenda:not(.agenda--always) {

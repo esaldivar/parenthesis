@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  afterRenderEffect,
+  computed,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../../shared/avatar/avatar';
@@ -64,8 +74,25 @@ export class WeekCalendar {
 
   protected readonly label = computed(() => weekLabelLong(this.weekStart()));
   private readonly events = computed(() => this.week()?.events ?? []);
-  protected readonly hours = computed(() => visibleHours(this.events()));
+  /** The whole day is in the grid; it scrolls (see constructor) to where this week's activities begin. */
+  protected readonly hours = computed(() => ({ startHour: 0, endHour: 24 }));
   protected readonly rows = computed(() => (this.hours().endHour - this.hours().startHour) * 2);
+  /** 8 AM, or earlier when an activity this week starts earlier. */
+  private readonly firstHour = computed(() => visibleHours(this.events()).startHour);
+  private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+
+  constructor() {
+    // Open each week (and the grid itself) scrolled to the morning. It reruns only when the week, its activities or
+    // the grid change, never fighting the parent's own scrolling.
+    afterRenderEffect(() => {
+      const scroller = this.scroller()?.nativeElement;
+      const hour = this.firstHour();
+      this.weekStart();
+      if (scroller) {
+        scroller.scrollTop = ((hour - this.hours().startHour) * 2 * scroller.scrollHeight) / this.rows();
+      }
+    });
+  }
   protected readonly hourMarks = computed(() => {
     const { startHour, endHour } = this.hours();
     const marks: { label: string; row: number }[] = [];

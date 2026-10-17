@@ -170,10 +170,21 @@ describe('DashboardPage (approved design)', () => {
       const dentist = columns[4].querySelector('.act') as HTMLElement; // Thursday
 
       expect(text(dentist.querySelector('.act__title'))).toBe('Dentist Appointment');
-      expect(dentist.style.gridRow).toBe(`5 / span ${MIN_SLOTS}`); // 10:00 AM in a grid starting at 8:00 AM
+      expect(dentist.style.gridRow).toBe(`21 / span ${MIN_SLOTS}`); // 10:00 AM in a whole-day grid of 30-minute rows
       expect(dentist.getAttribute('data-category')).toBe('medical');
       expect([...dentist.querySelectorAll('app-avatar')].map((a) => a.getAttribute('title'))).toEqual(['Kai', 'Aurora']);
       expect(text(columns[3])).toContain('Soccer Practice'); // Wednesday
+    });
+
+    it('keeps the whole day in a labelled, keyboard-focusable scrolling area below the all-day row', async () => {
+      const { el } = await render({ sample: true });
+      const scroller = el.querySelector('.grid__body')!;
+
+      expect(scroller.getAttribute('tabindex')).toBe('0');
+      expect(scroller.getAttribute('aria-label')).toBe('Activities by time of day, scrollable');
+      expect(scroller.querySelectorAll('.daycol')).toHaveLength(7);
+      expect(el.querySelector('.grid__top .allday')).not.toBeNull(); // Stays in place while the hours scroll.
+      expect(text(scroller.querySelector('.grid__hours'))).toContain('12 AM');
     });
 
     it('shows proposals on the calendar, below the schedule, marked as proposed and needing approval', async () => {
