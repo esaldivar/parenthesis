@@ -49,6 +49,34 @@ that points back here.
   - Domain names, HTTPS, the pipeline (deploy `develop` → dev, `main` → prod), secrets in Key Vault, database
     migrations on deploy, backups, monitoring.
 
+- [ ] **M2: onboarding, co-parent invitation, children, profile picker** (owner requirements, October 17, 2026).
+  - **Sign-up and invitation:** after signing up, a parent invites the co-parent by email.
+    - If the co-parent already has an account, the email says "join your co-parent's family", not "sign up".
+    - The inviter is never told whether an account exists, so the invite box can't be used to look people up.
+  - **Setup:** asks for the household size (how many children).
+  - **Children:** either parent can add a child, but the child only exists once **both parents approve** (approval
+    engine).
+  - **Netflix-style profile picker** after login ("Who's using Parenthesis?"): a parent profile and each child's.
+    - Children unlock with a short numeric PIN; parents use a longer password.
+    - Parents can view the children's experience; children can never see parent data.
+    - This changes the approved child-login design (separate child accounts activated by a one-time code), so it
+      needs the decisions below first.
+  - [ ] **Owner decisions needed:**
+    1. Parent re-authentication when switching from a child profile back to a parent profile (recommended: always),
+       and child PIN rules (recommended: 4–6 digits, with lockout).
+    2. Keep children's own-device sign-in as well as the picker?
+    3. Diary privacy: should parents see the private diary, or everything except it (the current guardrail)?
+    4. Children added before the co-parent joins: usable immediately and confirmed later, or waiting for approval?
+    5. Two parents who each already set up a family: block and explain (recommended) rather than merge.
+- [ ] **Mobile first** (owner: phone is the preferred way to use the app). Review every new screen at phone size
+  first, in every milestone.
+- [ ] **Installable app (PWA)** before the MVP. A native wrapper (e.g. Capacitor) is optional after the MVP.
+- [ ] **Owner, via ChatGPT:** a synthetic mock photo set — fictional parent and child avatars, crayon-style kid
+  artwork, people-free "memory" photos. **Never real children's photos or artwork:** the repository is public.
+- [ ] **Owner, via ChatGPT:** mobile mockups first (dashboard, week calendar, propose and approve, bottom navigation
+  and More). Then family setup and invitation, child profiles and Child Essentials, the full calendar, approvals and
+  the memories gallery.
+
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
