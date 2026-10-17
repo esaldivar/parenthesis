@@ -1,20 +1,41 @@
-// Mobile first, single column in priority order: greeting, week, next handoff, needs review, events, memories.
-// When the page is wide (container query), the week takes the main column with handoff and review beside it.
+// The approved dashboard layout. Wide: calendar centrepiece (two columns) with Upcoming and Quick Add beside it,
+// then From Your Kids, Recent Messages and Family Memories. Medium: two columns. Phones: one column, with Upcoming
+// straight after the calendar so the next handoff and pending reviews are easy to find.
 :host {
   display: block;
   container-type: inline-size;
 }
 
 h1 {
-  margin-bottom: var(--space-1);
+  margin: 0;
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.4rem);
 }
 
 h2 {
-  font-size: var(--font-size-h3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 1.375rem;
+
+  app-icon {
+    color: var(--color-action);
+  }
 }
 
 p {
   margin: 0;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
 }
 
 .sample-banner {
@@ -31,167 +52,376 @@ p {
   gap: var(--space-4);
   grid-template-areas:
     'welcome'
-    'week'
-    'handoff'
-    'review'
-    'events'
+    'calendar'
+    'upcoming'
+    'quick'
+    'kids'
+    'messages'
     'memories';
 }
 
+// --- Welcome ---------------------------------------------------------------------------------------------------------
 .welcome {
   grid-area: welcome;
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.welcome__date {
-  color: var(--color-text-secondary);
-}
-
-.welcome__actions {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-4);
+  min-height: 5rem;
+  padding-block: var(--space-2);
+}
 
-  a,
-  button {
-    min-height: var(--target-min);
+.welcome__sun {
+  flex: none;
+  width: 3.5rem;
+  height: 2.25rem;
+
+  .sun-body {
+    fill: var(--brand-gold);
+  }
+  .sun-rays,
+  .sun-ground {
+    fill: none;
+    stroke: var(--brand-coral);
+    stroke-width: 3;
+    stroke-linecap: round;
   }
 }
 
-.welcome__note {
-  flex-basis: 100%;
+.welcome__sub {
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
 }
 
+.welcome__leaves {
+  display: none;
+}
+
+// --- Cards -----------------------------------------------------------------------------------------------------------
 .card {
   display: block;
   min-width: 0;
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-4);
   background: var(--color-surface);
   border: 1px solid var(--color-surface-soft);
   border-radius: var(--radius-card);
 }
 
-.area-week {
-  grid-area: week;
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
-.area-handoff {
-  grid-area: handoff;
+.see-all {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  font-size: 0.9375rem;
 }
 
-.area-review {
-  grid-area: review;
+.area-calendar {
+  grid-area: calendar;
 }
-
-.area-events {
-  grid-area: events;
+.area-upcoming {
+  grid-area: upcoming;
 }
-
+.area-quick {
+  grid-area: quick;
+}
+.area-kids {
+  grid-area: kids;
+}
+.area-messages {
+  grid-area: messages;
+}
 .area-memories {
   grid-area: memories;
 }
 
-.handoff__when {
-  font-weight: 600;
-  margin-bottom: var(--space-2);
-}
-
-.handoffs {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+// Upcoming
+.upcoming {
   display: grid;
-  gap: var(--space-3);
 }
 
-.handoff {
+.upcoming__item {
   display: flex;
+  align-items: center;
   gap: var(--space-3);
-  align-items: flex-start;
-}
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-surface-soft);
 
-.handoff__names {
-  font-weight: 700;
-}
-
-.handoff__status {
-  margin-top: var(--space-1);
-}
-
-.review__count {
-  font-weight: 600;
-  margin-bottom: var(--space-2);
-}
-
-.list {
-  list-style: none;
-  margin: 0 0 var(--space-2);
-  padding: 0;
-  display: grid;
-  gap: var(--space-2);
-
-  li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-1) var(--space-2);
-    padding-bottom: var(--space-2);
-    border-bottom: 1px solid var(--color-surface-soft);
+  &:last-child {
+    border-bottom: 0;
   }
 }
 
-.list__title {
-  font-weight: 600;
-  flex-basis: 100%;
+.upcoming__icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--color-cat-other-bg);
+  color: var(--color-cat-other-icon);
 }
 
-.list__meta {
+@each $category in school, medical, music, sport, art {
+  .upcoming__item[data-category='#{$category}'] .upcoming__icon {
+    background: var(--color-cat-#{$category}-bg);
+    color: var(--color-cat-#{$category}-icon);
+  }
+}
+
+.upcoming__item[data-status='proposed'] .upcoming__icon {
+  background: var(--color-status-pending-bg);
+  color: var(--color-text);
+  outline: 2px dashed var(--color-outline);
+}
+
+.upcoming__text {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.upcoming__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+a.upcoming__title {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+}
+
+.upcoming__when {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
 }
 
-.memories {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.upcoming__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.upcoming__people {
+  display: inline-flex;
+  flex: none;
+
+  app-avatar + app-avatar {
+    margin-inline-start: -8px;
+  }
+}
+
+// Quick Add
+.quick {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-block: var(--space-3) var(--space-2);
+}
+
+.quick__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3.25rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-surface-soft);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+  cursor: not-allowed;
+
+  app-icon {
+    color: var(--color-action);
+  }
+}
+
+// From Your Kids
+.kids {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
 
   li {
     display: grid;
-    gap: var(--space-1);
+    gap: var(--space-2);
   }
 }
 
-.memories__tile {
+.kids__tile {
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-control);
-  background: var(--color-surface-soft);
+  background: var(--color-cat-art-bg);
+  color: var(--color-cat-art-icon);
+
+  &[data-kind='photo'] {
+    background: var(--color-cat-music-bg);
+    color: var(--color-cat-music-icon);
+  }
+}
+
+.kids__caption {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+
+  > span {
+    display: grid;
+  }
+}
+
+.kids__what {
+  font-size: 0.9375rem;
+}
+
+// Recent Messages
+.messages li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-surface-soft);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.messages__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.messages__from {
+  font-weight: 700;
+}
+
+.messages__preview {
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messages__time {
+  align-self: flex-start;
+  white-space: nowrap;
+}
+
+// Family Memories
+.memory {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.memory__nav {
+  flex: none;
+  width: var(--target-min);
+  height: var(--target-min);
+  border: 1px solid var(--color-surface-soft);
   color: var(--color-text);
 }
 
-@container (min-width: 900px) {
+.memory__figure {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+  text-align: center;
+
+  figcaption {
+    display: grid;
+  }
+}
+
+.memory__tile {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-control);
+  background: linear-gradient(180deg, var(--color-cat-medical-bg), var(--color-parenting-bg));
+  color: var(--color-text);
+}
+
+.memory__title {
+  font-weight: 700;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+
+  span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-surface-soft);
+    box-shadow: inset 0 0 0 1px var(--color-outline);
+  }
+
+  .is-current {
+    background: var(--color-action);
+    box-shadow: none;
+  }
+}
+
+// --- Layouts ---------------------------------------------------------------------------------------------------------
+@container (min-width: 760px) {
   .dashboard {
-    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
       'welcome welcome'
-      'week handoff'
-      'week review'
-      'events memories';
+      'calendar calendar'
+      'upcoming quick'
+      'kids messages'
+      'memories memories';
+  }
+
+  .welcome__leaves {
+    display: block;
+    position: absolute;
+    inset-inline-end: 0;
+    top: -1.5rem;
+    width: 9rem;
+    height: 7rem;
+    transform: scaleX(-1) rotate(-20deg);
+    opacity: 0.85;
+  }
+}
+
+@container (min-width: 1180px) {
+  .dashboard {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(19rem, 0.85fr);
+    // Upcoming and Quick Add stack at the top of the right column; the calendar spans their height and more.
+    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-areas:
+      'welcome welcome welcome'
+      'calendar calendar upcoming'
+      'calendar calendar quick'
+      'calendar calendar .'
+      'kids messages memories';
     align-items: start;
   }
 
-  .area-week {
+  .area-calendar {
     align-self: stretch;
   }
 }

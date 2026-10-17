@@ -1,8 +1,8 @@
 import { Caregiver, ChildRef, LocalDateTime, ParentingTime, PlainDate, ScheduleStatus } from './model';
-import { datePart, daysBetween } from './week';
+import { addDays, dateTimeLabel, datePart, daysBetween } from './week';
 
 /**
- * Parenting time as displayed: children who share a caregiver, start, end and status appear in one block
+ * Parenting time as displayed: children who share a caregiver, start, end, status and title appear in one block
  * (docs/design/DASHBOARD.md). This is presentation only. It never edits, merges or reassigns the underlying
  * parenting-time records, and splitting or regrouping can't change custody or approvals.
  */
@@ -14,12 +14,14 @@ export interface ScheduleBlock {
   readonly end: LocalDateTime;
   readonly status: ScheduleStatus;
   readonly changePending: boolean;
+  /** The parent's title for this time, or "Time with {caregiver}". Never "custody". */
+  readonly title: string;
   /** The records this block represents, unchanged. */
   readonly items: readonly ParentingTime[];
 }
 
 const keyOf = (p: ParentingTime) =>
-  [p.caregiver.membershipId, p.start, p.end, p.status, p.changePending ? 'pending' : ''].join('|');
+  [p.caregiver.membershipId, p.start, p.end, p.status, p.changePending ? 'pending' : '', p.title ?? ''].join('|');
 
 /**
  * Groups parenting time for display. With `split`, every child gets their own block (the optional "split this
@@ -44,6 +46,7 @@ export function groupParentingTime(entries: readonly ParentingTime[], options: {
         end: first.end,
         status: first.status,
         changePending: first.changePending ?? false,
+        title: first.title ?? `Time with ${first.caregiver.displayName}`,
         items,
       };
     })
@@ -101,4 +104,15 @@ export function placeInWeek(blocks: readonly ScheduleBlock[], weekStart: PlainDa
     });
   }
   return placements;
+}
+
+/** "Sun, Oct 11 – Sat, Oct 17 · All day" for whole days, otherwise the exact times. */
+export function blockRange(block: Pick<ScheduleBlock, 'start' | 'end'>): string {
+  const dayOnly = (value: string) => dateTimeLabel(value).replace(/, \d.*$/, '');
+  if (block.start.endsWith('T00:00') && block.end.endsWith('T00:00')) {
+    const first = dayOnly(block.start);
+    const last = dayOnly(`${addDays(datePart(block.end), -1)}T00:00`);
+    return first === last ? `${first} · All day` : `${first} – ${last} · All day`;
+  }
+  return `${dateTimeLabel(block.start)} – ${dateTimeLabel(block.end)}`;
 }

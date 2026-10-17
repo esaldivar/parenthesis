@@ -16,20 +16,39 @@ describe('application shells', () => {
     [...root.querySelectorAll('a')].map((a) => a.textContent!.replace(/\s+/g, ' ').trim());
 
   describe('parent shell', () => {
-    it('offers the planned navigation with visible labels, and marks Messages as later', async () => {
+    it('offers the approved navigation, in its exact order, with Calendar as one standalone item', async () => {
       const body = await open('/');
       const sidenav = body.querySelector('nav.sidenav')!;
 
       expect(linkTexts(sidenav)).toEqual([
-        'Dashboard',
+        'Home',
         'Calendar',
-        'Children',
-        'Memories',
-        'Messages, Later', // Visually hidden comma, so screen readers don't hear "MessagesLater".
-        'Approvals',
+        'Messages',
+        'From Your Kids',
+        'Family Memories',
+        'Child Essentials',
         'Settings',
       ]);
-      expect(linkTexts(body.querySelector('nav.bottomnav')!)).toEqual(['Home', 'Calendar', 'Memories', 'Approvals', 'More']);
+      expect(linkTexts(body.querySelector('nav.bottomnav')!)).toEqual(['Home', 'Calendar', 'Messages', 'Memories', 'More']);
+    });
+
+    it('lists the remaining destinations under More on phones, in the same order', async () => {
+      const body = await open('/more');
+
+      expect(linkTexts(body.querySelector('main ul')!)).toEqual(['From Your Kids', 'Child Essentials', 'Settings']);
+    });
+
+    it('sends old /children links to Child Essentials', async () => {
+      const body = await open('/children');
+
+      expect(body.querySelector('main h1')!.textContent).toBe('Child Essentials');
+    });
+
+    it('offers an account menu instead of a bare sign-out button', async () => {
+      const body = await open('/');
+
+      expect([...body.querySelectorAll('button[aria-label="Account menu"]')]).toHaveLength(2); // Sidebar and top bar.
+      expect(body.textContent).toContain('Hi, Alex!');
     });
 
     it('marks the current page for assistive technology', async () => {
@@ -39,15 +58,15 @@ describe('application shells', () => {
       expect(current).toEqual(['Calendar', 'Calendar']); // Side and bottom navigation; only one is visible at a time.
     });
 
-    it('orders the dashboard by immediate need', async () => {
+    it('shows the approved dashboard sections', async () => {
       const body = await open('/');
 
-      expect([...body.querySelectorAll('main h2')].map((h) => h.textContent!.trim())).toEqual([
-        'This week',
-        'Next handoff',
-        'Needs your review',
-        'Upcoming events',
-        'Shared memories',
+      expect([...body.querySelectorAll('main h2')].map((h) => h.textContent!.replace(/\s+/g, ' ').trim()).slice(1)).toEqual([
+        'Upcoming',
+        'Quick Add',
+        'From Your Kids',
+        'Recent Messages',
+        'Family Memories',
       ]);
     });
 
@@ -70,7 +89,7 @@ describe('application shells', () => {
       const text = body.textContent!;
 
       expect(linkTexts(body.querySelector('nav')!)).toEqual(['My Artwork', 'My Diary', 'My Photos', 'My Memories']);
-      for (const adultOnly of ['Approvals', 'Messages', 'Calendar', 'Children', 'Dashboard']) {
+      for (const adultOnly of ['Approvals', 'Messages', 'Calendar', 'Child Essentials', 'From Your Kids', 'Family Memories']) {
         expect(text).not.toContain(adultOnly);
       }
     });

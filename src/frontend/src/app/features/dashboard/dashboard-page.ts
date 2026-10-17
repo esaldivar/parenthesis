@@ -13,30 +13,45 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
+import { Avatar } from '../../shared/avatar/avatar';
+import { Leaves } from '../../shared/decor/leaves';
 import { EmptyState } from '../../shared/empty-state/empty-state';
-import { Icon } from '../../shared/icon/icon';
-import { ChildAvatars } from './child-avatars';
+import { Icon, IconName } from '../../shared/icon/icon';
 import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from './dashboard-data';
-import { childNames, groupParentingTime } from './grouping';
-import { DashboardWeek, PlainDate } from './model';
+import { blockRange, childNames, groupParentingTime } from './grouping';
+import { DashboardWeek, PlainDate, ScheduleStatus } from './model';
 import { StatusLabel } from './status-label';
-import { WeekCalendar, WeekState } from './week-calendar';
+import { CATEGORY_ICONS } from './timeline';
+import { InlineView, WeekCalendar, WeekState } from './week-calendar';
 import { addDays, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
 
 /** The current time; replaced in tests. */
 export const NOW = new InjectionToken<() => Date>('NOW', { factory: () => () => new Date() });
 
+interface UpcomingItem {
+  readonly key: string;
+  readonly icon: IconName;
+  readonly category: string;
+  readonly title: string;
+  readonly when: string;
+  readonly people: readonly { name: string; kind: 'parent' | 'child' }[];
+  readonly status: ScheduleStatus;
+  readonly note?: string;
+  readonly link?: string;
+}
+
 /**
- * The parent dashboard (docs/design/DASHBOARD.md): greeting, this week's calendar, the next handoff, items that need
- * this parent's review, upcoming events and shared memories.
+ * The parent dashboard, built to the approved design (docs/design/APPROVED_DASHBOARD_2026-10-16.md): greeting, the
+ * weekly calendar as the centrepiece, Upcoming and Quick Add, then From Your Kids, Recent Messages and Family
+ * Memories.
  *
- * Until the calendar, approvals and memories APIs exist, the live dashboard shows honest "not available yet" states.
- * In development builds, `?sample=1` previews the layout with clearly labelled synthetic data.
+ * Until the calendar, approvals, messages and memories APIs exist, the live dashboard shows honest "not available
+ * yet" states. In development builds, `?sample=1` previews the layout with clearly labelled synthetic data.
  */
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, EmptyState, Icon, WeekCalendar, ChildAvatars, StatusLabel],
+  imports: [RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar],
   providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.scss',
@@ -48,48 +63,94 @@ export class DashboardPage {
 
   /** `?sample=1`, honoured only in development builds. */
   readonly sample = input<string>();
+  /** `?week=YYYY-MM-DD` (any day of the week), e.g. when coming back from the Calendar page. */
+  readonly week = input<string>();
+
   protected readonly showingSample = computed(() => isDevMode() && this.sample() === '1');
 
   private readonly timeZone = computed(() => this.auth.currentFamily()?.timeZone ?? 'UTC');
   protected readonly today = computed(() => todayIn(this.timeZone(), this.now));
   protected readonly currentWeekStart = computed(() => startOfWeek(this.today()));
-  protected readonly weekStart = signal<PlainDate | null>(null);
-  protected readonly shownWeek = computed(() => this.weekStart() ?? this.currentWeekStart());
+  private readonly chosenWeek = signal<PlainDate | null>(null);
+  private readonly linkedWeek = computed(() => {
+    const week = this.week();
+    return week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? startOfWeek(week) : null;
+  });
+  protected readonly shownWeek = computed(() => this.chosenWeek() ?? this.linkedWeek() ?? this.currentWeekStart());
   protected readonly isCurrentWeek = computed(() => this.shownWeek() === this.currentWeekStart());
 
   /** "Show children separately this week": a view choice that resets when the week changes and never edits data. */
   protected readonly split = signal(false);
+  protected readonly inlineView = signal<InlineView>('week');
 
   protected readonly state = signal<WeekState>('loading');
-  protected readonly week = signal<DashboardWeek | null>(null);
+  protected readonly data = signal<DashboardWeek | null>(null);
   private requestId = 0;
 
+  protected readonly firstName = computed(() => this.auth.user()?.displayName.split(/\s+/)[0] ?? '');
   protected readonly greeting = computed(() => {
-    const firstName = this.auth.user()?.displayName.split(/\s+/)[0];
     const hello = greetingFor(hourIn(this.timeZone(), this.now));
-    return firstName ? `${hello}, ${firstName}` : hello;
+    return this.firstName() ? `${hello}, ${this.firstName()}!` : `${hello}!`;
   });
-  protected readonly todayLabel = computed(() => dayLong(this.today()));
-  protected readonly familyName = computed(() => this.auth.currentFamily()?.name ?? '');
 
-  /** Every confirmed arrangement that starts at the next handoff moment (children may change hands together or not). */
-  protected readonly nextHandoffs = computed(() => {
+  /** Proposals awaiting this parent, then this week's parenting time and activities from today on. */
+  protected readonly upcoming = computed<UpcomingItem[]>(() => {
+    const data = this.data();
+    if (!data) {
+      return [];
+    }
     const nowLocal = nowIn(this.timeZone(), this.now);
-    const upcoming = groupParentingTime(this.week()?.parentingTime ?? [], { split: false }).filter(
-      (b) => b.status === 'confirmed' && b.start > nowLocal,
-    );
-    const next = upcoming[0]?.start;
-    return next ? upcoming.filter((b) => b.start === next) : [];
+    const reviews: UpcomingItem[] = data.pendingReviews.map((r) => ({
+      key: `review-${r.id}`,
+      icon: 'approvals',
+      category: 'review',
+      title: r.summary,
+      when: `Proposed by ${r.proposedBy} · needs your review`,
+      people: [],
+      status: 'proposed',
+      link: '/approvals',
+    }));
+    const parenting: UpcomingItem[] = groupParentingTime(data.parentingTime, { split: false })
+      .filter((b) => b.status === 'confirmed' && b.end > nowLocal)
+      .map((b) => ({
+        key: `pt-${b.key}`,
+        icon: 'calendar',
+        category: 'parenting',
+        title: b.title,
+        when: blockRange(b),
+        people: [{ name: b.caregiver.displayName, kind: 'parent' as const }, ...b.children.map((c) => ({ name: c.name, kind: 'child' as const }))],
+        status: b.status,
+        note: b.changePending ? 'Change pending' : undefined,
+      }));
+    const events: UpcomingItem[] = data.events
+      .filter((e) => e.date >= this.today())
+      .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
+      .map((e) => ({
+        key: `ev-${e.id}`,
+        icon: CATEGORY_ICONS[e.category],
+        category: e.category,
+        title: e.title,
+        when: e.time ? dateTimeLabel(`${e.date}T${e.time}`).replace(/, (\d)/, ' · $1') : dayLong(e.date),
+        people: e.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+        status: e.status,
+      }));
+    return [...reviews, ...parenting, ...events].slice(0, 5);
   });
 
-  protected readonly upcomingEvents = computed(() =>
-    (this.week()?.events ?? [])
-      .filter((e) => e.date >= this.today())
-      .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? ''))),
-  );
+  protected readonly memoryIndex = signal(0);
+  protected readonly memories = computed(() => this.data()?.recentMemories ?? []);
+  protected readonly currentMemory = computed(() => this.memories()[this.memoryIndex()] ?? null);
 
+  /** Shown as in the approved design, but honest: none of these flows exist yet, so they're marked unavailable. */
+  protected readonly quickActions: readonly { label: string; icon: IconName }[] = [
+    { label: 'Event', icon: 'calendar' },
+    { label: 'Message', icon: 'messages' },
+    { label: 'Memory', icon: 'image' },
+    { label: 'Note', icon: 'plus' },
+  ];
+
+  protected readonly personRef = (person: { name: string }) => ({ id: person.name, name: person.name });
   protected readonly childNames = childNames;
-  protected readonly dateTimeLabel = dateTimeLabel;
   protected readonly dayLong = dayLong;
   protected readonly timeLabel = timeLabel;
 
@@ -104,16 +165,21 @@ export class DashboardPage {
 
   protected goToWeek(offsetWeeks: number): void {
     this.split.set(false);
-    this.weekStart.set(addDays(this.shownWeek(), offsetWeeks * 7));
+    this.chosenWeek.set(addDays(this.shownWeek(), offsetWeeks * 7));
   }
 
-  protected goToThisWeek(): void {
+  protected goToToday(): void {
     this.split.set(false);
-    this.weekStart.set(null);
+    this.chosenWeek.set(this.currentWeekStart());
   }
 
   protected setSplit(split: boolean): void {
     this.split.set(split);
+  }
+
+  protected showMemory(offset: number): void {
+    const count = this.memories().length;
+    this.memoryIndex.set((this.memoryIndex() + offset + count) % count);
   }
 
   protected reload(): void {
@@ -125,15 +191,16 @@ export class DashboardPage {
     const request = ++this.requestId;
     this.state.set('loading');
     try {
-      const week = familyId ? await source.load(familyId, weekStart) : null;
+      const data = familyId ? await source.load(familyId, weekStart) : null;
       if (request !== this.requestId) {
         return; // A newer week was requested meanwhile.
       }
-      this.week.set(week);
-      this.state.set(week ? 'ready' : 'unavailable');
+      this.data.set(data);
+      this.memoryIndex.set(0);
+      this.state.set(data ? 'ready' : 'unavailable');
     } catch {
       if (request === this.requestId) {
-        this.week.set(null);
+        this.data.set(null);
         this.state.set('error');
       }
     }

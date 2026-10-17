@@ -98,6 +98,21 @@ export function weekLabel(weekStart: PlainDate): string {
   );
 }
 
+/** "October 11 – 17, 2026" (the approved toolbar style). */
+export function weekLabelLong(weekStart: PlainDate): string {
+  return plainSpaces(
+    utcFormat({ month: 'long', day: 'numeric', year: 'numeric' }).formatRange(toUtc(weekStart), toUtc(addDays(weekStart, 6))),
+  );
+}
+
+/** "Oct 11" */
+export const monthDay = (date: PlainDate) => utcFormat({ month: 'short', day: 'numeric' }).format(toUtc(date));
+
+/** "8 AM" */
+export function hourLabel(hour: number): string {
+  return plainSpaces(utcFormat({ hour: 'numeric' }).format(new Date(Date.UTC(2000, 0, 1, hour))));
+}
+
 /** "Mon" */
 export const weekdayShort = (date: PlainDate) => utcFormat({ weekday: 'short' }).format(toUtc(date));
 

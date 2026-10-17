@@ -50,6 +50,18 @@ const pairs: [foreground: string, background: string, minimum: number][] = [
   ['brand-wordmark-hesis', 'color-canvas', TEXT],
   ['brand-wordmark-parent', 'color-surface', NON_TEXT],
   ['brand-wordmark-hesis', 'color-surface', TEXT],
+  // Activity categories: text sits on the fill, icons need 3:1 against it.
+  ...['school', 'medical', 'music', 'sport', 'art', 'other'].flatMap(
+    (c) =>
+      [
+        ['color-text', `color-cat-${c}-bg`, TEXT],
+        ['color-text-secondary', `color-cat-${c}-bg`, TEXT],
+        [`color-cat-${c}-icon`, `color-cat-${c}-bg`, NON_TEXT],
+      ] as [string, string, number][],
+  ),
+  ['color-text', 'color-parenting-bg', TEXT],
+  ['color-text-secondary', 'color-parenting-bg', TEXT],
+  ['color-text', 'color-avatar-parent', TEXT],
 ];
 
 describe.each(['light', 'dark'] as const)('%s theme tokens', (mixin) => {

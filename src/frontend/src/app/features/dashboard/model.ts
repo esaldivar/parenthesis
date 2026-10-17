@@ -35,7 +35,12 @@ export interface ParentingTime {
   readonly status: ScheduleStatus;
   /** A confirmed arrangement that has a proposed change awaiting approval. */
   readonly changePending?: boolean;
+  /** Optional descriptive title a parent gave it (e.g. "Dad's SeaWorld Adventure"); otherwise "Time with …". */
+  readonly title?: string;
 }
+
+/** Activity categories for icons and colour accents (always alongside text). */
+export type EventCategory = 'school' | 'medical' | 'music' | 'sport' | 'art' | 'other';
 
 export interface FamilyEvent {
   readonly id: string;
@@ -43,6 +48,9 @@ export interface FamilyEvent {
   readonly date: PlainDate;
   /** "HH:mm"; absent for all-day events. */
   readonly time?: string;
+  /** Defaults to 60 minutes when unknown. */
+  readonly durationMinutes?: number;
+  readonly category: EventCategory;
   readonly children: readonly ChildRef[];
   readonly status: ScheduleStatus;
 }
@@ -51,6 +59,22 @@ export interface PendingReview {
   readonly id: string;
   readonly summary: string;
   readonly proposedBy: string;
+}
+
+/** Something a child chose to share with this parent from their own space. */
+export interface KidShare {
+  readonly id: string;
+  readonly child: ChildRef;
+  readonly kind: 'drawing' | 'photo';
+  readonly sharedAt: string;
+}
+
+/** A message between the parents (messaging is parent-to-parent in the architecture). */
+export interface RecentMessage {
+  readonly id: string;
+  readonly from: string;
+  readonly preview: string;
+  readonly sentAt: string;
 }
 
 export interface SharedMemory {
@@ -66,5 +90,7 @@ export interface DashboardWeek {
   readonly parentingTime: readonly ParentingTime[];
   readonly events: readonly FamilyEvent[];
   readonly pendingReviews: readonly PendingReview[];
+  readonly kidShares: readonly KidShare[];
+  readonly recentMessages: readonly RecentMessage[];
   readonly recentMemories: readonly SharedMemory[];
 }

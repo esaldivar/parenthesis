@@ -1,17 +1,16 @@
-// Mobile first: a compact agenda. When the calendar itself is wide enough (container query, not viewport), the
-// days become seven columns and parenting time becomes bars spanning the days they cover.
+// The approved weekly calendar. Wide containers show the week grid; narrow ones (phones) fall back to the
+// agenda, which is also the List view.
 :host {
   display: block;
   container-type: inline-size;
+  --slot: 1.125rem; // 30 minutes
+  --gutter: 3.5rem;
 }
 
-h2 {
+h2,
+h3,
+p {
   margin: 0;
-}
-
-h3 {
-  font-size: 1rem;
-  margin: var(--space-4) 0 var(--space-2);
 }
 
 ol,
@@ -21,180 +20,100 @@ ul {
   padding: 0;
 }
 
-p {
-  margin: 0;
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
 }
 
-.week__header {
+// --- Toolbar ----------------------------------------------------------------------------------------------------
+.toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
-.week__nav {
+.toolbar__nav {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-1) var(--space-2);
+}
 
-  button[mat-icon-button] {
-    width: var(--target-min);
-    height: var(--target-min);
-    font-size: 1.5rem;
-    line-height: 1;
+.nav-btn {
+  width: var(--target-min);
+  height: var(--target-min);
+  color: var(--color-text);
+}
+
+.toolbar__label {
+  // Scales with the card; on the narrowest phones it wraps inside its own space rather than pushing "next" down.
+  font-size: clamp(1rem, 0.55rem + 2.6cqi, 1.375rem);
+  font-weight: 700;
+  min-width: 0;
+}
+
+.toolbar__week {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.pill {
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-soft);
   }
 }
 
-.week__label {
-  min-width: 9rem;
-  text-align: center;
-  font-weight: 600;
-}
-
-// --- Days ---------------------------------------------------------------------------------------------------
-.days {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.day {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
-  align-items: baseline;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-control);
-  background: var(--color-canvas);
-}
-
-.day--today {
-  background: var(--color-selected);
-  box-shadow: inset 0 0 0 2px var(--color-action);
-}
-
-.day__label {
-  min-width: 4.5rem;
-  font-weight: 600;
-}
-
-.day__weekday {
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}
-
-.day__today {
-  display: inline-block;
-  margin-inline-start: var(--space-2);
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.events {
-  display: grid;
-  gap: var(--space-1);
-  flex: 1 1 12rem;
-}
-
-.event {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border-radius: 8px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-surface-soft);
-  font-size: 0.875rem;
-}
-
-.event[data-status='proposed'] {
-  border: 1px dashed var(--color-outline);
-}
-
-.event__title {
-  font-weight: 600;
-}
-
-.event__meta {
-  color: var(--color-text-secondary);
-}
-
-// --- Parenting time ---------------------------------------------------------------------------------------------
-.schedule__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.blocks,
-.proposals {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.block {
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-start;
-  padding: var(--space-3);
-  border-radius: var(--radius-control);
+.segmented {
+  display: inline-flex;
   border: 1px solid var(--color-outline);
-  background: var(--color-surface);
-  min-width: 0;
-}
+  border-radius: var(--radius-control);
+  overflow: hidden;
 
-// Proposed blocks are visibly provisional: dashed, on the pending fill, and always labelled "Proposed".
-.block--proposed {
-  border-style: dashed;
-  background: var(--color-status-pending-bg);
-}
+  button,
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--space-4);
+    border: 0;
+    border-inline-start: 1px solid var(--color-outline);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
 
-.block__body {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
+    &:first-child {
+      border-inline-start: 0;
+    }
 
-.block__names {
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
+    &:hover {
+      background: var(--color-surface-soft);
+    }
+  }
 
-.block__caregiver {
-  font-weight: 600;
-}
+  [aria-pressed='true'] {
+    background: var(--color-action);
+    color: var(--color-on-action);
+    font-weight: 600;
 
-.block__when {
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-}
-
-.block__status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
-}
-
-.block__toggle {
-  justify-self: start;
-  min-height: var(--target-min);
-}
-
-.block__details {
-  font-size: 0.875rem;
-
-  li + li {
-    margin-top: 2px;
+    &:hover {
+      background: var(--color-action-hover);
+    }
   }
 }
 
@@ -213,57 +132,336 @@ p {
   background: var(--color-status-rejected-bg);
 }
 
-.hint {
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  margin-bottom: var(--space-2);
+// --- Week grid --------------------------------------------------------------------------------------------------
+.grid {
+  display: none;
+  grid-template-columns: var(--gutter) repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--color-surface-soft);
+  border-radius: var(--radius-control);
+  background: var(--color-canvas);
+  overflow: hidden;
 }
 
-// --- Wide: a real week grid --------------------------------------------------------------------------------------
-@container (min-width: 540px) {
-  .days {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-  }
+.grid__corner,
+.grid__head {
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--color-surface-soft);
+  background: var(--color-surface);
+}
 
-  .day {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    min-height: 6.5rem;
-  }
+.grid__head {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  border-inline-start: 1px solid var(--color-surface-soft);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
 
-  .day__label {
-    min-width: 0;
-  }
+.grid__date {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0 var(--space-1);
+  border-radius: 999px;
+  color: var(--color-text);
+  font-weight: 600;
+}
 
-  .day__number {
-    display: block;
-    font-size: 1.25rem;
-  }
+.grid__head.is-today {
+  color: var(--color-text);
+  font-weight: 700;
 
-  .day__today {
-    margin-inline-start: 0;
+  .grid__date {
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
+}
 
-  .events {
-    flex: none;
-  }
+.grid__allday-label {
+  display: grid;
+  place-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-surface-soft);
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
 
-  .event {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.allday {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-1) 0;
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--color-surface-soft);
+}
 
-  .blocks {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    grid-auto-rows: auto;
-    column-gap: var(--space-1);
-  }
+// Parenting time: one continuous block across the days it covers, with the parent's and children's avatars.
+.pt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  margin-inline: 2px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-surface-soft);
+  background: var(--color-parenting-bg);
+  color: var(--color-text);
 
-  .blocks .block {
+  .allday & {
     grid-column: var(--start) / var(--end);
     grid-row: var(--lane);
-    flex-direction: column;
+    min-height: 3.75rem;
+  }
+}
+
+.pt[data-status='proposed'] {
+  border: 2px dashed var(--color-outline);
+  background: var(--color-status-pending-bg);
+}
+
+.pt__icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: var(--color-action);
+}
+
+.pt__avatars {
+  display: inline-flex;
+  flex: none;
+
+  app-avatar + app-avatar {
+    margin-inline-start: -8px;
+  }
+}
+
+.pt__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pt__title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.pt__meta {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.pt__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.grid__hours {
+  display: grid;
+  grid-template-rows: repeat(var(--rows), var(--slot));
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+
+  span {
+    padding-inline-end: var(--space-2);
+    text-align: end;
+    transform: translateY(-0.5em);
+  }
+}
+
+.daycol {
+  display: grid;
+  grid-template-rows: repeat(var(--rows), var(--slot));
+  grid-template-columns: repeat(var(--lanes), minmax(0, 1fr));
+  gap: 0 3px;
+  padding: 0 3px;
+  border-inline-start: 1px solid var(--color-surface-soft);
+  // Hour lines every two slots.
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--color-surface-soft) 0 1px,
+    transparent 1px calc(var(--slot) * 2)
+  );
+}
+
+// Activities: category fill + icon, always with the title and time in text.
+.act {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  margin-block: 2px;
+  padding: var(--space-2);
+  border-radius: 10px;
+  background: var(--color-cat-other-bg);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  overflow: hidden;
+}
+
+.act__icon {
+  color: var(--color-cat-other-icon);
+}
+
+.act__title {
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.act__time {
+  color: var(--color-text-secondary);
+}
+
+.act__avatars {
+  display: inline-flex;
+  margin-top: 2px;
+
+  app-avatar + app-avatar {
+    margin-inline-start: -6px;
+  }
+}
+
+@each $category in school, medical, music, sport, art, other {
+  .act[data-category='#{$category}'] {
+    background: var(--color-cat-#{$category}-bg);
+
+    .act__icon {
+      color: var(--color-cat-#{$category}-icon);
+    }
+  }
+}
+
+.act[data-status='proposed'] {
+  border: 2px dashed var(--color-outline);
+}
+
+// --- Agenda (List view; Week view on narrow screens) -----------------------------------------------------------------
+.agenda {
+  display: grid;
+  gap: var(--space-4);
+
+  h3 {
+    font-size: 1rem;
+  }
+}
+
+.agenda__blocks {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.pt--card {
+  align-items: flex-start;
+}
+
+.pt__toggle {
+  justify-self: start;
+  min-height: var(--target-min);
+}
+
+.pt__details {
+  font-size: 0.875rem;
+}
+
+.agenda__days {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.agenda__day {
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-canvas);
+
+  &.is-today {
+    box-shadow: inset 0 0 0 2px var(--color-action);
+  }
+
+  ul {
+    display: grid;
     gap: var(--space-2);
+    margin-top: var(--space-2);
+  }
+}
+
+.agenda__date {
+  font-weight: 700;
+}
+
+.today-badge {
+  display: inline-block;
+  margin-inline-start: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: 0.75rem;
+}
+
+.act--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-size: 0.875rem;
+
+  .act__title {
+    flex: 1 1 8rem;
+  }
+}
+
+.cal__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+// --- Wide: the week grid replaces the agenda in Week view -----------------------------------------------------------
+@container (min-width: 720px) {
+  .grid {
+    display: grid;
+  }
+
+  .agenda:not(.agenda--always) {
+    display: none;
+  }
+}
+
+// Short arrangements (one or two days) stack their content so it stays legible in a narrow span.
+.allday .pt--narrow {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+
+  .pt__icon,
+  .pt__meta {
+    display: none;
+  }
+}
+
+.proposals {
+  margin-top: var(--space-3);
+
+  h3 {
+    font-size: 1rem;
+  }
+
+  ul {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+  }
+
+  .pt {
+    align-items: center;
   }
 }
