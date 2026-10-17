@@ -20,6 +20,7 @@ COPY src/backend/CoParent.SharedKernel/CoParent.SharedKernel.csproj src/backend/
 COPY src/backend/CoParent.Infrastructure/CoParent.Infrastructure.csproj src/backend/CoParent.Infrastructure/
 COPY src/backend/Modules/CoParent.Modules.Identity/CoParent.Modules.Identity.csproj src/backend/Modules/CoParent.Modules.Identity/
 COPY src/backend/Modules/CoParent.Modules.Families/CoParent.Modules.Families.csproj src/backend/Modules/CoParent.Modules.Families/
+COPY src/backend/Modules/CoParent.Modules.Approvals/CoParent.Modules.Approvals.csproj src/backend/Modules/CoParent.Modules.Approvals/
 RUN dotnet restore src/backend/CoParent.Api/CoParent.Api.csproj
 
 COPY .editorconfig ./
