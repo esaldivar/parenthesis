@@ -171,6 +171,56 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.ToTable("devices", "families");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.DevicePairingCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<byte[]>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_membership_id");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_device_pairing_codes");
+
+                    b.HasIndex("ChildProfileId")
+                        .HasDatabaseName("ix_device_pairing_codes_child_profile_id");
+
+                    b.HasIndex("CodeHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_device_pairing_codes_code_hash");
+
+                    b.ToTable("device_pairing_codes", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.Family", b =>
                 {
                     b.Property<Guid>("Id")
@@ -343,6 +393,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_devices_families_family_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.DevicePairingCode", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_device_pairing_codes_child_profiles_child_profile_id");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.FamilyMembership", b =>

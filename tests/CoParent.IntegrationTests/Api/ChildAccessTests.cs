@@ -159,6 +159,65 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Conflict, change.StatusCode);
     }
 
+    [Fact]
+    public async Task A_paired_tablet_belongs_to_one_child_only()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        var code = (await JsonAsync(await family.Mom.PostAsync($"/api/families/{family.FamilyId}/children/{family.KaiId}/pairing-code")))
+            .GetProperty("code").GetString()!;
+        using var tablet = await ApiSession.StartAsync(api);
+
+        var paired = await tablet.PostAsync("/api/device/pair", new { code = code.ToLowerInvariant(), deviceName = "Kai's tablet" });
+        var picker = await JsonAsync(await tablet.GetAsync("/api/device/profiles"));
+        await tablet.RefreshAntiforgeryAsync();
+        var signIn = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+
+        Assert.Equal(HttpStatusCode.OK, paired.StatusCode);
+        Assert.Equal("Kai", (await JsonAsync(paired)).GetProperty("childFirstName").GetString());
+        Assert.Equal("ChildPaired", picker.GetProperty("deviceKind").GetString());
+        Assert.Equal(["child:Kai"], picker.GetProperty("profiles").EnumerateArray()
+            .Select(p => $"{p.GetProperty("kind").GetString()}:{p.GetProperty("name").GetString()}"));
+        Assert.Equal(HttpStatusCode.NoContent, signIn.StatusCode);
+        var devices = (await JsonAsync(await family.Mom.GetAsync($"/api/families/{family.FamilyId}/devices"))).EnumerateArray();
+        Assert.Contains(devices, d => d.GetProperty("name").GetString() == "Kai's tablet" && d.GetProperty("kind").GetString() == "ChildPaired");
+    }
+
+    [Fact]
+    public async Task A_pairing_code_works_once_and_a_new_code_replaces_the_old_one()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        var first = await PairingCodeAsync(family);
+        var second = await PairingCodeAsync(family);
+        using var tabletA = await ApiSession.StartAsync(api);
+        using var tabletB = await ApiSession.StartAsync(api);
+
+        var withReplaced = await tabletA.PostAsync("/api/device/pair", new { code = first, deviceName = "Tablet A" });
+        var withCurrent = await tabletA.PostAsync("/api/device/pair", new { code = second, deviceName = "Tablet A" });
+        var reused = await tabletB.PostAsync("/api/device/pair", new { code = second, deviceName = "Tablet B" });
+
+        Assert.Equal(HttpStatusCode.NotFound, withReplaced.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, withCurrent.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, reused.StatusCode);
+    }
+
+    [Fact]
+    public async Task Pairing_ends_any_parent_session_on_the_tablet()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        var code = await PairingCodeAsync(family);
+
+        await family.Dad.PostAsync("/api/device/pair", new { code, deviceName = "Old family laptop" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await family.Dad.GetAsync("/api/me")).StatusCode);
+    }
+
+    private static async Task<string> PairingCodeAsync(TestFamily family) =>
+        (await JsonAsync(await family.Mom.PostAsync($"/api/families/{family.FamilyId}/children/{family.KaiId}/pairing-code")))
+            .GetProperty("code").GetString()!;
+
     /// <summary>Dad and Mom, with Kai approved by both, Kai's PIN set, and Dad's browser registered as a household device.</summary>
     private async Task<TestFamily> FamilyWithKaiAsync(bool setPin = true)
     {
