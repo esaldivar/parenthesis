@@ -1,0 +1,153 @@
+<section class="week" aria-labelledby="week-heading" [attr.aria-busy]="state() === 'loading'">
+  <header class="week__header">
+    <h2 id="week-heading">{{ isCurrentWeek() ? 'This week' : 'Week' }}</h2>
+    <div class="week__nav">
+      <button mat-icon-button type="button" (click)="previousWeek.emit()" aria-label="Previous week">
+        <span aria-hidden="true">‹</span>
+      </button>
+      <p class="week__label" aria-live="polite">{{ label() }}</p>
+      <button mat-icon-button type="button" (click)="nextWeek.emit()" aria-label="Next week">
+        <span aria-hidden="true">›</span>
+      </button>
+      @if (!isCurrentWeek()) {
+        <button mat-button type="button" (click)="thisWeek.emit()">This week</button>
+      }
+    </div>
+  </header>
+
+  <ol class="days" aria-label="Days">
+    @for (day of days(); track day.date) {
+      <li class="day" [class.day--today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+        <p class="day__label">
+          <span class="visually-hidden">{{ day.longLabel }}</span>
+          <span aria-hidden="true"><span class="day__weekday">{{ day.weekday }}</span>{{ ' ' }}<span class="day__number">{{ day.dayNumber }}</span></span>
+          @if (day.isToday) {
+            <span class="day__today">Today</span>
+          }
+        </p>
+        @if (day.events.length > 0) {
+          <ul class="events">
+            @for (event of day.events; track event.id) {
+              <li class="event" [attr.data-status]="event.status">
+                <span class="event__title">{{ event.title }}</span>
+                <span class="event__meta">
+                  @if (event.time) {
+                    {{ timeLabel(event.time) }} ·
+                  }
+                  {{ childNames(event.children) }}
+                </span>
+                <app-status-label [status]="event.status" />
+              </li>
+            }
+          </ul>
+        }
+      </li>
+    }
+  </ol>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="note">Loading this week…</p>
+    }
+    @case ('error') {
+      <div class="note note--error" role="alert">
+        We couldn’t load this week.
+        <button mat-button type="button" (click)="retry.emit()">Try again</button>
+      </div>
+    }
+    @case ('unavailable') {
+      <p class="note">
+        The shared calendar isn’t available yet. When it is, parenting time and family events for this week will
+        appear here. Nothing shown on this page is a schedule.
+      </p>
+    }
+    @case ('ready') {
+      <div class="schedule">
+        <div class="schedule__header">
+          <h3 id="parenting-heading">Parenting time</h3>
+          @if (canSplit()) {
+            <button mat-button type="button" [attr.aria-pressed]="split()" (click)="splitChange.emit(!split())">
+              {{ split() ? 'Group children with the same schedule' : 'Show children separately this week' }}
+            </button>
+          }
+        </div>
+        @if (split()) {
+          <p class="hint">Showing each child separately. This only changes the view, not anyone’s schedule.</p>
+        }
+
+        @if (agreed().length === 0) {
+          <p class="note">No parenting time this week.</p>
+        } @else {
+          <ol class="blocks" aria-labelledby="parenting-heading" [style.--lanes]="lanes()">
+            @for (block of agreed(); track block.key) {
+              @let place = placement(block);
+              <li
+                class="block"
+                [attr.data-status]="block.status"
+                [style.--start]="place?.startColumn"
+                [style.--end]="place?.endColumn"
+                [style.--lane]="(place?.lane ?? 0) + 1"
+              >
+                <app-child-avatars [children]="block.children" />
+                <div class="block__body">
+                  <p class="block__names">{{ childNames(block.children) }}</p>
+                  <p class="block__caregiver">With {{ block.caregiver.displayName }}</p>
+                  <p class="block__when">
+                    @if (place?.continuesBefore) {
+                      <span aria-hidden="true">← </span>
+                    }
+                    {{ range(block) }}
+                    @if (place?.continuesAfter) {
+                      <span aria-hidden="true"> →</span>
+                    }
+                  </p>
+                  <p class="block__status">
+                    <app-status-label [status]="block.status" />
+                    @if (block.changePending) {
+                      <app-status-label status="change-pending" />
+                    }
+                  </p>
+                  @if (block.children.length > 1) {
+                    <button
+                      mat-button
+                      type="button"
+                      class="block__toggle"
+                      [attr.aria-expanded]="isExpanded(block)"
+                      [attr.aria-controls]="idFor(block)"
+                      (click)="toggleDetails(block)"
+                    >
+                      {{ isExpanded(block) ? 'Hide details' : 'Details' }}<span class="visually-hidden"> for {{ childNames(block.children) }}</span>
+                    </button>
+                    <ul class="block__details" [id]="idFor(block)" [hidden]="!isExpanded(block)">
+                      @for (item of block.items; track item.id) {
+                        <li>{{ item.child.name }}: with {{ item.caregiver.displayName }}, {{ range(block) }}</li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        }
+
+        @if (proposed().length > 0) {
+          <h3 id="proposed-heading">Proposed changes</h3>
+          <p class="hint">Proposals aren’t part of the schedule until both parents agree.</p>
+          <ol class="proposals" aria-labelledby="proposed-heading">
+            @for (block of proposed(); track block.key) {
+              <li class="block block--proposed" data-status="proposed">
+                <app-child-avatars [children]="block.children" />
+                <div class="block__body">
+                  <p class="block__names">{{ childNames(block.children) }}</p>
+                  <p class="block__caregiver">With {{ block.caregiver.displayName }}</p>
+                  <p class="block__when">{{ range(block) }}</p>
+                  <p class="block__status"><app-status-label status="proposed" /></p>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    }
+  }
+</section>

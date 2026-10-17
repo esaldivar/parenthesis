@@ -1,0 +1,197 @@
+// Mobile first, single column in priority order: greeting, week, next handoff, needs review, events, memories.
+// When the page is wide (container query), the week takes the main column with handoff and review beside it.
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+h1 {
+  margin-bottom: var(--space-1);
+}
+
+h2 {
+  font-size: var(--font-size-h3);
+}
+
+p {
+  margin: 0;
+}
+
+.sample-banner {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 2px dashed var(--color-outline);
+  border-radius: var(--radius-control);
+  background: var(--color-status-pending-bg);
+  color: var(--color-text);
+}
+
+.dashboard {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-areas:
+    'welcome'
+    'week'
+    'handoff'
+    'review'
+    'events'
+    'memories';
+}
+
+.welcome {
+  grid-area: welcome;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.welcome__date {
+  color: var(--color-text-secondary);
+}
+
+.welcome__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+
+  a,
+  button {
+    min-height: var(--target-min);
+  }
+}
+
+.welcome__note {
+  flex-basis: 100%;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.card {
+  display: block;
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-soft);
+  border-radius: var(--radius-card);
+}
+
+.area-week {
+  grid-area: week;
+}
+
+.area-handoff {
+  grid-area: handoff;
+}
+
+.area-review {
+  grid-area: review;
+}
+
+.area-events {
+  grid-area: events;
+}
+
+.area-memories {
+  grid-area: memories;
+}
+
+.handoff__when {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.handoffs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.handoff {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.handoff__names {
+  font-weight: 700;
+}
+
+.handoff__status {
+  margin-top: var(--space-1);
+}
+
+.review__count {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.list {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-surface-soft);
+  }
+}
+
+.list__title {
+  font-weight: 600;
+  flex-basis: 100%;
+}
+
+.list__meta {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.memories {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  gap: var(--space-3);
+
+  li {
+    display: grid;
+    gap: var(--space-1);
+  }
+}
+
+.memories__tile {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+}
+
+@container (min-width: 900px) {
+  .dashboard {
+    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+    grid-template-areas:
+      'welcome welcome'
+      'week handoff'
+      'week review'
+      'events memories';
+    align-items: start;
+  }
+
+  .area-week {
+    align-self: stretch;
+  }
+}

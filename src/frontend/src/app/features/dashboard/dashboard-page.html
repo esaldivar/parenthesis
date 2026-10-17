@@ -1,0 +1,144 @@
+@if (showingSample()) {
+  <div class="sample-banner" role="note">
+    <strong>Sample data preview.</strong>
+    Fictional people and events for reviewing this layout (development builds only). This is not your family’s
+    schedule, and nothing here can be changed.
+  </div>
+}
+
+<div class="dashboard">
+  <header class="welcome">
+    <div>
+      <h1>{{ greeting() }}</h1>
+      <p class="welcome__date">
+        {{ todayLabel() }}
+        @if (familyName()) {
+          · {{ familyName() }}
+        }
+      </p>
+    </div>
+    <div class="welcome__actions">
+      <a mat-flat-button routerLink="/calendar" [queryParams]="{ view: 'month' }">View month</a>
+      <button mat-stroked-button type="button" disabled disabledInteractive aria-describedby="propose-note">
+        Propose an event
+      </button>
+      <p id="propose-note" class="welcome__note">Proposing events opens with the shared calendar.</p>
+    </div>
+  </header>
+
+  <app-week-calendar
+    class="card area-week"
+    [weekStart]="shownWeek()"
+    [today]="today()"
+    [isCurrentWeek]="isCurrentWeek()"
+    [state]="state()"
+    [week]="week()"
+    [split]="split()"
+    (previousWeek)="goToWeek(-1)"
+    (nextWeek)="goToWeek(1)"
+    (thisWeek)="goToThisWeek()"
+    (splitChange)="setSplit($event)"
+    (retry)="reload()"
+  />
+
+  <section class="card area-handoff" aria-labelledby="handoff-heading">
+    <h2 id="handoff-heading">Next handoff</h2>
+    @if (nextHandoffs().length > 0) {
+      <p class="handoff__when">{{ dateTimeLabel(nextHandoffs()[0].start) }}</p>
+      <ul class="handoffs">
+        @for (handoff of nextHandoffs(); track handoff.key) {
+          <li class="handoff">
+            <app-child-avatars [children]="handoff.children" />
+            <div>
+              <p class="handoff__names">{{ childNames(handoff.children) }}</p>
+              <p>With {{ handoff.caregiver.displayName }}</p>
+              <p class="handoff__status"><app-status-label status="confirmed" /></p>
+            </div>
+          </li>
+        }
+      </ul>
+    } @else if (state() === 'ready') {
+      <app-empty-state icon="calendar" title="No more handoffs this week" body="The next one will show here." />
+    } @else {
+      <app-empty-state
+        icon="calendar"
+        title="Nothing to show yet"
+        body="Your next parenting-time handoff will appear here once the shared calendar is available."
+      />
+    }
+  </section>
+
+  <section class="card area-review" aria-labelledby="review-heading">
+    <h2 id="review-heading">Needs your review</h2>
+    @if (state() === 'ready' && week()!.pendingReviews.length > 0) {
+      <p class="review__count">
+        {{ week()!.pendingReviews.length }} {{ week()!.pendingReviews.length === 1 ? 'proposal' : 'proposals' }} waiting
+        for your answer
+      </p>
+      <ul class="list">
+        @for (review of week()!.pendingReviews; track review.id) {
+          <li>
+            <span class="list__title">{{ review.summary }}</span>
+            <span class="list__meta">Proposed by {{ review.proposedBy }}</span>
+            <app-status-label status="proposed" />
+          </li>
+        }
+      </ul>
+      <a mat-button routerLink="/approvals">Go to approvals</a>
+    } @else if (state() === 'ready') {
+      <app-empty-state icon="approvals" title="Nothing waiting for you" body="Proposed changes that need your answer will appear here." />
+    } @else {
+      <app-empty-state
+        icon="approvals"
+        title="No requests"
+        body="Approvals aren’t available yet, so nothing is waiting for either parent."
+      />
+    }
+  </section>
+
+  <section class="card area-events" aria-labelledby="events-heading">
+    <h2 id="events-heading">Upcoming events</h2>
+    @if (state() === 'ready' && upcomingEvents().length > 0) {
+      <ul class="list">
+        @for (event of upcomingEvents(); track event.id) {
+          <li>
+            <span class="list__title">{{ event.title }}</span>
+            <span class="list__meta">
+              {{ dayLong(event.date) }}@if (event.time) {, {{ timeLabel(event.time) }}} · {{ childNames(event.children) }}
+            </span>
+            <app-status-label [status]="event.status" />
+          </li>
+        }
+      </ul>
+    } @else if (state() === 'ready') {
+      <app-empty-state icon="calendar" title="No more events this week" body="School events, appointments and activities show here." />
+    } @else {
+      <app-empty-state
+        icon="calendar"
+        title="No upcoming events yet"
+        body="School events, appointments and activities will show here once the calendar is available."
+      />
+    }
+  </section>
+
+  <section class="card area-memories" aria-labelledby="memories-heading">
+    <h2 id="memories-heading">Shared memories</h2>
+    @if (state() === 'ready' && week()!.recentMemories.length > 0) {
+      <ul class="memories">
+        @for (memory of week()!.recentMemories; track memory.id) {
+          <li>
+            <span class="memories__tile" aria-hidden="true"><app-icon name="image" [size]="28" /></span>
+            <span class="list__title">{{ memory.title }}</span>
+            <span class="list__meta">Shared by {{ memory.sharedBy }} · {{ dayLong(memory.date) }}</span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <app-empty-state
+        icon="image"
+        title="No memories shared yet"
+        body="Photos and artwork shared with your family will appear here when memories are available."
+      />
+    }
+  </section>
+</div>

@@ -1,0 +1,269 @@
+// Mobile first: a compact agenda. When the calendar itself is wide enough (container query, not viewport), the
+// days become seven columns and parenting time becomes bars spanning the days they cover.
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+h2 {
+  margin: 0;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+ol,
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+p {
+  margin: 0;
+}
+
+.week__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.week__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+
+  button[mat-icon-button] {
+    width: var(--target-min);
+    height: var(--target-min);
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+}
+
+.week__label {
+  min-width: 9rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+// --- Days ---------------------------------------------------------------------------------------------------
+.days {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.day {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-canvas);
+}
+
+.day--today {
+  background: var(--color-selected);
+  box-shadow: inset 0 0 0 2px var(--color-action);
+}
+
+.day__label {
+  min-width: 4.5rem;
+  font-weight: 600;
+}
+
+.day__weekday {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.day__today {
+  display: inline-block;
+  margin-inline-start: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.events {
+  display: grid;
+  gap: var(--space-1);
+  flex: 1 1 12rem;
+}
+
+.event {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-soft);
+  font-size: 0.875rem;
+}
+
+.event[data-status='proposed'] {
+  border: 1px dashed var(--color-outline);
+}
+
+.event__title {
+  font-weight: 600;
+}
+
+.event__meta {
+  color: var(--color-text-secondary);
+}
+
+// --- Parenting time ---------------------------------------------------------------------------------------------
+.schedule__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.blocks,
+.proposals {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.block {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+// Proposed blocks are visibly provisional: dashed, on the pending fill, and always labelled "Proposed".
+.block--proposed {
+  border-style: dashed;
+  background: var(--color-status-pending-bg);
+}
+
+.block__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.block__names {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.block__caregiver {
+  font-weight: 600;
+}
+
+.block__when {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.block__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.block__toggle {
+  justify-self: start;
+  min-height: var(--target-min);
+}
+
+.block__details {
+  font-size: 0.875rem;
+
+  li + li {
+    margin-top: 2px;
+  }
+}
+
+.note {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--color-outline);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+}
+
+.note--error {
+  border-style: solid;
+  border-color: var(--color-danger);
+  color: var(--color-text);
+  background: var(--color-status-rejected-bg);
+}
+
+.hint {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: var(--space-2);
+}
+
+// --- Wide: a real week grid --------------------------------------------------------------------------------------
+@container (min-width: 540px) {
+  .days {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .day {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    min-height: 6.5rem;
+  }
+
+  .day__label {
+    min-width: 0;
+  }
+
+  .day__number {
+    display: block;
+    font-size: 1.25rem;
+  }
+
+  .day__today {
+    margin-inline-start: 0;
+  }
+
+  .events {
+    flex: none;
+  }
+
+  .event {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .blocks {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-auto-rows: auto;
+    column-gap: var(--space-1);
+  }
+
+  .blocks .block {
+    grid-column: var(--start) / var(--end);
+    grid-row: var(--lane);
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+}

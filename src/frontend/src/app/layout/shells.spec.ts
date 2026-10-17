@@ -42,11 +42,12 @@ describe('application shells', () => {
     it('orders the dashboard by immediate need', async () => {
       const body = await open('/');
 
-      expect([...body.querySelectorAll('main h2')].map((h) => h.textContent)).toEqual([
-        'Today',
-        'Waiting for you',
-        'Coming up',
-        'Recent memories',
+      expect([...body.querySelectorAll('main h2')].map((h) => h.textContent!.trim())).toEqual([
+        'This week',
+        'Next handoff',
+        'Needs your review',
+        'Upcoming events',
+        'Shared memories',
       ]);
     });
 
