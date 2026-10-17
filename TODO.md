@@ -123,6 +123,18 @@ that points back here.
   - [ ] Optional: a free Discord server with a `#dev-updates` channel fed by a GitHub webhook.
   - Meta AI has no known GitHub integration, so it isn't planned.
 
+- [ ] **M3: the shared calendar** (started October 17, 2026; designs: Design Request #2, issue #48).
+  - [x] Backend: Calendar module with create and list (C-01, AP-03), following CALENDAR_DECISIONS.md.
+    - Parenting time, holidays and joint family events need both parents. A joint event waits even before the
+      co-parent joins; the others are auto-confirmed and labelled while there's one parent (decision 7).
+    - Activities and unavailable time are confirmed at once. Unavailable notes are private to their owner.
+    - Kids see only confirmed events that include them.
+  - [ ] Backend: edit and cancel (CalendarModify / CalendarCancel approvals, including re-approval for material
+    edits to joint events); swap requests with the non-blocking unavailable-overlap warning; overlap detection (C-06).
+  - [ ] Backend: recurrence (C-05), reminders (C-04), the .ics feed (C-07), request expiry (AP-06).
+  - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
+    data source.
+
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
