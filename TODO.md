@@ -61,13 +61,28 @@ that points back here.
     - Parents can view the children's experience; children can never see parent data.
     - This changes the approved child-login design (separate child accounts activated by a one-time code), so it
       needs the decisions below first.
-  - [ ] **Owner decisions needed:**
-    1. Parent re-authentication when switching from a child profile back to a parent profile (recommended: always),
-       and child PIN rules (recommended: 4–6 digits, with lockout).
-    2. Keep children's own-device sign-in as well as the picker?
-    3. Diary privacy: should parents see the private diary, or everything except it (the current guardrail)?
-    4. Children added before the co-parent joins: usable immediately and confirmed later, or waiting for approval?
-    5. Two parents who each already set up a family: block and explain (recommended) rather than merge.
+  - [x] **Owner decisions** (October 17, 2026):
+    1. **Parent profile:** switching to a parent profile always asks for that parent's full password.
+       **Child PIN:** locks after **3 wrong tries**, both parents are notified, and either parent can **tap to
+       unlock**.
+    2. **Children's own tablets:** yes, without a parent signing in on them. Proposed: device pairing.
+       - A parent shows a short-lived one-time code or QR code on their own phone (about 10 minutes).
+       - The tablet enters the code and is paired to that one child. After that, the child unlocks with their PIN.
+       - Parents see and can instantly remove paired devices, and the same lock applies.
+       - To confirm when building.
+    3. **Diary:** private from parents (the current guardrail stays).
+    4. **Before the co-parent joins:** children **aren't usable until both parents approve**. This replaces the
+       architecture's "auto-confirm until the co-parent joins" for children.
+    5. **Two existing families:** block and explain; no merging.
+  - [ ] Update the architecture docs (child sign-in via profile picker and device pairing, PIN lockout, children
+    needing both parents' approval) before building, since this changes approved decisions.
+- [ ] **Optional, future: diary safety signals** (owner idea, October 17, 2026; needs careful design and ideally
+  child-safety expert input).
+  - The owner's idea was to secretly alert parents about worrying diary content.
+  - Recommended instead: a **transparent** version. Children are told, in kid-friendly words, that the diary is
+    private unless they write that they're in danger. The child immediately sees help resources. Parents get a
+    "please check in with them" alert **without the diary text**.
+  - Avoid secret monitoring: it breaks the child's trust, and keyword matching gives false alarms.
 - [ ] **Mobile first** (owner: phone is the preferred way to use the app). Review every new screen at phone size
   first, in every milestone.
 - [ ] **Installable app (PWA)** before the MVP. A native wrapper (e.g. Capacitor) is optional after the MVP.
