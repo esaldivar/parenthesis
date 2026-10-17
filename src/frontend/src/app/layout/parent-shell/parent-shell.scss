@@ -13,6 +13,8 @@
   grid-area: topbar;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   background: var(--color-canvas);
   border-bottom: 1px solid var(--color-surface-soft);
@@ -26,6 +28,26 @@
   min-height: var(--target-min);
   color: var(--color-text);
   text-decoration: none;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.family-name {
+  display: none;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account button {
+  min-height: var(--target-min);
+  flex: none;
 }
 
 main {
@@ -97,6 +119,10 @@ a.is-active {
 
   .topbar {
     padding-inline: var(--space-6);
+  }
+
+  .family-name {
+    display: inline;
   }
 
   .sidenav {

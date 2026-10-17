@@ -23,6 +23,9 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
 
     private string _connectionString = null!;
 
+    // A stand-in for the built Angular app, so SPA hosting can be tested without a frontend build.
+    private readonly string _webRoot = CreateWebRoot();
+
     // Null while no module has tables yet (Respawn refuses an empty database); reset is then a no-op.
     private Respawner? _respawner;
 
@@ -71,6 +74,16 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         await _respawner.ResetAsync(connection);
     }
 
+    public const string SpaMarker = "parenthesis-test-spa";
+
+    private static string CreateWebRoot()
+    {
+        var root = Directory.CreateTempSubdirectory("parenthesis-wwwroot-").FullName;
+        File.WriteAllText(Path.Combine(root, "index.html"), $"<!doctype html><title>{SpaMarker}</title>");
+        File.WriteAllText(Path.Combine(root, "main-ABC123.js"), "console.log('app');");
+        return root;
+    }
+
     private static async Task<bool> HasApplicationTablesAsync(NpgsqlConnection connection)
     {
         await using var command = new NpgsqlCommand(
@@ -89,6 +102,7 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(TestingEnvironment);
+        builder.UseWebRoot(_webRoot);
         builder.UseSetting("ConnectionStrings:Postgres", _connectionString);
 
         // Every test client shares one "IP"; rate limiting has its own test with a low limit.
@@ -96,7 +110,6 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         builder.UseSetting("App:PublicBaseUrl", PublicBaseUrl);
         builder.ConfigureServices(services =>
         {
-            services.AddSingleton<IStartupFilter, ThrowingEndpointStartupFilter>();
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<FakeEmailSender>();
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());

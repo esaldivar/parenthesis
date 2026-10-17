@@ -5,6 +5,14 @@
     <a class="brand" routerLink="/" aria-label="Parenthesis home">
       <app-logo [markSize]="36" [decorative]="true" />
     </a>
+    <div class="account">
+      @if (auth.currentFamily(); as family) {
+        <span class="family-name">{{ family.name }}</span>
+      }
+      <button mat-stroked-button type="button" (click)="signOut()">
+        Sign out<span class="visually-hidden"> {{ auth.user()?.displayName }}</span>
+      </button>
+    </div>
   </header>
 
   <nav class="sidenav" aria-label="Main">
