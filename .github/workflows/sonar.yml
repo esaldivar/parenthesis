@@ -1,0 +1,75 @@
+name: Sonar
+
+# Code quality, security and vulnerability analysis with SonarQube Cloud (Free plan, public repository). The Free plan
+# analyses the main branch, so this runs on PRs into main (releases and hotfixes) and on main after each merge.
+# Setup steps for the owner: docs/runbooks/sonarqube-cloud.md. Until the SONAR_ORGANIZATION variable is set, the job
+# is skipped rather than failing.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  sonar:
+    name: SonarQube Cloud
+    if: vars.SONAR_ORGANIZATION != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Full history, so Sonar can tell new code from old.
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      # Installed so the TypeScript analysis can resolve Angular's types.
+      - name: Install frontend dependencies
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      # The .NET scanner analyses C# through the build and, with scanAll, the rest of the repository too (TypeScript,
+      # HTML, CSS, Docker, YAML).
+      - name: Begin analysis
+        run: >
+          dotnet sonarscanner begin
+          /k:"$SONAR_PROJECT_KEY"
+          /o:"$SONAR_ORGANIZATION"
+          /d:sonar.token="$SONAR_TOKEN"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.scanner.scanAll=true
+          /d:sonar.exclusions="**/node_modules/**,**/dist/**,**/bin/**,**/obj/**,docs/**"
+          /d:sonar.test.inclusions="**/*.spec.ts"
+
+      - name: Build
+        run: dotnet build CoParent.slnx -c Release
+
+      - name: End analysis (uploads results; the quality gate shows on the PR)
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
