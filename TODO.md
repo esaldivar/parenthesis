@@ -11,11 +11,16 @@ that points back here.
   which is all that's needed. The paid plans and the self-hosted server were ruled out on cost.
   - [x] Pipeline ready: `.github/workflows/sonar.yml` runs on PRs into `main` and on `main`, and is skipped until
     it's connected (October 17, 2026).
-  - [ ] **Owner:** create the SonarQube Cloud organization and project, turn off Automatic Analysis, and add
-    `SONAR_TOKEN`, `SONAR_ORGANIZATION` and `SONAR_PROJECT_KEY` to GitHub. Steps:
-    [docs/runbooks/sonarqube-cloud.md](docs/runbooks/sonarqube-cloud.md).
-  - [ ] First green analysis on a PR into `main`. Then make **SonarQube Cloud** a required check on `main`.
-  - [ ] Add test coverage reports to the analysis (backend and Vitest).
+  - [x] **Owner:** SonarQube Cloud organization and project created, and the token and keys added to GitHub
+    (October 17, 2026).
+  - [x] First analysis ran on release PR #27 (October 17, 2026). It found 1 vulnerability (fixed in #28) and 0%
+    coverage, because no coverage reports were being sent yet.
+  - [x] The quality gate (**SonarCloud Code Analysis**) and **SonarQube Cloud** are required checks on `main`, so a
+    failing gate blocks releases (owner decision, October 17, 2026).
+  - [x] Coverage reports go to Sonar: backend via `dotnet-coverage`, frontend via Vitest lcov (October 17, 2026).
+  - [ ] Quality gate green on release PR #27.
+  - [ ] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
+    with the reason "required so keyboard users can scroll the hours".
   - [ ] Add the quality-gate badge to the README.
   - [ ] **Owner, optional:** install SonarQube for IDE (formerly SonarLint), which is free, in connected mode.
 - [ ] **Branching model and protected branches** (requested October 17, 2026).
