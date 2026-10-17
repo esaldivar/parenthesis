@@ -13,6 +13,15 @@ A personalized, welcoming home screen that gives a parent a calm overview of the
 5. Upcoming events and recent shared family memories.
 6. Messages: only when implemented; until then, avoid a fake working inbox.
 
+## Multi-child schedule grouping — agreed behavior
+- A family may have one or many children. The **default** is one shared calendar block when multiple children have the same parent/caregiver assignment and identical start/end times.
+- The shared block shows each child's avatar side by side, plus names (for example, **Kai & Aurora**) and an explicit caregiver label (for example, **With Jordan**). Never rely on color alone or imply the children are parents.
+- If the children have different parenting-time assignments or time windows, show distinct blocks for the affected children. Expand a group to inspect individual child details.
+- Offer an optional **split display for this week** so a parent can see separate child blocks even if schedules match. This is a **view preference only**: splitting or regrouping must not modify custody assignments, approvals, or underlying events. Make it reversible.
+- Grouping should scale to larger families: show a limited row of avatars and an accessible **+N children** label when space is tight; reveal the full child list on expansion.
+- Use **Kai and Aurora** as example child names in the reviewed concept, but use synthetic profiles and images in actual fixtures/mockups, not real children's photos or personal data.
+- Any actual proposed change to one child's parenting time still follows the existing mutual-approval and authorization rules.
+
 ## Calendar behavior
 - **Weekly by default on dashboard**, not monthly.
 - Provide a clearly labelled **View month** action that opens the full calendar's monthly view in one interaction.
