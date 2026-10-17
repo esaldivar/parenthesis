@@ -38,10 +38,13 @@ ul {
   font-size: 0.875rem;
 }
 
+// Small label under the greeting; still dashed and explicit so sample data can't be mistaken for a real schedule.
 .sample-banner {
-  margin-bottom: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border: 2px dashed var(--color-outline);
+  display: inline-block;
+  margin-top: var(--space-2);
+  padding: 2px var(--space-3);
+  font-size: 0.8125rem;
+  border: 1px dashed var(--color-outline);
   border-radius: var(--radius-control);
   background: var(--color-status-pending-bg);
   color: var(--color-text);
@@ -105,6 +108,7 @@ ul {
   background: var(--color-surface);
   border: 1px solid var(--color-surface-soft);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .card__header {
@@ -120,6 +124,13 @@ ul {
   align-items: center;
   min-height: var(--target-min);
   font-size: 0.9375rem;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
 }
 
 .area-calendar {
@@ -169,7 +180,7 @@ ul {
   color: var(--color-cat-other-icon);
 }
 
-@each $category in school, medical, music, sport, art {
+@each $category in school, medical, music, sport, art, family, unavailable {
   .upcoming__item[data-category='#{$category}'] .upcoming__icon {
     background: var(--color-cat-#{$category}-bg);
     color: var(--color-cat-#{$category}-icon);
@@ -340,7 +351,8 @@ a.upcoming__title {
 .memory__figure {
   flex: 1;
   min-width: 0;
-  margin: 0;
+  max-width: 26rem;
+  margin: 0 auto;
   display: grid;
   gap: var(--space-2);
   text-align: center;
@@ -367,7 +379,6 @@ a.upcoming__title {
   display: flex;
   justify-content: center;
   gap: var(--space-2);
-  margin-top: var(--space-2);
 
   span {
     width: 8px;
@@ -399,15 +410,15 @@ a.upcoming__title {
     display: block;
     position: absolute;
     inset-inline-end: 0;
-    top: -1.5rem;
-    width: 9rem;
-    height: 7rem;
+    top: -2.5rem;
+    width: 14rem;
+    height: 10rem;
     transform: scaleX(-1) rotate(-20deg);
     opacity: 0.85;
   }
 }
 
-@container (min-width: 1180px) {
+@container (min-width: 1120px) {
   .dashboard {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(19rem, 0.85fr);
     // Upcoming and Quick Add stack at the top of the right column; the calendar spans their height and more.
@@ -423,5 +434,76 @@ a.upcoming__title {
 
   .area-calendar {
     align-self: stretch;
+  }
+
+  // Desktop windows tall enough: the whole dashboard fits the window with no page scroll (user decision, October 17,
+  // 2026). The calendar takes the height that's left and its hours scroll inside it; the cards below stay compact.
+  @media (min-height: 760px) {
+    .dashboard {
+      height: calc(100dvh - 5.75rem); // Window minus the top bar and the page's bottom padding.
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    }
+
+    .area-calendar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      --cal-body-max: none;
+    }
+
+    .area-kids,
+    .area-messages,
+    .area-memories {
+      align-self: stretch;
+      padding-block: var(--space-3);
+    }
+
+    .card__header {
+      margin-bottom: var(--space-2);
+    }
+
+    .welcome {
+      min-height: 0;
+      padding-block: 0;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    .welcome__sub {
+      font-size: 1rem;
+    }
+
+    .sample-banner {
+      margin-top: var(--space-1);
+    }
+
+    .upcoming__item {
+      padding-block: var(--space-2);
+    }
+
+    .quick {
+      margin-block: var(--space-2) var(--space-1);
+    }
+
+    .quick__btn {
+      min-height: var(--target-min);
+    }
+
+    .kids__tile {
+      aspect-ratio: auto;
+      height: 5rem;
+    }
+
+    .messages li {
+      padding-block: 6px;
+    }
+
+    .memory__tile {
+      aspect-ratio: auto;
+      height: 5rem;
+    }
   }
 }

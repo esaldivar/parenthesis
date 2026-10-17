@@ -55,6 +55,10 @@ export class SampleDashboardDataSource extends DashboardDataSource {
         { id: 'e-piano', title: 'Piano Lesson', date: date(2), time: '16:00', category: 'music', children: [aurora], status: 'confirmed' },
         { id: 'e-soccer', title: 'Soccer Practice', date: date(3), time: '17:30', durationMinutes: 90, category: 'sport', children: [kai], status: 'confirmed' },
         { id: 'e-dentist', title: 'Dentist Appointment', date: date(4), time: '10:00', category: 'medical', children: [kai, aurora], status: 'confirmed' },
+        // Mock family event (both parents attend) for the calendar key's Family event style.
+        { id: 'e-play', title: 'School Play', date: date(4), time: '18:00', durationMinutes: 90, category: 'family', children: [kai, aurora], parents: [dad, mom], status: 'confirmed' },
+        // Mock "unavailable" block so the calendar key's Unavailable style appears on the sample week.
+        { id: 'e-unavailable', title: 'Dad unavailable', date: date(3), time: '09:00', durationMinutes: 180, category: 'unavailable', children: [], status: 'confirmed' },
         { id: 'e-art', title: 'Art Class', date: date(5), time: '16:00', category: 'art', children: [aurora], status: 'confirmed' },
       ],
       pendingReviews: [{ id: 'r1', summary: 'Time with Mom for Kai, Saturday 10:00 AM – 6:00 PM', proposedBy: 'Dad' }],

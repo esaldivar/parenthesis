@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Logo } from './logo';
 
-describe('Logo (asset pending)', () => {
+describe('Logo (approved icon, wordmark asset pending)', () => {
   function render(decorative = false) {
     const fixture = TestBed.createComponent(Logo);
     fixture.componentRef.setInput('decorative', decorative);
@@ -9,11 +9,14 @@ describe('Logo (asset pending)', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('does not draw an icon: the approved artwork may not be approximated (BRANDING.md)', () => {
+  it('uses the approved icon file unchanged and draws nothing itself (BRANDING.md)', () => {
     const host = render();
+    const icon = host.querySelector('img')!;
 
-    expect(host.querySelector('svg, img, canvas')).toBeNull();
-    expect(host.getAttribute('data-asset-status')).toBe('pending');
+    expect(icon.getAttribute('src')).toBe('/brand/parenthesis-icon.svg');
+    expect(icon.getAttribute('alt')).toBe(''); // The host carries the name.
+    expect(host.querySelector('svg, canvas')).toBeNull();
+    expect(host.getAttribute('data-asset-status')).toBe('wordmark-pending');
   });
 
   it('shows the Option B wordmark text with exact capitalisation', () => {

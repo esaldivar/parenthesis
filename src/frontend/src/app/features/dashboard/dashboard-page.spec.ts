@@ -4,6 +4,7 @@ import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { LiveDashboardDataSource } from './dashboard-data';
 import { DashboardPage, NOW } from './dashboard-page';
+import { MIN_SLOTS } from './timeline';
 
 // Wednesday, October 14, 2026, 9:00 AM in the fake family's time zone (America/Chicago).
 const WEDNESDAY_MORNING = new Date('2026-10-14T14:00:00Z');
@@ -147,7 +148,7 @@ describe('DashboardPage (approved design)', () => {
 
     it('shows multi-day parenting time as one continuous block with the parent’s and children’s avatars', async () => {
       const { el } = await render({ sample: true });
-      const blocks = [...el.querySelectorAll('.allday > li')];
+      const blocks = [...el.querySelectorAll('.allday > li[data-status="confirmed"]')];
 
       expect(blocks).toHaveLength(1);
       expect(text(blocks[0].querySelector('.pt__title'))).toBe('Time with Dad');
@@ -169,19 +170,53 @@ describe('DashboardPage (approved design)', () => {
       const dentist = columns[4].querySelector('.act') as HTMLElement; // Thursday
 
       expect(text(dentist.querySelector('.act__title'))).toBe('Dentist Appointment');
-      expect(dentist.style.gridRow).toBe('5 / span 5'); // 10:00 AM in a grid starting at 8:00 AM
+      expect(dentist.style.gridRow).toBe(`21 / span ${MIN_SLOTS}`); // 10:00 AM in a whole-day grid of 30-minute rows
       expect(dentist.getAttribute('data-category')).toBe('medical');
       expect([...dentist.querySelectorAll('app-avatar')].map((a) => a.getAttribute('title'))).toEqual(['Kai', 'Aurora']);
       expect(text(columns[3])).toContain('Soccer Practice'); // Wednesday
     });
 
-    it('keeps proposals out of the schedule and clearly labelled', async () => {
+    it('has a calendar key naming each style in text, matching what the sample week shows', async () => {
       const { el } = await render({ sample: true });
-      const proposal = el.querySelector('.proposals li')!;
 
-      expect(text(proposal)).toContain('Time with Mom');
+      expect([...el.querySelectorAll('.legend li')].map(text)).toEqual([
+        'Parenting time',
+        'Family event (both parents)',
+        'Proposed',
+        'Unavailable',
+      ]);
+      const play = el.querySelector('.act[data-category="family"]')!;
+      expect(text(play)).toContain('School Play');
+      expect(text(play)).toContain('with Dad and Mom');
+      expect([...play.querySelectorAll('app-avatar')].map((a) => a.getAttribute('title'))).toEqual(['Dad', 'Mom', 'Kai', 'Aurora']);
+      expect(el.querySelector('.legend')!.getAttribute('aria-label')).toBe('Calendar key');
+      const unavailable = el.querySelector('.act[data-category="unavailable"]')!;
+      expect(text(unavailable)).toContain('Dad unavailable');
+    });
+
+    it('keeps the whole day in a labelled, keyboard-focusable scrolling area below the all-day row', async () => {
+      const { el } = await render({ sample: true });
+      const scroller = el.querySelector('.grid__body')!;
+
+      expect(scroller.getAttribute('tabindex')).toBe('0');
+      expect(scroller.getAttribute('aria-label')).toBe('Activities by time of day, scrollable');
+      expect(scroller.querySelectorAll('.daycol')).toHaveLength(7);
+      expect(el.querySelector('.grid__top .allday')).not.toBeNull(); // Stays in place while the hours scroll.
+      expect(text(scroller.querySelector('.grid__hours'))).toContain('12 AM');
+    });
+
+    it('shows proposals on the calendar, below the schedule, marked as proposed and needing approval', async () => {
+      const { el } = await render({ sample: true });
+      const blocks = [...el.querySelectorAll<HTMLElement>('.allday > li')];
+      const proposal = blocks.find((li) => text(li).includes('Time with Mom'))!;
+
+      expect(proposal.getAttribute('data-status')).toBe('proposed'); // Hatched, dashed outline.
       expect(text(proposal)).toContain('Proposed');
-      expect([...el.querySelectorAll('.allday > li')].some((li) => text(li).includes('Time with Mom'))).toBe(false);
+      expect(text(proposal)).toContain('Needs approval');
+      expect(proposal.style.getPropertyValue('--lane')).toBe('2'); // Its own lane beneath the confirmed schedule.
+      const confirmed = blocks.find((li) => text(li).includes('Time with Dad'))!;
+      expect(confirmed.getAttribute('data-status')).toBe('confirmed');
+      expect(text(confirmed)).not.toContain('Needs approval');
     });
 
     it('lists what needs this parent’s review first in Upcoming, linking to approvals', async () => {
@@ -200,7 +235,7 @@ describe('DashboardPage (approved design)', () => {
       toggle().click();
       await settle(fixture);
       expect(toggle().getAttribute('aria-pressed')).toBe('true');
-      expect(el.querySelectorAll('.allday > li')).toHaveLength(2);
+      expect(el.querySelectorAll('.allday > li[data-status="confirmed"]')).toHaveLength(2);
 
       button(el, 'Next week').click();
       await settle(fixture);

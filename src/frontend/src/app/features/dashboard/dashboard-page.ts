@@ -23,7 +23,7 @@ import { DashboardWeek, PlainDate, ScheduleStatus } from './model';
 import { StatusLabel } from './status-label';
 import { CATEGORY_ICONS } from './timeline';
 import { InlineView, WeekCalendar, WeekState } from './week-calendar';
-import { addDays, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
+import { addDays, dateMedium, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
 
 /** The current time; replaced in tests. */
 export const NOW = new InjectionToken<() => Date>('NOW', { factory: () => () => new Date() });
@@ -131,7 +131,10 @@ export class DashboardPage {
         category: e.category,
         title: e.title,
         when: e.time ? dateTimeLabel(`${e.date}T${e.time}`).replace(/, (\d)/, ' · $1') : dayLong(e.date),
-        people: e.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+        people: [
+          ...(e.parents ?? []).map((p) => ({ name: p.displayName, kind: 'parent' as const })),
+          ...e.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+        ],
         status: e.status,
       }));
     return [...reviews, ...parenting, ...events].slice(0, 5);
@@ -151,7 +154,7 @@ export class DashboardPage {
 
   protected readonly personRef = (person: { name: string }) => ({ id: person.name, name: person.name });
   protected readonly childNames = childNames;
-  protected readonly dayLong = dayLong;
+  protected readonly dateMedium = dateMedium;
   protected readonly timeLabel = timeLabel;
 
   constructor() {
