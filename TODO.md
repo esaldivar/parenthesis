@@ -32,6 +32,10 @@ that points back here.
   - [x] CI runs on pushes to `develop`. The **PR source** check only lets `develop` or `hotfix/…` merge into `main`.
     The model is documented in CONTRIBUTING.md.
   - [x] Branch protection on `main` and `develop`: PRs only, required checks up to date, no force pushes or deletions, admins included (October 17, 2026).
+  - [x] The **PR source** check also covers PRs into `develop` and re-runs when a PR is retargeted, in
+    `.github/workflows/pr-branch-policy.yml` (October 17, 2026).
+  - [ ] Document the `design/…` and `feat/…` branch prefixes in CONTRIBUTING.md, and that **PR source** now checks
+    PRs into `develop` too.
   - [ ] First release: PR `develop` → `main`, so `main` gets the dashboard work. This is the owner's call, since
     `main` is the site.
 
