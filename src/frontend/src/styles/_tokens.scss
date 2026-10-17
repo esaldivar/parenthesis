@@ -44,6 +44,8 @@
   --color-cat-other-bg: #e4ebdd;
   --color-cat-other-icon: #176b67;
   --color-parenting-bg: #dfe9d8;
+  // Minimal elevation for cards, as in the approved dashboard.
+  --shadow-card: 0 1px 2px rgb(32 58 49 / 4%), 0 4px 16px rgb(32 58 49 / 6%);
 }
 
 // Dark mode is a full forest-green surface system, not an inversion. Elevation comes from surface steps and borders.
@@ -88,6 +90,7 @@
   --color-cat-other-bg: #24483a;
   --color-cat-other-icon: #91d2c5;
   --color-parenting-bg: #24483a;
+  --shadow-card: none;
 }
 
 // Brand colours (docs/design/BRANDING.md) for the logo and small decorative touches only. They are not

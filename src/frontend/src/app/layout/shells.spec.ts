@@ -58,6 +58,13 @@ describe('application shells', () => {
       expect(current).toEqual(['Calendar', 'Calendar']); // Side and bottom navigation; only one is visible at a time.
     });
 
+    it('keeps Home current when the dashboard URL carries a query, and only Home', async () => {
+      const body = await open('/?week=2026-10-18');
+
+      const current = [...body.querySelectorAll('[aria-current="page"]')].map((a) => a.textContent!.trim());
+      expect(current).toEqual(['Home', 'Home']);
+    });
+
     it('shows the approved dashboard sections', async () => {
       const body = await open('/');
 

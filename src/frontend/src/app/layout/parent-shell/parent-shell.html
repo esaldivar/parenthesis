@@ -23,10 +23,10 @@
             <a
               [routerLink]="item.path"
               routerLinkActive="is-active"
-              [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+              [routerLinkActiveOptions]="activeOptions(item.path)"
               ariaCurrentWhenActive="page"
             >
-              <app-icon [name]="item.icon" [size]="26" />
+              <app-icon [name]="item.icon" [size]="28" />
               <span>{{ item.label }}</span>
             </a>
           </li>
@@ -68,7 +68,7 @@
           <a
             [routerLink]="item.path"
             routerLinkActive="is-active"
-            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+            [routerLinkActiveOptions]="activeOptions(item.path)"
             ariaCurrentWhenActive="page"
           >
             <app-icon [name]="item.icon" />

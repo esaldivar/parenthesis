@@ -168,9 +168,14 @@
         </button>
         <figure class="memory__figure" aria-live="polite">
           <span class="memory__tile" aria-hidden="true"><app-icon name="album" [size]="44" /></span>
+          <span class="dots" aria-hidden="true">
+            @for (m of memories(); track m.id; let i = $index) {
+              <span [class.is-current]="i === memoryIndex()"></span>
+            }
+          </span>
           <figcaption>
             <span class="memory__title">{{ memory.title }}</span>
-            <span class="muted">{{ dayLong(memory.date) }}</span>
+            <span class="muted">{{ dateMedium(memory.date) }}</span>
             <span class="visually-hidden">, memory {{ memoryIndex() + 1 }} of {{ memories().length }}</span>
           </figcaption>
         </figure>
@@ -178,11 +183,6 @@
           <app-icon name="chevron-right" />
         </button>
       </div>
-      <p class="dots" aria-hidden="true">
-        @for (m of memories(); track m.id; let i = $index) {
-          <span [class.is-current]="i === memoryIndex()"></span>
-        }
-      </p>
     } @else {
       <app-empty-state
         icon="album"

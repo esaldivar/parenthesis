@@ -4,6 +4,7 @@ import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { LiveDashboardDataSource } from './dashboard-data';
 import { DashboardPage, NOW } from './dashboard-page';
+import { MIN_SLOTS } from './timeline';
 
 // Wednesday, October 14, 2026, 9:00 AM in the fake family's time zone (America/Chicago).
 const WEDNESDAY_MORNING = new Date('2026-10-14T14:00:00Z');
@@ -169,7 +170,7 @@ describe('DashboardPage (approved design)', () => {
       const dentist = columns[4].querySelector('.act') as HTMLElement; // Thursday
 
       expect(text(dentist.querySelector('.act__title'))).toBe('Dentist Appointment');
-      expect(dentist.style.gridRow).toBe('5 / span 5'); // 10:00 AM in a grid starting at 8:00 AM
+      expect(dentist.style.gridRow).toBe(`5 / span ${MIN_SLOTS}`); // 10:00 AM in a grid starting at 8:00 AM
       expect(dentist.getAttribute('data-category')).toBe('medical');
       expect([...dentist.querySelectorAll('app-avatar')].map((a) => a.getAttribute('title'))).toEqual(['Kai', 'Aurora']);
       expect(text(columns[3])).toContain('Soccer Practice'); // Wednesday

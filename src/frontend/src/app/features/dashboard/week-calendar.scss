@@ -3,7 +3,7 @@
 :host {
   display: block;
   container-type: inline-size;
-  --slot: 1.125rem; // 30 minutes
+  --slot: 0.875rem; // 30 minutes; 0.6875rem in wide cards, matching the approved design's compact hour rows
   --gutter: 3.5rem;
 }
 
@@ -234,7 +234,7 @@ ul {
   flex: none;
 
   app-avatar + app-avatar {
-    margin-inline-start: -8px;
+    margin-inline-start: -10px;
   }
 }
 
@@ -247,6 +247,11 @@ ul {
 .pt__title {
   font-weight: 700;
   overflow-wrap: anywhere;
+
+  .allday & {
+    font-weight: 600;
+    font-size: 1.0625rem;
+  }
 }
 
 .pt__meta {
@@ -324,6 +329,91 @@ ul {
 
   app-avatar + app-avatar {
     margin-inline-start: -6px;
+  }
+}
+
+// In the grid, narrow cards: icon, title, then time with the children's avatars beside it. Wide cards follow the
+// approved design: icon beside the title and time, avatars centred below. Either way they fit the minimum card height.
+.daycol .act {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon icon'
+    'title title'
+    'time avatars';
+  align-items: center;
+  align-content: start;
+  gap: 2px var(--space-1);
+  padding: 6px;
+  line-height: 1.25;
+
+  .act__head,
+  .act__text {
+    display: contents;
+  }
+
+  .act__icon {
+    grid-area: icon;
+  }
+
+  .act__title {
+    grid-area: title;
+  }
+
+  .act__time {
+    grid-area: time;
+  }
+
+  .act__avatars {
+    grid-area: avatars;
+    margin: 0;
+  }
+
+  app-status-label {
+    grid-column: 1 / -1;
+  }
+
+  .act__time {
+    white-space: nowrap;
+  }
+}
+
+// Two or more children don't fit beside the time in a narrow card: they get their own row.
+.daycol .act:has(.act__avatars app-avatar + app-avatar) {
+  grid-template-areas:
+    'icon icon'
+    'title title'
+    'time time'
+    'avatars avatars';
+
+  .act__avatars {
+    justify-self: start;
+  }
+}
+
+@container (min-width: 900px) {
+  // On .grid, not :host: a container query never matches the container element itself.
+  .grid {
+    --slot: 0.6875rem;
+  }
+
+  .daycol .act,
+  .daycol .act:has(.act__avatars app-avatar + app-avatar) {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'icon title'
+      'icon time'
+      'avatars avatars';
+    column-gap: 6px;
+
+    .act__icon {
+      align-self: start;
+    }
+
+    .act__avatars {
+      justify-self: center;
+      margin-top: var(--space-1);
+    }
   }
 }
 
@@ -422,7 +512,7 @@ ul {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-top: var(--space-3);
+  margin-top: var(--space-1);
 }
 
 // --- Wide: the week grid replaces the agenda in Week view -----------------------------------------------------------
@@ -448,20 +538,31 @@ ul {
   }
 }
 
+// Proposals stay outside the grid (they aren't schedule yet), kept compact so the calendar keeps its approved height.
 .proposals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
   margin-top: var(--space-3);
 
   h3 {
-    font-size: 1rem;
+    font-size: 0.9375rem;
   }
 
   ul {
+    flex-basis: 100%;
     display: grid;
     gap: var(--space-2);
-    margin-top: var(--space-2);
   }
 
   .pt {
+    flex-wrap: wrap; // On the narrowest phones the Proposed label moves below instead of squeezing the text.
     align-items: center;
+    padding-block: var(--space-1);
+  }
+
+  .pt__text {
+    flex: 1 1 10rem;
   }
 }

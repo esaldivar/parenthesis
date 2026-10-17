@@ -62,9 +62,9 @@
               >
                 <span class="pt__icon" aria-hidden="true"><app-icon name="calendar" [size]="22" /></span>
                 <span class="pt__avatars" aria-hidden="true">
-                  <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="38" />
+                  <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="40" />
                   @for (child of block.children; track child.id) {
-                    <app-avatar [name]="child.name" [size]="38" />
+                    <app-avatar [name]="child.name" [size]="40" />
                   }
                 </span>
                 <span class="pt__text">
@@ -114,13 +114,17 @@
                   [style.grid-column]="slot.lane"
                   [attr.title]="event.title + ', ' + timeLabel(event.time!) + ', ' + childNames(event.children)"
                 >
-                  <app-icon class="act__icon" [name]="icons[event.category]" [size]="22" />
-                  <span class="act__title">{{ event.title }}</span>
-                  <span class="act__time">{{ timeLabel(event.time!) }}</span>
+                  <span class="act__head">
+                    <app-icon class="act__icon" [name]="icons[event.category]" [size]="22" />
+                    <span class="act__text">
+                      <span class="act__title">{{ event.title }}</span>
+                      <span class="act__time">{{ timeLabel(event.time!) }}</span>
+                    </span>
+                  </span>
                   <span class="visually-hidden">, {{ childNames(event.children) }}</span>
                   <span class="act__avatars" aria-hidden="true">
                     @for (child of event.children; track child.id) {
-                      <app-avatar [name]="child.name" [size]="28" />
+                      <app-avatar [name]="child.name" [size]="26" />
                     }
                   </span>
                   @if (event.status !== 'confirmed') {

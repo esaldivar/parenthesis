@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { IsActiveMatchOptions, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Logo } from '../../shared/brand/logo';
@@ -9,6 +9,10 @@ import { Leaves } from '../../shared/decor/leaves';
 import { Icon } from '../../shared/icon/icon';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
+
+const IGNORE_QUERY = { queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' } as const;
+const HOME_ACTIVE: IsActiveMatchOptions = { paths: 'exact', ...IGNORE_QUERY };
+const SECTION_ACTIVE: IsActiveMatchOptions = { paths: 'subset', ...IGNORE_QUERY };
 
 /**
  * The parent shell from the approved dashboard: a calm left sidebar (brand, navigation in the approved order,
@@ -24,6 +28,10 @@ import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
 export class ParentShell {
   protected readonly nav = PARENT_NAV;
   protected readonly mobileNav = PARENT_MOBILE_NAV;
+  /** Home is active only on "/" itself, other items on their sections too; queries (`?week=`, `?sample=1`) never matter. */
+  protected activeOptions(path: string): IsActiveMatchOptions {
+    return path === '/' ? HOME_ACTIVE : SECTION_ACTIVE;
+  }
   protected readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
   private readonly main = viewChild<ElementRef<HTMLElement>>('main');

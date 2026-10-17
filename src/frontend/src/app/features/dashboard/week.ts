@@ -116,6 +116,10 @@ export function hourLabel(hour: number): string {
 /** "Mon" */
 export const weekdayShort = (date: PlainDate) => utcFormat({ weekday: 'short' }).format(toUtc(date));
 
+/** "Oct 14, 2026" */
+export const dateMedium = (date: PlainDate) =>
+  utcFormat({ month: 'short', day: 'numeric', year: 'numeric' }).format(toUtc(date));
+
 /** "Monday, October 12" */
 export const dayLong = (date: PlainDate) => utcFormat({ weekday: 'long', month: 'long', day: 'numeric' }).format(toUtc(date));
 
