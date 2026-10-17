@@ -24,3 +24,8 @@ Status: concept approved in conversation, October 16, 2026. This document specif
 The implementation should use reusable SVG assets and text, not approximate the logo with emoji, CSS punctuation, or a screenshot crop. Review 16px favicon, 24px navigation, 48px app icon, and full wordmark; check dark/light backgrounds, legibility, color-blind interpretation, and contrast. All faces/people remain abstract and inclusive.
 
 See [../design-system.md](../design-system.md) for existing application UI guidance. Brand accent colors need not replace existing semantic action/contrast tokens.
+
+## Implementation decisions (approved October 16, 2026)
+- **Dark-mode wordmark:** `Parent` stays sage (`#5E8F7E`); `hesis` uses ivory (`#F7F5ED`) on dark surfaces, because charcoal is about 1.2:1 on the forest-green canvas. Light mode keeps charcoal.
+- **UI action colour:** the design system's teal remains the colour for buttons and links (contrast-verified in both themes). Muted blue is used in the logo only and never encodes a parent, role or custody arrangement.
+- Still open: final production artwork, a dark-mode README logo variant, and the rounded typeface.

@@ -45,6 +45,11 @@ const pairs: [foreground: string, background: string, minimum: number][] = [
   ['color-focus', 'color-surface', NON_TEXT],
   ['color-outline', 'color-canvas', NON_TEXT],
   ['color-outline', 'color-surface', NON_TEXT],
+  // The wordmark is bold display text (>= 20px), so the large-text minimum applies.
+  ['brand-wordmark-parent', 'color-canvas', NON_TEXT],
+  ['brand-wordmark-hesis', 'color-canvas', TEXT],
+  ['brand-wordmark-parent', 'color-surface', NON_TEXT],
+  ['brand-wordmark-hesis', 'color-surface', TEXT],
 ];
 
 describe.each(['light', 'dark'] as const)('%s theme tokens', (mixin) => {

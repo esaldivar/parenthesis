@@ -23,6 +23,9 @@
   --color-status-pending-bg: #fbeee0;
   --color-status-confirmed-bg: #dcefe9;
   --color-status-rejected-bg: #f8e1df;
+  // Wordmark (docs/design/BRANDING.md): sage "Parent", charcoal "hesis".
+  --brand-wordmark-parent: #5e8f7e;
+  --brand-wordmark-hesis: #20303f;
 }
 
 // Dark mode is a full forest-green surface system, not an inversion. Elevation comes from surface steps and borders.
@@ -47,6 +50,20 @@
   --color-status-pending-bg: #4a3a22;
   --color-status-confirmed-bg: #1f4a3f;
   --color-status-rejected-bg: #4d2724;
+  // Charcoal "hesis" is invisible on forest green (1.2:1), so dark mode uses ivory. Sage "Parent" is unchanged.
+  --brand-wordmark-parent: #5e8f7e;
+  --brand-wordmark-hesis: #f7f5ed;
+}
+
+// Brand colours (docs/design/BRANDING.md) for the logo and small decorative touches only. They are not
+// semantic UI tokens: the two caregiver colours must never encode a parent, role or custody in the product.
+@mixin brand {
+  --brand-blue: #4e79a7;
+  --brand-sage: #5e8f7e;
+  --brand-coral: #f08a6b;
+  --brand-gold: #f4c15d;
+  --brand-charcoal: #20303f;
+  --brand-on-coral: #ffffff;
 }
 
 @mixin scale {
