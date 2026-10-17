@@ -3,10 +3,11 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../app.routes';
 import { axeViolations } from '../../testing/axe';
+import { fakeAuth } from '../../testing/fake-auth';
 
 describe('application shells', () => {
   async function open(url: string) {
-    TestBed.configureTestingModule({ providers: [provideRouter(routes, withComponentInputBinding())] });
+    TestBed.configureTestingModule({ providers: [provideRouter(routes, withComponentInputBinding()), fakeAuth()] });
     const harness = await RouterTestingHarness.create(url);
     return harness.routeNativeElement!.ownerDocument.body;
   }

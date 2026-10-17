@@ -32,7 +32,7 @@ dotnet test --solution CoParent.slnx   # unit + integration (integration tests s
 
 cd src/frontend
 npm ci
-npm start                     # http://localhost:4200 (parent shell at /, child shell at /kid)
+npm start                     # http://localhost:4200, proxies /api to the API at https://localhost:7180 (run it too)
 npm run lint && npm test       # ESLint (incl. template accessibility rules); Vitest + axe-core + token contrast
 ```
 
@@ -61,7 +61,7 @@ With the API running (`http` profile port shown):
 
 Errors are returned as RFC 9457 `application/problem+json` with a `traceId`. Every response also carries a `trace-id` header that matches the `TraceId` in the server logs.
 
-Sign-in pages and the same-origin hosting of the built app arrive in PR 12.
+In Docker and Azure the API serves the built Angular app itself (same origin, so the session cookie never crosses origins). Locally, register at http://localhost:4200/register and open the confirmation email in Mailpit.
 
 ## Repository layout
 
