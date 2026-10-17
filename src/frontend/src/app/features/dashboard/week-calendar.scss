@@ -1,5 +1,7 @@
 // The approved weekly calendar. Wide containers show the week grid; narrow ones (phones) fall back to the
 // agenda, which is also the List view.
+@use 'proposed-fill' as *;
+
 :host {
   display: block;
   container-type: inline-size;
@@ -181,6 +183,7 @@ ul {
   }
 
   &::-webkit-scrollbar-thumb {
+    min-height: 40px;
     border: 2px solid var(--color-surface-soft);
     border-radius: var(--radius-pill);
     background: var(--color-text);
@@ -273,14 +276,7 @@ ul {
 
 // Proposed: diagonal hatching, a dashed outline and written labels, never colour alone. Not part of the schedule.
 .pt[data-status='proposed'] {
-  border: 2px dashed var(--color-outline);
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      transparent 0 7px,
-      color-mix(in srgb, var(--color-outline) 22%, transparent) 7px 9px
-    ),
-    var(--color-status-pending-bg);
+  @include proposed-fill;
 }
 
 .pt__note {
@@ -412,7 +408,6 @@ ul {
   align-content: start;
   gap: 2px var(--space-1);
   padding: 6px;
-  line-height: 1.25;
 
   .act__head,
   .act__text {
@@ -484,7 +479,8 @@ ul {
   }
 }
 
-@each $category in school, medical, music, sport, art, other {
+// "other" is the base .act style.
+@each $category in school, medical, music, sport, art, family, unavailable {
   .act[data-category='#{$category}'] {
     background: var(--color-cat-#{$category}-bg);
 
@@ -614,17 +610,6 @@ ul {
   .pt__icon,
   .pt__meta {
     display: none;
-  }
-
-  // Short proposals keep the hatching, dashed outline and "Proposed" label; the longer note moves to the tooltip
-  // (and stays available to screen readers) so the block stays compact.
-  .pt__note {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 
   .pt__text {

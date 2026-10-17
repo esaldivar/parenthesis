@@ -176,6 +176,24 @@ describe('DashboardPage (approved design)', () => {
       expect(text(columns[3])).toContain('Soccer Practice'); // Wednesday
     });
 
+    it('has a calendar key naming each style in text, matching what the sample week shows', async () => {
+      const { el } = await render({ sample: true });
+
+      expect([...el.querySelectorAll('.legend li')].map(text)).toEqual([
+        'Parenting time',
+        'Family event (both parents)',
+        'Proposed',
+        'Unavailable',
+      ]);
+      const play = el.querySelector('.act[data-category="family"]')!;
+      expect(text(play)).toContain('School Play');
+      expect(text(play)).toContain('with Dad and Mom');
+      expect([...play.querySelectorAll('app-avatar')].map((a) => a.getAttribute('title'))).toEqual(['Dad', 'Mom', 'Kai', 'Aurora']);
+      expect(el.querySelector('.legend')!.getAttribute('aria-label')).toBe('Calendar key');
+      const unavailable = el.querySelector('.act[data-category="unavailable"]')!;
+      expect(text(unavailable)).toContain('Dad unavailable');
+    });
+
     it('keeps the whole day in a labelled, keyboard-focusable scrolling area below the all-day row', async () => {
       const { el } = await render({ sample: true });
       const scroller = el.querySelector('.grid__body')!;

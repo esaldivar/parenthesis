@@ -51,7 +51,7 @@ const pairs: [foreground: string, background: string, minimum: number][] = [
   ['brand-wordmark-parent', 'color-surface', NON_TEXT],
   ['brand-wordmark-hesis', 'color-surface', TEXT],
   // Activity categories: text sits on the fill, icons need 3:1 against it.
-  ...['school', 'medical', 'music', 'sport', 'art', 'other'].flatMap(
+  ...['school', 'medical', 'music', 'sport', 'art', 'family', 'unavailable', 'other'].flatMap(
     (c) =>
       [
         ['color-text', `color-cat-${c}-bg`, TEXT],

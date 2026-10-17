@@ -69,5 +69,7 @@ export const CATEGORY_ICONS: Record<EventCategory, IconName> = {
   music: 'music',
   sport: 'soccer',
   art: 'palette',
+  family: 'children',
+  unavailable: 'block',
   other: 'calendar',
 };

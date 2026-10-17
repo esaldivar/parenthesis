@@ -82,7 +82,11 @@
                     </span>
                     <span class="pt__meta">{{ childNames(block.children) }} · {{ range(block) }}</span>
                     @if (block.status === 'proposed') {
-                      <span class="pt__note">Needs approval · not on the schedule yet</span>
+                      <!-- Short proposals keep the hatching, outline and Proposed label; this note moves to the tooltip and
+                           screen readers so the block stays compact. -->
+                      <span class="pt__note" [class.visually-hidden]="place.endColumn - place.startColumn <= 2">
+                        Needs approval · not on the schedule yet
+                      </span>
                     }
                     @if (block.status === 'confirmed' && !block.changePending) {
                       <span class="visually-hidden">, confirmed</span>
@@ -136,8 +140,11 @@
                         <span class="act__time">{{ timeLabel(event.time!) }}</span>
                       </span>
                     </span>
-                    <span class="visually-hidden">, {{ childNames(event.children) }}</span>
+                    <span class="visually-hidden">, {{ childNames(event.children) }}{{ event.parents?.length ? ', with ' + parentNames(event) : '' }}</span>
                     <span class="act__avatars" aria-hidden="true">
+                      @for (parent of event.parents ?? []; track parent.membershipId) {
+                        <app-avatar [name]="parent.displayName" kind="parent" [size]="26" />
+                      }
                       @for (child of event.children; track child.id) {
                         <app-avatar [name]="child.name" [size]="26" />
                       }
@@ -227,9 +234,12 @@
                       @if (event.time) {
                         {{ timeLabel(event.time) }} ·
                       }
-                      {{ childNames(event.children) }}
+                      {{ childNames(event.children) }}{{ event.parents?.length ? ' · with ' + parentNames(event) : '' }}
                     </span>
                     <span class="act__avatars" aria-hidden="true">
+                      @for (parent of event.parents ?? []; track parent.membershipId) {
+                        <app-avatar [name]="parent.displayName" kind="parent" [size]="28" />
+                      }
                       @for (child of event.children; track child.id) {
                         <app-avatar [name]="child.name" [size]="28" />
                       }
@@ -255,6 +265,7 @@
           {{ split() ? 'Group children with the same schedule' : 'Show children separately this week' }}
         </button>
       }
+      <app-calendar-key />
     </footer>
   } @else if (state() === 'unavailable') {
     <p class="note">

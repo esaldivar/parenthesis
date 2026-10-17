@@ -1,0 +1,12 @@
+// The proposed-change fill: diagonal hatching and a dashed outline. Shared by the calendar and its key so they always
+// match; proposals are also always labelled in text, never shown by colour alone.
+@mixin proposed-fill {
+  border: 2px dashed var(--color-outline);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--color-outline) 22%, transparent) 7px 9px
+    ),
+    var(--color-status-pending-bg);
+}

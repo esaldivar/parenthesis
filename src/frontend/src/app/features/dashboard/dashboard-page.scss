@@ -180,7 +180,7 @@ ul {
   color: var(--color-cat-other-icon);
 }
 
-@each $category in school, medical, music, sport, art {
+@each $category in school, medical, music, sport, art, family, unavailable {
   .upcoming__item[data-category='#{$category}'] .upcoming__icon {
     background: var(--color-cat-#{$category}-bg);
     color: var(--color-cat-#{$category}-icon);

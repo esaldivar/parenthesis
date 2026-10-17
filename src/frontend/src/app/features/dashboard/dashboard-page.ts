@@ -131,7 +131,10 @@ export class DashboardPage {
         category: e.category,
         title: e.title,
         when: e.time ? dateTimeLabel(`${e.date}T${e.time}`).replace(/, (\d)/, ' · $1') : dayLong(e.date),
-        people: e.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+        people: [
+          ...(e.parents ?? []).map((p) => ({ name: p.displayName, kind: 'parent' as const })),
+          ...e.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+        ],
         status: e.status,
       }));
     return [...reviews, ...parenting, ...events].slice(0, 5);

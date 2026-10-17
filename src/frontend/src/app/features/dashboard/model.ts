@@ -40,7 +40,11 @@ export interface ParentingTime {
 }
 
 /** Activity categories for icons and colour accents (always alongside text). */
-export type EventCategory = 'school' | 'medical' | 'music' | 'sport' | 'art' | 'other';
+/**
+ * `family`: an event both parents attend (e.g. a school play), with its own colour. `unavailable`: a parent's
+ * blocked-out time. Both are mock styling for now (see the calendar key); the categories aren't in the API yet.
+ */
+export type EventCategory = 'school' | 'medical' | 'music' | 'sport' | 'art' | 'family' | 'unavailable' | 'other';
 
 export interface FamilyEvent {
   readonly id: string;
@@ -52,6 +56,8 @@ export interface FamilyEvent {
   readonly durationMinutes?: number;
   readonly category: EventCategory;
   readonly children: readonly ChildRef[];
+  /** Parents attending, shown before the children (both parents for a family event). */
+  readonly parents?: readonly Caregiver[];
   readonly status: ScheduleStatus;
 }
 

@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
+import { CalendarKey } from './calendar-key';
 import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from './grouping';
 import { DashboardWeek, FamilyEvent, PlainDate } from './model';
 import { StatusLabel } from './status-label';
@@ -50,7 +51,7 @@ interface DayView {
 @Component({
   selector: 'app-week-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, Avatar, Icon, StatusLabel],
+  imports: [MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey],
   templateUrl: './week-calendar.html',
   styleUrl: './week-calendar.scss',
 })
@@ -140,6 +141,7 @@ export class WeekCalendar {
   );
 
   protected readonly childNames = childNames;
+  protected readonly parentNames = (event: FamilyEvent) => (event.parents ?? []).map((p) => p.displayName).join(' and ');
   protected readonly timeLabel = timeLabel;
   protected readonly icons = CATEGORY_ICONS;
 
