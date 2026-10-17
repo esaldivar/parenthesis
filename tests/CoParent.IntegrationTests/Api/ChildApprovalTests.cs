@@ -78,6 +78,47 @@ public sealed class ChildApprovalTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_decision_can_carry_a_comment_and_decided_requests_move_to_history()
+    {
+        var (dad, mom, familyId) = await TwoParentFamilyAsync(addChildFirst: "Kai");
+        using (dad)
+        using (mom)
+        {
+            var request = Assert.Single((await JsonAsync(await mom.GetAsync($"/api/families/{familyId}/approvals"))).EnumerateArray());
+
+            var rejected = await mom.PostAsync(
+                $"/api/families/{familyId}/approvals/{request.GetProperty("id").GetGuid()}/reject", new { comment = "Let's add Kai together this weekend." });
+            var pending = await JsonAsync(await dad.GetAsync($"/api/families/{familyId}/approvals"));
+            var history = await JsonAsync(await dad.GetAsync($"/api/families/{familyId}/approvals?view=history"));
+
+            Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
+            Assert.Empty(pending.EnumerateArray());
+            var decided = Assert.Single(history.EnumerateArray());
+            Assert.Equal("Rejected", decided.GetProperty("status").GetString());
+            Assert.NotEqual(JsonValueKind.Null, decided.GetProperty("resolvedAt").ValueKind);
+            var decision = Assert.Single(decided.GetProperty("decisions").EnumerateArray());
+            Assert.Equal("Reject", decision.GetProperty("decision").GetString());
+            Assert.Equal("Let's add Kai together this weekend.", decision.GetProperty("comment").GetString());
+        }
+    }
+
+    [Fact]
+    public async Task A_comment_that_is_too_long_is_rejected()
+    {
+        var (dad, mom, familyId) = await TwoParentFamilyAsync(addChildFirst: "Kai");
+        using (dad)
+        using (mom)
+        {
+            var request = Assert.Single((await JsonAsync(await mom.GetAsync($"/api/families/{familyId}/approvals"))).EnumerateArray());
+
+            var response = await mom.PostAsync(
+                $"/api/families/{familyId}/approvals/{request.GetProperty("id").GetGuid()}/approve", new { comment = new string('x', 501) });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task The_proposer_can_withdraw_and_only_the_proposer()
     {
         var (dad, mom, familyId) = await TwoParentFamilyAsync(addChildFirst: "Kai");

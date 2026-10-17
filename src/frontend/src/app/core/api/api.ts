@@ -54,6 +54,8 @@ export interface ChangeRequest {
   readonly requiredApprovals: number;
   /** True when this parent can still approve or reject it (not the proposer, hasn't answered). */
   readonly canDecide: boolean;
+  readonly resolvedAt: string | null;
+  readonly decisions: readonly { deciderMembershipId: string; decision: 'Approve' | 'Reject'; comment: string | null; decidedAt: string }[];
 }
 
 export type DeviceKind = 'Household' | 'ChildPaired';
@@ -127,11 +129,13 @@ export class Api {
     this.call(this.http.post<Child>(`/api/families/${familyId}/children`, { firstName }));
 
   // Approvals inbox (ADR-0003).
-  approvals = (familyId: string) => this.call(this.http.get<ChangeRequest[]>(`/api/families/${familyId}/approvals`));
-  approve = (familyId: string, requestId: string) =>
-    this.call(this.http.post<ChangeRequest>(`/api/families/${familyId}/approvals/${requestId}/approve`, {}));
-  reject = (familyId: string, requestId: string) =>
-    this.call(this.http.post<ChangeRequest>(`/api/families/${familyId}/approvals/${requestId}/reject`, {}));
+  /** Pending requests, or the 50 most recently decided with `history`. */
+  approvals = (familyId: string, view: 'pending' | 'history' = 'pending') =>
+    this.call(this.http.get<ChangeRequest[]>(`/api/families/${familyId}/approvals`, { params: view === 'history' ? { view } : {} }));
+  approve = (familyId: string, requestId: string, comment?: string) =>
+    this.call(this.http.post<ChangeRequest>(`/api/families/${familyId}/approvals/${requestId}/approve`, { comment }));
+  reject = (familyId: string, requestId: string, comment?: string) =>
+    this.call(this.http.post<ChangeRequest>(`/api/families/${familyId}/approvals/${requestId}/reject`, { comment }));
   withdraw = (familyId: string, requestId: string) =>
     this.call(this.http.post<void>(`/api/families/${familyId}/approvals/${requestId}/withdraw`, {}));
 

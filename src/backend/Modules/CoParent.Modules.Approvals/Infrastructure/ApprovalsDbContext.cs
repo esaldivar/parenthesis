@@ -45,6 +45,7 @@ internal sealed class ApprovalsDbContext(DbContextOptions<ApprovalsDbContext> op
         {
             decision.ToTable("approval_decisions");
             decision.Property(d => d.Decision).HasConversion<string>().HasMaxLength(16);
+            decision.Property(d => d.Comment).HasMaxLength(ApprovalDecision.CommentMaxLength);
             decision.HasIndex(d => new { d.ChangeRequestId, d.DeciderMembershipId }).IsUnique();
         });
     }
