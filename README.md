@@ -1,8 +1,6 @@
 # Parenthesis
 
-![Parenthesis logo concept — two parenthesis-shaped caregivers embracing a smiling child](docs/design/assets/parenthesis-logo-concept.svg)
-
-> **Logo asset pending:** The image above is a provisional placeholder, **not the approved logo**. The brand design is locked to **Variation 1 (Default)** icon and **Option B** wordmark from the original user-provided branding board. Do not recreate or alter it; see [locked brand rules](docs/design/BRANDING.md).
+**Approved Parenthesis logo:** Variation 1 (Default) icon and Option B wordmark. The exact source artwork is awaiting repository upload; the provisional illustration has been removed from this page to prevent displaying the wrong logo. See [locked brand rules](docs/design/BRANDING.md).
 
 
 [![CI](https://github.com/esaldivar/parenthesis/actions/workflows/ci.yml/badge.svg)](https://github.com/esaldivar/parenthesis/actions/workflows/ci.yml)
