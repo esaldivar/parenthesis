@@ -9,7 +9,7 @@ namespace CoParent.IntegrationTests.Api;
 [Collection(ApiCollectionDefinition.Name)]
 public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 {
-    private static readonly DateTimeOffset Monday = new(2026, 10, 12, 0, 0, 0, TimeSpan.FromHours(-5));
+    private static readonly DateTimeOffset _monday = new(2026, 10, 12, 0, 0, 0, TimeSpan.FromHours(-5));
 
     public async ValueTask InitializeAsync() => await api.ResetDatabaseAsync();
 
@@ -71,11 +71,18 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         // Children need both parents (ADR-0006), so these events don't name any yet.
         var holiday = await JsonAsync(await dad.PostAsync($"/api/families/{familyId}/calendar/events", new
         {
-            category = "Holiday", title = "Thanksgiving", startsAt = Monday, endsAt = Monday.AddDays(1), allDay = true,
+            category = "Holiday",
+            title = "Thanksgiving",
+            startsAt = _monday,
+            endsAt = _monday.AddDays(1),
+            allDay = true,
         }));
         var joint = await JsonAsync(await dad.PostAsync($"/api/families/{familyId}/calendar/events", new
         {
-            category = "Joint", title = "Parent-teacher night", startsAt = Monday.AddHours(18), endsAt = Monday.AddHours(19),
+            category = "Joint",
+            title = "Parent-teacher night",
+            startsAt = _monday.AddHours(18),
+            endsAt = _monday.AddHours(19),
         }));
 
         Assert.Equal("Confirmed", holiday.GetProperty("status").GetString());
@@ -92,7 +99,10 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 
         var created = await f.Dad.PostAsync(Events(f), new
         {
-            category = "Unavailable", startsAt = Monday.AddHours(8), endsAt = Monday.AddHours(17), notes = "Work trip to Denver",
+            category = "Unavailable",
+            startsAt = _monday.AddHours(8),
+            endsAt = _monday.AddHours(17),
+            notes = "Work trip to Denver",
         });
         var dads = Assert.Single(await WeekAsync(f.Dad, f));
         var moms = Assert.Single(await WeekAsync(f.Mom, f));
@@ -111,7 +121,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         await f.Dad.PostAsync(Events(f), Activity("Soccer Practice", f.KaiId));
         await f.Dad.PostAsync(Events(f), Activity("Piano Lesson", f.AuroraId));
         await f.Dad.PostAsync(Events(f), ParentingTime("Time with Dad", f.DadMembershipId, f.KaiId));
-        await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = Monday.AddHours(8), endsAt = Monday.AddHours(9), notes = "Private" });
+        await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddHours(8), endsAt = _monday.AddHours(9), notes = "Private" });
         using var kai = await KaiSignedInAsync(f);
 
         var kaisWeek = await WeekAsync(kai, f);
@@ -132,10 +142,10 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         using var _ = f;
         object body = problem switch
         {
-            "end-before-start" => new { category = "Activity", title = "Oops", startsAt = Monday.AddHours(10), endsAt = Monday.AddHours(9) },
+            "end-before-start" => new { category = "Activity", title = "Oops", startsAt = _monday.AddHours(10), endsAt = _monday.AddHours(9) },
             "unknown-child" => Activity("Mystery", Guid.CreateVersion7()),
-            "no-caregiver" => new { category = "ParentingTime", title = "Time", startsAt = Monday, endsAt = Monday.AddDays(2), childIds = new[] { f.KaiId } },
-            _ => new { category = "Unavailable", startsAt = Monday, endsAt = Monday.AddHours(2), childIds = new[] { f.KaiId } },
+            "no-caregiver" => new { category = "ParentingTime", title = "Time", startsAt = _monday, endsAt = _monday.AddDays(2), childIds = new[] { f.KaiId } },
+            _ => new { category = "Unavailable", startsAt = _monday, endsAt = _monday.AddHours(2), childIds = new[] { f.KaiId } },
         };
 
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Dad.PostAsync(Events(f), body)).StatusCode);
@@ -147,31 +157,36 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         var f = await FamilyAsync();
         using var _ = f;
 
-        var backwards = await f.Dad.GetAsync($"{Events(f)}?from={Q(Monday)}&to={Q(Monday.AddDays(-1))}");
-        var tooWide = await f.Dad.GetAsync($"{Events(f)}?from={Q(Monday)}&to={Q(Monday.AddDays(120))}");
+        var backwards = await f.Dad.GetAsync($"{Events(f)}?from={Q(_monday)}&to={Q(_monday.AddDays(-1))}");
+        var tooWide = await f.Dad.GetAsync($"{Events(f)}?from={Q(_monday)}&to={Q(_monday.AddDays(120))}");
 
         Assert.Equal(HttpStatusCode.BadRequest, backwards.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, tooWide.StatusCode);
     }
 
     private static object Activity(string title, Guid child) =>
-        new { category = "Activity", title, startsAt = Monday.AddHours(17), endsAt = Monday.AddHours(18), childIds = new[] { child } };
+        new { category = "Activity", title, startsAt = _monday.AddHours(17), endsAt = _monday.AddHours(18), childIds = new[] { child } };
 
     private static object ParentingTime(string title, Guid caregiver, Guid child) => new
     {
-        category = "ParentingTime", title, startsAt = Monday, endsAt = Monday.AddDays(6), allDay = true,
-        childIds = new[] { child }, caregiverMembershipId = caregiver,
+        category = "ParentingTime",
+        title,
+        startsAt = _monday,
+        endsAt = _monday.AddDays(6),
+        allDay = true,
+        childIds = new[] { child },
+        caregiverMembershipId = caregiver,
     };
 
     private static object Joint(string title, Guid child) =>
-        new { category = "Joint", title, startsAt = Monday.AddHours(18), endsAt = Monday.AddHours(20), childIds = new[] { child } };
+        new { category = "Joint", title, startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(20), childIds = new[] { child } };
 
     private static string Events(Family f) => $"/api/families/{f.FamilyId}/calendar/events";
 
     private static string Q(DateTimeOffset value) => Uri.EscapeDataString(value.ToString("O"));
 
     private static async Task<List<JsonElement>> WeekAsync(ApiSession session, Family f) =>
-        (await JsonAsync(await session.GetAsync($"{Events(f)}?from={Q(Monday)}&to={Q(Monday.AddDays(7))}"))).EnumerateArray().ToList();
+        (await JsonAsync(await session.GetAsync($"{Events(f)}?from={Q(_monday)}&to={Q(_monday.AddDays(7))}"))).EnumerateArray().ToList();
 
     /// <summary>Dad and Mom; Kai and Aurora approved by both.</summary>
     private async Task<Family> FamilyAsync()
