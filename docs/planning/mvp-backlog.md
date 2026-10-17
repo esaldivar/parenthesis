@@ -35,7 +35,11 @@ Size: S ≤ 1 day, M ≈ 2–3 days, L ≈ 1 week. Each item should fit in one r
 | A-02 | Email confirmation & password reset (Mailpit locally) | P0 | M |
 | A-03 | Lockout + rate limiting on auth endpoints | P0 | S |
 | A-04 | `/api/me` + Angular auth state (signals), guards, login/register pages | P0 | M |
-| A-05 | Child account activation via one-time code (no email) | P0 | M |
+| A-05 | ~~Child account activation via one-time code~~ → replaced by A-08–A-11 (ADR-0006) | — | — |
+| A-08 | Household device registration plus "Who's using Parenthesis?" profile picker; a parent tile always needs the full password | P0 | M |
+| A-09 | Child PIN (4–6 digits, hashed). Works only on registered devices. Child session principal | P0 | M |
+| A-10 | PIN lockout after 3 tries; notify both parents; one-tap unlock by either parent (audited) | P0 | S |
+| A-11 | Child tablet pairing (10-minute one-time code or QR); device list with instant revoke | P0 | M |
 | A-06 | TOTP two-factor authentication for parents | P1 | M |
 | A-07 | Platform admin role + minimal admin endpoints (aggregates only) | P1 | S |
 
@@ -44,12 +48,13 @@ Size: S ≤ 1 day, M ≈ 2–3 days, L ≈ 1 week. Each item should fit in one r
 |---|---|---|---|
 | FM-01 | Create family (creator becomes Parent; no owner concept) | P0 | S |
 | FM-02 | Tenant gate endpoint filter + `ITenantContext` + query filters + cross-tenant tests | P0 | M |
-| FM-03 | Invite co-parent by email (hashed token, expiry, revoke, accept flow) | P0 | M |
-| FM-04 | Child profiles CRUD (minimal PII) | P0 | S |
+| FM-03 | Invite co-parent by email (hashed token, expiry, revoke, accept flow). Sends a "join" email when the invitee already has an account; never reveals that to the inviter. Existing families are never merged (ADR-0006) | P0 | M |
+| FM-04 | Child profiles (minimal PII). Created through a `ChildCreate` request that both parents approve; setup asks for the household size (ADR-0006) | P0 | M |
 | FM-05 | Invite / enable child login (ChildAccessGrant approval; immediate disable) | P0 | M |
 | FM-06 | Family switcher (user in multiple families, e.g. blended families) | P1 | S |
 | FM-07 | Leave family; membership status handling | P1 | S |
 | FM-08 | Category approval policy settings UI | P1 | S |
+| FM-09 | "View as child": read-only parent preview of a child's space, excluding the private diary (ADR-0006) | P1 | S |
 
 ## E3 — Shared calendar
 | ID | Item | P | Size |
