@@ -227,27 +227,19 @@
       </ol>
     </div>
 
+    <!-- Proposals are not schedule: compact lines outside the grid, always labelled Proposed. -->
     @if (proposals().length > 0) {
       <section class="proposals" aria-labelledby="proposals-heading">
         <h3 id="proposals-heading">Proposed changes</h3>
-        <p class="muted">Not part of the schedule until both parents agree.</p>
         <ul>
           @for (block of proposals(); track block.key) {
-            <li class="pt pt--card" data-status="proposed">
-              <span class="pt__avatars" aria-hidden="true">
-                <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="34" />
-                @for (child of block.children; track child.id) {
-                  <app-avatar [name]="child.name" [size]="34" />
-                }
-              </span>
-              <span class="pt__text">
-                <span class="pt__title">{{ block.title }}</span>
-                <span class="pt__meta">{{ childNames(block.children) }} · {{ range(block) }}</span>
-              </span>
+            <li>
               <app-status-label status="proposed" />
+              <span>{{ block.title }} · {{ childNames(block.children) }} · {{ range(block) }}</span>
             </li>
           }
         </ul>
+        <p class="muted">Not on the calendar until both parents agree.</p>
       </section>
     }
 

@@ -10,6 +10,15 @@
   </button>
 </mat-menu>
 
+<mat-menu #notificationsMenu="matMenu" xPosition="before">
+  <p class="menu-note">
+    @if (sample()) {
+      Sample preview: these counts are fictional.
+    }
+    Notifications aren’t available yet.
+  </p>
+</mat-menu>
+
 <div class="shell">
   <aside class="sidebar">
     <a class="brand" routerLink="/" aria-label="Parenthesis home">
@@ -28,6 +37,10 @@
             >
               <app-icon [name]="item.icon" [size]="28" />
               <span>{{ item.label }}</span>
+              @if (unread(item.path); as count) {
+                <span class="badge" aria-hidden="true">{{ count }}</span>
+                <span class="visually-hidden">, {{ count }} unread (sample data)</span>
+              }
             </a>
           </li>
         }
@@ -50,11 +63,24 @@
     <a class="brand brand--compact" routerLink="/" aria-label="Parenthesis home">
       <app-logo [decorative]="true" />
     </a>
-    <button class="account" type="button" [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
-      <app-avatar [name]="firstName()" kind="parent" [size]="36" />
-      <span class="account__name">{{ firstName() }}</span>
-      <app-icon name="chevron-down" [size]="20" />
-    </button>
+    <div class="topbar__actions">
+      <button
+        class="bell"
+        type="button"
+        [matMenuTriggerFor]="notificationsMenu"
+        [attr.aria-label]="notifications() ? 'Notifications, ' + notifications() + ' unread (sample data)' : 'Notifications'"
+      >
+        <app-icon name="bell" [size]="26" />
+        @if (notifications(); as count) {
+          <span class="badge badge--bell" aria-hidden="true">{{ count }}</span>
+        }
+      </button>
+      <button class="account" type="button" [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
+        <app-avatar [name]="firstName()" kind="parent" [size]="36" />
+        <span class="account__name">{{ firstName() }}</span>
+        <app-icon name="chevron-down" [size]="20" />
+      </button>
+    </div>
   </header>
 
   <main id="main-content" #main tabindex="-1">

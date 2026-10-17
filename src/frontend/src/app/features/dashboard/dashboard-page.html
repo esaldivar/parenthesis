@@ -1,11 +1,3 @@
-@if (showingSample()) {
-  <div class="sample-banner" role="note">
-    <strong>Sample data preview.</strong>
-    Fictional people and events for reviewing this layout (development builds only). This is not your family’s
-    schedule, and nothing here can be changed.
-  </div>
-}
-
 <div class="dashboard">
   <header class="welcome">
     <svg class="welcome__sun" viewBox="0 0 64 40" aria-hidden="true" focusable="false">
@@ -16,6 +8,12 @@
     <div>
       <h1>{{ greeting() }}</h1>
       <p class="welcome__sub">Here’s what’s happening with your family.</p>
+      @if (showingSample()) {
+        <p class="sample-banner" role="note">
+          <strong>Sample data</strong> · fictional people and events (development builds only). This is not your
+          family’s schedule, and nothing here can be changed.
+        </p>
+      }
     </div>
     <app-leaves class="welcome__leaves" variant="header" />
   </header>

@@ -38,11 +38,13 @@ ul {
   font-size: 0.875rem;
 }
 
+// Small label under the greeting; still dashed and explicit so sample data can't be mistaken for a real schedule.
 .sample-banner {
-  margin-bottom: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  font-size: 0.875rem;
-  border: 2px dashed var(--color-outline);
+  display: inline-block;
+  margin-top: var(--space-2);
+  padding: 2px var(--space-3);
+  font-size: 0.8125rem;
+  border: 1px dashed var(--color-outline);
   border-radius: var(--radius-control);
   background: var(--color-status-pending-bg);
   color: var(--color-text);

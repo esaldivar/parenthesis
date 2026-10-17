@@ -58,6 +58,22 @@ describe('application shells', () => {
       expect(current).toEqual(['Calendar', 'Calendar']); // Side and bottom navigation; only one is visible at a time.
     });
 
+    it('never shows unread counts for real data: the bell says notifications are not available yet', async () => {
+      const body = await open('/');
+
+      expect(body.querySelector('.badge')).toBeNull();
+      expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications');
+    });
+
+    it('shows placeholder counts only in the sample preview, labelled as sample data', async () => {
+      const body = await open('/?sample=1');
+      const sidenav = body.querySelector('nav.sidenav')!;
+
+      expect(sidenav.textContent).toContain('3 unread (sample data)'); // Messages
+      expect(sidenav.textContent).toContain('2 unread (sample data)'); // From Your Kids
+      expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications, 3 unread (sample data)');
+    });
+
     it('keeps Home current when the dashboard URL carries a query, and only Home', async () => {
       const body = await open('/?week=2026-10-18');
 

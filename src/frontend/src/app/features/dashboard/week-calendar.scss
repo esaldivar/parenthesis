@@ -538,31 +538,29 @@ ul {
   }
 }
 
-// Proposals stay outside the grid (they aren't schedule yet), kept compact so the calendar keeps its approved height.
+// Proposals stay outside the grid (they aren't schedule yet): one compact line each, so the calendar keeps close to
+// its approved height.
 .proposals {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-1) var(--space-2);
-  margin-top: var(--space-3);
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-2);
+  font-size: 0.875rem;
 
   h3 {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
   }
 
   ul {
-    flex-basis: 100%;
-    display: grid;
-    gap: var(--space-2);
+    display: contents;
   }
 
-  .pt {
-    flex-wrap: wrap; // On the narrowest phones the Proposed label moves below instead of squeezing the text.
+  li {
+    display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
-    padding-block: var(--space-1);
-  }
-
-  .pt__text {
-    flex: 1 1 10rem;
+    gap: var(--space-1) var(--space-2);
+    min-width: 0;
   }
 }
