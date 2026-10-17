@@ -49,6 +49,34 @@ jobs:
       - name: Test (unit, integration, architecture)
         run: dotnet test --solution CoParent.slnx -c Release --no-build
 
+  frontend:
+    name: Frontend (lint, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (TypeScript + template accessibility rules)
+        run: npm run lint
+
+      - name: Test (Vitest, axe-core, token contrast)
+        run: npm test
+
+      - name: Build (production)
+        run: npx ng build
+
   docker:
     name: API image
     runs-on: ubuntu-latest

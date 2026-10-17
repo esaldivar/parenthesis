@@ -1,0 +1,72 @@
+// Parenthesis semantic design tokens (docs/design-system.md).
+// Proposed defaults for visual review. Components use these tokens, never raw hex values.
+// Contrast for the text/background pairs is checked by src/app/core/theme/tokens.spec.ts.
+
+@mixin light {
+  color-scheme: light;
+  --color-canvas: #f7f5ed;
+  --color-surface: #ffffff;
+  --color-surface-soft: #e4ebdd;
+  --color-text: #203a31;
+  --color-text-secondary: #4d6258;
+  --color-action: #176b67;
+  --color-action-hover: #125955;
+  --color-action-pressed: #0e4744;
+  --color-on-action: #ffffff;
+  --color-accent: #de8f7e;
+  --color-on-accent: #203a31;
+  --color-outline: #718478;
+  --color-danger: #a13333;
+  --color-focus: #176b67;
+  --color-selected: #e4ebdd;
+  --color-disabled-text: #5f6f66;
+  --color-status-pending-bg: #fbeee0;
+  --color-status-confirmed-bg: #dcefe9;
+  --color-status-rejected-bg: #f8e1df;
+}
+
+// Dark mode is a full forest-green surface system, not an inversion. Elevation comes from surface steps and borders.
+@mixin dark {
+  color-scheme: dark;
+  --color-canvas: #10251e;
+  --color-surface: #19372d;
+  --color-surface-soft: #24483a;
+  --color-text: #f7f5ed;
+  --color-text-secondary: #c0d0c5;
+  --color-action: #91d2c5;
+  --color-action-hover: #a8ddd2;
+  --color-action-pressed: #bfe7de;
+  --color-on-action: #10251e;
+  --color-accent: #edaa98;
+  --color-on-accent: #10251e; // Ivory text fails on light coral (1.8:1), so accent fills always take dark text.
+  --color-outline: #8aa99a;
+  --color-danger: #ffb4ab;
+  --color-focus: #91d2c5;
+  --color-selected: #24483a;
+  --color-disabled-text: #9db2a6;
+  --color-status-pending-bg: #4a3a22;
+  --color-status-confirmed-bg: #1f4a3f;
+  --color-status-rejected-bg: #4d2724;
+}
+
+@mixin scale {
+  // 4px grid.
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-card: 18px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --content-max-width: 72rem;
+  --target-min: 44px;
+  --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-body: 1rem;
+  --line-height-body: 1.5;
+  --font-size-h3: 1.25rem;
+  --font-size-h2: 1.5rem;
+  --font-size-h1: 2rem;
+  --motion-fast: 120ms;
+}

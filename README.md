@@ -12,7 +12,7 @@ Parenthesis is a multi-tenant co-parenting app for separated parents: a shared c
 
 Prerequisites:
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (pinned in `global.json`)
-- Node.js (frontend, from PR 11)
+- Node.js 24 LTS or 26 (`src/frontend/.nvmrc`; Angular 22 needs ^24.15 or >=26)
 - Docker Desktop, running
 
 ```bash
@@ -25,6 +25,11 @@ dotnet build CoParent.slnx
 dotnet run --project src/backend/CoParent.Api -- migrate   # first run, and after pulling new migrations
 dotnet run --project src/backend/CoParent.Api
 dotnet test --solution CoParent.slnx   # unit + integration (integration tests start their own PostgreSQL container)
+
+cd src/frontend
+npm ci
+npm start                     # http://localhost:4200 (parent shell at /, child shell at /kid)
+npm run lint && npm test       # ESLint (incl. template accessibility rules); Vitest + axe-core + token contrast
 ```
 
 | Service | Address | Purpose |
@@ -52,14 +57,14 @@ With the API running (`http` profile port shown):
 
 Errors are returned as RFC 9457 `application/problem+json` with a `traceId`. Every response also carries a `trace-id` header that matches the `TraceId` in the server logs.
 
-The Angular app is added later in Milestone 1; this section grows with it.
+Sign-in pages and the same-origin hosting of the built app arrive in PR 12.
 
 ## Repository layout
 
 ```
 docs/           architecture, ADRs, planning, runbooks
 src/backend/    ASP.NET Core host, shared kernel, infrastructure, modules
-src/frontend/   Angular workspace (PR 11)
+src/frontend/   Angular 22 app: parent and child shells, design tokens (see docs/design-system.md)
 tests/          unit, integration (xUnit v3, Testcontainers) and architecture tests
 ```
 
