@@ -74,9 +74,9 @@ that points back here.
     4. **Before the co-parent joins:** children **aren't usable until both parents approve**. This replaces the
        architecture's "auto-confirm until the co-parent joins" for children.
     5. **Two existing families:** block and explain; no merging.
-  - [x] Architecture updated for these decisions: ADR-0006 (proposed), the solution architecture, ERD and backlog
+  - [x] Architecture updated for these decisions: ADR-0006, the solution architecture, ERD and backlog
     (October 17, 2026).
-  - [ ] **Owner:** review and approve ADR-0006. Building starts after that.
+  - [x] **Owner** approved ADR-0006 (October 17, 2026).
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner
   manages. There's no direct link between the two, so GitHub is the shared desk: `docs/design/handoffs/` and the
   `design` issue label. See that folder's README.

@@ -1,6 +1,6 @@
 # ADR-0006: Profile picker, child PINs, paired child devices, and children approved by both parents
 
-- **Status:** Proposed (2026-10-17). Awaiting owner review.
+- **Status:** Accepted (2026-10-17, owner approval)
 - **Date:** 2026-10-17
 - **Supersedes:** the child-login part of §5, and decisions 7 (for children only) and 8 in
   [solution-architecture.md](../architecture/solution-architecture.md) §9. Backlog item A-05 is replaced.

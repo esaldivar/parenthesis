@@ -303,7 +303,7 @@ erDiagram
 | Notification, AuditLog, ExternalCalendarConnection | Same names (+ `external_event_link` for de-duplication) |
 | *(new)* Invitation, CategoryApprovalPolicy, OutboxMessage | Needed for invitations, configurable approvals and reliable side effects |
 
-## M2 additions (ADR-0006, proposed 2026-10-17)
+## M2 additions (ADR-0006, accepted 2026-10-17)
 The new tables for profile picker sign-in, child PINs, paired child devices, and children that need both parents'
 approval:
 - **`device`:** a household device or a child's paired tablet.

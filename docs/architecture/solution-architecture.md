@@ -119,7 +119,7 @@ Rules:
 ### Authentication
 - ASP.NET Core Identity with **cookie authentication**: HttpOnly, Secure, `SameSite=Strict`, plus antiforgery tokens on unsafe methods. No tokens are stored in `localStorage` (ADR-0004).
 - Email confirmation, lockout, and password rules following NIST 800-63B (length over complexity, breached-password check later). TOTP 2FA is on the backlog.
-- **Children sign in with a profile picker and a PIN** ([ADR-0006](../adr/0006-profiles-pins-and-child-devices.md), proposed 2026-10-17). This replaces the earlier design of child accounts with a username and password.
+- **Children sign in with a profile picker and a PIN** ([ADR-0006](../adr/0006-profiles-pins-and-child-devices.md), accepted 2026-10-17). This replaces the earlier design of child accounts with a username and password.
   - **Where a PIN works:** only on a device registered to the family, either a parent's household device or a child's tablet paired with a one-time code.
   - **Lockout:** three wrong PINs lock the profile, both parents are notified, and either parent can unlock it.
   - **Switching to a parent profile** always needs the parent's full password.
