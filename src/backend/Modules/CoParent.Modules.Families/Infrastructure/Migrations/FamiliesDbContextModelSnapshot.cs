@@ -23,6 +23,46 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ChildProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_membership_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_child_profiles");
+
+                    b.HasIndex("FamilyId", "Status")
+                        .HasDatabaseName("ix_child_profiles_family_id_status");
+
+                    b.ToTable("child_profiles", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.Family", b =>
                 {
                     b.Property<Guid>("Id")
@@ -160,6 +200,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .HasDatabaseName("ix_invitations_family_id_normalized_email");
 
                     b.ToTable("invitations", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ChildProfile", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.Family", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_child_profiles_families_family_id");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.FamilyMembership", b =>

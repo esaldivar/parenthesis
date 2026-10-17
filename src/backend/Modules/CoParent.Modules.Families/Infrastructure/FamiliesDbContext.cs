@@ -21,6 +21,8 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<Invitation> Invitations => Set<Invitation>();
 
+    public DbSet<ChildProfile> Children => Set<ChildProfile>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -57,6 +59,16 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             invitation.HasIndex(i => i.TokenHash).IsUnique();
             invitation.HasIndex(i => new { i.FamilyId, i.NormalizedEmail });
             invitation.HasQueryFilter(TenantContext.QueryFilterName, i => i.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ChildProfile>(child =>
+        {
+            child.ToTable("child_profiles");
+            child.Property(c => c.FirstName).HasMaxLength(ChildProfile.FirstNameMaxLength);
+            child.Property(c => c.Status).HasConversion<string>().HasMaxLength(16);
+            child.HasOne<Family>().WithMany().HasForeignKey(c => c.FamilyId);
+            child.HasIndex(c => new { c.FamilyId, c.Status });
+            child.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
         });
     }
 }
