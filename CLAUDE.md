@@ -40,6 +40,11 @@ design through semantic theme tokens and accessible primitives.
 - Appearance is personal: one user's light/dark/system choice must not change
   another parent's or child's preference or require mutual approval.
 
+## Open work
+
+[TODO.md](TODO.md) is the single list of open work. Anything the owner calls a to-do, and anything left unfinished or
+deferred, is added there in the same change and ticked off in the PR that completes it.
+
 ## Implementation and verification
 
 Follow Milestone 1: scaffold the shell/theme first; use honest empty states for
