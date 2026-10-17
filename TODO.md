@@ -77,6 +77,11 @@ that points back here.
   - [x] Architecture updated for these decisions: ADR-0006, the solution architecture, ERD and backlog
     (October 17, 2026).
   - [x] **Owner** approved ADR-0006 (October 17, 2026).
+  - [x] Backend: co-parent invitations (FM-03). "Join" vs "sign up" emails, no account lookup for the inviter,
+    single-use and expiring links, revoke, two parents at most, never merging families (October 17, 2026).
+  - [ ] Backend: children approved by both parents (FM-04), household size.
+  - [ ] Backend: devices, profile picker, PINs and lockout (A-08–A-10); tablet pairing (A-11).
+  - [ ] Frontend: these screens, once Design Request #1 (issue #38) is approved.
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner
   manages. There's no direct link between the two, so GitHub is the shared desk: `docs/design/handoffs/` and the
   `design` issue label. See that folder's README.
