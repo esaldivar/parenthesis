@@ -47,10 +47,11 @@ jobs:
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
 
-      # Installed so the TypeScript analysis can resolve Angular's types.
+      # Installed so the TypeScript analysis can resolve Angular's types. Analysis only reads code, so package install
+      # scripts never need to run here (Sonar githubactions:S6505).
       - name: Install frontend dependencies
         working-directory: src/frontend
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
