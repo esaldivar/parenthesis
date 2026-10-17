@@ -25,8 +25,10 @@
   project, so the passing checks are the gate.
 - **Merging:** squash-merge into `develop`. Merge `develop` into `main` with a merge commit, so the release history
   is kept.
-- **After every release or hotfix,** open a PR from `main` into `develop` (a back-merge). `main` requires PRs to be
-  up to date with it, so `develop` must contain `main`'s merge commits before the next release.
+- **After every release or hotfix,** back-merge `main` into `develop`: branch `chore/sync-main` from `develop`, run
+  `git merge origin/main`, and PR it into `develop` with a **merge commit**. `main` requires PRs to be up to date, so
+  `develop` must contain `main`'s merge commits before the next release. A PR straight from `main` doesn't work,
+  because `develop` requires PRs to be up to date too.
 - **SonarQube Cloud quality gate:** required on `main`. New code needs an A security, reliability and maintainability
   rating, at least 80% coverage, and little duplication.
 - Keep PRs small: one backlog item (or one slice of it) per PR.
