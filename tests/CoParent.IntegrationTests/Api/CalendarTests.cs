@@ -244,7 +244,10 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         var created = await f.Dad.PostAsync(Events(f), ParentingTime("Time with Mom", f.MomMembershipId, f.KaiId));
 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
-        Assert.Equal(["OverlapsCoParentUnavailable"], (await JsonAsync(created)).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+        // Mom is both the other parent and the proposed caregiver: two gentle notes, nothing blocked.
+        Assert.Equal(
+            ["OverlapsCoParentUnavailable", "CaregiverUnavailable"],
+            (await JsonAsync(created)).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
     }
 
     [Fact]
@@ -257,6 +260,51 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}")).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await f.Mom.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Overlapping_parenting_time_for_the_same_child_is_flagged_but_not_blocked()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        await ConfirmedParentingTimeAsync(f);
+
+        var overlapping = await f.Mom.PostAsync(Events(f), new
+        {
+            category = "ParentingTime",
+            title = "Time with Mom",
+            startsAt = _monday.AddDays(2),
+            endsAt = _monday.AddDays(4),
+            childIds = new[] { f.KaiId },
+            caregiverMembershipId = f.MomMembershipId,
+        });
+        var otherChild = await f.Mom.PostAsync(Events(f), new
+        {
+            category = "ParentingTime",
+            title = "Time with Mom",
+            startsAt = _monday.AddDays(2),
+            endsAt = _monday.AddDays(4),
+            childIds = new[] { f.AuroraId },
+            caregiverMembershipId = f.MomMembershipId,
+        });
+
+        Assert.Equal(HttpStatusCode.Created, overlapping.StatusCode);
+        Assert.Contains("OverlapsParentingTime", (await JsonAsync(overlapping)).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+        Assert.DoesNotContain("OverlapsParentingTime", (await JsonAsync(otherChild)).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+    }
+
+    [Fact]
+    public async Task Marking_yourself_unavailable_during_your_own_parenting_time_is_flagged()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        await ConfirmedParentingTimeAsync(f); // Dad has Kai Monday to Sunday.
+
+        var unavailable = await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddDays(1), endsAt = _monday.AddDays(2), allDay = true });
+        var momUnavailable = await f.Mom.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddDays(1), endsAt = _monday.AddDays(2), allDay = true });
+
+        Assert.Equal(["OverlapsYourParentingTime"], (await JsonAsync(unavailable)).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+        Assert.Empty((await JsonAsync(momUnavailable)).GetProperty("warnings").EnumerateArray());
     }
 
     private static async Task<Guid> ConfirmedParentingTimeAsync(Family f)
