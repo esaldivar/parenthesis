@@ -23,6 +23,10 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<ChildProfile> Children => Set<ChildProfile>();
 
+    public DbSet<Device> Devices => Set<Device>();
+
+    public DbSet<ChildCredential> ChildCredentials => Set<ChildCredential>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -69,6 +73,28 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             child.HasOne<Family>().WithMany().HasForeignKey(c => c.FamilyId);
             child.HasIndex(c => new { c.FamilyId, c.Status });
             child.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<Device>(device =>
+        {
+            device.ToTable("devices");
+            device.Property(d => d.Kind).HasConversion<string>().HasMaxLength(16);
+            device.Property(d => d.Name).HasMaxLength(Device.NameMaxLength);
+            device.Property(d => d.TokenHash).HasMaxLength(32);
+            device.HasOne<Family>().WithMany().HasForeignKey(d => d.FamilyId);
+            device.HasOne<ChildProfile>().WithMany().HasForeignKey(d => d.ChildProfileId);
+            device.HasIndex(d => d.TokenHash).IsUnique();
+            device.HasIndex(d => d.FamilyId);
+            device.HasQueryFilter(TenantContext.QueryFilterName, d => d.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ChildCredential>(credential =>
+        {
+            credential.ToTable("child_credentials");
+            credential.Property(c => c.PinHash).HasMaxLength(256);
+            credential.HasOne<ChildProfile>().WithMany().HasForeignKey(c => c.ChildProfileId);
+            credential.HasIndex(c => c.ChildProfileId).IsUnique();
+            credential.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
         });
     }
 }

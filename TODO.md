@@ -80,7 +80,13 @@ that points back here.
   - [x] Backend: co-parent invitations (FM-03). "Join" vs "sign up" emails, no account lookup for the inviter,
     single-use and expiring links, revoke, two parents at most, never merging families (October 17, 2026).
   - [x] Backend: children approved by both parents (FM-04): the core of the Approvals module (ADR-0003) with the inbox, approve, reject and withdraw. Household setup adds one request per child (October 17, 2026).
-  - [ ] Backend: devices, profile picker, PINs and lockout (A-08–A-10); tablet pairing (A-11).
+  - [x] Backend: household devices, "Who's using Parenthesis?" profiles, kid PIN sign-in on registered devices only,
+    the 3-strikes lock with an email to both parents and one-tap unlock, instant device removal and access disabling,
+    and the kid-session gate (A-08–A-10, October 17, 2026).
+  - [ ] Backend: kid tablet pairing with a one-time code (A-11).
+  - [ ] Backend: changing an existing kid PIN with the co-parent's approval (ADR-0006). Today a PIN is set once;
+    disabling access is immediate.
+  - [ ] Frontend: re-fetch the antiforgery token whenever the profile changes (kid signs in, parent signs back in).
   - [ ] Frontend: these screens, once Design Request #1 (issue #38) is approved.
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner
   manages. There's no direct link between the two, so GitHub is the shared desk: `docs/design/handoffs/` and the
