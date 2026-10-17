@@ -30,3 +30,6 @@ appsettings.*.local.json
 
 # Local data volumes (docker compose)
 .data/
+
+# Local Claude Code / editor tooling
+.claude/

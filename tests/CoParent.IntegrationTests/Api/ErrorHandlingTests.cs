@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoParent.IntegrationTests.Api;
 
@@ -27,7 +29,9 @@ public sealed class ErrorHandlingTests(ApiFactory api) : IAsyncLifetime
     [Fact]
     public async Task Unhandled_exception_returns_500_problem_details_without_internal_details()
     {
-        var response = await api.CreateClient().GetAsync(ThrowingEndpointStartupFilter.Path, TestContext.Current.CancellationToken);
+        await using var failing = api.WithWebHostBuilder(b =>
+            b.ConfigureServices(s => s.AddSingleton<IAntiforgery, ThrowingAntiforgery>()));
+        var response = await failing.CreateClient().GetAsync("/api/antiforgery", TestContext.Current.CancellationToken);
         var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var problem = JsonDocument.Parse(body).RootElement;
 
@@ -37,7 +41,7 @@ public sealed class ErrorHandlingTests(ApiFactory api) : IAsyncLifetime
         AssertTraceIdMatchesHeader(response, problem);
 
         // Exception messages and stack traces must never reach clients.
-        Assert.DoesNotContain(ThrowingEndpointStartupFilter.SecretMessage, body, StringComparison.Ordinal);
+        Assert.DoesNotContain(ThrowingAntiforgery.SecretMessage, body, StringComparison.Ordinal);
         Assert.DoesNotContain(nameof(InvalidOperationException), body, StringComparison.Ordinal);
     }
 

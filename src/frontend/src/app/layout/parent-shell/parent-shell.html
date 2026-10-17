@@ -1,0 +1,60 @@
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" routerLink="/" aria-label="Parenthesis home">
+      <app-logo [markSize]="36" [decorative]="true" />
+    </a>
+    <div class="account">
+      @if (auth.currentFamily(); as family) {
+        <span class="family-name">{{ family.name }}</span>
+      }
+      <button mat-stroked-button type="button" (click)="signOut()">
+        Sign out<span class="visually-hidden"> {{ auth.user()?.displayName }}</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="sidenav" aria-label="Main">
+    <ul>
+      @for (item of nav; track item.path) {
+        <li>
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+            ariaCurrentWhenActive="page"
+          >
+            <app-icon [name]="item.icon" />
+            <span>{{ item.label }}</span>
+            @if (item.note) {
+              <span class="note"><span class="visually-hidden">, </span>{{ item.note }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <main id="main-content" #main tabindex="-1">
+    <router-outlet />
+  </main>
+
+  <nav class="bottomnav" aria-label="Main">
+    <ul>
+      @for (item of mobileNav; track item.path) {
+        <li>
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+            ariaCurrentWhenActive="page"
+          >
+            <app-icon [name]="item.icon" />
+            <span>{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+</div>

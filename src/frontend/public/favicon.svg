@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="1 -6 122 122">
+  <!-- Icon-only Parenthesis mark (docs/design/BRANDING.md). Provisional, from the concept artwork. No rays at favicon size. -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M36 18 C10 37 10 73 36 94" stroke="#4E79A7" stroke-width="14"/>
+    <path d="M87 18 C113 37 113 73 87 94" stroke="#5E8F7E" stroke-width="14"/>
+    <circle cx="61" cy="47" r="13" fill="#F08A6B"/>
+    <path d="M39 67 Q61 101 83 67" stroke="#F08A6B" stroke-width="12"/>
+  </g>
+</svg>

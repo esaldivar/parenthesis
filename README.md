@@ -1,5 +1,9 @@
 # Parenthesis
 
+![Parenthesis logo concept — two parenthesis-shaped caregivers embracing a smiling child](docs/design/assets/parenthesis-logo-concept.svg)
+
+> **Brand preview:** This is a provisional vector interpretation of the approved logo direction; final production artwork is pending visual review.
+
 [![CI](https://github.com/esaldivar/parenthesis/actions/workflows/ci.yml/badge.svg)](https://github.com/esaldivar/parenthesis/actions/workflows/ci.yml)
 
 Parenthesis is a multi-tenant co-parenting app for separated parents: a shared calendar with PR-style mutual approvals, a family memory library with mutual deletion approval, and a safe, simple space for children.
@@ -12,7 +16,7 @@ Parenthesis is a multi-tenant co-parenting app for separated parents: a shared c
 
 Prerequisites:
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (pinned in `global.json`)
-- Node.js (frontend, from PR 11)
+- Node.js 24 LTS or 26 (`src/frontend/.nvmrc`; Angular 22 needs ^24.15 or >=26)
 - Docker Desktop, running
 
 ```bash
@@ -25,6 +29,11 @@ dotnet build CoParent.slnx
 dotnet run --project src/backend/CoParent.Api -- migrate   # first run, and after pulling new migrations
 dotnet run --project src/backend/CoParent.Api
 dotnet test --solution CoParent.slnx   # unit + integration (integration tests start their own PostgreSQL container)
+
+cd src/frontend
+npm ci
+npm start                     # http://localhost:4200, proxies /api to the API at https://localhost:7180 (run it too)
+npm run lint && npm test       # ESLint (incl. template accessibility rules); Vitest + axe-core + token contrast
 ```
 
 | Service | Address | Purpose |
@@ -52,16 +61,25 @@ With the API running (`http` profile port shown):
 
 Errors are returned as RFC 9457 `application/problem+json` with a `traceId`. Every response also carries a `trace-id` header that matches the `TraceId` in the server logs.
 
-The Angular app is added later in Milestone 1; this section grows with it.
+In Docker and Azure the API serves the built Angular app itself (same origin, so the session cookie never crosses origins). Locally, register at http://localhost:4200/register and open the confirmation email in Mailpit.
 
 ## Repository layout
 
 ```
 docs/           architecture, ADRs, planning, runbooks
 src/backend/    ASP.NET Core host, shared kernel, infrastructure, modules
-src/frontend/   Angular workspace (PR 11)
+src/frontend/   Angular 22 app: parent and child shells, design tokens (see docs/design-system.md)
 tests/          unit, integration (xUnit v3, Testcontainers) and architecture tests
 ```
+
+## Design and branding
+
+- [Design handoff index](docs/design/README.md) (start here)
+- [Visual design system](docs/design-system.md)
+- [Brand identity and logo usage](docs/design/BRANDING.md)
+- [Page design planning](docs/design/PAGE_DESIGNS.md)
+
+The logo uses a neutral, abstract child figure and a two-tone wordmark: sage **Parent** and charcoal **hesis** (ivory **hesis** in dark mode). In the app it is the reusable `app-logo` component (`src/frontend/src/app/shared/brand/logo.ts`). Detailed styling guidance lives in the linked documents to keep this README focused on the project and setup.
 
 ## Planning documents
 - [Solution architecture & repository structure](docs/architecture/solution-architecture.md)
