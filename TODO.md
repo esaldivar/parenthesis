@@ -79,7 +79,7 @@ that points back here.
   - [x] **Owner** approved ADR-0006 (October 17, 2026).
   - [x] Backend: co-parent invitations (FM-03). "Join" vs "sign up" emails, no account lookup for the inviter,
     single-use and expiring links, revoke, two parents at most, never merging families (October 17, 2026).
-  - [ ] Backend: children approved by both parents (FM-04), household size.
+  - [x] Backend: children approved by both parents (FM-04): the core of the Approvals module (ADR-0003) with the inbox, approve, reject and withdraw. Household setup adds one request per child (October 17, 2026).
   - [ ] Backend: devices, profile picker, PINs and lockout (A-08–A-10); tablet pairing (A-11).
   - [ ] Frontend: these screens, once Design Request #1 (issue #38) is approved.
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner

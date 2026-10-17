@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using CoParent.Infrastructure.Persistence;
+using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Families.Contracts;
 using CoParent.Modules.Families.Endpoints;
 using CoParent.Modules.Families.Infrastructure;
@@ -17,6 +18,8 @@ public static class FamiliesModule
         services.AddModuleDbContext<FamiliesDbContext>();
         services.AddScoped<IFamilyMembershipReader, FamilyMembershipReader>();
         services.AddScoped<InvitationEmails>();
+        services.AddScoped<IApprovalTargetHandler, ChildCreateHandler>();
+        services.AddScoped<IApprovalParticipants, FamilyParticipants>();
 
         // Invitations send email, so each signed-in user gets a modest hourly allowance.
         services.Configure<RateLimiterOptions>(options => options.AddPolicy(InvitationEndpoints.RateLimitPolicy, context =>
@@ -32,6 +35,7 @@ public static class FamiliesModule
     {
         FamilyEndpoints.Map(api, family);
         InvitationEndpoints.Map(api, family);
+        ChildEndpoints.Map(family);
         return api;
     }
 }
