@@ -5,6 +5,9 @@ public static class ChangeRequestTypes
 {
     /// <summary>Adding a child to the family (ADR-0006).</summary>
     public const string ChildCreate = "ChildCreate";
+
+    /// <summary>Changing a child's existing PIN (ADR-0006). Setting the first PIN and disabling access don't need it.</summary>
+    public const string ChildPinChange = "ChildPinChange";
 }
 
 /// <summary>A proposal raised by a parent. The proposer's own approval is implied.</summary>

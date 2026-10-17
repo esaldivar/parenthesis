@@ -46,6 +46,11 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("locked_at");
 
+                    b.Property<string>("PendingPinHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("pending_pin_hash");
+
                     b.Property<string>("PinHash")
                         .IsRequired()
                         .HasMaxLength(256)

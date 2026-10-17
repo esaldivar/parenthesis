@@ -1,4 +1,5 @@
 using CoParent.Infrastructure.Tenancy;
+using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Families.Domain;
 using CoParent.Modules.Families.Infrastructure;
 using CoParent.Modules.Identity.Contracts;
@@ -21,6 +22,8 @@ internal sealed record RegisterDeviceRequest(string? Name);
 internal sealed record DeviceView(Guid Id, string Name, DeviceKind Kind, Guid? ChildProfileId, DateTimeOffset CreatedAt, DateTimeOffset LastSeenAt);
 
 internal sealed record SetPinRequest(string? Pin);
+
+internal sealed record PinChangeProposed(Guid ChangeRequestId);
 
 internal sealed record ProfileTile(string Kind, Guid Id, string Name, bool CanSignIn, bool Locked);
 
@@ -162,17 +165,18 @@ internal static class ChildAccessEndpoints
     }
 
     /// <summary>
-    /// Enables a child's sign-in by setting their first PIN. The child must already be approved by both parents.
-    /// Changing an existing PIN will need the co-parent's approval (ADR-0006), which comes later; disable and re-enable
-    /// isn't offered as a workaround.
+    /// Setting a child's first PIN enables their sign-in (the child is already approved by both parents). Changing an
+    /// existing PIN needs the co-parent's approval (ADR-0006): the new PIN is held, hashed, until they approve, and the
+    /// current PIN keeps working meanwhile.
     /// </summary>
-    private static async Task<Results<NoContent, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> SetPinAsync(
+    private static async Task<Results<NoContent, Accepted<PinChangeProposed>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> SetPinAsync(
         Guid childId,
         SetPinRequest request,
         HttpContext http,
         ITenantContext tenant,
         FamiliesDbContext db,
         IPasswordHasher<ChildCredential> hasher,
+        IChangeRequests changeRequests,
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
@@ -198,22 +202,40 @@ internal static class ChildAccessEndpoints
             });
         }
 
-        if (await db.ChildCredentials.AnyAsync(c => c.ChildProfileId == childId, cancellationToken))
+        var now = clock.GetUtcNow();
+        var userId = http.User.GetUserId();
+        var existing = await db.ChildCredentials.SingleOrDefaultAsync(c => c.ChildProfileId == childId, cancellationToken);
+        if (existing is not null)
         {
-            return TypedResults.Problem(
-                title: $"{child.FirstName} already has a PIN.",
-                detail: "Changing a PIN will need your co-parent's approval. That's coming soon.",
-                statusCode: StatusCodes.Status409Conflict);
+            if (existing.PendingPinHash is not null)
+            {
+                return TypedResults.Problem(
+                    title: $"A new PIN for {child.FirstName} is already waiting for approval.",
+                    detail: "Your co-parent can approve it, or whoever proposed it can withdraw it, before another change.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            Guid requestId = default;
+            await unitOfWork.ExecuteAsync(async ct =>
+            {
+                existing.PendingPinHash = hasher.HashPassword(existing, pin);
+                existing.UpdatedAt = now;
+                await db.SaveChangesAsync(ct);
+                requestId = await changeRequests.ProposeAsync(
+                    new ChangeRequestProposal(
+                        ChangeRequestTypes.ChildPinChange, "child", childId, $"Change {child.FirstName}'s PIN", tenant.MembershipId, userId!.Value),
+                    ct);
+            }, cancellationToken);
+            return TypedResults.Accepted((string?)null, new PinChangeProposed(requestId));
         }
 
-        var now = clock.GetUtcNow();
         var credential = new ChildCredential { FamilyId = tenant.FamilyId, ChildProfileId = childId, PinHash = "", UpdatedAt = now };
         credential.PinHash = hasher.HashPassword(credential, pin);
         await unitOfWork.ExecuteAsync(async ct =>
         {
             db.ChildCredentials.Add(credential);
             await db.SaveChangesAsync(ct);
-            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, http.User.GetUserId(), "child.access_enabled", "child", childId), ct);
+            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "child.access_enabled", "child", childId), ct);
         }, cancellationToken);
         return TypedResults.NoContent();
     }

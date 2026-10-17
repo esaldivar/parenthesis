@@ -84,8 +84,9 @@ that points back here.
     the 3-strikes lock with an email to both parents and one-tap unlock, instant device removal and access disabling,
     and the kid-session gate (A-08–A-10, October 17, 2026).
   - [x] Backend: kid tablet pairing (A-11). A 10-minute single-use XXXX-XXXX code from a parent makes the tablet that one child's device and ends any parent session on it (October 17, 2026).
-  - [ ] Backend: changing an existing kid PIN with the co-parent's approval (ADR-0006). Today a PIN is set once;
-    disabling access is immediate.
+  - [x] Backend: changing a kid's existing PIN needs the co-parent's approval (ChildPinChange). The current PIN works
+    until it's approved; reject or withdraw keeps it (October 17, 2026). Setting the first PIN and disabling access stay
+    immediate.
   - [ ] Frontend: re-fetch the antiforgery token whenever the profile changes (kid signs in, parent signs back in).
   - [ ] Frontend: these screens, once Design Request #1 (issue #38) is approved.
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner

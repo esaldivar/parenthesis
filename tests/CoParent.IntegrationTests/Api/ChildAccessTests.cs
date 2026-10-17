@@ -144,7 +144,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_PIN_is_set_once_and_only_for_an_approved_child()
+    public async Task A_PIN_can_only_be_set_for_an_approved_child()
     {
         var family = await FamilyWithKaiAsync();
         using var _ = family;
@@ -152,11 +152,61 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
 
         var forPending = await family.Dad.SendAsync(
             HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{pending.GetProperty("id").GetGuid()}/pin", new { pin = "4826" });
-        var change = await family.Dad.SendAsync(
-            HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" });
 
         Assert.Equal(HttpStatusCode.NotFound, forPending.StatusCode);
-        Assert.Equal(HttpStatusCode.Conflict, change.StatusCode);
+    }
+
+    [Fact]
+    public async Task Changing_a_PIN_waits_for_the_co_parent_and_the_old_PIN_works_until_then()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        using var tablet = await PairedTabletAsync(family);
+
+        var proposed = await family.Dad.SendAsync(
+            HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" });
+        var requestId = (await JsonAsync(proposed)).GetProperty("changeRequestId").GetGuid();
+        var newBeforeApproval = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "4826" });
+        await tablet.RefreshAntiforgeryAsync();
+        var oldBeforeApproval = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+        var approved = await family.Mom.PostAsync($"/api/families/{family.FamilyId}/approvals/{requestId}/approve");
+        await tablet.SendAsync(HttpMethod.Post, "/api/auth/logout");
+        await tablet.RefreshAntiforgeryAsync();
+        var oldAfter = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+        var newAfter = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "4826" });
+
+        Assert.Equal(HttpStatusCode.Accepted, proposed.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, newBeforeApproval.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, oldBeforeApproval.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, oldAfter.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, newAfter.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_rejected_PIN_change_keeps_the_current_PIN()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        using var tablet = await PairedTabletAsync(family);
+        var proposed = await JsonAsync(await family.Dad.SendAsync(
+            HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" }));
+
+        var rejected = await family.Mom.PostAsync(
+            $"/api/families/{family.FamilyId}/approvals/{proposed.GetProperty("changeRequestId").GetGuid()}/reject");
+        var current = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+
+        Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, current.StatusCode);
+    }
+
+    private async Task<ApiSession> PairedTabletAsync(TestFamily family)
+    {
+        var tablet = await ApiSession.StartAsync(api);
+        var code = await PairingCodeAsync(family);
+        Assert.Equal(HttpStatusCode.OK, (await tablet.PostAsync("/api/device/pair", new { code, deviceName = "Kai's tablet" })).StatusCode);
+        await tablet.RefreshAntiforgeryAsync();
+        return tablet;
     }
 
     [Fact]

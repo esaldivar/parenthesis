@@ -94,6 +94,7 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
         {
             credential.ToTable("child_credentials");
             credential.Property(c => c.PinHash).HasMaxLength(256);
+            credential.Property(c => c.PendingPinHash).HasMaxLength(256);
             credential.HasOne<ChildProfile>().WithMany().HasForeignKey(c => c.ChildProfileId);
             credential.HasIndex(c => c.ChildProfileId).IsUnique();
             credential.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
