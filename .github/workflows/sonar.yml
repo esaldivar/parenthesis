@@ -53,8 +53,15 @@ jobs:
         working-directory: src/frontend
         run: npm ci --ignore-scripts
 
-      - name: Install SonarScanner for .NET
-        run: dotnet tool install --global dotnet-sonarscanner
+      - name: Install SonarScanner for .NET and dotnet-coverage
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          dotnet tool install --global dotnet-coverage
+
+      # Coverage for the quality gate (new code must be at least 80% covered).
+      - name: Frontend tests with coverage (lcov)
+        working-directory: src/frontend
+        run: npm test -- --coverage --coverage-reporters=lcov
 
       # The .NET scanner analyses C# through the build and, with scanAll, the rest of the repository too (TypeScript,
       # HTML, CSS, Docker, YAML).
@@ -68,9 +75,16 @@ jobs:
           /d:sonar.scanner.scanAll=true
           /d:sonar.exclusions="**/node_modules/**,**/dist/**,**/bin/**,**/obj/**,docs/**"
           /d:sonar.test.inclusions="**/*.spec.ts"
+          /d:sonar.cs.vscoveragexml.reportsPaths="coverage-backend.xml"
+          /d:sonar.javascript.lcov.reportPaths="src/frontend/coverage/parenthesis/lcov.info"
+          /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,docker/**,.github/**"
 
       - name: Build
         run: dotnet build CoParent.slnx -c Release
+
+      # Integration tests start PostgreSQL with Testcontainers on the runner's Docker.
+      - name: Backend tests with coverage
+        run: dotnet-coverage collect "dotnet test --solution CoParent.slnx -c Release --no-build" -f xml -o coverage-backend.xml
 
       - name: End analysis (uploads results; the quality gate shows on the PR)
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
