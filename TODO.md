@@ -35,6 +35,20 @@ that points back here.
   - [ ] First release: PR `develop` → `main`, so `main` gets the dashboard work. This is the owner's call, since
     `main` is the site.
 
+- [ ] **Deployment: development and production environments** (scoped October 17, 2026; to plan later).
+  - Two environments:
+    - **Development**, deployed automatically from `develop`: the newest features, **synthetic data only**.
+    - **Production**, deployed from `main` on each release: the stable version, with real families.
+  - Each environment gets its **own database**. Development must never hold real family or child data.
+  - Platform: Azure, as the architecture already chose (Container Apps, Azure Database for PostgreSQL, Blob Storage,
+    Key Vault). Confirm this with the owner, including AWS as the alternative, when planning.
+  - Keep costs low: small tiers, and check what Azure's free offers cover.
+  - **Real email sending** for deployed environments, for example Azure Communication Services Email. Mailpit only
+    catches mail locally. Email is used for account confirmation, password resets and account-safety notices, and
+    later for approval notifications.
+  - Domain names, HTTPS, the pipeline (deploy `develop` → dev, `main` → prod), secrets in Key Vault, database
+    migrations on deploy, backups, monitoring.
+
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
