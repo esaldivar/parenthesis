@@ -22,7 +22,7 @@ that points back here.
   - [x] `develop` created from the latest work (`feat/angular-shell`, which is now retired).
   - [x] CI runs on pushes to `develop`. The **PR source** check only lets `develop` or `hotfix/…` merge into `main`.
     The model is documented in CONTRIBUTING.md.
-  - [ ] Branch protection on `main` and `develop` (applied once this lands; see CONTRIBUTING.md).
+  - [x] Branch protection on `main` and `develop`: PRs only, required checks up to date, no force pushes or deletions, admins included (October 17, 2026).
   - [ ] First release: PR `develop` → `main`, so `main` gets the dashboard work. This is the owner's call, since
     `main` is the site.
 
