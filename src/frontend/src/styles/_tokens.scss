@@ -26,6 +26,24 @@
   // Wordmark (docs/design/BRANDING.md): sage "Parent", charcoal "hesis".
   --brand-wordmark-parent: #5e8f7e;
   --brand-wordmark-hesis: #20303f;
+  // Decoration and activity categories (approved dashboard). Category fills take primary text; icons meet 3:1.
+  --color-leaf: #c9dcc4;
+  --color-leaf-strong: #8fb29a;
+  --color-leaf-gold: #efd28f;
+  --color-avatar-parent: #dce7f2;
+  --color-cat-school-bg: #fbe3e0;
+  --color-cat-school-icon: #b23a32;
+  --color-cat-medical-bg: #fdecd6;
+  --color-cat-medical-icon: #a5560a;
+  --color-cat-music-bg: #dfebf7;
+  --color-cat-music-icon: #2b63a0;
+  --color-cat-sport-bg: #dff0e3;
+  --color-cat-sport-icon: #2a7247;
+  --color-cat-art-bg: #f9e1ea;
+  --color-cat-art-icon: #a3345f;
+  --color-cat-other-bg: #e4ebdd;
+  --color-cat-other-icon: #176b67;
+  --color-parenting-bg: #dfe9d8;
 }
 
 // Dark mode is a full forest-green surface system, not an inversion. Elevation comes from surface steps and borders.
@@ -53,6 +71,23 @@
   // Charcoal "hesis" is invisible on forest green (1.2:1), so dark mode uses ivory. Sage "Parent" is unchanged.
   --brand-wordmark-parent: #5e8f7e;
   --brand-wordmark-hesis: #f7f5ed;
+  --color-leaf: #2c5141;
+  --color-leaf-strong: #4d7a63;
+  --color-leaf-gold: #6b5a2e;
+  --color-avatar-parent: #2b4a63;
+  --color-cat-school-bg: #4a2b2a;
+  --color-cat-school-icon: #ffa59c;
+  --color-cat-medical-bg: #4a3a22;
+  --color-cat-medical-icon: #f6bd77;
+  --color-cat-music-bg: #22394b;
+  --color-cat-music-icon: #9cc6ee;
+  --color-cat-sport-bg: #1f4a35;
+  --color-cat-sport-icon: #8fd8aa;
+  --color-cat-art-bg: #4a2638;
+  --color-cat-art-icon: #f4a6c6;
+  --color-cat-other-bg: #24483a;
+  --color-cat-other-icon: #91d2c5;
+  --color-parenting-bg: #24483a;
 }
 
 // Brand colours (docs/design/BRANDING.md) for the logo and small decorative touches only. They are not

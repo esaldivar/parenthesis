@@ -1,0 +1,194 @@
+@if (showingSample()) {
+  <div class="sample-banner" role="note">
+    <strong>Sample data preview.</strong>
+    Fictional people and events for reviewing this layout (development builds only). This is not your family’s
+    schedule, and nothing here can be changed.
+  </div>
+}
+
+<div class="dashboard">
+  <header class="welcome">
+    <svg class="welcome__sun" viewBox="0 0 64 40" aria-hidden="true" focusable="false">
+      <path class="sun-body" d="M14 34a18 18 0 0 1 36 0z" />
+      <path class="sun-rays" d="M32 2v8 M10 10l5 5 M54 10l-5 5 M2 26h7 M55 26h7" />
+      <path class="sun-ground" d="M6 37h52" />
+    </svg>
+    <div>
+      <h1>{{ greeting() }}</h1>
+      <p class="welcome__sub">Here’s what’s happening with your family.</p>
+    </div>
+    <app-leaves class="welcome__leaves" variant="header" />
+  </header>
+
+  <app-week-calendar
+    class="card area-calendar"
+    [weekStart]="shownWeek()"
+    [today]="today()"
+    [isCurrentWeek]="isCurrentWeek()"
+    [state]="state()"
+    [week]="data()"
+    [split]="split()"
+    [view]="inlineView()"
+    (previousWeek)="goToWeek(-1)"
+    (nextWeek)="goToWeek(1)"
+    (goToToday)="goToToday()"
+    (viewChange)="inlineView.set($event)"
+    (splitChange)="setSplit($event)"
+    (retry)="reload()"
+  />
+
+  <section class="card area-upcoming" aria-labelledby="upcoming-heading">
+    <header class="card__header">
+      <h2 id="upcoming-heading">Upcoming</h2>
+      <a class="see-all" routerLink="/calendar" [queryParams]="{ view: 'list', week: shownWeek() }">
+        See all<span class="visually-hidden"> upcoming events</span>
+      </a>
+    </header>
+    @if (upcoming().length > 0) {
+      <ul class="upcoming">
+        @for (item of upcoming(); track item.key) {
+          <li class="upcoming__item" [attr.data-category]="item.category" [attr.data-status]="item.status">
+            <span class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
+            <span class="upcoming__text">
+              @if (item.link) {
+                <a class="upcoming__title" [routerLink]="item.link">{{ item.title }}</a>
+              } @else {
+                <span class="upcoming__title">{{ item.title }}</span>
+              }
+              <span class="upcoming__when">{{ item.when }}</span>
+              @if (item.people.length > 0) {
+                <span class="visually-hidden">, with {{ childNames(item.people.map(personRef)) }}</span>
+              }
+              @if (item.status !== 'confirmed' || item.note) {
+                <span class="upcoming__status">
+                  @if (item.status !== 'confirmed') {
+                    <app-status-label [status]="item.status" />
+                  }
+                  @if (item.note) {
+                    <app-status-label status="change-pending" />
+                  }
+                </span>
+              }
+            </span>
+            <span class="upcoming__people" aria-hidden="true">
+              @for (person of item.people; track person.name) {
+                <app-avatar [name]="person.name" [kind]="person.kind" [size]="32" />
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    } @else if (state() === 'ready') {
+      <app-empty-state icon="calendar" title="Nothing else this week" body="New plans and activities will show here." />
+    } @else {
+      <app-empty-state
+        icon="calendar"
+        title="Nothing to show yet"
+        body="Parenting time and activities will appear here once the shared calendar is available."
+      />
+    }
+  </section>
+
+  <section class="card area-quick" aria-labelledby="quick-heading">
+    <h2 id="quick-heading">Quick Add</h2>
+    <div class="quick">
+      @for (action of quickActions; track action.label) {
+        <button type="button" class="quick__btn" aria-disabled="true" aria-describedby="quick-note">
+          <app-icon [name]="action.icon" [size]="26" />
+          <span>{{ action.label }}</span>
+        </button>
+      }
+    </div>
+    <p id="quick-note" class="muted">Adding from here opens with the calendar, messages and memories.</p>
+  </section>
+
+  <section class="card area-kids" aria-labelledby="kids-heading">
+    <header class="card__header">
+      <h2 id="kids-heading"><app-icon name="children" [size]="26" /> From Your Kids</h2>
+      <a class="see-all" routerLink="/from-your-kids">See all<span class="visually-hidden"> from your kids</span></a>
+    </header>
+    @if (state() === 'ready' && data()!.kidShares.length > 0) {
+      <ul class="kids">
+        @for (share of data()!.kidShares; track share.id) {
+          <li>
+            <span class="kids__tile" [attr.data-kind]="share.kind" aria-hidden="true">
+              <app-icon [name]="share.kind === 'drawing' ? 'palette' : 'image'" [size]="40" />
+            </span>
+            <span class="kids__caption">
+              <app-avatar [name]="share.child.name" [size]="32" />
+              <span>
+                <span class="kids__what">{{ share.child.name }} shared a {{ share.kind }} with you</span>
+                <span class="muted">{{ share.sharedAt }}</span>
+              </span>
+            </span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <app-empty-state
+        icon="pencil"
+        title="Nothing shared yet"
+        body="Drawings and photos your children choose to share with you will appear here."
+      />
+    }
+  </section>
+
+  <section class="card area-messages" aria-labelledby="messages-heading">
+    <header class="card__header">
+      <h2 id="messages-heading"><app-icon name="messages" [size]="26" /> Recent Messages</h2>
+      <a class="see-all" routerLink="/messages">See all<span class="visually-hidden"> messages</span></a>
+    </header>
+    @if (state() === 'ready' && data()!.recentMessages.length > 0) {
+      <ul class="messages">
+        @for (message of data()!.recentMessages; track message.id) {
+          <li>
+            <app-avatar [name]="message.from" kind="parent" [size]="44" />
+            <span class="messages__text">
+              <span class="messages__from">{{ message.from }}</span>
+              <span class="messages__preview">{{ message.preview }}</span>
+            </span>
+            <span class="muted messages__time">{{ message.sentAt }}</span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <app-empty-state icon="messages" title="No messages yet" body="Messaging between parents isn’t available yet." />
+    }
+  </section>
+
+  <section class="card area-memories" aria-labelledby="memories-heading">
+    <header class="card__header">
+      <h2 id="memories-heading"><app-icon name="album" [size]="26" /> Family Memories</h2>
+      <a class="see-all" routerLink="/memories">See all<span class="visually-hidden"> family memories</span></a>
+    </header>
+    @if (state() === 'ready' && currentMemory(); as memory) {
+      <div class="memory">
+        <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(-1)" aria-label="Previous memory">
+          <app-icon name="chevron-left" />
+        </button>
+        <figure class="memory__figure" aria-live="polite">
+          <span class="memory__tile" aria-hidden="true"><app-icon name="album" [size]="44" /></span>
+          <figcaption>
+            <span class="memory__title">{{ memory.title }}</span>
+            <span class="muted">{{ dayLong(memory.date) }}</span>
+            <span class="visually-hidden">, memory {{ memoryIndex() + 1 }} of {{ memories().length }}</span>
+          </figcaption>
+        </figure>
+        <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(1)" aria-label="Next memory">
+          <app-icon name="chevron-right" />
+        </button>
+      </div>
+      <p class="dots" aria-hidden="true">
+        @for (m of memories(); track m.id; let i = $index) {
+          <span [class.is-current]="i === memoryIndex()"></span>
+        }
+      </p>
+    } @else {
+      <app-empty-state
+        icon="album"
+        title="No memories shared yet"
+        body="Photos and artwork shared with your family will appear here when memories are available."
+      />
+    }
+  </section>
+</div>

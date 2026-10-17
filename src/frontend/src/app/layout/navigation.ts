@@ -8,23 +8,27 @@ export interface NavItem {
   readonly note?: string;
 }
 
-/** Full parent navigation (wider screens), in the order agreed in the product brief. */
+/**
+ * Parent navigation, in the exact order of the approved dashboard (docs/design/APPROVED_DASHBOARD_2026-10-16.md):
+ * Calendar is one standalone item; Child Essentials sits directly below Family Memories and above Settings.
+ * Approvals stays reachable from the dashboard and the calendar, not from the main navigation.
+ */
 export const PARENT_NAV: readonly NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: 'home' },
+  { label: 'Home', path: '/', icon: 'home' },
   { label: 'Calendar', path: '/calendar', icon: 'calendar' },
-  { label: 'Children', path: '/children', icon: 'children' },
-  { label: 'Memories', path: '/memories', icon: 'image' },
-  { label: 'Messages', path: '/messages', icon: 'messages', note: 'Later' },
-  { label: 'Approvals', path: '/approvals', icon: 'approvals' },
+  { label: 'Messages', path: '/messages', icon: 'messages' },
+  { label: 'From Your Kids', path: '/from-your-kids', icon: 'pencil' },
+  { label: 'Family Memories', path: '/memories', icon: 'album' },
+  { label: 'Child Essentials', path: '/child-essentials', icon: 'children' },
   { label: 'Settings', path: '/settings', icon: 'settings' },
 ];
 
-/** Compact bottom navigation on phones; the rest is under More. */
+/** Compact bottom navigation on phones; the rest is under More, in the same order as the sidebar. */
 export const PARENT_MOBILE_NAV: readonly NavItem[] = [
   { label: 'Home', path: '/', icon: 'home' },
   { label: 'Calendar', path: '/calendar', icon: 'calendar' },
-  { label: 'Memories', path: '/memories', icon: 'image' },
-  { label: 'Approvals', path: '/approvals', icon: 'approvals' },
+  { label: 'Messages', path: '/messages', icon: 'messages' },
+  { label: 'Memories', path: '/memories', icon: 'album' },
   { label: 'More', path: '/more', icon: 'more' },
 ];
 

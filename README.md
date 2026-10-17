@@ -31,6 +31,7 @@ dotnet test --solution CoParent.slnx   # unit + integration (integration tests s
 cd src/frontend
 npm ci
 npm start                     # http://localhost:4200, proxies /api to the API at https://localhost:7180 (run it too)
+                              # dev builds only: http://localhost:4200/?sample=1 previews the dashboard with labelled sample data
 npm run lint && npm test       # ESLint (incl. template accessibility rules); Vitest + axe-core + token contrast
 ```
 
