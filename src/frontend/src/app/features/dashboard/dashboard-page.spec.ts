@@ -148,7 +148,7 @@ describe('DashboardPage (approved design)', () => {
 
     it('shows multi-day parenting time as one continuous block with the parent’s and children’s avatars', async () => {
       const { el } = await render({ sample: true });
-      const blocks = [...el.querySelectorAll('.allday > li')];
+      const blocks = [...el.querySelectorAll('.allday > li[data-status="confirmed"]')];
 
       expect(blocks).toHaveLength(1);
       expect(text(blocks[0].querySelector('.pt__title'))).toBe('Time with Dad');
@@ -176,13 +176,18 @@ describe('DashboardPage (approved design)', () => {
       expect(text(columns[3])).toContain('Soccer Practice'); // Wednesday
     });
 
-    it('keeps proposals out of the schedule and clearly labelled', async () => {
+    it('shows proposals on the calendar, below the schedule, marked as proposed and needing approval', async () => {
       const { el } = await render({ sample: true });
-      const proposal = el.querySelector('.proposals li')!;
+      const blocks = [...el.querySelectorAll<HTMLElement>('.allday > li')];
+      const proposal = blocks.find((li) => text(li).includes('Time with Mom'))!;
 
-      expect(text(proposal)).toContain('Time with Mom');
+      expect(proposal.getAttribute('data-status')).toBe('proposed'); // Hatched, dashed outline.
       expect(text(proposal)).toContain('Proposed');
-      expect([...el.querySelectorAll('.allday > li')].some((li) => text(li).includes('Time with Mom'))).toBe(false);
+      expect(text(proposal)).toContain('Needs approval');
+      expect(proposal.style.getPropertyValue('--lane')).toBe('2'); // Its own lane beneath the confirmed schedule.
+      const confirmed = blocks.find((li) => text(li).includes('Time with Dad'))!;
+      expect(confirmed.getAttribute('data-status')).toBe('confirmed');
+      expect(text(confirmed)).not.toContain('Needs approval');
     });
 
     it('lists what needs this parent’s review first in Upcoming, linking to approvals', async () => {
@@ -201,7 +206,7 @@ describe('DashboardPage (approved design)', () => {
       toggle().click();
       await settle(fixture);
       expect(toggle().getAttribute('aria-pressed')).toBe('true');
-      expect(el.querySelectorAll('.allday > li')).toHaveLength(2);
+      expect(el.querySelectorAll('.allday > li[data-status="confirmed"]')).toHaveLength(2);
 
       button(el, 'Next week').click();
       await settle(fixture);

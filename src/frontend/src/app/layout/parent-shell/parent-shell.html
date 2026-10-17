@@ -52,11 +52,7 @@
       <p class="tagline">Different homes.<br />Same love.</p>
     </div>
 
-    <button class="profile" type="button" [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
-      <app-avatar [name]="firstName()" kind="parent" [size]="40" />
-      <span class="profile__hi">Hi, {{ firstName() }}!</span>
-      <app-icon name="chevron-down" [size]="20" />
-    </button>
+    <!-- No profile button here: the account menu is in the top bar only (user decision, October 17, 2026). -->
   </aside>
 
   <header class="topbar">

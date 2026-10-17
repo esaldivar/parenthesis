@@ -19,7 +19,7 @@ const SECTION_ACTIVE: IsActiveMatchOptions = { paths: 'subset', ...IGNORE_QUERY 
 
 /**
  * The parent shell from the approved dashboard: a calm left sidebar (brand, navigation in the approved order,
- * leaves and tagline, profile) on wide screens; a top bar and bottom navigation on phones.
+ * leaves and tagline) on wide screens, with the account menu in the top bar; a top bar and bottom navigation on phones.
  */
 @Component({
   selector: 'app-parent-shell',

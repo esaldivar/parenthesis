@@ -217,9 +217,22 @@ ul {
   }
 }
 
+// Proposed: diagonal hatching, a dashed outline and written labels, never colour alone. Not part of the schedule.
 .pt[data-status='proposed'] {
   border: 2px dashed var(--color-outline);
-  background: var(--color-status-pending-bg);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--color-outline) 22%, transparent) 7px 9px
+    ),
+    var(--color-status-pending-bg);
+}
+
+.pt__note {
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .pt__icon {
@@ -536,31 +549,19 @@ ul {
   .pt__meta {
     display: none;
   }
-}
 
-// Proposals stay outside the grid (they aren't schedule yet): one compact line each, so the calendar keeps close to
-// its approved height.
-.proposals {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-3);
-  margin-top: var(--space-2);
-  font-size: 0.875rem;
-
-  h3 {
-    font-size: 0.875rem;
+  // Short proposals keep the hatching, dashed outline and "Proposed" label; the longer note moves to the tooltip
+  // (and stays available to screen readers) so the block stays compact.
+  .pt__note {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
-  ul {
-    display: contents;
-  }
-
-  li {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-1) var(--space-2);
-    min-width: 0;
+  .pt__title {
+    font-size: 0.9375rem;
   }
 }

@@ -95,9 +95,15 @@ export class WeekCalendar {
   );
 
   private readonly blocks = computed(() => groupParentingTime(this.week()?.parentingTime ?? [], { split: this.split() }));
-  /** The schedule: confirmed (and rejected) arrangements. Proposals are listed separately below the grid. */
-  protected readonly allDay = computed(() => this.blocks().filter((b) => b.status !== 'proposed'));
-  protected readonly proposals = computed(() => this.blocks().filter((b) => b.status === 'proposed'));
+  /**
+   * The all-day row: the schedule (confirmed and rejected arrangements) first, then proposals, which take their own
+   * lane beneath it. Proposals are hatched, outlined and labelled "Proposed · Needs approval", so they never read as
+   * part of the schedule (approved by the user on October 17, 2026).
+   */
+  protected readonly allDay = computed(() => [
+    ...this.blocks().filter((b) => b.status !== 'proposed'),
+    ...this.blocks().filter((b) => b.status === 'proposed'),
+  ]);
   protected readonly placements = computed(() => placeInWeek(this.allDay(), this.weekStart()));
   protected readonly allDayLanes = computed(() => Math.max(1, ...[...this.placements().values()].map((p) => p.lane + 1)));
 

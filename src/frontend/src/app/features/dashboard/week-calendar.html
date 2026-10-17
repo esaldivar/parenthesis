@@ -59,6 +59,7 @@
                 [style.--start]="place.startColumn"
                 [style.--end]="place.endColumn"
                 [style.--lane]="place.lane + 1"
+                [attr.title]="block.status === 'proposed' ? 'Proposed: needs approval, not on the schedule yet' : null"
               >
                 <span class="pt__icon" aria-hidden="true"><app-icon name="calendar" [size]="22" /></span>
                 <span class="pt__avatars" aria-hidden="true">
@@ -78,6 +79,9 @@
                     }
                   </span>
                   <span class="pt__meta">{{ childNames(block.children) }} · {{ range(block) }}</span>
+                  @if (block.status === 'proposed') {
+                    <span class="pt__note">Needs approval · not on the schedule yet</span>
+                  }
                   @if (block.status === 'confirmed' && !block.changePending) {
                     <span class="visually-hidden">, confirmed</span>
                   }
@@ -158,6 +162,9 @@
               <span class="pt__text">
                 <span class="pt__title">{{ block.title }}</span>
                 <span class="pt__meta">{{ childNames(block.children) }} · {{ range(block) }}</span>
+                @if (block.status === 'proposed') {
+                  <span class="pt__note">Needs approval · not on the schedule yet</span>
+                }
                 <span class="pt__status">
                   <app-status-label [status]="block.status" />
                   @if (block.changePending) {
@@ -226,22 +233,6 @@
         }
       </ol>
     </div>
-
-    <!-- Proposals are not schedule: compact lines outside the grid, always labelled Proposed. -->
-    @if (proposals().length > 0) {
-      <section class="proposals" aria-labelledby="proposals-heading">
-        <h3 id="proposals-heading">Proposed changes</h3>
-        <ul>
-          @for (block of proposals(); track block.key) {
-            <li>
-              <app-status-label status="proposed" />
-              <span>{{ block.title }} · {{ childNames(block.children) }} · {{ range(block) }}</span>
-            </li>
-          }
-        </ul>
-        <p class="muted">Not on the calendar until both parents agree.</p>
-      </section>
-    }
 
     <footer class="cal__footer">
       @if (split()) {

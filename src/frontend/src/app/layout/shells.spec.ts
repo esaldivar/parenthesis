@@ -44,11 +44,14 @@ describe('application shells', () => {
       expect(body.querySelector('main h1')!.textContent).toBe('Child Essentials');
     });
 
-    it('offers an account menu instead of a bare sign-out button', async () => {
+    it('offers one account menu, in the top bar, instead of a bare sign-out button', async () => {
       const body = await open('/');
 
-      expect([...body.querySelectorAll('button[aria-label="Account menu"]')]).toHaveLength(2); // Sidebar and top bar.
-      expect(body.textContent).toContain('Hi, Alex!');
+      const menus = [...body.querySelectorAll('button[aria-label="Account menu"]')];
+      expect(menus).toHaveLength(1);
+      expect(menus[0].closest('header.topbar')).not.toBeNull();
+      expect(menus[0].textContent).toContain('Alex');
+      expect(body.querySelector('.sidebar')!.textContent).not.toContain('Hi, Alex');
     });
 
     it('marks the current page for assistive technology', async () => {
