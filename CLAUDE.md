@@ -1,6 +1,6 @@
 # Parenthesis: Claude Code handoff
 
-Read [docs/design-system.md](docs/design-system.md) before designing or implementing UI.
+Read [docs/design-system.md](docs/design-system.md) and the [brand handoff](docs/design/README.md) before designing or implementing UI. The root README displays a provisional logo SVG from `docs/design/assets/parenthesis-logo-concept.svg`; refine and replace it only after visual approval. Keep the README concise: show the logo and link the design guide rather than copying the full styling specification.
 It records the Parenthesis visual direction and acceptance checks, not a request to
 implement every feature at once.
 

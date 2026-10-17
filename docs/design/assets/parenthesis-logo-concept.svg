@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 124" role="img" aria-labelledby="title desc">
+<title id="title">Parenthesis</title><desc id="desc">Two parenthesis-shaped caregivers embrace a smiling child; Parent is sage green and hesis is charcoal.</desc>
+<g transform="translate(7 8)" fill="none" stroke-linecap="round">
+<path d="M36 18 C10 37 10 73 36 94" stroke="#4E79A7" stroke-width="12"/>
+<path d="M87 18 C113 37 113 73 87 94" stroke="#5E8F7E" stroke-width="12"/>
+<circle cx="61" cy="47" r="12" fill="#F08A6B" stroke="none"/>
+<path d="M39 67 Q61 101 83 67" stroke="#F08A6B" stroke-width="11"/>
+<path d="M56 48 Q61 53 66 48" stroke="#fff" stroke-width="2.5"/>
+<path d="M61 18 v-6 M45 22 l-4 -5 M77 22 l4 -5" stroke="#F4C15D" stroke-width="4"/>
+</g>
+<text x="132" y="78" font-family="Arial, Helvetica, sans-serif" font-size="49" font-weight="700"><tspan fill="#5E8F7E">Parent</tspan><tspan fill="#20303F">hesis</tspan></text>
+</svg>
