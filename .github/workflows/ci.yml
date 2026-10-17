@@ -87,13 +87,17 @@ jobs:
       - name: Build image (not pushed)
         run: docker build -f docker/api.Dockerfile -t parenthesis-api:${{ github.sha }} .
 
-      - name: Smoke test liveness
+      - name: Smoke test liveness and the bundled app
         run: |
           docker run -d --name api -p 8080:8080 \
             -e ConnectionStrings__Postgres="Host=localhost;Database=unused" \
             parenthesis-api:${{ github.sha }}
           for i in $(seq 1 30); do
-            if curl -fsS http://localhost:8080/health/live; then echo; exit 0; fi
+            if curl -fsS http://localhost:8080/health/live; then
+              echo
+              curl -fsS http://localhost:8080/ | grep -q '<app-root' && echo "App shell served" && exit 0
+              echo "The Angular app was not served at /"; docker logs api; exit 1
+            fi
             sleep 1
           done
           docker logs api

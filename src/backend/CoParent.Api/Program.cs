@@ -38,6 +38,7 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseTraceIdHeader();
 app.UseHttpLogging();
+app.UseSpaStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseTenantGate();
@@ -60,6 +61,9 @@ var family = api.MapFamilyScopedGroup();
 
 api.MapIdentityEndpoints();
 api.MapFamiliesEndpoints(family);
+
+// Everything else that looks like a client-side route gets the Angular app.
+app.MapSpaFallback();
 
 await app.RunAsync();
 

@@ -1,7 +1,15 @@
-# API image. Build from the repo root:
+# API image, serving the Angular app from the same origin (ADR-0004). Build from the repo root:
 #   docker build -f docker/api.Dockerfile -t parenthesis-api .
-# The Angular build stage is added when the frontend lands (Milestone 1, PR 11).
 
+# 1. Angular app
+FROM node:24-alpine AS spa
+WORKDIR /spa
+COPY src/frontend/package.json src/frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY src/frontend/ ./
+RUN npx ng build
+
+# 2. API
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -18,10 +26,11 @@ COPY .editorconfig ./
 COPY src/backend/ src/backend/
 RUN dotnet publish src/backend/CoParent.Api/CoParent.Api.csproj -c Release --no-restore -o /app
 
-# Chiseled runtime: no shell or package manager, runs as a non-root user by default.
+# 3. Runtime. Chiseled: no shell or package manager, runs as a non-root user by default.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
 WORKDIR /app
 COPY --from=build /app ./
+COPY --from=spa /spa/dist/parenthesis/browser ./wwwroot
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "CoParent.Api.dll"]
