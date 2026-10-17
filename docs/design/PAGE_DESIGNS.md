@@ -9,7 +9,7 @@ Status: **not yet approved as individual wireframes**. This file tracks future p
 - Follow [the design system](../design-system.md) and [brand identity](BRANDING.md).
 
 ## Pages to design together
-1. Parent dashboard: today's schedule, next exchange, decisions awaiting review, upcoming events, memories.
+1. [Parent dashboard](DASHBOARD.md): personalized home with a **weekly default calendar**, one-tap monthly view, next exchange, pending decisions, upcoming events and memories. Direction agreed; visual mockups pending.
 2. Shared calendar: confirmed events and proposed changes clearly distinguished; approval/rejection states.
 3. Child profiles: authorized family details, age-appropriate navigation.
 4. Child artwork, diary and memories: privacy-first; private by default, explicit sharing choices.
