@@ -23,10 +23,10 @@ export function daysBetween(from: PlainDate, to: PlainDate): number {
   return Math.round((toUtc(to).getTime() - toUtc(from).getTime()) / DAY_MS);
 }
 
-/** Weeks start on Monday, as in the dashboard wireframe. */
+/** Weeks run Sunday to Saturday (product decision, docs/design/DASHBOARD.md). */
 export function startOfWeek(date: PlainDate): PlainDate {
   const weekday = toUtc(date).getUTCDay(); // 0 = Sunday
-  return addDays(date, -((weekday + 6) % 7));
+  return addDays(date, -weekday);
 }
 
 export function weekDays(weekStart: PlainDate): PlainDate[] {

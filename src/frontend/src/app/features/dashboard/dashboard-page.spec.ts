@@ -52,7 +52,7 @@ describe('DashboardPage', () => {
       const { el } = await render();
 
       expect(text(el.querySelector('#week-heading'))).toBe('This week');
-      expect(text(el.querySelector('.week__label'))).toBe('Oct 12 – 18, 2026');
+      expect(text(el.querySelector('.week__label'))).toBe('Oct 11 – 17, 2026');
       expect(text(el.querySelector('[aria-current="date"]'))).toContain('Friday, October 16');
     });
 
@@ -79,17 +79,17 @@ describe('DashboardPage', () => {
 
       button(el, 'Next week').click();
       await settle(fixture);
-      expect(text(el.querySelector('.week__label'))).toBe('Oct 19 – 25, 2026');
+      expect(text(el.querySelector('.week__label'))).toBe('Oct 18 – 24, 2026');
       expect(text(el.querySelector('#week-heading'))).toBe('Week');
       expect(el.querySelector('[aria-current="date"]')).toBeNull();
 
       button(el, 'This week').click();
       await settle(fixture);
-      expect(text(el.querySelector('.week__label'))).toBe('Oct 12 – 18, 2026');
+      expect(text(el.querySelector('.week__label'))).toBe('Oct 11 – 17, 2026');
 
       button(el, 'Previous week').click();
       await settle(fixture);
-      expect(text(el.querySelector('.week__label'))).toBe('Oct 5 – 11, 2026');
+      expect(text(el.querySelector('.week__label'))).toBe('Oct 4 – 10, 2026');
     });
 
     it('announces the week label politely to screen readers', async () => {

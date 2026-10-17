@@ -25,6 +25,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
  */
 export class SampleDashboardDataSource extends DashboardDataSource {
   override async load(_familyId: string, weekStart: PlainDate): Promise<DashboardWeek> {
+    // Offsets are days from Sunday: 1 = Monday … 6 = Saturday, 8 = next Monday.
     const day = (offset: number, time: string) => `${addDays(weekStart, offset)}T${time}`;
     const kai = { id: 'sample-kai', name: 'Kai' };
     const aurora = { id: 'sample-aurora', name: 'Aurora' };
@@ -37,18 +38,18 @@ export class SampleDashboardDataSource extends DashboardDataSource {
       source: 'sample',
       parentingTime: [
         // Same schedule for both children → one block each time.
-        ...both('mon', jordan, day(0, '08:00'), day(2, '18:00')),
-        ...both('wed', alex, day(2, '18:00'), day(4, '15:00'), { changePending: true }),
+        ...both('mon', jordan, day(1, '08:00'), day(3, '18:00')),
+        ...both('wed', alex, day(3, '18:00'), day(5, '15:00'), { changePending: true }),
         // Different schedules over the weekend → separate blocks.
-        { id: 'fri-kai', child: kai, caregiver: jordan, start: day(4, '15:00'), end: day(7, '08:00'), status: 'confirmed' },
-        { id: 'fri-aurora', child: aurora, caregiver: alex, start: day(4, '15:00'), end: day(7, '08:00'), status: 'confirmed' },
+        { id: 'fri-kai', child: kai, caregiver: jordan, start: day(5, '15:00'), end: day(8, '08:00'), status: 'confirmed' },
+        { id: 'fri-aurora', child: aurora, caregiver: alex, start: day(5, '15:00'), end: day(8, '08:00'), status: 'confirmed' },
         // A proposal: shown separately and never as confirmed.
-        { id: 'sat-kai', child: kai, caregiver: alex, start: day(5, '10:00'), end: day(6, '12:00'), status: 'proposed' },
+        { id: 'sat-kai', child: kai, caregiver: alex, start: day(6, '10:00'), end: day(7, '12:00'), status: 'proposed' },
       ],
       events: [
-        { id: 'e1', title: 'Dentist check-up', date: addDays(weekStart, 1), time: '09:30', children: [aurora], status: 'confirmed' },
-        { id: 'e2', title: 'School concert', date: addDays(weekStart, 3), time: '18:00', children: [kai, aurora], status: 'confirmed' },
-        { id: 'e3', title: 'Soccer tournament', date: addDays(weekStart, 5), time: '10:00', children: [kai], status: 'proposed' },
+        { id: 'e1', title: 'Dentist check-up', date: addDays(weekStart, 2), time: '09:30', children: [aurora], status: 'confirmed' },
+        { id: 'e2', title: 'School concert', date: addDays(weekStart, 4), time: '18:00', children: [kai, aurora], status: 'confirmed' },
+        { id: 'e3', title: 'Soccer tournament', date: addDays(weekStart, 6), time: '10:00', children: [kai], status: 'proposed' },
       ],
       pendingReviews: [{ id: 'r1', summary: 'Kai with Alex, Saturday 10:00 AM to Sunday 12:00 PM', proposedBy: 'Alex' }],
       recentMemories: [

@@ -61,7 +61,7 @@ These are layout wireframes, not final rendered visual assets. The approved bran
 [Hello, Jordan]                     [View month] [Propose an event]
 +------------------------------------------+-----------------------+
 | THIS WEEK  < Oct 12–18 >                 | NEXT HANDOFF          |
-| Mon  Tue  Wed  Thu  Fri  Sat  Sun         | Kai + Aurora         |
+| Sun  Mon  Tue  Wed  Thu  Fri  Sat         | Kai + Aurora         |
 | [Kai][Aurora] Kai & Aurora — With Jordan  | Confirmed • details   |
 | [Kai][Aurora] Kai & Aurora — With Alex    +-----------------------+
 | Proposed changes appear separately       | NEEDS YOUR REVIEW     |
@@ -77,7 +77,7 @@ These are layout wireframes, not final rendered visual assets. The approved bran
 [APPROVED BRAND]                   [Profile]
 Hello, Jordan
 THIS WEEK     < Oct 12–18 >    [View month]
-[Mon][Tue][Wed][Thu][Fri][Sat][Sun]
+[Sun][Mon][Tue][Wed][Thu][Fri][Sat]
 [Kai][Aurora] Kai & Aurora
 With Jordan • Confirmed
 [Propose an event]
@@ -89,3 +89,10 @@ SHARED MEMORIES
 ```
 
 **Visual review checklist:** approved logo exactly as supplied; warm cream surfaces, sage and muted-blue accents, restrained coral highlights, rounded cards, readable typography; confirmed and proposed status labels; names beside adjacent child icons; both parent names explicitly labelled; no functional-looking messaging until built. Any mockup screenshots require explicit user review before implementation.
+
+## Implementation decisions (approved October 16, 2026)
+- **Weeks run Sunday to Saturday** on the dashboard and calendar (the wireframes above were updated from Mon–Sun).
+- Children's names in a shared block are listed **alphabetically** (for example, "Aurora & Kai").
+- **Show children separately this week** is a view-only toggle that **resets when the displayed week changes**.
+- Until verified production logo exports are committed, the app shows a **text-only "Parenthesis" wordmark** (Option B colours) as an explicit logo-pending state, and no custom favicon.
+- Development builds may preview the dashboard with clearly labelled **synthetic sample data** via `?sample=1`; production builds never show it.
