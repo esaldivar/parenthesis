@@ -25,6 +25,9 @@ internal sealed record CreateEventRequest(
     IReadOnlyList<Guid>? ChildIds,
     Guid? CaregiverMembershipId);
 
+internal sealed record UpdateEventRequest(
+    string? Title, DateTimeOffset? StartsAt, DateTimeOffset? EndsAt, bool? AllDay, string? Location, string? Notes, Guid? CaregiverMembershipId);
+
 internal sealed record EventView(
     Guid Id,
     string Title,
@@ -39,7 +42,10 @@ internal sealed record EventView(
     Guid? CaregiverMembershipId,
     Guid OwnerMembershipId,
     bool ConfirmedBeforeCoParentJoined,
-    Guid? ChangeRequestId);
+    Guid? ChangeRequestId,
+    PendingChange PendingChange,
+    ProposedTimes? Proposed,
+    IReadOnlyList<string> Warnings);
 
 /// <summary>The shared calendar (C-01, AP-03; docs/design/CALENDAR_DECISIONS.md).</summary>
 internal static class CalendarEndpoints
@@ -55,7 +61,12 @@ internal static class CalendarEndpoints
         var calendar = family.MapGroup("/calendar/events").WithTags("Calendar");
         calendar.MapGet("/", ListAsync).WithMetadata(new ChildSessionAllowed());
         calendar.MapPost("/", CreateAsync);
+        calendar.MapPatch("/{eventId:guid}", UpdateAsync);
+        calendar.MapDelete("/{eventId:guid}", CancelAsync);
     }
+
+    /// <summary>Non-blocking: the proposed parenting time overlaps the other parent's unavailable time (CALENDAR_DECISIONS.md).</summary>
+    public const string OverlapsCoParentUnavailable = "OverlapsCoParentUnavailable";
 
     /// <summary>
     /// Events overlapping [from, to). Parents see pending and confirmed events; an Unavailable event's notes are shown
@@ -83,7 +94,7 @@ internal static class CalendarEndpoints
             : query.Where(e => e.Status == EventStatus.Confirmed || e.Status == EventStatus.PendingApproval);
 
         var events = await query.OrderBy(e => e.StartsAt).ToListAsync(cancellationToken);
-        return TypedResults.Ok(events.Select(e => View(e, tenant, changeRequestId: null)).ToList());
+        return TypedResults.Ok(events.Select(e => View(e, tenant, changeRequestId: null, [])).ToList());
     }
 
     private static async Task<Results<Created<EventView>, ValidationProblem, ForbidHttpResult>> CreateAsync(
@@ -137,6 +148,8 @@ internal static class CalendarEndpoints
         calendarEvent.Children.AddRange((request.ChildIds ?? []).Distinct().Select(id =>
             new EventChild { FamilyId = tenant.FamilyId, EventId = calendarEvent.Id, ChildProfileId = id }));
 
+        // Reads first: once the unit of work commits, its transaction is finished.
+        var warnings = await WarningsAsync(db, category, calendarEvent.StartsAt, calendarEvent.EndsAt, tenant.MembershipId, cancellationToken);
         var userId = http.User.GetUserId()!.Value;
         Guid? changeRequestId = null;
         await unitOfWork.ExecuteAsync(async ct =>
@@ -161,7 +174,218 @@ internal static class CalendarEndpoints
 
         return TypedResults.Created(
             $"/api/families/{tenant.FamilyId}/calendar/events/{calendarEvent.Id}",
-            View(calendarEvent, tenant, changeRequestId));
+            View(calendarEvent, tenant, changeRequestId, warnings));
+    }
+
+    /// <summary>
+    /// Edits an event. Activities (either parent) and unavailable time (its owner) change at once. A confirmed
+    /// parenting-time, holiday or joint event keeps its current values and gets a CalendarModify request ("change
+    /// pending", with before → after); a parenting-time swap is such a change. Notes always change at once.
+    /// </summary>
+    private static async Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> UpdateAsync(
+        Guid eventId,
+        UpdateEventRequest request,
+        HttpContext http,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IFamilyRoster roster,
+        IChangeRequests changeRequests,
+        IUnitOfWork unitOfWork,
+        IAuditLog audit,
+        CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        var e = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, cancellationToken);
+        if (e is null || e.Status is EventStatus.Cancelled or EventStatus.Rejected
+            || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId))
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (e.Status == EventStatus.PendingApproval || e.PendingChange != PendingChange.None)
+        {
+            return RequestWaiting("Wait for your co-parent's answer, or withdraw the request, before changing it again.");
+        }
+
+        var current = e.Current();
+        var change = new ProposedTimes(
+            string.IsNullOrWhiteSpace(request.Title) ? current.Title : request.Title.Trim(),
+            request.StartsAt?.ToUniversalTime() ?? current.StartsAt,
+            request.EndsAt?.ToUniversalTime() ?? current.EndsAt,
+            request.AllDay ?? current.AllDay,
+            request.Location is null ? current.Location : (string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim()),
+            e.Category == EventCategory.ParentingTime ? request.CaregiverMembershipId ?? current.CaregiverMembershipId : null);
+
+        var parents = await roster.ActiveParentMembershipIdsAsync(cancellationToken);
+        var errors = ValidateChange(change, e.Category, parents, request.Notes);
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        var warnings = await WarningsAsync(db, e.Category, change.StartsAt, change.EndsAt, tenant.MembershipId, cancellationToken);
+        var userId = http.User.GetUserId()!.Value;
+        var needsApproval = CalendarEvent.NeedsApproval(e.Category) && parents.Count >= 2 && change != current;
+        Guid? changeRequestId = null;
+        await unitOfWork.ExecuteAsync(async ct =>
+        {
+            if (request.Notes is not null)
+            {
+                e.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+            }
+
+            if (needsApproval)
+            {
+                e.ProposeModify(change);
+            }
+            else
+            {
+                e.Apply(change);
+            }
+
+            await db.SaveChangesAsync(ct);
+            if (needsApproval)
+            {
+                changeRequestId = await changeRequests.ProposeAsync(
+                    new ChangeRequestProposal(
+                        ChangeRequestTypes.CalendarModify, "calendar_event", e.Id, $"Change {e.Title}", tenant.MembershipId, userId),
+                    ct);
+            }
+
+            var action = needsApproval ? "calendar_event.change_proposed" : "calendar_event.updated";
+            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, action, "calendar_event", e.Id), ct);
+        }, cancellationToken);
+
+        var view = View(e, tenant, changeRequestId, warnings);
+        return needsApproval ? TypedResults.Accepted((string?)null, view) : TypedResults.Ok(view);
+    }
+
+    /// <summary>
+    /// Cancels an event. Activities and unavailable time cancel at once; a confirmed approval-gated event gets a
+    /// CalendarCancel request. A still-pending event is withdrawn from the approvals inbox instead.
+    /// </summary>
+    private static async Task<Results<NoContent, Accepted<EventView>, NotFound, ProblemHttpResult, ForbidHttpResult>> CancelAsync(
+        Guid eventId,
+        HttpContext http,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IFamilyRoster roster,
+        IChangeRequests changeRequests,
+        IUnitOfWork unitOfWork,
+        IAuditLog audit,
+        CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        var e = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, cancellationToken);
+        if (e is null || e.Status is EventStatus.Cancelled or EventStatus.Rejected
+            || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId))
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (e.Status == EventStatus.PendingApproval || e.PendingChange != PendingChange.None)
+        {
+            return RequestWaiting("Withdraw that request from the approvals inbox instead.");
+        }
+
+        var parents = await roster.ActiveParentMembershipIdsAsync(cancellationToken);
+        var needsApproval = CalendarEvent.NeedsApproval(e.Category) && parents.Count >= 2;
+        var userId = http.User.GetUserId()!.Value;
+        Guid? changeRequestId = null;
+        await unitOfWork.ExecuteAsync(async ct =>
+        {
+            if (needsApproval)
+            {
+                e.ProposeCancel();
+            }
+            else
+            {
+                e.Status = EventStatus.Cancelled;
+            }
+
+            await db.SaveChangesAsync(ct);
+            if (needsApproval)
+            {
+                changeRequestId = await changeRequests.ProposeAsync(
+                    new ChangeRequestProposal(
+                        ChangeRequestTypes.CalendarCancel, "calendar_event", e.Id, $"Cancel {e.Title}", tenant.MembershipId, userId),
+                    ct);
+            }
+
+            var action = needsApproval ? "calendar_event.cancel_proposed" : "calendar_event.cancelled";
+            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, action, "calendar_event", e.Id), ct);
+        }, cancellationToken);
+
+        return needsApproval
+            ? TypedResults.Accepted((string?)null, View(e, tenant, changeRequestId, []))
+            : TypedResults.NoContent();
+    }
+
+    private static ProblemHttpResult RequestWaiting(string detail) => TypedResults.Problem(
+        title: "This event already has a request waiting for an answer.", detail: detail, statusCode: StatusCodes.Status409Conflict);
+
+    private static Dictionary<string, string[]> ValidateChange(
+        ProposedTimes change, EventCategory category, IReadOnlySet<Guid> parents, string? notes)
+    {
+        var errors = new Dictionary<string, string[]>();
+        if (change.Title.Length is 0 or > CalendarEvent.TitleMaxLength)
+        {
+            errors["title"] = [$"Enter a title of 1 to {CalendarEvent.TitleMaxLength} characters."];
+        }
+
+        if (change.EndsAt <= change.StartsAt)
+        {
+            errors["endsAt"] = ["Choose an end that's after the start."];
+        }
+        else if (change.EndsAt - change.StartsAt > MaxDuration)
+        {
+            errors["endsAt"] = [$"An event can last up to {MaxDuration.TotalDays:0} days."];
+        }
+
+        if ((change.Location?.Length ?? 0) > CalendarEvent.LocationMaxLength)
+        {
+            errors["location"] = [$"Keep the location under {CalendarEvent.LocationMaxLength} characters."];
+        }
+
+        if ((notes?.Length ?? 0) > CalendarEvent.NotesMaxLength)
+        {
+            errors["notes"] = [$"Keep notes under {CalendarEvent.NotesMaxLength} characters."];
+        }
+
+        if (category == EventCategory.ParentingTime
+            && (change.CaregiverMembershipId is not { } caregiver || !parents.Contains(caregiver)))
+        {
+            errors["caregiverMembershipId"] = ["Choose which parent has the children."];
+        }
+
+        return errors;
+    }
+
+    /// <summary>Parenting time overlapping the other parent's unavailable time gets a gentle, non-blocking warning.</summary>
+    private static async Task<IReadOnlyList<string>> WarningsAsync(
+        CalendarDbContext db, EventCategory category, DateTimeOffset starts, DateTimeOffset ends, Guid proposer, CancellationToken cancellationToken)
+    {
+        if (category != EventCategory.ParentingTime)
+        {
+            return [];
+        }
+
+        var overlaps = await db.Events.AnyAsync(
+            x => x.Category == EventCategory.Unavailable
+                && x.Status == EventStatus.Confirmed
+                && x.OwnerMembershipId != proposer
+                && x.StartsAt < ends
+                && x.EndsAt > starts,
+            cancellationToken);
+        return overlaps ? [OverlapsCoParentUnavailable] : [];
     }
 
     private static Dictionary<string, string[]> Validate(
@@ -225,7 +449,7 @@ internal static class CalendarEndpoints
     private static string Summary(CalendarEvent e) =>
         $"{(e.Category == EventCategory.Joint ? "Family event" : "Add")}: {e.Title}, {e.StartsAt:MMM d}";
 
-    private static EventView View(CalendarEvent e, ITenantContext tenant, Guid? changeRequestId) => new(
+    private static EventView View(CalendarEvent e, ITenantContext tenant, Guid? changeRequestId, IReadOnlyList<string> warnings) => new(
         e.Id,
         e.Title,
         e.Category,
@@ -241,5 +465,9 @@ internal static class CalendarEndpoints
         e.CaregiverMembershipId,
         e.OwnerMembershipId,
         e.ConfirmedBeforeCoParentJoined,
-        changeRequestId);
+        changeRequestId,
+        // Children never see pending changes (they never see approvals or disagreements).
+        tenant.Role == FamilyRole.Child ? PendingChange.None : e.PendingChange,
+        tenant.Role == FamilyRole.Child ? null : e.Proposed,
+        warnings);
 }

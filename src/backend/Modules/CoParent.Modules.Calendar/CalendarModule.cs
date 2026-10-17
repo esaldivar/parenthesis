@@ -15,6 +15,8 @@ public static class CalendarModule
         services.AddModuleDbContext<CalendarDbContext>();
         services.AddScoped<IApprovalTargetHandler, CalendarCreateHandler>();
         services.AddScoped<IApprovalTargetHandler, JointEventCreateHandler>();
+        services.AddScoped<IApprovalTargetHandler, CalendarModifyHandler>();
+        services.AddScoped<IApprovalTargetHandler, CalendarCancelHandler>();
         return services;
     }
 

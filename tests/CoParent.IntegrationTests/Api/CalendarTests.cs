@@ -164,6 +164,108 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, tooWide.StatusCode);
     }
 
+    [Fact]
+    public async Task An_activity_is_edited_and_cancelled_at_once()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = (await JsonAsync(await f.Dad.PostAsync(Events(f), Activity("Soccer Practice", f.KaiId)))).GetProperty("id").GetGuid();
+
+        var edited = await f.Mom.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { title = "Soccer Game", location = "Field 3" });
+        var cancelled = await f.Mom.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}");
+
+        Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        Assert.Equal("Soccer Game", (await JsonAsync(edited)).GetProperty("title").GetString());
+        Assert.Equal(HttpStatusCode.NoContent, cancelled.StatusCode);
+        Assert.Empty(await WeekAsync(f.Dad, f));
+    }
+
+    [Fact]
+    public async Task A_swap_keeps_the_current_parenting_time_until_the_other_parent_approves()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+
+        var swap = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { startsAt = _monday.AddDays(1), caregiverMembershipId = f.MomMembershipId });
+        var proposal = await JsonAsync(swap);
+        var whileWaiting = Assert.Single(await WeekAsync(f.Mom, f));
+        var approved = await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{proposal.GetProperty("changeRequestId").GetGuid()}/approve");
+        var after = Assert.Single(await WeekAsync(f.Dad, f));
+
+        Assert.Equal(HttpStatusCode.Accepted, swap.StatusCode);
+        Assert.Equal("Modify", whileWaiting.GetProperty("pendingChange").GetString());
+        Assert.Equal(f.DadMembershipId, whileWaiting.GetProperty("caregiverMembershipId").GetGuid()); // Before.
+        Assert.Equal(f.MomMembershipId, whileWaiting.GetProperty("proposed").GetProperty("caregiverMembershipId").GetGuid()); // After.
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        Assert.Equal(f.MomMembershipId, after.GetProperty("caregiverMembershipId").GetGuid());
+        Assert.Equal("None", after.GetProperty("pendingChange").GetString());
+    }
+
+    [Fact]
+    public async Task A_declined_swap_changes_nothing()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+        var proposal = await JsonAsync(await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { caregiverMembershipId = f.MomMembershipId }));
+
+        await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{proposal.GetProperty("changeRequestId").GetGuid()}/reject");
+        var after = Assert.Single(await WeekAsync(f.Dad, f));
+
+        Assert.Equal(f.DadMembershipId, after.GetProperty("caregiverMembershipId").GetGuid());
+        Assert.Equal("None", after.GetProperty("pendingChange").GetString());
+    }
+
+    [Fact]
+    public async Task Cancelling_parenting_time_needs_the_other_parent_and_a_second_request_waits()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+
+        var cancel = await JsonAsync(await f.Dad.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}"));
+        var secondChange = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { title = "Longer weekend" });
+        var stillThere = Assert.Single(await WeekAsync(f.Mom, f));
+        await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{cancel.GetProperty("changeRequestId").GetGuid()}/approve");
+
+        Assert.Equal("Cancel", stillThere.GetProperty("pendingChange").GetString());
+        Assert.Equal(HttpStatusCode.Conflict, secondChange.StatusCode);
+        Assert.Empty(await WeekAsync(f.Mom, f));
+    }
+
+    [Fact]
+    public async Task Proposing_parenting_time_over_the_other_parents_unavailable_time_warns_without_blocking()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        await f.Mom.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddDays(2), endsAt = _monday.AddDays(3), allDay = true });
+
+        var created = await f.Dad.PostAsync(Events(f), ParentingTime("Time with Mom", f.MomMembershipId, f.KaiId));
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal(["OverlapsCoParentUnavailable"], (await JsonAsync(created)).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+    }
+
+    [Fact]
+    public async Task Only_its_owner_can_change_unavailable_time()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = (await JsonAsync(await f.Mom.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday, endsAt = _monday.AddHours(4) })))
+            .GetProperty("id").GetGuid();
+
+        Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await f.Mom.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}")).StatusCode);
+    }
+
+    private static async Task<Guid> ConfirmedParentingTimeAsync(Family f)
+    {
+        var created = await JsonAsync(await f.Dad.PostAsync(Events(f), ParentingTime("Time with Dad", f.DadMembershipId, f.KaiId)));
+        await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{created.GetProperty("changeRequestId").GetGuid()}/approve");
+        return created.GetProperty("id").GetGuid();
+    }
+
     private static object Activity(string title, Guid child) =>
         new { category = "Activity", title, startsAt = _monday.AddHours(17), endsAt = _monday.AddHours(18), childIds = new[] { child } };
 
@@ -207,7 +309,8 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 
         var members = (await JsonAsync(await dad.GetAsync($"/api/families/{familyId}"))).GetProperty("members").EnumerateArray().ToList();
         var dadMembership = members.Single(m => m.GetProperty("displayName").GetString() == "Dad").GetProperty("membershipId").GetGuid();
-        return new Family(dad, mom, familyId, kai.GetProperty("id").GetGuid(), aurora.GetProperty("id").GetGuid(), dadMembership);
+        var momMembership = members.Single(m => m.GetProperty("displayName").GetString() == "Mom").GetProperty("membershipId").GetGuid();
+        return new Family(dad, mom, familyId, kai.GetProperty("id").GetGuid(), aurora.GetProperty("id").GetGuid(), dadMembership, momMembership);
     }
 
     private async Task<ApiSession> KaiSignedInAsync(Family f)
@@ -223,7 +326,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         return tablet;
     }
 
-    private sealed record Family(ApiSession Dad, ApiSession Mom, Guid FamilyId, Guid KaiId, Guid AuroraId, Guid DadMembershipId)
+    private sealed record Family(ApiSession Dad, ApiSession Mom, Guid FamilyId, Guid KaiId, Guid AuroraId, Guid DadMembershipId, Guid MomMembershipId)
         : IDisposable
     {
         public void Dispose()

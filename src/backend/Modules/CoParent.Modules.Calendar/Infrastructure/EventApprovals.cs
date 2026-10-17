@@ -38,3 +38,52 @@ internal sealed class JointEventCreateHandler(CalendarDbContext db) : EventCreat
 
     public override int MinimumApprovals => 2;
 }
+
+/// <summary>Applies or discards a proposed change to a confirmed event.</summary>
+internal sealed class CalendarModifyHandler(CalendarDbContext db) : IApprovalTargetHandler
+{
+    public string Type => ChangeRequestTypes.CalendarModify;
+
+    public int MinimumApprovals => 1;
+
+    public async Task ApplyAsync(ApprovalTarget target, CancellationToken cancellationToken)
+    {
+        var calendarEvent = await db.Events.SingleAsync(e => e.Id == target.TargetId, cancellationToken);
+        if (calendarEvent.Proposed is { } proposed)
+        {
+            calendarEvent.Apply(proposed);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RejectAsync(ApprovalTarget target, CancellationToken cancellationToken)
+    {
+        var calendarEvent = await db.Events.SingleAsync(e => e.Id == target.TargetId, cancellationToken);
+        calendarEvent.ClearPendingChange();
+        await db.SaveChangesAsync(cancellationToken);
+    }
+}
+
+/// <summary>Cancels a confirmed event once approved; declining keeps it.</summary>
+internal sealed class CalendarCancelHandler(CalendarDbContext db) : IApprovalTargetHandler
+{
+    public string Type => ChangeRequestTypes.CalendarCancel;
+
+    public int MinimumApprovals => 1;
+
+    public async Task ApplyAsync(ApprovalTarget target, CancellationToken cancellationToken)
+    {
+        var calendarEvent = await db.Events.SingleAsync(e => e.Id == target.TargetId, cancellationToken);
+        calendarEvent.Status = EventStatus.Cancelled;
+        calendarEvent.ClearPendingChange();
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RejectAsync(ApprovalTarget target, CancellationToken cancellationToken)
+    {
+        var calendarEvent = await db.Events.SingleAsync(e => e.Id == target.TargetId, cancellationToken);
+        calendarEvent.ClearPendingChange();
+        await db.SaveChangesAsync(cancellationToken);
+    }
+}
