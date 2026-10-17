@@ -35,6 +35,21 @@
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), e.g. `feat(calendar): add change-request endpoint`.
 - Open work is tracked in [TODO.md](TODO.md).
 
+### Weekly rhythm: Sonar Sunday and Release Tuesday
+Code-quality findings are reviewed every week, so they don't pile up into technical debt (owner decision, October 17,
+2026).
+- **Sunday, Sonar Sunday:** `.github/workflows/sonar-sunday.yml` opens a **Sonar Sunday** issue listing SonarQube
+  Cloud's open vulnerabilities, bugs, security hotspots and major code smells on `main`.
+  - Fix them on `fix/sonar-sunday-<date>`, with a PR into `develop`, and link it in the issue.
+  - Work in order: vulnerabilities and bugs first, then hotspots, then code smells.
+  - Anything deliberate is marked **Accepted** in SonarCloud, with a reason.
+- **Tuesday, Release Tuesday:** `.github/workflows/release-tuesday.yml` opens a **Release Tuesday** checklist when
+  `develop` has changes that `main` doesn't.
+  - Open the `develop` → `main` PR and merge it once every check, including the quality gate, is green.
+  - Then back-merge into `develop`.
+- Both run at 14:00 UTC and can also be run by hand from the Actions tab. GitHub only runs scheduled workflows from
+  the default branch (`main`).
+
 ## Definition of Done
 - Builds with zero warnings (warnings are errors).
 - New behaviour has unit and/or integration tests.

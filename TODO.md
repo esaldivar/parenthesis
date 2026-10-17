@@ -18,7 +18,11 @@ that points back here.
   - [x] The quality gate (**SonarCloud Code Analysis**) and **SonarQube Cloud** are required checks on `main`, so a
     failing gate blocks releases (owner decision, October 17, 2026).
   - [x] Coverage reports go to Sonar: backend via `dotnet-coverage`, frontend via Vitest lcov (October 17, 2026).
-  - [ ] Quality gate green on release PR #27.
+  - [x] Quality gate green on release PR #27: security, reliability and maintainability all A, 98.6% coverage on new
+    code (October 17, 2026).
+  - [ ] **Weekly rhythm** (owner decision, October 17, 2026). Sonar Sunday issue → fix PR into `develop` → Release
+    Tuesday. Both workflows are written; they start running once they're on `main` (the next release). Then check
+    the first automatic Sonar Sunday issue.
   - [ ] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
     with the reason "required so keyboard users can scroll the hours".
   - [ ] Add the quality-gate badge to the README.
