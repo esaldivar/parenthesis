@@ -1,11 +1,11 @@
 # Parenthesis brand identity — v0.1
 
-Status: **BRAND DESIGN LOCKED — October 16, 2026.** The user supplied the original branding board and explicitly chose **Variation 1 (Default) + Option B wordmark**. This is a strict reference, not permission to reinterpret the mark. The exact original raster artwork has not yet been committed as a binary asset.
+Status: **BRAND DESIGN LOCKED — October 16, 2026.** The user supplied the original branding board and explicitly chose **Variation 1 (Default) + Option B wordmark**. This is a strict reference, not permission to reinterpret the mark. The exact original branding board is committed at [`assets/F61791C0-BC62-4584-9C48-B5E8CA9A7BFE.jpeg`](assets/F61791C0-BC62-4584-9C48-B5E8CA9A7BFE.jpeg). This is the immutable visual reference; production-ready logo exports remain pending.
 
 ## Immutable reference rules
 - **Do not regenerate, redraw, restyle, recolor, substitute, or approximate the approved icon in any mockup or application screen.** Do not use AI-generated dashboard logos as source material.
 - The original user-supplied branding board is the authoritative visual source: **Variation 1 (Default)** icon in the lower-left row and **Option B** wordmark in the upper middle. Any discrepancy between this text and the original artwork must be resolved in favor of the original artwork.
-- Until the original raster logo or a visually verified faithful vectorization is checked into the repository, **do not promote the provisional SVG** at `docs/design/assets/parenthesis-logo-concept.svg` to an official logo. It is a placeholder only. Prefer an explicit asset-pending state to a visually incorrect substitute.
+- Until visually verified production logo exports are checked into the repository, **do not promote the provisional SVG** at `docs/design/assets/parenthesis-logo-concept.svg` to an official logo. It is a placeholder only. Prefer an explicit asset-pending state to a visually incorrect substitute.
 - Prepare horizontal, compact, and icon-only exports **from the same master artwork**, with no design variations. Review exports side by side against the source before approval.
 
 ## Approved direction
