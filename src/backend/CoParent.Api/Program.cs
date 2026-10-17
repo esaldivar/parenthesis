@@ -2,6 +2,8 @@ using System.Text.Json.Serialization;
 using CoParent.Api.Hosting;
 using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
+using CoParent.Modules.Approvals;
+using CoParent.Modules.Calendar;
 using CoParent.Modules.Families;
 using CoParent.Modules.Identity;
 
@@ -23,7 +25,9 @@ builder.Services
 
 builder.Services
     .AddIdentityModule()
-    .AddFamiliesModule();
+    .AddApprovalsModule()
+    .AddFamiliesModule()
+    .AddCalendarModule();
 
 var app = builder.Build();
 
@@ -61,6 +65,8 @@ var family = api.MapFamilyScopedGroup();
 
 api.MapIdentityEndpoints();
 api.MapFamiliesEndpoints(family);
+family.MapApprovalsEndpoints();
+family.MapCalendarEndpoints();
 
 // Everything else that looks like a client-side route gets the Angular app.
 app.MapSpaFallback();
