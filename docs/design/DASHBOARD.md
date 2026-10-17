@@ -50,5 +50,42 @@ A personalized, welcoming home screen that gives a parent a calm overview of the
 - Permissions and privacy are enforced by the server, not only by hidden UI.
 - Unimplemented features do not simulate success.
 
-## Next design review
-Create desktop and mobile mockups from this specification, then request approval before treating specific dimensions, copy, and interactions as final.
+## Desktop and mobile wireframe handoff
+
+These are layout wireframes, not final rendered visual assets. The approved branding board is committed on `feat/angular-shell` at `docs/design/assets/F61791C0-BC62-4584-9C48-B5E8CA9A7BFE.jpeg`. Use that exact source for any logo placement; never recreate it with an image generator. Production logo exports are still pending.
+
+### Desktop layout (wide viewport)
+
+```text
+[APPROVED BRAND]   Home / Calendar / Memories / Settings
+[Hello, Jordan]                     [View month] [Propose an event]
++------------------------------------------+-----------------------+
+| THIS WEEK  < Oct 12–18 >                 | NEXT HANDOFF          |
+| Mon  Tue  Wed  Thu  Fri  Sat  Sun         | Kai + Aurora         |
+| [Kai][Aurora] Kai & Aurora — With Jordan  | Confirmed • details   |
+| [Kai][Aurora] Kai & Aurora — With Alex    +-----------------------+
+| Proposed changes appear separately       | NEEDS YOUR REVIEW     |
+| [Expand] [Split children this week]       | 1 proposed event      |
++------------------------------------------+-----------------------+
+| UPCOMING EVENTS                          | SHARED MEMORIES       |
++------------------------------------------+-----------------------+
+```
+
+### Mobile layout (320px and wider)
+
+```text
+[APPROVED BRAND]                   [Profile]
+Hello, Jordan
+THIS WEEK     < Oct 12–18 >    [View month]
+[Mon][Tue][Wed][Thu][Fri][Sat][Sun]
+[Kai][Aurora] Kai & Aurora
+With Jordan • Confirmed
+[Propose an event]
+NEXT HANDOFF — Kai & Aurora
+NEEDS YOUR REVIEW — 1 proposal
+UPCOMING EVENTS
+SHARED MEMORIES
+[Home] [Calendar] [Memories] [Settings]
+```
+
+**Visual review checklist:** approved logo exactly as supplied; warm cream surfaces, sage and muted-blue accents, restrained coral highlights, rounded cards, readable typography; confirmed and proposed status labels; names beside adjacent child icons; both parent names explicitly labelled; no functional-looking messaging until built. Any mockup screenshots require explicit user review before implementation.
