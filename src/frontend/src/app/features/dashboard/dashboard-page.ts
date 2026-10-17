@@ -1,77 +1,208 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  InjectionToken,
+  computed,
+  effect,
+  inject,
+  input,
+  isDevMode,
+  signal,
+  untracked,
+} from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { RouterLink } from '@angular/router';
+import { AuthStore } from '../../core/auth/auth.store';
+import { Avatar } from '../../shared/avatar/avatar';
+import { Leaves } from '../../shared/decor/leaves';
 import { EmptyState } from '../../shared/empty-state/empty-state';
+import { Icon, IconName } from '../../shared/icon/icon';
+import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from './dashboard-data';
+import { blockRange, childNames, groupParentingTime } from './grouping';
+import { DashboardWeek, PlainDate, ScheduleStatus } from './model';
+import { StatusLabel } from './status-label';
+import { CATEGORY_ICONS } from './timeline';
+import { InlineView, WeekCalendar, WeekState } from './week-calendar';
+import { addDays, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
+
+/** The current time; replaced in tests. */
+export const NOW = new InjectionToken<() => Date>('NOW', { factory: () => () => new Date() });
+
+interface UpcomingItem {
+  readonly key: string;
+  readonly icon: IconName;
+  readonly category: string;
+  readonly title: string;
+  readonly when: string;
+  readonly people: readonly { name: string; kind: 'parent' | 'child' }[];
+  readonly status: ScheduleStatus;
+  readonly note?: string;
+  readonly link?: string;
+}
 
 /**
- * Ordered by immediate need (docs/design-system.md): today and the next handoff, decisions waiting on you,
- * upcoming events, then recent memories. Every section is an honest empty state until its feature exists.
+ * The parent dashboard, built to the approved design (docs/design/APPROVED_DASHBOARD_2026-10-16.md): greeting, the
+ * weekly calendar as the centrepiece, Upcoming and Quick Add, then From Your Kids, Recent Messages and Family
+ * Memories.
+ *
+ * Until the calendar, approvals, messages and memories APIs exist, the live dashboard shows honest "not available
+ * yet" states. In development builds, `?sample=1` previews the layout with clearly labelled synthetic data.
  */
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EmptyState],
-  template: `
-    <h1>Home</h1>
-    <p class="intro">A calm overview of your family's schedule and shared moments.</p>
+  imports: [RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar],
+  providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
+  templateUrl: './dashboard-page.html',
+  styleUrl: './dashboard-page.scss',
+})
+export class DashboardPage {
+  private readonly auth = inject(AuthStore);
+  private readonly liveSource = inject(DashboardDataSource);
+  private readonly now = inject(NOW)();
 
-    <div class="sections">
-      <section aria-labelledby="today-heading">
-        <h2 id="today-heading">Today</h2>
-        <app-empty-state
-          icon="calendar"
-          title="Nothing scheduled to show yet"
-          body="When the shared calendar is ready, today's plans and the next handoff will appear here."
-        />
-      </section>
+  /** `?sample=1`, honoured only in development builds. */
+  readonly sample = input<string>();
+  /** `?week=YYYY-MM-DD` (any day of the week), e.g. when coming back from the Calendar page. */
+  readonly week = input<string>();
 
-      <section aria-labelledby="decisions-heading">
-        <h2 id="decisions-heading">Waiting for you</h2>
-        <app-empty-state
-          icon="approvals"
-          title="No requests"
-          body="Proposed schedule changes and deletion requests that need your answer will be listed here."
-        />
-      </section>
+  protected readonly showingSample = computed(() => isDevMode() && this.sample() === '1');
 
-      <section aria-labelledby="upcoming-heading">
-        <h2 id="upcoming-heading">Coming up</h2>
-        <app-empty-state
-          icon="calendar"
-          title="No upcoming events yet"
-          body="School events, appointments and activities will show here once the calendar is available."
-        />
-      </section>
+  private readonly timeZone = computed(() => this.auth.currentFamily()?.timeZone ?? 'UTC');
+  protected readonly today = computed(() => todayIn(this.timeZone(), this.now));
+  protected readonly currentWeekStart = computed(() => startOfWeek(this.today()));
+  private readonly chosenWeek = signal<PlainDate | null>(null);
+  private readonly linkedWeek = computed(() => {
+    const week = this.week();
+    return week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? startOfWeek(week) : null;
+  });
+  protected readonly shownWeek = computed(() => this.chosenWeek() ?? this.linkedWeek() ?? this.currentWeekStart());
+  protected readonly isCurrentWeek = computed(() => this.shownWeek() === this.currentWeekStart());
 
-      <section aria-labelledby="memories-heading">
-        <h2 id="memories-heading">Recent memories</h2>
-        <app-empty-state
-          icon="image"
-          title="No memories shared yet"
-          body="Photos and artwork shared with your family will appear here when memories are available."
-        />
-      </section>
-    </div>
-  `,
-  styles: `
-    .intro {
-      color: var(--color-text-secondary);
-      margin-bottom: var(--space-6);
+  /** "Show children separately this week": a view choice that resets when the week changes and never edits data. */
+  protected readonly split = signal(false);
+  protected readonly inlineView = signal<InlineView>('week');
+
+  protected readonly state = signal<WeekState>('loading');
+  protected readonly data = signal<DashboardWeek | null>(null);
+  private requestId = 0;
+
+  protected readonly firstName = computed(() => this.auth.user()?.displayName.split(/\s+/)[0] ?? '');
+  protected readonly greeting = computed(() => {
+    const hello = greetingFor(hourIn(this.timeZone(), this.now));
+    return this.firstName() ? `${hello}, ${this.firstName()}!` : `${hello}!`;
+  });
+
+  /** Proposals awaiting this parent, then this week's parenting time and activities from today on. */
+  protected readonly upcoming = computed<UpcomingItem[]>(() => {
+    const data = this.data();
+    if (!data) {
+      return [];
     }
-    .sections {
-      display: grid;
-      gap: var(--space-6);
-    }
-    section {
-      padding: var(--space-4);
-      background: var(--color-surface);
-      border: 1px solid var(--color-surface-soft);
-      border-radius: var(--radius-card);
-    }
-    // Two columns on wide screens; DOM (and reading) order stays Today → Waiting → Coming up → Memories.
-    @media (min-width: 1100px) {
-      .sections {
-        grid-template-columns: 1fr 1fr;
+    const nowLocal = nowIn(this.timeZone(), this.now);
+    const reviews: UpcomingItem[] = data.pendingReviews.map((r) => ({
+      key: `review-${r.id}`,
+      icon: 'approvals',
+      category: 'review',
+      title: r.summary,
+      when: `Proposed by ${r.proposedBy} · needs your review`,
+      people: [],
+      status: 'proposed',
+      link: '/approvals',
+    }));
+    const parenting: UpcomingItem[] = groupParentingTime(data.parentingTime, { split: false })
+      .filter((b) => b.status === 'confirmed' && b.end > nowLocal)
+      .map((b) => ({
+        key: `pt-${b.key}`,
+        icon: 'calendar',
+        category: 'parenting',
+        title: b.title,
+        when: blockRange(b),
+        people: [{ name: b.caregiver.displayName, kind: 'parent' as const }, ...b.children.map((c) => ({ name: c.name, kind: 'child' as const }))],
+        status: b.status,
+        note: b.changePending ? 'Change pending' : undefined,
+      }));
+    const events: UpcomingItem[] = data.events
+      .filter((e) => e.date >= this.today())
+      .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
+      .map((e) => ({
+        key: `ev-${e.id}`,
+        icon: CATEGORY_ICONS[e.category],
+        category: e.category,
+        title: e.title,
+        when: e.time ? dateTimeLabel(`${e.date}T${e.time}`).replace(/, (\d)/, ' · $1') : dayLong(e.date),
+        people: e.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+        status: e.status,
+      }));
+    return [...reviews, ...parenting, ...events].slice(0, 5);
+  });
+
+  protected readonly memoryIndex = signal(0);
+  protected readonly memories = computed(() => this.data()?.recentMemories ?? []);
+  protected readonly currentMemory = computed(() => this.memories()[this.memoryIndex()] ?? null);
+
+  /** Shown as in the approved design, but honest: none of these flows exist yet, so they're marked unavailable. */
+  protected readonly quickActions: readonly { label: string; icon: IconName }[] = [
+    { label: 'Event', icon: 'calendar' },
+    { label: 'Message', icon: 'messages' },
+    { label: 'Memory', icon: 'image' },
+    { label: 'Note', icon: 'plus' },
+  ];
+
+  protected readonly personRef = (person: { name: string }) => ({ id: person.name, name: person.name });
+  protected readonly childNames = childNames;
+  protected readonly dayLong = dayLong;
+  protected readonly timeLabel = timeLabel;
+
+  constructor() {
+    effect(() => {
+      const weekStart = this.shownWeek();
+      const familyId = this.auth.currentFamily()?.id;
+      const source = this.showingSample() ? new SampleDashboardDataSource() : this.liveSource;
+      untracked(() => void this.load(source, familyId, weekStart));
+    });
+  }
+
+  protected goToWeek(offsetWeeks: number): void {
+    this.split.set(false);
+    this.chosenWeek.set(addDays(this.shownWeek(), offsetWeeks * 7));
+  }
+
+  protected goToToday(): void {
+    this.split.set(false);
+    this.chosenWeek.set(this.currentWeekStart());
+  }
+
+  protected setSplit(split: boolean): void {
+    this.split.set(split);
+  }
+
+  protected showMemory(offset: number): void {
+    const count = this.memories().length;
+    this.memoryIndex.set((this.memoryIndex() + offset + count) % count);
+  }
+
+  protected reload(): void {
+    const source = this.showingSample() ? new SampleDashboardDataSource() : this.liveSource;
+    void this.load(source, this.auth.currentFamily()?.id, this.shownWeek());
+  }
+
+  private async load(source: DashboardDataSource, familyId: string | undefined, weekStart: PlainDate): Promise<void> {
+    const request = ++this.requestId;
+    this.state.set('loading');
+    try {
+      const data = familyId ? await source.load(familyId, weekStart) : null;
+      if (request !== this.requestId) {
+        return; // A newer week was requested meanwhile.
+      }
+      this.data.set(data);
+      this.memoryIndex.set(0);
+      this.state.set(data ? 'ready' : 'unavailable');
+    } catch {
+      if (request === this.requestId) {
+        this.data.set(null);
+        this.state.set('error');
       }
     }
-  `,
-})
-export class DashboardPage {}
+  }
+}

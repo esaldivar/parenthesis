@@ -7,31 +7,13 @@ const comingSoon = (title: string, data: Record<string, string>) => ({
   data: { heading: title, ...data },
 });
 
+// Order follows the approved navigation (docs/design/APPROVED_DASHBOARD_2026-10-16.md).
 export const PARENT_ROUTES: Routes = [
   { path: '', title: 'Home', loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage) },
   {
     path: 'calendar',
-    ...comingSoon('Calendar', {
-      icon: 'calendar',
-      intro: 'Parenting time, school, appointments and activities in one shared view.',
-      emptyBody: 'The shared calendar isn’t available yet. Nothing you see elsewhere is scheduled until it is.',
-    }),
-  },
-  {
-    path: 'children',
-    ...comingSoon('Children', {
-      icon: 'children',
-      intro: 'Profiles for each child, and whether they have their own sign-in.',
-      emptyBody: 'Child profiles aren’t available yet.',
-    }),
-  },
-  {
-    path: 'memories',
-    ...comingSoon('Memories', {
-      icon: 'image',
-      intro: 'A private library of your family’s photos and children’s artwork.',
-      emptyBody: 'Memories aren’t available yet, so nothing has been uploaded or shared.',
-    }),
+    title: 'Calendar',
+    loadComponent: () => import('./calendar/calendar-page').then((m) => m.CalendarPage),
   },
   {
     path: 'messages',
@@ -42,6 +24,32 @@ export const PARENT_ROUTES: Routes = [
       emptyBody: 'Messaging isn’t part of this version of Parenthesis.',
     }),
   },
+  {
+    path: 'from-your-kids',
+    ...comingSoon('From Your Kids', {
+      icon: 'pencil',
+      intro: 'Drawings, photos and notes your children choose to share with you.',
+      emptyBody: 'Sharing from your children’s space isn’t available yet, so nothing has been shared.',
+    }),
+  },
+  {
+    path: 'memories',
+    ...comingSoon('Family Memories', {
+      icon: 'album',
+      intro: 'A private library of your family’s photos and children’s artwork.',
+      emptyBody: 'Family memories aren’t available yet, so nothing has been uploaded or shared.',
+    }),
+  },
+  {
+    path: 'child-essentials',
+    ...comingSoon('Child Essentials', {
+      icon: 'children',
+      intro: 'Each child’s profile and the details both parents need to know.',
+      emptyBody: 'Child profiles aren’t available yet.',
+    }),
+  },
+  // Older links to /children land on its replacement.
+  { path: 'children', redirectTo: 'child-essentials' },
   {
     path: 'approvals',
     ...comingSoon('Approvals', {

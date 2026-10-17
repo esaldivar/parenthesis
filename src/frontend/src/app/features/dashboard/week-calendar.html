@@ -1,0 +1,266 @@
+<section class="cal" aria-labelledby="week-heading" [attr.aria-busy]="state() === 'loading'">
+  <header class="toolbar">
+    <div class="toolbar__nav">
+      <div class="toolbar__week">
+        <button mat-icon-button type="button" class="nav-btn" (click)="previousWeek.emit()" aria-label="Previous week">
+          <app-icon name="chevron-left" />
+        </button>
+      <h2 id="week-heading" class="toolbar__label">
+        <span class="visually-hidden">{{ isCurrentWeek() ? 'This week, ' : 'Week of ' }}</span>{{ label() }}
+      </h2>
+        <button mat-icon-button type="button" class="nav-btn" (click)="nextWeek.emit()" aria-label="Next week">
+          <app-icon name="chevron-right" />
+        </button>
+      </div>
+      <button type="button" class="pill" (click)="goToToday.emit()" [attr.aria-disabled]="isCurrentWeek()">Today</button>
+    </div>
+    <div class="segmented" role="group" aria-label="Calendar view">
+      <button type="button" [attr.aria-pressed]="view() === 'week'" (click)="viewChange.emit('week')">Week</button>
+      <a routerLink="/calendar" [queryParams]="{ view: 'month', week: weekStart() }">Month</a>
+      <button type="button" [attr.aria-pressed]="view() === 'list'" (click)="viewChange.emit('list')">List</button>
+    </div>
+  </header>
+  <p class="visually-hidden" aria-live="polite">{{ label() }}</p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="note">Loading this week…</p>
+    }
+    @case ('error') {
+      <div class="note note--error" role="alert">
+        We couldn’t load this week.
+        <button mat-button type="button" (click)="retry.emit()">Try again</button>
+      </div>
+    }
+  }
+
+  <!-- Week grid (wide containers in Week view). -->
+  @if (view() === 'week') {
+    <div class="grid" [class.grid--empty]="state() !== 'ready'" [style.--rows]="rows()">
+      <div class="grid__corner" aria-hidden="true"></div>
+      @for (day of days(); track day.date) {
+        <div class="grid__head" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+          <span class="visually-hidden">{{ day.longLabel }}{{ day.isToday ? ', today' : '' }}</span>
+          <span aria-hidden="true" class="grid__weekday">{{ day.weekday }}</span>
+          <span aria-hidden="true" class="grid__date">{{ day.monthDay }}</span>
+        </div>
+      }
+
+      @if (state() === 'ready') {
+        <div class="grid__allday-label" aria-hidden="true">All day</div>
+        <ol class="allday" aria-label="All-day parenting time" [style.--lanes]="allDayLanes()">
+          @for (block of allDay(); track block.key) {
+            @let place = placement(block);
+            @if (place) {
+              <li
+                class="pt"
+                [class.pt--narrow]="place.endColumn - place.startColumn <= 2"
+                [attr.data-status]="block.status"
+                [style.--start]="place.startColumn"
+                [style.--end]="place.endColumn"
+                [style.--lane]="place.lane + 1"
+              >
+                <span class="pt__icon" aria-hidden="true"><app-icon name="calendar" [size]="22" /></span>
+                <span class="pt__avatars" aria-hidden="true">
+                  <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="38" />
+                  @for (child of block.children; track child.id) {
+                    <app-avatar [name]="child.name" [size]="38" />
+                  }
+                </span>
+                <span class="pt__text">
+                  <span class="pt__title">
+                    @if (place.continuesBefore) {
+                      <span aria-hidden="true">← </span>
+                    }
+                    {{ block.title }}
+                    @if (place.continuesAfter) {
+                      <span aria-hidden="true"> →</span>
+                    }
+                  </span>
+                  <span class="pt__meta">{{ childNames(block.children) }} · {{ range(block) }}</span>
+                  @if (block.status === 'confirmed' && !block.changePending) {
+                    <span class="visually-hidden">, confirmed</span>
+                  }
+                </span>
+                @if (block.status !== 'confirmed' || block.changePending) {
+                  <span class="pt__status">
+                    @if (block.status !== 'confirmed') {
+                      <app-status-label [status]="block.status" />
+                    } @else {
+                      <app-status-label status="change-pending" />
+                    }
+                  </span>
+                }
+              </li>
+            }
+          }
+        </ol>
+
+        <div class="grid__hours" aria-hidden="true">
+          @for (mark of hourMarks(); track mark.row) {
+            <span [style.grid-row]="mark.row">{{ mark.label }}</span>
+          }
+        </div>
+        @for (day of days(); track day.date) {
+          <ol class="daycol" [attr.aria-label]="'Activities on ' + day.longLabel" [style.--lanes]="day.lanes">
+            @for (event of day.events; track event.id) {
+              @let slot = day.placements.get(event.id);
+              @if (slot) {
+                <li
+                  class="act"
+                  [attr.data-category]="event.category"
+                  [attr.data-status]="event.status"
+                  [style.grid-row]="slot.row + ' / span ' + slot.span"
+                  [style.grid-column]="slot.lane"
+                  [attr.title]="event.title + ', ' + timeLabel(event.time!) + ', ' + childNames(event.children)"
+                >
+                  <app-icon class="act__icon" [name]="icons[event.category]" [size]="22" />
+                  <span class="act__title">{{ event.title }}</span>
+                  <span class="act__time">{{ timeLabel(event.time!) }}</span>
+                  <span class="visually-hidden">, {{ childNames(event.children) }}</span>
+                  <span class="act__avatars" aria-hidden="true">
+                    @for (child of event.children; track child.id) {
+                      <app-avatar [name]="child.name" [size]="28" />
+                    }
+                  </span>
+                  @if (event.status !== 'confirmed') {
+                    <app-status-label [status]="event.status" />
+                  }
+                </li>
+              }
+            }
+          </ol>
+        }
+      }
+    </div>
+  }
+
+  <!-- Agenda: List view, and Week view on narrow screens. -->
+  @if (state() === 'ready') {
+    <div class="agenda" [class.agenda--always]="view() === 'list'">
+      <h3 id="allday-heading">All day</h3>
+      @if (allDay().length === 0) {
+        <p class="muted">No parenting time this week.</p>
+      } @else {
+        <ol class="agenda__blocks" aria-labelledby="allday-heading">
+          @for (block of allDay(); track block.key) {
+            <li class="pt pt--card" [attr.data-status]="block.status">
+              <span class="pt__avatars" aria-hidden="true">
+                <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="36" />
+                @for (child of block.children; track child.id) {
+                  <app-avatar [name]="child.name" [size]="36" />
+                }
+              </span>
+              <span class="pt__text">
+                <span class="pt__title">{{ block.title }}</span>
+                <span class="pt__meta">{{ childNames(block.children) }} · {{ range(block) }}</span>
+                <span class="pt__status">
+                  <app-status-label [status]="block.status" />
+                  @if (block.changePending) {
+                    <app-status-label status="change-pending" />
+                  }
+                </span>
+                @if (block.children.length > 1) {
+                  <button
+                    mat-button
+                    type="button"
+                    class="pt__toggle"
+                    [attr.aria-expanded]="isExpanded(block)"
+                    [attr.aria-controls]="idFor(block)"
+                    (click)="toggleDetails(block)"
+                  >
+                    {{ isExpanded(block) ? 'Hide details' : 'Details' }}<span class="visually-hidden"> for {{ childNames(block.children) }}</span>
+                  </button>
+                  <ul class="pt__details" [id]="idFor(block)" [hidden]="!isExpanded(block)">
+                    @for (item of block.items; track item.id) {
+                      <li>{{ item.child.name }}: {{ block.title }}, {{ range(block) }}</li>
+                    }
+                  </ul>
+                }
+              </span>
+            </li>
+          }
+        </ol>
+      }
+
+      <ol class="agenda__days" aria-label="Activities by day">
+        @for (day of days(); track day.date) {
+          <li class="agenda__day" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+            <p class="agenda__date">
+              {{ day.longLabel }}
+              @if (day.isToday) {
+                <span class="today-badge">Today</span>
+              }
+            </p>
+            @if (day.events.length === 0) {
+              <p class="muted">No activities</p>
+            } @else {
+              <ul>
+                @for (event of day.events; track event.id) {
+                  <li class="act act--row" [attr.data-category]="event.category" [attr.data-status]="event.status">
+                    <app-icon class="act__icon" [name]="icons[event.category]" [size]="22" />
+                    <span class="act__title">{{ event.title }}</span>
+                    <span class="act__time">
+                      @if (event.time) {
+                        {{ timeLabel(event.time) }} ·
+                      }
+                      {{ childNames(event.children) }}
+                    </span>
+                    <span class="act__avatars" aria-hidden="true">
+                      @for (child of event.children; track child.id) {
+                        <app-avatar [name]="child.name" [size]="28" />
+                      }
+                    </span>
+                    @if (event.status !== 'confirmed') {
+                      <app-status-label [status]="event.status" />
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          </li>
+        }
+      </ol>
+    </div>
+
+    @if (proposals().length > 0) {
+      <section class="proposals" aria-labelledby="proposals-heading">
+        <h3 id="proposals-heading">Proposed changes</h3>
+        <p class="muted">Not part of the schedule until both parents agree.</p>
+        <ul>
+          @for (block of proposals(); track block.key) {
+            <li class="pt pt--card" data-status="proposed">
+              <span class="pt__avatars" aria-hidden="true">
+                <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="34" />
+                @for (child of block.children; track child.id) {
+                  <app-avatar [name]="child.name" [size]="34" />
+                }
+              </span>
+              <span class="pt__text">
+                <span class="pt__title">{{ block.title }}</span>
+                <span class="pt__meta">{{ childNames(block.children) }} · {{ range(block) }}</span>
+              </span>
+              <app-status-label status="proposed" />
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <footer class="cal__footer">
+      @if (split()) {
+        <p class="muted">Showing each child separately. This only changes the view, not anyone’s schedule.</p>
+      }
+      @if (canSplit()) {
+        <button mat-button type="button" [attr.aria-pressed]="split()" (click)="splitChange.emit(!split())">
+          {{ split() ? 'Group children with the same schedule' : 'Show children separately this week' }}
+        </button>
+      }
+    </footer>
+  } @else if (state() === 'unavailable') {
+    <p class="note">
+      The shared calendar isn’t available yet. When it is, parenting time and activities for this week will appear
+      here. Nothing shown on this page is a schedule.
+    </p>
+  }
+</section>

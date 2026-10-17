@@ -1,0 +1,246 @@
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { axeViolations } from '../../../testing/axe';
+import { fakeAuth } from '../../../testing/fake-auth';
+import { LiveDashboardDataSource } from './dashboard-data';
+import { DashboardPage, NOW } from './dashboard-page';
+
+// Wednesday, October 14, 2026, 9:00 AM in the fake family's time zone (America/Chicago).
+const WEDNESDAY_MORNING = new Date('2026-10-14T14:00:00Z');
+
+describe('DashboardPage (approved design)', () => {
+  async function render(options: { sample?: boolean; failingSource?: boolean; week?: string } = {}) {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), fakeAuth(), { provide: NOW, useValue: () => WEDNESDAY_MORNING }],
+    });
+    let calls = 0;
+    if (options.failingSource) {
+      TestBed.overrideProvider(LiveDashboardDataSource, {
+        useValue: { load: () => (++calls, Promise.reject(new Error('offline'))) },
+      });
+    }
+    const fixture = TestBed.createComponent(DashboardPage);
+    if (options.sample) {
+      fixture.componentRef.setInput('sample', '1');
+    }
+    if (options.week) {
+      fixture.componentRef.setInput('week', options.week);
+    }
+    await settle(fixture);
+    return { fixture, el: fixture.nativeElement as HTMLElement, calls: () => calls };
+  }
+
+  async function settle(fixture: { whenStable(): Promise<unknown>; detectChanges(): void }) {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  const text = (el: Element | null) => el?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+  const button = (el: HTMLElement, label: string | RegExp) =>
+    [...el.querySelectorAll('button')].find((b) =>
+      typeof label === 'string' ? text(b) === label || b.getAttribute('aria-label') === label : label.test(text(b)),
+    )!;
+  const link = (el: HTMLElement, label: string) => [...el.querySelectorAll('a')].find((a) => text(a).startsWith(label))!;
+
+  describe('layout and live (no calendar API yet)', () => {
+    it('greets the parent like the approved design', async () => {
+      const { el } = await render();
+
+      expect(text(el.querySelector('h1'))).toBe('Good morning, Alex!');
+      expect(text(el.querySelector('.welcome__sub'))).toBe('Here’s what’s happening with your family.');
+    });
+
+    it('has the approved sections in order', async () => {
+      const { el } = await render();
+
+      expect([...el.querySelectorAll('h2')].map(text)).toEqual([
+        'This week, October 11 – 17, 2026',
+        'Upcoming',
+        'Quick Add',
+        'From Your Kids',
+        'Recent Messages',
+        'Family Memories',
+      ]);
+    });
+
+    it('opens on the current Sunday-to-Saturday week with today marked', async () => {
+      const { el } = await render();
+
+      const heads = [...el.querySelectorAll('.grid__head')].map((h) => text(h.querySelector('.grid__weekday')));
+      expect(heads).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+      expect(text(el.querySelector('[aria-current="date"]'))).toContain('Wednesday, October 14, today');
+    });
+
+    it('is honest that there is no schedule yet, with no sample content', async () => {
+      const { el } = await render();
+
+      expect(text(el)).toContain('The shared calendar isn’t available yet');
+      expect(el.querySelector('.allday, .daycol, .proposals, .sample-banner')).toBeNull();
+      expect(text(el.querySelector('.area-messages'))).toContain('Messaging between parents isn’t available yet');
+    });
+
+    it('offers Quick Add actions honestly, as unavailable', async () => {
+      const { el } = await render();
+      const actions = [...el.querySelectorAll('.quick__btn')];
+
+      expect(actions.map(text)).toEqual(['Event', 'Message', 'Memory', 'Note']);
+      expect(actions.every((b) => b.getAttribute('aria-disabled') === 'true')).toBe(true);
+      expect(text(el.querySelector('#quick-note'))).toContain('opens with the calendar, messages and memories');
+    });
+
+    it('moves between weeks and returns with Today', async () => {
+      const { fixture, el } = await render();
+
+      button(el, 'Next week').click();
+      await settle(fixture);
+      expect(text(el.querySelector('#week-heading'))).toBe('Week of October 18 – 24, 2026');
+      expect(el.querySelector('[aria-current="date"]')).toBeNull();
+
+      button(el, 'Today').click();
+      await settle(fixture);
+      expect(text(el.querySelector('#week-heading'))).toBe('This week, October 11 – 17, 2026');
+
+      button(el, 'Previous week').click();
+      await settle(fixture);
+      expect(text(el.querySelector('#week-heading'))).toBe('Week of October 4 – 10, 2026');
+    });
+
+    it('opens Month on the full Calendar page with the selected week preserved', async () => {
+      const { fixture, el } = await render();
+
+      button(el, 'Next week').click();
+      await settle(fixture);
+
+      expect(link(el, 'Month').getAttribute('href')).toBe('/calendar?view=month&week=2026-10-18');
+      expect(link(el, 'See all').getAttribute('href')).toBe('/calendar?view=list&week=2026-10-18');
+    });
+
+    it('starts on the week passed back from the Calendar page', async () => {
+      const { el } = await render({ week: '2026-10-21' });
+
+      expect(text(el.querySelector('#week-heading'))).toBe('Week of October 18 – 24, 2026');
+    });
+
+    it('explains a failure and can try again', async () => {
+      const { fixture, el, calls } = await render({ failingSource: true });
+
+      expect(text(el.querySelector('[role="alert"]'))).toContain('We couldn’t load this week.');
+      button(el, 'Try again').click();
+      await settle(fixture);
+      expect(calls()).toBe(2);
+    });
+
+    it('has no automatically detectable accessibility issues', async () => {
+      const { el } = await render();
+
+      expect(await axeViolations(el)).toEqual([]);
+    });
+  });
+
+  describe('sample preview (development builds only)', () => {
+    it('labels the data as a fictional sample', async () => {
+      const { el } = await render({ sample: true });
+
+      expect(text(el.querySelector('.sample-banner'))).toContain('not your family’s schedule');
+    });
+
+    it('shows multi-day parenting time as one continuous block with the parent’s and children’s avatars', async () => {
+      const { el } = await render({ sample: true });
+      const blocks = [...el.querySelectorAll('.allday > li')];
+
+      expect(blocks).toHaveLength(1);
+      expect(text(blocks[0].querySelector('.pt__title'))).toBe('Time with Dad');
+      expect((blocks[0] as HTMLElement).style.getPropertyValue('--start')).toBe('1');
+      expect((blocks[0] as HTMLElement).style.getPropertyValue('--end')).toBe('8');
+      const avatars = [...blocks[0].querySelectorAll('app-avatar')].map((a) => [a.getAttribute('title'), a.getAttribute('data-kind')]);
+      expect(avatars).toEqual([
+        ['Dad', 'parent'],
+        ['Aurora', 'child'],
+        ['Kai', 'child'],
+      ]);
+      expect(text(blocks[0])).toContain('Aurora & Kai · Sun, Oct 11 – Sat, Oct 17 · All day');
+      expect(text(blocks[0])).not.toMatch(/custody/i);
+    });
+
+    it('places activities in their day and time slots beneath parenting time, with child avatars', async () => {
+      const { el } = await render({ sample: true });
+      const columns = [...el.querySelectorAll('.daycol')];
+      const dentist = columns[4].querySelector('.act') as HTMLElement; // Thursday
+
+      expect(text(dentist.querySelector('.act__title'))).toBe('Dentist Appointment');
+      expect(dentist.style.gridRow).toBe('5 / span 5'); // 10:00 AM in a grid starting at 8:00 AM
+      expect(dentist.getAttribute('data-category')).toBe('medical');
+      expect([...dentist.querySelectorAll('app-avatar')].map((a) => a.getAttribute('title'))).toEqual(['Kai', 'Aurora']);
+      expect(text(columns[3])).toContain('Soccer Practice'); // Wednesday
+    });
+
+    it('keeps proposals out of the schedule and clearly labelled', async () => {
+      const { el } = await render({ sample: true });
+      const proposal = el.querySelector('.proposals li')!;
+
+      expect(text(proposal)).toContain('Time with Mom');
+      expect(text(proposal)).toContain('Proposed');
+      expect([...el.querySelectorAll('.allday > li')].some((li) => text(li).includes('Time with Mom'))).toBe(false);
+    });
+
+    it('lists what needs this parent’s review first in Upcoming, linking to approvals', async () => {
+      const { el } = await render({ sample: true });
+      const first = el.querySelector('.upcoming__item')!;
+
+      expect(text(first)).toContain('needs your review');
+      expect(first.querySelector('a')!.getAttribute('href')).toBe('/approvals');
+      expect([...el.querySelectorAll('.upcoming__title')].map(text)).toContain('Time with Dad');
+    });
+
+    it('splits children for this week only, as a reversible view preference', async () => {
+      const { fixture, el } = await render({ sample: true });
+      const toggle = () => button(el, /children separately|same schedule/);
+
+      toggle().click();
+      await settle(fixture);
+      expect(toggle().getAttribute('aria-pressed')).toBe('true');
+      expect(el.querySelectorAll('.allday > li')).toHaveLength(2);
+
+      button(el, 'Next week').click();
+      await settle(fixture);
+      expect(toggle().getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('switches to the List view in place', async () => {
+      const { fixture, el } = await render({ sample: true });
+
+      button(el, 'List').click();
+      await settle(fixture);
+
+      expect(button(el, 'List').getAttribute('aria-pressed')).toBe('true');
+      expect(el.querySelector('.grid')).toBeNull();
+      expect(el.querySelector('.agenda--always')).not.toBeNull();
+    });
+
+    it('steps through family memories', async () => {
+      const { fixture, el } = await render({ sample: true });
+
+      expect(text(el.querySelector('.memory__title'))).toBe('Sunset at the Lake');
+      button(el, 'Next memory').click();
+      await settle(fixture);
+      expect(text(el.querySelector('.memory__title'))).toBe('Pumpkin Patch');
+    });
+
+    it('shows parent-to-parent messages and children’s shares', async () => {
+      const { el } = await render({ sample: true });
+
+      expect(text(el.querySelector('.messages'))).toContain('Can you pick Aurora up after art class?');
+      expect([...el.querySelectorAll('.kids__what')].map(text)).toEqual([
+        'Aurora shared a drawing with you',
+        'Kai shared a photo with you',
+      ]);
+    });
+
+    it('has no automatically detectable accessibility issues', async () => {
+      const { el } = await render({ sample: true });
+
+      expect(await axeViolations(el)).toEqual([]);
+    });
+  });
+});
