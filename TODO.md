@@ -133,7 +133,8 @@ that points back here.
     a non-blocking warning when parenting time overlaps the other parent's unavailable time (October 17, 2026).
   - [x] Backend: overlap detection (C-06). Non-blocking warnings for double-booked parenting time, an unavailable
     caregiver, and unavailable time over your own parenting time (October 17, 2026).
-  - [ ] Backend: recurrence (C-05), reminders (C-04), the .ics feed (C-07), request expiry (AP-06).
+  - [x] Backend: approvals history and decision comments (AP-04/05); request expiry after 14 days (AP-06) (October 17, 2026).
+  - [ ] Backend: recurrence (C-05), reminders (C-04, with notifications), the .ics feed (C-07).
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
     data source.
 

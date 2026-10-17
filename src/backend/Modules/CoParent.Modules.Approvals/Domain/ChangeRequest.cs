@@ -8,6 +8,9 @@ internal enum ChangeRequestStatus
     Approved,
     Rejected,
     Withdrawn,
+
+    /// <summary>Not answered in time (AP-06); treated like a rejection.</summary>
+    Expired,
 }
 
 internal enum Decision

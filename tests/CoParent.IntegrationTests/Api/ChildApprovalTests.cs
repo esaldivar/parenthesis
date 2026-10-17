@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoParent.IntegrationTests.Api;
 
@@ -115,6 +116,26 @@ public sealed class ChildApprovalTests(ApiFactory api) : IAsyncLifetime
                 $"/api/families/{familyId}/approvals/{request.GetProperty("id").GetGuid()}/approve", new { comment = new string('x', 501) });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task An_unanswered_request_expires_after_two_weeks_and_counts_as_not_approved()
+    {
+        var (dad, mom, familyId) = await TwoParentFamilyAsync(addChildFirst: "Kai");
+        using (dad)
+        using (mom)
+        {
+            var expiry = api.Services.GetRequiredService<CoParent.Modules.Approvals.Contracts.IRequestExpiry>();
+
+            var tooSoon = await expiry.ExpireAsync(DateTimeOffset.UtcNow.AddDays(13), TestContext.Current.CancellationToken);
+            var expired = await expiry.ExpireAsync(DateTimeOffset.UtcNow.AddDays(15), TestContext.Current.CancellationToken);
+            var history = await JsonAsync(await dad.GetAsync($"/api/families/{familyId}/approvals?view=history"));
+
+            Assert.Equal(0, tooSoon);
+            Assert.Equal(1, expired);
+            Assert.Empty(await ChildrenAsync(dad, familyId));
+            Assert.Equal("Expired", Assert.Single(history.EnumerateArray()).GetProperty("status").GetString());
         }
     }
 
