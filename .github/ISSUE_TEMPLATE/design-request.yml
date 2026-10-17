@@ -1,0 +1,30 @@
+name: Design request
+description: Work for the design lane (ChatGPT). See docs/design/handoffs/README.md.
+title: "Design request: "
+labels: [design]
+body:
+  - type: textarea
+    id: screens
+    attributes:
+      label: Screens
+      description: Each screen, numbered. Mobile first, then desktop, in light and dark mode.
+    validations:
+      required: true
+  - type: textarea
+    id: states
+    attributes:
+      label: States to show
+      placeholder: default / empty / loading / error / pending / proposed
+  - type: input
+    id: story
+    attributes:
+      label: Related story
+      placeholder: "#123"
+  - type: textarea
+    id: deliver
+    attributes:
+      label: Deliverables
+      value: |
+        - Handoff note: docs/design/handoffs/<YYYY-MM-DD>-<topic>.md
+        - Assets: docs/design/assets/<topic>/<topic>-<screen>-<mobile|desktop>-<light|dark>.png
+        - Fictional family only (Mom, Dad, Kai, Aurora). The logo stays locked.

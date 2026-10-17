@@ -101,6 +101,21 @@ that points back here.
   and More). Then family setup and invitation, child profiles and Child Essentials, the full calendar, approvals and
   the memories gallery.
 
+- [ ] **Project management in GitHub** (owner ideas, October 17, 2026). Recommended over Jira: free, and it links
+  PRs to stories automatically.
+  - [x] PR template (description, summary, type checkboxes, checklist), plus Story, Bug and Design request issue
+    templates (October 17, 2026).
+  - [ ] GitHub Projects board: Backlog → Ready for design → In design → Ready for dev → In progress → In review →
+    Done. Needs the owner's OK; `gh` may need the `project` scope (`gh auth refresh -s project`).
+  - [ ] Start each session by checking the board for *Ready for dev* stories (Claude) and *Ready for design* stories
+    (ChatGPT, via the owner).
+  - [ ] Later, optional: a Claude agent that reacts to GitHub issues automatically. It needs a paid API key, so it's
+    deferred for cost.
+- [ ] **Notifications** (owner idea, October 17, 2026).
+  - [ ] **Owner:** install the GitHub mobile app and watch the repo (PRs, issues, releases, failed checks). It's free.
+  - [ ] Optional: a free Discord server with a `#dev-updates` channel fed by a GitHub webhook.
+  - Meta AI has no known GitHub integration, so it isn't planned.
+
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
