@@ -21,6 +21,7 @@ public static class FamiliesModule
         services.AddScoped<IFamilyMembershipReader, FamilyMembershipReader>();
         services.AddScoped<InvitationEmails>();
         services.AddScoped<IApprovalTargetHandler, ChildCreateHandler>();
+        services.AddScoped<IApprovalTargetHandler, ChildPinChangeHandler>();
         services.AddScoped<IApprovalParticipants, FamilyParticipants>();
         services.AddScoped<IChildSessionValidator, ChildSessionValidator>();
         services.AddScoped<ChildSafetyEmails>();

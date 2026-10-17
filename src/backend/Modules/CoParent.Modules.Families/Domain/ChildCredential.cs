@@ -17,6 +17,9 @@ internal sealed partial class ChildCredential : Entity, IFamilyScoped
 
     public required string PinHash { get; set; }
 
+    /// <summary>A proposed new PIN (hashed), waiting for the other parent's approval. The current PIN keeps working.</summary>
+    public string? PendingPinHash { get; set; }
+
     public int FailedAttempts { get; private set; }
 
     public DateTimeOffset? LockedAt { get; private set; }
