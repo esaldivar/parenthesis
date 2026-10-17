@@ -149,7 +149,11 @@ internal static class CalendarEndpoints
             new EventChild { FamilyId = tenant.FamilyId, EventId = calendarEvent.Id, ChildProfileId = id }));
 
         // Reads first: once the unit of work commits, its transaction is finished.
-        var warnings = await WarningsAsync(db, category, calendarEvent.StartsAt, calendarEvent.EndsAt, tenant.MembershipId, cancellationToken);
+        var warnings = await WarningsAsync(
+            db,
+            new WarningCheck(category, calendarEvent.StartsAt, calendarEvent.EndsAt, tenant.MembershipId, calendarEvent.CaregiverMembershipId,
+                calendarEvent.Children.Select(c => c.ChildProfileId).ToList(), ExcludeEventId: null),
+            cancellationToken);
         var userId = http.User.GetUserId()!.Value;
         Guid? changeRequestId = null;
         await unitOfWork.ExecuteAsync(async ct =>
@@ -227,7 +231,11 @@ internal static class CalendarEndpoints
             return TypedResults.ValidationProblem(errors);
         }
 
-        var warnings = await WarningsAsync(db, e.Category, change.StartsAt, change.EndsAt, tenant.MembershipId, cancellationToken);
+        var warnings = await WarningsAsync(
+            db,
+            new WarningCheck(e.Category, change.StartsAt, change.EndsAt, tenant.MembershipId, change.CaregiverMembershipId,
+                e.Children.Select(c => c.ChildProfileId).ToList(), ExcludeEventId: e.Id),
+            cancellationToken);
         var userId = http.User.GetUserId()!.Value;
         var needsApproval = CalendarEvent.NeedsApproval(e.Category) && parents.Count >= 2 && change != current;
         Guid? changeRequestId = null;
@@ -369,24 +377,72 @@ internal static class CalendarEndpoints
         return errors;
     }
 
-    /// <summary>Parenting time overlapping the other parent's unavailable time gets a gentle, non-blocking warning.</summary>
+    /// <summary>Parenting time for a child that overlaps another parenting-time block for the same child (C-06).</summary>
+    public const string OverlapsParentingTime = "OverlapsParentingTime";
+
+    /// <summary>The caregiving parent marked themselves unavailable then: suggest arranging coverage, never reassign.</summary>
+    public const string CaregiverUnavailable = "CaregiverUnavailable";
+
+    /// <summary>New unavailable time overlaps the owner's own confirmed parenting time.</summary>
+    public const string OverlapsYourParentingTime = "OverlapsYourParentingTime";
+
+    /// <summary>
+    /// Gentle, non-blocking conflict warnings (CALENDAR_DECISIONS.md, C-06). They inform; they never block a request
+    /// or change anyone's parenting time.
+    /// </summary>
     private static async Task<IReadOnlyList<string>> WarningsAsync(
-        CalendarDbContext db, EventCategory category, DateTimeOffset starts, DateTimeOffset ends, Guid proposer, CancellationToken cancellationToken)
+        CalendarDbContext db, WarningCheck check, CancellationToken cancellationToken)
     {
-        if (category != EventCategory.ParentingTime)
+        var (category, starts, ends, proposer) = (check.Category, check.StartsAt, check.EndsAt, check.ProposerMembershipId);
+        var overlapping = db.Events.Where(x => x.Id != check.ExcludeEventId
+            && x.StartsAt < ends
+            && x.EndsAt > starts
+            && (x.Status == EventStatus.Confirmed || x.Status == EventStatus.PendingApproval));
+        var warnings = new List<string>();
+
+        if (category == EventCategory.ParentingTime)
         {
-            return [];
+            var unavailable = await overlapping
+                .Where(x => x.Category == EventCategory.Unavailable && x.Status == EventStatus.Confirmed)
+                .Select(x => x.OwnerMembershipId)
+                .ToListAsync(cancellationToken);
+            if (unavailable.Any(owner => owner != proposer))
+            {
+                warnings.Add(OverlapsCoParentUnavailable);
+            }
+
+            if (check.CaregiverMembershipId is { } caregiver && unavailable.Contains(caregiver))
+            {
+                warnings.Add(CaregiverUnavailable);
+            }
+
+            var childIds = check.ChildIds;
+            if (await overlapping.AnyAsync(
+                    x => x.Category == EventCategory.ParentingTime && x.Children.Any(c => childIds.Contains(c.ChildProfileId)),
+                    cancellationToken))
+            {
+                warnings.Add(OverlapsParentingTime);
+            }
+        }
+        else if (category == EventCategory.Unavailable
+            && await overlapping.AnyAsync(
+                x => x.Category == EventCategory.ParentingTime && x.Status == EventStatus.Confirmed && x.CaregiverMembershipId == proposer,
+                cancellationToken))
+        {
+            warnings.Add(OverlapsYourParentingTime);
         }
 
-        var overlaps = await db.Events.AnyAsync(
-            x => x.Category == EventCategory.Unavailable
-                && x.Status == EventStatus.Confirmed
-                && x.OwnerMembershipId != proposer
-                && x.StartsAt < ends
-                && x.EndsAt > starts,
-            cancellationToken);
-        return overlaps ? [OverlapsCoParentUnavailable] : [];
+        return warnings;
     }
+
+    private sealed record WarningCheck(
+        EventCategory Category,
+        DateTimeOffset StartsAt,
+        DateTimeOffset EndsAt,
+        Guid ProposerMembershipId,
+        Guid? CaregiverMembershipId,
+        IReadOnlyList<Guid> ChildIds,
+        Guid? ExcludeEventId);
 
     private static Dictionary<string, string[]> Validate(
         CreateEventRequest request, IReadOnlySet<Guid> children, IReadOnlySet<Guid> parents)
