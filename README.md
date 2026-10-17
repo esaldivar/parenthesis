@@ -1,5 +1,10 @@
 # Parenthesis
 
+![Parenthesis logo concept — two parenthesis-shaped caregivers embracing a smiling child](docs/design/assets/parenthesis-logo-concept.svg)
+
+> **Brand preview:** This is a provisional vector interpretation of the approved logo direction; final production artwork is pending visual review.
+
+
 [![CI](https://github.com/esaldivar/parenthesis/actions/workflows/ci.yml/badge.svg)](https://github.com/esaldivar/parenthesis/actions/workflows/ci.yml)
 
 Parenthesis is a multi-tenant co-parenting app for separated parents: a shared calendar with PR-style mutual approvals, a family memory library with mutual deletion approval, and a safe, simple space for children.
@@ -67,6 +72,14 @@ src/backend/    ASP.NET Core host, shared kernel, infrastructure, modules
 src/frontend/   Angular 22 app: parent and child shells, design tokens (see docs/design-system.md)
 tests/          unit, integration (xUnit v3, Testcontainers) and architecture tests
 ```
+
+## Design and branding
+
+- [Visual design system](docs/design-system.md)
+- [Brand identity and logo usage](docs/design/BRANDING.md)
+- [Page design planning](docs/design/PAGE_DESIGNS.md)
+
+The logo uses a neutral, abstract child figure and a two-tone wordmark: sage **Parent** and charcoal **hesis**. Detailed styling guidance lives in the linked documents to keep this README focused on the project and setup.
 
 ## Planning documents
 - [Solution architecture & repository structure](docs/architecture/solution-architecture.md)
