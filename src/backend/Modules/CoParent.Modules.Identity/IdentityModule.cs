@@ -4,6 +4,8 @@ using CoParent.Modules.Identity.Contracts;
 using CoParent.Modules.Identity.Domain;
 using CoParent.Modules.Identity.Endpoints;
 using CoParent.Modules.Identity.Infrastructure;
+using CoParent.SharedKernel.Security;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -58,6 +60,26 @@ public static class IdentityModule
             // An API answers with status codes, not redirects to a login page.
             options.Events.OnRedirectToLogin = context => SetStatus(context.Response, StatusCodes.Status401Unauthorized);
             options.Events.OnRedirectToAccessDenied = context => SetStatus(context.Response, StatusCodes.Status403Forbidden);
+
+            // Child sessions (ADR-0006) have no user account, so the security-stamp check doesn't apply. They're
+            // re-checked on every request instead: an archived child, disabled access or a removed device ends them
+            // at once. Parent sessions keep Identity's own validation.
+            var validateParent = options.Events.OnValidatePrincipal;
+            options.Events.OnValidatePrincipal = async context =>
+            {
+                if (context.Principal?.GetChildSession() is not { } child)
+                {
+                    await validateParent(context);
+                    return;
+                }
+
+                var validator = context.HttpContext.RequestServices.GetRequiredService<IChildSessionValidator>();
+                if (!await validator.IsValidAsync(child, context.HttpContext.RequestAborted))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                }
+            };
         });
         services.AddAuthorization();
 

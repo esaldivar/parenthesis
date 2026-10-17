@@ -1,6 +1,7 @@
 using System.Net.Mail;
 using System.Security.Claims;
 using CoParent.Modules.Identity.Domain;
+using CoParent.SharedKernel.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -30,7 +31,7 @@ internal static class AuthEndpoints
         anonymous.MapPost("/login", LoginAsync);
         AccountRecoveryEndpoints.Map(anonymous);
 
-        api.MapPost("/auth/logout", LogoutAsync).WithTags("Auth");
+        api.MapPost("/auth/logout", LogoutAsync).WithTags("Auth").WithMetadata(new ChildSessionAllowed());
         api.MapGet("/me", MeAsync).WithTags("Me");
     }
 
