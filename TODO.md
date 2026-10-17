@@ -83,7 +83,7 @@ that points back here.
   - [x] Backend: household devices, "Who's using Parenthesis?" profiles, kid PIN sign-in on registered devices only,
     the 3-strikes lock with an email to both parents and one-tap unlock, instant device removal and access disabling,
     and the kid-session gate (A-08–A-10, October 17, 2026).
-  - [ ] Backend: kid tablet pairing with a one-time code (A-11).
+  - [x] Backend: kid tablet pairing (A-11). A 10-minute single-use XXXX-XXXX code from a parent makes the tablet that one child's device and ends any parent session on it (October 17, 2026).
   - [ ] Backend: changing an existing kid PIN with the co-parent's approval (ADR-0006). Today a PIN is set once;
     disabling access is immediate.
   - [ ] Frontend: re-fetch the antiforgery token whenever the profile changes (kid signs in, parent signs back in).

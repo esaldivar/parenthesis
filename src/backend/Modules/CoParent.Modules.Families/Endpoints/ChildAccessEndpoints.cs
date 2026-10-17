@@ -30,6 +30,12 @@ internal sealed record ChildSignInRequest(Guid ChildId, string? Pin);
 
 internal sealed record ChildSessionView(Guid ChildId, string FirstName, Guid FamilyId);
 
+internal sealed record PairingCodeView(string Code, DateTimeOffset ExpiresAt);
+
+internal sealed record PairDeviceRequest(string? Code, string? DeviceName);
+
+internal sealed record PairedDeviceView(Guid ChildId, string ChildFirstName);
+
 /// <summary>
 /// Devices, the profile picker, child PINs and lockout (A-08 to A-10, ADR-0006).
 /// <list type="bullet">
@@ -53,10 +59,12 @@ internal static class ChildAccessEndpoints
         children.MapPut("/pin", SetPinAsync);
         children.MapDelete("/pin", DisableAsync);
         children.MapPost("/unlock", UnlockAsync);
+        children.MapPost("/pairing-code", CreatePairingCodeAsync);
 
         var device = api.MapGroup("/device").WithTags("Profile picker").AllowAnonymous();
         device.MapGet("/profiles", ProfilesAsync);
         device.MapPost("/child-session", ChildSignInAsync).RequireRateLimiting(PinRateLimitPolicy);
+        device.MapPost("/pair", PairAsync).RequireRateLimiting(PinRateLimitPolicy);
 
         api.MapGet("/session/child", CurrentChild).WithTags("Profile picker").WithMetadata(new ChildSessionAllowed());
     }
@@ -416,6 +424,126 @@ internal static class ChildAccessEndpoints
             IdentityConstants.ApplicationScheme,
             ChildSessionPrincipal.Create(new ChildSession(child.Id, device.FamilyId, device.Id, child.FirstName)));
         return TypedResults.NoContent();
+    }
+
+    /// <summary>
+    /// A one-time code for pairing this child's own tablet (A-11). Valid for 10 minutes and single use; it replaces any
+    /// earlier unused code for the same child.
+    /// </summary>
+    private static async Task<Results<Ok<PairingCodeView>, NotFound, ForbidHttpResult>> CreatePairingCodeAsync(
+        Guid childId,
+        HttpContext http,
+        ITenantContext tenant,
+        FamiliesDbContext db,
+        IUnitOfWork unitOfWork,
+        IAuditLog audit,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (!await db.Children.AnyAsync(c => c.Id == childId && c.Status == ChildStatus.Active, cancellationToken))
+        {
+            return TypedResults.NotFound();
+        }
+
+        var now = clock.GetUtcNow();
+        var (code, hash) = DevicePairingCode.NewCode();
+        var pairing = new DevicePairingCode
+        {
+            FamilyId = tenant.FamilyId,
+            ChildProfileId = childId,
+            CodeHash = hash,
+            CreatedByMembershipId = tenant.MembershipId,
+            CreatedAt = now,
+            ExpiresAt = now + DevicePairingCode.Lifetime,
+        };
+
+        await unitOfWork.ExecuteAsync(async ct =>
+        {
+            var earlier = await db.PairingCodes.Where(c => c.ChildProfileId == childId && c.UsedAt == null).ToListAsync(ct);
+            earlier.ForEach(c => c.MarkUsed(now));
+            db.PairingCodes.Add(pairing);
+            await db.SaveChangesAsync(ct);
+            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, http.User.GetUserId(), "device.pairing_code_created", "child", childId), ct);
+        }, cancellationToken);
+        return TypedResults.Ok(new PairingCodeView(code, pairing.ExpiresAt));
+    }
+
+    /// <summary>
+    /// The child's tablet redeems the code and becomes that child's device. Any session on this browser ends: a
+    /// child's tablet never keeps a parent signed in.
+    /// </summary>
+    private static async Task<Results<Ok<PairedDeviceView>, ValidationProblem, ProblemHttpResult>> PairAsync(
+        PairDeviceRequest request,
+        HttpContext http,
+        FamiliesDbContext db,
+        TenantContext tenant,
+        IUnitOfWork unitOfWork,
+        IAuditLog audit,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
+        var name = request.DeviceName?.Trim() ?? "";
+        if (name.Length is 0 or > Device.NameMaxLength)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["deviceName"] = [$"Give this device a name of 1 to {Device.NameMaxLength} characters, like \"Kai's tablet\"."],
+            });
+        }
+
+        var invalid = TypedResults.Problem(
+            title: "That code didn't work.",
+            detail: "Codes work once and only for 10 minutes. Ask a parent for a new one.",
+            statusCode: StatusCodes.Status404NotFound);
+        if (string.IsNullOrWhiteSpace(request.Code))
+        {
+            return invalid;
+        }
+
+        var now = clock.GetUtcNow();
+        var hash = DevicePairingCode.Hash(request.Code);
+        string[] filter = [TenantContext.QueryFilterName];
+        var pairing = await db.PairingCodes.IgnoreQueryFilters(filter).SingleOrDefaultAsync(c => c.CodeHash == hash, cancellationToken);
+        var child = pairing is null
+            ? null
+            : await db.Children.IgnoreQueryFilters(filter).SingleOrDefaultAsync(
+                c => c.Id == pairing.ChildProfileId && c.Status == ChildStatus.Active, cancellationToken);
+        if (pairing is null || child is null || !pairing.IsUsable(now))
+        {
+            return invalid;
+        }
+
+        var (token, tokenHash) = Device.NewToken();
+        var device = new Device
+        {
+            FamilyId = pairing.FamilyId,
+            Kind = DeviceKind.ChildPaired,
+            ChildProfileId = child.Id,
+            Name = name,
+            TokenHash = tokenHash,
+            CreatedByMembershipId = pairing.CreatedByMembershipId,
+            CreatedAt = now,
+            LastSeenAt = now,
+        };
+
+        await unitOfWork.ExecuteAsync(async ct =>
+        {
+            // The tablet joins this family as the child's device.
+            tenant.Resolve(pairing.FamilyId, child.Id, FamilyRole.Child);
+            pairing.MarkUsed(now);
+            db.Devices.Add(device);
+            await db.SaveChangesAsync(ct);
+            await audit.RecordAsync(new AuditEntry(pairing.FamilyId, null, "device.paired", "device", device.Id), ct);
+        }, cancellationToken);
+
+        await http.SignOutAsync(IdentityConstants.ApplicationScheme);
+        DeviceCookie.Set(http.Response, token, now);
+        return TypedResults.Ok(new PairedDeviceView(child.Id, child.FirstName));
     }
 
     private static Results<Ok<ChildSessionView>, UnauthorizedHttpResult> CurrentChild(HttpContext http) =>

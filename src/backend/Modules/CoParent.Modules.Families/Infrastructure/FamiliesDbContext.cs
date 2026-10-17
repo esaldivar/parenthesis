@@ -27,6 +27,8 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<ChildCredential> ChildCredentials => Set<ChildCredential>();
 
+    public DbSet<DevicePairingCode> PairingCodes => Set<DevicePairingCode>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -95,6 +97,16 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             credential.HasOne<ChildProfile>().WithMany().HasForeignKey(c => c.ChildProfileId);
             credential.HasIndex(c => c.ChildProfileId).IsUnique();
             credential.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<DevicePairingCode>(code =>
+        {
+            code.ToTable("device_pairing_codes");
+            code.Property(c => c.CodeHash).HasMaxLength(32);
+            code.HasOne<ChildProfile>().WithMany().HasForeignKey(c => c.ChildProfileId);
+            code.HasIndex(c => c.CodeHash).IsUnique();
+            code.HasIndex(c => c.ChildProfileId);
+            code.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
         });
     }
 }
