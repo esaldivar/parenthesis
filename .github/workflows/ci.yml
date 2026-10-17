@@ -1,9 +1,11 @@
 name: CI
 
+# Every PR is checked. main and develop only change through PRs (protected branches; see CONTRIBUTING.md), and are
+# re-checked after each merge.
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read
@@ -18,6 +20,23 @@ env:
   CI: "true"
 
 jobs:
+  # main is what goes to the site: it only accepts PRs from develop (a release) or a hotfix/* branch. GitHub can't
+  # restrict a PR's source branch itself, so this required check does.
+  pr-source:
+    name: PR source (main accepts develop or hotfix/*)
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the source branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            develop|hotfix/*) echo "OK: $HEAD_REF -> main" ;;
+            *) echo "::error::PRs into main must come from develop or a hotfix/* branch (this one is from $HEAD_REF)."; exit 1 ;;
+          esac
+
   backend:
     name: Backend (build, format, tests)
     runs-on: ubuntu-latest

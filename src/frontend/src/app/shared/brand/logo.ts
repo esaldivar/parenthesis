@@ -1,32 +1,45 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
- * Parenthesis brand slot — LOGO ASSET PENDING.
+ * Parenthesis brand slot — approved icon + text wordmark (WORDMARK ASSET PENDING).
  *
- * The brand is locked (docs/design/BRANDING.md): the approved artwork is Variation 1 (Default) icon + Option B
- * wordmark on the original board at docs/design/assets/F61791C0-BC62-4584-9C48-B5E8CA9A7BFE.jpeg. Production
- * exports aren't in the repository yet, and the rules forbid redrawing or approximating the icon, so until they are
- * this renders only the product name as text in the Option B colours (sage "Parent", charcoal "hesis"; ivory in
- * dark mode) — an explicit asset-pending state rather than a visually incorrect substitute.
+ * The brand is locked (docs/design/BRANDING.md): Variation 1 (Default) icon + Option B wordmark, from the original
+ * board at docs/design/assets/F61791C0-BC62-4584-9C48-B5E8CA9A7BFE.jpeg.
  *
- * When verified exports land, render them here; every screen uses this component.
+ * - Icon: the user-approved export docs/design/assets/parenthesis-icon.svg, copied unchanged to
+ *   public/brand/parenthesis-icon.svg. Never redraw, recolour or edit it.
+ * - Wordmark: rendered as text in the Option B colours (sage "Parent", charcoal "hesis"; ivory in dark mode) because
+ *   the horizontal lockup exports are defective.
+ *
+ * TODO(brand): corrected parenthesis-logo-horizontal.svg and parenthesis-logo-horizontal-dark.svg are needed from
+ * ChatGPT (the user's asset tool): the exact board artwork, lettering converted to outlines, transparent background,
+ * uploaded to docs/design/assets/ on feat/angular-shell. Once they're visually verified against the board, render
+ * them here instead of the text wordmark. Every screen uses this component.
  */
 @Component({
   selector: 'app-logo',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'logo',
-    'data-asset-status': 'pending',
+    'data-asset-status': 'wordmark-pending',
     '[attr.role]': 'decorative() ? null : "img"',
     '[attr.aria-label]': 'decorative() ? null : "Parenthesis"',
     '[attr.aria-hidden]': 'decorative() ? "true" : null',
   },
-  template: `<span class="logo__wordmark"><span class="parent">Parent</span><span class="hesis">hesis</span></span>`,
+  template: `
+    <img class="logo__icon" src="/brand/parenthesis-icon.svg" alt="" width="188" height="174" />
+    <span class="logo__wordmark"><span class="parent">Parent</span><span class="hesis">hesis</span></span>
+  `,
   styles: `
     :host {
       display: inline-flex;
       align-items: center;
+      gap: 0.3em;
       line-height: 1;
+    }
+    .logo__icon {
+      width: auto;
+      height: 1.9em;
     }
     .logo__wordmark {
       font-family: var(--font-family);

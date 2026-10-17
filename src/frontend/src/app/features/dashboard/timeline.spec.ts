@@ -11,14 +11,14 @@ describe('activity time grid', () => {
   });
 
   it('places an activity by its start time in 30-minute rows, with a minimum legible height', () => {
-    const { placements } = placeDay([event('dentist', '10:00'), event('long', '13:00', 240)], 8);
+    const { placements } = placeDay([event('dentist', '10:00'), event('long', '15:00', 360)], 8);
 
     expect(placements.get('dentist')).toEqual({ row: 5, span: MIN_SLOTS, lane: 1 });
-    expect(placements.get('long')).toEqual({ row: 11, span: 8, lane: 1 });
+    expect(placements.get('long')).toEqual({ row: 15, span: 12, lane: 1 });
   });
 
-  it('puts overlapping activities side by side', () => {
-    const { placements, lanes } = placeDay([event('a', '16:00'), event('b', '16:30'), event('c', '19:00')], 8);
+  it('puts activities whose cards would overlap side by side', () => {
+    const { placements, lanes } = placeDay([event('a', '16:00'), event('b', '16:30'), event('c', '21:00')], 8);
 
     expect([placements.get('a')!.lane, placements.get('b')!.lane, placements.get('c')!.lane]).toEqual([1, 2, 1]);
     expect(lanes).toBe(2);

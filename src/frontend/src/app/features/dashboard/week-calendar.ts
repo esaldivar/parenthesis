@@ -1,8 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  afterRenderEffect,
+  computed,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
+import { CalendarKey } from './calendar-key';
 import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from './grouping';
 import { DashboardWeek, FamilyEvent, PlainDate } from './model';
 import { StatusLabel } from './status-label';
@@ -40,7 +51,7 @@ interface DayView {
 @Component({
   selector: 'app-week-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, Avatar, Icon, StatusLabel],
+  imports: [MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey],
   templateUrl: './week-calendar.html',
   styleUrl: './week-calendar.scss',
 })
@@ -64,8 +75,25 @@ export class WeekCalendar {
 
   protected readonly label = computed(() => weekLabelLong(this.weekStart()));
   private readonly events = computed(() => this.week()?.events ?? []);
-  protected readonly hours = computed(() => visibleHours(this.events()));
+  /** The whole day is in the grid; it scrolls (see constructor) to where this week's activities begin. */
+  protected readonly hours = computed(() => ({ startHour: 0, endHour: 24 }));
   protected readonly rows = computed(() => (this.hours().endHour - this.hours().startHour) * 2);
+  /** 8 AM, or earlier when an activity this week starts earlier. */
+  private readonly firstHour = computed(() => visibleHours(this.events()).startHour);
+  private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+
+  constructor() {
+    // Open each week (and the grid itself) scrolled to the morning. It reruns only when the week, its activities or
+    // the grid change, never fighting the parent's own scrolling.
+    afterRenderEffect(() => {
+      const scroller = this.scroller()?.nativeElement;
+      const hour = this.firstHour();
+      this.weekStart();
+      if (scroller) {
+        scroller.scrollTop = ((hour - this.hours().startHour) * 2 * scroller.scrollHeight) / this.rows();
+      }
+    });
+  }
   protected readonly hourMarks = computed(() => {
     const { startHour, endHour } = this.hours();
     const marks: { label: string; row: number }[] = [];
@@ -95,9 +123,15 @@ export class WeekCalendar {
   );
 
   private readonly blocks = computed(() => groupParentingTime(this.week()?.parentingTime ?? [], { split: this.split() }));
-  /** The schedule: confirmed (and rejected) arrangements. Proposals are listed separately below the grid. */
-  protected readonly allDay = computed(() => this.blocks().filter((b) => b.status !== 'proposed'));
-  protected readonly proposals = computed(() => this.blocks().filter((b) => b.status === 'proposed'));
+  /**
+   * The all-day row: the schedule (confirmed and rejected arrangements) first, then proposals, which take their own
+   * lane beneath it. Proposals are hatched, outlined and labelled "Proposed · Needs approval", so they never read as
+   * part of the schedule (approved by the user on October 17, 2026).
+   */
+  protected readonly allDay = computed(() => [
+    ...this.blocks().filter((b) => b.status !== 'proposed'),
+    ...this.blocks().filter((b) => b.status === 'proposed'),
+  ]);
   protected readonly placements = computed(() => placeInWeek(this.allDay(), this.weekStart()));
   protected readonly allDayLanes = computed(() => Math.max(1, ...[...this.placements().values()].map((p) => p.lane + 1)));
 
@@ -107,6 +141,7 @@ export class WeekCalendar {
   );
 
   protected readonly childNames = childNames;
+  protected readonly parentNames = (event: FamilyEvent) => (event.parents ?? []).map((p) => p.displayName).join(' and ');
   protected readonly timeLabel = timeLabel;
   protected readonly icons = CATEGORY_ICONS;
 

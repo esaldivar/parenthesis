@@ -1,0 +1,90 @@
+name: Sonar
+
+# Code quality, security and vulnerability analysis with SonarQube Cloud (Free plan, public repository). The Free plan
+# analyses the main branch, so this runs on PRs into main (releases and hotfixes) and on main after each merge.
+# Setup steps for the owner: docs/runbooks/sonarqube-cloud.md. Until the SONAR_ORGANIZATION variable is set, the job
+# is skipped rather than failing.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  sonar:
+    name: SonarQube Cloud
+    if: vars.SONAR_ORGANIZATION != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Full history, so Sonar can tell new code from old.
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      # Installed so the TypeScript analysis can resolve Angular's types. Analysis only reads code, so package install
+      # scripts never need to run here (Sonar githubactions:S6505).
+      - name: Install frontend dependencies
+        working-directory: src/frontend
+        run: npm ci --ignore-scripts
+
+      - name: Install SonarScanner for .NET and dotnet-coverage
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          dotnet tool install --global dotnet-coverage
+
+      # Coverage for the quality gate (new code must be at least 80% covered).
+      - name: Frontend tests with coverage (lcov)
+        working-directory: src/frontend
+        run: npm test -- --coverage --coverage-reporters=lcov
+
+      # The .NET scanner analyses C# through the build and, with scanAll, the rest of the repository too (TypeScript,
+      # HTML, CSS, Docker, YAML).
+      - name: Begin analysis
+        run: >
+          dotnet sonarscanner begin
+          /k:"$SONAR_PROJECT_KEY"
+          /o:"$SONAR_ORGANIZATION"
+          /d:sonar.token="$SONAR_TOKEN"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.scanner.scanAll=true
+          /d:sonar.exclusions="**/node_modules/**,**/dist/**,**/bin/**,**/obj/**,docs/**"
+          /d:sonar.test.inclusions="**/*.spec.ts"
+          /d:sonar.cs.vscoveragexml.reportsPaths="coverage-backend.xml"
+          /d:sonar.javascript.lcov.reportPaths="src/frontend/coverage/parenthesis/lcov.info"
+          /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,docker/**,.github/**"
+
+      - name: Build
+        run: dotnet build CoParent.slnx -c Release
+
+      # Integration tests start PostgreSQL with Testcontainers on the runner's Docker.
+      - name: Backend tests with coverage
+        run: dotnet-coverage collect "dotnet test --solution CoParent.slnx -c Release --no-build" -f xml -o coverage-backend.xml
+
+      - name: End analysis (uploads results; the quality gate shows on the PR)
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"

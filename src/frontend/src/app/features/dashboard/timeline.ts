@@ -5,8 +5,11 @@ import { IconName } from '../../shared/icon/icon';
 // Pure functions: they read events and never change them, and activities never affect parenting time.
 
 export const SLOT_MINUTES = 30;
-/** A card needs room for its icon, title, time and avatars, so it's at least this many slots tall. */
-export const MIN_SLOTS = 5;
+/**
+ * A card needs room for its icon, title, time and child avatars (in the approved design cards are taller than short
+ * activities), so it is at least this many slots tall. Overlap lanes use this visual height.
+ */
+export const MIN_SLOTS = 9;
 const DEFAULT_START_HOUR = 8;
 const DEFAULT_END_HOUR = 21; // So the last label is 8 PM, as in the approved design.
 const DEFAULT_DURATION = 60;
@@ -66,5 +69,7 @@ export const CATEGORY_ICONS: Record<EventCategory, IconName> = {
   music: 'music',
   sport: 'soccer',
   art: 'palette',
+  family: 'children',
+  unavailable: 'block',
   other: 'calendar',
 };

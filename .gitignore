@@ -33,3 +33,6 @@ appsettings.*.local.json
 
 # Local Claude Code / editor tooling
 .claude/
+
+# Backend coverage for SonarQube Cloud (dotnet-coverage)
+coverage-*.xml

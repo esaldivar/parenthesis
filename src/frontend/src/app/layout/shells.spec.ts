@@ -44,11 +44,14 @@ describe('application shells', () => {
       expect(body.querySelector('main h1')!.textContent).toBe('Child Essentials');
     });
 
-    it('offers an account menu instead of a bare sign-out button', async () => {
+    it('offers one account menu, in the top bar, instead of a bare sign-out button', async () => {
       const body = await open('/');
 
-      expect([...body.querySelectorAll('button[aria-label="Account menu"]')]).toHaveLength(2); // Sidebar and top bar.
-      expect(body.textContent).toContain('Hi, Alex!');
+      const menus = [...body.querySelectorAll('button[aria-label="Account menu"]')];
+      expect(menus).toHaveLength(1);
+      expect(menus[0].closest('header.topbar')).not.toBeNull();
+      expect(menus[0].textContent).toContain('Alex');
+      expect(body.querySelector('.sidebar')!.textContent).not.toContain('Hi, Alex');
     });
 
     it('marks the current page for assistive technology', async () => {
@@ -56,6 +59,29 @@ describe('application shells', () => {
 
       const current = [...body.querySelectorAll('[aria-current="page"]')].map((a) => a.textContent!.trim());
       expect(current).toEqual(['Calendar', 'Calendar']); // Side and bottom navigation; only one is visible at a time.
+    });
+
+    it('never shows unread counts for real data: the bell says notifications are not available yet', async () => {
+      const body = await open('/');
+
+      expect(body.querySelector('.badge')).toBeNull();
+      expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications');
+    });
+
+    it('shows placeholder counts only in the sample preview, labelled as sample data', async () => {
+      const body = await open('/?sample=1');
+      const sidenav = body.querySelector('nav.sidenav')!;
+
+      expect(sidenav.textContent).toContain('3 unread (sample data)'); // Messages
+      expect(sidenav.textContent).toContain('2 unread (sample data)'); // From Your Kids
+      expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications, 3 unread (sample data)');
+    });
+
+    it('keeps Home current when the dashboard URL carries a query, and only Home', async () => {
+      const body = await open('/?week=2026-10-18');
+
+      const current = [...body.querySelectorAll('[aria-current="page"]')].map((a) => a.textContent!.trim());
+      expect(current).toEqual(['Home', 'Home']);
     });
 
     it('shows the approved dashboard sections', async () => {

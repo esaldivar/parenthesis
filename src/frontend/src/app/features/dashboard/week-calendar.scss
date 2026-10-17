@@ -1,9 +1,11 @@
 // The approved weekly calendar. Wide containers show the week grid; narrow ones (phones) fall back to the
 // agenda, which is also the List view.
+@use 'proposed-fill' as *;
+
 :host {
   display: block;
   container-type: inline-size;
-  --slot: 1.125rem; // 30 minutes
+  --slot: 0.875rem; // 30 minutes; 0.6875rem in wide cards, matching the approved design's compact hour rows
   --gutter: 3.5rem;
 }
 
@@ -26,6 +28,14 @@ ul {
 }
 
 // --- Toolbar ----------------------------------------------------------------------------------------------------
+// When the dashboard gives the calendar a fixed height, the hours area fills what's left (flex chain down to it).
+.cal {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -135,16 +145,63 @@ ul {
 // --- Week grid --------------------------------------------------------------------------------------------------
 .grid {
   display: none;
-  grid-template-columns: var(--gutter) repeat(7, minmax(0, 1fr));
   border: 1px solid var(--color-surface-soft);
   border-radius: var(--radius-control);
   background: var(--color-canvas);
   overflow: hidden;
 }
 
+// Both parts share the same columns and reserve the scroll bar's gutter, so the day columns line up.
+.grid__top,
+.grid__body {
+  display: grid;
+  grid-template-columns: var(--gutter) repeat(7, minmax(0, 1fr));
+  scrollbar-gutter: stable;
+}
+
+.grid__top {
+  overflow: hidden;
+}
+
+// The hours scroll inside a fixed height (the whole day is there), with a scroll bar that's always shown, so the rest
+// of the dashboard stays on screen. Keyboard users can focus it and scroll with the arrow keys.
+.grid__body {
+  position: relative; // Contains absolutely positioned screen-reader text, which would otherwise stretch the page.
+  max-height: var(--cal-body-max, 20rem);
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+
+  // A classic, always-visible scroll bar in the calendar's colours: a light sage track and a forest-green thumb (user
+  // decision, October 17, 2026). Styling it opts out of auto-hiding overlay scroll bars (Edge on Windows 11, macOS);
+  // Firefox, which lacks these pseudo-elements, gets scrollbar-color instead.
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--color-surface-soft);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    border: 2px solid var(--color-surface-soft);
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-color: var(--color-text) var(--color-surface-soft);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+  }
+}
+
 .grid__corner,
 .grid__head {
-  padding: var(--space-2) var(--space-1);
+  padding: var(--space-1);
   border-bottom: 1px solid var(--color-surface-soft);
   background: var(--color-surface);
 }
@@ -161,8 +218,8 @@ ul {
 .grid__date {
   display: inline-grid;
   place-items: center;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
   padding: 0 var(--space-1);
   border-radius: 999px;
   color: var(--color-text);
@@ -217,9 +274,15 @@ ul {
   }
 }
 
+// Proposed: diagonal hatching, a dashed outline and written labels, never colour alone. Not part of the schedule.
 .pt[data-status='proposed'] {
-  border: 2px dashed var(--color-outline);
-  background: var(--color-status-pending-bg);
+  @include proposed-fill;
+}
+
+.pt__note {
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .pt__icon {
@@ -234,7 +297,7 @@ ul {
   flex: none;
 
   app-avatar + app-avatar {
-    margin-inline-start: -8px;
+    margin-inline-start: -10px;
   }
 }
 
@@ -247,6 +310,11 @@ ul {
 .pt__title {
   font-weight: 700;
   overflow-wrap: anywhere;
+
+  .allday & {
+    font-weight: 600;
+    font-size: 1.0625rem;
+  }
 }
 
 .pt__meta {
@@ -327,7 +395,92 @@ ul {
   }
 }
 
-@each $category in school, medical, music, sport, art, other {
+// In the grid, narrow cards: icon, title, then time with the children's avatars beside it. Wide cards follow the
+// approved design: icon beside the title and time, avatars centred below. Either way they fit the minimum card height.
+.daycol .act {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon icon'
+    'title title'
+    'time avatars';
+  align-items: center;
+  align-content: start;
+  gap: 2px var(--space-1);
+  padding: 6px;
+
+  .act__head,
+  .act__text {
+    display: contents;
+  }
+
+  .act__icon {
+    grid-area: icon;
+  }
+
+  .act__title {
+    grid-area: title;
+  }
+
+  .act__time {
+    grid-area: time;
+  }
+
+  .act__avatars {
+    grid-area: avatars;
+    margin: 0;
+  }
+
+  app-status-label {
+    grid-column: 1 / -1;
+  }
+
+  .act__time {
+    white-space: nowrap;
+  }
+}
+
+// Two or more children don't fit beside the time in a narrow card: they get their own row.
+.daycol .act:has(.act__avatars app-avatar + app-avatar) {
+  grid-template-areas:
+    'icon icon'
+    'title title'
+    'time time'
+    'avatars avatars';
+
+  .act__avatars {
+    justify-self: start;
+  }
+}
+
+@container (min-width: 900px) {
+  // On .grid, not :host: a container query never matches the container element itself.
+  .grid {
+    --slot: 0.6875rem;
+  }
+
+  .daycol .act,
+  .daycol .act:has(.act__avatars app-avatar + app-avatar) {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'icon title'
+      'icon time'
+      'avatars avatars';
+    column-gap: 6px;
+
+    .act__icon {
+      align-self: start;
+    }
+
+    .act__avatars {
+      justify-self: center;
+      margin-top: var(--space-1);
+    }
+  }
+}
+
+// "other" is the base .act style.
+@each $category in school, medical, music, sport, art, family, unavailable {
   .act[data-category='#{$category}'] {
     background: var(--color-cat-#{$category}-bg);
 
@@ -422,13 +575,25 @@ ul {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-top: var(--space-3);
+  margin-top: var(--space-1);
 }
 
 // --- Wide: the week grid replaces the agenda in Week view -----------------------------------------------------------
 @container (min-width: 720px) {
   .grid {
-    display: grid;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .grid__top {
+    flex: none;
+  }
+
+  .grid__body {
+    flex: 1 1 auto;
+    min-height: 6rem;
   }
 
   .agenda:not(.agenda--always) {
@@ -446,22 +611,22 @@ ul {
   .pt__meta {
     display: none;
   }
-}
 
-.proposals {
-  margin-top: var(--space-3);
-
-  h3 {
-    font-size: 1rem;
+  .pt__text {
+    width: 100%;
   }
 
-  ul {
-    display: grid;
-    gap: var(--space-2);
-    margin-top: var(--space-2);
+  app-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8125rem;
   }
 
-  .pt {
-    align-items: center;
+  // One line (the full title is in the tooltip and read by screen readers), keeping the all-day row short.
+  .pt__title {
+    overflow: hidden;
+    font-size: 0.9375rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
