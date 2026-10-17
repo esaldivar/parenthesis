@@ -119,7 +119,10 @@ Rules:
 ### Authentication
 - ASP.NET Core Identity with **cookie authentication**: HttpOnly, Secure, `SameSite=Strict`, plus antiforgery tokens on unsafe methods. No tokens are stored in `localStorage` (ADR-0004).
 - Email confirmation, lockout, and password rules following NIST 800-63B (length over complexity, breached-password check later). TOTP 2FA is on the backlog.
-- **Child logins** need no email. A parent generates a one-time code on the child's device, and the child picks a username and a password or passphrase. A child account is an Identity user with `UserType=Child`.
+- **Children sign in with a profile picker and a PIN** ([ADR-0006](../adr/0006-profiles-pins-and-child-devices.md), proposed 2026-10-17). This replaces the earlier design of child accounts with a username and password.
+  - **Where a PIN works:** only on a device registered to the family, either a parent's household device or a child's tablet paired with a one-time code.
+  - **Lockout:** three wrong PINs lock the profile, both parents are notified, and either parent can unlock it.
+  - **Switching to a parent profile** always needs the parent's full password.
 
 ### Authorization (three layers, all server-side)
 1. **Tenant gate.** An endpoint filter on every `/api/families/{familyId}/…` route resolves the caller's active membership and fills `ITenantContext`. If the caller isn't a member, the API returns **404**, not 403, so it doesn't leak whether the family exists.
@@ -245,6 +248,6 @@ CoParent.Modules.Calendar/
 4. **One DbContext per module on a shared connection** (§3), not one global DbContext.
 5. **Frontend test runner.** Use **Vitest** (the default in current Angular CLI; Karma is deprecated) rather than Jasmine/Karma or Jest.
 6. **Hosting.** Azure Container Apps (scales to zero, cheap) over App Service.
-7. **Single-parent families.** Until the co-parent accepts the invitation, approval-required actions are **auto-confirmed and labelled "Confirmed before co-parent joined"**. The new parent sees them in a review list when they join. Alternative: block them until a second parent joins.
-8. **Child login.** Enabling it needs the other parent's approval (`ChildAccessGrant`). Disabling it is immediate, protective and audited.
+7. **Single-parent families.** Until the co-parent accepts the invitation, approval-required actions are **auto-confirmed and labelled "Confirmed before co-parent joined"**. The new parent sees them in a review list when they join. Alternative: block them until a second parent joins. **Exception (ADR-0006, 2026-10-17):** adding a child is never auto-confirmed. The child stays pending until both parents approve.
+8. **Child login.** Enabling it needs the other parent's approval (`ChildAccessGrant`). Disabling it is immediate, protective and audited. Sign-in itself is now by profile picker and PIN on registered devices (ADR-0006).
 9. **Diary sharing.** Private by default. A child can share an entry with *both parents* or *nobody*. Sharing with only one parent is deliberately left out for MVP so the app doesn't become a source of conflict between parents.

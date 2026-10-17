@@ -74,8 +74,12 @@ that points back here.
     4. **Before the co-parent joins:** children **aren't usable until both parents approve**. This replaces the
        architecture's "auto-confirm until the co-parent joins" for children.
     5. **Two existing families:** block and explain; no merging.
-  - [ ] Update the architecture docs (child sign-in via profile picker and device pairing, PIN lockout, children
-    needing both parents' approval) before building, since this changes approved decisions.
+  - [x] Architecture updated for these decisions: ADR-0006 (proposed), the solution architecture, ERD and backlog
+    (October 17, 2026).
+  - [ ] **Owner:** review and approve ADR-0006. Building starts after that.
+- [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner
+  manages. There's no direct link between the two, so GitHub is the shared desk: `docs/design/handoffs/` and the
+  `design` issue label. See that folder's README.
 - [ ] **Optional, future: diary safety signals** (owner idea, October 17, 2026; needs careful design and ideally
   child-safety expert input).
   - The owner's idea was to secretly alert parents about worrying diary content.

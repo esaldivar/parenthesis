@@ -303,6 +303,19 @@ erDiagram
 | Notification, AuditLog, ExternalCalendarConnection | Same names (+ `external_event_link` for de-duplication) |
 | *(new)* Invitation, CategoryApprovalPolicy, OutboxMessage | Needed for invitations, configurable approvals and reliable side effects |
 
+## M2 additions (ADR-0006, proposed 2026-10-17)
+The new tables for profile picker sign-in, child PINs, paired child devices, and children that need both parents'
+approval:
+- **`device`:** a household device or a child's paired tablet.
+- **`device_pairing_code`:** single-use, valid for 10 minutes, stored hashed.
+- **`child_credential`:** the PIN hash, a failed-attempt counter, and the lock state.
+- **`child_profile.status`:** `PendingApproval | Active | Archived`.
+- **`change_request.type`:** gains `ChildCreate`.
+
+Full columns: [ADR-0006](../adr/0006-profiles-pins-and-child-devices.md#data-model-additions-identity-and-families-schemas).
+Child sign-in no longer uses an Identity user with `user_type = Child`. That column stays for compatibility until the
+migration removes it.
+
 ## Key constraints and indexes
 
 | Table | Constraint / index | Why |
