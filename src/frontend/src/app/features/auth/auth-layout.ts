@@ -14,7 +14,7 @@ import { Logo } from '../../shared/brand/logo';
     <a class="skip-link" href="#auth-main">Skip to main content</a>
     <header class="auth-header">
       <a routerLink="/sign-in" aria-label="Parenthesis">
-        <app-logo [markSize]="40" [decorative]="true" />
+        <app-logo [decorative]="true" />
       </a>
     </header>
     <main id="auth-main" tabindex="-1">
