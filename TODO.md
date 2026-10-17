@@ -129,8 +129,10 @@ that points back here.
       co-parent joins; the others are auto-confirmed and labelled while there's one parent (decision 7).
     - Activities and unavailable time are confirmed at once. Unavailable notes are private to their owner.
     - Kids see only confirmed events that include them.
-  - [ ] Backend: edit and cancel (CalendarModify / CalendarCancel approvals, including re-approval for material
-    edits to joint events); swap requests with the non-blocking unavailable-overlap warning; overlap detection (C-06).
+  - [x] Backend: edit, cancel and swap (CalendarModify / CalendarCancel). Pending changes show before → after; there is
+    a non-blocking warning when parenting time overlaps the other parent's unavailable time (October 17, 2026).
+  - [ ] Backend: overlap detection between parenting-time blocks (C-06); flag an owner's unavailable time that
+    overlaps their own confirmed parenting time.
   - [ ] Backend: recurrence (C-05), reminders (C-04), the .ics feed (C-07), request expiry (AP-06).
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
     data source.

@@ -74,6 +74,12 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("owner_membership_id");
 
+                    b.Property<string>("PendingChange")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("pending_change");
+
                     b.Property<DateTimeOffset>("StartsAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("starts_at");
@@ -126,6 +132,53 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasDatabaseName("ix_event_children_child_profile_id");
 
                     b.ToTable("event_children", "calendar");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.CalendarEvent", b =>
+                {
+                    b.OwnsOne("CoParent.Modules.Calendar.Domain.ProposedTimes", "Proposed", b1 =>
+                        {
+                            b1.Property<Guid>("CalendarEventId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<bool>("AllDay")
+                                .HasColumnType("boolean")
+                                .HasColumnName("proposed_all_day");
+
+                            b1.Property<Guid?>("CaregiverMembershipId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("proposed_caregiver_membership_id");
+
+                            b1.Property<DateTimeOffset>("EndsAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("proposed_ends_at");
+
+                            b1.Property<string>("Location")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("proposed_location");
+
+                            b1.Property<DateTimeOffset>("StartsAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("proposed_starts_at");
+
+                            b1.Property<string>("Title")
+                                .IsRequired()
+                                .HasMaxLength(120)
+                                .HasColumnType("character varying(120)")
+                                .HasColumnName("proposed_title");
+
+                            b1.HasKey("CalendarEventId");
+
+                            b1.ToTable("events", "calendar");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CalendarEventId")
+                                .HasConstraintName("fk_events_events_id");
+                        });
+
+                    b.Navigation("Proposed");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Calendar.Domain.EventChild", b =>

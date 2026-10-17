@@ -14,6 +14,12 @@ public static class ChangeRequestTypes
 
     /// <summary>A new joint family event: always both parents, even before the co-parent joins.</summary>
     public const string JointEventCreate = "JointEventCreate";
+
+    /// <summary>A change to a confirmed approval-gated event, including a parenting-time swap.</summary>
+    public const string CalendarModify = "CalendarModify";
+
+    /// <summary>Cancelling a confirmed approval-gated event.</summary>
+    public const string CalendarCancel = "CalendarCancel";
 }
 
 /// <summary>A proposal raised by a parent. The proposer's own approval is implied.</summary>

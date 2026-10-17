@@ -26,6 +26,14 @@ internal enum EventCategory
     Other,
 }
 
+/// <summary>A change to a confirmed event that waits for the other parent ("Confirmed · change pending").</summary>
+internal enum PendingChange
+{
+    None,
+    Modify,
+    Cancel,
+}
+
 internal enum EventStatus
 {
     PendingApproval,
@@ -61,7 +69,7 @@ internal sealed class CalendarEvent : Entity, IFamilyScoped
     public EventStatus Status { get; set; }
 
     /// <summary>ParentingTime only: the parent who has the children.</summary>
-    public Guid? CaregiverMembershipId { get; init; }
+    public Guid? CaregiverMembershipId { get; set; }
 
     public Guid OwnerMembershipId { get; init; }
 
@@ -74,6 +82,31 @@ internal sealed class CalendarEvent : Entity, IFamilyScoped
     public uint Version { get; private set; }
 
     public List<EventChild> Children { get; } = [];
+
+    public PendingChange PendingChange { get; private set; }
+
+    /// <summary>The proposed values while <see cref="PendingChange"/> is Modify. The event keeps its current values until then.</summary>
+    public ProposedTimes? Proposed { get; private set; }
+
+    public void ProposeModify(ProposedTimes proposed) => (PendingChange, Proposed) = (PendingChange.Modify, proposed);
+
+    public void ProposeCancel() => (PendingChange, Proposed) = (PendingChange.Cancel, null);
+
+    public void ClearPendingChange() => (PendingChange, Proposed) = (PendingChange.None, null);
+
+    /// <summary>Applies a change (directly, or once approved).</summary>
+    public void Apply(ProposedTimes change)
+    {
+        Title = change.Title;
+        StartsAt = change.StartsAt;
+        EndsAt = change.EndsAt;
+        AllDay = change.AllDay;
+        Location = change.Location;
+        CaregiverMembershipId = change.CaregiverMembershipId;
+        ClearPendingChange();
+    }
+
+    public ProposedTimes Current() => new(Title, StartsAt, EndsAt, AllDay, Location, CaregiverMembershipId);
 
     /// <summary>Categories where both parents must agree (architecture §4 defaults). The rest are confirmed at once.</summary>
     public static bool NeedsApproval(EventCategory category) =>
@@ -89,3 +122,7 @@ internal sealed class EventChild : IFamilyScoped
 
     public Guid ChildProfileId { get; init; }
 }
+
+/// <summary>The editable "material" fields of an event: what a change request proposes (before → after).</summary>
+internal sealed record ProposedTimes(
+    string Title, DateTimeOffset StartsAt, DateTimeOffset EndsAt, bool AllDay, string? Location, Guid? CaregiverMembershipId);

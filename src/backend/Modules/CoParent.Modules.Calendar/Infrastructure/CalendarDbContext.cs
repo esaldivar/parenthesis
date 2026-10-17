@@ -31,6 +31,12 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
             e.Property(x => x.Version).IsRowVersion();
             e.HasMany(x => x.Children).WithOne().HasForeignKey(c => c.EventId);
             e.Navigation(x => x.Children).AutoInclude();
+            e.Property(x => x.PendingChange).HasConversion<string>().HasMaxLength(16);
+            e.OwnsOne(x => x.Proposed, p =>
+            {
+                p.Property(x => x.Title).HasMaxLength(CalendarEvent.TitleMaxLength);
+                p.Property(x => x.Location).HasMaxLength(CalendarEvent.LocationMaxLength);
+            });
             e.HasIndex(x => new { x.FamilyId, x.StartsAt });
             e.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });
