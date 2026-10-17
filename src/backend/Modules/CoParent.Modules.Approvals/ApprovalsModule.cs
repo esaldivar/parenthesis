@@ -14,6 +14,10 @@ public static class ApprovalsModule
     {
         services.AddModuleDbContext<ApprovalsDbContext>();
         services.AddScoped<IChangeRequests, ChangeRequests>();
+        services.AddOptions<ApprovalOptions>().BindConfiguration(ApprovalOptions.Section);
+        services.AddSingleton<RequestExpiry>();
+        services.AddSingleton<IRequestExpiry>(sp => sp.GetRequiredService<RequestExpiry>());
+        services.AddHostedService<RequestExpiryWorker>();
         return services;
     }
 

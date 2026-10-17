@@ -59,3 +59,21 @@ public interface IApprovalParticipants
 {
     Task<int> CountActiveParentsAsync(CancellationToken cancellationToken = default);
 }
+
+public sealed class ApprovalOptions
+{
+    public const string Section = "Approvals";
+
+    /// <summary>How long a request may wait for an answer before it expires (AP-06). Expiring counts as "not approved".</summary>
+    public TimeSpan RequestLifetime { get; set; } = TimeSpan.FromDays(14);
+
+    /// <summary>How often the expiry check runs.</summary>
+    public TimeSpan CheckInterval { get; set; } = TimeSpan.FromHours(1);
+}
+
+/// <summary>Expires requests that waited longer than <see cref="ApprovalOptions.RequestLifetime"/> (AP-06). Runs hourly in the background.</summary>
+public interface IRequestExpiry
+{
+    /// <summary>Returns how many requests expired.</summary>
+    Task<int> ExpireAsync(DateTimeOffset now, CancellationToken cancellationToken = default);
+}
