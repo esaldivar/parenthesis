@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Logo } from '../../shared/brand/logo';
 import { Icon } from '../../shared/icon/icon';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
@@ -7,7 +8,7 @@ import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
 @Component({
   selector: 'app-parent-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Logo],
   templateUrl: './parent-shell.html',
   styleUrl: './parent-shell.scss',
 })

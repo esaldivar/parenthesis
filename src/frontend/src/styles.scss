@@ -4,6 +4,7 @@
 // Theme selection: html[data-theme] holds an explicit choice; without it ("System") the OS preference decides.
 :root {
   @include tokens.scale;
+  @include tokens.brand;
   @include tokens.light;
 }
 

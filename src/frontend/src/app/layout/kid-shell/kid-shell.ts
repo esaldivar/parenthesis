@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Logo } from '../../shared/brand/logo';
 import { Icon } from '../../shared/icon/icon';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { KID_NAV } from '../navigation';
@@ -9,13 +10,13 @@ import { KidPresentationService } from './kid-presentation.service';
 @Component({
   selector: 'app-kid-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Logo],
   host: { '[attr.data-presentation]': 'presentation.presentation()' },
   template: `
     <a class="skip-link" href="#kid-main">Skip to main content</a>
     <header class="kid-header">
       <a class="brand" routerLink="/kid" aria-label="My space home">
-        <app-icon name="leaf" [size]="28" />
+        <app-logo variant="mark" [markSize]="32" [decorative]="true" />
         <span>My space</span>
       </a>
       <a class="settings-link" routerLink="/kid/settings" routerLinkActive="is-active" ariaCurrentWhenActive="page">
