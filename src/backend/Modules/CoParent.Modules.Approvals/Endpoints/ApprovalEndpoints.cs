@@ -13,6 +13,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Approvals.Endpoints;
 
+internal sealed record DecisionRequest(string? Comment);
+
+internal sealed record DecisionView(Guid DeciderMembershipId, string Decision, string? Comment, DateTimeOffset DecidedAt);
+
 internal sealed record ChangeRequestView(
     Guid Id,
     string Type,
@@ -24,7 +28,9 @@ internal sealed record ChangeRequestView(
     DateTimeOffset CreatedAt,
     int Approvals,
     int RequiredApprovals,
-    bool CanDecide);
+    bool CanDecide,
+    DateTimeOffset? ResolvedAt,
+    IReadOnlyList<DecisionView> Decisions);
 
 /// <summary>The approvals inbox and decisions (ADR-0003). Parents only; children never see approvals.</summary>
 internal static class ApprovalEndpoints
@@ -33,12 +39,20 @@ internal static class ApprovalEndpoints
     {
         var approvals = family.MapGroup("/approvals").WithTags("Approvals");
         approvals.MapGet("/", ListPendingAsync);
-        approvals.MapPost("/{requestId:guid}/approve", (Guid requestId, [AsParameters] DecisionServices s, CancellationToken ct) => DecideAsync(requestId, Decision.Approve, s, ct));
-        approvals.MapPost("/{requestId:guid}/reject", (Guid requestId, [AsParameters] DecisionServices s, CancellationToken ct) => DecideAsync(requestId, Decision.Reject, s, ct));
+        approvals.MapPost(
+            "/{requestId:guid}/approve",
+            (Guid requestId, DecisionRequest? body, [AsParameters] DecisionServices s, CancellationToken ct) =>
+                DecideAsync(requestId, Decision.Approve, body?.Comment, s, ct));
+        approvals.MapPost(
+            "/{requestId:guid}/reject",
+            (Guid requestId, DecisionRequest? body, [AsParameters] DecisionServices s, CancellationToken ct) =>
+                DecideAsync(requestId, Decision.Reject, body?.Comment, s, ct));
         approvals.MapPost("/{requestId:guid}/withdraw", WithdrawAsync);
     }
 
+    /// <summary>The inbox: pending requests (default), or <c>?view=history</c> for the 50 most recently decided.</summary>
     private static async Task<Results<Ok<List<ChangeRequestView>>, ForbidHttpResult>> ListPendingAsync(
+        string? view,
         ITenantContext tenant,
         ApprovalsDbContext db,
         IEnumerable<IApprovalTargetHandler> handlers,
@@ -51,19 +65,34 @@ internal static class ApprovalEndpoints
         }
 
         var parents = await participants.CountActiveParentsAsync(cancellationToken);
-        var pending = await db.ChangeRequests
-            .Where(r => r.Status == ChangeRequestStatus.Pending)
-            .OrderBy(r => r.CreatedAt)
-            .ToListAsync(cancellationToken);
+        var pending = view == "history"
+            ? await db.ChangeRequests
+                .Where(r => r.Status != ChangeRequestStatus.Pending)
+                .OrderByDescending(r => r.ResolvedAt)
+                .Take(50)
+                .ToListAsync(cancellationToken)
+            : await db.ChangeRequests
+                .Where(r => r.Status == ChangeRequestStatus.Pending)
+                .OrderBy(r => r.CreatedAt)
+                .ToListAsync(cancellationToken);
         return TypedResults.Ok(pending.Select(r => View(r, tenant.MembershipId, Required(r, handlers, parents))).ToList());
     }
 
-    private static async Task<Results<Ok<ChangeRequestView>, NotFound, ProblemHttpResult, ForbidHttpResult>> DecideAsync(
-        Guid requestId, Decision decision, DecisionServices s, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<ChangeRequestView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> DecideAsync(
+        Guid requestId, Decision decision, string? comment, DecisionServices s, CancellationToken cancellationToken)
     {
         if (s.Tenant.Role != FamilyRole.Parent)
         {
             return TypedResults.Forbid();
+        }
+
+        comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+        if (comment?.Length > ApprovalDecision.CommentMaxLength)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["comment"] = [$"Keep the comment under {ApprovalDecision.CommentMaxLength} characters."],
+            });
         }
 
         var request = await s.Db.ChangeRequests.SingleOrDefaultAsync(r => r.Id == requestId, cancellationToken);
@@ -104,6 +133,7 @@ internal static class ApprovalEndpoints
                     DeciderMembershipId = s.Tenant.MembershipId,
                     Decision = decision,
                     DecidedAt = now,
+                    Comment = comment,
                 });
 
                 if (decision == Decision.Reject)
@@ -175,7 +205,11 @@ internal static class ApprovalEndpoints
         required,
         CanDecide: r.Status == ChangeRequestStatus.Pending
             && r.ProposerMembershipId != membershipId
-            && r.Decisions.All(d => d.DeciderMembershipId != membershipId));
+            && r.Decisions.All(d => d.DeciderMembershipId != membershipId),
+        r.ResolvedAt,
+        r.Decisions.OrderBy(d => d.DecidedAt)
+            .Select(d => new DecisionView(d.DeciderMembershipId, d.Decision.ToString(), d.Comment, d.DecidedAt))
+            .ToList());
 }
 
 /// <summary>The services a decision needs, bound from DI in one parameter.</summary>

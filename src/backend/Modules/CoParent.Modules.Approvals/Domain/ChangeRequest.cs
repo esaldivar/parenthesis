@@ -66,4 +66,9 @@ internal sealed class ApprovalDecision : Entity
     public Decision Decision { get; init; }
 
     public DateTimeOffset DecidedAt { get; init; }
+
+    /// <summary>Optional, e.g. "Can we do Saturday instead?" (AP-05).</summary>
+    public string? Comment { get; init; }
+
+    public const int CommentMaxLength = 500;
 }

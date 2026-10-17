@@ -34,6 +34,11 @@ namespace CoParent.Modules.Approvals.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("change_request_id");
 
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("comment");
+
                     b.Property<DateTimeOffset>("DecidedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("decided_at");
