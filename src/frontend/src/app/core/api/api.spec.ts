@@ -87,6 +87,21 @@ describe('Api (Milestone 2 endpoints)', () => {
       body: { code: 'K7QM-3RXA', deviceName: 'Tablet' },
     },
     { name: 'child session', call: (a) => a.childSession(), method: 'GET', url: '/api/session/child' },
+    {
+      name: 'create event',
+      call: (a) => a.createEvent('f1', { category: 'Activity', title: 'Soccer', startsAt: 's', endsAt: 'e' }),
+      method: 'POST',
+      url: '/api/families/f1/calendar/events',
+      body: { category: 'Activity', title: 'Soccer', startsAt: 's', endsAt: 'e' },
+    },
+    {
+      name: 'swap',
+      call: (a) => a.updateEvent('f1', 'e1', { caregiverMembershipId: 'm2' }),
+      method: 'PATCH',
+      url: '/api/families/f1/calendar/events/e1',
+      body: { caregiverMembershipId: 'm2' },
+    },
+    { name: 'cancel event', call: (a) => a.cancelEvent('f1', 'e1'), method: 'DELETE', url: '/api/families/f1/calendar/events/e1' },
   ];
 
   for (const c of cases) {
