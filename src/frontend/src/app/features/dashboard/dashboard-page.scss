@@ -435,4 +435,75 @@ a.upcoming__title {
   .area-calendar {
     align-self: stretch;
   }
+
+  // Desktop windows tall enough: the whole dashboard fits the window with no page scroll (user decision, October 17,
+  // 2026). The calendar takes the height that's left and its hours scroll inside it; the cards below stay compact.
+  @media (min-height: 760px) {
+    .dashboard {
+      height: calc(100dvh - 5.75rem); // Window minus the top bar and the page's bottom padding.
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    }
+
+    .area-calendar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      --cal-body-max: none;
+    }
+
+    .area-kids,
+    .area-messages,
+    .area-memories {
+      align-self: stretch;
+      padding-block: var(--space-3);
+    }
+
+    .card__header {
+      margin-bottom: var(--space-2);
+    }
+
+    .welcome {
+      min-height: 0;
+      padding-block: 0;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    .welcome__sub {
+      font-size: 1rem;
+    }
+
+    .sample-banner {
+      margin-top: var(--space-1);
+    }
+
+    .upcoming__item {
+      padding-block: var(--space-2);
+    }
+
+    .quick {
+      margin-block: var(--space-2) var(--space-1);
+    }
+
+    .quick__btn {
+      min-height: var(--target-min);
+    }
+
+    .kids__tile {
+      aspect-ratio: auto;
+      height: 5rem;
+    }
+
+    .messages li {
+      padding-block: 6px;
+    }
+
+    .memory__tile {
+      aspect-ratio: auto;
+      height: 5rem;
+    }
+  }
 }

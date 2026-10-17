@@ -26,6 +26,14 @@ ul {
 }
 
 // --- Toolbar ----------------------------------------------------------------------------------------------------
+// When the dashboard gives the calendar a fixed height, the hours area fills what's left (flex chain down to it).
+.cal {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -156,12 +164,14 @@ ul {
 // The hours scroll inside a fixed height (the whole day is there), with a scroll bar that's always shown, so the rest
 // of the dashboard stays on screen. Keyboard users can focus it and scroll with the arrow keys.
 .grid__body {
-  max-height: 20rem;
+  position: relative; // Contains absolutely positioned screen-reader text, which would otherwise stretch the page.
+  max-height: var(--cal-body-max, 20rem);
   overflow-y: scroll;
   overscroll-behavior: contain;
 
-  // A classic, always-visible scroll bar. Styling it opts out of auto-hiding overlay scroll bars (Edge on Windows 11,
-  // macOS); Firefox, which lacks these pseudo-elements, gets scrollbar-color instead.
+  // A classic, always-visible scroll bar in the calendar's colours: a light sage track and a forest-green thumb (user
+  // decision, October 17, 2026). Styling it opts out of auto-hiding overlay scroll bars (Edge on Windows 11, macOS);
+  // Firefox, which lacks these pseudo-elements, gets scrollbar-color instead.
   &::-webkit-scrollbar {
     width: 12px;
   }
@@ -171,13 +181,13 @@ ul {
   }
 
   &::-webkit-scrollbar-thumb {
-    border: 3px solid var(--color-surface-soft);
+    border: 2px solid var(--color-surface-soft);
     border-radius: var(--radius-pill);
-    background: var(--color-outline);
+    background: var(--color-text);
   }
 
   @supports not selector(::-webkit-scrollbar) {
-    scrollbar-color: var(--color-outline) var(--color-surface-soft);
+    scrollbar-color: var(--color-text) var(--color-surface-soft);
   }
 
   &:focus-visible {
@@ -188,7 +198,7 @@ ul {
 
 .grid__corner,
 .grid__head {
-  padding: var(--space-2) var(--space-1);
+  padding: var(--space-1);
   border-bottom: 1px solid var(--color-surface-soft);
   background: var(--color-surface);
 }
@@ -205,8 +215,8 @@ ul {
 .grid__date {
   display: inline-grid;
   place-items: center;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
   padding: 0 var(--space-1);
   border-radius: 999px;
   color: var(--color-text);
@@ -575,7 +585,19 @@ ul {
 // --- Wide: the week grid replaces the agenda in Week view -----------------------------------------------------------
 @container (min-width: 720px) {
   .grid {
-    display: block;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .grid__top {
+    flex: none;
+  }
+
+  .grid__body {
+    flex: 1 1 auto;
+    min-height: 6rem;
   }
 
   .agenda:not(.agenda--always) {
@@ -605,7 +627,21 @@ ul {
     white-space: nowrap;
   }
 
+  .pt__text {
+    width: 100%;
+  }
+
+  app-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8125rem;
+  }
+
+  // One line (the full title is in the tooltip and read by screen readers), keeping the all-day row short.
   .pt__title {
+    overflow: hidden;
     font-size: 0.9375rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
