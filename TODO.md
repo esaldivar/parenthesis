@@ -27,6 +27,15 @@ that points back here.
   - [ ] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
     with the reason "required so keyboard users can scroll the hours".
   - [ ] Add the quality-gate badge to the README.
+  - [ ] **Release security gate** (requested October 18, 2026): `release-gate` job in `sonar.yml`, policy and
+    troubleshooting in `docs/runbooks/sonar-release-gate.md`.
+    - [x] Gate, tests with a fake SonarQube Cloud API, docs and CLAUDE.md rules (October 18, 2026).
+    - [ ] **Owner:** once it has run on a release PR, add **Release security gate** to `main`'s required status
+      checks (steps in the runbook). Keep every existing protection.
+    - [ ] Check the first real run: the scanner's task id is picked up and the API answers match the gate's
+      expectations (it was tested against a fake API only).
+    - [ ] Issue #65: the seven vulnerabilities on `main` block the next release until each is fixed or accepted in
+      SonarQube Cloud with a reason. Fixed separately, not in the gate's PR.
   - [ ] **Owner, optional:** install SonarQube for IDE (formerly SonarLint), which is free, in connected mode.
 - [ ] **Branching model and protected branches** (requested October 17, 2026).
   - [x] `develop` created from the latest work (`feat/angular-shell`, which is now retired).

@@ -25,6 +25,9 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
   - **PR source** checks the source branch is allowed into the target (the table above).
   - PRs into `main` are also analysed by **SonarQube Cloud** for code quality and security
     (see [the runbook](docs/runbooks/sonarqube-cloud.md)).
+  - PRs into `main` also run the **Release security gate**, which blocks the release on unresolved vulnerabilities,
+    high-severity security issues, unreviewed hotspots and accepted findings with no written reason. It fails if
+    SonarQube Cloud can't be checked. See [the release security gate](docs/runbooks/sonar-release-gate.md).
 - **Approvals:** GitHub doesn't let authors approve their own PRs, and this is a single-maintainer project, so the
   passing checks are the gate for merging. **Production** additionally needs the owner's approval of each deployment,
   in the Actions tab (the `production` environment).
@@ -51,7 +54,8 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
   - Fix them on `fix/sonar-sunday-<date>`, with a PR into the active release branch, and link it in the issue.
   - Work in order: vulnerabilities and bugs first, then hotspots, then code smells. A vulnerability that can't wait
     for the next release is a hotfix.
-  - Anything deliberate is marked **Accepted** in SonarCloud, with a reason.
+  - Anything deliberate is marked **Accepted** in SonarCloud, with a reason. The release security gate fails on an
+    accepted security finding that has no comment.
 - **Every other Friday, a production release window** (America/Chicago, from October 30, 2026; replaces Release
   Tuesday). `.github/workflows/release-window.yml` opens a checklist issue on the Monday of release week and tells
   Discord at each step. A window is an opportunity, not a deadline. See
