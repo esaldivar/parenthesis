@@ -20,9 +20,10 @@ that points back here.
   - [x] Coverage reports go to Sonar: backend via `dotnet-coverage`, frontend via Vitest lcov (October 17, 2026).
   - [x] Quality gate green on release PR #27: security, reliability and maintainability all A, 98.6% coverage on new
     code (October 17, 2026).
-  - [ ] **Weekly rhythm** (owner decision, October 17, 2026). Sonar Sunday issue → fix PR into `develop` → Release
-    Tuesday. Both workflows are written; they start running once they're on `main` (the next release). Then check
-    the first automatic Sonar Sunday issue.
+  - [ ] **Weekly rhythm** (owner decision, October 17, 2026; release day changed October 18). Sonar Sunday issue →
+    fix PR into the active release branch → the next biweekly release window (Release Tuesday was replaced). The
+    workflows start running once they're on `main` (the next release). Then check the first automatic Sonar Sunday
+    issue.
   - [ ] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
     with the reason "required so keyboard users can scroll the hours".
   - [ ] Add the quality-gate badge to the README.
@@ -34,12 +35,12 @@ that points back here.
   - [x] Branch protection on `main` and `develop`: PRs only, required checks up to date, no force pushes or deletions, admins included (October 17, 2026).
   - [x] The **PR source** check also covers PRs into `develop` and re-runs when a PR is retargeted, in
     `.github/workflows/pr-branch-policy.yml` (October 17, 2026).
-  - [ ] Document the `design/…` and `feat/…` branch prefixes in CONTRIBUTING.md, and that **PR source** now checks
-    PRs into `develop` too.
-  - [ ] First release: PR `develop` → `main`, so `main` gets the dashboard work. This is the owner's call, since
-    `main` is the site.
+  - [x] Document the `design/…` and `feat/…` branch prefixes in CONTRIBUTING.md, and that **PR source** checks PRs
+    into `develop` too (October 18, 2026, with the release-branch model below).
+  - [ ] First release: now through `release/0.2.0` (see "Branching, releases and environments" below).
 
-- [ ] **Deployment: development and production environments** (scoped October 17, 2026; to plan later).
+- [ ] **Deployment: development and production environments** (scoped October 17, 2026; planned October 18: Azure,
+  confirmed by the owner. Pipeline and runbook in "Branching, releases and environments" below).
   - Two environments:
     - **Development**, deployed automatically from `develop`: the newest features, **synthetic data only**.
     - **Production**, deployed from `main` on each release: the stable version, with real families.
@@ -171,14 +172,37 @@ that points back here.
   - [ ] Watch the first real runs: the first major or release PR notice, the first over-limit PR, and the first
     Monday report (it only runs once this is released to `main`).
 
-- [ ] **Branching, release and environments** (owner brief, October 18, 2026). Milestone release branches, a private
-  `development` environment, biweekly Friday production releases with owner approval. The brief is in CLAUDE.md.
+- [ ] **Branching, releases and environments** (owner brief and decisions, October 18, 2026). Rules in
+  `docs/development-workflow.md`.
   - [x] Brief recorded in CLAUDE.md, with the discrepancies against the current process (October 18, 2026).
-  - [ ] **Owner:** decide the discrepancies (`develop` vs `development`, weekly vs biweekly releases, milestone map).
-  - [ ] Plan for protections, environments, hosting and deployment approval; wait for owner approval.
-  - [ ] Flag the November 27 and December 25, 2026 release windows (holidays) for the owner.
-  - [ ] After approval: implement, update CONTRIBUTING.md and `docs/development-workflow.md`, and shorten the CLAUDE.md
-    section to a link.
+  - [x] **Owner decisions** (October 18, 2026): keep `develop` (no rename to `development`); biweekly Friday
+    windows from October 30, replacing Release Tuesday; November 25 and December 23 replace the holiday Fridays;
+    work goes through `release/x.y.z` branches, including tooling and docs; the owner's milestone list is the release
+    structure and the backlog is re-mapped to it; cut `release/0.2.0` from `develop` as it is; Azure hosting (no
+    subscription yet); invite-only accounts on the development site; the existing Discord webhook secret.
+  - [x] Built (October 18, 2026): the **PR source** policy for `release/*` and the stricter `develop`;
+    `release-window.yml` with `.github/release-windows.json`; `deploy.yml` (dormant until `DEPLOY_ENABLED`);
+    production promotes the image tested on `develop`; release PRs into `develop` count as release notices in
+    `dev-workflow.mjs`; CONTRIBUTING.md, `docs/development-workflow.md`, the Azure runbook and the backlog's release
+    map; CLAUDE.md now links to the workflow guide.
+  - [ ] Cut `release/0.2.0` from `develop` once this is merged, and retarget open work PRs (#40, #59) to it.
+  - [ ] Remove the one-off `chore/release-workflow` exception from `.github/scripts/check-pr-branch-policy.sh`
+    (`TODO(workflow)`) in the first PR into `release/0.2.0`.
+  - [x] **Owner:** GitHub settings from the runbook (October 18, 2026): the `release branches` ruleset (PRs only,
+    the four checks up to date, no deletion or force pushes, checks not required on creation); **PR source** required
+    on `develop`; the `development` environment (deploys from `develop` only) and the `production` environment (owner
+    as required reviewer, self-review allowed, no admin bypass, deploys from `main` only). The environment variables
+    wait for the Azure setup.
+  - [ ] **Owner:** Azure account and both environments (runbook steps 1–3), then `DEPLOY_ENABLED` = `true` and the
+    `parenthesis-api` package made public.
+  - [ ] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
+    (application change in Identity, v0.2.0).
+  - [ ] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
+    reachable in the app.
+  - [ ] Watch the first runs: the first release-window issue (Monday, October 26 is the first release-week Monday,
+    but scheduled runs need this on `main`, so run it by hand until then), the first development deployment and
+    the first production deployment and rollback drill.
+  - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
