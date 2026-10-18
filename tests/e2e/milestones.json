@@ -1,0 +1,9 @@
+{
+  "comment": "Every released milestone stays here, and its tests keep running on every release (docs/runbooks/playwright-release-gate.md). Add the next milestone when its first feature ships; never remove one.",
+  "milestones": [
+    { "tag": "@m1", "name": "Milestone 1: Foundation (sign-up, sign-in, families, tenant isolation)" },
+    { "tag": "@m2", "name": "Milestone 2: Family and children (invitations, child profiles, profile picker, PINs)" },
+    { "tag": "@m3", "name": "Milestone 3: Shared calendar (events, proposals, approvals)" }
+  ],
+  "regressionTag": "@regression"
+}

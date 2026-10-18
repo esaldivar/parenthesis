@@ -30,13 +30,14 @@ expect fail main chore/sync-main "$repo" "$repo"
 expect fail main docs/x "$repo" "$repo"
 expect fail main hotfix/ "$repo" "$repo"
 expect fail main hotfix "$repo" "$repo"
+expect fail main release/0.3.0 "$repo" "$repo"
 expect fail main develop-old "$repo" "$repo"
 expect fail main my/develop "$repo" "$repo"
 expect fail main develop "$repo" "someone/parenthesis"
 expect fail main hotfix/x "$repo" "someone/parenthesis"
 
-# Into develop: the requested prefixes plus the existing documented ones.
-for head in design/signup-invitations-profile-picker feat/x feature/request-expiry fix/ci-pr-branch-policy \
+# Into develop: release branches (gated by Playwright), plus the work-branch prefixes.
+for head in release/0.3.0 release/m3-calendar design/signup-invitations-profile-picker feat/x feature/request-expiry fix/ci-pr-branch-policy \
             bugfix/x hotfix/x chore/sync-main docs/m2-architecture; do
   expect pass develop "$head" "$repo" "$repo"
 done
@@ -47,6 +48,17 @@ expect fail develop design/ "$repo" "$repo"
 expect fail develop Feat/x "$repo" "$repo"
 expect fail develop ci/x "$repo" "$repo"
 expect fail develop dependabot/nuget/x "$repo" "$repo"
+expect fail develop release/ "$repo" "$repo"
+expect fail develop Release/0.3.0 "$repo" "$repo"
+
+# Into a release branch: develop (to bring it up to date) and the work-branch prefixes.
+for head in develop feature/shared-calendar feat/x fix/x bugfix/x chore/x docs/x design/x; do
+  expect pass release/0.3.0 "$head" "$repo" "$repo"
+done
+expect fail release/0.3.0 main "$repo" "$repo"
+expect fail release/0.3.0 hotfix/x "$repo" "$repo"
+expect fail release/0.3.0 release/0.2.0 "$repo" "$repo"
+expect fail release/0.3.0 random-branch "$repo" "$repo"
 
 # Other targets (stacked PRs) have no policy.
 expect pass feat/angular-shell docs/x "$repo" "$repo"

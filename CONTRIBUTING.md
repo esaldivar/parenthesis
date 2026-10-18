@@ -6,10 +6,11 @@
 | Branch | Purpose | Changes through |
 |---|---|---|
 | `main` | What goes to the site. | A PR from `develop` (a release) or from `hotfix/…` only |
-| `develop` | Integration branch for new work. | PRs from the branches below |
-| `feature/…` | New features | Branch from `develop`, PR into `develop` |
-| `bugfix/…`, `fix/…` | Bug fixes | Branch from `develop`, PR into `develop` |
-| `chore/…`, `docs/…` | Tooling, CI, documentation | Branch from `develop`, PR into `develop` |
+| `develop` | Integration branch for new work. | PRs from `release/…` (gated by Playwright) and the branches below |
+| `release/…` | A milestone release candidate, e.g. `release/0.3.0` | Branch from `develop`; feature and fix PRs into it; then a PR into `develop` |
+| `feature/…` | New features | Branch from `develop` or the release branch, PR into either |
+| `bugfix/…`, `fix/…` | Bug fixes | Branch from `develop` or the release branch, PR into either |
+| `chore/…`, `docs/…` | Tooling, CI, documentation | Branch from `develop` or the release branch, PR into either |
 | `hotfix/…` | Urgent fix to the live site | Branch from `main`, PR into `main`, then merge `main` back into `develop` |
 
 - `main` and `develop` are **protected**. Nobody can push to them directly, force-push or delete them, and that
@@ -18,11 +19,20 @@
   - Backend: build, format and tests.
   - Frontend: lint, unit tests and production build.
   - API image: build and smoke test.
-  - PRs into `main` also run **PR source**, which only accepts `develop` or `hotfix/…`.
+  - Every PR runs **PR source**, which checks the source branch against the target: `main` only accepts `develop` or
+    `hotfix/…`; `develop` accepts `release/…` and the work branches; `release/…` accepts `develop` and the work
+    branches.
+  - **Release E2E gate** (PRs into `develop`): a `release/…` PR merges only after the Playwright suite passes for every
+    milestone so far, run against the release candidate itself. Other PRs pass it at once, without running
+    Playwright. See [the runbook](docs/runbooks/playwright-release-gate.md).
   - PRs into `main` are also analysed by **SonarQube Cloud** for code quality and security, once it's connected
     (see [the runbook](docs/runbooks/sonarqube-cloud.md)).
 - **Approvals:** none required. GitHub doesn't let authors approve their own PRs, and this is a single-maintainer
-  project, so the passing checks are the gate.
+  project, so the passing checks are the gate. For a release PR, **the owner merging it is the approval**: nobody else
+  merges a `release/…` PR (owner decision, October 18, 2026).
+- **Milestone releases:** cut `release/<version>` from `develop`, land the milestone's feature and fix PRs in it, then
+  open `release/<version>` → `develop`. Playwright runs on that PR; a failure blocks the merge until the underlying
+  issue is fixed on the release branch. Never skip, disable or delete a test to get a release through.
 - **Merging:** squash-merge into `develop`. Merge `develop` into `main` with a merge commit, so the release history
   is kept.
 - **After every release or hotfix,** back-merge `main` into `develop`: branch `chore/sync-main` from `develop`, run

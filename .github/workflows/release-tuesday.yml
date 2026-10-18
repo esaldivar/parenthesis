@@ -47,6 +47,7 @@ jobs:
             else
               echo "- [ ] Open the release PR: \`develop\` → \`main\`."
             fi
+            echo "- [ ] Any milestone release in this batch (\`release/…\` → \`develop\`) passed the **Release E2E gate** (Playwright)."
             echo "- [ ] All required checks green, including the **SonarCloud Code Analysis** quality gate."
             echo "- [ ] Merge with a **merge commit** (not a squash)."
             echo "- [ ] Back-merge \`main\` into \`develop\` (\`chore/sync-main\`; see CONTRIBUTING.md)."

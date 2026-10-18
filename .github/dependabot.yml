@@ -16,6 +16,15 @@ updates:
       actions:
         patterns: ["*"]
 
+  # Playwright release gate (tests/e2e). Playwright and its browser move together, so updates come as one group.
+  - package-ecosystem: npm
+    directory: "/tests/e2e"
+    schedule:
+      interval: weekly
+    groups:
+      e2e:
+        patterns: ["*"]
+
   - package-ecosystem: docker
     directory: "/docker"
     schedule:

@@ -3,8 +3,10 @@
 # Usage: check-pr-branch-policy.sh <base-ref> <head-ref> [<base-repo> <head-repo>]
 # The repo arguments are "owner/name"; when given, PRs into main must come from this repository, not a fork.
 # Policy (see CONTRIBUTING.md):
-#   main    <- develop (a release) or hotfix/* only
-#   develop <- design/*, feat/*, feature/*, fix/*, bugfix/*, hotfix/*, chore/*, docs/*
+#   main      <- develop (a release) or hotfix/* only
+#   develop   <- release/* (a milestone release, gated by Playwright), design/*, feat/*, feature/*, fix/*, bugfix/*,
+#                hotfix/*, chore/*, docs/*
+#   release/* <- develop (to bring it up to date), design/*, feat/*, feature/*, fix/*, bugfix/*, chore/*, docs/*
 #   any other target: no policy (e.g. a PR stacked on a feature branch)
 set -euo pipefail
 
@@ -30,14 +32,24 @@ case "$base" in
     ;;
   develop)
     case "$head" in
-      design/?* | feat/?* | feature/?* | fix/?* | bugfix/?* | hotfix/?* | chore/?* | docs/?*)
+      release/?* | design/?* | feat/?* | feature/?* | fix/?* | bugfix/?* | hotfix/?* | chore/?* | docs/?*)
         echo "OK: $head -> develop"
         ;;
       main)
         fail "Don't PR main straight into develop. Back-merge through a chore/sync-main branch instead (see CONTRIBUTING.md)."
         ;;
       *)
-        fail "PRs into develop must come from a design/, feat/, feature/, fix/, bugfix/, hotfix/, chore/ or docs/ branch (this one is from $head). Rename the branch and open a new PR."
+        fail "PRs into develop must come from a release/, design/, feat/, feature/, fix/, bugfix/, hotfix/, chore/ or docs/ branch (this one is from $head). Rename the branch and open a new PR."
+        ;;
+    esac
+    ;;
+  release/?*)
+    case "$head" in
+      develop | design/?* | feat/?* | feature/?* | fix/?* | bugfix/?* | chore/?* | docs/?*)
+        echo "OK: $head -> $base"
+        ;;
+      *)
+        fail "PRs into $base must come from develop or a design/, feat/, feature/, fix/, bugfix/, chore/ or docs/ branch (this one is from $head). Hotfixes go to main; one release branch doesn't merge into another."
         ;;
     esac
     ;;

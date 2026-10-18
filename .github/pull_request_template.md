@@ -14,7 +14,7 @@
 - [ ] ♻️ Refactor (no behaviour change)
 - [ ] ✅ Tests only
 - [ ] 🎨 Design (assets or a handoff from ChatGPT)
-- [ ] 🚀 Release (`develop` → `main`) or hotfix
+- [ ] 🚀 Release (`release/…` → `develop`, or `develop` → `main`) or hotfix
 
 ## Checklist
 - [ ] Tests added or updated, and they pass locally

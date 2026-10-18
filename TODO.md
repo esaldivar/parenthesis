@@ -154,6 +154,22 @@ that points back here.
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
     data source.
 
+- [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Milestone releases go
+  `release/*` → `develop`, and Playwright tests the release candidate for every milestone so far. Runbook:
+  `docs/runbooks/playwright-release-gate.md`.
+  - [x] Suite in `tests/e2e/` (M1, M2, M3 and a regression test for #58), workflow
+    `.github/workflows/playwright-release.yml`, the **Release E2E gate** check, Discord notification, and the branch
+    policy for `release/*` (October 18, 2026).
+  - [ ] **Owner:** make **Release E2E gate** a required check on `develop` (runbook, "Branch protection").
+  - [ ] **Owner:** confirm the Discord webhook secret is named `DISCORD_WEBHOOK_URL`, or rename the reference in the
+    workflow to match the existing secret.
+  - [ ] First real run on the first `release/*` PR: check the summary, the artifacts and the Discord post.
+  - [ ] Add browser journeys as the M2 and M3 screens ship (invitations, children, profile picker, PIN entry, the
+    full calendar). Until then those features are tested through the API, and the calendar page through its honest
+    empty state.
+  - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
+    the sign-in limit, for the test instance only.
+
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
