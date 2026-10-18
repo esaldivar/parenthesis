@@ -157,7 +157,13 @@ that points back here.
 - [ ] **Development workflow automation** (owner brief, October 18, 2026). Weekly PR and Copilot review limits,
   Discord notifications for major and release PRs, and a weekly status report. The brief is in CLAUDE.md.
   - [x] Brief recorded in CLAUDE.md (October 18, 2026).
-  - [ ] Inspection report to the owner (CLAUDE.md step 11), then wait for approval.
+  - [x] Inspection report to the owner (CLAUDE.md step 11), October 18, 2026.
+  - [x] **Owner settings** (October 18, 2026): `DISCORD_WEBHOOK_URL` is a repository Actions secret (the plain-text
+    variable copy was deleted); the `main` ruleset "Copilot review for default branch" now requires 0 approvals (it
+    required 2 with no bypass, which would have blocked releases); Copilot review effort is **Lite**; "Allow Copilot
+    to approve pull requests" is **off**; there are no Copilot automatic-review rulesets.
+  - [ ] Owner says "approved" for the proposed build: weekly PR and Copilot counters, Discord notices for major and
+    release PRs, Monday status report, in one PR into `develop`.
   - [ ] After approval: implement, write `docs/development-workflow.md`, and shorten the CLAUDE.md section to a link.
 
 - [ ] **Branching, release and environments** (owner brief, October 18, 2026). Milestone release branches, a private
