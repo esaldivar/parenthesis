@@ -102,9 +102,8 @@ that points back here.
     - [x] Sign-up, household setup and invitations: register with confirm password, the four-step setup (family,
       how many children, their names, invite), "pending approval" for each child, the invitation accept page with
       one calm screen for invalid links, and a co-parent card in Settings (October 18, 2026).
-    - [ ] Profile picker, parent password and child PIN screens.
-    - [ ] Tablet pairing and device management.
-    - [ ] Co-parent approvals.
+    - [ ] Second PR (owner decision October 18, 2026: Request #1 ships as two PRs to fit the weekly limit): profile
+      picker, parent password and child PIN screens; tablet pairing and device management; co-parent approvals.
   - [ ] QR code for tablet pairing (deferred, owner decision October 18, 2026). Show the code only for now; adding a
     QR code needs a new library.
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner
@@ -125,6 +124,16 @@ that points back here.
 - [ ] **Owner, via ChatGPT:** mobile mockups first (dashboard, week calendar, propose and approve, bottom navigation
   and More). Then family setup and invitation, child profiles and Child Essentials, the full calendar, approvals and
   the memories gallery.
+
+- [ ] **Development workflow automation** (plan approved by the owner, October 18, 2026). One `chore/` PR.
+  - Weekly limits: 3 new development PRs into `develop`, 6 Copilot reviews, 2 per PR; reset Monday 00:00
+    America/Chicago; extras only with the owner's `owner-approved-pr` / `owner-approved-review` label.
+  - Workflows: a required "PR budget" check (blocks merging over the limit, can't block opening), Copilot review
+    counting and warnings, Discord notices for major and release PRs (with test results, no duplicates), and a
+    Monday report from real GitHub data. Least-privilege permissions; no PR code runs with secrets.
+  - `docs/development-workflow.md` as the authoritative reference, linked from CLAUDE.md and CONTRIBUTING.md.
+  - [ ] **Owner:** add the `DISCORD_WEBHOOK_URL` Actions secret, and make "PR budget" a required check on `develop`.
+  - [ ] **Owner:** check Copilot code review settings (rulesets and personal); untick "Review new pushes".
 
 - [ ] **Project management in GitHub** (owner ideas, October 17, 2026). Recommended over Jira: free, and it links
   PRs to stories automatically.
