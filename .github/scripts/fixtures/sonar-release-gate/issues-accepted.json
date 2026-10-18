@@ -1,0 +1,110 @@
+{
+  "_note": "Synthetic answer shaped like api/issues/search with issueStatuses=ACCEPTED,FALSE_POSITIVE&additionalFields=comments.",
+  "answer": {
+    "total": 2,
+    "p": 1,
+    "ps": 500,
+    "paging": {
+      "pageIndex": 1,
+      "pageSize": 500,
+      "total": 2
+    },
+    "effortTotal": 10,
+    "debtTotal": 10,
+    "issues": [
+      {
+        "key": "AaFJqlc5CiUwZk3h2z-9",
+        "rule": "csharpsquid:S4790",
+        "severity": "MINOR",
+        "component": "esaldivar_parenthesis:src/backend/CoParent.Api/Example.cs",
+        "project": "esaldivar_parenthesis",
+        "line": 12,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 12,
+          "endLine": 12,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "RESOLVED",
+        "message": "Synthetic accepted finding with a justification.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "LOW"
+          }
+        ],
+        "issueStatus": "ACCEPTED",
+        "resolution": "WONTFIX",
+        "comments": [
+          {
+            "key": "AZcomment000000000001",
+            "login": "esaldivar@github",
+            "htmlText": "Accepted by owner: synthetic justification, see issue #65.",
+            "markdown": "Accepted by owner: synthetic justification, see issue #65.",
+            "updatable": true,
+            "createdAt": "2026-10-19T15:02:44+0000"
+          }
+        ]
+      },
+      {
+        "key": "AaFJqlc5CiUwZk3h2z-8",
+        "rule": "csharpsquid:S2068",
+        "severity": "BLOCKER",
+        "component": "esaldivar_parenthesis:src/backend/CoParent.Api/Example.cs",
+        "project": "esaldivar_parenthesis",
+        "line": 20,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 20,
+          "endLine": 20,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "RESOLVED",
+        "message": "Synthetic false positive with no justification.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "BLOCKER"
+          }
+        ],
+        "issueStatus": "FALSE_POSITIVE",
+        "resolution": "FALSE-POSITIVE",
+        "comments": []
+      }
+    ],
+    "components": [
+      {
+        "key": "esaldivar_parenthesis",
+        "enabled": true,
+        "qualifier": "TRK",
+        "name": "parenthesis",
+        "longName": "parenthesis"
+      }
+    ],
+    "facets": []
+  }
+}

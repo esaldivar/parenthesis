@@ -2,6 +2,7 @@
 // Run: node --test .github/scripts/sonar-release-gate.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   classifyIssue,
   changedInCandidate,
@@ -11,6 +12,7 @@ import {
   isAccepted,
   isOpen,
   main,
+  report,
   sonarClient,
   waitForAnalysis,
 } from "./sonar-release-gate.mjs";
@@ -77,8 +79,9 @@ function fakeSonar(data = {}, { fail = {} } = {}) {
       case "qualitygates/project_status":
         return json(200, { projectStatus: data.gate ?? { status: "OK", conditions: [] } });
       case "issues/search": {
-        const accepted = Boolean(q.resolutions);
-        let list = (data.issues?.[scope] ?? []).filter((i) => (accepted ? isAccepted(i) : isOpen(i)));
+        // Like SonarQube: resolved=false keeps unresolved issues; issueStatuses keeps the listed statuses.
+        const wanted = q.issueStatuses?.split(",");
+        let list = (data.issues?.[scope] ?? []).filter((i) => (wanted ? wanted.includes(i.issueStatus) : isOpen(i)));
         if (q.types) list = list.filter((i) => i.type === "VULNERABILITY");
         if (q.impactSoftwareQualities) list = list.filter((i) => (i.impacts ?? []).some((x) => x.softwareQuality === "SECURITY"));
         return json(200, { issues: list, paging: { pageIndex: 1, pageSize: 500, total: list.length } });
@@ -88,7 +91,7 @@ function fakeSonar(data = {}, { fail = {} } = {}) {
         return json(200, { hotspots: list, paging: { pageIndex: 1, pageSize: 500, total: list.length } });
       }
       case "hotspots/show":
-        return json(200, { key: q.hotspot, comment: data.hotspotComments?.[q.hotspot] ?? [] });
+        return json(200, data.hotspotShow?.[q.hotspot] ?? { key: q.hotspot, comment: data.hotspotComments?.[q.hotspot] ?? [] });
       default:
         return json(404, { errors: [{ msg: `unknown ${path}` }] });
     }
@@ -132,6 +135,8 @@ test("legacy-only answers (no impacts) still block vulnerabilities", () => {
 test("statuses use the current issueStatus, with the legacy status and resolution as a fallback", () => {
   assert.equal(isOpen({ issueStatus: "CONFIRMED" }), true);
   assert.equal(isOpen({ issueStatus: "ACCEPTED" }), false);
+  assert.equal(isOpen({ issueStatus: "FIXED" }), false);
+  assert.equal(isOpen({ issueStatus: "IN_SANDBOX" }), true, "an unknown status fails closed");
   assert.equal(isOpen({ status: "REOPENED" }), true);
   assert.equal(isOpen({ status: "RESOLVED", resolution: "WONTFIX" }), false);
   assert.equal(isAccepted({ issueStatus: "FALSE_POSITIVE" }), true);
@@ -141,7 +146,7 @@ test("statuses use the current issueStatus, with the legacy status and resolutio
 
 test("a justification is a non-empty comment", () => {
   assert.equal(hasJustification([]), false);
-  assert.equal(hasJustification(undefined), false);
+  assert.equal(hasJustification(undefined), null, "no comment list at all: can't be checked");
   assert.equal(hasJustification([{ markdown: "  " }]), false);
   assert.equal(hasJustification([{ markdown: "Required so keyboard users can scroll." }]), true);
   assert.equal(hasJustification([{ htmlText: "Reviewed: test-only code." }]), true);
@@ -168,7 +173,8 @@ test("a compliant release passes", async () => {
   const result = await gate(sonar);
   assert.equal(result.passed, true, result.blocking.join("\n"));
   assert.equal(result.warnings.length, 2);
-  assert.ok(sonar.calls.every((c) => c.auth === "Bearer synthetic-token"));
+  const basic = `Basic ${Buffer.from("synthetic-token:").toString("base64")}`;
+  assert.ok(sonar.calls.every((c) => c.auth === basic), "the token is sent as the Basic-auth user, like Sonar Sunday");
 });
 
 test("a failing quality gate blocks, naming the failed conditions", async () => {
@@ -306,4 +312,155 @@ test("main() end to end: passes a compliant release, blocks one with findings, a
   assert.equal(await main(env, deps(fakeSonar())), true);
   assert.equal(await main(env, deps(fakeSonar({ issues: { main: [vulnerability()] } }))), false);
   assert.equal(await main(env, deps(fakeSonar({}, { fail: { "issues/search": 500 } }))), false);
+});
+
+// ---------- Realistic answers (fixtures/sonar-release-gate) ----------
+// Shaped like SonarQube Cloud's documented Web API answers. The seven vulnerabilities use the keys, messages, files and
+// lines of the real Sonar Sunday issue #56 (tracked in #65); rule keys and impacts there are illustrative.
+
+const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/sonar-release-gate/${name}.json`, import.meta.url), "utf8"));
+const REAL_KEY = "esaldivar_parenthesis";
+const mainIssues = fixture("issues-main").answer.issues;
+const acceptedIssues = fixture("issues-accepted").answer.issues;
+const ceTask = fixture("ce-task");
+const qualityGate = fixture("quality-gate");
+const hotspots = fixture("hotspots");
+const errors = fixture("errors");
+
+// Every file a fixture finding points at, with numbered lines; the candidate is identical unless a test changes it.
+const sourceFiles = Object.fromEntries(
+  [...mainIssues, ...acceptedIssues].map((i) => [i.component.split(":")[1], Array.from({ length: 120 }, (_, n) => `line ${n + 1} code`).join("\n")]),
+);
+const realFiles = (candidateChanges = {}) => files(sourceFiles, { ...sourceFiles, ...candidateChanges });
+const realGate = (sonar, over = {}) =>
+  evaluate({ client: sonar.client, projectKey: REAL_KEY, analysisId: "AZanalysis00000000001", pullRequest: "99", ...realFiles(), ...over });
+
+test("fixtures: issue #65's seven vulnerabilities on main block the release; the bug and code smell don't", async () => {
+  const sonar = fakeSonar({ gate: qualityGate.ok.projectStatus, issues: { main: mainIssues } });
+  const result = await realGate(sonar);
+  assert.equal(result.passed, false);
+  assert.equal(result.blocking.length, 7);
+  for (const key of ["AaFJgkAVnwwNvcZN96mT", "AaFJgj-qnwwNvcZN96mS", "AaFJqlaJCiUwZk3h2z-2"]) {
+    assert.ok(result.blocking.some((b) => b.includes(`open=${key}`)), `${key} is listed with its link`);
+  }
+  assert.ok(result.blocking.some((b) => b.includes("**LOW security** vulnerability") && b.includes("AntiforgeryExtensions.cs:34")));
+  assert.ok(!result.blocking.some((b) => /AaFJqlcRCiUwZk3h2z-3|AaFJqlc5CiUwZk3h2z-4/.test(b)), "non-security findings are ignored");
+  assert.equal(result.gateStatus, "OK", "main's quality gate can be OK while old vulnerabilities remain (as on October 18)");
+});
+
+test("fixtures: the gate sends current-model filters and asks for comments", async () => {
+  const sonar = fakeSonar({ issues: { main: mainIssues } });
+  await realGate(sonar);
+  const searches = sonar.calls.filter((c) => c.path === "issues/search");
+  assert.ok(searches.length > 0);
+  assert.ok(searches.every((c) => c.q.additionalFields === "comments" && c.q.componentKeys === REAL_KEY));
+  assert.ok(searches.every((c) => !("resolutions" in c.q) && !("statuses" in c.q)), "no deprecated status filters");
+  assert.ok(searches.some((c) => c.q.resolved === "false" && c.q.impactSoftwareQualities === "SECURITY"));
+  assert.ok(searches.some((c) => c.q.issueStatuses === "ACCEPTED,FALSE_POSITIVE"));
+  assert.ok(sonar.calls.some((c) => c.path === "qualitygates/project_status" && c.q.analysisId === "AZanalysis00000000001"));
+});
+
+test("fixtures: a release that changes one flagged line clears only that finding", async () => {
+  const dockerfile = sourceFiles["docker/api.Dockerfile"].split("\n");
+  dockerfile[7] = "RUN npm ci --ignore-scripts";
+  const sonar = fakeSonar({ issues: { main: mainIssues } });
+  const result = await realGate(sonar, realFiles({ "docker/api.Dockerfile": dockerfile.join("\n") }));
+  assert.equal(result.passed, false);
+  assert.equal(result.blocking.length, 6);
+  assert.equal(result.fixed.length, 1);
+  assert.match(result.fixed[0], /AaFJgkAVnwwNvcZN96mT/);
+});
+
+test("fixtures: a justified acceptance passes; a false positive with no comment blocks", async () => {
+  const result = await realGate(fakeSonar({ issues: { main: acceptedIssues } }));
+  assert.equal(result.passed, false);
+  assert.equal(result.blocking.length, 1);
+  assert.match(result.blocking[0], /AaFJqlc5CiUwZk3h2z-8.*marked \*\*FALSE_POSITIVE\*\* without a comment/);
+});
+
+test("fixtures: an accepted finding whose comments weren't returned blocks with its own message", async () => {
+  const { comments, ...noComments } = acceptedIssues[0];
+  const result = await realGate(fakeSonar({ issues: { main: [noComments] } }));
+  assert.equal(result.passed, false);
+  assert.match(result.blocking[0], /didn't return its comments/);
+});
+
+test("fixtures: hotspots to review: HIGH on main blocks, LOW warns; in the PR's new code both block", async () => {
+  const onMain = await realGate(fakeSonar({ hotspots: { main: hotspots.toReview.hotspots } }));
+  assert.equal(onMain.passed, false);
+  assert.equal(onMain.blocking.length, 1);
+  assert.match(onMain.blocking[0], /HIGH hotspot.*AZhot01/);
+  assert.equal(onMain.warnings.length, 1);
+  const inPr = await realGate(fakeSonar({ hotspots: { pr: hotspots.toReview.hotspots } }));
+  assert.equal(inPr.blocking.length, 2);
+});
+
+test("fixtures: hotspots reviewed as Safe need a comment, and a missing comment list blocks", async () => {
+  const reviewed = { hotspots: { main: hotspots.reviewedSafe.hotspots } };
+  assert.equal((await realGate(fakeSonar({ ...reviewed, hotspotShow: { AZhot03: hotspots.showWithComment } }))).passed, true);
+  const bare = await realGate(fakeSonar({ ...reviewed, hotspotShow: { AZhot03: hotspots.showWithoutComment } }));
+  assert.match(bare.blocking[0], /reviewed as \*\*SAFE\*\* without a comment/);
+  const missing = await realGate(fakeSonar({ ...reviewed, hotspotShow: { AZhot03: hotspots.showMissingCommentField } }));
+  assert.match(missing.blocking[0], /didn't return its comments/);
+});
+
+test("fixtures: a failing quality gate blocks with the condition that failed", async () => {
+  const result = await realGate(fakeSonar({ gate: qualityGate.error.projectStatus }));
+  assert.equal(result.passed, false);
+  assert.match(result.blocking[0], /new_coverage.*41\.2.*80/);
+});
+
+test("fixtures: a compliant release passes and the report says so", async () => {
+  const sonar = fakeSonar({
+    gate: qualityGate.ok.projectStatus,
+    issues: { main: [acceptedIssues[0]] },
+    hotspots: { main: hotspots.reviewedSafe.hotspots },
+    hotspotShow: { AZhot03: hotspots.showWithComment },
+  });
+  const result = await realGate(sonar);
+  assert.equal(result.passed, true, result.blocking.join("\n"));
+  assert.match(report(result, { pullRequest: "99" }), /Release security gate: passed/);
+});
+
+test("fixtures: the analysis task (pending, then success) and a failed task", async () => {
+  const answers = [ceTask.pending, ceTask.pending, ceTask.success];
+  const client = { get: async () => answers.shift() ?? ceTask.success };
+  assert.equal(await waitForAnalysis(client, "AZtask0000000000000001", { projectKey: REAL_KEY, pullRequest: "99", sleep: noSleep }), "AZanalysis00000000001");
+  await assert.rejects(waitForAnalysis({ get: async () => ceTask.failed }, "T", { sleep: noSleep }), /FAILED: Synthetic processing failure/);
+});
+
+test("fixtures: SonarQube's own error messages are passed on", async () => {
+  const withBody = (status, body) => sonarClient({ token: "t", fetchImpl: async () => ({ ok: false, status, text: async () => JSON.stringify(body) }) });
+  await assert.rejects(withBody(401, errors.unauthorized).get("ce/task"), /HTTP 401 \(Authentication is required\).*SONAR_TOKEN/);
+  await assert.rejects(withBody(400, errors.badParameter).get("issues/search"), /HTTP 400 .*must be one of.*Web API may have changed/);
+});
+
+test("main(): a skipped or failed analysis job blocks without calling SonarQube", async () => {
+  const env = { SONAR_TOKEN: "synthetic-token", SONAR_PROJECT_KEY: REAL_KEY, PR_NUMBER: "99" };
+  for (const result of ["skipped", "failure", "cancelled"]) {
+    const sonar = fakeSonar();
+    assert.equal(await main({ ...env, SONAR_JOB_RESULT: result, SONAR_CE_TASK_ID: "" }, { client: sonar.client, ...realFiles() }), false, result);
+    assert.equal(sonar.calls.length, 0);
+  }
+  // A task id with a failed job still blocks: the analysis may be incomplete.
+  assert.equal(await main({ ...env, SONAR_JOB_RESULT: "failure", SONAR_CE_TASK_ID: "T1" }, { client: fakeSonar().client }), false);
+});
+
+// ---------- The workflow wiring (.github/workflows/sonar.yml) ----------
+// Text checks, as Node has no YAML parser built in; actionlint checks the syntax.
+
+test("sonar.yml: the gate job can't be skipped, reads this run's analysis and keeps its check name", () => {
+  const yml = readFileSync(new URL("../workflows/sonar.yml", import.meta.url), "utf8");
+  const gateJob = yml.slice(yml.indexOf("\n  release-gate:"));
+  assert.ok(gateJob.length > 1, "release-gate job exists");
+  assert.match(gateJob, /\n    name: Release security gate\n/, "the required check's name");
+  assert.match(gateJob, /\n    needs: sonar\n/);
+  assert.match(gateJob, /\n    if: \$\{\{ !cancelled\(\) \}\}\n/, "runs when the analysis is skipped or fails");
+  assert.match(gateJob, /SONAR_CE_TASK_ID: \$\{\{ needs\.sonar\.outputs\.ce-task-id \}\}/);
+  assert.match(gateJob, /SONAR_JOB_RESULT: \$\{\{ needs\.sonar\.result \}\}/);
+  assert.match(gateJob, /PR_NUMBER: \$\{\{ github\.event\.pull_request\.number \}\}/);
+  assert.match(gateJob, /run: node \.github\/scripts\/sonar-release-gate\.mjs\n/);
+  assert.doesNotMatch(gateJob, /continue-on-error/);
+  assert.match(yml, /pull_request:\n    branches: \[main\]/, "runs on every PR into main");
+  assert.match(yml, /ce-task-id: \$\{\{ steps\.report\.outputs\.ce-task-id \}\}/);
 });

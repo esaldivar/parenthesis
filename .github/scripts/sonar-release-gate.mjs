@@ -29,8 +29,10 @@ export const POLICY = {
   blockingHotspotProbabilities: ["HIGH"],
 };
 
-const OPEN_STATUSES = ["OPEN", "CONFIRMED", "REOPENED"];
+// issueStatus values (current model). Anything not known to be closed counts as open, so a new status fails closed.
+const CLOSED_STATUSES = ["FIXED", "ACCEPTED", "FALSE_POSITIVE"];
 const ACCEPTED_STATUSES = ["ACCEPTED", "FALSE_POSITIVE"];
+// Legacy resolution values, only used when an answer has no issueStatus ("WONTFIX" is the legacy name for Accepted).
 const ACCEPTED_RESOLUTIONS = ["WONTFIX", "FALSE-POSITIVE"];
 const PAGE_SIZE = 500;
 const MAX_RESULTS = 10000; // SonarQube's search APIs stop paging here.
@@ -77,7 +79,8 @@ export function sonarClient({
       let res;
       try {
         res = await fetchImpl(url, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          // The token as the Basic-auth user, as the Sonar Sunday workflow already does successfully (curl -u "$SONAR_TOKEN:").
+          headers: { Authorization: `Basic ${Buffer.from(`${token}:`).toString("base64")}`, Accept: "application/json" },
           signal: AbortSignal.timeout(timeoutMs),
         });
       } catch (e) {
@@ -166,9 +169,10 @@ export function classifyIssue(issue) {
   return null;
 }
 
+/** Open unless SonarQube says it's fixed, accepted or a false positive. Unknown statuses count as open. */
 export function isOpen(issue) {
-  if (issue.issueStatus) return OPEN_STATUSES.includes(issue.issueStatus);
-  return !issue.resolution && OPEN_STATUSES.includes(issue.status ?? "OPEN");
+  if (issue.issueStatus) return !CLOSED_STATUSES.includes(issue.issueStatus);
+  return !issue.resolution && issue.status !== "CLOSED" && issue.status !== "RESOLVED";
 }
 
 export function isAccepted(issue) {
@@ -176,10 +180,19 @@ export function isAccepted(issue) {
   return ACCEPTED_RESOLUTIONS.includes(issue.resolution);
 }
 
-/** A justification is at least one non-empty comment on the finding in SonarQube Cloud. */
+/**
+ * A justification is at least one non-empty comment on the finding in SonarQube Cloud. Returns null when the answer
+ * carries no comment list at all, so the caller can say the comments couldn't be read (still blocking).
+ */
 export function hasJustification(comments) {
-  return (comments ?? []).some((c) => `${c.markdown ?? c.htmlText ?? ""}`.trim().length > 0);
+  if (!Array.isArray(comments)) return null;
+  return comments.some((c) => `${c?.markdown ?? c?.htmlText ?? ""}`.trim().length > 0);
 }
+
+const noJustification = (verdict, what) =>
+  verdict === null
+    ? `${what}, and SonarQube Cloud didn't return its comments, so the justification can't be checked`
+    : `${what} without a comment explaining why`;
 
 export function severityLabel(issue) {
   const impact = securityImpacts(issue)
@@ -308,16 +321,19 @@ export async function evaluate({
   // 5. Accepted findings need a written justification in SonarQube Cloud.
   const scopes = pullRequest ? [candidateScope, baseScope] : [candidateScope];
   for (const scope of scopes) {
-    for (const issue of await securityIssues(scope, { resolutions: ACCEPTED_RESOLUTIONS.join(",") })) {
-      if (isAccepted(issue) && classifyIssue(issue) && !hasJustification(issue.comments)) {
-        blocking.push(`${describe(issue, scope)} — marked **${issue.issueStatus ?? issue.resolution}** without a comment explaining why`);
+    for (const issue of await securityIssues(scope, { issueStatuses: ACCEPTED_STATUSES.join(",") })) {
+      if (!isAccepted(issue) || !classifyIssue(issue)) continue;
+      const verdict = hasJustification(issue.comments);
+      if (verdict !== true) {
+        blocking.push(`${describe(issue, scope)} — ${noJustification(verdict, `marked **${issue.issueStatus ?? issue.resolution}**`)}`);
       }
     }
     for (const resolution of ["SAFE", "ACKNOWLEDGED"]) {
       for (const h of await client.all("hotspots/search", { projectKey, ...scope, status: "REVIEWED", resolution }, "hotspots")) {
         const detail = await client.get("hotspots/show", { hotspot: h.key });
-        if (!hasJustification(detail.comment)) {
-          blocking.push(`${hotspotLine(h, scope)} — reviewed as **${resolution}** without a comment explaining why`);
+        const verdict = hasJustification(detail.comment);
+        if (verdict !== true) {
+          blocking.push(`${hotspotLine(h, scope)} — ${noJustification(verdict, `reviewed as **${resolution}**`)}`);
         }
       }
     }

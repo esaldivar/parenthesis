@@ -38,7 +38,14 @@ The gate uses SonarQube Cloud's current model: each issue has **impacts** (softw
 `RELIABILITY` or `MAINTAINABILITY`, with severity `BLOCKER`, `HIGH`, `MEDIUM`, `LOW` or `INFO`) and an
 **issueStatus** (`OPEN`, `CONFIRMED`, `ACCEPTED`, `FALSE_POSITIVE`, `FIXED`). There is no `CRITICAL` in this
 model: the legacy `CRITICAL` corresponds to `HIGH`, `MAJOR` to `MEDIUM` and `MINOR` to `LOW`. The legacy `type`,
-`severity`, `status` and `resolution` fields are only a fallback when an answer lacks the new ones.
+`severity`, `status` and `resolution` fields are only a fallback when an answer lacks the new ones. An
+`issueStatus` the gate doesn't know counts as open, so a new status in SonarQube blocks rather than slipping through.
+Severities are compared in the gate, not sent as filters, so it works whether or not SonarQube Cloud returns
+`BLOCKER` and `INFO` impact severities.
+
+Hotspots use their own model: **status** `TO_REVIEW` or `REVIEWED`, and when reviewed a **resolution** of `FIXED`,
+`SAFE` or `ACKNOWLEDGED` (an accepted risk). Their **review priority** is `vulnerabilityProbability`: `HIGH`, `MEDIUM`
+or `LOW`.
 
 "Critical or high" therefore means `BLOCKER` or `HIGH` security impact. The gate is stricter for vulnerabilities:
 every vulnerability blocks, because the seven in issue #65 are legacy `MAJOR`/`MINOR` (`MEDIUM`/`LOW`) and must
@@ -90,9 +97,31 @@ the quality gate to make a PR pass. A policy change gets its own reviewed PR int
 | `The analysis is for PR #…, not PR #…` | An analysis of another PR was picked up. Re-run the whole workflow. |
 | `Quality gate is ERROR` | Open the analysis link and fix the failing condition (for example new-code coverage). |
 | `without a comment explaining why` | Add the justification comment to that finding in SonarQube Cloud, then re-run. |
+| `didn't return its comments` | SonarQube Cloud answered without the finding's comment list, so the justification can't be checked. Re-run; if it persists, its API changed: update the script and its tests. |
+| The **Release security gate** check never starts ("Expected — Waiting for status") | The Sonar workflow only starts when a PR into `main` is opened, reopened or pushed to. A PR retargeted to `main` afterwards hasn't run it: push the next commit, or close and reopen the PR. The check stays blocking meanwhile. |
 
 Run the gate's tests locally with `node --test .github/scripts/sonar-release-gate.test.mjs`. They use a fake
-SonarQube Cloud API, so they need no token or network.
+SonarQube Cloud API, so they need no token or network. The answers in `.github/scripts/fixtures/sonar-release-gate/`
+follow SonarQube's Web API response shapes; the seven vulnerabilities there use the keys, files and lines of the real
+Sonar Sunday issue #56.
+
+## API calls and how far they are verified
+Checked October 18, 2026. SonarQube Cloud's own API pages (`sonarcloud.io/web_api`, `docs.sonarsource.com`) couldn't be
+reached from the session that built this, so nothing below was run against the live API from there. "Proven" means
+the Sonar Sunday workflow already made that call successfully against this project (issue #56).
+
+| Call | Used for | Status |
+|---|---|---|
+| Token as Basic-auth user (`-u "$SONAR_TOKEN:"`) | Authentication | Proven by Sonar Sunday |
+| `qualitygates/project_status` | Quality gate (`branch` proven; the gate uses `analysisId`) | Proven endpoint; `analysisId` per the Web API docs |
+| `issues/search` with `resolved=false`, `types=VULNERABILITY` | Open vulnerabilities | Proven by Sonar Sunday. `types` is deprecated in favour of `impactSoftwareQualities` but still answers |
+| `issues/search` with `impactSoftwareQualities=SECURITY`, `issueStatuses=ACCEPTED,FALSE_POSITIVE`, `additionalFields=comments` | Security impacts, accepted findings and their comments | Per the Web API docs and SonarSource community answers; first real run confirms |
+| `hotspots/search` with `status=TO_REVIEW` | Hotspots to review | Proven by Sonar Sunday |
+| `hotspots/search` with `status=REVIEWED&resolution=…`, then `hotspots/show` (`comment` list) | Reviewed hotspots' justification | Per the Web API docs; first real run confirms |
+| `ce/task?id=` (`status`, `analysisId`, `pullRequest`, `componentKey`) | Waiting for this exact analysis | Per the Web API docs; first real run confirms |
+| `.sonarqube/out/.sonar/report-task.txt` (`ceTaskId=`) | The analysis' task id, written by the .NET scanner | Default location; the workflow also searches `.sonarqube/` for it |
+
+If any of these turns out different, the gate fails closed with the API's own message; it never passes by mistake.
 
 ## Required status check on `main`
 The gate only blocks merges once it's a required check. Only the owner (repository admin) can set this.
@@ -120,3 +149,6 @@ required check in the same change.
 - The PR's own workflow and gate script run from the PR branch, as all `pull_request` checks do. Changes to them
   are protected by review, not by the gate.
 - The gate reads at most 10,000 results per search, SonarQube's own limit; more than that fails the gate.
+- The gate checks that the analysis belongs to this PR, but SonarQube's task answer doesn't name the commit. The task
+  id comes from the same workflow run, whose analysis checked out the PR's merge commit, and `main` requires PRs to be
+  up to date, so that merge commit is what `main` becomes.
