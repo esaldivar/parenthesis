@@ -111,6 +111,9 @@ test("classification: labels force or suppress major; release targets always not
   assert.ok(release.reasons.includes("release to production"));
   assert.equal(classifyPr(pr({ base: { ref: "release/0.2.0" } }), ["README.md"]).release, true);
   assert.equal(classifyPr(pr(), ["README.md"]).release, false);
+  // develop is the development site: a release branch going into it is release work; a hotfix sync isn't.
+  assert.equal(classifyPr(pr({ head: { ref: "release/0.2.0" } }), ["README.md"]).release, true);
+  assert.equal(classifyPr(pr({ head: { ref: "chore/sync-main" } }), ["README.md"]).release, false);
 });
 
 const templateBody = `## Description

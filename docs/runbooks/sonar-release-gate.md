@@ -1,6 +1,6 @@
 # Release security gate (SonarQube Cloud)
 
-Every release PR into `main` (a `develop` release or a `hotfix/…`) must pass the **Release security gate** check.
+Every production release PR into `main` (`develop` → `main`, or a `hotfix/…`) must pass the **Release security gate** check.
 It blocks the release when SonarQube Cloud has security findings that aren't resolved, or that were accepted
 without a written reason. Setup of SonarQube Cloud itself: [sonarqube-cloud.md](sonarqube-cloud.md).
 
@@ -61,7 +61,8 @@ fails and the finding is back on Sunday's list.
 - **While coding:** SonarQube for IDE in connected mode flags the same rules.
 
 ## Resolving a blocking finding
-1. **Fix it** on a `fix/…` branch with a PR into `develop` (or a `hotfix/…` into `main` when urgent). Link the
+1. **Fix it** on a `fix/…` branch with a PR into the active `release/x.y.z` branch (or a `hotfix/…` into `main`
+   when it can't wait for the next release window; see [the development workflow](../development-workflow.md)). Link the
    tracking issue (for example #65) in the PR.
 2. **Or accept it, with a reason**, only if it's a false positive or a risk the owner deliberately accepts:
    - Issue: **Accept** (the risk is real but acceptable) or **False positive** (the rule is wrong here), and add a
@@ -72,7 +73,7 @@ fails and the finding is back on Sunday's list.
    new state.
 
 Never mark a finding Accepted or False positive just to get a release out, and never change the gate, the rules or
-the quality gate to make a PR pass. A policy change gets its own reviewed PR into `develop`.
+the quality gate to make a PR pass. A policy change gets its own reviewed PR into the active release branch.
 
 ## Troubleshooting
 | Message | What to do |
@@ -96,10 +97,11 @@ SonarQube Cloud API, so they need no token or network.
 ## Required status check on `main`
 The gate only blocks merges once it's a required check. Only the owner (repository admin) can set this.
 
-1. Open the release PR once with this workflow on `develop`, so the **Release security gate** check has run at least
+1. Wait until this workflow has reached `develop` (through a release) and a PR into `main` has run it once, so the **Release security gate** check has run at least
    once (GitHub only offers checks it has seen).
 2. **Settings → Branches →** the `main` protection rule **→ Edit** (or **Settings → Rules → Rulesets**, if `main`
-   is protected by a ruleset). Don't remove or loosen anything already there.
+   is protected by a ruleset). Only `main` needs it: the analysis only runs on PRs into `main`, so don't add it to
+   `develop` or the `release branches` ruleset. Don't remove or loosen anything already there.
 3. Under **Require status checks to pass before merging**, keep **Require branches to be up to date** on, search
    for **Release security gate**, and add it. If GitHub offers a source, choose **GitHub Actions**.
 4. Keep the existing required checks: **PR source (main accepts develop or hotfix/\*)**, **SonarQube Cloud**,
