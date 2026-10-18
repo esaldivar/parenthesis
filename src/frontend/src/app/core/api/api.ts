@@ -77,6 +77,8 @@ export interface ChangeRequest {
   readonly requiredApprovals: number;
   /** True when this parent can still approve or reject it (not the proposer, hasn't answered). */
   readonly canDecide: boolean;
+  /** True when this parent proposed it, so they can withdraw it while it's pending. */
+  readonly proposedByYou: boolean;
   readonly resolvedAt: string | null;
   readonly decisions: readonly { deciderMembershipId: string; decision: 'Approve' | 'Reject'; comment: string | null; decidedAt: string }[];
 }
