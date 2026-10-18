@@ -4,7 +4,7 @@ Sets up the **development** and **production** environments that `.github/workfl
 GitHub settings the workflow needs. The rules are in [the development workflow](../development-workflow.md). Until
 step 6 is done, the deploy workflow does nothing.
 
-Status (October 18, 2026): **not started.** The owner has no Azure subscription yet.
+Status (October 18, 2026): GitHub settings (steps 4 and 5) **done**, except the environment variables. Azure (steps 1–3, 6) **not started**: the owner has no subscription yet.
 
 Everything below is done by the owner, once. Commands use the [Azure CLI](https://learn.microsoft.com/cli/azure/)
 (`az`), which also runs in the browser through Azure Cloud Shell. Never paste secrets, passwords or connection
@@ -138,6 +138,7 @@ echo "AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)"
 |---|---|---|
 | Deployment branches and tags | Selected branches: `develop` | Selected branches: `main` |
 | Required reviewers | none | **the owner**. Leave "Prevent self-review" unticked, so the owner can approve their own merge |
+| Allow administrators to bypass | (any) | **Unticked**, so every production deployment waits for approval |
 | Environment variables | `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` (from step 3), `AZURE_RESOURCE_GROUP` (`rg-parenthesis-dev`), `AZURE_CONTAINER_APP` (`ca-parenthesis-dev`), `AZURE_MIGRATION_JOB` (`job-parenthesis-migrate-dev`), `APP_URL` (from step 2) | The same names with the `prod` values |
 
 These identifiers aren't secrets (sign-in works only from this repository's workflow in that environment), so they
@@ -148,7 +149,8 @@ are variables.
    - Enforcement: **Active**. Bypass list: empty.
    - Target branches: **Include by pattern** `release/*`.
    - Rules: **Restrict deletions**; **Require a pull request before merging** (0 approvals); **Require status
-     checks to pass**, with "Require branches to be up to date" on, and these checks: `Backend (build, format,
+     checks to pass**, with "Require branches to be up to date" and "Do not require status checks on creation" on
+     (so new release branches can be created), and these checks: `Backend (build, format,
      tests)`, `Frontend (lint, test, build)`, `API image`, `PR source (main accepts develop or hotfix/*)`;
      **Block force pushes**.
 2. **Settings → Branches → `develop`** (existing rule): add `PR source (main accepts develop or hotfix/*)` to the

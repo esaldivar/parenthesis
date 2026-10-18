@@ -188,8 +188,11 @@ that points back here.
   - [ ] Cut `release/0.2.0` from `develop` once this is merged, and retarget open work PRs (#40, #59) to it.
   - [ ] Remove the one-off `chore/release-workflow` exception from `.github/scripts/check-pr-branch-policy.sh`
     (`TODO(workflow)`) in the first PR into `release/0.2.0`.
-  - [ ] **Owner:** GitHub settings from the runbook: the `release branches` ruleset, **PR source** required on
-    `develop`, the `development` and `production` environments (owner as required reviewer).
+  - [x] **Owner:** GitHub settings from the runbook (October 18, 2026): the `release branches` ruleset (PRs only,
+    the four checks up to date, no deletion or force pushes, checks not required on creation); **PR source** required
+    on `develop`; the `development` environment (deploys from `develop` only) and the `production` environment (owner
+    as required reviewer, self-review allowed, no admin bypass, deploys from `main` only). The environment variables
+    wait for the Azure setup.
   - [ ] **Owner:** Azure account and both environments (runbook steps 1–3), then `DEPLOY_ENABLED` = `true` and the
     `parenthesis-api` package made public.
   - [ ] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
