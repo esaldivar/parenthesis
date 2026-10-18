@@ -41,7 +41,11 @@
   because `develop` requires PRs to be up to date too.
 - **SonarQube Cloud quality gate:** required on `main`. New code needs an A security, reliability and maintainability
   rating, at least 80% coverage, and little duplication.
-- Keep PRs small: one backlog item (or one slice of it) per PR.
+- **Weekly limits:** at most 3 new development PRs and 6 Copilot reviews a week (2 per PR). Discord notices for
+  major and release PRs, and the Monday status report, are automatic. See
+  [the development workflow](docs/development-workflow.md).
+- Keep PRs focused: one backlog item (or one slice of it) per PR, and group closely related changes rather than
+  opening PRs for minor ones.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), e.g. `feat(calendar): add change-request endpoint`.
 - Open work is tracked in [TODO.md](TODO.md).
 

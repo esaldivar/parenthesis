@@ -161,14 +161,42 @@ that points back here.
     `.github/workflows/playwright-release.yml`, the **Release E2E gate** check, Discord notification, and the branch
     policy for `release/*` (October 18, 2026).
   - [ ] **Owner:** make **Release E2E gate** a required check on `develop` (runbook, "Branch protection").
-  - [ ] **Owner:** confirm the Discord webhook secret is named `DISCORD_WEBHOOK_URL`, or rename the reference in the
-    workflow to match the existing secret.
+  - [x] Discord: the result is posted through the existing `DISCORD_WEBHOOK_URL` secret (owner confirmed, October 18,
+    2026). It's a separate message from the Discord PR notice, posted when the run finishes.
+  - [x] `develop` is release-only: it accepts `release/*`, `hotfix/*` and the `chore/sync-main` back-merge, so all
+    work reaches it through Playwright (owner decision, October 18, 2026).
   - [ ] First real run on the first `release/*` PR: check the summary, the artifacts and the Discord post.
   - [ ] Add browser journeys as the M2 and M3 screens ship (invitations, children, profile picker, PIN entry, the
     full calendar). Until then those features are tested through the API, and the calendar page through its honest
     empty state.
   - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
     the sign-in limit, for the test instance only.
+
+- [ ] **Development workflow automation** (owner brief, October 18, 2026). Weekly PR and Copilot review limits,
+  Discord notifications for major and release PRs, and a weekly status report. The brief is in CLAUDE.md.
+  - [x] Brief recorded in CLAUDE.md (October 18, 2026).
+  - [x] Inspection report to the owner (CLAUDE.md step 11), October 18, 2026.
+  - [x] **Owner settings** (October 18, 2026): `DISCORD_WEBHOOK_URL` is a repository Actions secret (the plain-text
+    variable copy was deleted); the `main` ruleset "Copilot review for default branch" now requires 0 approvals (it
+    required 2 with no bypass, which would have blocked releases); Copilot review effort is **Lite**; "Allow Copilot
+    to approve pull requests" is **off**; there are no Copilot automatic-review rulesets.
+  - [x] Owner approved the build (October 18, 2026).
+  - [x] Built: `pr-weekly-limit.yml`, `copilot-review-usage.yml`, `discord-pr-notify.yml`, `weekly-dev-status.yml`,
+    `workflow-scripts.yml`, `.github/scripts/dev-workflow.mjs` with tests, `docs/development-workflow.md`; CLAUDE.md
+    now links to it (October 18, 2026).
+  - [ ] **Owner:** once the **Weekly PR limit** check has run on a PR into `develop`, make it a required check there
+    (Settings → Branches → `develop`), so PRs over the limit can't merge without `owner-approved-pr`.
+  - [ ] Watch the first real runs: the first major or release PR notice, the first over-limit PR, and the first
+    Monday report (it only runs once this is released to `main`).
+
+- [ ] **Branching, release and environments** (owner brief, October 18, 2026). Milestone release branches, a private
+  `development` environment, biweekly Friday production releases with owner approval. The brief is in CLAUDE.md.
+  - [x] Brief recorded in CLAUDE.md, with the discrepancies against the current process (October 18, 2026).
+  - [ ] **Owner:** decide the discrepancies (`develop` vs `development`, weekly vs biweekly releases, milestone map).
+  - [ ] Plan for protections, environments, hosting and deployment approval; wait for owner approval.
+  - [ ] Flag the November 27 and December 25, 2026 release windows (holidays) for the owner.
+  - [ ] After approval: implement, update CONTRIBUTING.md and `docs/development-workflow.md`, and shorten the CLAUDE.md
+    section to a link.
 
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements

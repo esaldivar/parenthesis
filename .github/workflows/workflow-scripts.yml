@@ -1,0 +1,25 @@
+name: Workflow scripts
+
+# Unit tests for the development workflow automation (.github/scripts/dev-workflow.mjs). No secrets.
+on:
+  pull_request:
+    paths:
+      - ".github/scripts/**"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Workflow script tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Test the workflow scripts
+        run: node --test .github/scripts/dev-workflow.test.mjs
