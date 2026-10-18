@@ -99,7 +99,9 @@ that points back here.
     `develop`:
     - [x] Backend: a household device's picker shows only the parent who registered it, not both parents
       (October 18, 2026).
-    - [ ] Sign-up, household setup and invitations.
+    - [x] Sign-up, household setup and invitations: register with confirm password, the four-step setup (family,
+      how many children, their names, invite), "pending approval" for each child, the invitation accept page with
+      one calm screen for invalid links, and a co-parent card in Settings (October 18, 2026).
     - [ ] Profile picker, parent password and child PIN screens.
     - [ ] Tablet pairing and device management.
     - [ ] Co-parent approvals.

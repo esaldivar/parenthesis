@@ -20,6 +20,21 @@ export interface FamilySummary {
   readonly role: FamilyRole;
 }
 
+export interface FamilyMember {
+  readonly membershipId: string;
+  readonly displayName: string;
+  readonly role: FamilyRole;
+  readonly joinedAt: string;
+}
+
+export interface FamilyDetails {
+  readonly id: string;
+  readonly name: string;
+  readonly timeZone: string;
+  readonly createdAt: string;
+  readonly members: readonly FamilyMember[];
+}
+
 // --- Milestone 2 (ADR-0006): invitations, children, approvals, devices, the profile picker -----------------------------
 
 export interface InvitationSummary {
@@ -180,6 +195,7 @@ export class Api {
   myFamilies = () => this.call(this.http.get<FamilySummary[]>('/api/me/families'));
   createFamily = (body: { name: string; timeZone: string }) =>
     this.call(this.http.post<FamilySummary>('/api/families', body));
+  family = (familyId: string) => this.call(this.http.get<FamilyDetails>(`/api/families/${familyId}`));
 
   // Co-parent invitations (FM-03). The answer to "send" is the same whether or not the address has an account.
   invitations = (familyId: string) => this.call(this.http.get<InvitationSummary[]>(`/api/families/${familyId}/invitations`));
