@@ -85,8 +85,9 @@ jobs:
           cache: npm
           cache-dependency-path: tests/e2e/package-lock.json
 
+      # No dependency install scripts (issue #65); Playwright's browser is installed below by its own CLI.
       - name: Install test dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Find the Playwright version
         id: playwright
@@ -101,14 +102,14 @@ jobs:
 
       - name: Install Chromium
         if: steps.browser-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps --only-shell chromium
+        run: npm run browser:install
 
       - name: Install Chromium's system libraries
         if: steps.browser-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npm run browser:deps
 
       - name: Run the release gate (every milestone)
-        run: npx playwright test
+        run: npm test
 
       # Totals, duration, per-milestone and regression results. Also fails if a milestone lost its tests.
       - name: Summarize

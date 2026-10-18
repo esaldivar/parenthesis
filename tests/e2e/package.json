@@ -6,8 +6,11 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
+    "browser:install": "playwright install --with-deps --only-shell chromium",
+    "browser:deps": "playwright install-deps chromium",
     "typecheck": "tsc --noEmit",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "trace": "playwright show-trace"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

@@ -64,7 +64,7 @@ add a browser journey for it. Screens that aren't built yet are tested for their
 ## When it fails
 1. The merge is blocked: **Release E2E gate** is red.
 2. The run's summary lists the failed tests and the results per milestone.
-3. Download `playwright-failures` for screenshots, traces (open them with `npx playwright show-trace`) and the API
+3. Download `playwright-failures` for screenshots, traces (open them with `npm run trace -- <file>` in `tests/e2e`) and the API
    log. `playwright-report` has the full HTML report.
 4. Fix the underlying problem on the release branch (a `fix/*` PR into `release/*`, or a push to it).
 5. The new push re-runs the gate and cancels any run it supersedes.
@@ -93,8 +93,8 @@ docker compose up -d postgres mailpit           # or any Postgres and Mailpit on
 docker build -f docker/api.Dockerfile -t parenthesis-api:rc .
 POSTGRES_CONNECTION="Host=localhost;Port=5432;Database=coparent;Username=<user>;Password=<password>" \
   tests/e2e/scripts/start-release-candidate.sh parenthesis-api:rc
-cd tests/e2e && npm ci && npx playwright install chromium
-npx playwright test                              # or: npx playwright test --grep @m2
+cd tests/e2e && npm ci --ignore-scripts && npm run browser:install
+npm test                                         # or: npm test -- --grep @m2
 node scripts/summarize.mjs                       # the same summary CI shows
 ```
 
