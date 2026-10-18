@@ -101,8 +101,12 @@ export function countsTowardLimit(pr) {
 
 export const isCopilot = (login = "") => /^copilot(-pull-request-reviewer)?(\[bot\])?$/i.test(login);
 
-/** Whether the target is a release branch: main (production), development, or release/x.y.z. */
-export const targetsRelease = (base) => base === "main" || base === "development" || base.startsWith("release/");
+/**
+ * Whether a PR is release work: anything into main (production) or a release/x.y.z branch, and a release branch
+ * going into develop (the development site). Hotfix syncs and back-merges into develop aren't.
+ */
+export const targetsRelease = (base, head = "") =>
+  base === "main" || base.startsWith("release/") || (["develop", "development"].includes(base) && head.startsWith("release/"));
 
 const MAJOR_PATHS = [
   [/\/Migrations\//, "database migrations"],
@@ -116,7 +120,7 @@ const LARGE_LINES = 1500;
 /** Classifies a PR as major and/or release, with plain-English reasons. `files` are paths. */
 export function classifyPr(pr, files = []) {
   const labels = labelNames(pr);
-  const release = targetsRelease(pr.base.ref);
+  const release = targetsRelease(pr.base.ref, pr.head.ref);
   const detected = [];
   if (!labels.includes(LABELS.notMajor)) {
     for (const [pattern, why] of MAJOR_PATHS) if (files.some((f) => pattern.test(f))) detected.push(why);

@@ -1,7 +1,7 @@
 # Playwright release gate
 
 End-to-end tests that keep a release from breaking what already works (owner decision, October 18, 2026). They run
-only on milestone release PRs, `release/*` → `develop`, and test the current milestone **and every milestone before
+only on milestone release PRs, `release/x.y.z` → `develop`, and test the current milestone **and every milestone before
 it**. A failure blocks the merge.
 
 | | |
@@ -15,14 +15,15 @@ it**. A failure blocks the merge.
 
 | PR | Playwright |
 |---|---|
-| `release/0.3.0` → `develop` | **Runs** (opened, new pushes, reopened, marked ready for review) |
-| `hotfix/*`, `chore/sync-main` → `develop` | No. The gate check passes at once. |
-| `feature/*`, `bugfix/*`, `chore/*`, … → `release/*` | No |
+| `release/0.2.0` → `develop` | **Runs** (opened, new pushes, reopened, marked ready for review) |
+| `hotfix/*`, `chore/sync-*` → `develop` | No. The gate check passes at once. |
+| `feature/*`, `bugfix/*`, `chore/*`, … → `release/x.y.z` | No |
 | `develop` → `main`, `hotfix/*` → `main` | No |
 | Pushes to any branch, schedules | No |
 
-`develop` only accepts release branches, hotfixes and the `chore/sync-main` back-merge, so all other work reaches
-it through a release PR and this gate (owner decision, October 18, 2026). Draft release PRs don't run it. Marking the PR ready for review starts the run. A `release/*` branch from a fork
+`develop` only accepts release branches, hotfixes and `chore/sync-*` back-merges (see
+[the development workflow](../development-workflow.md)), so all other work reaches it through a release PR and this
+gate. Draft release PRs don't run it. Marking the PR ready for review starts the run. A `release/*` branch from a fork
 never runs it, and the gate fails for it.
 
 ## What it tests
@@ -38,14 +39,15 @@ secrets or production settings are used.
   is fixed at 30 tries a minute per address. A full run uses about 11, or about 22 if every PIN test needs its
   retry, so keep the PIN tests lean.
 
-Tests are grouped and tagged by milestone. [`milestones.json`](../../tests/e2e/milestones.json) lists every released
-milestone, and the summary reports each one:
+Tests are grouped and tagged by milestone, following the release map in
+[the backlog](../planning/mvp-backlog.md). [`milestones.json`](../../tests/e2e/milestones.json) lists every milestone
+with tests, and the summary reports each one:
 
 | Tag | Milestone | Folder |
 |---|---|---|
-| `@m1` | Foundation: sign-up, email confirmation, sign-in, families, tenant isolation, app shell | `specs/m1-foundation/` |
-| `@m2` | Family and children: invitations, child profiles with both parents' approval, profile picker, PINs, lockout | `specs/m2-family/` |
-| `@m3` | Shared calendar: proposals, approvals, rejections, private notes, what children see | `specs/m3-calendar/` |
+| `@m1` | v0.1.0 Foundation: health, the app shell, authentication required, antiforgery | `specs/m1-foundation/` |
+| `@m2` | v0.2.0 Accounts and profiles: sign-up, email confirmation, sign-in, families, tenant isolation, invitations, children approved by both parents, profile picker, PINs, lockout | `specs/m2-accounts/` |
+| `@m3` | v0.3.0 Calendar and approvals (the work already in `develop`): proposals, approvals, rejections, private notes, what children see | `specs/m3-calendar/` |
 | `@regression` | One test per fixed bug, named after its issue (`issue-58-…`), plus its milestone tag | `specs/regression/` |
 
 Features without screens yet are tested through the API, the same way the app will call them. When a screen ships,

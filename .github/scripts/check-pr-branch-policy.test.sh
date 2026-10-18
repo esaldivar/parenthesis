@@ -20,6 +20,7 @@ expect() { # expect <pass|fail> <base> <head> [<base-repo> <head-repo>]
 
 # Into main: develop and hotfix/* only, from this repository.
 expect pass main develop "$repo" "$repo"
+expect fail main release/0.2.0 "$repo" "$repo"
 expect pass main hotfix/login-crash "$repo" "$repo"
 expect pass main develop
 expect fail main design/signup-invitations-profile-picker "$repo" "$repo"
@@ -30,38 +31,31 @@ expect fail main chore/sync-main "$repo" "$repo"
 expect fail main docs/x "$repo" "$repo"
 expect fail main hotfix/ "$repo" "$repo"
 expect fail main hotfix "$repo" "$repo"
-expect fail main release/0.3.0 "$repo" "$repo"
 expect fail main develop-old "$repo" "$repo"
 expect fail main my/develop "$repo" "$repo"
 expect fail main develop "$repo" "someone/parenthesis"
 expect fail main hotfix/x "$repo" "someone/parenthesis"
 
-# Into develop: release branches (gated by Playwright), hotfixes and the back-merge only.
-for head in release/0.3.0 release/m3-calendar hotfix/x chore/sync-main chore/sync-main-2026-10-20; do
+# Into develop: only tested releases and hotfix propagation.
+for head in release/0.2.0 release/1.10.3 hotfix/x chore/sync-main chore/sync-main-2026-10-30; do
   expect pass develop "$head" "$repo" "$repo"
 done
-# Everything else goes into the active release branch.
 for head in design/signup-invitations-profile-picker feat/x feature/request-expiry fix/ci-pr-branch-policy \
-            bugfix/x chore/playwright-release-gate docs/m2-architecture chore/sync-mainline; do
+            bugfix/x chore/x docs/x release/0.2 release/v0.2.0 release/0.02.0 release/ main develop random-branch \
+            Feat/x ci/x dependabot/nuget/x chore/release-workflow; do
   expect fail develop "$head" "$repo" "$repo"
 done
-expect fail develop main "$repo" "$repo"
-expect fail develop develop "$repo" "$repo"
-expect fail develop random-branch "$repo" "$repo"
-expect fail develop design/ "$repo" "$repo"
-expect fail develop Feat/x "$repo" "$repo"
-expect fail develop ci/x "$repo" "$repo"
-expect fail develop dependabot/nuget/x "$repo" "$repo"
-expect fail develop release/ "$repo" "$repo"
-expect fail develop Release/0.3.0 "$repo" "$repo"
+expect fail develop release/0.2.0 "$repo" "someone/parenthesis"
 
-# Into a release branch: develop (to bring it up to date) and the work-branch prefixes.
-for head in develop hotfix/x feature/shared-calendar feat/x fix/x bugfix/x chore/x docs/x design/x; do
-  expect pass release/0.3.0 "$head" "$repo" "$repo"
+# Into a release branch: work branches from this repository.
+for head in design/x feat/x feature/parent-registration fix/x bugfix/child-pin-validation chore/x docs/x hotfix/x; do
+  expect pass release/0.2.0 "$head" "$repo" "$repo"
 done
-expect fail release/0.3.0 main "$repo" "$repo"
-expect fail release/0.3.0 release/0.2.0 "$repo" "$repo"
-expect fail release/0.3.0 random-branch "$repo" "$repo"
+for head in develop main release/0.3.0 random-branch feature/ ci/x dependabot/nuget/x; do
+  expect fail release/0.2.0 "$head" "$repo" "$repo"
+done
+expect fail release/0.2.0 feature/x "$repo" "someone/parenthesis"
+expect fail release/next feature/x "$repo" "$repo"
 
 # Other targets (stacked PRs) have no policy.
 expect pass feat/angular-shell docs/x "$repo" "$repo"

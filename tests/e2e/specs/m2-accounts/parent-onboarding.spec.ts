@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { FAMILY_NAME, PASSWORD, newEmail } from '../../support/data';
 import { linkFromEmail } from '../../support/mailpit';
 
-test.describe('Parent onboarding', { tag: '@m1' }, () => {
+test.describe('Parent onboarding', { tag: '@m2' }, () => {
   test('a parent registers, confirms their email, signs in and creates a family', async ({ page }) => {
     const email = newEmail('Alex Rivera');
 

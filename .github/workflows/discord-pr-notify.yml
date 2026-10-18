@@ -1,6 +1,6 @@
 name: Discord PR notice
 
-# Tells the owner on Discord when a major PR, or any PR into a release branch (main, development, release/*), is
+# Tells the owner on Discord when a major PR, or any PR into a release branch (main, release/*, and release/x.y.z into develop), is
 # opened or marked ready for review, and when one is labeled "blocked". Drafts wait until they're ready. A hidden
 # marker comment on the PR stops duplicate notices; a failed notice turns this run red and says so on the PR.
 # Rules: docs/development-workflow.md.

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { soloParent } from '../../support/family';
 
-test.describe('Tenant isolation', { tag: '@m1' }, () => {
+test.describe('Tenant isolation', { tag: '@m2' }, () => {
   test("a parent from another family can't see or touch this family", async () => {
     const rivera = await soloParent('Dad');
     const other = await soloParent('Jordan Lee');

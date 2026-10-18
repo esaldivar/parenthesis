@@ -1,8 +1,164 @@
-# Development workflow: PR limits, Copilot reviews and Discord notices
+# Development workflow
 
-This is the authoritative reference for these rules (owner brief, October 18, 2026). Branches, checks and merging are
-in [CONTRIBUTING.md](../CONTRIBUTING.md). The automation lives in `.github/scripts/dev-workflow.mjs` and the
-workflows named below.
+The authoritative reference for branches, releases, environments, PR limits, Copilot reviews and Discord notices
+(owner briefs and decisions, October 18, 2026). Day-to-day conventions (checks, merging, commit style) are in
+[CONTRIBUTING.md](../CONTRIBUTING.md). The automation lives in `.github/scripts/` and the workflows named below.
+
+## Branches and releases
+
+```text
+main                      production (real families)
+ └─ develop               the private development site
+     └─ release/0.2.0     one milestone, one release; cut from develop
+         ├─ feature/parent-registration
+         ├─ bugfix/child-pin-validation
+         └─ docs/…, chore/…, design/…
+hotfix/…                  from main, for urgent production bugs
+```
+
+- **`main`** is production. No direct pushes, no unreviewed changes, no automatic production deployments: each one
+  waits for the owner's approval. Rollback is always available (below).
+- **`develop`** keeps its name (owner decision) and is the private development site. It is **not** an open
+  integration branch: it only takes tested milestone releases (`release/x.y.z`), hotfixes and their syncs
+  (`chore/sync-…`). Every merge deploys to the development site automatically.
+- **`release/x.y.z`**: one per milestone, cut from the latest `develop`. Only the active milestone's branch exists
+  at a time; future ones are never created ahead. Every feature, fix, doc and tooling change for the milestone
+  targets it, including Sonar Sunday fixes.
+- **Work branches** (`feature/`, `feat/`, `bugfix/`, `fix/`, `chore/`, `docs/`, `design/`) start from the active
+  release branch and PR back into it. Never merge an incomplete feature into `develop` or `main`, and never merge a
+  PR automatically.
+- **Hotfixes** for urgent production bugs: branch from `main`, make the smallest safe fix, test, open a PR into
+  `main`, get the owner's approval, deploy (approval again in Actions), verify production, then sync into `develop`
+  (`chore/sync-main`) and the active release branch. Hotfixes may ship outside a release window, never without
+  approval.
+- The **PR source** check enforces which branch may merge into which (`.github/scripts/check-pr-branch-policy.sh`).
+  Release branches must be named `release/x.y.z`.
+
+### Feature workflow
+1. Branch from the active release branch.
+2. Implement it and run the relevant tests.
+3. Open a PR into the release branch (within the weekly PR limit below).
+4. Required checks run; request a Copilot review within the review limits.
+5. Resolve blocking issues.
+6. The owner merges it (squash).
+
+### Milestones
+
+Each milestone is one release. The backlog's items are mapped to them in [the backlog](planning/mvp-backlog.md).
+
+| Version | Milestone | Scope |
+|---|---|---|
+| v0.1.0 | 1. Foundation | Architecture, configuration, design system, foundational UI, dashboard foundation, development infrastructure |
+| v0.2.0 | 2. Accounts and profiles | Parent registration, authentication, invitations, child profiles, child PINs, profile picker, permissions |
+| v0.3.0 | 3. Calendar and approvals | Shared calendar, parenting schedules, event proposals and approvals, change requests, calendar notifications |
+| v0.4.0 | 4. Communication (proposed) | Parent messaging, family communication, notifications, shared family information |
+| v0.5.0 | 5. Child experience (proposed) | Child dashboard, artwork and photos, journal, child privacy controls |
+| v1.0.0 | Private beta | All milestones integrated, security validation, end-to-end tests, production readiness, invitation-only |
+
+**Starting point (owner decision, October 18, 2026):** `main` holds the Milestone 1 foundation. `develop` already
+holds Milestone 2 work and some Milestone 3 backend work (calendar, approvals). `release/0.2.0` is cut from `develop`
+as it is, and Milestone 2 is finished there. The Milestone 3 backend work already in `develop` comes along with
+0.2.0; Milestone 3 (0.3.0) finishes it. Before 0.2.0 reaches production, check that nothing unfinished from
+Milestone 3 is reachable in the app (TODO.md).
+
+## Release windows
+
+Production releases happen in **windows every other Friday, America/Chicago**, starting **October 30, 2026**. The
+calendar is `.github/release-windows.json`:
+
+| Scheduled | Actual | Why |
+|---|---|---|
+| Fri, Oct 30, 2026 | Fri, Oct 30 | First window |
+| Fri, Nov 13, 2026 | Fri, Nov 13 | |
+| Fri, Nov 27, 2026 | **Wed, Nov 25** | Day after Thanksgiving (owner decision) |
+| Fri, Dec 11, 2026 | Fri, Dec 11 | |
+| Fri, Dec 25, 2026 | **Wed, Dec 23** | Christmas (owner decision) |
+| Then every 14 days | Fri, Jan 8, 2027, … | |
+
+- A window is an **opportunity, not a deadline**. If the milestone isn't ready or stable, skip it: keep the release
+  branch open, keep testing, and aim for the next window. Never skip testing or approval to meet a date.
+- Holidays: dates listed under `holidays` in the calendar file are flagged for the owner when a window lands on them.
+  Nothing is moved or deployed on a holiday without approval. To move or cancel a window, edit `moved` or `skipped`.
+- `.github/workflows/release-window.yml` runs daily and, on the days below, opens or updates a **Release window**
+  checklist issue and tells Discord. It never merges or deploys anything.
+
+| Day | What happens |
+|---|---|
+| Week 1, Mon–Wed | Features, fixes, PR reviews, automated tests on the release branch |
+| Week 1, Thu–Fri | Finish the scope, stabilize, integration tests, fix release blockers, draft release notes |
+| Week 2, Monday | Checklist issue opens. PR `release/x.y.z` → `develop`; once approved and merged it deploys to the development site |
+| Week 2, Tue–Wed | Test on the development site: authentication and authorization, family workflows, database changes. Fix critical defects on the release branch and retest |
+| Day before the window | Readiness review: acceptance criteria, deployment plan, rollback. Discord asks for owner approval |
+| The window | PR `develop` → `main`, merged once approved. The production deployment waits for the owner's approval in Actions, then runs smoke tests, tags the version and publishes release notes. Discord confirms |
+
+For a moved window (a Wednesday), the same steps happen on the Monday, the day before and the day of that week.
+
+## Promotion
+
+1. **Release branch.** All the milestone's PRs are merged, required checks pass, stabilization is done.
+2. **`release/x.y.z` → `develop`.** Passing checks, including the **Release E2E gate**: Playwright tests the
+   release candidate for this milestone and every one before it, and a failure blocks the merge
+   ([runbook](runbooks/playwright-release-gate.md)). Release notes written, no open blocking defects, and the owner's
+   approval. Merge with a **merge commit**. The development deployment then builds the image, runs migrations and
+   smoke tests, and records the tested commit (GitHub's deployment history for the `development` environment). If
+   testing fails, production is blocked: fix it on the release branch and repeat.
+3. **`develop` → `main`.** Successful development testing, an approved release candidate, a verified rollback, and
+   the owner's approval. The PR must contain only that tested release; if `develop` holds anything else, stop and
+   propose a safer promotion. Merge with a **merge commit**.
+4. **Production deployment** (`.github/workflows/deploy.yml`): it deploys the **exact image tested on `develop`**,
+   never a rebuild. It refuses to run when `main`'s files differ from the merged `develop` commit, when that commit
+   has no successful development deployment, or when no untagged `release/x.y.z` is contained in `main`. After the
+   owner approves it: migrations, deployment, smoke tests and health checks, the `vX.Y.Z` tag and release notes,
+   then Discord. A failed deployment rolls back to the previous image automatically. Hotfixes build a new image from
+   `main` (they skip the development site) and get the next patch version.
+
+## Environments and deployment
+
+Hosting is Azure, as the architecture chose: Azure Container Apps, Azure Database for PostgreSQL Flexible Server,
+Blob Storage and Key Vault. Setup steps: [the Azure runbook](runbooks/azure-environments.md). Until it's done, the
+repository variable `DEPLOY_ENABLED` is unset and the deploy workflow does nothing.
+
+| | Development | Production |
+|---|---|---|
+| Deploys from | `develop`, on every merge | `main`, after the owner approves each deployment |
+| GitHub environment | `development` (deployments from `develop` only) | `production` (from `main` only; owner is the required reviewer) |
+| Access | Invite-only accounts: sign-up only for allow-listed tester emails | Invitation-only families (private beta) |
+| Data | Its own database. **Synthetic data only**, never real families | Its own database, backups |
+| Secrets | Its own Key Vault and managed identity | Its own Key Vault and managed identity |
+| Checks | Smoke tests (`/health/live`, `/health/ready`, the app shell) | The same, plus monitoring (Application Insights) |
+
+- Images go to GitHub Container Registry as `ghcr.io/esaldivar/parenthesis-api:sha-<commit>`, and released ones are
+  also tagged `vX.Y.Z`.
+- Azure sign-in uses OpenID Connect (no stored passwords): each environment has its own identity, limited to its
+  own resource group.
+- Migrations run as a one-off Container Apps job with the same image (`migrate`) before the app is updated, so they
+  must be backward compatible (add first, remove in a later release).
+
+### Rollback
+- **Automatic:** if the deployment or its smoke tests fail, the workflow puts the previous image back.
+- **By hand:** Actions → Deploy → Run workflow from `main` (production) or `develop` (development), with the
+  environment and a released version (for example `v0.2.0`). Production still needs the owner's approval.
+- **Database:** migrations aren't undone automatically. Restore with PostgreSQL's point-in-time restore (see the
+  runbook), which is why migrations must stay backward compatible.
+
+## Branch protection (owner settings)
+
+These are repository settings the owner applies; nothing in the repository can change them. Click-by-click steps are
+in [the Azure runbook](runbooks/azure-environments.md#github-settings).
+
+| Branch | Rules |
+|---|---|
+| `main` | Existing protection (PRs only, required checks up to date, no force pushes or deletion, admins included). Required checks include **PR source** and the SonarCloud quality gate. |
+| `develop` | Existing protection, plus **PR source** and **Release E2E gate** as required checks. |
+| `release/*` | A ruleset: PRs only, required checks (Backend, Frontend, API image, PR source) up to date, no force pushes, no deletion. Admins included. |
+| Environments | `production`: required reviewer = the owner, deployments from `main` only. `development`: deployments from `develop` only. |
+
+- GitHub can't restrict a PR's source branch, which is why **PR source** is a check; it only blocks merging once it's
+  a required check on each protected branch.
+- GitHub can't require an approval from a PR's own author, so the owner's approval is enforced on the production
+  **deployment**, not on the PR.
+- Automation (GitHub Actions) can't push to protected branches: workflows only comment, open issues, tag releases and
+  deploy.
 
 ## Weekly limits
 
@@ -16,8 +172,8 @@ workflows named below.
 - The limits apply to PRs opened from **Monday, October 19, 2026**. Earlier PRs stay valid and never count.
 - A PR counts in the week it was **created**. Closing and reopening it doesn't count it again, and doesn't reset its
   Copilot review count.
-- **Not counted:** releases and promotions between permanent branches (`develop`/`development` → `main`,
-  `release/*` → `development`), `chore/sync-…` back-merges, `hotfix/…` PRs, PRs opened by bots (Dependabot), and PRs
+- **Not counted:** releases and promotions between permanent branches (`develop` → `main`, `release/*` →
+  `develop`), `chore/sync-…` back-merges, `hotfix/…` PRs, PRs opened by bots (Dependabot), and PRs
   labeled `replacement` because they replace an earlier PR (for example, one moved to a correctly named branch).
 - **Exceptions:** only the owner grants them, with a label. GitHub records who added a label, and the workflows only
   accept it when the repository owner added it.
@@ -66,8 +222,10 @@ Multiple significant features or core-functionality changes that the paths don't
 |---|---|
 | A major PR is being prepared | Claude, before opening it (step 5 above) |
 | A major PR is opened, or marked ready for review | `discord-pr-notify.yml` |
-| Any PR into a release branch (`main`, `development` or `release/*`) is opened or ready, whatever its size | `discord-pr-notify.yml` |
-| A release candidate (a PR into `main`) needs owner approval | `discord-pr-notify.yml` ("release candidate" notice) |
+| Any PR into `main` or a `release/*` branch, or a release branch into `develop`, is opened or ready, whatever its size | `discord-pr-notify.yml` |
+| A release candidate (a PR into `main`) needs owner approval | `discord-pr-notify.yml` ("release candidate" notice), and `release-window.yml` the day before the window |
+| Release week starts, the readiness review, and the window itself | `release-window.yml` |
+| A deployment to development or production succeeds or fails | `deploy.yml` |
 | A major or release PR is labeled `blocked` (a significant risk or blocker) | `discord-pr-notify.yml`, once per commit |
 | A PR goes over the weekly PR or Copilot limit | `pr-weekly-limit.yml`, `copilot-review-usage.yml` |
 | Monday report | `weekly-dev-status.yml` |
