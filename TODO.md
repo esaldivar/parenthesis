@@ -169,6 +169,20 @@ that points back here.
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
     data source.
 
+- [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Every `release/x.y.z` → `develop`
+  PR runs Playwright against the release candidate, for the current milestone and every one before it. Runbook:
+  `docs/runbooks/playwright-release-gate.md`.
+  - [x] Suite in `tests/e2e/` (v0.1.0, v0.2.0, the v0.3.0 work already in `develop`, and a regression test for #58),
+    workflow `.github/workflows/playwright-release.yml`, the **Release E2E gate** check and its Discord post through
+    `DISCORD_WEBHOOK_URL` (October 18, 2026).
+  - [x] **Owner:** **Release E2E gate** is a required check on `develop` (October 18, 2026).
+  - [ ] First real run on the `release/0.2.0` → `develop` PR: check the summary, the artifacts and the Discord post.
+  - [ ] Add browser journeys as the v0.2.0 and v0.3.0 screens ship (invitations, children, profile picker, PIN
+    entry, the full calendar). Until then those features are tested through the API, and the calendar page through
+    its honest empty state.
+  - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
+    the sign-in limit, for the test instance only.
+
 - [ ] **Development workflow automation** (owner brief, October 18, 2026). Weekly PR and Copilot review limits,
   Discord notifications for major and release PRs, and a weekly status report. The brief is in CLAUDE.md.
   - [x] Brief recorded in CLAUDE.md (October 18, 2026).
@@ -200,8 +214,8 @@ that points back here.
     `dev-workflow.mjs`; CONTRIBUTING.md, `docs/development-workflow.md`, the Azure runbook and the backlog's release
     map; CLAUDE.md now links to the workflow guide.
   - [ ] Cut `release/0.2.0` from `develop` once this is merged, and retarget open work PRs (#40, #59) to it.
-  - [ ] Remove the one-off `chore/release-workflow` exception from `.github/scripts/check-pr-branch-policy.sh`
-    (`TODO(workflow)`) in the first PR into `release/0.2.0`.
+  - [x] Removed the one-off `chore/release-workflow` exception from `.github/scripts/check-pr-branch-policy.sh` in
+    the first PR into `release/0.2.0` (October 18, 2026).
   - [x] **Owner:** GitHub settings from the runbook (October 18, 2026): the `release branches` ruleset (PRs only,
     the four checks up to date, no deletion or force pushes, checks not required on creation); **PR source** required
     on `develop`; the `development` environment (deploys from `develop` only) and the `production` environment (owner

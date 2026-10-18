@@ -44,9 +44,6 @@ case "$base" in
     fi
     case "$head" in
       hotfix/?* | chore/sync-?*) echo "OK: $head -> develop" ;;
-      # TODO(workflow): one-off exception for the PR that introduces this policy; remove it in the first PR into
-      # release/0.2.0 (see TODO.md).
-      chore/release-workflow) echo "OK: $head -> develop (one-off exception that introduces this policy)" ;;
       main) fail "Don't PR main straight into develop. Back-merge through a chore/sync-main branch (see docs/development-workflow.md)." ;;
       *) fail "develop only accepts release/x.y.z, hotfix/* or chore/sync-* branches (this one is from $head). Target the active release/x.y.z branch instead." ;;
     esac

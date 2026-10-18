@@ -23,6 +23,9 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
   - Frontend: lint, unit tests and production build.
   - API image: build and smoke test.
   - **PR source** checks the source branch is allowed into the target (the table above).
+  - **Release E2E gate** (PRs into `develop`): a `release/x.y.z` PR merges only after Playwright passes for every
+    milestone so far, run against the release candidate. Other PRs pass it at once, without running Playwright
+    (see [the runbook](docs/runbooks/playwright-release-gate.md)).
   - PRs into `main` are also analysed by **SonarQube Cloud** for code quality and security
     (see [the runbook](docs/runbooks/sonarqube-cloud.md)).
   - PRs into `main` also run the **Release security gate**, which blocks the release on unresolved vulnerabilities,

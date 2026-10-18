@@ -13,6 +13,11 @@ node_modules/
 dist/
 .angular/
 
+# Playwright release gate output
+tests/e2e/playwright-report/
+tests/e2e/test-results/
+tests/e2e/results/
+
 # IDEs / OS
 .idea/
 .vscode/*

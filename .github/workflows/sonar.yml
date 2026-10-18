@@ -83,7 +83,7 @@ jobs:
           /d:sonar.test.inclusions="**/*.spec.ts"
           /d:sonar.cs.vscoveragexml.reportsPaths="coverage-backend.xml"
           /d:sonar.javascript.lcov.reportPaths="src/frontend/coverage/parenthesis/lcov.info"
-          /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,docker/**,.github/**"
+          /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,tests/e2e/**,docker/**,.github/**"
 
       - name: Build
         run: dotnet build CoParent.slnx -c Release

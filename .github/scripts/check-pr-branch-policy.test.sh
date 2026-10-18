@@ -40,10 +40,9 @@ expect fail main hotfix/x "$repo" "someone/parenthesis"
 for head in release/0.2.0 release/1.10.3 hotfix/x chore/sync-main chore/sync-main-2026-10-30; do
   expect pass develop "$head" "$repo" "$repo"
 done
-expect pass develop chore/release-workflow "$repo" "$repo" # one-off exception, TODO(workflow)
 for head in design/signup-invitations-profile-picker feat/x feature/request-expiry fix/ci-pr-branch-policy \
             bugfix/x chore/x docs/x release/0.2 release/v0.2.0 release/0.02.0 release/ main develop random-branch \
-            Feat/x ci/x dependabot/nuget/x; do
+            Feat/x ci/x dependabot/nuget/x chore/release-workflow; do
   expect fail develop "$head" "$repo" "$repo"
 done
 expect fail develop release/0.2.0 "$repo" "someone/parenthesis"
