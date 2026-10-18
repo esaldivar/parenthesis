@@ -162,9 +162,14 @@ that points back here.
     variable copy was deleted); the `main` ruleset "Copilot review for default branch" now requires 0 approvals (it
     required 2 with no bypass, which would have blocked releases); Copilot review effort is **Lite**; "Allow Copilot
     to approve pull requests" is **off**; there are no Copilot automatic-review rulesets.
-  - [ ] Owner says "approved" for the proposed build: weekly PR and Copilot counters, Discord notices for major and
-    release PRs, Monday status report, in one PR into `develop`.
-  - [ ] After approval: implement, write `docs/development-workflow.md`, and shorten the CLAUDE.md section to a link.
+  - [x] Owner approved the build (October 18, 2026).
+  - [x] Built: `pr-weekly-limit.yml`, `copilot-review-usage.yml`, `discord-pr-notify.yml`, `weekly-dev-status.yml`,
+    `workflow-scripts.yml`, `.github/scripts/dev-workflow.mjs` with tests, `docs/development-workflow.md`; CLAUDE.md
+    now links to it (October 19, 2026).
+  - [ ] **Owner:** once the **Weekly PR limit** check has run on a PR into `develop`, make it a required check there
+    (Settings → Branches → `develop`), so PRs over the limit can't merge without `owner-approved-pr`.
+  - [ ] Watch the first real runs: the first major or release PR notice, the first over-limit PR, and the first
+    Monday report (it only runs once this is released to `main`).
 
 - [ ] **Branching, release and environments** (owner brief, October 18, 2026). Milestone release branches, a private
   `development` environment, biweekly Friday production releases with owner approval. The brief is in CLAUDE.md.
