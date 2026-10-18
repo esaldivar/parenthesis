@@ -165,7 +165,7 @@ that points back here.
   - [x] Owner approved the build (October 18, 2026).
   - [x] Built: `pr-weekly-limit.yml`, `copilot-review-usage.yml`, `discord-pr-notify.yml`, `weekly-dev-status.yml`,
     `workflow-scripts.yml`, `.github/scripts/dev-workflow.mjs` with tests, `docs/development-workflow.md`; CLAUDE.md
-    now links to it (October 19, 2026).
+    now links to it (October 18, 2026).
   - [ ] **Owner:** once the **Weekly PR limit** check has run on a PR into `develop`, make it a required check there
     (Settings → Branches → `develop`), so PRs over the limit can't merge without `owner-approved-pr`.
   - [ ] Watch the first real runs: the first major or release PR notice, the first over-limit PR, and the first
