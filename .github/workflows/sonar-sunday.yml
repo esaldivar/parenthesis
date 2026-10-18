@@ -2,8 +2,8 @@ name: Sonar Sunday
 
 # Weekly review of SonarQube Cloud's findings on main (owner decision, October 17, 2026). Every Sunday this opens an
 # issue listing open vulnerabilities, bugs, security hotspots and code smells as a checklist. Fixes go on a
-# fix/sonar-sunday-<date> branch with a PR into develop, and reach main with the Release Tuesday release two days later.
-# See CONTRIBUTING.md ("Weekly rhythm"). It can also be run by hand from the Actions tab.
+# fix/sonar-sunday-<date> branch with a PR into the active release/x.y.z branch, and reach main with that release's
+# window (or a hotfix, if urgent). See docs/development-workflow.md. It can also be run by hand from the Actions tab.
 on:
   schedule:
     - cron: "0 14 * * 0" # Sundays 14:00 UTC (9 AM Central, 8 AM in winter).
@@ -62,9 +62,9 @@ jobs:
             echo
             echo "---"
             echo "**This week:**"
-            echo "1. Fix the items above on a \`fix/sonar-sunday-$today\` branch, with a PR into \`develop\` (link it here)."
+            echo "1. Fix the items above on a \`fix/sonar-sunday-$today\` branch, with a PR into the active \`release/x.y.z\` branch (link it here)."
             echo "   Anything deliberate gets marked **Accepted** in SonarCloud, with a reason."
-            echo "2. **Release Tuesday:** release \`develop\` → \`main\`, so the fixes reach the site."
+            echo "2. The fixes reach the site with the next release window. A vulnerability that can't wait is a \`hotfix/…\` from \`main\`."
             echo
             echo "All findings: $link"
           } > body.md

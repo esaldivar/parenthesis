@@ -1,6 +1,6 @@
 name: Workflow scripts
 
-# Unit tests for the development workflow automation (.github/scripts/dev-workflow.mjs). No secrets.
+# Unit tests for the development workflow automation (.github/scripts). No secrets.
 on:
   pull_request:
     paths:
@@ -23,3 +23,9 @@ jobs:
 
       - name: Test the workflow scripts
         run: node --test .github/scripts/dev-workflow.test.mjs
+
+      - name: Test the branch policy and the release calendar
+        run: |
+          bash .github/scripts/check-pr-branch-policy.test.sh
+          bash .github/scripts/release-window.test.sh
+          bash .github/scripts/production-plan.test.sh
