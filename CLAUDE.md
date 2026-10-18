@@ -45,6 +45,23 @@ design through semantic theme tokens and accessible primitives.
 [TODO.md](TODO.md) is the single list of open work. Anything the owner calls a to-do, and anything left unfinished or
 deferred, is added there in the same change and ticked off in the PR that completes it.
 
+## Security and release checks
+
+Follow [the release security gate](docs/runbooks/sonar-release-gate.md) and [SECURITY.md](SECURITY.md).
+
+- Before opening or updating a release PR (`develop` → `main`, or `hotfix/…`), review SonarQube Cloud's findings for
+  the release: the latest Sonar Sunday issue, open security issues and hotspots on `main`, and the PR's own analysis.
+- Resolve every release-blocking finding before asking for the release to merge: fix it on a branch into `develop`,
+  or, only with the owner's decision, mark it Accepted / False positive (hotspots: Safe / Acknowledged) in SonarQube
+  Cloud **with a comment** giving the reason, who decided, and the linked GitHub issue or PR.
+- Never bypass, skip, disable or weaken a security check to get a PR through: no editing the gate, its policy, the
+  quality gate or the required checks to make a PR pass, no admin merges past a red check, no accepting a finding
+  just to unblock a release. A policy change is its own reviewed PR. If a check is wrong, say so and stop.
+- Record every accepted security exception in SonarQube Cloud (the comment) and in the tracking GitHub issue.
+- Before requesting review, run the checks that apply to the change (backend build, format and tests; frontend lint,
+  tests and build; `node --test` for `.github/scripts`; actionlint for workflows when available) and report what
+  ran and what couldn't.
+
 ## Implementation and verification
 
 Follow Milestone 1: scaffold the shell/theme first; use honest empty states for

@@ -47,7 +47,7 @@ jobs:
             else
               echo "- [ ] Open the release PR: \`develop\` → \`main\`."
             fi
-            echo "- [ ] All required checks green, including the **SonarCloud Code Analysis** quality gate."
+            echo "- [ ] All required checks green, including the **SonarCloud Code Analysis** quality gate and the **Release security gate** (docs/runbooks/sonar-release-gate.md)."
             echo "- [ ] Merge with a **merge commit** (not a squash)."
             echo "- [ ] Back-merge \`main\` into \`develop\` (\`chore/sync-main\`; see CONTRIBUTING.md)."
             echo "- [ ] Close this week's Sonar Sunday issue once its fixes are released."

@@ -1,6 +1,7 @@
 name: Workflow scripts
 
-# Unit tests for the development workflow automation (.github/scripts/dev-workflow.mjs). No secrets.
+# Unit tests for the workflow automation in .github/scripts (dev-workflow.mjs and sonar-release-gate.mjs). No secrets:
+# the release gate is tested against a fake SonarQube Cloud API.
 on:
   pull_request:
     paths:
@@ -22,4 +23,4 @@ jobs:
           persist-credentials: false
 
       - name: Test the workflow scripts
-        run: node --test .github/scripts/dev-workflow.test.mjs
+        run: node --test .github/scripts/dev-workflow.test.mjs .github/scripts/sonar-release-gate.test.mjs
