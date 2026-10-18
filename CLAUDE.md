@@ -66,3 +66,17 @@ Workflow conversation, and no HTML prototype was present in this checkout.
 Do not invent a recovered prototype. If the original files become available,
 preserve them as references under `docs/prototypes/` with provenance and describe
 any differences from the design system before using them for implementation.
+
+## Telegram notifications
+
+Use the Telegram bot (`TELEGRAM_BOT_TOKEN`) only when the owner says in that
+session that they are away from the app (for example, driving). Otherwise do not
+use it.
+
+- Message only when you are blocked and need the owner's response. No progress
+  updates, summaries, or completion notices.
+- Keep it to one short, general line, such as "I need your response on the PR
+  review." Put the full question and details in the Claude app, not Telegram.
+- The bot cannot receive replies; the owner answers in the Claude app.
+- No chat ID is stored. Ask the owner to message the bot, then read it from
+  `getUpdates`. Strip whitespace from the token before use.
