@@ -36,6 +36,11 @@ that points back here.
       expectations (it was tested against a fake API only).
     - [ ] Issue #65: the seven vulnerabilities on `main` block the next release until each is fixed or accepted in
       SonarQube Cloud with a reason. Fixed separately, not in the gate's PR.
+      - [x] Six fixed in `fix/sonar-65-vulnerabilities` (October 18, 2026): `npm ci --ignore-scripts` and
+        `npm run build` instead of `npx ng build`, in `docker/api.Dockerfile` and `ci.yml`.
+      - [ ] **Owner:** the `HttpOnly` finding on the `XSRF-TOKEN` cookie (`AntiforgeryExtensions.cs:34`): mark it
+        Accepted in SonarQube Cloud with the comment in that PR (Angular must read the cookie), or ask for a redesign.
+      - [ ] After the release reaches `main`, check the six fixed findings closed, then close #65.
   - [ ] **Owner, optional:** install SonarQube for IDE (formerly SonarLint), which is free, in connected mode.
 - [ ] **Branching model and protected branches** (requested October 17, 2026).
   - [x] `develop` created from the latest work (`feat/angular-shell`, which is now retired).
