@@ -93,6 +93,18 @@ that points back here.
     immediate.
   - [ ] Frontend: re-fetch the antiforgery token whenever the profile changes (kid signs in, parent signs back in).
   - [ ] Frontend: these screens, once Design Request #1 (issue #38) is approved.
+    Approved October 18, 2026 (owner decisions: one parent tile per device, 7-day invitations with the email copy
+    saying 7 days, one generic screen for expired/used/revoked links, 8-character pairing code typed in a text box,
+    "We've let your parents know" for a locked PIN, initials and no age on child tiles). Delivered as small PRs into
+    `develop`:
+    - [x] Backend: a household device's picker shows only the parent who registered it, not both parents
+      (October 18, 2026).
+    - [ ] Sign-up, household setup and invitations.
+    - [ ] Profile picker, parent password and child PIN screens.
+    - [ ] Tablet pairing and device management.
+    - [ ] Co-parent approvals.
+  - [ ] QR code for tablet pairing (deferred, owner decision October 18, 2026). Show the code only for now; adding a
+    QR code needs a new library.
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner
   manages. There's no direct link between the two, so GitHub is the shared desk: `docs/design/handoffs/` and the
   `design` issue label. See that folder's README.
