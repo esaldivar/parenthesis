@@ -142,6 +142,12 @@ that points back here.
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
     data source.
 
+- [ ] **Development workflow automation** (owner brief, October 18, 2026). Weekly PR and Copilot review limits,
+  Discord notifications for major and release PRs, and a weekly status report. The brief is in CLAUDE.md.
+  - [x] Brief recorded in CLAUDE.md (October 18, 2026).
+  - [ ] Inspection report to the owner (CLAUDE.md step 11), then wait for approval.
+  - [ ] After approval: implement, write `docs/development-workflow.md`, and shorten the CLAUDE.md section to a link.
+
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
