@@ -20,12 +20,27 @@ that points back here.
   - [x] Coverage reports go to Sonar: backend via `dotnet-coverage`, frontend via Vitest lcov (October 17, 2026).
   - [x] Quality gate green on release PR #27: security, reliability and maintainability all A, 98.6% coverage on new
     code (October 17, 2026).
-  - [ ] **Weekly rhythm** (owner decision, October 17, 2026). Sonar Sunday issue → fix PR into `develop` → Release
-    Tuesday. Both workflows are written; they start running once they're on `main` (the next release). Then check
-    the first automatic Sonar Sunday issue.
+  - [ ] **Weekly rhythm** (owner decision, October 17, 2026; release day changed October 18). Sonar Sunday issue →
+    fix PR into the active release branch → the next biweekly release window (Release Tuesday was replaced). The
+    workflows start running once they're on `main` (the next release). Then check the first automatic Sonar Sunday
+    issue.
   - [ ] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
     with the reason "required so keyboard users can scroll the hours".
   - [ ] Add the quality-gate badge to the README.
+  - [ ] **Release security gate** (requested October 18, 2026): `release-gate` job in `sonar.yml`, policy and
+    troubleshooting in `docs/runbooks/sonar-release-gate.md`.
+    - [x] Gate, tests with a fake SonarQube Cloud API, docs and CLAUDE.md rules (October 18, 2026).
+    - [ ] **Owner:** once it has run on a release PR, add **Release security gate** to `main`'s required status
+      checks (steps in the runbook). Keep every existing protection.
+    - [ ] Check the first real run: the scanner's task id is picked up and the API answers match the gate's
+      expectations (it was tested against a fake API only).
+    - [ ] Issue #65: the seven vulnerabilities on `main` block the next release until each is fixed or accepted in
+      SonarQube Cloud with a reason. Fixed separately, not in the gate's PR.
+      - [x] Six fixed in `fix/sonar-65-vulnerabilities` (October 18, 2026): `npm ci --ignore-scripts` and
+        `npm run build` instead of `npx ng build`, in `docker/api.Dockerfile` and `ci.yml`.
+      - [ ] **Owner:** the `HttpOnly` finding on the `XSRF-TOKEN` cookie (`AntiforgeryExtensions.cs:34`): mark it
+        Accepted in SonarQube Cloud with the comment in that PR (Angular must read the cookie), or ask for a redesign.
+      - [ ] After the release reaches `main`, check the six fixed findings closed, then close #65.
   - [ ] **Owner, optional:** install SonarQube for IDE (formerly SonarLint), which is free, in connected mode.
 - [ ] **Branching model and protected branches** (requested October 17, 2026).
   - [x] `develop` created from the latest work (`feat/angular-shell`, which is now retired).
@@ -34,12 +49,12 @@ that points back here.
   - [x] Branch protection on `main` and `develop`: PRs only, required checks up to date, no force pushes or deletions, admins included (October 17, 2026).
   - [x] The **PR source** check also covers PRs into `develop` and re-runs when a PR is retargeted, in
     `.github/workflows/pr-branch-policy.yml` (October 17, 2026).
-  - [ ] Document the `design/…` and `feat/…` branch prefixes in CONTRIBUTING.md, and that **PR source** now checks
-    PRs into `develop` too.
-  - [ ] First release: PR `develop` → `main`, so `main` gets the dashboard work. This is the owner's call, since
-    `main` is the site.
+  - [x] Document the `design/…` and `feat/…` branch prefixes in CONTRIBUTING.md, and that **PR source** checks PRs
+    into `develop` too (October 18, 2026, with the release-branch model below).
+  - [ ] First release: now through `release/0.2.0` (see "Branching, releases and environments" below).
 
-- [ ] **Deployment: development and production environments** (scoped October 17, 2026; to plan later).
+- [ ] **Deployment: development and production environments** (scoped October 17, 2026; planned October 18: Azure,
+  confirmed by the owner. Pipeline and runbook in "Branching, releases and environments" below).
   - Two environments:
     - **Development**, deployed automatically from `develop`: the newest features, **synthetic data only**.
     - **Production**, deployed from `main` on each release: the stable version, with real families.
@@ -125,16 +140,6 @@ that points back here.
   and More). Then family setup and invitation, child profiles and Child Essentials, the full calendar, approvals and
   the memories gallery.
 
-- [ ] **Development workflow automation** (plan approved by the owner, October 18, 2026). One `chore/` PR.
-  - Weekly limits: 3 new development PRs into `develop`, 6 Copilot reviews, 2 per PR; reset Monday 00:00
-    America/Chicago; extras only with the owner's `owner-approved-pr` / `owner-approved-review` label.
-  - Workflows: a required "PR budget" check (blocks merging over the limit, can't block opening), Copilot review
-    counting and warnings, Discord notices for major and release PRs (with test results, no duplicates), and a
-    Monday report from real GitHub data. Least-privilege permissions; no PR code runs with secrets.
-  - `docs/development-workflow.md` as the authoritative reference, linked from CLAUDE.md and CONTRIBUTING.md.
-  - [ ] **Owner:** add the `DISCORD_WEBHOOK_URL` Actions secret, and make "PR budget" a required check on `develop`.
-  - [ ] **Owner:** check Copilot code review settings (rulesets and personal); untick "Review new pushes".
-
 - [ ] **Project management in GitHub** (owner ideas, October 17, 2026). Recommended over Jira: free, and it links
   PRs to stories automatically.
   - [x] PR template (description, summary, type checkboxes, checklist), plus Story, Bug and Design request issue
@@ -164,6 +169,69 @@ that points back here.
   - [ ] Backend: recurrence (C-05), reminders (C-04, with notifications), the .ics feed (C-07).
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
     data source.
+
+- [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Every `release/x.y.z` → `develop`
+  PR runs Playwright against the release candidate, for the current milestone and every one before it. Runbook:
+  `docs/runbooks/playwright-release-gate.md`.
+  - [x] Suite in `tests/e2e/` (v0.1.0, v0.2.0, the v0.3.0 work already in `develop`, and a regression test for #58),
+    workflow `.github/workflows/playwright-release.yml`, the **Release E2E gate** check and its Discord post through
+    `DISCORD_WEBHOOK_URL` (October 18, 2026).
+  - [x] **Owner:** **Release E2E gate** is a required check on `develop` (October 18, 2026).
+  - [ ] First real run on the `release/0.2.0` → `develop` PR: check the summary, the artifacts and the Discord post.
+  - [ ] Add browser journeys as the v0.2.0 and v0.3.0 screens ship (invitations, children, profile picker, PIN
+    entry, the full calendar). Until then those features are tested through the API, and the calendar page through
+    its honest empty state.
+  - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
+    the sign-in limit, for the test instance only.
+
+- [ ] **Development workflow automation** (owner brief, October 18, 2026). Weekly PR and Copilot review limits,
+  Discord notifications for major and release PRs, and a weekly status report. The brief is in CLAUDE.md.
+  - [x] Brief recorded in CLAUDE.md (October 18, 2026).
+  - [x] Inspection report to the owner (CLAUDE.md step 11), October 18, 2026.
+  - [x] **Owner settings** (October 18, 2026): `DISCORD_WEBHOOK_URL` is a repository Actions secret (the plain-text
+    variable copy was deleted); the `main` ruleset "Copilot review for default branch" now requires 0 approvals (it
+    required 2 with no bypass, which would have blocked releases); Copilot review effort is **Lite**; "Allow Copilot
+    to approve pull requests" is **off**; there are no Copilot automatic-review rulesets.
+  - [x] Owner approved the build (October 18, 2026).
+  - [x] Built: `pr-weekly-limit.yml`, `copilot-review-usage.yml`, `discord-pr-notify.yml`, `weekly-dev-status.yml`,
+    `workflow-scripts.yml`, `.github/scripts/dev-workflow.mjs` with tests, `docs/development-workflow.md`; CLAUDE.md
+    now links to it (October 18, 2026).
+  - [ ] **Owner:** once the **Weekly PR limit** check has run on a PR into `develop`, make it a required check there
+    (Settings → Branches → `develop`), so PRs over the limit can't merge without `owner-approved-pr`.
+  - [ ] Watch the first real runs: the first major or release PR notice, the first over-limit PR, and the first
+    Monday report (it only runs once this is released to `main`).
+
+- [ ] **Branching, releases and environments** (owner brief and decisions, October 18, 2026). Rules in
+  `docs/development-workflow.md`.
+  - [x] Brief recorded in CLAUDE.md, with the discrepancies against the current process (October 18, 2026).
+  - [x] **Owner decisions** (October 18, 2026): keep `develop` (no rename to `development`); biweekly Friday
+    windows from October 30, replacing Release Tuesday; November 25 and December 23 replace the holiday Fridays;
+    work goes through `release/x.y.z` branches, including tooling and docs; the owner's milestone list is the release
+    structure and the backlog is re-mapped to it; cut `release/0.2.0` from `develop` as it is; Azure hosting (no
+    subscription yet); invite-only accounts on the development site; the existing Discord webhook secret.
+  - [x] Built (October 18, 2026): the **PR source** policy for `release/*` and the stricter `develop`;
+    `release-window.yml` with `.github/release-windows.json`; `deploy.yml` (dormant until `DEPLOY_ENABLED`);
+    production promotes the image tested on `develop`; release PRs into `develop` count as release notices in
+    `dev-workflow.mjs`; CONTRIBUTING.md, `docs/development-workflow.md`, the Azure runbook and the backlog's release
+    map; CLAUDE.md now links to the workflow guide.
+  - [ ] Cut `release/0.2.0` from `develop` once this is merged, and retarget open work PRs (#40, #59) to it.
+  - [x] Removed the one-off `chore/release-workflow` exception from `.github/scripts/check-pr-branch-policy.sh` in
+    the first PR into `release/0.2.0` (October 18, 2026).
+  - [x] **Owner:** GitHub settings from the runbook (October 18, 2026): the `release branches` ruleset (PRs only,
+    the four checks up to date, no deletion or force pushes, checks not required on creation); **PR source** required
+    on `develop`; the `development` environment (deploys from `develop` only) and the `production` environment (owner
+    as required reviewer, self-review allowed, no admin bypass, deploys from `main` only). The environment variables
+    wait for the Azure setup.
+  - [ ] **Owner:** Azure account and both environments (runbook steps 1–3), then `DEPLOY_ENABLED` = `true` and the
+    `parenthesis-api` package made public.
+  - [ ] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
+    (application change in Identity, v0.2.0).
+  - [ ] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
+    reachable in the app.
+  - [ ] Watch the first runs: the first release-window issue (Monday, October 26 is the first release-week Monday,
+    but scheduled runs need this on `main`, so run it by hand until then), the first development deployment and
+    the first production deployment and rollback drill.
+  - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements

@@ -3,50 +3,66 @@
 ## Workflow
 
 ### Branches
+Milestone releases (owner decision, October 18, 2026). Full rules, release windows and deployment:
+[the development workflow](docs/development-workflow.md).
+
 | Branch | Purpose | Changes through |
 |---|---|---|
-| `main` | What goes to the site. | A PR from `develop` (a release) or from `hotfix/…` only |
-| `develop` | Integration branch for new work. | PRs from the branches below |
-| `feature/…` | New features | Branch from `develop`, PR into `develop` |
-| `bugfix/…`, `fix/…` | Bug fixes | Branch from `develop`, PR into `develop` |
-| `chore/…`, `docs/…` | Tooling, CI, documentation | Branch from `develop`, PR into `develop` |
-| `hotfix/…` | Urgent fix to the live site | Branch from `main`, PR into `main`, then merge `main` back into `develop` |
+| `main` | Production: real families use it. | A PR from `develop` (a tested release) or from `hotfix/…` only |
+| `develop` | The private development site. Only tested milestone releases and hotfix syncs. | A PR from `release/x.y.z`, `hotfix/…` or `chore/sync-…` |
+| `release/x.y.z` | One milestone (`release/0.2.0` = Milestone 2), cut from `develop`. One open at a time. | PRs from the work branches below |
+| `feature/…`, `feat/…` | New features | Branch from the active release branch, PR into it |
+| `bugfix/…`, `fix/…` | Bug fixes found during the milestone | Branch from the active release branch, PR into it |
+| `chore/…`, `docs/…`, `design/…` | Tooling, CI, documentation, design handoffs | Branch from the active release branch, PR into it |
+| `hotfix/…` | Urgent fix to production | Branch from `main`, PR into `main`, then sync into `develop` and the active release branch |
 
-- `main` and `develop` are **protected**. Nobody can push to them directly, force-push or delete them, and that
-  includes admins. Changes arrive only through PRs.
+- `main`, `develop` and `release/*` are **protected**. Nobody can push to them directly, force-push or delete them,
+  and that includes admins. Changes arrive only through PRs.
 - **PR checks** must pass and the branch must be up to date with its target:
   - Backend: build, format and tests.
   - Frontend: lint, unit tests and production build.
   - API image: build and smoke test.
-  - PRs into `main` also run **PR source**, which only accepts `develop` or `hotfix/…`.
-  - PRs into `main` are also analysed by **SonarQube Cloud** for code quality and security, once it's connected
+  - **PR source** checks the source branch is allowed into the target (the table above).
+  - **Release E2E gate** (PRs into `develop`): a `release/x.y.z` PR merges only after Playwright passes for every
+    milestone so far, run against the release candidate. Other PRs pass it at once, without running Playwright
+    (see [the runbook](docs/runbooks/playwright-release-gate.md)).
+  - PRs into `main` are also analysed by **SonarQube Cloud** for code quality and security
     (see [the runbook](docs/runbooks/sonarqube-cloud.md)).
-- **Approvals:** none required. GitHub doesn't let authors approve their own PRs, and this is a single-maintainer
-  project, so the passing checks are the gate.
-- **Merging:** squash-merge into `develop`. Merge `develop` into `main` with a merge commit, so the release history
-  is kept.
-- **After every release or hotfix,** back-merge `main` into `develop`: branch `chore/sync-main` from `develop`, run
-  `git merge origin/main`, and PR it into `develop` with a **merge commit**. `main` requires PRs to be up to date, so
-  `develop` must contain `main`'s merge commits before the next release. A PR straight from `main` doesn't work,
-  because `develop` requires PRs to be up to date too.
+  - PRs into `main` also run the **Release security gate**, which blocks the release on unresolved vulnerabilities,
+    high-severity security issues, unreviewed hotspots and accepted findings with no written reason. It fails if
+    SonarQube Cloud can't be checked. See [the release security gate](docs/runbooks/sonar-release-gate.md).
+- **Approvals:** GitHub doesn't let authors approve their own PRs, and this is a single-maintainer project, so the
+  passing checks are the gate for merging. **Production** additionally needs the owner's approval of each deployment,
+  in the Actions tab (the `production` environment).
+- **Merging:** squash-merge work branches into the release branch. Merge `release/x.y.z` into `develop`, and `develop`
+  into `main`, with a **merge commit**: production deploys the image tested on `develop`, and the release version comes
+  from the merged release branch, so both depend on keeping that history.
+- **After every production release or hotfix,** back-merge `main` into `develop`: branch `chore/sync-main` from
+  `develop`, run `git merge origin/main`, and PR it into `develop` with a **merge commit**. Then do the same into the
+  active release branch (`chore/sync-develop` from it, `git merge origin/develop`), so the next release is up to date.
 - **SonarQube Cloud quality gate:** required on `main`. New code needs an A security, reliability and maintainability
   rating, at least 80% coverage, and little duplication.
-- Keep PRs small: one backlog item (or one slice of it) per PR.
+- **Weekly limits:** at most 3 new development PRs and 6 Copilot reviews a week (2 per PR). Discord notices for
+  major and release PRs, and the Monday status report, are automatic. See
+  [the development workflow](docs/development-workflow.md).
+- Keep PRs focused: one backlog item (or one slice of it) per PR, and group closely related changes rather than
+  opening PRs for minor ones.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), e.g. `feat(calendar): add change-request endpoint`.
 - Open work is tracked in [TODO.md](TODO.md).
 
-### Weekly rhythm: Sonar Sunday and Release Tuesday
-Code-quality findings are reviewed every week, so they don't pile up into technical debt (owner decision, October 17,
-2026).
-- **Sunday, Sonar Sunday:** `.github/workflows/sonar-sunday.yml` opens a **Sonar Sunday** issue listing SonarQube
-  Cloud's open vulnerabilities, bugs, security hotspots and major code smells on `main`.
-  - Fix them on `fix/sonar-sunday-<date>`, with a PR into `develop`, and link it in the issue.
-  - Work in order: vulnerabilities and bugs first, then hotspots, then code smells.
-  - Anything deliberate is marked **Accepted** in SonarCloud, with a reason.
-- **Tuesday, Release Tuesday:** `.github/workflows/release-tuesday.yml` opens a **Release Tuesday** checklist when
-  `develop` has changes that `main` doesn't.
-  - Open the `develop` → `main` PR and merge it once every check, including the quality gate, is green.
-  - Then back-merge into `develop`.
+### Rhythm: Sonar Sunday and biweekly release windows
+- **Every Sunday, Sonar Sunday:** `.github/workflows/sonar-sunday.yml` opens a **Sonar Sunday** issue listing
+  SonarQube Cloud's open vulnerabilities, bugs, security hotspots and major code smells on `main` (owner decision,
+  October 17, 2026).
+  - Fix them on `fix/sonar-sunday-<date>`, with a PR into the active release branch, and link it in the issue.
+  - Work in order: vulnerabilities and bugs first, then hotspots, then code smells. A vulnerability that can't wait
+    for the next release is a hotfix.
+  - Anything deliberate is marked **Accepted** in SonarCloud, with a reason. The release security gate fails on an
+    accepted security finding that has no comment.
+- **Every other Friday, a production release window** (America/Chicago, from October 30, 2026; replaces Release
+  Tuesday). `.github/workflows/release-window.yml` opens a checklist issue on the Monday of release week and tells
+  Discord at each step. A window is an opportunity, not a deadline. See
+  [release windows](docs/development-workflow.md#release-windows).
 - Both run at 14:00 UTC and can also be run by hand from the Actions tab. GitHub only runs scheduled workflows from
   the default branch (`main`).
 

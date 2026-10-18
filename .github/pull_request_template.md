@@ -5,6 +5,15 @@
 <!-- A short bullet list of what changed. -->
 -
 
+## Testing
+<!-- What you ran and the results, e.g. "Backend tests 114/114, frontend lint and tests pass". -->
+
+## Risks and known issues
+<!-- Anything reviewers or the owner should watch. "None" is fine. -->
+
+## Outstanding work
+<!-- What's left for a later PR (also add it to TODO.md). "None" is fine. -->
+
 ## Type of change
 - [ ] ✨ Feature
 - [ ] 🐛 Bug fix
@@ -14,7 +23,7 @@
 - [ ] ♻️ Refactor (no behaviour change)
 - [ ] ✅ Tests only
 - [ ] 🎨 Design (assets or a handoff from ChatGPT)
-- [ ] 🚀 Release (`develop` → `main`) or hotfix
+- [ ] 🚀 Release (`release/x.y.z` → `develop`, or `develop` → `main`) or hotfix
 
 ## Checklist
 - [ ] Tests added or updated, and they pass locally

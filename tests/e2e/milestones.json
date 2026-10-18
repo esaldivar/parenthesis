@@ -1,0 +1,18 @@
+{
+  "comment": "Every milestone with tests, following the release map in docs/planning/mvp-backlog.md. Every milestone's tests keep running on every release (docs/runbooks/playwright-release-gate.md). Add the next milestone when its first feature ships; never remove one.",
+  "milestones": [
+    {
+      "tag": "@m1",
+      "name": "v0.1.0 Foundation (health, app shell, auth required, antiforgery)"
+    },
+    {
+      "tag": "@m2",
+      "name": "v0.2.0 Accounts and profiles (sign-up, sign-in, families, invitations, children, profile picker, PINs)"
+    },
+    {
+      "tag": "@m3",
+      "name": "v0.3.0 Calendar and approvals (events, proposals, approvals)"
+    }
+  ],
+  "regressionTag": "@regression"
+}
