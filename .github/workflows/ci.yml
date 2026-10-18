@@ -69,8 +69,9 @@ jobs:
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
 
+      # No dependency install scripts (issue #65); lint, tests and the build don't need them.
       - name: Install
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Lint (TypeScript + template accessibility rules)
         run: npm run lint
@@ -79,7 +80,7 @@ jobs:
         run: npm test
 
       - name: Build (production)
-        run: npx ng build
+        run: npm run build # The Angular CLI pinned in the lockfile, not an on-demand npx install.
 
   docker:
     name: API image
