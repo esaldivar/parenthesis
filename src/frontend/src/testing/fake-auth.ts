@@ -28,6 +28,23 @@ export function fakeAuth(
       child.set(null);
       fake.status.set('anonymous');
     },
+    // Resolve by default; a test replaces them (vi.spyOn) to simulate the API's answers.
+    signIn: async () => {
+      user.set({ id: 'user-1', email: 'alex@example.test', displayName: 'Alex Rivera' });
+      fake.status.set('signed-in');
+    },
+    childSignIn: async (childId: string) => {
+      child.set({ childId, firstName: 'Kai', familyId: 'family-1' });
+      fake.status.set('child');
+    },
+    pairDevice: async () => {
+      device.set({
+        familyName: 'Rivera Family',
+        deviceKind: 'ChildPaired',
+        profiles: [{ kind: 'child', id: 'kai', name: 'Kai', canSignIn: true, locked: false }],
+      });
+      return { childId: 'kai', childFirstName: 'Kai' };
+    },
   };
   return { provide: AuthStore, useValue: fake as unknown as AuthStore };
 }
