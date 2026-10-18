@@ -162,6 +162,9 @@ describe('profile picker, parent password and child PIN (ADR-0006)', () => {
       await submit(harness);
 
       expect(body.querySelector('[role="alert"]')!.textContent).toBe('That PIN didn’t work. 2 tries left.');
+      // The box is empty and ready for the next try, without a second error under it.
+      expect(body.querySelector<HTMLInputElement>('input[inputmode="numeric"]')!.value).toBe('');
+      expect(body.querySelector('mat-error')).toBeNull();
     });
 
     it('locks calmly after the third wrong PIN, saying the parents have been told', async () => {

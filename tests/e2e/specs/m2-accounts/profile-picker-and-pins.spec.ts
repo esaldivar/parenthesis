@@ -55,8 +55,8 @@ test.describe('Profile picker and child PINs', { tag: '@m2' }, () => {
       expect((await attempt('1359')).status()).toBe(423);
       expect((await attempt(KAI_PIN)).status()).toBe(423);
 
-      await linkFromEmail(family.dad.email, "Kai's profile is locked", '/child-essentials');
-      await linkFromEmail(family.mom.email, "Kai's profile is locked", '/child-essentials');
+      await linkFromEmail(family.dad.email, "Kai's profile is locked", '/settings');
+      await linkFromEmail(family.mom.email, "Kai's profile is locked", '/settings');
 
       expect((await family.mom.post(`/api/families/${family.familyId}/children/${family.kaiId}/unlock`)).status()).toBe(204);
       expect((await attempt(KAI_PIN)).status()).toBe(204);

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
+import { FormGroupDirective, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -110,6 +110,7 @@ export class ChildPinPage {
   });
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
+  private readonly formDirective = viewChild(FormGroupDirective);
 
   protected async submit(): Promise<void> {
     if (this.form.invalid) {
@@ -123,7 +124,8 @@ export class ChildPinPage {
       await this.router.navigateByUrl('/kid');
     } catch (error) {
       const problem = toProblem(error);
-      this.form.reset();
+      // A clean, empty box for the next try, without an "enter your PIN" error on top of the real message.
+      this.formDirective()?.resetForm();
       if (problem.status === 423) {
         this.lockedNow.set(true);
       } else if (problem.status === 401) {
