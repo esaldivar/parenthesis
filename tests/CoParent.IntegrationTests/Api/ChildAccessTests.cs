@@ -16,7 +16,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
-    public async Task A_registered_household_device_shows_both_parents_and_the_child()
+    public async Task A_household_device_shows_only_the_parent_who_registered_it_and_the_child()
     {
         var family = await FamilyWithKaiAsync();
         using var _ = family;
@@ -25,11 +25,27 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
 
         Assert.Equal("Rivera Family", picker.GetProperty("familyName").GetString());
         Assert.Equal(
-            ["parent:Dad", "parent:Mom", "child:Kai"],
+            ["parent:Dad", "child:Kai"],
             picker.GetProperty("profiles").EnumerateArray().Select(p => $"{p.GetProperty("kind").GetString()}:{p.GetProperty("name").GetString()}"));
         var kai = picker.GetProperty("profiles").EnumerateArray().Last();
         Assert.True(kai.GetProperty("canSignIn").GetBoolean());
         Assert.False(kai.GetProperty("locked").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Each_parents_device_shows_only_that_parent()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        Assert.Equal(
+            HttpStatusCode.Created,
+            (await family.Mom.PostAsync($"/api/families/{family.FamilyId}/devices/household", new { name = "Mom's phone" })).StatusCode);
+
+        var picker = await JsonAsync(await family.Mom.GetAsync("/api/device/profiles"));
+
+        Assert.Equal(
+            ["parent:Mom", "child:Kai"],
+            picker.GetProperty("profiles").EnumerateArray().Select(p => $"{p.GetProperty("kind").GetString()}:{p.GetProperty("name").GetString()}"));
     }
 
     [Fact]
