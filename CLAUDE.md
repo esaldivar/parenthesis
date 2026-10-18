@@ -232,3 +232,117 @@ limitations; testing plan. **Wait for owner approval before implementation.**
 
 If a requirement cannot be technically enforced, document the limitation and propose an alternative. Do not
 redesign Parenthesis, modify application features, or create unnecessary PRs.
+
+## Branching, release and environments (owner brief, October 18, 2026)
+
+Status: **brief recorded, not implemented.** It conflicts with the process in [CONTRIBUTING.md](CONTRIBUTING.md) in
+several places (see "Discrepancies" below). CONTRIBUTING.md stays in force until the owner approves a plan. Inspect
+the repository, its settings and its infrastructure first, propose a plan, and **do not change branches, protections,
+workflows, environments or documents until the owner approves it.** Once approved, document the result in
+`docs/development-workflow.md` and shorten this section to a link.
+
+### Goal
+A milestone-based workflow with feature/bugfix branches, one release branch per milestone, a private
+development/testing environment, a stable production environment, automated checks, scheduled production releases,
+manual owner approval, Discord release notifications and controlled Copilot review use (see the section above).
+
+### Branches
+- **`main`: production.** Real families use it, so it must stay stable. No direct pushes, no unreviewed changes, no
+  automatic production deployments. Required checks pass, deployments need owner approval, and rollback must be
+  possible.
+- **`development`: private testing environment.** Approved merges deploy automatically. Only authorized testers can
+  reach it, with configuration and data separate from production. No direct pushes; required checks pass; it must stay
+  working. It is **not** an open integration branch: only stabilized milestone releases and approved hotfix syncs
+  enter it.
+- **`release/x.y.z`: one per milestone** (`release/0.1.0`, `release/0.2.0`, …). Created from the latest approved
+  `development`. Create only the active milestone's release branch, one at a time, never all future ones up front.
+  All features and non-production bug fixes for that milestone target it.
+- **`feature/<name>`** and **`bugfix/<name>`**: branch from the active release branch and PR back into it.
+- **`hotfix/<name>`**: urgent production bugs only. Branch from `main`.
+
+```text
+main
+ └─ development
+     └─ release/0.2.0
+         ├─ feature/parent-registration
+         ├─ feature/child-profiles
+         └─ bugfix/child-pin-validation
+```
+
+### Feature and bugfix workflow
+1. Branch from the active release branch. 2. Implement. 3. Run the relevant tests. 4. Open a PR into the release
+branch. 5. Required checks run. 6. Request a Copilot review within the weekly limits. 7. Resolve blocking issues.
+8. Merge the approved PR into the release branch.
+- Never merge incomplete features into `development` or `main`. Never merge a PR automatically without authorization.
+
+### Hotfixes
+Identify the production issue → branch from `main` → smallest safe fix → tests → protected PR → owner approval →
+deploy → verify production → propagate into `development` → propagate into affected active release branches.
+Emergency hotfixes may ship outside release windows, but still need approval.
+
+### Milestones (working release structure)
+| Version | Milestone | Scope |
+|---|---|---|
+| v0.1.0 | 1. Foundation | Architecture, project configuration, design system, foundational UI components, dashboard foundation, initial development infrastructure |
+| v0.2.0 | 2. Accounts and profiles | Parent registration, authentication, family invitations, child profiles, child PIN access, profile picker, parent and child permissions |
+| v0.3.0 | 3. Calendar and approvals | Shared calendar, parenting schedules, event proposals and approvals, schedule change requests, calendar notifications |
+| v0.4.0 | 4. Communication (proposed) | Secure parent messaging, family communication, notifications, shared family information |
+| v0.5.0 | 5. Child experience (proposed) | Child dashboard, artwork uploads, photo sharing, journal, child-specific privacy controls |
+| v1.0.0 | Private beta | Integrated milestones, security validation, end-to-end testing, production readiness, invitation-only access |
+
+Do not overwrite approved requirements in [the backlog](docs/planning/mvp-backlog.md), the milestone plans, issues or
+project boards. Report discrepancies before proposing changes. Child privacy rules above (diary private by default,
+children never see disputes or approvals) still apply to Milestone 5.
+
+### Release schedule
+- Production release windows are **every other Friday, America/Chicago**: October 30, November 13, November 27,
+  December 11 and December 25, 2026, then every two weeks.
+- They are opportunities, not deadlines. Never ship an incomplete or unstable release: skip the window, keep the
+  release branch open, and target the next approved window. A milestone must be ready and approved before release.
+- Flag holiday windows for the owner (November 27 is the day after Thanksgiving; December 25 is Christmas). Never
+  reschedule or deploy on a holiday without approval.
+
+### Two-week cycle (target, never a reason to skip testing or approval)
+- **Week 1.** Mon–Wed: features, fixes, PR reviews, automated tests. Thu–Fri: finish scope, stabilize, integration
+  tests, fix release blockers, draft release notes.
+- **Week 2.** Mon: release PR into `development`, checks, approval, deploy to the private environment.
+  Tue–Wed: test there (authentication and authorization, family workflows, database changes), fix critical defects,
+  retest. Thu: readiness review (acceptance criteria, deployment plan, rollback), Discord release summary, request
+  owner approval. Fri: promote to `main`, deploy the tested artifact, production smoke tests, health check, tag the
+  release, Discord deployment confirmation.
+
+### Promotion
+1. **Release branch:** feature and bugfix PRs merged, required tests green, stabilization done.
+2. **`release/x.y.z` → `development`:** passing checks, finished release notes, owner approval, no open blocking
+   defects. Then deploy to the private environment, run smoke and integration tests, and record the tested commit and
+   artifact. If validation fails, block production, fix the release and retest.
+3. **`development` → `main`:** successful development testing, an approved release candidate, production readiness
+   checks, owner approval and a verified rollback procedure. The PR must contain only the approved, tested release;
+   if `development` holds anything else, stop and propose a safer promotion. Deploy the exact tested artifact where
+   the host supports it; never rebuild different contents for production. After deployment: smoke tests, health
+   check, version tag, release notes, Discord notification. Never deploy an unapproved release.
+
+### Branch protection
+Investigate GitHub rulesets and branch protection, and propose rules for `main`, `development` and `release/*`: no
+direct pushes to permanent branches, required PRs and status checks, no force pushes, no unauthorized deletion, owner
+approval for production promotion, and suitable limits on automation identities. Avoid rules that block legitimate
+release work, and say which protections this repository's GitHub plan can actually enforce.
+
+### Environments (none exist yet)
+- **Development:** private test site deployed from `development`, restricted access, its own database and secrets,
+  safe synthetic test data, automated smoke tests.
+- **Production:** site deployed from approved `main` releases, its own database and secrets, appropriate monitoring.
+
+### Discrepancies with the current repository (found October 18, 2026; resolve with the owner)
+- The integration branch is **`develop`**, not `development`, and features branch from and PR into it directly. CI,
+  the PR source check, Release Tuesday and protections all reference `develop`. Renaming it is the owner's call.
+- There are no release branches yet; `main` only accepts PRs from `develop` or `hotfix/…`.
+- Releases are **weekly (Release Tuesday)**, not biweekly Fridays.
+- **No PR approvals are required** today: GitHub doesn't let authors approve their own PRs, and this is a
+  single-maintainer project. Owner approval for deployments would need another mechanism, such as GitHub environment
+  required reviewers.
+- [The backlog's milestone map](docs/planning/mvp-backlog.md) differs: M1 includes auth and tenancy; M4 is
+  memories, uploads, mutual deletion and restriction; M5 is dashboard, notifications, hardening and the Azure deploy
+  (the MVP release); messaging and the child diary are M6+.
+- SonarQube Cloud (Free plan) only analyses PRs into `main` and `main` itself.
+- This brief ends at the production environment; anything planned after that point wasn't received.

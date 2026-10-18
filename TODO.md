@@ -148,6 +148,15 @@ that points back here.
   - [ ] Inspection report to the owner (CLAUDE.md step 11), then wait for approval.
   - [ ] After approval: implement, write `docs/development-workflow.md`, and shorten the CLAUDE.md section to a link.
 
+- [ ] **Branching, release and environments** (owner brief, October 18, 2026). Milestone release branches, a private
+  `development` environment, biweekly Friday production releases with owner approval. The brief is in CLAUDE.md.
+  - [x] Brief recorded in CLAUDE.md, with the discrepancies against the current process (October 18, 2026).
+  - [ ] **Owner:** decide the discrepancies (`develop` vs `development`, weekly vs biweekly releases, milestone map).
+  - [ ] Plan for protections, environments, hosting and deployment approval; wait for owner approval.
+  - [ ] Flag the November 27 and December 25, 2026 release windows (holidays) for the owner.
+  - [ ] After approval: implement, update CONTRIBUTING.md and `docs/development-workflow.md`, and shorten the CLAUDE.md
+    section to a link.
+
 ## Dashboard and design
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
