@@ -1,0 +1,37 @@
+name: Discord PR notice
+
+# Tells the owner on Discord when a major PR, or any PR into a release branch (main, development, release/*), is
+# opened or marked ready for review, and when one is labeled "blocked". Drafts wait until they're ready. A hidden
+# marker comment on the PR stops duplicate notices; a failed notice turns this run red and says so on the PR.
+# Rules: docs/development-workflow.md.
+#
+# Runs from the base branch and never checks out or executes the PR's code; the PR's text only goes into the
+# message, with Discord mentions disabled.
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, labeled, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: discord-pr-notify-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    name: Discord PR notice
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Notify the owner if this PR is major or a release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: node .github/scripts/dev-workflow.mjs notify-pr
