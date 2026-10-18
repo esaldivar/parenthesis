@@ -2,7 +2,7 @@ name: Sonar Sunday
 
 # Weekly review of SonarQube Cloud's findings on main (owner decision, October 17, 2026). Every Sunday this opens an
 # issue listing open vulnerabilities, bugs, security hotspots and code smells as a checklist. Fixes go on a
-# fix/sonar-sunday-<date> branch with a PR into develop, and reach main with the Release Tuesday release two days later.
+# fix/sonar-sunday-<date> branch with a PR into the active release/* branch, and reach main with the Release Tuesday release two days later.
 # See CONTRIBUTING.md ("Weekly rhythm"). It can also be run by hand from the Actions tab.
 on:
   schedule:

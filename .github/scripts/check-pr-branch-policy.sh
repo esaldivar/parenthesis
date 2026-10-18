@@ -4,9 +4,10 @@
 # The repo arguments are "owner/name"; when given, PRs into main must come from this repository, not a fork.
 # Policy (see CONTRIBUTING.md):
 #   main      <- develop (a release) or hotfix/* only
-#   develop   <- release/* (a milestone release, gated by Playwright), design/*, feat/*, feature/*, fix/*, bugfix/*,
-#                hotfix/*, chore/*, docs/*
-#   release/* <- develop (to bring it up to date), design/*, feat/*, feature/*, fix/*, bugfix/*, chore/*, docs/*
+#   develop   <- release/* (a milestone release, gated by Playwright), hotfix/*, and the chore/sync-main back-merge
+#                only. All other work goes into the active release branch (owner decision, October 18, 2026).
+#   release/* <- develop (to bring it up to date), hotfix/*, design/*, feat/*, feature/*, fix/*, bugfix/*, chore/*,
+#                docs/*
 #   any other target: no policy (e.g. a PR stacked on a feature branch)
 set -euo pipefail
 
@@ -32,24 +33,24 @@ case "$base" in
     ;;
   develop)
     case "$head" in
-      release/?* | design/?* | feat/?* | feature/?* | fix/?* | bugfix/?* | hotfix/?* | chore/?* | docs/?*)
+      release/?* | hotfix/?* | chore/sync-main | chore/sync-main-?*)
         echo "OK: $head -> develop"
         ;;
       main)
         fail "Don't PR main straight into develop. Back-merge through a chore/sync-main branch instead (see CONTRIBUTING.md)."
         ;;
       *)
-        fail "PRs into develop must come from a release/, design/, feat/, feature/, fix/, bugfix/, hotfix/, chore/ or docs/ branch (this one is from $head). Rename the branch and open a new PR."
+        fail "PRs into develop must come from a release/* branch (gated by Playwright), a hotfix/* branch or the chore/sync-main back-merge (this one is from $head). Retarget the PR to the active release branch."
         ;;
     esac
     ;;
   release/?*)
     case "$head" in
-      develop | design/?* | feat/?* | feature/?* | fix/?* | bugfix/?* | chore/?* | docs/?*)
+      develop | hotfix/?* | design/?* | feat/?* | feature/?* | fix/?* | bugfix/?* | chore/?* | docs/?*)
         echo "OK: $head -> $base"
         ;;
       *)
-        fail "PRs into $base must come from develop or a design/, feat/, feature/, fix/, bugfix/, chore/ or docs/ branch (this one is from $head). Hotfixes go to main; one release branch doesn't merge into another."
+        fail "PRs into $base must come from develop, a hotfix/* branch or a design/, feat/, feature/, fix/, bugfix/, chore/ or docs/ branch (this one is from $head). One release branch doesn't merge into another."
         ;;
     esac
     ;;

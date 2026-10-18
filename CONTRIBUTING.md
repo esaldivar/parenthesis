@@ -6,11 +6,11 @@
 | Branch | Purpose | Changes through |
 |---|---|---|
 | `main` | What goes to the site. | A PR from `develop` (a release) or from `hotfix/…` only |
-| `develop` | Integration branch for new work. | PRs from `release/…` (gated by Playwright) and the branches below |
-| `release/…` | A milestone release candidate, e.g. `release/0.3.0` | Branch from `develop`; feature and fix PRs into it; then a PR into `develop` |
-| `feature/…` | New features | Branch from `develop` or the release branch, PR into either |
-| `bugfix/…`, `fix/…` | Bug fixes | Branch from `develop` or the release branch, PR into either |
-| `chore/…`, `docs/…` | Tooling, CI, documentation | Branch from `develop` or the release branch, PR into either |
+| `develop` | Integration branch: stabilized milestone releases only. | A PR from `release/…` (gated by Playwright), `hotfix/…`, or the `chore/sync-main` back-merge only |
+| `release/…` | The active milestone's release candidate, e.g. `release/0.3.0` | Branch from `develop`; the work branches below PR into it; then a PR into `develop` |
+| `feature/…` | New features | Branch from the active release branch, PR into it |
+| `bugfix/…`, `fix/…` | Bug fixes | Branch from the active release branch, PR into it |
+| `chore/…`, `docs/…`, `design/…` | Tooling, CI, documentation, design handoffs | Branch from the active release branch, PR into it |
 | `hotfix/…` | Urgent fix to the live site | Branch from `main`, PR into `main`, then merge `main` back into `develop` |
 
 - `main` and `develop` are **protected**. Nobody can push to them directly, force-push or delete them, and that
@@ -20,20 +20,19 @@
   - Frontend: lint, unit tests and production build.
   - API image: build and smoke test.
   - Every PR runs **PR source**, which checks the source branch against the target: `main` only accepts `develop` or
-    `hotfix/…`; `develop` accepts `release/…` and the work branches; `release/…` accepts `develop` and the work
-    branches.
+    `hotfix/…`; `develop` only accepts `release/…`, `hotfix/…` and `chore/sync-main`; `release/…` accepts `develop`,
+    hotfixes and the work branches.
   - **Release E2E gate** (PRs into `develop`): a `release/…` PR merges only after the Playwright suite passes for every
-    milestone so far, run against the release candidate itself. Other PRs pass it at once, without running
-    Playwright. See [the runbook](docs/runbooks/playwright-release-gate.md).
+    milestone so far, run against the release candidate itself. Other PRs pass it at once, without running Playwright. See [the runbook](docs/runbooks/playwright-release-gate.md).
   - PRs into `main` are also analysed by **SonarQube Cloud** for code quality and security, once it's connected
     (see [the runbook](docs/runbooks/sonarqube-cloud.md)).
 - **Approvals:** none required. GitHub doesn't let authors approve their own PRs, and this is a single-maintainer
   project, so the passing checks are the gate. For a release PR, **the owner merging it is the approval**: nobody else
   merges a `release/…` PR (owner decision, October 18, 2026).
-- **Milestone releases:** cut `release/<version>` from `develop`, land the milestone's feature and fix PRs in it, then
-  open `release/<version>` → `develop`. Playwright runs on that PR; a failure blocks the merge until the underlying
+- **Milestone releases:** cut `release/<version>` from `develop` (one at a time, for the active milestone), land the
+  milestone's feature, fix, chore and docs PRs in it, then open `release/<version>` → `develop`. Playwright runs on that PR; a failure blocks the merge until the underlying
   issue is fixed on the release branch. Never skip, disable or delete a test to get a release through.
-- **Merging:** squash-merge into `develop`. Merge `develop` into `main` with a merge commit, so the release history
+- **Merging:** squash-merge work PRs into the release branch; merge `release/…` into `develop` with a merge commit. Merge `develop` into `main` with a merge commit, so the release history
   is kept.
 - **After every release or hotfix,** back-merge `main` into `develop`: branch `chore/sync-main` from `develop`, run
   `git merge origin/main`, and PR it into `develop` with a **merge commit**. `main` requires PRs to be up to date, so
@@ -54,7 +53,7 @@ Code-quality findings are reviewed every week, so they don't pile up into techni
 2026).
 - **Sunday, Sonar Sunday:** `.github/workflows/sonar-sunday.yml` opens a **Sonar Sunday** issue listing SonarQube
   Cloud's open vulnerabilities, bugs, security hotspots and major code smells on `main`.
-  - Fix them on `fix/sonar-sunday-<date>`, with a PR into `develop`, and link it in the issue.
+  - Fix them on `fix/sonar-sunday-<date>`, with a PR into the active release branch, and link it in the issue.
   - Work in order: vulnerabilities and bugs first, then hotspots, then code smells.
   - Anything deliberate is marked **Accepted** in SonarCloud, with a reason.
 - **Tuesday, Release Tuesday:** `.github/workflows/release-tuesday.yml` opens a **Release Tuesday** checklist when

@@ -193,6 +193,8 @@ that points back here.
   `development` environment, biweekly Friday production releases with owner approval. The brief is in CLAUDE.md.
   - [x] Brief recorded in CLAUDE.md, with the discrepancies against the current process (October 18, 2026).
   - [ ] **Owner:** decide the discrepancies (`develop` vs `development`, weekly vs biweekly releases, milestone map).
+    Decided October 18, 2026: the branch stays `develop`; milestone work goes through `release/*` into `develop`,
+    gated by Playwright, and `develop` accepts nothing else but hotfixes and the back-merge.
   - [ ] Plan for protections, environments, hosting and deployment approval; wait for owner approval.
   - [ ] Flag the November 27 and December 25, 2026 release windows (holidays) for the owner.
   - [ ] After approval: implement, update CONTRIBUTING.md and `docs/development-workflow.md`, and shorten the CLAUDE.md

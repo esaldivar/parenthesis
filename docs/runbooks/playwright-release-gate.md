@@ -16,12 +16,13 @@ it**. A failure blocks the merge.
 | PR | Playwright |
 |---|---|
 | `release/0.3.0` → `develop` | **Runs** (opened, new pushes, reopened, marked ready for review) |
-| `feature/*`, `fix/*`, `chore/*`, … → `develop` | No. The gate check passes at once. |
-| `feature/*`, `bugfix/*` → `release/*` | No |
+| `hotfix/*`, `chore/sync-main` → `develop` | No. The gate check passes at once. |
+| `feature/*`, `bugfix/*`, `chore/*`, … → `release/*` | No |
 | `develop` → `main`, `hotfix/*` → `main` | No |
 | Pushes to any branch, schedules | No |
 
-Draft release PRs don't run it. Marking the PR ready for review starts the run. A `release/*` branch from a fork
+`develop` only accepts release branches, hotfixes and the `chore/sync-main` back-merge, so all other work reaches
+it through a release PR and this gate (owner decision, October 18, 2026). Draft release PRs don't run it. Marking the PR ready for review starts the run. A `release/*` branch from a fork
 never runs it, and the gate fails for it.
 
 ## What it tests
