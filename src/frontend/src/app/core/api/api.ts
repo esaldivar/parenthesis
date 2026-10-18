@@ -52,6 +52,14 @@ export interface Child {
   readonly status: ChildStatus;
   /** Set when the child was just added: the approval request the co-parent answers. */
   readonly changeRequestId: string | null;
+  /** Whether the child has a PIN, is locked after three wrong tries, or has a new PIN waiting for approval. */
+  readonly signIn: ChildSignIn;
+}
+
+export interface ChildSignIn {
+  readonly enabled: boolean;
+  readonly locked: boolean;
+  readonly pinChangePending: boolean;
 }
 
 export type ChangeRequestType = 'ChildCreate' | 'ChildPinChange';
