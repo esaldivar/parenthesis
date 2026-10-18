@@ -20,6 +20,10 @@ export const routes: Routes = [
   authPage('confirm-email', 'Confirm your email', () => import('./features/auth/confirm-email-page').then((m) => m.ConfirmEmailPage)),
   authPage('forgot-password', 'Reset your password', () => import('./features/auth/forgot-password-page').then((m) => m.ForgotPasswordPage)),
   authPage('reset-password', 'Choose a new password', () => import('./features/auth/reset-password-page').then((m) => m.ResetPasswordPage)),
+  // Opened from the invitation email; works signed in or out (the page asks signed-out visitors to sign in).
+  authPage('invitations/accept', 'Join your co-parent’s family', () =>
+    import('./features/invitations/accept-invitation-page').then((m) => m.AcceptInvitationPage),
+  ),
   authPage('welcome', 'Set up your family', () => import('./features/onboarding/welcome-page').then((m) => m.WelcomePage), [signedIn]),
   {
     path: 'kid',

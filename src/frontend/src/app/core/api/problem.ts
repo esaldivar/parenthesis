@@ -4,6 +4,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 export interface Problem {
   readonly status: number;
   readonly title?: string;
+  /** The problem type URI, when the API sets one (for example `…/existing-family`). */
+  readonly type?: string;
   /** Field errors from a validation problem, keyed by the request's field names. */
   readonly errors: Readonly<Record<string, readonly string[]>>;
 }
@@ -16,6 +18,7 @@ export function toProblem(error: unknown): Problem {
   return {
     status: error.status,
     title: typeof body.title === 'string' ? body.title : undefined,
+    type: typeof body.type === 'string' ? body.type : undefined,
     errors: typeof body.errors === 'object' && body.errors !== null ? body.errors : {},
   };
 }

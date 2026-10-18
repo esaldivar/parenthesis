@@ -10,7 +10,8 @@ test.describe('Parent onboarding', { tag: '@m2' }, () => {
       await page.goto('/register');
       await page.getByLabel('Your name').fill('Alex Rivera');
       await page.getByLabel('Email').fill(email);
-      await page.getByLabel('Password').fill(PASSWORD);
+      await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+      await page.getByLabel('Confirm password').fill(PASSWORD);
       await page.getByRole('button', { name: 'Create account' }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
     });
@@ -38,9 +39,25 @@ test.describe('Parent onboarding', { tag: '@m2' }, () => {
       await expect(page.getByRole('heading', { level: 1, name: 'Welcome, Alex Rivera' })).toBeVisible();
     });
 
-    await test.step('create the family and land on the dashboard', async () => {
+    await test.step('create the family', async () => {
       await page.getByLabel('Family name').fill(FAMILY_NAME);
       await page.getByRole('button', { name: 'Create family' }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Let’s set up your family' })).toBeVisible();
+    });
+
+    await test.step('add one child, who waits for the co-parent’s approval', async () => {
+      // The count starts at one child.
+      await page.getByRole('button', { name: 'Continue' }).click();
+      await page.getByLabel('Child 1’s first name').fill('Sam');
+      await page.getByRole('button', { name: 'Continue' }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Children pending approval' })).toBeVisible();
+      await expect(page.getByText('Waiting for approval')).toBeVisible();
+      await page.getByRole('button', { name: 'Continue' }).click();
+    });
+
+    await test.step('skip the invitation and land on the dashboard', async () => {
+      await expect(page.getByRole('heading', { level: 1, name: 'Invite your co-parent' })).toBeVisible();
+      await page.getByRole('link', { name: 'Continue to Parenthesis' }).click();
       await expect(page).toHaveURL(/\/$/);
       await expect(page.getByRole('navigation').first()).toBeVisible();
       // Unbuilt features show honest empty states, never sample data.
