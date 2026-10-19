@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
+import { PendingInvitation } from '../../core/invitations/pending-invitation';
 import { FORM_STYLES } from './form-styles';
 
 @Component({
@@ -54,6 +55,7 @@ import { FORM_STYLES } from './form-styles';
 export class SignInPage {
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly pending = inject(PendingInvitation);
 
   /** Where to go after signing in (from the guard); only in-app paths are honoured. */
   readonly returnUrl = input<string>();
@@ -92,6 +94,10 @@ export class SignInPage {
   private safeReturnUrl(): string {
     const url = this.returnUrl();
     // Only paths within the app, never "//evil.example" or absolute URLs (open redirect).
-    return url && url.startsWith('/') && !url.startsWith('//') ? url : '/';
+    if (url && url.startsWith('/') && !url.startsWith('//')) {
+      return url;
+    }
+    // Back from confirming their email, an invited co-parent goes straight to their invitation.
+    return this.pending.peek() ? '/invitations/accept' : '/';
   }
 }

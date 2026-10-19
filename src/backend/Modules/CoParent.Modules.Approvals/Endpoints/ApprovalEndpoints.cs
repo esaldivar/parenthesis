@@ -29,6 +29,7 @@ internal sealed record ChangeRequestView(
     int Approvals,
     int RequiredApprovals,
     bool CanDecide,
+    bool ProposedByYou,
     DateTimeOffset? ResolvedAt,
     IReadOnlyList<DecisionView> Decisions);
 
@@ -206,6 +207,7 @@ internal static class ApprovalEndpoints
         CanDecide: r.Status == ChangeRequestStatus.Pending
             && r.ProposerMembershipId != membershipId
             && r.Decisions.All(d => d.DeciderMembershipId != membershipId),
+        ProposedByYou: r.ProposerMembershipId == membershipId,
         r.ResolvedAt,
         r.Decisions.OrderBy(d => d.DecidedAt)
             .Select(d => new DecisionView(d.DeciderMembershipId, d.Decision.ToString(), d.Comment, d.DecidedAt))

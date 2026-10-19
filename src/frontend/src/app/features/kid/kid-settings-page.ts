@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatRadioChange, MatRadioModule } from '@angular/material/radio';
+import { Router } from '@angular/router';
+import { AuthStore } from '../../core/auth/auth.store';
 import { KidPresentation, KidPresentationService } from '../../layout/kid-shell/kid-presentation.service';
 import { AppearancePicker } from '../../shared/appearance-picker/appearance-picker';
 
 @Component({
   selector: 'app-kid-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, MatRadioModule],
+  imports: [AppearancePicker, MatRadioModule, MatButtonModule],
   template: `
     <h1>Settings</h1>
 
@@ -29,6 +32,14 @@ import { AppearancePicker } from '../../shared/appearance-picker/appearance-pick
         <mat-radio-button value="compact">Compact</mat-radio-button>
       </mat-radio-group>
     </section>
+
+    @if (auth.status() === 'child') {
+      <section class="card">
+        <h2>Done for now?</h2>
+        <p class="help">Go back to the list of profiles so someone else can use this device.</p>
+        <button mat-stroked-button type="button" (click)="switchProfile()">Switch profile</button>
+      </section>
+    }
   `,
   styles: `
     .card {
@@ -41,6 +52,9 @@ import { AppearancePicker } from '../../shared/appearance-picker/appearance-pick
     .help {
       color: var(--color-text-secondary);
     }
+    button {
+      min-height: var(--kid-target, var(--target-min));
+    }
     .options {
       display: flex;
       flex-wrap: wrap;
@@ -50,6 +64,14 @@ import { AppearancePicker } from '../../shared/appearance-picker/appearance-pick
 })
 export class KidSettingsPage {
   protected readonly presentation = inject(KidPresentationService);
+  protected readonly auth = inject(AuthStore);
+  private readonly router = inject(Router);
+
+  /** Ends the child's session. Getting into a parent profile from here always takes that parent's password. */
+  protected async switchProfile(): Promise<void> {
+    await this.auth.signOut();
+    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in');
+  }
 
   protected choose(event: MatRadioChange<KidPresentation>): void {
     this.presentation.presentation.set(event.value);

@@ -24,9 +24,24 @@ that points back here.
     fix PR into the active release branch → the next biweekly release window (Release Tuesday was replaced). The
     workflows start running once they're on `main` (the next release). Then check the first automatic Sonar Sunday
     issue.
-  - [ ] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
-    with the reason "required so keyboard users can scroll the hours".
+  - [x] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
+    with the reason "required so keyboard users can scroll the hours" (accepted, with the WCAG 2.1.1 comment,
+    October 19, 2026).
   - [ ] Add the quality-gate badge to the README.
+  - [ ] **Release security gate** (requested October 18, 2026): `release-gate` job in `sonar.yml`, policy and
+    troubleshooting in `docs/runbooks/sonar-release-gate.md`.
+    - [x] Gate, tests with a fake SonarQube Cloud API, docs and CLAUDE.md rules (October 18, 2026).
+    - [ ] **Owner:** once it has run on a release PR, add **Release security gate** to `main`'s required status
+      checks (steps in the runbook). Keep every existing protection.
+    - [ ] Check the first real run: the scanner's task id is picked up and the API answers match the gate's
+      expectations (it was tested against a fake API only).
+    - [ ] Issue #65: the seven vulnerabilities on `main` block the next release until each is fixed or accepted in
+      SonarQube Cloud with a reason. Fixed separately, not in the gate's PR.
+      - [x] Six fixed in `fix/sonar-65-vulnerabilities` (October 18, 2026): `npm ci --ignore-scripts` and
+        `npm run build` instead of `npx ng build`, in `docker/api.Dockerfile` and `ci.yml`.
+      - [ ] **Owner:** the `HttpOnly` finding on the `XSRF-TOKEN` cookie (`AntiforgeryExtensions.cs:34`): mark it
+        Accepted in SonarQube Cloud with the comment in that PR (Angular must read the cookie), or ask for a redesign.
+      - [ ] After the release reaches `main`, check the six fixed findings closed, then close #65.
   - [ ] **Owner, optional:** install SonarQube for IDE (formerly SonarLint), which is free, in connected mode.
 - [ ] **Branching model and protected branches** (requested October 17, 2026).
   - [x] `develop` created from the latest work (`feat/angular-shell`, which is now retired).
@@ -92,18 +107,28 @@ that points back here.
   - [x] Backend: changing a kid's existing PIN needs the co-parent's approval (ChildPinChange). The current PIN works
     until it's approved; reject or withdraw keeps it (October 17, 2026). Setting the first PIN and disabling access stay
     immediate.
-  - [ ] Frontend: re-fetch the antiforgery token whenever the profile changes (kid signs in, parent signs back in).
-  - [ ] Frontend: these screens, once Design Request #1 (issue #38) is approved.
+  - [x] Frontend: re-fetch the antiforgery token whenever the profile changes (kid signs in, parent signs back in,
+    sign-out, tablet pairing), in the auth store (October 18, 2026).
+  - [x] Frontend: these screens, once Design Request #1 (issue #38) is approved.
     Approved October 18, 2026 (owner decisions: one parent tile per device, 7-day invitations with the email copy
     saying 7 days, one generic screen for expired/used/revoked links, 8-character pairing code typed in a text box,
     "We've let your parents know" for a locked PIN, initials and no age on child tiles). Delivered as small PRs into
     `develop`:
     - [x] Backend: a household device's picker shows only the parent who registered it, not both parents
       (October 18, 2026).
-    - [ ] Sign-up, household setup and invitations.
-    - [ ] Profile picker, parent password and child PIN screens.
-    - [ ] Tablet pairing and device management.
-    - [ ] Co-parent approvals.
+    - [x] Sign-up, household setup and invitations: register with confirm password, the four-step setup (family,
+      how many children, their names, invite), "pending approval" for each child, the invitation accept page with
+      one calm screen for invalid links, and a co-parent card in Settings (October 18, 2026).
+    - [x] Second PR (owner decision October 18, 2026: Request #1 ships as two PRs to fit the weekly limit): profile
+      picker, parent password and child PIN screens; tablet pairing and device management; co-parent approvals
+      (October 18, 2026). **Owner decision, October 18:** a child's PIN is 4 to 6 digits, chosen by the parent; the
+      child types it in one number box and taps "Go". The children list now returns each child's sign-in state, the
+      approvals list says which requests you proposed, and the lock email links to Settings, where Unlock is.
+  - [ ] Check the Request #1 screens against the image mockups once they're committed (the handoff is text-only, so
+    the screens follow the design system).
+  - [ ] Parent tile: it asks for email and password, because the picker only knows the parent's name. Optional:
+    remember the email on the device.
+  - [ ] Approvals: a note can be added when declining only. Optional: a note when approving too (AP-05).
   - [ ] QR code for tablet pairing (deferred, owner decision October 18, 2026). Show the code only for now; adding a
     QR code needs a new library.
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner
@@ -153,7 +178,30 @@ that points back here.
   - [x] Backend: approvals history and decision comments (AP-04/05); request expiry after 14 days (AP-06) (October 17, 2026).
   - [ ] Backend: recurrence (C-05), reminders (C-04, with notifications), the .ics feed (C-07).
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
-    data source.
+    data source. The inbox exists since v0.2.0 but shows only child requests; show calendar requests there too.
+
+- [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Every `release/x.y.z` → `develop`
+  PR runs Playwright against the release candidate, for the current milestone and every one before it. Runbook:
+  `docs/runbooks/playwright-release-gate.md`.
+  - [x] Suite in `tests/e2e/` (v0.1.0, v0.2.0, the v0.3.0 work already in `develop`, and a regression test for #58),
+    workflow `.github/workflows/playwright-release.yml`, the **Release E2E gate** check and its Discord post through
+    `DISCORD_WEBHOOK_URL` (October 18, 2026).
+  - [x] **Owner:** **Release E2E gate** is a required check on `develop` (October 18, 2026).
+  - [ ] Get the workflow onto `develop`. It exists only on `release/0.2.0`, so PRs into `develop` wait forever for
+    the required check (seen on #81, October 19, 2026). Plan, no early release:
+    - [x] Merge `develop` into `release/0.2.0` (merge commit, not squash) to clear the release PR's conflicts (#82).
+    - [ ] Release week (October 26): open `release/0.2.0` → `develop`; the gate and Playwright run on it.
+    - [ ] After it merges, update #81 from `develop` so the gate runs (it passes at once for non-release PRs).
+    - [ ] **Owner:** delete the stale `release/0.3.0` branch (older, unhardened copy of the gate; #64 closed).
+  - [ ] First real run on the `release/0.2.0` → `develop` PR: check the summary, the artifacts and the Discord post.
+  - [ ] Add browser journeys as the v0.2.0 and v0.3.0 screens ship (invitations, children, profile picker, PIN
+    entry, the full calendar). Until then those features are tested through the API, and the calendar page through
+    its honest empty state.
+    - [x] v0.2.0: the profile picker, PIN entry (tries left), switching profile, approving a PIN change in the inbox,
+      and pairing a tablet, in `specs/m2-accounts/profiles-in-the-browser.spec.ts` (October 18, 2026).
+    - [ ] Invitations in the browser, and the v0.3.0 calendar screens.
+  - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
+    the sign-in limit, for the test instance only.
 
 - [ ] **Development workflow automation** (owner brief, October 18, 2026). Weekly PR and Copilot review limits,
   Discord notifications for major and release PRs, and a weekly status report. The brief is in CLAUDE.md.
@@ -185,9 +233,11 @@ that points back here.
     production promotes the image tested on `develop`; release PRs into `develop` count as release notices in
     `dev-workflow.mjs`; CONTRIBUTING.md, `docs/development-workflow.md`, the Azure runbook and the backlog's release
     map; CLAUDE.md now links to the workflow guide.
-  - [ ] Cut `release/0.2.0` from `develop` once this is merged, and retarget open work PRs (#40, #59) to it.
-  - [ ] Remove the one-off `chore/release-workflow` exception from `.github/scripts/check-pr-branch-policy.sh`
-    (`TODO(workflow)`) in the first PR into `release/0.2.0`.
+  - [x] Cut `release/0.2.0` from `develop` once this is merged, and retarget open work PRs (#40, #59) to it
+    (October 18, 2026).
+  - [x] Draft v0.2.0 release notes: `docs/releases/v0.2.0.md` (October 19, 2026).
+  - [x] Removed the one-off `chore/release-workflow` exception from `.github/scripts/check-pr-branch-policy.sh` in
+    the first PR into `release/0.2.0` (October 18, 2026).
   - [x] **Owner:** GitHub settings from the runbook (October 18, 2026): the `release branches` ruleset (PRs only,
     the four checks up to date, no deletion or force pushes, checks not required on creation); **PR source** required
     on `develop`; the `development` environment (deploys from `develop` only) and the `production` environment (owner
@@ -195,10 +245,17 @@ that points back here.
     wait for the Azure setup.
   - [ ] **Owner:** Azure account and both environments (runbook steps 1–3), then `DEPLOY_ENABLED` = `true` and the
     `parenthesis-api` package made public.
-  - [ ] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
-    (application change in Identity, v0.2.0).
-  - [ ] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
-    reachable in the app.
+  - [x] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
+    (application change in Identity, v0.2.0). `Identity:SignUp:InviteOnly` and `AllowedEmails`; off by default, so
+    production stays open (October 19, 2026).
+  - [ ] **Owner:** when the development site exists, set the tester list (Azure runbook, "Development only:
+    invite-only sign-up"). Invited co-parents must be on it too.
+  - [x] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
+    reachable in the app (October 19, 2026). Nothing is: the calendar page is an honest empty state, the dashboard
+    shows "not available yet" (its sample data only in development builds), Quick Add is disabled with a note, the
+    approvals inbox shows child requests only, the kid space has no calendar, and Swagger is development-only. The
+    calendar API itself stays on (**owner decision**, October 19): it's signed-in, family-scoped and tested, sends no
+    email, and v0.3.0 needs it; only a parent calling it by hand could reach it.
   - [ ] Watch the first runs: the first release-window issue (Monday, October 26 is the first release-week Monday,
     but scheduled runs need this on `main`, so run it by hand until then), the first development deployment and
     the first production deployment and rollback drill.

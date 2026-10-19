@@ -52,12 +52,8 @@ export const PARENT_ROUTES: Routes = [
   { path: 'children', redirectTo: 'child-essentials' },
   {
     path: 'approvals',
-    ...comingSoon('Approvals', {
-      icon: 'approvals',
-      intro: 'Changes to agreed schedules and deletions of shared memories need both parents to agree.',
-      emptyTitle: 'No requests',
-      emptyBody: 'Approvals aren’t available yet, so there’s nothing waiting for either parent.',
-    }),
+    title: 'Approvals',
+    loadComponent: () => import('./approvals/approvals-page').then((m) => m.ApprovalsPage),
   },
   { path: 'settings', title: 'Settings', loadComponent: () => import('./settings/settings-page').then((m) => m.SettingsPage) },
   { path: 'more', title: 'More', loadComponent: () => import('./more/more-page').then((m) => m.MorePage) },

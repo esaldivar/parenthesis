@@ -121,6 +121,7 @@ jobs:
               echo
               echo "**Window: production**"
               echo "- [ ] PR \`develop\` → \`main\` (merge commit) contains only this tested release. ${MAIN_PR}"
+              echo "- [ ] **Release security gate** green on that PR: no unresolved release-blocking SonarQube findings (docs/runbooks/sonar-release-gate.md)."
               echo "- [ ] Owner approves the **production** deployment in Actions."
               echo "- [ ] Production smoke tests and health checks green; version tag and release notes published."
               echo "- [ ] Back-merge \`main\` into \`develop\` (\`chore/sync-main\`), then into any open release branch."
