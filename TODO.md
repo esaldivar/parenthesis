@@ -233,7 +233,9 @@ that points back here.
     production promotes the image tested on `develop`; release PRs into `develop` count as release notices in
     `dev-workflow.mjs`; CONTRIBUTING.md, `docs/development-workflow.md`, the Azure runbook and the backlog's release
     map; CLAUDE.md now links to the workflow guide.
-  - [ ] Cut `release/0.2.0` from `develop` once this is merged, and retarget open work PRs (#40, #59) to it.
+  - [x] Cut `release/0.2.0` from `develop` once this is merged, and retarget open work PRs (#40, #59) to it
+    (October 18, 2026).
+  - [x] Draft v0.2.0 release notes: `docs/releases/v0.2.0.md` (October 19, 2026).
   - [x] Removed the one-off `chore/release-workflow` exception from `.github/scripts/check-pr-branch-policy.sh` in
     the first PR into `release/0.2.0` (October 18, 2026).
   - [x] **Owner:** GitHub settings from the runbook (October 18, 2026): the `release branches` ruleset (PRs only,
