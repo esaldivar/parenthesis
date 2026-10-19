@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 
 namespace CoParent.Modules.Identity.Endpoints;
 
@@ -35,10 +36,11 @@ internal static class AuthEndpoints
         api.MapGet("/me", MeAsync).WithTags("Me");
     }
 
-    private static async Task<Results<Accepted, ValidationProblem>> RegisterAsync(
+    private static async Task<Results<Accepted, ValidationProblem, ProblemHttpResult>> RegisterAsync(
         RegisterRequest request,
         UserManager<AppUser> users,
         AccountEmails emails,
+        IOptions<SignUpOptions> signUp,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {
@@ -49,6 +51,15 @@ internal static class AuthEndpoints
         }
 
         var email = request.Email!.Trim();
+        if (!signUp.Value.Allows(email))
+        {
+            // Checked before anything else, so it says nothing about whether an account exists.
+            return TypedResults.Problem(
+                title: "Sign-up here is by invitation only.",
+                detail: "This is a test site. Ask the Parenthesis team to add your email address.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         var user = new AppUser
         {
             UserName = email,
