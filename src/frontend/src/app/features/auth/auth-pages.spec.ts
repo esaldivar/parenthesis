@@ -106,6 +106,28 @@ describe('auth and onboarding routes', () => {
       expect(body.querySelector('[role=alert]')).toBeNull();
     });
 
+    it('explains an invite-only site and who to ask', async () => {
+      const { harness, http, body } = await open('/register');
+
+      await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[formcontrolname=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'twelve chars ok');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      http.expectOne('/api/auth/register').flush(
+        {
+          title: 'Sign-up here is by invitation only.',
+          detail: 'This is a test site. Ask the Parenthesis team to add your email address.',
+        },
+        { status: 403, statusText: 'Forbidden' },
+      );
+      await settle(harness);
+
+      expect(body.querySelector('[role=alert]')!.textContent!.trim()).toBe(
+        'Sign-up here is by invitation only. This is a test site. Ask the Parenthesis team to add your email address.',
+      );
+    });
+
     it('checks password length before calling the API', async () => {
       const { harness, http, body } = await open('/register');
 

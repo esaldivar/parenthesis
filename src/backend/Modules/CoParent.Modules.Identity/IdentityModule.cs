@@ -84,6 +84,7 @@ public static class IdentityModule
         services.AddAuthorization();
 
         services.AddOptions<AuthRateLimitOptions>().BindConfiguration(AuthRateLimitOptions.Section);
+        services.AddOptions<SignUpOptions>().BindConfiguration(SignUpOptions.Section);
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -121,4 +122,26 @@ internal sealed class AuthRateLimitOptions
     public int PermitLimit { get; set; } = 10;
 
     public TimeSpan Window { get; set; } = TimeSpan.FromMinutes(1);
+}
+
+/// <summary>
+/// Who may create an account. Open by default (production). The development site sets <see cref="InviteOnly"/> and lists
+/// its testers, so only they can register there (owner decision, October 18, 2026).
+/// </summary>
+internal sealed class SignUpOptions
+{
+    public const string Section = "Identity:SignUp";
+
+    private static readonly char[] _separators = [',', ';', ' ', '\t', '\r', '\n'];
+
+    /// <summary>When true, only <see cref="AllowedEmails"/> can register. True with an empty list means nobody can.</summary>
+    public bool InviteOnly { get; set; }
+
+    /// <summary>Tester email addresses, separated by commas, semicolons or spaces (one setting, easy to keep in Azure).</summary>
+    public string AllowedEmails { get; set; } = "";
+
+    public bool Allows(string email) =>
+        !InviteOnly
+        || AllowedEmails.Split(_separators, StringSplitOptions.RemoveEmptyEntries)
+            .Any(allowed => string.Equals(allowed, email, StringComparison.OrdinalIgnoreCase));
 }

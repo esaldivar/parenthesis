@@ -236,8 +236,11 @@ that points back here.
     wait for the Azure setup.
   - [ ] **Owner:** Azure account and both environments (runbook steps 1–3), then `DEPLOY_ENABLED` = `true` and the
     `parenthesis-api` package made public.
-  - [ ] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
-    (application change in Identity, v0.2.0).
+  - [x] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
+    (application change in Identity, v0.2.0). `Identity:SignUp:InviteOnly` and `AllowedEmails`; off by default, so
+    production stays open (October 19, 2026).
+  - [ ] **Owner:** when the development site exists, set the tester list (Azure runbook, "Development only:
+    invite-only sign-up"). Invited co-parents must be on it too.
   - [ ] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
     reachable in the app.
   - [ ] Watch the first runs: the first release-window issue (Monday, October 26 is the first release-week Monday,

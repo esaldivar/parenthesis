@@ -160,6 +160,9 @@ export class RegisterPage implements OnInit {
           this.form.get(field)!.setErrors({ server: true });
         }
         this.form.markAllAsTouched();
+      } else if (problem.status === 403 && problem.title) {
+        // An invite-only site (the development site): say so, and who to ask.
+        this.error.set([problem.title, problem.detail].filter(Boolean).join(' '));
       } else {
         this.error.set(generalMessage(problem));
       }
