@@ -182,7 +182,10 @@ that points back here.
     - [x] **Board sync** (owner decision, October 19, 2026): the queue keeps Project #2's Status in step with each
       issue's PRs (In Development, Awaiting PR Approval, Code Review, Awaiting Deployment, Done and closed; Backlog when
       every PR closed unmerged), for any open issue a PR links with a closing keyword. `scripts/claude_queue_board.py`.
-    - [ ] **Owner:** `gh auth refresh -s project` on the queue PC, so the board sync can write (it's read-only now).
+    - [x] **Owner:** `gh auth refresh -s project` on the queue PC (October 19, 2026). First real sync moved #94 to
+      Awaiting Deployment.
+    - [x] Discord board updates (owner decision, October 19, 2026): one message per scheduled run listing each card
+      moved (issue, title, old → new status, closed at Done); none when nothing moved.
     - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, and a draft PR opened by a
       scheduled run. The Discord failure notice works (sent during the fix, October 19). Record the pilot on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).
