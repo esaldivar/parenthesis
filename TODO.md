@@ -187,13 +187,17 @@ that points back here.
     workflow `.github/workflows/playwright-release.yml`, the **Release E2E gate** check and its Discord post through
     `DISCORD_WEBHOOK_URL` (October 18, 2026).
   - [x] **Owner:** **Release E2E gate** is a required check on `develop` (October 18, 2026).
-  - [ ] Get the workflow onto `develop`. It exists only on `release/0.2.0`, so PRs into `develop` wait forever for
-    the required check (seen on #81, October 19, 2026). Plan, no early release:
+  - [x] Get the workflow onto `develop`. It existed only on `release/0.2.0`, so PRs into `develop` waited forever
+    for the required check (seen on #81, October 19, 2026):
     - [x] Merge `develop` into `release/0.2.0` (merge commit, not squash) to clear the release PR's conflicts (#82).
-    - [ ] Release week (October 26): open `release/0.2.0` → `develop`; the gate and Playwright run on it.
-    - [ ] After it merges, update #81 from `develop` so the gate runs (it passes at once for non-release PRs).
-    - [ ] **Owner:** delete the stale `release/0.3.0` branch (older, unhardened copy of the gate; #64 closed).
-  - [ ] First real run on the `release/0.2.0` → `develop` PR: check the summary, the artifacts and the Discord post.
+    - [x] `release/0.2.0` → `develop` opened early at the owner's request and merged (#88, October 19, 2026).
+    - [x] Updated #81 from `develop`; its **Release E2E gate** reported and passed, and it merged (October 19, 2026).
+    - [x] **Owner:** deleted the stale `release/0.3.0`; a fresh `release/0.3.0` was cut from `develop`
+      (October 19, 2026).
+  - [x] First real run on the `release/0.2.0` → `develop` PR (#88, October 19, 2026): Playwright passed in about
+    4 minutes, the summary ran, the HTML report and summary artifacts were uploaded, and the Discord post was sent.
+  - [ ] Move `actions/upload-artifact` and `actions/download-artifact` in `playwright-release.yml` off Node.js 20
+    (GitHub warned on #88's run; they're being forced onto Node.js 24).
   - [ ] Add browser journeys as the v0.2.0 and v0.3.0 screens ship (invitations, children, profile picker, PIN
     entry, the full calendar). Until then those features are tested through the API, and the calendar page through
     its honest empty state.
