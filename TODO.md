@@ -158,8 +158,19 @@ that points back here.
     Done. Needs the owner's OK; `gh` may need the `project` scope (`gh auth refresh -s project`).
   - [ ] Start each session by checking the board for *Ready for dev* stories (Claude) and *Ready for design* stories
     (ChatGPT, via the owner).
-  - [ ] Later, optional: a Claude agent that reacts to GitHub issues automatically. It needs a paid API key, so it's
-    deferred for cost.
+  - [x] ~~Later, optional: a Claude agent that reacts to GitHub issues automatically (paid API key).~~ Replaced by
+    the local Claude queue on the owner's Claude subscription (#94, October 19, 2026): no API key, nothing scheduled.
+  - [ ] **Local Claude queue** (#94). Runner, approval check, selector labels, CI for the Python tests, runbook
+    (`docs/runbooks/claude-local-queue.md`).
+    - [x] Labels `owner-approved-claude` and `claude-implementation` created; #95 (Actions scaffold) closed
+      (October 19, 2026).
+    - [ ] **Owner:** delete the `hotfix/claude-queue-execution-scaffold` branch (Claude Code's permission check
+      blocked the deletion).
+    - [ ] **Owner:** set `DISCORD_WEBHOOK_URL` as a user environment variable on the machine that runs the queue
+      (runbook, "One-time setup").
+    - [ ] Pilot after this merges: the owner picks a small, synthetic-data M3 coding issue, labels it, and runs
+      `--plan`, then an interactive run, then one headless run. Record the result on #94.
+    - [ ] Not yet verified end to end: the Claude permission rules in a real run, and the Discord send from the runner.
 - [ ] **Notifications** (owner idea, October 17, 2026).
   - [ ] **Owner:** install the GitHub mobile app and watch the repo (PRs, issues, releases, failed checks). It's free.
   - [ ] Optional: a free Discord server with a `#dev-updates` channel fed by a GitHub webhook.

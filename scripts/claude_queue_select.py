@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Read-only GitHub Project issue queue selector. Requires token with Projects read access."""
+"""Read-only GitHub Project issue queue selector. Requires token with Projects read access.
+
+An issue is selected only when it is open, in the exact milestone, in exactly one item of the project with Status
+"Ready For Development", not blocked, has exactly one valid priority, and carries both queue labels:
+"claude-implementation" (a coding issue) and "owner-approved-claude". The label only nominates the issue: the owner's
+approval is verified separately against the issue history (scripts/claude_queue_approval.py) before anything runs.
+"""
 import json
 import os
 import sys
@@ -24,13 +30,18 @@ QUERY = """query($owner:String!, $repo:String!, $cursor:String) {
   }
 }"""
 
+CODING_LABEL = "claude-implementation"
+APPROVAL_LABEL = "owner-approved-claude"
+REQUIRED_LABELS = (CODING_LABEL, APPROVAL_LABEL)
+
+
 def eligible(issues, milestone, project_number):
     """Never infer status or priority from titles; missing metadata fails closed."""
     if not milestone or project_number is None:
         raise ValueError("ACTIVE_MILESTONE and PROJECT_NUMBER are required")
     ranked = []
     status_diagnostics = []
-    excluded = {"state": 0, "milestone": 0, "project": 0, "status": 0, "blocked": 0, "priority": 0}
+    excluded = {"state": 0, "milestone": 0, "project": 0, "status": 0, "blocked": 0, "labels": 0, "priority": 0}
     for issue in issues:
         if issue.get("state") != "OPEN":
             excluded["state"] += 1
@@ -57,6 +68,10 @@ def eligible(issues, milestone, project_number):
         if labels & {"blocked", "status:blocked"}:
             excluded["blocked"] += 1
             continue
+        if not all(label in labels for label in REQUIRED_LABELS):
+            # Non-coding issues never get "claude-implementation"; unapproved issues lack "owner-approved-claude".
+            excluded["labels"] += 1
+            continue
         project_priorities = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Priority"]
         priority_map = {"P0 - Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
         if len(project_priorities) != 1 or project_priorities[0] not in priority_map:
@@ -78,11 +93,8 @@ def github_graphql(token, variables):
         raise RuntimeError("GitHub GraphQL returned errors or inaccessible repository")
     return result["data"]["repository"]["issues"]
 
-def main():
-    owner, repo = os.environ.get("GITHUB_REPOSITORY", "").split("/", 1)
-    token = os.environ["GH_TOKEN"]
-    milestone = os.environ["ACTIVE_MILESTONE"]
-    project_number = int(os.environ["PROJECT_NUMBER"])
+def fetch_open_issues(token, owner, repo):
+    """All open issues with their labels and project fields, following pagination."""
     issues, cursor = [], None
     while True:
         page = github_graphql(token, {"owner": owner, "repo": repo, "cursor": cursor})
@@ -93,6 +105,15 @@ def main():
         if not next_cursor or next_cursor == cursor:
             raise RuntimeError("Invalid pagination cursor")
         cursor = next_cursor
+    return issues
+
+
+def main():
+    owner, repo = os.environ.get("GITHUB_REPOSITORY", "").split("/", 1)
+    token = os.environ["GH_TOKEN"]
+    milestone = os.environ["ACTIVE_MILESTONE"]
+    project_number = int(os.environ["PROJECT_NUMBER"])
+    issues = fetch_open_issues(token, owner, repo)
     queue, excluded, status_diagnostics = eligible(issues, milestone, project_number)
     print(json.dumps({"mode": "read-only", "active_milestone": milestone,
                       "eligible_count": len(queue), "selected": queue[0] if queue else None,

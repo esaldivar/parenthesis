@@ -12,7 +12,8 @@ spec.loader.exec_module(selector)
 def issue(status_field="Status", status_value="Ready For Development"):
     return {
         "number": 80, "title": "Safe dry-run issue", "url": "https://github.com/esaldivar/parenthesis/issues/80",
-        "state": "OPEN", "milestone": {"title": "M2 — Onboarding"}, "labels": {"nodes": []},
+        "state": "OPEN", "milestone": {"title": "M2 — Onboarding"},
+        "labels": {"nodes": [{"name": "claude-implementation"}, {"name": "owner-approved-claude"}]},
         "projectItems": {"nodes": [{"project": {"number": 2}, "fieldValues": {"nodes": [
             {"name": status_value, "field": {"name": status_field}},
             {"name": "P3 - Low", "field": {"name": "Priority"}},
