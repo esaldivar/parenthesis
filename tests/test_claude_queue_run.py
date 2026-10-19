@@ -1,7 +1,11 @@
 """Unit tests for the local Claude queue runner's guards (scripts/claude_queue_run.py). No network, no Claude."""
+import contextlib
 import importlib.util
+import io
 import json
+import os
 import pathlib
+import subprocess
 import sys
 import unittest
 
@@ -121,6 +125,40 @@ class OutputTests(unittest.TestCase):
         cleaned = runner.redact(text)
         for secret in ("webhooks/123", "ghp_", "github_pat_", "sk-ant-"):
             self.assertNotIn(secret, cleaned)
+
+
+class ScheduledRunTests(unittest.TestCase):
+    def test_scheduled_is_headless_and_takes_the_top_of_the_queue(self):
+        args = runner.parse_args(["--scheduled"])
+        self.assertEqual(args.mode, "headless")
+        self.assertIsNone(args.issue)
+        self.assertEqual(runner.parse_args([]).mode, "interactive")
+
+    def test_scheduled_rejects_manual_only_options(self):
+        for extra in (["--issue", "72"], ["--commit-only"], ["--mode", "interactive"]):
+            with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+                runner.parse_args(["--scheduled", *extra])
+
+    def test_handled_issues_from_local_remote_and_pr_branches(self):
+        names = ["develop", "feature/98-calendar-validation-tests", "refs/heads/bugfix/12-pin-lockout",
+                 "origin/feature/40-x", "design/signup-invitations", "release/0.3.0", "feature/no-number",
+                 "chore/sync-develop-into-0.3.0", "hotfix/7-urgent"]
+        self.assertEqual(runner.handled_issue_numbers(names), {98, 12, 40})
+
+    def test_failures_notify_once_until_something_changes(self):
+        self.assertTrue(runner.should_notify("Claude queue stopped: A", ""))
+        self.assertFalse(runner.should_notify("Claude queue stopped: A", "Claude queue stopped: A\n"))
+        self.assertTrue(runner.should_notify("Claude queue stopped: B", "Claude queue stopped: A"))
+
+    def test_idle_is_not_a_failure(self):
+        self.assertFalse(issubclass(runner.Idle, runner.Stop))
+
+    def test_stale_lock_detection(self):
+        self.assertTrue(runner.process_alive(os.getpid()))
+        self.assertFalse(runner.process_alive(0))
+        finished = subprocess.Popen([sys.executable, "-c", "pass"])
+        finished.wait()
+        self.assertFalse(runner.process_alive(finished.pid))
 
 
 if __name__ == "__main__":

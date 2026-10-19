@@ -159,7 +159,7 @@ that points back here.
   - [ ] Start each session by checking the board for *Ready for dev* stories (Claude) and *Ready for design* stories
     (ChatGPT, via the owner).
   - [x] ~~Later, optional: a Claude agent that reacts to GitHub issues automatically (paid API key).~~ Replaced by
-    the local Claude queue on the owner's Claude subscription (#94, October 19, 2026): no API key, nothing scheduled.
+    the local Claude queue on the owner's Claude subscription (#94, October 19, 2026): no API key.
   - [ ] **Local Claude queue** (#94). Runner, approval check, selector labels, CI for the Python tests, runbook
     (`docs/runbooks/claude-local-queue.md`).
     - [x] Labels `owner-approved-claude` and `claude-implementation` created; #95 (Actions scaffold) closed
@@ -167,9 +167,15 @@ that points back here.
     - [x] **Owner:** deleted the `hotfix/claude-queue-execution-scaffold` branch (October 19, 2026).
     - [x] **Owner:** set `DISCORD_WEBHOOK_URL` as a user environment variable on the machine that runs the queue
       (runbook, "One-time setup") (October 19, 2026).
-    - [ ] Pilot after this merges: the owner picks a small, synthetic-data M3 coding issue, labels it, and runs
-      `--plan`, then an interactive run, then one headless run. Record the result on #94.
-    - [ ] Not yet verified end to end: the Claude permission rules in a real run, and the Discord send from the runner.
+    - [x] Pilot issue: #98 (calendar validation tests), approved by the owner; `--plan` selected it (October 19, 2026).
+    - [x] **Fully automated** (owner decision, October 19, 2026): an hourly Windows scheduled task on the owner's PC
+      runs `--scheduled` (headless; quiet when idle; skips issues that already have a queue branch or PR; waits at the
+      weekly limit; Discord notice when a draft PR opens or a run fails, once per problem; clears a crashed run's
+      lock). Set up with `scripts/claude_queue_schedule.ps1`.
+    - [ ] **Owner:** after this merges, run `scripts/claude_queue_schedule.ps1` once (runbook, "Running it on a
+      schedule"). The first scheduled run is the pilot: #98 runs headless once the weekly limit resets.
+    - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, the Discord notices from
+      the runner, and a full scheduled run (window-free, the checkout refresh). Record the pilot's result on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).
   - [ ] **Owner:** install the GitHub mobile app and watch the repo (PRs, issues, releases, failed checks). It's free.
   - [ ] Optional: a free Discord server with a `#dev-updates` channel fed by a GitHub webhook.

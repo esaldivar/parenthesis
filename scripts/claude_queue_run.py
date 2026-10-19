@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Local Claude queue runner (issue #94). The owner starts it on their own machine; nothing is scheduled.
+"""Local Claude queue runner (issue #94). Runs on the owner's own machine, started by hand or every hour by a
+Windows scheduled task (owner decision, October 19, 2026; scripts/claude_queue_schedule.ps1).
 
 It runs one owner-approved coding issue with Claude Code, signed in with the owner's Claude subscription (never an
 API key), and opens a draft PR into the active release branch. It never merges, deploys, changes labels or changes
@@ -8,6 +9,7 @@ the project board. Every step fails closed. Runbook: docs/runbooks/claude-local-
   python scripts/claude_queue_run.py --plan            # select and verify only; changes nothing
   python scripts/claude_queue_run.py                   # interactive Claude session for the top eligible issue
   python scripts/claude_queue_run.py --issue 72 --mode headless
+  pythonw scripts/claude_queue_run.py --scheduled      # what the scheduled task runs: headless, quiet when idle
 """
 import argparse
 import datetime
@@ -68,7 +70,57 @@ class Stop(Exception):
     """Stops the run (fail closed). The message tells the owner what happened and what to do."""
 
 
+class Idle(Exception):
+    """Nothing to do right now (no approved issue, the weekly limit, another run). Not a failure."""
+
+
+# Set by --scheduled on Windows so git, dotnet, npm and Claude never open console windows on the owner's screen.
+CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+_creationflags = 0
+
 # ---------- Pure helpers (unit tested) ----------
+
+
+def handled_issue_numbers(branch_names):
+    """Issues that already have a queue branch (local, pushed, or the head of any PR, merged or not).
+
+    Merging into a release branch doesn't close the issue, so without this an hourly run would redo it.
+    """
+    numbers = set()
+    for name in branch_names:
+        match = re.match(r"^(?:refs/heads/)?(?:origin/)?(?:feature|bugfix)/(\d+)-", name.strip())
+        if match:
+            numbers.add(int(match.group(1)))
+    return numbers
+
+
+def process_alive(pid):
+    """Whether a process is still running. On Windows os.kill(pid, 0) would terminate it, so ask the OS instead."""
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        try:
+            code = ctypes.c_ulong()
+            return bool(kernel32.GetExitCodeProcess(handle, ctypes.byref(code))) and code.value == 259  # STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def should_notify(message, last_message):
+    """Scheduled failures notify once, not every hour, until something different happens."""
+    return message.strip() != (last_message or "").strip()
 
 def redact(text):
     for pattern, replacement in _REDACT:
@@ -256,8 +308,10 @@ class Runner:
         try:
             result = subprocess.run(cmd, cwd=cwd or self.repo_root, env=env, timeout=timeout, text=True,
                                     encoding="utf-8", errors="replace",
+                                    stdin=subprocess.DEVNULL if capture else None,
                                     stdout=subprocess.PIPE if capture else None,
-                                    stderr=subprocess.STDOUT if capture else None)
+                                    stderr=subprocess.STDOUT if capture else None,
+                                    creationflags=_creationflags)
         except subprocess.TimeoutExpired:
             raise Stop(f"`{Path(cmd[0]).name} {cmd[1] if len(cmd) > 1 else ''}` timed out") from None
         if capture and result.stdout:
@@ -277,20 +331,36 @@ class Runner:
 
     # ----- Gates -----
 
-    def select_and_verify(self):
-        """Selection, approval and runner identity. Returns the verified issue."""
+    def handled_issues(self):
+        """Issue numbers with a queue branch already: local, on origin, or the head of any PR (fails closed)."""
+        names = self.git("for-each-ref", "--format=%(refname:short)", "refs/heads").splitlines()
+        names += [line.split("\t")[-1] for line in self.git("ls-remote", "--heads", "origin").splitlines()]
+        prs = self.run(["gh", "pr", "list", "--state", "all", "--limit", "1000", "--json", "headRefName",
+                        "-q", ".[].headRefName"])
+        names += prs.stdout.splitlines()
+        return handled_issue_numbers(names)
+
+    def select_and_verify(self, number=None):
+        """Selection, approval and runner identity. Returns the verified issue.
+
+        `number` re-checks one issue (before pushing); otherwise --issue, or the top of the queue. Without --issue,
+        issues that already have a queue branch or PR are skipped, so a scheduled run never repeats one.
+        """
         issues = selector.fetch_open_issues(self.token, self.owner, self.repo)
         queue, excluded, _ = selector.eligible(issues, ACTIVE_MILESTONE, PROJECT_NUMBER)
         numbers = [q["number"] for q in queue]
-        if self.args.issue is not None:
-            if self.args.issue not in numbers:
-                raise Stop(f"#{self.args.issue} isn't eligible (Project #{PROJECT_NUMBER}, {ACTIVE_MILESTONE}, Ready For "
+        number = number if number is not None else self.args.issue
+        if number is not None:
+            if number not in numbers:
+                raise Stop(f"#{number} isn't eligible (Project #{PROJECT_NUMBER}, {ACTIVE_MILESTONE}, Ready For "
                            f"Development, both queue labels, one priority, not blocked). Exclusions: {excluded}")
-            number = self.args.issue
-        elif numbers:
-            number = numbers[0]
         else:
-            raise Stop(f"No eligible issue in {ACTIVE_MILESTONE}. Exclusions: {excluded}")
+            handled = self.handled_issues()
+            waiting = [n for n in numbers if n not in handled]
+            if not waiting:
+                skipped = f"; already handled: {sorted(set(numbers) & handled)}" if numbers else ""
+                raise Idle(f"No eligible issue waiting in {ACTIVE_MILESTONE}{skipped}. Exclusions: {excluded}")
+            number = waiting[0]
         repository = approval.fetch_issue(self.token, self.owner, self.repo, number)
         try:
             issue = approval.verify(repository)
@@ -333,6 +403,8 @@ class Runner:
         used, limit = self.weekly_usage()
         self.log(f"Development PRs this week: {used} of {limit}")
         at_limit = used >= limit
+        if at_limit and self.args.scheduled:
+            raise Idle(f"The weekly PR limit is reached; #{issue['number']} waits for Monday's reset.")
         if at_limit and not self.args.commit_only:
             raise Stop("The weekly PR limit is reached. Run again next week, or use --commit-only to work and commit "
                        "without opening a PR.")
@@ -399,7 +471,7 @@ class Runner:
             return
 
         # Check everything again just before anything leaves this machine.
-        again = self.select_and_verify()
+        again = self.select_and_verify(issue["number"])
         if again["number"] != issue["number"]:
             raise Stop("The issue's approval or eligibility changed during the run; nothing was pushed")
         used, limit = self.weekly_usage()
@@ -432,11 +504,55 @@ class Runner:
                         "--title", title, "--body-file", str(body)], cwd=worktree).stdout.strip().splitlines()[-1]
         self.log(f"Draft PR opened: {url}")
         self.log(f"When you're done with it: git worktree remove {worktree}")
+        self.notify(f"Claude queue opened a draft PR for #{issue['number']} ({issue['title']}): {url}\n"
+                    f"All checks passed locally. It needs your review before it's marked ready.", dedupe=False)
+
+    # ----- Scheduled-run notices -----
+
+    def notify(self, message, dedupe=True):
+        """Scheduled runs only: one Discord line. Never raises; a failed notice is logged, not fatal."""
+        if not self.args.scheduled:
+            return
+        last_path = self.state_dir / "last-notice.txt"
+        try:
+            last = last_path.read_text(encoding="utf-8") if last_path.exists() else ""
+            if dedupe and not should_notify(message, last):
+                self.log("Same problem as the last notice; not sent again.")
+                return
+            webhook = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+            if not webhook:
+                self.log("DISCORD_WEBHOOK_URL isn't set, so no Discord notice was sent.")
+                return
+            note = self.state_dir / "notice.txt"
+            note.write_text(redact(message) + "\n", encoding="utf-8")
+            env = dict(os.environ, DISCORD_WEBHOOK_URL=webhook)
+            sent = self.run(["node", ".github/scripts/dev-workflow.mjs", "send", str(note)], env=env, check=False)
+            if sent.returncode == 0:
+                last_path.write_text(message if dedupe else "", encoding="utf-8")
+                self.log("Discord notice sent.")
+            else:
+                self.log("The Discord notice failed; see the output above.")
+        except (OSError, Stop) as exc:
+            self.log(f"The Discord notice failed: {exc}")
+
+    def lock_is_stale(self):
+        """A lock left by a run that crashed or was killed: its process is gone."""
+        try:
+            pid = int(self.lock_path.read_text(encoding="utf-8").strip())
+        except (OSError, ValueError):
+            return False  # unreadable or being written: treat as held
+        return not process_alive(pid)
 
     def locked_main(self):
         try:
             fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError:
+            if self.args.scheduled and self.lock_is_stale():
+                self.log(f"Removed a stale lock from a run that is no longer running ({self.lock_path}).")
+                self.lock_path.unlink(missing_ok=True)
+                return self.locked_main()
+            if self.args.scheduled:
+                raise Idle("Another queue run is in progress.") from None
             raise Stop(f"Another queue run is in progress (or crashed). If none is running, delete {self.lock_path}") from None
         try:
             os.write(fd, str(os.getpid()).encode())
@@ -449,31 +565,80 @@ class Runner:
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Run one owner-approved issue with local Claude Code (#94).")
     parser.add_argument("--issue", type=int, help="issue number (must be eligible and approved); default: top of the queue")
-    parser.add_argument("--mode", choices=("interactive", "headless"), default="interactive")
+    parser.add_argument("--mode", choices=("interactive", "headless"), help="default: interactive")
     parser.add_argument("--kind", choices=("feature", "bugfix"), default="feature")
     parser.add_argument("--plan", action="store_true", help="select and verify only; change nothing")
     parser.add_argument("--commit-only", action="store_true", help="at the weekly PR limit: commit locally, no push or PR")
     parser.add_argument("--timeout-minutes", type=int, default=60, help="headless mode only")
-    return parser.parse_args(argv)
+    parser.add_argument("--scheduled", action="store_true",
+                        help="for the scheduled task: headless, top of the queue, quiet when idle, Discord on outcomes")
+    args = parser.parse_args(argv)
+    if args.scheduled:
+        if args.issue is not None or args.commit_only or args.mode == "interactive":
+            parser.error("--scheduled always takes the top of the queue, headless, and never uses --commit-only")
+        args.mode = "headless"
+    args.mode = args.mode or "interactive"
+    return args
+
+
+REFRESHED_ENV = "CLAUDE_QUEUE_REFRESHED"
+
+
+def refresh_and_rerun(argv):
+    """Scheduled runs: update the dedicated queue checkout to the active release, then run that copy of the runner,
+    so merged runner changes apply at once. Only a clean, detached checkout is touched; never the owner's own."""
+    root = Path(__file__).resolve().parents[1]
+    git = shutil.which("git")
+    if not git:
+        raise Stop("`git` isn't installed or isn't on PATH")
+
+    def g(*a):
+        return subprocess.run([git, "-C", str(root), *a], capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                              creationflags=_creationflags)
+
+    if g("symbolic-ref", "-q", "HEAD").returncode == 0 or g("status", "--porcelain", "--untracked-files=no").stdout.strip():
+        raise Stop(f"Scheduled runs need a dedicated, clean checkout with a detached HEAD ({root} isn't one). "
+                   "Run scripts/claude_queue_schedule.ps1 to set it up.")
+    if g("fetch", "-q", "origin", ACTIVE_RELEASE).returncode or \
+            g("checkout", "-q", "--detach", f"origin/{ACTIVE_RELEASE}").returncode:
+        raise Stop(f"Couldn't update the queue checkout to origin/{ACTIVE_RELEASE}")
+    env = dict(os.environ, **{REFRESHED_ENV: "1"})
+    return subprocess.run([sys.executable, str(root / "scripts" / "claude_queue_run.py"), *argv], env=env,
+                          stdin=subprocess.DEVNULL, creationflags=_creationflags).returncode
 
 
 def main(argv=None):
+    global _creationflags
+    sys.dont_write_bytecode = True  # keep the queue checkout clean
     for stream in (sys.stdout, sys.stderr):  # Windows consoles otherwise mangle "M3 — Calendar"
-        if hasattr(stream, "reconfigure"):
+        if stream is not None and hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
+    argv = list(sys.argv[1:] if argv is None else argv)
     args = parse_args(argv)
+    if args.scheduled:
+        _creationflags = CREATE_NO_WINDOW
     try:
         runner = Runner(args)
     except Stop as exc:
         print(f"Stopped: {exc}", file=sys.stderr)
         return 1
     try:
+        if args.scheduled and not os.environ.get(REFRESHED_ENV):
+            return refresh_and_rerun(argv)
         runner.locked_main()
+    except Idle as exc:
+        if args.scheduled:  # an idle hourly check leaves no log behind
+            runner.log_path.unlink(missing_ok=True)
+        else:
+            runner.log(f"Nothing to do: {exc}")
+        return 0
     except Stop as exc:
         runner.log(f"Stopped: {exc}")
+        runner.notify(f"Claude queue stopped: {exc}\nLog: {runner.log_path}")
         return 1
     except (OSError, ValueError, KeyError, RuntimeError, json.JSONDecodeError) as exc:
         runner.log(f"Stopped (unexpected error, failing closed): {type(exc).__name__}: {exc}")
+        runner.notify(f"Claude queue stopped (unexpected error): {type(exc).__name__}: {exc}\nLog: {runner.log_path}")
         return 1
     return 0
 
