@@ -110,7 +110,7 @@ addresses with commas; an invited co-parent must be on the list too. Production 
 up.
 
 ```bash
-az containerapp update -g $RG -n ca-parenthesis-development \
+az containerapp update -g rg-parenthesis-dev -n ca-parenthesis-dev \
   --set-env-vars Identity__SignUp__InviteOnly=true "Identity__SignUp__AllowedEmails=tester1@example.com,tester2@example.com"
 ```
 
