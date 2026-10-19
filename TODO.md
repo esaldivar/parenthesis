@@ -24,8 +24,9 @@ that points back here.
     fix PR into the active release branch → the next biweekly release window (Release Tuesday was replaced). The
     workflows start running once they're on `main` (the next release). Then check the first automatic Sonar Sunday
     issue.
-  - [ ] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
-    with the reason "required so keyboard users can scroll the hours".
+  - [x] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
+    with the reason "required so keyboard users can scroll the hours" (accepted, with the WCAG 2.1.1 comment,
+    October 19, 2026).
   - [ ] Add the quality-gate badge to the README.
   - [ ] **Release security gate** (requested October 18, 2026): `release-gate` job in `sonar.yml`, policy and
     troubleshooting in `docs/runbooks/sonar-release-gate.md`.
@@ -241,8 +242,12 @@ that points back here.
     production stays open (October 19, 2026).
   - [ ] **Owner:** when the development site exists, set the tester list (Azure runbook, "Development only:
     invite-only sign-up"). Invited co-parents must be on it too.
-  - [ ] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
-    reachable in the app.
+  - [x] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
+    reachable in the app (October 19, 2026). Nothing is: the calendar page is an honest empty state, the dashboard
+    shows "not available yet" (its sample data only in development builds), Quick Add is disabled with a note, the
+    approvals inbox shows child requests only, the kid space has no calendar, and Swagger is development-only. The
+    calendar API itself stays on (**owner decision**, October 19): it's signed-in, family-scoped and tested, sends no
+    email, and v0.3.0 needs it; only a parent calling it by hand could reach it.
   - [ ] Watch the first runs: the first release-window issue (Monday, October 26 is the first release-week Monday,
     but scheduled runs need this on `main`, so run it by hand until then), the first development deployment and
     the first production deployment and rollback drill.
