@@ -284,6 +284,13 @@ that points back here.
     wait for the Azure setup.
   - [ ] **Owner:** Azure account and both environments (runbook steps 1–3), then `DEPLOY_ENABLED` = `true` and the
     `parenthesis-api` package made public.
+  - [ ] **Owner:** people and roles (runbook step 3a, owner request October 19, 2026): Entra groups
+    `parenthesis-dev-contributors` (Contributor on dev) and `parenthesis-prod-readers` (read-only on production),
+    an everyday account in both, and the Owner account kept for emergencies.
+  - [ ] **Owner:** Application Insights prep per environment (runbook step 2): ingestion daily cap and the
+    `appinsights` Key Vault secret.
+  - [ ] Wire up Application Insights in the API (owner plans this soon): read `APPLICATIONINSIGHTS_CONNECTION_STRING`
+    from `secretref:appinsights`, no personal data in telemetry, then add the app setting in each environment.
   - [x] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
     (application change in Identity, v0.2.0). `Identity:SignUp:InviteOnly` and `AllowedEmails`; off by default, so
     production stays open (October 19, 2026).
