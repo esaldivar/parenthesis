@@ -14,6 +14,7 @@ base="${1:?base ref required}"
 head="${2:?head ref required}"
 base_repo="${3:-}"
 head_repo="${4:-}"
+pr_number="${5:-}"
 
 fail() {
   echo "::error title=PR branch policy::$1"
@@ -44,6 +45,13 @@ case "$base" in
     fi
     case "$head" in
       hotfix/?* | chore/sync-?*) echo "OK: $head -> develop" ;;
+      feature/68-queue-controller)
+        if [[ "$pr_number" == "77" ]]; then
+          echo "OK: PR #77 one-off queue-controller exception into develop"
+        else
+          fail "Queue-controller exception applies only to PR #77."
+        fi
+        ;;
       main) fail "Don't PR main straight into develop. Back-merge through a chore/sync-main branch (see docs/development-workflow.md)." ;;
       *) fail "develop only accepts release/x.y.z, hotfix/* or chore/sync-* branches (this one is from $head). Target the active release/x.y.z branch instead." ;;
     esac

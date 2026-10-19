@@ -38,4 +38,5 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
           BASE_REPO: ${{ github.repository }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        run: bash .github/scripts/check-pr-branch-policy.sh "$BASE_REF" "$HEAD_REF" "$BASE_REPO" "$HEAD_REPO"
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash .github/scripts/check-pr-branch-policy.sh "$BASE_REF" "$HEAD_REF" "$BASE_REPO" "$HEAD_REPO" "$PR_NUMBER"
