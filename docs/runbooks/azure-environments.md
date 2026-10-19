@@ -4,7 +4,7 @@ Sets up the **development** and **production** environments that `.github/workfl
 GitHub settings the workflow needs. The rules are in [the development workflow](../development-workflow.md). Until
 step 6 is done, the deploy workflow does nothing.
 
-Status (October 19, 2026): GitHub settings (steps 4 and 5) **done**, except the environment variables. Azure (steps 1–3, 3a, 6) **not started**; the owner starts with the development environment.
+Status (October 19, 2026): **development is set up** (steps 1–3, 3a for development, 4 and 6; `SUFFIX=15465`). Production (steps 2–3 with `ENV=prod`, its GitHub variables, and the production readers' role assignments) is still to do before the first production release window (October 30, 2026).
 
 Everything below is done by the owner, once. Commands use the [Azure CLI](https://learn.microsoft.com/cli/azure/)
 (`az`), which also runs in the browser through Azure Cloud Shell. Never paste secrets, passwords or connection
@@ -27,91 +27,111 @@ before creating anything.
 Run this once with `ENV=dev` and once with `ENV=prod`. Pick a region close to the families (the example uses
 `centralus`). Names that must be globally unique get a short random suffix.
 
+**Paste one line at a time.** In Azure Cloud Shell, multi-line pastes broke (October 19, 2026), so every command
+below is a single line. Cloud Shell also times out after a while and **wipes your variables**: write down `SUFFIX`
+the moment you pick it, and if the shell restarts, set the variables again (the first block) before carrying on.
+
+Development (October 19, 2026): `ENV=dev`, `LOC=centralus`, `SUFFIX=15465`.
+
 ```bash
 az login
-ENV=dev                      # then repeat with ENV=prod
+ENV=dev
 LOC=centralus
-SUFFIX=$RANDOM
+SUFFIX=$RANDOM && echo "Write this down: SUFFIX=$SUFFIX"
 RG=rg-parenthesis-$ENV
-az group create -n $RG -l $LOC
-
-# Logs and monitoring
-az monitor log-analytics workspace create -g $RG -n log-parenthesis-$ENV -l $LOC
-az monitor app-insights component create -g $RG -a appi-parenthesis-$ENV -l $LOC \
-  --workspace log-parenthesis-$ENV
-
-# Container Apps environment (consumption plan, scales to zero)
-az containerapp env create -g $RG -n cae-parenthesis-$ENV -l $LOC \
-  --logs-workspace-id "$(az monitor log-analytics workspace show -g $RG -n log-parenthesis-$ENV --query customerId -o tsv)" \
-  --logs-workspace-key "$(az monitor log-analytics workspace get-shared-keys -g $RG -n log-parenthesis-$ENV --query primarySharedKey -o tsv)"
-
-# PostgreSQL 17, smallest tier, 7-day point-in-time backups. You'll be asked for an admin password: store it only in
-# Key Vault (below).
-az postgres flexible-server create -g $RG -n psql-parenthesis-$ENV-$SUFFIX -l $LOC \
-  --tier Burstable --sku-name Standard_B1ms --storage-size 32 --version 17 \
-  --admin-user parenthesisadmin --public-access 0.0.0.0 --backup-retention 7
-az postgres flexible-server db create -g $RG -s psql-parenthesis-$ENV-$SUFFIX -d coparent
-
-# Secrets
-az keyvault create -g $RG -n kv-parenthesis-$ENV-$SUFFIX -l $LOC --enable-rbac-authorization true
-
-# Blob storage (for uploads, when Milestone 5 needs it)
-az storage account create -g $RG -n stparenthesis$ENV$SUFFIX -l $LOC --sku Standard_LRS \
-  --allow-blob-public-access false --min-tls-version TLS1_2
+PG=psql-parenthesis-$ENV-$SUFFIX
+KV=kv-parenthesis-$ENV-$SUFFIX
 ```
 
-`--public-access 0.0.0.0` allows only Azure services (including Container Apps) to reach the database. It does not
-open it to the internet.
+After a Cloud Shell restart, set the same variables with the recorded suffix instead of `$RANDOM`
+(for development: `ENV=dev; LOC=centralus; SUFFIX=15465; RG=rg-parenthesis-dev; PG=psql-parenthesis-dev-15465; KV=kv-parenthesis-dev-15465`).
+
+### Register the resource providers (new subscriptions only)
+A new subscription hasn't registered these services yet, and creating them fails until it has. Once per
+subscription; each takes a minute or two:
+
+```bash
+az provider register --namespace Microsoft.DBforPostgreSQL --wait
+az provider register --namespace Microsoft.KeyVault --wait
+az provider register --namespace Microsoft.Storage --wait
+```
+
+If a later command says another namespace "is not registered", register it the same way.
+
+### Resources
+
+```bash
+az group create -n $RG -l $LOC
+az monitor log-analytics workspace create -g $RG -n log-parenthesis-$ENV -l $LOC
+az monitor app-insights component create -g $RG -a appi-parenthesis-$ENV -l $LOC --workspace log-parenthesis-$ENV
+az containerapp env create -g $RG -n cae-parenthesis-$ENV -l $LOC --logs-workspace-id "$(az monitor log-analytics workspace show -g $RG -n log-parenthesis-$ENV --query customerId -o tsv)" --logs-workspace-key "$(az monitor log-analytics workspace get-shared-keys -g $RG -n log-parenthesis-$ENV --query primarySharedKey -o tsv)"
+az postgres flexible-server create -g $RG -n $PG -l $LOC --tier Burstable --sku-name Standard_B1ms --storage-size 32 --version 17 --admin-user parenthesisadmin --public-access 0.0.0.0 --backup-retention 7
+az postgres flexible-server db create -g $RG --server-name $PG --name coparent
+az keyvault create -g $RG -n $KV -l $LOC --enable-rbac-authorization true
+az storage account create -g $RG -n stparenthesis$ENV$SUFFIX -l $LOC --sku Standard_LRS --allow-blob-public-access false --min-tls-version TLS1_2
+```
+
+- The container app environment uses the consumption plan, which scales to zero.
+- PostgreSQL 17 on the smallest tier keeps 7 days of point-in-time backups. You'll be asked for an admin password:
+  keep it only in Key Vault (below), never in chat or files.
+- `--public-access 0.0.0.0` lets only Azure services (including Container Apps) reach the database. It does not open
+  it to the internet.
+- `db create` takes `--server-name` and `--name` in the current CLI (the old `-s`/`-d` form failed).
+- The storage account is for uploads when Milestone 5 needs it.
 
 ### The app and its migration job
 The first deployment uses a placeholder image; the workflow replaces it.
 
 ```bash
-az containerapp create -g $RG -n ca-parenthesis-$ENV --environment cae-parenthesis-$ENV \
-  --image mcr.microsoft.com/k8se/quickstart:latest --target-port 8080 --ingress external \
-  --min-replicas 0 --max-replicas 2 --system-assigned
-az containerapp job create -g $RG -n job-parenthesis-migrate-$ENV --environment cae-parenthesis-$ENV \
-  --image mcr.microsoft.com/k8se/quickstart:latest --trigger-type Manual \
-  --replica-timeout 600 --replica-retry-limit 0 --args migrate --system-assigned
+az containerapp create -g $RG -n ca-parenthesis-$ENV --environment cae-parenthesis-$ENV --image mcr.microsoft.com/k8se/quickstart:latest --target-port 8080 --ingress external --min-replicas 0 --max-replicas 2 --system-assigned
+az containerapp job create -g $RG -n job-parenthesis-migrate-$ENV --environment cae-parenthesis-$ENV --image mcr.microsoft.com/k8se/quickstart:latest --trigger-type Manual --replica-timeout 600 --replica-retry-limit 0 --args migrate --system-assigned
 ```
 
 The migration job runs the API image with the `migrate` argument (`dotnet CoParent.Api.dll migrate`), which applies
 every module's migrations and exits.
 
-### App settings
-Store the connection string in Key Vault, give both identities read access, and point the app and the job at it.
+### Key Vault secrets
+The vault uses Azure RBAC, so even the subscription Owner can't write secrets until it has a data role on the vault.
+Grant yourself **Key Vault Secrets Officer** first (it can take a minute to apply), then set the secrets:
 
 ```bash
-KV=kv-parenthesis-$ENV-$SUFFIX
-PG=psql-parenthesis-$ENV-$SUFFIX
-az role assignment create --assignee "$(az ad signed-in-user show --query id -o tsv)" \
-  --role "Key Vault Secrets Officer" --scope "$(az keyvault show -n $KV --query id -o tsv)"
-az keyvault secret set --vault-name $KV -n postgres \
-  --value "Host=$PG.postgres.database.azure.com;Database=coparent;Username=parenthesisadmin;Password=<the admin password>;Ssl Mode=Require"
-
-for target in "containerapp ca-parenthesis-$ENV" "containerapp job job-parenthesis-migrate-$ENV"; do
-  principal="$(az $target show -g $RG --query identity.principalId -o tsv)"
-  az role assignment create --assignee "$principal" --role "Key Vault Secrets User" \
-    --scope "$(az keyvault show -n $KV --query id -o tsv)"
-  az $target secret set -g $RG \
-    --secrets "postgres=keyvaultref:$(az keyvault secret show --vault-name $KV -n postgres --query id -o tsv),identityref:system"
-done
-
-URL="https://$(az containerapp show -g $RG -n ca-parenthesis-$ENV --query properties.configuration.ingress.fqdn -o tsv)"
-az containerapp update -g $RG -n ca-parenthesis-$ENV \
-  --set-env-vars ConnectionStrings__Postgres=secretref:postgres App__PublicBaseUrl=$URL ASPNETCORE_ENVIRONMENT=Production
-az containerapp job update -g $RG -n job-parenthesis-migrate-$ENV \
-  --set-env-vars ConnectionStrings__Postgres=secretref:postgres
-echo "APP_URL for GitHub: $URL"
+az role assignment create --assignee "$(az ad signed-in-user show --query id -o tsv)" --role "Key Vault Secrets Officer" --scope "$(az keyvault show -n $KV --query id -o tsv)"
+az keyvault secret set --vault-name $KV -n postgres --value "Host=$PG.postgres.database.azure.com;Database=coparent;Username=parenthesisadmin;Password=<the admin password>;Ssl Mode=Require"
+az keyvault secret set --vault-name $KV -n appinsights --value "$(az monitor app-insights component show -g $RG -a appi-parenthesis-$ENV --query connectionString -o tsv)"
 ```
+
+Type the admin password into the `postgres` command yourself; don't save it anywhere else. Cloud Shell keeps command
+history, so clear it afterwards (`history -c`).
+
+### Wire the secrets into the app and the job
+Each has its own identity. Give both read access to the vault, then add the `postgres` secret as a Key Vault
+reference (`keyvaultref`), so the value never sits in the container app's configuration:
+
+```bash
+KV_ID="$(az keyvault show -n $KV --query id -o tsv)"
+PG_SECRET="$(az keyvault secret show --vault-name $KV -n postgres --query id -o tsv)"
+az role assignment create --assignee "$(az containerapp show -g $RG -n ca-parenthesis-$ENV --query identity.principalId -o tsv)" --role "Key Vault Secrets User" --scope "$KV_ID"
+az role assignment create --assignee "$(az containerapp job show -g $RG -n job-parenthesis-migrate-$ENV --query identity.principalId -o tsv)" --role "Key Vault Secrets User" --scope "$KV_ID"
+az containerapp secret set -g $RG -n ca-parenthesis-$ENV --secrets "postgres=keyvaultref:$PG_SECRET,identityref:system"
+az containerapp job secret set -g $RG -n job-parenthesis-migrate-$ENV --secrets "postgres=keyvaultref:$PG_SECRET,identityref:system"
+```
+
+### Environment variables
+
+```bash
+URL="https://$(az containerapp show -g $RG -n ca-parenthesis-$ENV --query properties.configuration.ingress.fqdn -o tsv)" && echo "APP_URL for GitHub: $URL"
+az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars ConnectionStrings__Postgres=secretref:postgres App__PublicBaseUrl=$URL ASPNETCORE_ENVIRONMENT=Production
+az containerapp job update -g $RG -n job-parenthesis-migrate-$ENV --set-env-vars ConnectionStrings__Postgres=secretref:postgres
+```
+
+Development's `APP_URL` is `https://ca-parenthesis-dev.calmfield-0e9f47dd.centralus.azurecontainerapps.io`.
 
 **Development only: invite-only sign-up.** Only the testers you list can create an account there. Separate the
 addresses with commas; an invited co-parent must be on the list too. Production leaves these unset, so anyone can sign
 up.
 
 ```bash
-az containerapp update -g rg-parenthesis-dev -n ca-parenthesis-dev \
-  --set-env-vars Identity__SignUp__InviteOnly=true "Identity__SignUp__AllowedEmails=tester1@example.com,tester2@example.com"
+az containerapp update -g rg-parenthesis-dev -n ca-parenthesis-dev --set-env-vars Identity__SignUp__InviteOnly=true "Identity__SignUp__AllowedEmails=tester1@example.com,tester2@example.com"
 ```
 
 To add or remove a tester later, run the same command with the full new list. Anyone else who tries to register sees
@@ -123,16 +143,12 @@ Services), a custom domain with HTTPS, and the data-protection key ring (S-01).
 **Development holds synthetic data only.** Never copy production data into it.
 
 ### Application Insights (prepared now, wired up later)
-Step 2 already creates `appi-parenthesis-$ENV` on the environment's Log Analytics workspace. The app doesn't send
-telemetry yet; that's planned work. Prepare it now so it's ready:
+`appi-parenthesis-$ENV` (created above) sits on the environment's Log Analytics workspace, and its connection string
+is already in Key Vault as `appinsights`. The app doesn't send telemetry yet; that's planned work. Cap log ingestion
+so telemetry can't run up the bill (GB per day; 0.5 is plenty for one environment):
 
 ```bash
-# Cap log ingestion so telemetry can't run up the bill (GB per day; 0.5 is plenty for one environment).
 az monitor log-analytics workspace update -g $RG -n log-parenthesis-$ENV --quota 0.5
-
-# Keep the connection string in Key Vault, like the database's, for when the app starts using it.
-az keyvault secret set --vault-name $KV -n appinsights \
-  --value "$(az monitor app-insights component show -g $RG -a appi-parenthesis-$ENV --query connectionString -o tsv)"
 ```
 
 When the app is wired up, it reads `APPLICATIONINSIGHTS_CONNECTION_STRING` from a `secretref:appinsights` app setting.
@@ -146,12 +162,7 @@ One identity per environment, each allowed to change only its own resource group
 APP_ID="$(az ad app create --display-name github-parenthesis-$ENV --query appId -o tsv)"
 az ad sp create --id $APP_ID
 GH_ENV=development            # GitHub environment name: "development" for dev, "production" for prod
-az ad app federated-credential create --id $APP_ID --parameters "{
-  \"name\": \"github-$GH_ENV\",
-  \"issuer\": \"https://token.actions.githubusercontent.com\",
-  \"subject\": \"repo:esaldivar/parenthesis:environment:$GH_ENV\",
-  \"audiences\": [\"api://AzureADTokenExchange\"]
-}"
+az ad app federated-credential create --id $APP_ID --parameters "{\"name\": \"github-$GH_ENV\", \"issuer\": \"https://token.actions.githubusercontent.com\", \"subject\": \"repo:esaldivar/parenthesis:environment:$GH_ENV\", \"audiences\": [\"api://AzureADTokenExchange\"]}"
 az role assignment create --assignee $APP_ID --role Contributor --scope "$(az group show -n $RG --query id -o tsv)"
 echo "AZURE_CLIENT_ID=$APP_ID"
 echo "AZURE_TENANT_ID=$(az account show --query tenantId -o tsv)"
@@ -183,16 +194,11 @@ group_id() { az ad group show -g "$1" --query id -o tsv; }
 
 # After ENV=dev
 DEV_KV=kv-parenthesis-dev-<suffix>
-az role assignment create --assignee-object-id "$(group_id parenthesis-dev-contributors)" --assignee-principal-type Group \
-  --role Contributor --scope "$(az group show -n rg-parenthesis-dev --query id -o tsv)"
-az role assignment create --assignee-object-id "$(group_id parenthesis-dev-contributors)" --assignee-principal-type Group \
-  --role "Key Vault Secrets Officer" --scope "$(az keyvault show -n $DEV_KV --query id -o tsv)"
+az role assignment create --assignee-object-id "$(group_id parenthesis-dev-contributors)" --assignee-principal-type Group --role Contributor --scope "$(az group show -n rg-parenthesis-dev --query id -o tsv)"
+az role assignment create --assignee-object-id "$(group_id parenthesis-dev-contributors)" --assignee-principal-type Group --role "Key Vault Secrets Officer" --scope "$(az keyvault show -n $DEV_KV --query id -o tsv)"
 
 # After ENV=prod
-for role in Reader "Monitoring Reader" "Log Analytics Reader"; do
-  az role assignment create --assignee-object-id "$(group_id parenthesis-prod-readers)" --assignee-principal-type Group \
-    --role "$role" --scope "$(az group show -n rg-parenthesis-prod --query id -o tsv)"
-done
+for role in Reader "Monitoring Reader" "Log Analytics Reader"; do az role assignment create --assignee-object-id "$(group_id parenthesis-prod-readers)" --assignee-principal-type Group --role "$role" --scope "$(az group show -n rg-parenthesis-prod --query id -o tsv)"; done
 
 # Add a person (the owner's everyday account, or a collaborator)
 az ad group member add -g parenthesis-dev-contributors --member-id "<user object id>"
