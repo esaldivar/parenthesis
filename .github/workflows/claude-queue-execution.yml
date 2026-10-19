@@ -1,0 +1,39 @@
+name: Claude Queue Execution (Preparation Only)
+
+# Deliberately manual and disabled until owner approval and credential setup.
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Approved coding issue number (required for future execution)'
+        required: true
+        type: number
+      dry_run:
+        description: 'Inspection only; execution is not enabled'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: claude-queue-prep-${{ github.event.inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: Guard against unapproved execution
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Confirm preparation-only mode
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" != "true" ]; then
+            echo "::error::Claude execution is not enabled. Owner approval and authentication are required."
+            exit 1
+          fi
+          echo "Preparation-only workflow. No Claude calls, writes, branches, or PRs."
