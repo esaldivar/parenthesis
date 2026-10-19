@@ -75,6 +75,20 @@ def plan_changes(issues, prs_by_issue, last_seen):
     return changes, seen
 
 
+def announcement(moves, limit=20):
+    """One Discord message for every card a run moved: issue, title, old -> new status, and closed at Done."""
+    if not moves:
+        return ""
+    lines = ["Parenthesis board update"]
+    for move in moves[:limit]:
+        title = move["title"] if len(move["title"]) <= 60 else move["title"][:59].rstrip() + "…"
+        lines.append(f"#{move['number']} {title}: {move['from'] or '(no status)'} → {move['to']}"
+                     + (" (issue closed)" if move.get("closed") else ""))
+    if len(moves) > limit:
+        lines.append(f"…and {len(moves) - limit} more (see the run log)")
+    return "\n".join(lines)
+
+
 def describe(changes):
     if not changes:
         return "Board: no status changes."

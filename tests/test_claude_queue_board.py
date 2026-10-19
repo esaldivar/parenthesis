@@ -85,6 +85,31 @@ class PlanTests(unittest.TestCase):
         self.assertIn("#5: (no status) -> Done (and close the issue)", text)
 
 
+class AnnouncementTests(unittest.TestCase):
+    def test_nothing_moved_sends_nothing(self):
+        self.assertEqual(board.announcement([]), "")
+
+    def test_one_message_lists_every_move(self):
+        text = board.announcement([
+            {"number": 98, "title": "[M3] Calendar validation tests", "from": board.READY, "to": board.IN_DEVELOPMENT},
+            {"number": 94, "title": "Local Claude queue", "from": board.AWAITING_DEPLOYMENT, "to": board.DONE,
+             "closed": True},
+            {"number": 7, "title": "No status yet", "from": None, "to": board.CODE_REVIEW}])
+        self.assertEqual(text.splitlines(), [
+            "Parenthesis board update",
+            "#98 [M3] Calendar validation tests: Ready For Development → In Development",
+            "#94 Local Claude queue: Awaiting Deployment → Done (issue closed)",
+            "#7 No status yet: (no status) → Code Review"])
+
+    def test_long_titles_and_release_days_stay_short(self):
+        moves = [{"number": n, "title": "x" * 80, "from": board.AWAITING_DEPLOYMENT, "to": board.DONE, "closed": True}
+                 for n in range(25)]
+        lines = board.announcement(moves, limit=20).splitlines()
+        self.assertEqual(len(lines), 22)
+        self.assertIn("x" * 59 + "…", lines[1])
+        self.assertEqual(lines[-1], "…and 5 more (see the run log)")
+
+
 class FakeGh:
     """Answers the Board's gh calls from canned data and records them."""
 

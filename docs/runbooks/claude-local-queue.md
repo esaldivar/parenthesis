@@ -140,6 +140,9 @@ with "Closes #n" (or Fixes/Resolves) at the start of a line, bullet or sentence 
 - "Follow-up to #94" or "...and close #65 later" don't link an issue; only a closing keyword that starts a line,
   bullet or sentence does.
 - Updates land within the hour (it's the hourly task), and only while your PC is on.
+- Discord gets **one message per scheduled run** listing every card it moved (issue number, title, old → new
+  status, and "issue closed" at Done), including the queue's own moves. Nothing is sent when nothing moved. On a
+  release day expect one longer message as that release's issues reach Done.
 - Preview without changing anything: `python scripts/claude_queue_run.py --board-plan`.
 - If the board can't be updated (for example `gh` lacks the project scope), the run says so once on Discord and
   carries on with the queue; the card catches up on the next run that succeeds.

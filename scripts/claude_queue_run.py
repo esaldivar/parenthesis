@@ -292,6 +292,7 @@ class Runner:
         self.log_path = self.state_dir / f"run-{stamp}.log"
         self.lock_path = self.state_dir / "run.lock"
         self.board_changed = False
+        self.board_moves = []  # announced on Discord in one message at the end of a scheduled run
 
     def log(self, message):
         message = redact(str(message))
@@ -557,6 +558,8 @@ class Runner:
                     b.close_issue(number)
                 self.log(f"Board: moved #{number} to {change['target']}" + (" and closed it" if change["close"] else ""))
                 self.board_changed = True
+                self.board_moves.append({"number": number, "title": issues[number]["title"], "from": change["current"],
+                                         "to": change["target"], "closed": change["close"]})
             except (Stop, RuntimeError, KeyError) as exc:
                 failed.append(number)
                 self.log(f"Board: couldn't move #{number}: {exc}")
@@ -574,16 +577,30 @@ class Runner:
         """The queue's own moves. Never stops the run: the work matters more than the card."""
         try:
             b = self.board()
-            b.set_status(b.open_issues()[number]["item"], status)
+            issue = b.open_issues()[number]
+            if issue["status"] == status:
+                return
+            b.set_status(issue["item"], status)
             self.log(f"Board: moved #{number} to {status}")
+            self.board_moves.append({"number": number, "title": issue["title"], "from": issue["status"], "to": status})
         except (Stop, RuntimeError, KeyError, ValueError) as exc:
             self.log(f"Board: couldn't move #{number} to {status}: {exc}")
             self.notify(f"Claude queue: couldn't move #{number} to {status} on the board: {exc}")
 
     # ----- Scheduled-run notices -----
 
-    def notify(self, message, dedupe=True):
-        """Scheduled runs only: one Discord line. Never raises; a failed notice is logged, not fatal."""
+    def announce_board(self):
+        """Scheduled runs: one Discord message listing every card this run moved (nothing when none moved)."""
+        if self.board_moves:
+            self.notify(board.announcement(self.board_moves), dedupe=False, clear_last=False)
+            self.board_moves = []
+
+    def notify(self, message, dedupe=True, clear_last=True):
+        """Scheduled runs only: one Discord line. Never raises; a failed notice is logged, not fatal.
+
+        dedupe: a problem is sent once until a different one happens. clear_last: after a success notice, the next
+        problem is sent even if it's the same as before. Board updates do neither.
+        """
         if not self.args.scheduled:
             return
         last_path = self.state_dir / "last-notice.txt"
@@ -601,7 +618,8 @@ class Runner:
             env = dict(os.environ, DISCORD_WEBHOOK_URL=webhook)
             sent = self.run(["node", ".github/scripts/dev-workflow.mjs", "send", str(note)], env=env, check=False)
             if sent.returncode == 0:
-                last_path.write_text(message if dedupe else "", encoding="utf-8")
+                if dedupe or clear_last:
+                    last_path.write_text(message if dedupe else "", encoding="utf-8")
                 self.log("Discord notice sent.")
             else:
                 self.log("The Discord notice failed; see the output above.")
@@ -723,7 +741,10 @@ def main(argv=None):
     try:
         if args.scheduled and not os.environ.get(REFRESHED_ENV):
             return refresh_and_rerun(argv)  # the refreshed copy records the outcome
-        runner.locked_main()
+        try:
+            runner.locked_main()
+        finally:
+            runner.announce_board()  # whatever the outcome, say which cards moved
     except Idle as exc:
         if args.scheduled:  # an idle hourly check leaves no log behind (unless it moved cards), only the status line
             if not runner.board_changed:
