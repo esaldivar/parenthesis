@@ -29,28 +29,37 @@ def eligible(issues, milestone, project_number):
     if not milestone or project_number is None:
         raise ValueError("ACTIVE_MILESTONE and PROJECT_NUMBER are required")
     ranked = []
+    excluded = {"state": 0, "milestone": 0, "project": 0, "status": 0, "blocked": 0, "priority": 0}
     for issue in issues:
-        if issue.get("state") != "OPEN" or (issue.get("milestone") or {}).get("title") != milestone:
+        if issue.get("state") != "OPEN":
+            excluded["state"] += 1
+            continue
+        if (issue.get("milestone") or {}).get("title") != milestone:
+            excluded["milestone"] += 1
             continue
         items = [item for item in (issue.get("projectItems") or {}).get("nodes", [])
                  if (item.get("project") or {}).get("number") == project_number]
         if len(items) != 1:
+            excluded["project"] += 1
             continue
         fields = (items[0].get("fieldValues") or {}).get("nodes", [])
         statuses = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Status"]
         if statuses != ["Ready for Development"]:
+            excluded["status"] += 1
             continue
         labels = {x["name"].lower() for x in (issue.get("labels") or {}).get("nodes", [])}
         if labels & {"blocked", "status:blocked"}:
+            excluded["blocked"] += 1
             continue
         project_priorities = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Priority"]
         priority_map = {"P0 - Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
         if len(project_priorities) != 1 or project_priorities[0] not in priority_map:
+            excluded["priority"] += 1
             continue
         ranked.append((priority_map[project_priorities[0]], issue["number"], issue))
     ranked.sort(key=lambda row: (row[0], row[1]))
-    return [{"number": issue["number"], "title": issue["title"], "url": issue["url"],
-             "priority": "P" + str(priority)} for priority, _, issue in ranked]
+    return ([{"number": issue["number"], "title": issue["title"], "url": issue["url"],
+             "priority": "P" + str(priority)} for priority, _, issue in ranked], excluded)
 
 def github_graphql(token, variables):
     payload = json.dumps({"query": QUERY, "variables": variables}).encode()
@@ -78,10 +87,11 @@ def main():
         if not next_cursor or next_cursor == cursor:
             raise RuntimeError("Invalid pagination cursor")
         cursor = next_cursor
-    queue = eligible(issues, milestone, project_number)
+    queue, excluded = eligible(issues, milestone, project_number)
     print(json.dumps({"mode": "read-only", "active_milestone": milestone,
                       "eligible_count": len(queue), "selected": queue[0] if queue else None,
-                      "queue": queue}, indent=2))
+                      "queue": queue, "issues_inspected": len(issues),
+                      "excluded_by_first_failing_filter": excluded}, indent=2))
 
 if __name__ == "__main__":
     try:
