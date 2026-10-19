@@ -44,7 +44,7 @@ def eligible(issues, milestone, project_number):
         if labels & {"blocked", "status:blocked"}:
             continue
         project_priorities = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Priority"]
-        priority_map = {"P0 — Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
+        priority_map = {"P0 - Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
         if len(project_priorities) != 1 or project_priorities[0] not in priority_map:
             continue
         ranked.append((priority_map[project_priorities[0]], issue["number"], issue))
