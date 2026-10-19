@@ -45,7 +45,7 @@ def eligible(issues, milestone, project_number):
             continue
         fields = (items[0].get("fieldValues") or {}).get("nodes", [])
         statuses = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Status"]
-        if statuses != ["Ready for Development"]:
+        if statuses != ["Ready For Development"]:
             # Explain the exact metadata received without weakening the eligibility gate.
             status_diagnostics.append({"issue": issue["number"], "project": project_number,
                 "status_values": statuses,
