@@ -603,43 +603,70 @@ def refresh_and_rerun(argv):
             g("checkout", "-q", "--detach", f"origin/{ACTIVE_RELEASE}").returncode:
         raise Stop(f"Couldn't update the queue checkout to origin/{ACTIVE_RELEASE}")
     env = dict(os.environ, **{REFRESHED_ENV: "1"})
+    # Explicit handles: the scheduled task starts pythonw without usable console handles, and passing those on
+    # fails with "The handle is invalid" (WinError 6).
     return subprocess.run([sys.executable, str(root / "scripts" / "claude_queue_run.py"), *argv], env=env,
-                          stdin=subprocess.DEVNULL, creationflags=_creationflags).returncode
+                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                          creationflags=_creationflags).returncode
+
+
+STATUS_FILE = "last-scheduled-run.txt"
+
+
+def status_line(outcome, detail, now=None):
+    """One line for .git/claude-queue/last-scheduled-run.txt, so even idle hourly runs can be confirmed."""
+    stamp = (now or datetime.datetime.now()).isoformat(timespec="seconds")
+    return f"{stamp} {outcome}" + (f": {redact(detail)}" if detail else "") + "\n"
 
 
 def main(argv=None):
     global _creationflags
     sys.dont_write_bytecode = True  # keep the queue checkout clean
-    for stream in (sys.stdout, sys.stderr):  # Windows consoles otherwise mangle "M3 — Calendar"
-        if stream is not None and hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8", errors="replace")
     argv = list(sys.argv[1:] if argv is None else argv)
     args = parse_args(argv)
     if args.scheduled:
         _creationflags = CREATE_NO_WINDOW
+        # Under the scheduled task there's no console: give Python real streams so writing or flushing them at exit
+        # can't fail (exit code 120). Everything that matters is in the log and the status file.
+        sys.stdout = sys.stderr = open(os.devnull, "w", encoding="utf-8")
+    for stream in (sys.stdout, sys.stderr):  # Windows consoles otherwise mangle "M3 — Calendar"
+        if stream is not None and hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     try:
         runner = Runner(args)
     except Stop as exc:
         print(f"Stopped: {exc}", file=sys.stderr)
         return 1
+
+    def record(outcome, detail=""):
+        if args.scheduled:
+            try:
+                (runner.state_dir / STATUS_FILE).write_text(status_line(outcome, detail), encoding="utf-8")
+            except OSError:
+                pass
+
     try:
         if args.scheduled and not os.environ.get(REFRESHED_ENV):
-            return refresh_and_rerun(argv)
+            return refresh_and_rerun(argv)  # the refreshed copy records the outcome
         runner.locked_main()
     except Idle as exc:
-        if args.scheduled:  # an idle hourly check leaves no log behind
+        if args.scheduled:  # an idle hourly check leaves no log behind, only the status line
             runner.log_path.unlink(missing_ok=True)
+            record("idle", str(exc))
         else:
             runner.log(f"Nothing to do: {exc}")
         return 0
     except Stop as exc:
         runner.log(f"Stopped: {exc}")
         runner.notify(f"Claude queue stopped: {exc}\nLog: {runner.log_path}")
+        record("stopped", f"{exc} (log: {runner.log_path})")
         return 1
     except (OSError, ValueError, KeyError, RuntimeError, json.JSONDecodeError) as exc:
         runner.log(f"Stopped (unexpected error, failing closed): {type(exc).__name__}: {exc}")
         runner.notify(f"Claude queue stopped (unexpected error): {type(exc).__name__}: {exc}\nLog: {runner.log_path}")
+        record("stopped", f"unexpected error: {type(exc).__name__}: {exc} (log: {runner.log_path})")
         return 1
+    record("finished", f"log: {runner.log_path}")
     return 0
 
 
