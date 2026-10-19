@@ -40,6 +40,12 @@ class QueueSelectionTests(unittest.TestCase):
     def test_status_must_match_exactly(self):
         self.assertEqual(self.select([issue(1, status="Ready for Development")]), [])
 
+    def test_in_development_only_when_the_runner_rechecks(self):
+        started = [issue(1, status="In Development")]
+        self.assertEqual(self.select(started), [])
+        queue, _, _ = selector.eligible(started, MILESTONE, PROJECT, ("Ready For Development", "In Development"))
+        self.assertEqual([x["number"] for x in queue], [1])
+
     def test_wrong_project_excluded(self):
         self.assertEqual(self.select([issue(1, project=1)]), [])
 

@@ -178,7 +178,11 @@ that points back here.
     - [x] Fixed: every scheduled run failed under Task Scheduler (exit 120; "The handle is invalid" when the runner
       restarted itself after updating its checkout). Added `.git/claude-queue/last-scheduled-run.txt` so idle runs
       can be confirmed (October 19, 2026).
-    - [ ] After the fix merges, confirm a real hourly run: the task's last result is 0 and the status file updates.
+    - [x] Confirmed a real scheduled run after the fix: task result 0, status file updated (October 19, 2026).
+    - [x] **Board sync** (owner decision, October 19, 2026): the queue keeps Project #2's Status in step with each
+      issue's PRs (In Development, Awaiting PR Approval, Code Review, Awaiting Deployment, Done and closed; Backlog when
+      every PR closed unmerged), for any open issue a PR links with a closing keyword. `scripts/claude_queue_board.py`.
+    - [ ] **Owner:** `gh auth refresh -s project` on the queue PC, so the board sync can write (it's read-only now).
     - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, and a draft PR opened by a
       scheduled run. The Discord failure notice works (sent during the fix, October 19). Record the pilot on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).

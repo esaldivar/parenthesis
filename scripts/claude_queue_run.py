@@ -3,13 +3,14 @@
 Windows scheduled task (owner decision, October 19, 2026; scripts/claude_queue_schedule.ps1).
 
 It runs one owner-approved coding issue with Claude Code, signed in with the owner's Claude subscription (never an
-API key), and opens a draft PR into the active release branch. It never merges, deploys, changes labels or changes
-the project board. Every step fails closed. Runbook: docs/runbooks/claude-local-queue.md.
+API key), and opens a draft PR into the active release branch. It never merges, deploys or changes labels. It keeps
+issue Status on Project #2 in step with the work (claude_queue_board.py). Every step fails closed. Runbook: docs/runbooks/claude-local-queue.md.
 
   python scripts/claude_queue_run.py --plan            # select and verify only; changes nothing
   python scripts/claude_queue_run.py                   # interactive Claude session for the top eligible issue
   python scripts/claude_queue_run.py --issue 72 --mode headless
-  pythonw scripts/claude_queue_run.py --scheduled      # what the scheduled task runs: headless, quiet when idle
+  pythonw scripts/claude_queue_run.py --scheduled      # what the scheduled task runs: board sync, then the queue
+  python scripts/claude_queue_run.py --board-plan      # preview the board sync; changes nothing
 """
 import argparse
 import datetime
@@ -23,6 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import claude_queue_approval as approval  # noqa: E402
+import claude_queue_board as board  # noqa: E402
 import claude_queue_select as selector  # noqa: E402
 
 # Owner decisions of October 19, 2026. Change these when the next release branch is cut.
@@ -289,6 +291,7 @@ class Runner:
         stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         self.log_path = self.state_dir / f"run-{stamp}.log"
         self.lock_path = self.state_dir / "run.lock"
+        self.board_changed = False
 
     def log(self, message):
         message = redact(str(message))
@@ -303,7 +306,7 @@ class Runner:
             raise Stop(f"`{name}` isn't installed or isn't on PATH")
         return path
 
-    def run(self, cmd, cwd=None, env=None, timeout=CHECK_TIMEOUT_SECONDS, check=True, capture=True):
+    def run(self, cmd, cwd=None, env=None, timeout=CHECK_TIMEOUT_SECONDS, check=True, capture=True, log_output=True):
         cmd = [self.exe(cmd[0]), *cmd[1:]]
         try:
             result = subprocess.run(cmd, cwd=cwd or self.repo_root, env=env, timeout=timeout, text=True,
@@ -314,7 +317,7 @@ class Runner:
                                     creationflags=_creationflags)
         except subprocess.TimeoutExpired:
             raise Stop(f"`{Path(cmd[0]).name} {cmd[1] if len(cmd) > 1 else ''}` timed out") from None
-        if capture and result.stdout:
+        if capture and result.stdout and (log_output or result.returncode != 0):
             with open(self.log_path, "a", encoding="utf-8") as fh:
                 fh.write(redact(result.stdout) + "\n")
         if check and result.returncode != 0:
@@ -347,13 +350,17 @@ class Runner:
         issues that already have a queue branch or PR are skipped, so a scheduled run never repeats one.
         """
         issues = selector.fetch_open_issues(self.token, self.owner, self.repo)
-        queue, excluded, _ = selector.eligible(issues, ACTIVE_MILESTONE, PROJECT_NUMBER)
+        # Re-checks (and --issue) also accept In Development: the status this runner sets when a run starts.
+        recheck = number is not None or self.args.issue is not None
+        statuses = (board.READY, board.IN_DEVELOPMENT) if recheck else (board.READY,)
+        queue, excluded, _ = selector.eligible(issues, ACTIVE_MILESTONE, PROJECT_NUMBER, statuses)
         numbers = [q["number"] for q in queue]
         number = number if number is not None else self.args.issue
         if number is not None:
             if number not in numbers:
                 raise Stop(f"#{number} isn't eligible (Project #{PROJECT_NUMBER}, {ACTIVE_MILESTONE}, Ready For "
-                           f"Development, both queue labels, one priority, not blocked). Exclusions: {excluded}")
+                           f"Development or In Development, both queue labels, one priority, not blocked). "
+                           f"Exclusions: {excluded}")
         else:
             handled = self.handled_issues()
             waiting = [n for n in numbers if n not in handled]
@@ -396,6 +403,15 @@ class Runner:
         name = self.run(["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]).stdout.strip()
         self.owner, self.repo = name.split("/", 1)
         self.user_id = json.loads(self.run(["gh", "api", "user"]).stdout)["id"]
+        if self.args.board_plan:
+            self.sync_board(apply=False)
+            return
+        if self.args.scheduled:
+            try:
+                self.sync_board(apply=True)
+            except (Stop, RuntimeError, ValueError, KeyError) as exc:
+                self.log(f"Board sync failed: {exc}")
+                self.notify(f"Claude queue: the board sync failed: {exc}\nLog: {self.log_path}")
         check_auth_status(self.run(["claude", "auth", "status"], check=False).stdout)
 
         issue = self.select_and_verify()
@@ -418,6 +434,7 @@ class Runner:
         worktree = self.repo_root.parent / f"parenthesis-claude-{issue['number']}"
         if worktree.exists():
             raise Stop(f"{worktree} already exists; remove it with `git worktree remove` first")
+        self.move(issue["number"], board.IN_DEVELOPMENT)
         self.git("fetch", "origin", ACTIVE_RELEASE)
         self.git("worktree", "add", "--no-track", "-b", branch, str(worktree), f"origin/{ACTIVE_RELEASE}")
         base = self.git("rev-parse", "HEAD", cwd=worktree).strip()
@@ -503,9 +520,65 @@ class Runner:
         url = self.run(["gh", "pr", "create", "--draft", "--base", ACTIVE_RELEASE, "--head", branch,
                         "--title", title, "--body-file", str(body)], cwd=worktree).stdout.strip().splitlines()[-1]
         self.log(f"Draft PR opened: {url}")
+        self.move(issue["number"], board.AWAITING_APPROVAL)
         self.log(f"When you're done with it: git worktree remove {worktree}")
         self.notify(f"Claude queue opened a draft PR for #{issue['number']} ({issue['title']}): {url}\n"
                     f"All checks passed locally. It needs your review before it's marked ready.", dedupe=False)
+
+    # ----- The project board (claude_queue_board.py) -----
+
+    def board(self):
+        def quiet(cmd):  # PR bodies and GraphQL pages stay out of the log
+            return self.run(cmd, log_output=False)
+        return board.Board(quiet, self.owner, self.repo)
+
+    def sync_board(self, apply):
+        """Moves issues to the Status their PRs call for. With apply=False, only logs what it would change."""
+        b = self.board()
+        self.git("fetch", "-q", "origin", "main")
+
+        def on_main(oid):
+            return self.run(["git", "merge-base", "--is-ancestor", oid, "origin/main"], check=False).returncode == 0
+
+        issues = b.open_issues()
+        state_path = self.state_dir / "board-state.json"
+        last = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        changes, seen = board.plan_changes(issues, b.linked_prs(on_main), last)
+        self.log(board.describe(changes))
+        if not apply:
+            self.log("Board preview only: nothing changed.")
+            return changes
+        failed = []
+        for change in changes:
+            number = change["number"]
+            try:
+                b.set_status(issues[number]["item"], change["target"])
+                if change["close"]:
+                    b.close_issue(number)
+                self.log(f"Board: moved #{number} to {change['target']}" + (" and closed it" if change["close"] else ""))
+                self.board_changed = True
+            except (Stop, RuntimeError, KeyError) as exc:
+                failed.append(number)
+                self.log(f"Board: couldn't move #{number}: {exc}")
+                if str(number) in last:  # try again next time
+                    seen[str(number)] = last[str(number)]
+                else:
+                    seen.pop(str(number), None)
+        state_path.write_text(json.dumps(seen, indent=1, sort_keys=True), encoding="utf-8")
+        if failed:
+            raise Stop(f"Couldn't update the board for {', '.join(f'#{n}' for n in failed)}. Does `gh` have the "
+                       "project scope (`gh auth refresh -s project`)?")
+        return changes
+
+    def move(self, number, status):
+        """The queue's own moves. Never stops the run: the work matters more than the card."""
+        try:
+            b = self.board()
+            b.set_status(b.open_issues()[number]["item"], status)
+            self.log(f"Board: moved #{number} to {status}")
+        except (Stop, RuntimeError, KeyError, ValueError) as exc:
+            self.log(f"Board: couldn't move #{number} to {status}: {exc}")
+            self.notify(f"Claude queue: couldn't move #{number} to {status} on the board: {exc}")
 
     # ----- Scheduled-run notices -----
 
@@ -570,6 +643,8 @@ def parse_args(argv=None):
     parser.add_argument("--plan", action="store_true", help="select and verify only; change nothing")
     parser.add_argument("--commit-only", action="store_true", help="at the weekly PR limit: commit locally, no push or PR")
     parser.add_argument("--timeout-minutes", type=int, default=60, help="headless mode only")
+    parser.add_argument("--board-plan", action="store_true",
+                        help="preview the project board sync (what would move where); change nothing")
     parser.add_argument("--scheduled", action="store_true",
                         help="for the scheduled task: headless, top of the queue, quiet when idle, Discord on outcomes")
     args = parser.parse_args(argv)
@@ -650,9 +725,10 @@ def main(argv=None):
             return refresh_and_rerun(argv)  # the refreshed copy records the outcome
         runner.locked_main()
     except Idle as exc:
-        if args.scheduled:  # an idle hourly check leaves no log behind, only the status line
-            runner.log_path.unlink(missing_ok=True)
-            record("idle", str(exc))
+        if args.scheduled:  # an idle hourly check leaves no log behind (unless it moved cards), only the status line
+            if not runner.board_changed:
+                runner.log_path.unlink(missing_ok=True)
+            record("idle", str(exc) + (f" Board updated (log: {runner.log_path})." if runner.board_changed else ""))
         else:
             runner.log(f"Nothing to do: {exc}")
         return 0

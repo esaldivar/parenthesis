@@ -4,13 +4,15 @@ Runs one owner-approved coding issue with Claude Code **on the owner's machine**
 subscription, and opens a **draft** PR into the active release branch (owner decision, October 19, 2026; issue #94).
 It's **fully automated**: a Windows scheduled task checks every hour while the owner is signed in to the PC (owner
 decision, October 19, 2026), so approving an issue is all it takes. No Claude credential is stored in GitHub, and no
-Claude runs in GitHub Actions. It never merges, deploys, changes labels or moves cards on the board.
+Claude runs in GitHub Actions. It never merges, deploys or changes labels. It does keep the board's **Status** in
+step with the work (owner decision, October 19, 2026; see "The project board" below).
 
 | | |
 |---|---|
 | Runner | [`scripts/claude_queue_run.py`](../../scripts/claude_queue_run.py) |
 | Selection | [`scripts/claude_queue_select.py`](../../scripts/claude_queue_select.py) (also used by the read-only **Claude Queue Dry Run** workflow) |
 | Approval check | [`scripts/claude_queue_approval.py`](../../scripts/claude_queue_approval.py) |
+| Board sync | [`scripts/claude_queue_board.py`](../../scripts/claude_queue_board.py) |
 | Schedule | [`scripts/claude_queue_schedule.ps1`](../../scripts/claude_queue_schedule.ps1) (the hourly Windows task) |
 | Tests | `tests/test_claude_queue_*.py`, run in CI by **Workflow script tests** |
 | Active release / milestone | `release/0.3.0` / `M3 — Calendar` (constants at the top of the runner) |
@@ -33,7 +35,7 @@ Approval is checked when the run starts and again just before anything is pushed
 ## One-time setup
 
 - Python 3.12, Git, Node.js, the .NET SDK and the GitHub CLI on PATH.
-- `gh auth login` as the owner. Project access may need `gh auth refresh -s read:project`.
+- `gh auth login` as the owner, with write access to projects for the board sync: `gh auth refresh -s project`.
 - Claude Code installed and signed in with `/login` (Claude subscription). `claude auth status` must show
   `"authMethod": "claude.ai"`; the runner refuses an API key and removes `ANTHROPIC_API_KEY` from Claude's environment.
 - For major PRs: a `DISCORD_WEBHOOK_URL` user environment variable on this machine. GitHub secrets can't be read back,
@@ -83,6 +85,7 @@ Each scheduled run (`--scheduled`):
   for Monday's reset). Idle checks leave no log;
 - writes one line to `.git/claude-queue/last-scheduled-run.txt` every time (when, and idle, stopped or finished), so
   you can confirm the hourly runs are happening;
+- moves the issue to **In Development** when it starts and **Awaiting PR Approval** when the draft PR opens;
 - sends one Discord line when it opens a draft PR, and one when it stops on a problem. The same problem isn't
   reported again every hour; a different one is;
 - clears the lock left by a run that crashed or was killed.
@@ -116,6 +119,30 @@ for the backend tests.
    pushing.
 10. Pushes and opens a **draft** PR into `release/0.3.0` with `Closes #n`, the check results, risks and outstanding
     work. The usual CI, branch policy, weekly limit and Discord notices apply when it's marked ready for review.
+
+## The project board
+
+Every scheduled run first syncs Project #2, then looks for work. Any **open** issue on the project that a PR links
+with "Closes #n" (or Fixes/Resolves) at the start of a line, bullet or sentence moves like this:
+
+| Status | When |
+|---|---|
+| In Development | A queue run starts on it (set by the run itself) |
+| Awaiting PR Approval | Its PR is open as a draft (the queue's draft PR, or a PR moved back to draft) |
+| Code Review | Its PR is marked ready for review |
+| Awaiting Deployment | The PR is merged but the work isn't on `main` yet (`release/x.y.z`, then `develop`, then `main`) |
+| Done | The merged work is on `main`; the issue is also **closed** |
+| Backlog | Every PR for it was closed without merging |
+
+- An open follow-up PR puts an issue back in review even after an earlier PR merged.
+- A card only moves when what its PRs say changes, so if you move one by hand it stays there until its PRs change
+  again. What the PRs said at the last sync is kept in `.git/claude-queue/board-state.json`.
+- "Follow-up to #94" or "...and close #65 later" don't link an issue; only a closing keyword that starts a line,
+  bullet or sentence does.
+- Updates land within the hour (it's the hourly task), and only while your PC is on.
+- Preview without changing anything: `python scripts/claude_queue_run.py --board-plan`.
+- If the board can't be updated (for example `gh` lacks the project scope), the run says so once on Discord and
+  carries on with the queue; the card catches up on the next run that succeeds.
 
 ## When a run stops
 
