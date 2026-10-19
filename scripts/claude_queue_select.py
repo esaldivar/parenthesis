@@ -36,17 +36,18 @@ def eligible(issues, milestone, project_number):
                  if (item.get("project") or {}).get("number") == project_number]
         if len(items) != 1:
             continue
-        statuses = [v.get("name") for v in (items[0].get("fieldValues") or {}).get("nodes", [])
-                    if (v.get("field") or {}).get("name") == "Status"]
+        fields = (items[0].get("fieldValues") or {}).get("nodes", [])
+        statuses = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Status"]
         if statuses != ["Ready for Development"]:
             continue
         labels = {x["name"].lower() for x in (issue.get("labels") or {}).get("nodes", [])}
         if labels & {"blocked", "status:blocked"}:
             continue
-        priorities = [p for p in range(4) if ("priority:p" + str(p)) in labels]
-        if len(priorities) != 1:
+        project_priorities = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Priority"]
+        priority_map = {"P0 Critical": 0, "P1 High": 1, "P2 Medium": 2, "P3 Low": 3}
+        if len(project_priorities) != 1 or project_priorities[0] not in priority_map:
             continue
-        ranked.append((priorities[0], issue["number"], issue))
+        ranked.append((priority_map[project_priorities[0]], issue["number"], issue))
     ranked.sort(key=lambda row: (row[0], row[1]))
     return [{"number": issue["number"], "title": issue["title"], "url": issue["url"],
              "priority": "P" + str(priority)} for priority, _, issue in ranked]
