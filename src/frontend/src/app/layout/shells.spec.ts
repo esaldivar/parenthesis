@@ -97,9 +97,9 @@ describe('application shells', () => {
     });
 
     it('says plainly that unbuilt features are not available', async () => {
-      const body = await open('/approvals');
+      const body = await open('/memories');
 
-      expect(body.querySelector('main')!.textContent).toContain('Approvals aren’t available yet');
+      expect(body.querySelector('main')!.textContent).toContain('Family memories aren’t available yet');
     });
 
     it.each(['/', '/calendar', '/settings', '/more'])('has no automatically detectable accessibility issues at %s', async (url) => {

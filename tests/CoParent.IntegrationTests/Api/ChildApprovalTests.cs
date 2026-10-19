@@ -34,6 +34,7 @@ public sealed class ChildApprovalTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(1, request.GetProperty("approvals").GetInt32());
         Assert.Equal(2, request.GetProperty("requiredApprovals").GetInt32());
         Assert.False(request.GetProperty("canDecide").GetBoolean());
+        Assert.True(request.GetProperty("proposedByYou").GetBoolean());
         Assert.Equal(HttpStatusCode.Conflict, ownApproval.StatusCode);
         Assert.Equal("PendingApproval", (await ChildrenAsync(dad, familyId)).Single().GetProperty("status").GetString());
     }
@@ -47,6 +48,7 @@ public sealed class ChildApprovalTests(ApiFactory api) : IAsyncLifetime
         {
             var request = Assert.Single((await JsonAsync(await mom.GetAsync($"/api/families/{familyId}/approvals"))).EnumerateArray());
             Assert.True(request.GetProperty("canDecide").GetBoolean());
+            Assert.False(request.GetProperty("proposedByYou").GetBoolean());
 
             var approved = await mom.PostAsync($"/api/families/{familyId}/approvals/{request.GetProperty("id").GetGuid()}/approve");
 

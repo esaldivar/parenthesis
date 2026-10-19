@@ -3,12 +3,14 @@ import { Api, FamilyDetails, InvitationSummary } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { AppearancePicker } from '../../shared/appearance-picker/appearance-picker';
+import { ChildrenAccess } from '../family/children-access';
+import { DeviceList } from '../family/device-list';
 import { InviteCoParent } from '../family/invite-co-parent';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, InviteCoParent],
+  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList],
   template: `
     <h1>Settings</h1>
     <section class="card">
@@ -31,6 +33,16 @@ import { InviteCoParent } from '../family/invite-co-parent';
           } @else {
             <p class="muted">Loading…</p>
           }
+        </section>
+
+        <section class="card" aria-labelledby="children-heading">
+          <h2 id="children-heading">Children</h2>
+          <app-children-access [familyId]="current.id" />
+        </section>
+
+        <section class="card" aria-labelledby="devices-heading">
+          <h2 id="devices-heading">Devices</h2>
+          <app-device-list [familyId]="current.id" />
         </section>
       }
     }

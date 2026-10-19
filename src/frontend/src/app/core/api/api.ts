@@ -52,6 +52,14 @@ export interface Child {
   readonly status: ChildStatus;
   /** Set when the child was just added: the approval request the co-parent answers. */
   readonly changeRequestId: string | null;
+  /** Whether the child has a PIN, is locked after three wrong tries, or has a new PIN waiting for approval. */
+  readonly signIn: ChildSignIn;
+}
+
+export interface ChildSignIn {
+  readonly enabled: boolean;
+  readonly locked: boolean;
+  readonly pinChangePending: boolean;
 }
 
 export type ChangeRequestType = 'ChildCreate' | 'ChildPinChange';
@@ -69,6 +77,8 @@ export interface ChangeRequest {
   readonly requiredApprovals: number;
   /** True when this parent can still approve or reject it (not the proposer, hasn't answered). */
   readonly canDecide: boolean;
+  /** True when this parent proposed it, so they can withdraw it while it's pending. */
+  readonly proposedByYou: boolean;
   readonly resolvedAt: string | null;
   readonly decisions: readonly { deciderMembershipId: string; decision: 'Approve' | 'Reject'; comment: string | null; decidedAt: string }[];
 }

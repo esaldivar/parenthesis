@@ -5,6 +5,8 @@
     'topbar'
     'main'
     'bottomnav';
+  // minmax(0, …) so the five navigation labels can't widen the page past a 320px screen.
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
   min-height: 100dvh;
 }

@@ -106,8 +106,9 @@ that points back here.
   - [x] Backend: changing a kid's existing PIN needs the co-parent's approval (ChildPinChange). The current PIN works
     until it's approved; reject or withdraw keeps it (October 17, 2026). Setting the first PIN and disabling access stay
     immediate.
-  - [ ] Frontend: re-fetch the antiforgery token whenever the profile changes (kid signs in, parent signs back in).
-  - [ ] Frontend: these screens, once Design Request #1 (issue #38) is approved.
+  - [x] Frontend: re-fetch the antiforgery token whenever the profile changes (kid signs in, parent signs back in,
+    sign-out, tablet pairing), in the auth store (October 18, 2026).
+  - [x] Frontend: these screens, once Design Request #1 (issue #38) is approved.
     Approved October 18, 2026 (owner decisions: one parent tile per device, 7-day invitations with the email copy
     saying 7 days, one generic screen for expired/used/revoked links, 8-character pairing code typed in a text box,
     "We've let your parents know" for a locked PIN, initials and no age on child tiles). Delivered as small PRs into
@@ -117,8 +118,16 @@ that points back here.
     - [x] Sign-up, household setup and invitations: register with confirm password, the four-step setup (family,
       how many children, their names, invite), "pending approval" for each child, the invitation accept page with
       one calm screen for invalid links, and a co-parent card in Settings (October 18, 2026).
-    - [ ] Second PR (owner decision October 18, 2026: Request #1 ships as two PRs to fit the weekly limit): profile
-      picker, parent password and child PIN screens; tablet pairing and device management; co-parent approvals.
+    - [x] Second PR (owner decision October 18, 2026: Request #1 ships as two PRs to fit the weekly limit): profile
+      picker, parent password and child PIN screens; tablet pairing and device management; co-parent approvals
+      (October 18, 2026). **Owner decision, October 18:** a child's PIN is 4 to 6 digits, chosen by the parent; the
+      child types it in one number box and taps "Go". The children list now returns each child's sign-in state, the
+      approvals list says which requests you proposed, and the lock email links to Settings, where Unlock is.
+  - [ ] Check the Request #1 screens against the image mockups once they're committed (the handoff is text-only, so
+    the screens follow the design system).
+  - [ ] Parent tile: it asks for email and password, because the picker only knows the parent's name. Optional:
+    remember the email on the device.
+  - [ ] Approvals: a note can be added when declining only. Optional: a note when approving too (AP-05).
   - [ ] QR code for tablet pairing (deferred, owner decision October 18, 2026). Show the code only for now; adding a
     QR code needs a new library.
 - [x] **Design ↔ code collaboration** (owner idea, October 17, 2026): ChatGPT designs, Claude codes, and the owner
@@ -168,7 +177,7 @@ that points back here.
   - [x] Backend: approvals history and decision comments (AP-04/05); request expiry after 14 days (AP-06) (October 17, 2026).
   - [ ] Backend: recurrence (C-05), reminders (C-04, with notifications), the .ics feed (C-07).
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
-    data source.
+    data source. The inbox exists since v0.2.0 but shows only child requests; show calendar requests there too.
 
 - [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Every `release/x.y.z` → `develop`
   PR runs Playwright against the release candidate, for the current milestone and every one before it. Runbook:
@@ -181,6 +190,9 @@ that points back here.
   - [ ] Add browser journeys as the v0.2.0 and v0.3.0 screens ship (invitations, children, profile picker, PIN
     entry, the full calendar). Until then those features are tested through the API, and the calendar page through
     its honest empty state.
+    - [x] v0.2.0: the profile picker, PIN entry (tries left), switching profile, approving a PIN change in the inbox,
+      and pairing a tablet, in `specs/m2-accounts/profiles-in-the-browser.spec.ts` (October 18, 2026).
+    - [ ] Invitations in the browser, and the v0.3.0 calendar screens.
   - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
     the sign-in limit, for the test instance only.
 
