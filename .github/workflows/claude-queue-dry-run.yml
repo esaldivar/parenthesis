@@ -1,0 +1,42 @@
+name: Claude Queue Dry Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_number:
+        description: 'GitHub Projects V2 project number'
+        required: true
+        type: number
+      active_milestone:
+        description: 'Exact active milestone title'
+        required: true
+        default: 'M2 — Onboarding'
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  inspect-queue:
+    name: Read-only queue inspection
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Inspect eligible issues (no writes)
+        env:
+          GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          PROJECT_NUMBER: ${{ inputs.project_number }}
+          ACTIVE_MILESTONE: ${{ inputs.active_milestone }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::PROJECTS_TOKEN secret is missing"
+            exit 1
+          fi
+          python scripts/claude_queue_select.py
