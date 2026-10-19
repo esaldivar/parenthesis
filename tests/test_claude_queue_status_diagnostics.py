@@ -9,7 +9,7 @@ selector = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(selector)
 
 
-def issue(status_field="Status", status_value="Ready for Development"):
+def issue(status_field="Status", status_value="Ready For Development"):
     return {
         "number": 80, "title": "Safe dry-run issue", "url": "https://github.com/esaldivar/parenthesis/issues/80",
         "state": "OPEN", "milestone": {"title": "M2 — Onboarding"}, "labels": {"nodes": []},
@@ -26,6 +26,12 @@ class QueueStatusTests(unittest.TestCase):
         self.assertEqual(queue[0]["number"], 80)
         self.assertEqual(excluded["status"], 0)
         self.assertEqual(diagnostics, [])
+
+    def test_wrong_capitalization_fails_closed(self):
+        queue, excluded, diagnostics = selector.eligible([issue(status_value="Ready for Development")], "M2 — Onboarding", 2)
+        self.assertEqual(queue, [])
+        self.assertEqual(excluded["status"], 1)
+        self.assertEqual(diagnostics[0]["status_values"], ["Ready for Development"])
 
     def test_missing_status_field_fails_closed_with_diagnostic(self):
         queue, excluded, diagnostics = selector.eligible([issue(status_field=None)], "M2 — Onboarding", 2)
