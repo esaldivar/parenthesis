@@ -4,7 +4,7 @@ Sets up the **development** and **production** environments that `.github/workfl
 GitHub settings the workflow needs. The rules are in [the development workflow](../development-workflow.md). Until
 step 6 is done, the deploy workflow does nothing.
 
-Status (October 18, 2026): GitHub settings (steps 4 and 5) **done**, except the environment variables. Azure (steps 1–3, 6) **not started**: the owner has no subscription yet.
+Status (October 19, 2026): GitHub settings (steps 4 and 5) **done**, except the environment variables. Azure (steps 1–3, 3a, 6) **not started**; the owner starts with the development environment.
 
 Everything below is done by the owner, once. Commands use the [Azure CLI](https://learn.microsoft.com/cli/azure/)
 (`az`), which also runs in the browser through Azure Cloud Shell. Never paste secrets, passwords or connection
@@ -122,6 +122,23 @@ Services), a custom domain with HTTPS, and the data-protection key ring (S-01).
 
 **Development holds synthetic data only.** Never copy production data into it.
 
+### Application Insights (prepared now, wired up later)
+Step 2 already creates `appi-parenthesis-$ENV` on the environment's Log Analytics workspace. The app doesn't send
+telemetry yet; that's planned work. Prepare it now so it's ready:
+
+```bash
+# Cap log ingestion so telemetry can't run up the bill (GB per day; 0.5 is plenty for one environment).
+az monitor log-analytics workspace update -g $RG -n log-parenthesis-$ENV --quota 0.5
+
+# Keep the connection string in Key Vault, like the database's, for when the app starts using it.
+az keyvault secret set --vault-name $KV -n appinsights \
+  --value "$(az monitor app-insights component show -g $RG -a appi-parenthesis-$ENV --query connectionString -o tsv)"
+```
+
+When the app is wired up, it reads `APPLICATIONINSIGHTS_CONNECTION_STRING` from a `secretref:appinsights` app setting.
+Telemetry must not carry personal data: no names, emails, children's details, diary or message text, and no request
+bodies. Production telemetry is real family activity, so only the production readers below see it.
+
 ## 3. Sign-in for GitHub Actions (OpenID Connect, no passwords)
 One identity per environment, each allowed to change only its own resource group.
 
@@ -140,6 +157,48 @@ echo "AZURE_CLIENT_ID=$APP_ID"
 echo "AZURE_TENANT_ID=$(az account show --query tenantId -o tsv)"
 echo "AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)"
 ```
+
+### 3a. People and roles (who may change what)
+The deploy identities above are for GitHub Actions only. People get access through Entra ID groups, so adding a
+collaborator later is one step. Two working roles plus an emergency admin; there's no separate "non-production" role
+because there are only two environments (add one if a staging environment ever exists).
+
+| Role (Entra group) | Access | Who |
+|---|---|---|
+| **Developer** (`parenthesis-dev-contributors`) | Contributor on `rg-parenthesis-dev`; Key Vault Secrets Officer on the dev Key Vault. Nothing in production. | The owner day to day; future collaborators |
+| **Production reader** (`parenthesis-prod-readers`) | Reader, Monitoring Reader and Log Analytics Reader on `rg-parenthesis-prod`: health, revisions, logs and Application Insights. No changes, no secrets. | The owner day to day |
+| **Production admin** (no group) | Owner on the subscription. Emergencies only, never daily work. | The owner only |
+
+Production changes go only through the deploy workflow, which waits for the owner's approval; nobody needs day-to-day
+write access to production or its database. Don't work daily as the Owner: use an everyday account in the two groups
+and keep the Owner account for emergencies. (Just-in-time admin with Privileged Identity Management needs an Entra ID
+P2 licence; the separate admin account gives most of the benefit for free.)
+
+Run once (groups), then the matching part after each environment exists:
+
+```bash
+az ad group create --display-name parenthesis-dev-contributors --mail-nickname parenthesis-dev-contributors
+az ad group create --display-name parenthesis-prod-readers --mail-nickname parenthesis-prod-readers
+group_id() { az ad group show -g "$1" --query id -o tsv; }
+
+# After ENV=dev
+DEV_KV=kv-parenthesis-dev-<suffix>
+az role assignment create --assignee-object-id "$(group_id parenthesis-dev-contributors)" --assignee-principal-type Group \
+  --role Contributor --scope "$(az group show -n rg-parenthesis-dev --query id -o tsv)"
+az role assignment create --assignee-object-id "$(group_id parenthesis-dev-contributors)" --assignee-principal-type Group \
+  --role "Key Vault Secrets Officer" --scope "$(az keyvault show -n $DEV_KV --query id -o tsv)"
+
+# After ENV=prod
+for role in Reader "Monitoring Reader" "Log Analytics Reader"; do
+  az role assignment create --assignee-object-id "$(group_id parenthesis-prod-readers)" --assignee-principal-type Group \
+    --role "$role" --scope "$(az group show -n rg-parenthesis-prod --query id -o tsv)"
+done
+
+# Add a person (the owner's everyday account, or a collaborator)
+az ad group member add -g parenthesis-dev-contributors --member-id "<user object id>"
+```
+
+These are Azure roles for managing the infrastructure. They're unrelated to the parent and child roles inside the app.
 
 ## GitHub settings
 ### 4. Environments
