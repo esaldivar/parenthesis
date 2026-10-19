@@ -96,7 +96,9 @@ For a moved window (a Wednesday), the same steps happen on the Monday, the day b
 ## Promotion
 
 1. **Release branch.** All the milestone's PRs are merged, required checks pass, stabilization is done.
-2. **`release/x.y.z` → `develop`.** Passing checks, release notes written, no open blocking defects, and the owner's
+2. **`release/x.y.z` → `develop`.** Passing checks, including the **Release E2E gate**: Playwright tests the
+   release candidate for this milestone and every one before it, and a failure blocks the merge
+   ([runbook](runbooks/playwright-release-gate.md)). Release notes written, no open blocking defects, and the owner's
    approval. Merge with a **merge commit**. The development deployment then builds the image, runs migrations and
    smoke tests, and records the tested commit (GitHub's deployment history for the `development` environment). If
    testing fails, production is blocked: fix it on the release branch and repeat.
@@ -147,7 +149,7 @@ in [the Azure runbook](runbooks/azure-environments.md#github-settings).
 | Branch | Rules |
 |---|---|
 | `main` | Existing protection (PRs only, required checks up to date, no force pushes or deletion, admins included). Required checks include **PR source** and the SonarCloud quality gate. |
-| `develop` | Existing protection, plus **PR source** as a required check. |
+| `develop` | Existing protection, plus **PR source** and **Release E2E gate** as required checks. |
 | `release/*` | A ruleset: PRs only, required checks (Backend, Frontend, API image, PR source) up to date, no force pushes, no deletion. Admins included. |
 | Environments | `production`: required reviewer = the owner, deployments from `main` only. `development`: deployments from `develop` only. |
 

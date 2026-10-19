@@ -5,8 +5,9 @@
     <app-icon name="settings" [size]="20" />
     <span>Settings</span>
   </a>
+  <!-- On a registered device, signing out leads to "Who's using Parenthesis?". -->
   <button mat-menu-item type="button" (click)="signOut()">
-    <span>Sign out</span>
+    <span>{{ auth.device() ? 'Switch profile' : 'Sign out' }}</span>
   </button>
 </mat-menu>
 

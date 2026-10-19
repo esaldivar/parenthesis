@@ -20,6 +20,21 @@ export interface FamilySummary {
   readonly role: FamilyRole;
 }
 
+export interface FamilyMember {
+  readonly membershipId: string;
+  readonly displayName: string;
+  readonly role: FamilyRole;
+  readonly joinedAt: string;
+}
+
+export interface FamilyDetails {
+  readonly id: string;
+  readonly name: string;
+  readonly timeZone: string;
+  readonly createdAt: string;
+  readonly members: readonly FamilyMember[];
+}
+
 // --- Milestone 2 (ADR-0006): invitations, children, approvals, devices, the profile picker -----------------------------
 
 export interface InvitationSummary {
@@ -37,6 +52,14 @@ export interface Child {
   readonly status: ChildStatus;
   /** Set when the child was just added: the approval request the co-parent answers. */
   readonly changeRequestId: string | null;
+  /** Whether the child has a PIN, is locked after three wrong tries, or has a new PIN waiting for approval. */
+  readonly signIn: ChildSignIn;
+}
+
+export interface ChildSignIn {
+  readonly enabled: boolean;
+  readonly locked: boolean;
+  readonly pinChangePending: boolean;
 }
 
 export type ChangeRequestType = 'ChildCreate' | 'ChildPinChange';
@@ -54,6 +77,8 @@ export interface ChangeRequest {
   readonly requiredApprovals: number;
   /** True when this parent can still approve or reject it (not the proposer, hasn't answered). */
   readonly canDecide: boolean;
+  /** True when this parent proposed it, so they can withdraw it while it's pending. */
+  readonly proposedByYou: boolean;
   readonly resolvedAt: string | null;
   readonly decisions: readonly { deciderMembershipId: string; decision: 'Approve' | 'Reject'; comment: string | null; decidedAt: string }[];
 }
@@ -180,6 +205,7 @@ export class Api {
   myFamilies = () => this.call(this.http.get<FamilySummary[]>('/api/me/families'));
   createFamily = (body: { name: string; timeZone: string }) =>
     this.call(this.http.post<FamilySummary>('/api/families', body));
+  family = (familyId: string) => this.call(this.http.get<FamilyDetails>(`/api/families/${familyId}`));
 
   // Co-parent invitations (FM-03). The answer to "send" is the same whether or not the address has an account.
   invitations = (familyId: string) => this.call(this.http.get<InvitationSummary[]>(`/api/families/${familyId}/invitations`));

@@ -44,10 +44,9 @@ expect pass develop feature/68-queue-controller "$repo" "$repo" 77
 expect fail develop feature/68-queue-controller "$repo" "$repo" 78
 expect fail develop feature/68-queue-controller "$repo" "$repo"
 expect fail develop feature/68-queue-controller "$repo" "someone/parenthesis" 77
-expect pass develop chore/release-workflow "$repo" "$repo" # one-off exception, TODO(workflow)
 for head in design/signup-invitations-profile-picker feat/x feature/request-expiry fix/ci-pr-branch-policy \
             bugfix/x chore/x docs/x release/0.2 release/v0.2.0 release/0.02.0 release/ main develop random-branch \
-            Feat/x ci/x dependabot/nuget/x; do
+            Feat/x ci/x dependabot/nuget/x chore/release-workflow; do
   expect fail develop "$head" "$repo" "$repo"
 done
 expect fail develop release/0.2.0 "$repo" "someone/parenthesis"

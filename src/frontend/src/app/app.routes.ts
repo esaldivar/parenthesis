@@ -1,6 +1,6 @@
 import { Type } from '@angular/core';
 import { CanMatchFn, Route, Routes } from '@angular/router';
-import { hasFamily, signedIn, signedOut } from './core/auth/guards';
+import { hasFamily, kidSpace, pickerAvailable, signedIn, signedOut } from './core/auth/guards';
 
 /** A page inside the auth layout, under its own top-level path so nothing competes with the app at "/". */
 function authPage(path: string, title: string, page: () => Promise<Type<unknown>>, canMatch: CanMatchFn[] = []): Route {
@@ -20,10 +20,26 @@ export const routes: Routes = [
   authPage('confirm-email', 'Confirm your email', () => import('./features/auth/confirm-email-page').then((m) => m.ConfirmEmailPage)),
   authPage('forgot-password', 'Reset your password', () => import('./features/auth/forgot-password-page').then((m) => m.ForgotPasswordPage)),
   authPage('reset-password', 'Choose a new password', () => import('./features/auth/reset-password-page').then((m) => m.ResetPasswordPage)),
+  // Opened from the invitation email; works signed in or out (the page asks signed-out visitors to sign in).
+  authPage('invitations/accept', 'Join your co-parent’s family', () =>
+    import('./features/invitations/accept-invitation-page').then((m) => m.AcceptInvitationPage),
+  ),
+  // "Who's using Parenthesis?" on a registered device (ADR-0006).
+  authPage('profiles', 'Who’s using Parenthesis?', () => import('./features/profiles/profile-picker-page').then((m) => m.ProfilePickerPage), [
+    pickerAvailable,
+  ]),
+  authPage('profiles/parent/:id', 'Enter your password', () =>
+    import('./features/profiles/parent-password-page').then((m) => m.ParentPasswordPage), [pickerAvailable],
+  ),
+  authPage('profiles/child/:id', 'Enter your PIN', () => import('./features/profiles/child-pin-page').then((m) => m.ChildPinPage), [
+    pickerAvailable,
+  ]),
+  // On a child's own tablet: redeem a parent's one-time code (A-11).
+  authPage('pair', 'Set up a child’s tablet', () => import('./features/profiles/pair-device-page').then((m) => m.PairDevicePage), [signedOut]),
   authPage('welcome', 'Set up your family', () => import('./features/onboarding/welcome-page').then((m) => m.WelcomePage), [signedIn]),
   {
     path: 'kid',
-    canMatch: [signedIn],
+    canMatch: [kidSpace],
     loadComponent: () => import('./layout/kid-shell/kid-shell').then((m) => m.KidShell),
     loadChildren: () => import('./features/kid/kid.routes').then((m) => m.KID_ROUTES),
   },

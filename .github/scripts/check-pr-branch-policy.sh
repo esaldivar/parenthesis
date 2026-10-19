@@ -45,9 +45,6 @@ case "$base" in
     fi
     case "$head" in
       hotfix/?* | chore/sync-?*) echo "OK: $head -> develop" ;;
-      # TODO(workflow): one-off exception for the PR that introduces this policy; remove it in the first PR into
-      # release/0.2.0 (see TODO.md).
-      chore/release-workflow) echo "OK: $head -> develop (one-off exception that introduces this policy)" ;;
       feature/68-queue-controller)
         if [[ "$pr_number" == "77" ]]; then
           echo "OK: PR #77 one-off queue-controller exception into develop"

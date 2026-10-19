@@ -105,9 +105,20 @@ az containerapp job update -g $RG -n job-parenthesis-migrate-$ENV \
 echo "APP_URL for GitHub: $URL"
 ```
 
+**Development only: invite-only sign-up.** Only the testers you list can create an account there. Separate the
+addresses with commas; an invited co-parent must be on the list too. Production leaves these unset, so anyone can sign
+up.
+
+```bash
+az containerapp update -g rg-parenthesis-dev -n ca-parenthesis-dev \
+  --set-env-vars Identity__SignUp__InviteOnly=true "Identity__SignUp__AllowedEmails=tester1@example.com,tester2@example.com"
+```
+
+To add or remove a tester later, run the same command with the full new list. Anyone else who tries to register sees
+"Sign-up here is by invitation only." Existing accounts can still sign in.
+
 Still to do before families use it (TODO.md): real email sending (`Email__Smtp__*`, for example Azure Communication
-Services), the invite-only tester allow-list on development, a custom domain with HTTPS, and the data-protection key
-ring (S-01).
+Services), a custom domain with HTTPS, and the data-protection key ring (S-01).
 
 **Development holds synthetic data only.** Never copy production data into it.
 

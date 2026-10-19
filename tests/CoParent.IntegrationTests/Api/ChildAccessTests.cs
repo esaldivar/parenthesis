@@ -200,6 +200,39 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Parents_see_each_childs_sign_in_state()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        using var tablet = await PairedTabletAsync(family);
+        await family.Dad.PostAsync($"/api/families/{family.FamilyId}/children", new { firstName = "Aurora" });
+
+        var before = await ChildrenSignInAsync(family);
+        await family.Dad.SendAsync(HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" });
+        foreach (var pin in new[] { "1357", "1358", "1359" })
+        {
+            await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin });
+        }
+
+        var after = await ChildrenSignInAsync(family);
+
+        Assert.Equal(["Kai:True:False:False", "Aurora:False:False:False"], before);
+        Assert.Equal(["Kai:True:True:True", "Aurora:False:False:False"], after);
+    }
+
+    /// <summary>Each child as "name:enabled:locked:pinChangePending", as Mom's children list shows it.</summary>
+    private static async Task<List<string>> ChildrenSignInAsync(TestFamily family) =>
+        (await JsonAsync(await family.Mom.GetAsync($"/api/families/{family.FamilyId}/children")))
+            .EnumerateArray()
+            .Select(c =>
+            {
+                var signIn = c.GetProperty("signIn");
+                return $"{c.GetProperty("firstName").GetString()}:{signIn.GetProperty("enabled").GetBoolean()}"
+                    + $":{signIn.GetProperty("locked").GetBoolean()}:{signIn.GetProperty("pinChangePending").GetBoolean()}";
+            })
+            .ToList();
+
+    [Fact]
     public async Task A_rejected_PIN_change_keeps_the_current_PIN()
     {
         var family = await FamilyWithKaiAsync();
