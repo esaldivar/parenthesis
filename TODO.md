@@ -174,8 +174,13 @@ that points back here.
       lock). Set up with `scripts/claude_queue_schedule.ps1`.
     - [ ] **Owner:** after this merges, run `scripts/claude_queue_schedule.ps1` once (runbook, "Running it on a
       schedule"). The first scheduled run is the pilot: #98 runs headless once the weekly limit resets.
-    - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, the Discord notices from
-      the runner, and a full scheduled run (window-free, the checkout refresh). Record the pilot's result on #94.
+    - [x] **Owner:** ran `scripts/claude_queue_schedule.ps1`; the task is registered (October 19, 2026).
+    - [x] Fixed: every scheduled run failed under Task Scheduler (exit 120; "The handle is invalid" when the runner
+      restarted itself after updating its checkout). Added `.git/claude-queue/last-scheduled-run.txt` so idle runs
+      can be confirmed (October 19, 2026).
+    - [ ] After the fix merges, confirm a real hourly run: the task's last result is 0 and the status file updates.
+    - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, and a draft PR opened by a
+      scheduled run. The Discord failure notice works (sent during the fix, October 19). Record the pilot on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).
   - [ ] **Owner:** install the GitHub mobile app and watch the repo (PRs, issues, releases, failed checks). It's free.
   - [ ] Optional: a free Discord server with a `#dev-updates` channel fed by a GitHub webhook.

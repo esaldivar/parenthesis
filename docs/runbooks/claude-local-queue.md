@@ -81,6 +81,8 @@ Each scheduled run (`--scheduled`):
 - runs Claude **headless** (only the pre-allowed tools, 60-minute limit), then the same checks and guards as below;
 - does nothing when no issue is waiting, another run is going, or the weekly PR limit is reached (the issue waits
   for Monday's reset). Idle checks leave no log;
+- writes one line to `.git/claude-queue/last-scheduled-run.txt` every time (when, and idle, stopped or finished), so
+  you can confirm the hourly runs are happening;
 - sends one Discord line when it opens a draft PR, and one when it stops on a problem. The same problem isn't
   reported again every hour; a different one is;
 - clears the lock left by a run that crashed or was killed.

@@ -1,5 +1,6 @@
 """Unit tests for the local Claude queue runner's guards (scripts/claude_queue_run.py). No network, no Claude."""
 import contextlib
+import datetime
 import importlib.util
 import io
 import json
@@ -8,6 +9,7 @@ import pathlib
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -159,6 +161,31 @@ class ScheduledRunTests(unittest.TestCase):
         finished = subprocess.Popen([sys.executable, "-c", "pass"])
         finished.wait()
         self.assertFalse(runner.process_alive(finished.pid))
+
+    def test_status_line(self):
+        now = datetime.datetime(2026, 10, 26, 0, 0, 5)
+        self.assertEqual(runner.status_line("idle", "No eligible issue", now),
+                         "2026-10-26T00:00:05 idle: No eligible issue\n")
+        self.assertEqual(runner.status_line("finished", "", now), "2026-10-26T00:00:05 finished\n")
+        self.assertNotIn("webhooks/1", runner.status_line("stopped", "https://discord.com/api/webhooks/1/x", now))
+
+    def test_refreshed_rerun_never_inherits_console_handles(self):
+        """The scheduled task has no console; inherited handles fail with WinError 6 (October 19, 2026)."""
+        def fake_run(cmd, **kwargs):
+            if cmd[-1] == "--scheduled":  # the rerun of the refreshed runner
+                calls.append(kwargs)
+                return subprocess.CompletedProcess(cmd, 0)
+            result = "" if "status" in cmd else None
+            return subprocess.CompletedProcess(cmd, 1 if "symbolic-ref" in cmd else 0, stdout=result or "")
+
+        calls = []
+        with mock.patch.object(runner.subprocess, "run", side_effect=fake_run), \
+                mock.patch.object(runner.shutil, "which", return_value="git"):
+            self.assertEqual(runner.refresh_and_rerun(["--scheduled"]), 0)
+        self.assertEqual(len(calls), 1)
+        for stream in ("stdin", "stdout", "stderr"):
+            self.assertEqual(calls[0][stream], subprocess.DEVNULL)
+        self.assertEqual(calls[0]["env"][runner.REFRESHED_ENV], "1")
 
 
 if __name__ == "__main__":
