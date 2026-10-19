@@ -164,10 +164,9 @@ that points back here.
     (`docs/runbooks/claude-local-queue.md`).
     - [x] Labels `owner-approved-claude` and `claude-implementation` created; #95 (Actions scaffold) closed
       (October 19, 2026).
-    - [ ] **Owner:** delete the `hotfix/claude-queue-execution-scaffold` branch (Claude Code's permission check
-      blocked the deletion).
-    - [ ] **Owner:** set `DISCORD_WEBHOOK_URL` as a user environment variable on the machine that runs the queue
-      (runbook, "One-time setup").
+    - [x] **Owner:** deleted the `hotfix/claude-queue-execution-scaffold` branch (October 19, 2026).
+    - [x] **Owner:** set `DISCORD_WEBHOOK_URL` as a user environment variable on the machine that runs the queue
+      (runbook, "One-time setup") (October 19, 2026).
     - [ ] Pilot after this merges: the owner picks a small, synthetic-data M3 coding issue, labels it, and runs
       `--plan`, then an interactive run, then one headless run. Record the result on #94.
     - [ ] Not yet verified end to end: the Claude permission rules in a real run, and the Discord send from the runner.
