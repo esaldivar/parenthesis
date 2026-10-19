@@ -282,20 +282,28 @@ that points back here.
     on `develop`; the `development` environment (deploys from `develop` only) and the `production` environment (owner
     as required reviewer, self-review allowed, no admin bypass, deploys from `main` only). The environment variables
     wait for the Azure setup.
-  - [ ] **Owner:** Azure account and both environments (runbook steps 1–3), then `DEPLOY_ENABLED` = `true` and the
-    `parenthesis-api` package made public.
-  - [ ] **Owner:** people and roles (runbook step 3a, owner request October 19, 2026): Entra groups
-    `parenthesis-dev-contributors` (Contributor on dev) and `parenthesis-prod-readers` (read-only on production),
-    an everyday account in both, and the Owner account kept for emergencies.
-  - [ ] **Owner:** Application Insights prep per environment (runbook step 2): ingestion daily cap and the
-    `appinsights` Key Vault secret.
+  - [x] **Owner:** Azure account (free trial, $25 monthly budget with alerts) and the **development** environment
+    (runbook steps 1–3 with `ENV=dev`, `SUFFIX=15465`): resource group, logs, Application Insights, Container Apps
+    environment, PostgreSQL 17, Key Vault, storage, the app and its migration job, Key Vault references, the GitHub
+    `development` variables and `DEPLOY_ENABLED` = `true` (October 19, 2026).
+  - [ ] First deployment to the development site (triggered by the next merge into `develop`); if the image pull
+    fails, make the `parenthesis-api` package public and re-run.
+  - [ ] **Owner:** the **production** environment before the first production window (October 30, 2026): runbook
+    steps 2–3 with `ENV=prod`, the GitHub `production` variables, and the production readers' role assignments.
+  - [x] **Owner:** people and roles (runbook step 3a, owner request October 19, 2026): Entra groups
+    `parenthesis-dev-contributors` (Contributor on dev and Key Vault Secrets Officer on the dev vault; the owner is a
+    member) and `parenthesis-prod-readers` (created; empty until production exists) (October 19, 2026).
+  - [ ] **Owner:** assign `parenthesis-prod-readers` its roles once production exists, and move daily work to an
+    everyday account, keeping the Owner account for emergencies.
+  - [x] **Owner:** Application Insights prep for development (runbook step 2): 0.5 GB daily ingestion cap and the
+    `appinsights` Key Vault secret (October 19, 2026). Production gets the same with `ENV=prod`.
   - [ ] Wire up Application Insights in the API (owner plans this soon): read `APPLICATIONINSIGHTS_CONNECTION_STRING`
     from `secretref:appinsights`, no personal data in telemetry, then add the app setting in each environment.
   - [x] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
     (application change in Identity, v0.2.0). `Identity:SignUp:InviteOnly` and `AllowedEmails`; off by default, so
     production stays open (October 19, 2026).
-  - [ ] **Owner:** when the development site exists, set the tester list (Azure runbook, "Development only:
-    invite-only sign-up"). Invited co-parents must be on it too.
+  - [x] **Owner:** set the development site's tester list (Azure runbook, "Development only: invite-only sign-up";
+    October 19, 2026).
   - [x] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
     reachable in the app (October 19, 2026). Nothing is: the calendar page is an honest empty state, the dashboard
     shows "not available yet" (its sample data only in development builds), Quick Add is disabled with a note, the
