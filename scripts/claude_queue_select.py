@@ -29,6 +29,7 @@ def eligible(issues, milestone, project_number):
     if not milestone or project_number is None:
         raise ValueError("ACTIVE_MILESTONE and PROJECT_NUMBER are required")
     ranked = []
+    status_diagnostics = []
     excluded = {"state": 0, "milestone": 0, "project": 0, "status": 0, "blocked": 0, "priority": 0}
     for issue in issues:
         if issue.get("state") != "OPEN":
@@ -45,6 +46,11 @@ def eligible(issues, milestone, project_number):
         fields = (items[0].get("fieldValues") or {}).get("nodes", [])
         statuses = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Status"]
         if statuses != ["Ready for Development"]:
+            # Explain the exact metadata received without weakening the eligibility gate.
+            status_diagnostics.append({"issue": issue["number"], "project": project_number,
+                "status_values": statuses,
+                "single_select_fields": [{"field": (v.get("field") or {}).get("name"),
+                    "value": v.get("name")} for v in fields if v.get("name") is not None]})
             excluded["status"] += 1
             continue
         labels = {x["name"].lower() for x in (issue.get("labels") or {}).get("nodes", [])}
@@ -59,7 +65,7 @@ def eligible(issues, milestone, project_number):
         ranked.append((priority_map[project_priorities[0]], issue["number"], issue))
     ranked.sort(key=lambda row: (row[0], row[1]))
     return ([{"number": issue["number"], "title": issue["title"], "url": issue["url"],
-             "priority": "P" + str(priority)} for priority, _, issue in ranked], excluded)
+             "priority": "P" + str(priority)} for priority, _, issue in ranked], excluded, status_diagnostics)
 
 def github_graphql(token, variables):
     payload = json.dumps({"query": QUERY, "variables": variables}).encode()
@@ -87,11 +93,12 @@ def main():
         if not next_cursor or next_cursor == cursor:
             raise RuntimeError("Invalid pagination cursor")
         cursor = next_cursor
-    queue, excluded = eligible(issues, milestone, project_number)
+    queue, excluded, status_diagnostics = eligible(issues, milestone, project_number)
     print(json.dumps({"mode": "read-only", "active_milestone": milestone,
                       "eligible_count": len(queue), "selected": queue[0] if queue else None,
                       "queue": queue, "issues_inspected": len(issues),
-                      "excluded_by_first_failing_filter": excluded}, indent=2))
+                      "excluded_by_first_failing_filter": excluded,
+                      "status_diagnostics": status_diagnostics}, indent=2))
 
 if __name__ == "__main__":
     try:
