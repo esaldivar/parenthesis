@@ -202,7 +202,7 @@ subscription (owner decision, October 19, 2026; #94). A Windows scheduled task o
 (owner decision, October 19, 2026: fully automated), and the owner can also start it by hand. It runs one issue at a
 time, never repeats an issue that already has a queue branch or PR, and only for issues with Status **Ready For Development**, the `claude-implementation` label, and the
 `owner-approved-claude` label added by the owner. It opens a **draft** PR into the active release branch and never
-merges, deploys or changes the board. At the weekly PR limit a scheduled run does nothing until the week resets. The
+merges, deploys or changes labels; it does keep issue Status on the board in step with each issue's PRs, up to Done (work on `main`, issue closed). At the weekly PR limit a scheduled run does nothing until the week resets. The
 owner's approval label is the only trigger. The weekly PR limit, Discord notices and every required check apply as above.
 How to run it: [the local Claude queue runbook](runbooks/claude-local-queue.md).
 

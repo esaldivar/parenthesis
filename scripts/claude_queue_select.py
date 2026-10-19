@@ -35,8 +35,12 @@ APPROVAL_LABEL = "owner-approved-claude"
 REQUIRED_LABELS = (CODING_LABEL, APPROVAL_LABEL)
 
 
-def eligible(issues, milestone, project_number):
-    """Never infer status or priority from titles; missing metadata fails closed."""
+def eligible(issues, milestone, project_number, allowed_statuses=("Ready For Development",)):
+    """Never infer status or priority from titles; missing metadata fails closed.
+
+    `allowed_statuses`: only the local runner's re-check before pushing also accepts "In Development", the status
+    the runner itself set when the run started.
+    """
     if not milestone or project_number is None:
         raise ValueError("ACTIVE_MILESTONE and PROJECT_NUMBER are required")
     ranked = []
@@ -56,7 +60,7 @@ def eligible(issues, milestone, project_number):
             continue
         fields = (items[0].get("fieldValues") or {}).get("nodes", [])
         statuses = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Status"]
-        if statuses != ["Ready For Development"]:
+        if len(statuses) != 1 or statuses[0] not in allowed_statuses:
             # Explain the exact metadata received without weakening the eligibility gate.
             status_diagnostics.append({"issue": issue["number"], "project": project_number,
                 "status_values": statuses,
