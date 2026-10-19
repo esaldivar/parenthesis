@@ -198,6 +198,9 @@ that points back here.
     4 minutes, the summary ran, the HTML report and summary artifacts were uploaded, and the Discord post was sent.
   - [ ] Move `actions/upload-artifact` and `actions/download-artifact` in `playwright-release.yml` off Node.js 20
     (GitHub warned on #88's run; they're being forced onto Node.js 24).
+- [ ] **Owner:** prune inactive branches (owner request, October 19, 2026). Claude lists merged or abandoned
+  branches with their PRs for review; the owner decides and deletes (rulesets protect `main`, `develop` and
+  `release/*`).
   - [ ] Add browser journeys as the v0.2.0 and v0.3.0 screens ship (invitations, children, profile picker, PIN
     entry, the full calendar). Until then those features are tested through the API, and the calendar page through
     its honest empty state.
