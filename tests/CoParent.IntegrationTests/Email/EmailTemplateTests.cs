@@ -47,6 +47,16 @@ public partial class EmailTemplateTests
     }
 
     [Fact]
+    public void Html_version_switches_to_the_dark_tokens_in_dark_mode()
+    {
+        var html = EmailTemplate.Render("sam@example.test", Content()).HtmlBody;
+
+        Assert.Contains("@media (prefers-color-scheme: dark)", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"pt-hesis\"", html, StringComparison.Ordinal);
+        Assert.Contains(".pt-text, .pt-hesis { color: #F7F5ED !important; }", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Mime_message_carries_both_versions_and_the_inline_icon()
     {
         var message = EmailTemplate.Render("sam@example.test", Content());

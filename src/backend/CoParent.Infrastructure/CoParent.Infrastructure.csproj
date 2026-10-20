@@ -17,6 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Unchanged copy of the approved icon export, embedded inline in emails (Email/Brand/README.md). -->
-    <EmbeddedResource Include="Email\Brand\parenthesis-icon-180.png" LogicalName="CoParent.Infrastructure.Email.parenthesis-icon.png" />
+    <EmbeddedResource Include="Email\Brand\parenthesis-icon-transparent-376.png" LogicalName="CoParent.Infrastructure.Email.parenthesis-icon.png" />
   </ItemGroup>
 </Project>
