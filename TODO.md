@@ -237,15 +237,15 @@ that points back here.
       (October 19, 2026).
   - [x] First real run on the `release/0.2.0` → `develop` PR (#88, October 19, 2026): Playwright passed in about
     4 minutes, the summary ran, the HTML report and summary artifacts were uploaded, and the Discord post was sent.
-  - [ ] Move `actions/upload-artifact` and `actions/download-artifact` in `playwright-release.yml` off Node.js 20
-    (GitHub warned on #88's run; they're being forced onto Node.js 24).
+  - [x] Moved `actions/upload-artifact` (v4 → v7) and `actions/download-artifact` (v4 → v8) in
+    `playwright-release.yml` to Node.js 24 (GitHub warned on #88's run). Only new optional inputs; defaults unchanged
+    (October 19, 2026).
 - [x] **Owner:** prune inactive branches (owner request, October 19, 2026). Claude listed merged or abandoned
   branches with their PRs; the owner deleted 28 (24 with merged PRs, 3 duplicates already in `develop`, and the
   superseded `docs/dev-workflow-automation`). Kept: `main`, `develop`, `release/0.2.0` (until v0.2.0 reaches
   production), `release/0.3.0` and `design/signup-invitations-profile-picker` (#40 open). Claude Code sessions
   can't delete branches (the proxy returns 403), so the owner deletes them.
-  - [ ] **Owner (optional):** turn on Settings → General → "Automatically delete head branches" so merged work
-    branches clean themselves up.
+  - [x] **Owner:** turned on Settings → General → "Automatically delete head branches" (October 19, 2026).
   - [ ] Add browser journeys as the v0.2.0 and v0.3.0 screens ship (invitations, children, profile picker, PIN
     entry, the full calendar). Until then those features are tested through the API, and the calendar page through
     its honest empty state.
