@@ -20,3 +20,9 @@
 - If the original asset is not present at the expected path, stop and report the missing asset instead of inventing one.
 
 **Repository status:** This manifest documents the exact source and checksum. The binary original has **not** been uploaded by this commit; do not claim otherwise.
+
+## Approved exports
+- `parenthesis-icon-transparent-376.png` (376 × 348, transparent): the approved `parenthesis-icon.svg` rasterised
+  unchanged at 2× in Chromium, with no redrawing or recolouring. Compared side by side with Variation 1 on the original
+  board and approved by the owner on **October 20, 2026** for email use, where SVG isn't supported. SHA-256:
+  `c8389f62f3130fe83858c273d61ee6c64a2d4126dc452ca9c52e84335fd3bdc0`. Emails embed an unchanged copy (`src/backend/CoParent.Infrastructure/Email/Brand/`).
