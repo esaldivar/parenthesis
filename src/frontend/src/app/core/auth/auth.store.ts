@@ -73,6 +73,14 @@ export class AuthStore {
     }
   }
 
+  /** Deletes the parent's account (A-12). The API ends the session; throws the HTTP error so the form can explain it. */
+  async deleteAccount(password: string): Promise<void> {
+    await this.api.deleteAccount(password);
+    this.setUser(null);
+    await this.api.antiforgery().catch(() => undefined);
+    await this.loadDevice().catch(() => undefined);
+  }
+
   async loadFamilies(): Promise<readonly FamilySummary[]> {
     const families = await this.api.myFamilies();
     this.families.set(families);

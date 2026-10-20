@@ -6,6 +6,32 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Required tracking issues on every PR (#132, owner October 20, 2026).** Template, trusted-base read-only
+  checker and tests prepared in the implementation PR. After owner-approved merges, verify live pass/fail behavior
+  and require **Tracking issue links** on `release/*`, `develop` and `main`, preserving every existing rule.
+  Existing open PR authors must identify relevant issues; no retroactive unrelated links. Details:
+  [rollout runbook](docs/runbooks/pr-issue-links.md). Not enforced until branch settings are verified.
+- [ ] **Account deletion (A-12, v0.3.0, first item; owner decisions October 20, 2026).** A parent can delete their own
+  account, so real families can leave and the owner can rerun the sign-up flows.
+  - [x] Built (October 20, 2026): Settings → Delete account. The parent re-enters their password and sees what will be
+    removed; deletion is permanent at once (`POST /api/me/delete`). It removes the sign-in, name and email, and
+    signs out; a wrong password counts toward the sign-in lockout.
+    - **With a co-parent:** the family, children and shared history stay with them, and the departing parent shows
+      as **"Former parent"** (no name kept). Their pending proposals are withdrawn. The co-parent's proposals that
+      no longer need anyone else are applied, as in a one-parent family. Their Unavailable time, the household
+      devices they registered, their unsent invitations, and the accepted invitation that held their email are
+      removed.
+    - **As the only parent:** the family goes too, with its children, devices, invitations, calendar and approvals.
+    - **Emails:** a confirmation to the parent, and a neutral notice to the co-parent that names nobody: "A parent
+      has left your family on Parenthesis." No personal data in logs (the audit rows hold ids only).
+  - [ ] Check it on the development site once it's released: delete a test account, then sign up again with the
+    same address.
+  - [ ] **Family pictures stay (owner, October 20, 2026).** When memories and uploads arrive (v0.5.0, M-01 to M-06),
+    a departing parent's photos and memories stay with the family if a co-parent remains: implement
+    `IParentDepartureHandler` in that module so it keeps them (attributed to "Former parent") and deletes them only
+    when the family is closing.
+  - Until it's released, use a Gmail plus address (added to `Identity__SignUp__AllowedEmails`) for a fresh account
+    on the development site.
 - [ ] **SonarQube Cloud (Free plan) protecting `main`** (big to-do; owner decision, October 17, 2026). It gives code
   quality, security and vulnerability analysis at no cost. The plan only covers PRs into `main` and `main` itself,
   which is all that's needed. The paid plans and the self-hosted server were ruled out on cost.
@@ -192,11 +218,12 @@ that points back here.
       (runbook, "One-time setup") (October 19, 2026).
     - [x] Pilot issue: #98 (calendar validation tests), approved by the owner; `--plan` selected it (October 19, 2026).
     - [x] **Fully automated** (owner decision, October 19, 2026): an hourly Windows scheduled task on the owner's PC
-      runs `--scheduled` (headless; quiet when idle; skips issues that already have a queue branch or PR; waits at the
-      weekly limit; Discord notice when a draft PR opens or a run fails, once per problem; clears a crashed run's
+      runs `--scheduled` (headless; quiet when idle; skips issues that already have a queue branch or PR;
+      ordinary coding is exempt from the promotion cap after #134 activation; Discord notice when a draft PR opens or a run fails, once per problem; clears a crashed run's
       lock). Set up with `scripts/claude_queue_schedule.ps1`.
     - [ ] **Owner:** after this merges, run `scripts/claude_queue_schedule.ps1` once (runbook, "Running it on a
-      schedule"). The first scheduled run is the pilot: #98 runs headless once the weekly limit resets.
+      schedule"). Task registration is already verified below. Pilot #98 is pending; coordinate #134 activation
+      explicitly, since the removed broad cap must no longer be used as a safety hold.
     - [x] **Owner:** ran `scripts/claude_queue_schedule.ps1`; the task is registered (October 19, 2026).
     - [x] Fixed: every scheduled run failed under Task Scheduler (exit 120; "The handle is invalid" when the runner
       restarted itself after updating its checkout). Added `.git/claude-queue/last-scheduled-run.txt` so idle runs
@@ -267,6 +294,10 @@ that points back here.
 
 - [ ] **Development workflow automation** (owner brief, October 18, 2026). Weekly PR and Copilot review limits,
   Discord notifications for major and release PRs, and a weekly status report. The brief is in CLAUDE.md.
+  - [ ] **Release-promotion-only weekly cap (#134, owner correction October 20, 2026).** Only `release/*` → `develop`
+    PRs count toward three per week. Ordinary work is exempt at admission and pre-PR recheck. Tested implementation
+    is in a separate PR; owner-approved merges and coordinated installed-runner activation remain pending.
+    Do not start #98 as a test or change/disable the task without authorization.
   - [x] Brief recorded in CLAUDE.md (October 18, 2026).
   - [x] Inspection report to the owner (CLAUDE.md step 11), October 18, 2026.
   - [x] **Owner settings** (October 18, 2026): `DISCORD_WEBHOOK_URL` is a repository Actions secret (the plain-text
@@ -279,6 +310,12 @@ that points back here.
     now links to it (October 18, 2026).
   - [ ] **Owner:** once the **Weekly PR limit** check has run on a PR into `develop`, make it a required check there
     (Settings → Branches → `develop`), so PRs over the limit can't merge without `owner-approved-pr`.
+  - [x] **Owner setting: Copilot review on release PRs** (owner decision, October 20, 2026; created October 20). Settings → Rules →
+    Rulesets → New branch ruleset named **Copilot release review**, target `develop`: turn on **Automatically
+    request Copilot code review** with **Review new pushes** off, and in "Require a pull request before merging" turn
+    on **Require conversation resolution before merging**. Don't change the other `develop` rules. Save it with
+    Enforcement status **Disabled**; it's set to Active only while a release PR is open (see
+    `docs/development-workflow.md`). The usage script already leaves these reviews out of the weekly count.
   - [ ] Watch the first real runs: the first major or release PR notice, the first over-limit PR, and the first
     Monday report (it only runs once this is released to `main`).
 

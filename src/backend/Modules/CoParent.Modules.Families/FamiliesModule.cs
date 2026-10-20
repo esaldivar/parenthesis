@@ -26,6 +26,7 @@ public static class FamiliesModule
         services.AddScoped<IFamilyRoster, FamilyRoster>();
         services.AddScoped<IChildSessionValidator, ChildSessionValidator>();
         services.AddScoped<ChildSafetyEmails>();
+        services.AddScoped<AccountDeletionEmails>();
         services.AddSingleton<IPasswordHasher<ChildCredential>, PasswordHasher<ChildCredential>>();
 
         // PIN attempts per address, on top of the 3-strikes lock per child.
@@ -39,6 +40,12 @@ public static class FamiliesModule
             RateLimitPartition.GetFixedWindowLimiter(
                 context.User.GetUserId()?.ToString() ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromHours(1) })));
+
+        // Deleting an account checks the password; the sign-in lockout applies too.
+        services.Configure<RateLimiterOptions>(options => options.AddPolicy(AccountDeletionEndpoints.RateLimitPolicy, context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                context.User.GetUserId()?.ToString() ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromHours(1) })));
         return services;
     }
 
@@ -50,6 +57,7 @@ public static class FamiliesModule
         InvitationEndpoints.Map(api, family);
         ChildEndpoints.Map(family);
         ChildAccessEndpoints.Map(api, family);
+        AccountDeletionEndpoints.Map(api);
         return api;
     }
 }

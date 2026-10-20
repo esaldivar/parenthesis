@@ -110,7 +110,7 @@ internal static class FamilyEndpoints
         var names = await directory.GetDisplayNamesAsync(memberships.Select(m => m.UserId).ToList(), cancellationToken);
 
         var members = memberships
-            .Select(m => new FamilyMember(m.Id, names.GetValueOrDefault(m.UserId, "Former member"), m.Role, m.JoinedAt))
+            .Select(m => new FamilyMember(m.Id, names.GetValueOrDefault(m.UserId, "Former parent"), m.Role, m.JoinedAt))
             .ToList();
         return TypedResults.Ok(new FamilyDetails(family.Id, family.Name, family.TimeZone, family.CreatedAt, members));
     }

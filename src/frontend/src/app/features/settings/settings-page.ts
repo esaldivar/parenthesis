@@ -6,11 +6,12 @@ import { AppearancePicker } from '../../shared/appearance-picker/appearance-pick
 import { ChildrenAccess } from '../family/children-access';
 import { DeviceList } from '../family/device-list';
 import { InviteCoParent } from '../family/invite-co-parent';
+import { DeleteAccount } from './delete-account';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList],
+  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, DeleteAccount],
   template: `
     <h1>Settings</h1>
     <section class="card">
@@ -46,6 +47,19 @@ import { InviteCoParent } from '../family/invite-co-parent';
         </section>
       }
     }
+
+    @if (auth.status() === 'signed-in') {
+      <section class="card" aria-labelledby="delete-account-heading">
+        <h2 id="delete-account-heading">Delete account</h2>
+        @if (deletionError(); as message) {
+          <p role="alert">{{ message }}</p>
+        } @else if (deletionFamilies(); as families) {
+          <app-delete-account [families]="families" />
+        } @else {
+          <p class="muted">Loading account deletion details…</p>
+        }
+      </section>
+    }
   `,
   styles: `
     :host {
@@ -75,8 +89,27 @@ export class SettingsPage implements OnInit {
   protected readonly details = signal<FamilyDetails | null>(null);
   protected readonly pending = signal<InvitationSummary | null>(null);
   protected readonly error = signal<string | null>(null);
+  protected readonly deletionError = signal<string | null>(null);
+  protected readonly deletionFamilies = signal<readonly { name: string; coParentName: string | null }[] | null>(null);
 
   async ngOnInit(): Promise<void> {
+    await Promise.all([this.loadDeletionFamilies(), this.loadCurrentFamily()]);
+  }
+
+  private async loadDeletionFamilies(): Promise<void> {
+    // The deletion endpoint affects every active family, not just the selected one.
+    // Never show a destructive confirmation based on partial or failed loads.
+    try {
+      const summaries = await this.api.myFamilies();
+      const parentFamilies = summaries.filter((family) => family.role === 'Parent');
+      const allDetails = await Promise.all(parentFamilies.map((family) => this.api.family(family.id)));
+      this.deletionFamilies.set(allDetails.map((details) => ({ name: details.name, coParentName: this.coParent(details) })));
+    } catch (error) {
+      this.deletionError.set(generalMessage(toProblem(error)));
+    }
+  }
+
+  private async loadCurrentFamily(): Promise<void> {
     const family = this.auth.currentFamily();
     if (family?.role !== 'Parent') {
       return;
