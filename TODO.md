@@ -339,6 +339,11 @@ that points back here.
 - [ ] Replace placeholder counts (`src/frontend/src/app/layout/sample-counts.ts`) with real unread and notification
   data.
 - [ ] Deferred (owner OK for now): photo avatars, kids' artwork and memory photos (initials and tiles are used).
+- [ ] Show/hide password toggle (eye icon) on every password field: sign-in, create account, reset password and
+  change password (owner request, October 20, 2026). A real button inside the field with an accessible name that
+  says what it does ("Show password" / "Hide password", `aria-pressed`), reachable by keyboard, never submits the
+  form, and the password goes back to hidden after submitting. Use the shared form components; check both themes and
+  320px.
 
 ## Backend features the dashboard is waiting on
 - [ ] Calendar and parenting-time endpoints, including change requests and approvals.
