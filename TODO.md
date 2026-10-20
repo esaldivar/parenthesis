@@ -6,6 +6,25 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Required tracking issues on every PR (#132, owner October 20, 2026).** Template, trusted-base read-only
+  checker and tests prepared in the implementation PR. After owner-approved merges, verify live pass/fail behavior
+  and require **Tracking issue links** on `release/*`, `develop` and `main`, preserving every existing rule.
+  Existing open PR authors must identify relevant issues; no retroactive unrelated links. Details:
+  [rollout runbook](docs/runbooks/pr-issue-links.md). Not enforced until branch settings are verified.
+- [ ] **Account deletion (A-12, v0.3.0, first item; owner decisions October 20, 2026).** A parent can delete their own
+  account, so real families can leave and the owner can rerun the sign-up flows. Today there's no way to delete one:
+  on the development site use a Gmail plus address (added to `Identity__SignUp__AllowedEmails`) for a fresh account.
+  - Settings → Delete account: re-enter the password, see what will be removed, confirm. Permanent immediately.
+  - Removes the login, profile and the parent's private data, and signs out every session and device.
+  - If a co-parent has joined: the family, children and shared history stay with them; what the leaving parent
+    created shows as "Former parent" (shared records stay for accountability). Approvals they proposed that are still
+    pending are withdrawn.
+  - If they're the only parent: the family, its child profiles, devices and pending invitations are deleted too.
+  - Emails: a confirmation to the leaving parent, and a neutral notice to the co-parent. No personal data in logs or
+    telemetry. Children never see it.
+  - Wording (owner, October 20, 2026): their records show as **"Former parent"** (no name kept). The co-parent's
+    email is neutral and names nobody: "A parent has left your family on Parenthesis. Your family, children and
+    shared history are unchanged."
 - [ ] **SonarQube Cloud (Free plan) protecting `main`** (big to-do; owner decision, October 17, 2026). It gives code
   quality, security and vulnerability analysis at no cost. The plan only covers PRs into `main` and `main` itself,
   which is all that's needed. The paid plans and the self-hosted server were ruled out on cost.
@@ -192,11 +211,12 @@ that points back here.
       (runbook, "One-time setup") (October 19, 2026).
     - [x] Pilot issue: #98 (calendar validation tests), approved by the owner; `--plan` selected it (October 19, 2026).
     - [x] **Fully automated** (owner decision, October 19, 2026): an hourly Windows scheduled task on the owner's PC
-      runs `--scheduled` (headless; quiet when idle; skips issues that already have a queue branch or PR; waits at the
-      weekly limit; Discord notice when a draft PR opens or a run fails, once per problem; clears a crashed run's
+      runs `--scheduled` (headless; quiet when idle; skips issues that already have a queue branch or PR;
+      ordinary coding is exempt from the promotion cap after #134 activation; Discord notice when a draft PR opens or a run fails, once per problem; clears a crashed run's
       lock). Set up with `scripts/claude_queue_schedule.ps1`.
     - [ ] **Owner:** after this merges, run `scripts/claude_queue_schedule.ps1` once (runbook, "Running it on a
-      schedule"). The first scheduled run is the pilot: #98 runs headless once the weekly limit resets.
+      schedule"). Task registration is already verified below. Pilot #98 is pending; coordinate #134 activation
+      explicitly, since the removed broad cap must no longer be used as a safety hold.
     - [x] **Owner:** ran `scripts/claude_queue_schedule.ps1`; the task is registered (October 19, 2026).
     - [x] Fixed: every scheduled run failed under Task Scheduler (exit 120; "The handle is invalid" when the runner
       restarted itself after updating its checkout). Added `.git/claude-queue/last-scheduled-run.txt` so idle runs
@@ -267,6 +287,10 @@ that points back here.
 
 - [ ] **Development workflow automation** (owner brief, October 18, 2026). Weekly PR and Copilot review limits,
   Discord notifications for major and release PRs, and a weekly status report. The brief is in CLAUDE.md.
+  - [ ] **Release-promotion-only weekly cap (#134, owner correction October 20, 2026).** Only `release/*` → `develop`
+    PRs count toward three per week. Ordinary work is exempt at admission and pre-PR recheck. Tested implementation
+    is in a separate PR; owner-approved merges and coordinated installed-runner activation remain pending.
+    Do not start #98 as a test or change/disable the task without authorization.
   - [x] Brief recorded in CLAUDE.md (October 18, 2026).
   - [x] Inspection report to the owner (CLAUDE.md step 11), October 18, 2026.
   - [x] **Owner settings** (October 18, 2026): `DISCORD_WEBHOOK_URL` is a repository Actions secret (the plain-text
@@ -315,8 +339,9 @@ that points back here.
     (runbook steps 1–3 with `ENV=dev`, `SUFFIX=15465`): resource group, logs, Application Insights, Container Apps
     environment, PostgreSQL 17, Key Vault, storage, the app and its migration job, Key Vault references, the GitHub
     `development` variables and `DEPLOY_ENABLED` = `true` (October 19, 2026).
-  - [ ] First deployment to the development site (triggered by the next merge into `develop`); if the image pull
-    fails, make the `parenthesis-api` package public and re-run.
+  - [x] First deployment to the development site, through the `chore/sync-main` back-merge (#105, October 19, 2026).
+  - [ ] Development deployment passes again after `release/0.3.0` → `develop` (#117): the sign-up email is branded
+    and sign-ins survive a restart.
   - [ ] **Owner:** the **production** environment before the first production window (October 30, 2026): runbook
     steps 2–3 with `ENV=prod`, the GitHub `production` variables, and the production readers' role assignments.
   - [x] **Owner:** people and roles (runbook step 3a, owner request October 19, 2026): Entra groups

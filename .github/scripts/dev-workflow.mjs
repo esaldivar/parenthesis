@@ -86,17 +86,15 @@ const labelNames = (pr) => (pr.labels ?? []).map((l) => (typeof l === "string" ?
 const isBot = (user) => user?.type === "Bot" || /\[bot\]$/.test(user?.login ?? "");
 const isPermanent = (ref) => ["main", "develop", "development"].includes(ref) || ref.startsWith("release/");
 
-/** Whether a PR counts toward the weekly limit of new development PRs, and why. */
+/** Owner policy (2026-10-20): only release/* -> develop PRs consume the weekly cap. */
 export function countsTowardLimit(pr) {
   const base = pr.base.ref;
   const head = pr.head.ref;
   if (new Date(pr.created_at) < LIMITS_START) return { counts: false, reason: "opened before the weekly limits started" };
-  if (isBot(pr.user)) return { counts: false, reason: "opened by a bot (for example, Dependabot)" };
-  if (labelNames(pr).includes(LABELS.replacement)) return { counts: false, reason: "replaces an earlier PR" };
-  if (head.startsWith("hotfix/")) return { counts: false, reason: "urgent production hotfix" };
-  if (base === "main" || isPermanent(head)) return { counts: false, reason: "release or promotion between permanent branches" };
-  if (head.startsWith("chore/sync-")) return { counts: false, reason: "back-merge after a release" };
-  return { counts: true, reason: "new development PR" };
+  if (base !== "develop" || !head.startsWith("release/") || head.length <= "release/".length) {
+    return { counts: false, reason: "only release/* source branches targeting develop consume the cap" };
+  }
+  return { counts: true, reason: "release-branch promotion into develop" };
 }
 
 /**
@@ -301,7 +299,9 @@ export function github({
   };
 }
 
-/** Development PRs created in [start, end), oldest first. Reopening never changes created_at. */
+/** Release promotions created in [start, end), oldest first. Reopening never changes created_at.
+ * Keep the exported name for existing callers; this is no longer an ordinary development-PR count.
+ */
 export async function developmentPrs(gh, { start, end }) {
   const found = [];
   for await (const pr of gh.paginate(`/repos/${gh.repo}/pulls?state=all&sort=created&direction=desc&per_page=100`)) {
@@ -375,28 +375,29 @@ const summary = (text) => {
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${text}\n`);
 };
 
-async function prLimit(gh) {
-  const pr = await gh.get(`/repos/${gh.repo}/pulls/${event().pull_request.number}`);
+export async function prLimit(gh, number = event().pull_request.number) {
+  const pr = await gh.get(`/repos/${gh.repo}/pulls/${number}`);
   const rule = countsTowardLimit(pr);
   if (!rule.counts) return summary(`#${pr.number} doesn't count toward the weekly PR limit: ${rule.reason}.`);
   const week = weekRange(new Date(pr.created_at));
   const prs = await developmentPrs(gh, week);
   const position = prs.findIndex((p) => p.number === pr.number) + 1;
+  if (position === 0) throw new Error('PR count changed during verification; rerun the latest event.');
   const limit = LIMITS.prsPerWeek;
   const weekText = `the week of ${formatChicagoDate(week.start)}`;
-  summary(`#${pr.number} is development PR ${position} of ${limit} allowed in ${weekText}.`);
+  summary(`#${pr.number} is release promotion ${position} of ${limit} allowed in ${weekText}.`);
   const existing = await comments(gh, pr.number);
   if (position === limit) {
     await commentOnce(gh, pr.number, existing, "pr-limit-last",
-      `ℹ️ This is development PR ${limit} of ${limit} for ${weekText}. Any further PR this week needs the owner's \`${LABELS.extraPr}\` label. The limit resets Monday at 12:00 AM Central. See docs/development-workflow.md.`);
+      `ℹ️ This is release promotion ${limit} of ${limit} for ${weekText}. Any further release/* -> develop PR this week needs the owner's \`${LABELS.extraPr}\` label. The limit resets Monday at 12:00 AM Central. See docs/development-workflow.md.`);
   }
   if (position <= limit) return;
   if (await ownerApproved(gh, pr, LABELS.extraPr)) return summary(`Over the limit, but the owner approved it with \`${LABELS.extraPr}\`.`);
   const others = prs.slice(0, position - 1).map((p) => `#${p.number}`).join(", ");
   const posted = await commentOnce(gh, pr.number, existing, "pr-limit-over",
-    `⛔ Weekly PR limit reached: this is development PR ${position}, and the limit is ${limit} per week (${others} came first, ${weekText}). It can stay open, but it shouldn't merge until the owner adds the \`${LABELS.extraPr}\` label or it moves to next week's allowance. The limit resets Monday at 12:00 AM Central. See docs/development-workflow.md.`);
+    `⛔ Weekly PR limit reached: this is release promotion ${position}, and the limit is ${limit} per week (${others} came first, ${weekText}). It can stay open, but it shouldn't merge until the owner adds the \`${LABELS.extraPr}\` label or a later promotion is created in a new week. The limit resets Monday at 12:00 AM Central. See docs/development-workflow.md.`);
   if (posted) {
-    await sendDiscord(`**PARENTHESIS — WEEKLY PR LIMIT REACHED**\n\nPR: #${pr.number} — ${pr.title}\nBranch: ${pr.head.ref} → ${pr.base.ref}\nThis is development PR ${position}; the limit is ${limit} per week (${others} came first).\nTo allow it, add the \`${LABELS.extraPr}\` label.\nGitHub: ${pr.html_url}`)
+    await sendDiscord(`**PARENTHESIS — WEEKLY PR LIMIT REACHED**\n\nPR: #${pr.number} — ${pr.title}\nBranch: ${pr.head.ref} → ${pr.base.ref}\nThis is release promotion ${position}; the limit is ${limit} per week (${others} came first).\nTo allow it, add the \`${LABELS.extraPr}\` label.\nGitHub: ${pr.html_url}`)
       .catch((e) => summary(`⚠️ ${e.message}`));
   }
   throw new Error(`Weekly PR limit reached (${position} of ${limit}). The owner can allow it with the "${LABELS.extraPr}" label.`);
@@ -477,11 +478,11 @@ export async function weeklyReport(gh, { period = "last", now = new Date() } = {
   const unavailable = [];
 
   const prs = await developmentPrs(gh, week);
-  lines.push(`**Development PRs created:** ${prs.length} of ${LIMITS.prsPerWeek}${prs.length > LIMITS.prsPerWeek ? " (over the limit)" : ""}`);
+  lines.push(`**Release promotions created:** ${prs.length} of ${LIMITS.prsPerWeek}${prs.length > LIMITS.prsPerWeek ? " (over the limit)" : ""}`);
   for (const p of prs) lines.push(`- #${p.number} ${p.title}`);
   lines.push(period === "last"
-    ? `**PR allowance this week:** ${LIMITS.prsPerWeek} (reset Monday; unused slots don't roll over)`
-    : `**PR allowance left:** ${Math.max(0, LIMITS.prsPerWeek - prs.length)} of ${LIMITS.prsPerWeek}`);
+    ? `**Release-promotion allowance this week:** ${LIMITS.prsPerWeek} (reset Monday; unused slots don't roll over)`
+    : `**Release-promotion allowance left:** ${Math.max(0, LIMITS.prsPerWeek - prs.length)} of ${LIMITS.prsPerWeek}`);
 
   try {
     const usage = await copilotUsage(gh, week);
@@ -576,7 +577,7 @@ async function main([command, ...args]) {
       const prs = await developmentPrs(gh, week);
       const copilot = await copilotUsage(gh, week);
       console.log(`Week of ${formatChicagoDate(week.start)} (resets Monday 12:00 AM Central)`);
-      console.log(`Development PRs: ${prs.length} of ${LIMITS.prsPerWeek}${prs.length ? ` (${prs.map((p) => `#${p.number}`).join(", ")})` : ""}`);
+      console.log(`Release promotions: ${prs.length} of ${LIMITS.prsPerWeek}${prs.length ? ` (${prs.map((p) => `#${p.number}`).join(", ")})` : ""}`);
       console.log(`Copilot reviews: ${copilot.used} of ${LIMITS.copilotPerWeek}${copilot.pending ? `, plus ${copilot.pending} pending` : ""}`);
       return;
     }
