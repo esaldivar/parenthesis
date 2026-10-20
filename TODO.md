@@ -357,4 +357,5 @@ that points back here.
   sign-up on the development site failed with "Invalid or missing antiforgery token" after a restart (October 20, 2026).
 - [ ] Before production: encrypt the key ring at rest with a Key Vault key (`ProtectKeysWithAzureKeyVault`, the app's
   managed identity). Today the keys rely on database access control only, and ASP.NET Core logs a warning about it.
-- [ ] S-03 forwarded headers behind the proxy.
+- [x] S-03 forwarded headers behind the proxy: `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` on each container app
+  (runbook step 2), found when sign-up failed on the development site (October 20, 2026).
