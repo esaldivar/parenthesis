@@ -32,6 +32,7 @@ describe('delete account (A-12)', () => {
     http = TestBed.inject(HttpTestingController);
     await vi.waitFor(() => http.expectOne(`${F}/devices`), { timeout: 2000 }).then((r) => r.flush([]));
     for (const r of http.match(`${F}/children`)) r.flush([]);
+    for (const r of http.match('/api/me/families')) r.flush([{ id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', role: 'Parent' }]);
     for (const r of http.match(F)) r.flush(family(members));
     for (const r of http.match(`${F}/invitations`)) r.flush([]);
     await settle(harness);
