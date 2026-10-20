@@ -19,11 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # pull_request_target executes from the default branch. Pin its trusted SHA;
+      # pull_request_target executes from the default branch. Use trusted default-branch code;
       # never execute or check out the PR head or a policy override on its target.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
           persist-credentials: false
       - name: Verify the current PR's tracking issues

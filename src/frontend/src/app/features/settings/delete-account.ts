@@ -29,17 +29,17 @@ import { FORM_STYLES } from '../auth/form-styles';
         <p class="warning" #warning tabindex="-1"><strong>This can't be undone.</strong> Deleting your account:</p>
         <ul>
           <li>Removes your sign-in, your name and your private details, and signs you out everywhere.</li>
-          @if (familyName(); as family) {
-            @if (coParentName(); as coParent) {
+          @for (family of families(); track $index) {
+            @if (family.coParentName; as coParent) {
               <li>
-                Leaves <strong>{{ family }}</strong> with <strong>{{ coParent }}</strong>: the family, your children and your
+                Leaves <strong>{{ family.name }}</strong> with <strong>{{ coParent }}</strong>: the family, your children and your
                 shared history stay with them. What you added shows as “Former parent”.
               </li>
               <li>Withdraws requests you're waiting on, and removes your Unavailable time.</li>
               <li>Sends {{ coParent }} an email that a parent has left. It doesn't include your name.</li>
             } @else {
               <li>
-                Deletes <strong>{{ family }}</strong> too, because you're its only parent: your children's profiles, devices,
+                Deletes <strong>{{ family.name }}</strong> too, because you're its only parent: your children's profiles, devices,
                 calendar and invitations.
               </li>
             }
@@ -109,10 +109,8 @@ export class DeleteAccount {
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
 
-  /** The parent's family, if they have one. */
-  readonly familyName = input<string | null>(null);
-  /** The co-parent's name once they've joined; null if this parent is the family's only parent. */
-  readonly coParentName = input<string | null>(null);
+  /** All active parent memberships, loaded before deletion can be offered. */
+  readonly families = input.required<readonly { name: string; coParentName: string | null }[]>();
 
   private readonly warning = viewChild<ElementRef<HTMLElement>>('warning');
 

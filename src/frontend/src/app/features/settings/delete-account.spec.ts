@@ -30,6 +30,7 @@ describe('delete account (A-12)', () => {
     });
     const harness = await RouterTestingHarness.create('/settings');
     http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/me/families').flush([{ id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', role: 'Parent' }]);
     await vi.waitFor(() => http.expectOne(`${F}/devices`), { timeout: 2000 }).then((r) => r.flush([]));
     for (const r of http.match(`${F}/children`)) r.flush([]);
     for (const r of http.match(F)) r.flush(family(members));

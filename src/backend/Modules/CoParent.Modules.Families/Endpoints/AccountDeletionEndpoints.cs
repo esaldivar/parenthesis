@@ -108,15 +108,18 @@ internal static class AccountDeletionEndpoints
         var audit = services.GetRequiredService<IAuditLog>();
         var now = services.GetRequiredService<TimeProvider>().GetUtcNow();
 
-        var remaining = await db.Memberships
-            .Where(m => m.Id != membershipId && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
-            .Select(m => m.UserId)
-            .ToListAsync(cancellationToken);
-        var closing = remaining.Count == 0;
-        var departure = new ParentDeparture(familyId, membershipId, closing);
-
+        var remaining = new List<Guid>();
         await services.GetRequiredService<IUnitOfWork>().ExecuteAsync(async ct =>
         {
+            // Serialize the parent-count decision with invitation acceptance.
+            await db.Database.SqlQuery<int>($"SELECT 1 AS \"Value\" FROM families.families WHERE id = {familyId} FOR UPDATE")
+                .SingleAsync(ct);
+            remaining = await db.Memberships
+                .Where(m => m.Id != membershipId && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
+                .Select(m => m.UserId)
+                .ToListAsync(ct);
+            var closing = remaining.Count == 0;
+            var departure = new ParentDeparture(familyId, membershipId, closing);
             if (closing)
             {
                 foreach (var handler in handlers)

@@ -118,7 +118,7 @@ for the backend tests.
 9. If the change is **major** (by `dev-workflow.mjs`'s rules: migrations, auth, security, infrastructure or a large
    change), sends the Discord summary first. Without `DISCORD_WEBHOOK_URL`, or if sending fails, it stops before
    pushing.
-10. Pushes and opens a **draft** PR into `release/0.3.0` with `Closes #n`, the check results, risks and outstanding
+10. Pushes and opens a **draft** PR into `release/0.3.0` with `Refs #n` in Tracking issues, the check results, risks and outstanding
     work. The usual CI, branch policy and Discord notices apply when it's marked ready for review; the promotion
     cap does not apply to this source/target pair.
 
