@@ -352,6 +352,10 @@ that points back here.
 
 ## Platform hardening (from the architecture backlog)
 - [ ] F-09 transactional outbox.
-- [ ] S-01 data-protection key ring.
+- [x] S-01 data-protection key ring: keys stored in PostgreSQL (`data_protection.keys`), shared by every replica and
+  restart, so sign-ins, antiforgery tokens and email links survive scaling, waking from zero and deploys. Found when
+  sign-up on the development site failed with "Invalid or missing antiforgery token" after a restart (October 20, 2026).
+- [ ] Before production: encrypt the key ring at rest with a Key Vault key (`ProtectKeysWithAzureKeyVault`, the app's
+  managed identity). Today the keys rely on database access control only, and ASP.NET Core logs a warning about it.
 - [x] S-03 forwarded headers behind the proxy: `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` on each container app
   (runbook step 2), found when sign-up failed on the development site (October 20, 2026).
