@@ -112,7 +112,7 @@ internal static class AccountDeletionEndpoints
         await services.GetRequiredService<IUnitOfWork>().ExecuteAsync(async ct =>
         {
             // Serialize the parent-count decision with invitation acceptance.
-            await db.Database.SqlQuery<int>($"SELECT 1 AS \"Value\" FROM families.families WHERE \"Id\" = {familyId} FOR UPDATE")
+            await db.Database.SqlQuery<int>($"SELECT 1 AS \"Value\" FROM families.families WHERE id = {familyId} FOR UPDATE")
                 .SingleAsync(ct);
             remaining = await db.Memberships
                 .Where(m => m.Id != membershipId && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)

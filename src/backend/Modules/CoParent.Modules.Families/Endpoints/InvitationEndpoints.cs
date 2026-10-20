@@ -267,7 +267,7 @@ internal static class InvitationEndpoints
             // Share the family-row lock with account deletion. Recheck under the lock:
             // the family may have been deleted or another parent may have joined.
             var exists = await db.Database.SqlQuery<int>(
-                $"SELECT 1 AS \"Value\" FROM families.families WHERE \"Id\" = {invitation.FamilyId} FOR UPDATE")
+                $"SELECT 1 AS \"Value\" FROM families.families WHERE id = {invitation.FamilyId} FOR UPDATE")
                 .ToListAsync(ct);
             if (exists.Count == 0)
             {
