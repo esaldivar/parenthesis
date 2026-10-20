@@ -309,8 +309,9 @@ that points back here.
     (runbook steps 1–3 with `ENV=dev`, `SUFFIX=15465`): resource group, logs, Application Insights, Container Apps
     environment, PostgreSQL 17, Key Vault, storage, the app and its migration job, Key Vault references, the GitHub
     `development` variables and `DEPLOY_ENABLED` = `true` (October 19, 2026).
-  - [ ] First deployment to the development site (triggered by the next merge into `develop`); if the image pull
-    fails, make the `parenthesis-api` package public and re-run.
+  - [x] First deployment to the development site, through the `chore/sync-main` back-merge (#105, October 19, 2026).
+  - [ ] Development deployment passes again after `release/0.3.0` → `develop` (#117): the sign-up email is branded
+    and sign-ins survive a restart.
   - [ ] **Owner:** the **production** environment before the first production window (October 30, 2026): runbook
     steps 2–3 with `ENV=prod`, the GitHub `production` variables, and the production readers' role assignments.
   - [x] **Owner:** people and roles (runbook step 3a, owner request October 19, 2026): Entra groups

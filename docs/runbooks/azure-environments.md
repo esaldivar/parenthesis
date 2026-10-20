@@ -190,7 +190,10 @@ email should arrive within a minute. If it doesn't, the app logs "Failed to send
 The development key expires in October 2027; rotate it in Brevo and store the new one with the same first command
 (the reference has no version, so the app picks it up after a restart).
 
-Still to do before families use it (TODO.md): a custom domain with HTTPS, and the data-protection key ring (S-01).
+The custom domain (above) and the data-protection key ring (S-01, stored in PostgreSQL by a migration) are done.
+Still to do before production (TODO.md): encrypt the key ring at rest with a Key Vault key
+(`ProtectKeysWithAzureKeyVault` with the app's managed identity); until then ASP.NET Core logs a warning that the
+keys aren't encrypted.
 
 **Development holds synthetic data only.** Never copy production data into it.
 
