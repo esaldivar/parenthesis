@@ -1,4 +1,3 @@
-using System.Text.Encodings.Web;
 using CoParent.Infrastructure.Email;
 using Microsoft.Extensions.Logging;
 
@@ -14,39 +13,33 @@ internal sealed partial class InvitationEmails(IEmailSender sender, PublicUrls u
         string to, string inviterName, string familyName, string token, bool hasAccount, CancellationToken cancellationToken)
     {
         var query = new Dictionary<string, string?> { ["token"] = token };
-        var (subject, intro, label, link) = hasAccount
-            ? ($"{inviterName} invited you to join {familyName} on Parenthesis",
-                $"{inviterName} invited you to join {familyName} as a co-parent. Sign in to accept.",
-                "Join the family",
-                urls.Build("/invitations/accept", query))
-            : ($"{inviterName} invited you to Parenthesis",
-                $"{inviterName} invited you to join {familyName} on Parenthesis, a shared space for co-parents. Create your account to accept.",
-                "Sign up to join",
-                urls.Build("/register", query));
+        var content = hasAccount
+            ? new EmailContent(
+                $"{inviterName} invited you to join {familyName} on Parenthesis",
+                "Accept to become a member of the family",
+                null,
+                [
+                    $"{inviterName} invited you to join {familyName} as a co-parent.",
+                    "You already have a Parenthesis account, so sign in with this email address and accept the invitation to become a member. Your existing family and data stay as they are: families are never merged.",
+                ],
+                new EmailAction("Accept and join", urls.Build("/invitations/accept", query)),
+                Footer)
+            : new EmailContent(
+                $"{inviterName} invited you to Parenthesis",
+                "Create your account to join the family",
+                null,
+                [
+                    $"{inviterName} invited you to join {familyName} on Parenthesis, a shared space for co-parents.",
+                    "Create your account with this email address to accept. Both parents have an equal say in the family.",
+                ],
+                new EmailAction("Sign up to join", urls.Build("/register", query)),
+                Footer);
 
-        const string footer =
-            "The invitation expires in 7 days and works once. If you weren't expecting it, you can ignore this email.";
-        var html = HtmlEncoder.Default;
-        var message = new EmailMessage(
-            to,
-            subject,
-            $"""
-            Hi,
-
-            {intro}
-
-            {label}: {link}
-
-            {footer}
-            """,
-            $"""
-            <p>Hi,</p>
-            <p>{html.Encode(intro)}</p>
-            <p><a href="{html.Encode(link.AbsoluteUri)}">{html.Encode(label)}</a></p>
-            <p>{html.Encode(footer)}</p>
-            """);
-        return TrySendAsync(message, cancellationToken);
+        return TrySendAsync(EmailTemplate.Render(to, content), cancellationToken);
     }
+
+    private const string Footer =
+        "The invitation expires in 7 days and works once. If you weren't expecting it, you can ignore this email.";
 
     private async Task TrySendAsync(EmailMessage message, CancellationToken cancellationToken)
     {

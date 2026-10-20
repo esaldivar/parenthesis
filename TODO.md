@@ -63,9 +63,22 @@ that points back here.
   - Platform: Azure, as the architecture already chose (Container Apps, Azure Database for PostgreSQL, Blob Storage,
     Key Vault). Confirm this with the owner, including AWS as the alternative, when planning.
   - Keep costs low: small tiers, and check what Azure's free offers cover.
-  - **Real email sending** for deployed environments, for example Azure Communication Services Email. Mailpit only
-    catches mail locally. Email is used for account confirmation, password resets and account-safety notices, and
-    later for approval notifications.
+  - **Real email sending** for deployed environments. Mailpit only catches mail locally. Email is used for account
+    confirmation, password resets and account-safety notices, and later for approval notifications.
+    - **Owner decision (October 20, 2026): Brevo** (SMTP relay, free tier), not SendGrid (needs a paid plan) or Azure
+      Communication Services. `parenthesisfamily.com` is authenticated in Brevo; mail comes from
+      `no-reply@parenthesisfamily.com`. The app keeps its SMTP sender, so no Brevo-specific code.
+    - [x] Branded HTML templates for every email (confirmation, already registered, password reset, co-parent
+      invitation for new and existing users, child locked), one shared layout with a plain-text twin and a single
+      link (October 20, 2026).
+    - [ ] **Owner:** wire Brevo into the development app (runbook, "Email (Brevo)"), then sign up with a tester
+      address to confirm delivery.
+    - [ ] **Owner:** production Brevo SMTP key in the production Key Vault, same settings.
+    - [ ] **Owner:** the development SMTP key (`brevo-smtp`) expires in October 2027; rotate it before then.
+    - [ ] Before production: check what Brevo stores (recipients, subjects, bodies) and add it to the privacy notes.
+      Emails carry first names, family names and links only, never diary, message or approval content.
+    - Not built: a "forgot username" email. Sign-in uses the email address as the username, so there is no separate
+      username to forget; "forgot password" covers it.
   - Domain names, HTTPS, the pipeline (deploy `develop` → dev, `main` → prod), secrets in Key Vault, database
     migrations on deploy, backups, monitoring.
 
