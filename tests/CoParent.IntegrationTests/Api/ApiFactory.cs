@@ -42,10 +42,14 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             _respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
             {
                 DbAdapter = DbAdapter.Postgres,
-                TablesToIgnore = [MigrationsHistoryTable],
+                // The data-protection key ring isn't test data: keys issued earlier in the run must stay valid.
+                TablesToIgnore = [MigrationsHistoryTable, new Respawn.Graph.Table("data_protection", "keys")],
             });
         }
     }
+
+    /// <summary>The API's test database, for building a second host that shares it.</summary>
+    public string ConnectionString => _connectionString;
 
     /// <summary>Runs a scalar query against the API's database, for asserting on data no endpoint exposes (e.g. the audit log).</summary>
     public async Task<T?> QueryScalarAsync<T>(string sql, params (string Name, object Value)[] parameters)

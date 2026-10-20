@@ -195,6 +195,17 @@ in [the Azure runbook](runbooks/azure-environments.md#github-settings).
 6. Fill in the PR template, including **Testing**, **Risks and known issues** and **Outstanding work**: the Discord
    notice is built from those sections.
 
+## Local Claude queue (owner-approved issues)
+
+The owner can have Claude Code implement an approved coding issue on the owner's own machine, with the owner's Claude
+subscription (owner decision, October 19, 2026; #94). A Windows scheduled task on that machine checks every hour
+(owner decision, October 19, 2026: fully automated), and the owner can also start it by hand. It runs one issue at a
+time, never repeats an issue that already has a queue branch or PR, and only for issues with Status **Ready For Development**, the `claude-implementation` label, and the
+`owner-approved-claude` label added by the owner. It opens a **draft** PR into the active release branch and never
+merges, deploys or changes labels; it does keep issue Status on the board in step with each issue's PRs, up to Done (work on `main`, issue closed). At the weekly PR limit a scheduled run does nothing until the week resets. The
+owner's approval label is the only trigger. The weekly PR limit, Discord notices and every required check apply as above.
+How to run it: [the local Claude queue runbook](runbooks/claude-local-queue.md).
+
 ## Copilot reviews
 
 - **Settings (checked October 18, 2026):** no automatic-review ruleset, so Copilot reviews only when someone asks.
