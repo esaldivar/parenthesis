@@ -67,6 +67,11 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
   the default branch (`main`).
 
 ## Definition of Done
+- Every PR lists its relevant real repository issues under **Tracking issues**, one `Refs #123` per line.
+  This includes documentation, tooling, release rollups, hotfixes, syncs and bot PRs. PR-only references and
+  examples do not count. Closed tracking issues can be reused for promotions; list the underlying work instead
+  of inventing an unrelated issue. Use non-closing `Refs` on intermediate branches. A reference does not prove
+  acceptance or deployment. See [the check and rollout instructions](docs/runbooks/pr-issue-links.md).
 - Builds with zero warnings (warnings are errors).
 - New behaviour has unit and/or integration tests.
 - Architecture decisions are recorded as an ADR in `docs/adr/`.

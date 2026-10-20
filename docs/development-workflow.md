@@ -35,6 +35,12 @@ hotfix/…                  from main, for urgent production bugs
   Release branches must be named `release/x.y.z`.
 
 ### Feature workflow
+Every PR, including releases, hotfixes and syncs, must list relevant real tracking issues under **Tracking issues**.
+Use one non-closing `Refs #123` line per issue; release rollups may reuse closed issues. The read-only **Tracking
+issue links** check validates issue existence, and must be made required separately after trusted-base rollout.
+See [the issue-link policy and activation runbook](runbooks/pr-issue-links.md). Issue acceptance and verified
+deployment remain separate decisions. Existing PRs need real links supplied by their authors, not unrelated issues.
+
 1. Branch from the active release branch.
 2. Implement it and run the relevant tests.
 3. Open a PR into the release branch (within the weekly PR limit below).

@@ -6,6 +6,11 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Required tracking issues on every PR (#132, owner October 20, 2026).** Template, trusted-base read-only
+  checker and tests prepared in the implementation PR. After owner-approved merges, verify live pass/fail behavior
+  and require **Tracking issue links** on `release/*`, `develop` and `main`, preserving every existing rule.
+  Existing open PR authors must identify relevant issues; no retroactive unrelated links. Details:
+  [rollout runbook](docs/runbooks/pr-issue-links.md). Not enforced until branch settings are verified.
 - [ ] **Account deletion (A-12, v0.3.0, first item; owner decisions October 20, 2026).** A parent can delete their own
   account, so real families can leave and the owner can rerun the sign-up flows. Today there's no way to delete one:
   on the development site use a Gmail plus address (added to `Identity__SignUp__AllowedEmails`) for a fresh account.
