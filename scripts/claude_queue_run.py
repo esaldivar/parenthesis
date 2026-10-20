@@ -166,10 +166,15 @@ def changed_paths(porcelain):
 
 def parse_usage(text):
     """(used, limit) from `dev-workflow.mjs usage`. Fails closed if the line is missing."""
-    match = re.search(r"Development PRs: (\d+) of (\d+)", text or "")
+    match = re.search(r"Release promotions: (\d+) of (\d+)", text or "")
     if not match:
         raise Stop("Couldn't read this week's PR usage from dev-workflow.mjs")
     return int(match.group(1)), int(match.group(2))
+
+
+def weekly_limit_applies(source, target):
+    """Only release/* -> develop consumes the owner's weekly cap (#134)."""
+    return target == "develop" and source.startswith("release/") and len(source) > len("release/")
 
 
 def check_auth_status(raw):
@@ -384,6 +389,15 @@ class Runner:
         node = self.run(["node", ".github/scripts/dev-workflow.mjs", "usage"], env=self.github_env())
         return parse_usage(node.stdout)
 
+    def weekly_limit_reached(self, source):
+        # Ordinary coding PRs target ACTIVE_RELEASE. Do not even query a release
+        # allowance for them: an exhausted cap or usage API outage cannot stop them.
+        if not weekly_limit_applies(source, ACTIVE_RELEASE):
+            return False
+        used, limit = self.weekly_usage()
+        self.log(f"Release promotions this week: {used} of {limit}")
+        return used >= limit
+
     def classify(self, worktree, branch, files, additions, deletions):
         """Major/release classification from dev-workflow.mjs, so the rules live in one place."""
         script = (worktree / ".github/scripts/dev-workflow.mjs").resolve().as_uri()
@@ -417,15 +431,13 @@ class Runner:
 
         issue = self.select_and_verify()
         self.log(f"Selected #{issue['number']}: {issue['title']} (approved by the owner at {issue['approved_at']})")
-        used, limit = self.weekly_usage()
-        self.log(f"Development PRs this week: {used} of {limit}")
-        at_limit = used >= limit
+        branch = branch_name(issue["number"], issue["title"], self.args.kind)
+        at_limit = self.weekly_limit_reached(branch)
         if at_limit and self.args.scheduled:
             raise Idle(f"The weekly PR limit is reached; #{issue['number']} waits for Monday's reset.")
         if at_limit and not self.args.commit_only:
             raise Stop("The weekly PR limit is reached. Run again next week, or use --commit-only to work and commit "
                        "without opening a PR.")
-        branch = branch_name(issue["number"], issue["title"], self.args.kind)
         if self.args.plan:
             self.log(f"Plan only: would create {branch} from {ACTIVE_RELEASE} and run Claude ({self.args.mode}). Nothing changed.")
             return
@@ -484,16 +496,15 @@ class Runner:
         self.git("commit", "-q", "-F", str(msg_path), cwd=worktree)
         self.log("Committed on the work branch.")
 
-        if at_limit:
-            self.log("Weekly PR limit reached: committed only. Push and open the PR next week (runbook).")
+        if at_limit or self.args.commit_only:
+            self.log("Committed locally only; nothing was pushed and no PR was opened.")
             return
 
         # Check everything again just before anything leaves this machine.
         again = self.select_and_verify(issue["number"])
         if again["number"] != issue["number"]:
             raise Stop("The issue's approval or eligibility changed during the run; nothing was pushed")
-        used, limit = self.weekly_usage()
-        if used >= limit:
+        if self.weekly_limit_reached(branch):
             raise Stop("The weekly PR limit was reached during the run; the commit stays local")
 
         classification = self.classify(worktree, branch, files, additions, deletions)
@@ -659,7 +670,7 @@ def parse_args(argv=None):
     parser.add_argument("--mode", choices=("interactive", "headless"), help="default: interactive")
     parser.add_argument("--kind", choices=("feature", "bugfix"), default="feature")
     parser.add_argument("--plan", action="store_true", help="select and verify only; change nothing")
-    parser.add_argument("--commit-only", action="store_true", help="at the weekly PR limit: commit locally, no push or PR")
+    parser.add_argument("--commit-only", action="store_true", help="commit locally, no push or PR; ordinary work is exempt from the promotion cap")
     parser.add_argument("--timeout-minutes", type=int, default=60, help="headless mode only")
     parser.add_argument("--board-plan", action="store_true",
                         help="preview the project board sync (what would move where); change nothing")
