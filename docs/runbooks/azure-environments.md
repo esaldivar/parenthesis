@@ -4,7 +4,7 @@ Sets up the **development** and **production** environments that `.github/workfl
 GitHub settings the workflow needs. The rules are in [the development workflow](../development-workflow.md). Until
 step 6 is done, the deploy workflow does nothing.
 
-Status (October 19, 2026): **development is set up** (steps 1–3, 3a for development, 4 and 6; `SUFFIX=15465`). Production (steps 2–3 with `ENV=prod`, its GitHub variables, and the production readers' role assignments) is still to do before the first production release window (October 30, 2026).
+Status (October 20, 2026): **development is set up and deployed** (steps 1–3, 3a for development, 4 and 6; `SUFFIX=15465`; first deployment October 20). Email: Brevo (see "Email (Brevo)"). Production (steps 2–3 with `ENV=prod`, its GitHub variables, and the production readers' role assignments) is still to do before the first production release window (October 30, 2026).
 
 Everything below is done by the owner, once. Commands use the [Azure CLI](https://learn.microsoft.com/cli/azure/)
 (`az`), which also runs in the browser through Azure Cloud Shell. Never paste secrets, passwords or connection
@@ -109,12 +109,23 @@ reference (`keyvaultref`), so the value never sits in the container app's config
 
 ```bash
 KV_ID="$(az keyvault show -n $KV --query id -o tsv)"
-PG_SECRET="$(az keyvault secret show --vault-name $KV -n postgres --query id -o tsv)"
+PG_SECRET="https://$KV.vault.azure.net/secrets/postgres"
 az role assignment create --assignee "$(az containerapp show -g $RG -n ca-parenthesis-$ENV --query identity.principalId -o tsv)" --role "Key Vault Secrets User" --scope "$KV_ID"
 az role assignment create --assignee "$(az containerapp job show -g $RG -n job-parenthesis-migrate-$ENV --query identity.principalId -o tsv)" --role "Key Vault Secrets User" --scope "$KV_ID"
 az containerapp secret set -g $RG -n ca-parenthesis-$ENV --secrets "postgres=keyvaultref:$PG_SECRET,identityref:system"
 az containerapp job secret set -g $RG -n job-parenthesis-migrate-$ENV --secrets "postgres=keyvaultref:$PG_SECRET,identityref:system"
 ```
+
+- **Reference the secret without a version** (as above, not the `id` that `az keyvault secret show` prints, which
+  ends in a version), so a new password or key is picked up without re-wiring.
+- **Check the roles stuck** before going on. Each identity should show `Key Vault Secrets User`:
+  `az role assignment list --scope "$KV_ID" --query "[].{who:principalId,role:roleDefinitionName}" -o table`.
+  If a role command failed with an "internal server error", Azure couldn't look up the identity: run the lookup on
+  its own line, check it printed an ID, then assign with `--assignee-object-id <id> --assignee-principal-type
+  ServicePrincipal`.
+- **If the secret was wired before the role worked**, the app or job keeps the failed lookup. After the role is in
+  place (allow up to 10 minutes), run the two `secret set` lines again to make them fetch it fresh. This is what
+  fixed the first development deployment (October 20, 2026).
 
 ### Environment variables
 
@@ -137,8 +148,28 @@ az containerapp update -g rg-parenthesis-dev -n ca-parenthesis-dev --set-env-var
 To add or remove a tester later, run the same command with the full new list. Anyone else who tries to register sees
 "Sign-up here is by invitation only." Existing accounts can still sign in.
 
-Still to do before families use it (TODO.md): real email sending (`Email__Smtp__*`, for example Azure Communication
-Services), a custom domain with HTTPS, and the data-protection key ring (S-01).
+### Email (Brevo)
+Email goes out through Brevo's SMTP relay (owner decision, October 20, 2026). `parenthesisfamily.com` is
+authenticated in Brevo, and mail comes from `no-reply@parenthesisfamily.com`. The app's settings are `Email__Smtp__*`
+and `Email__From*`; the SMTP key lives only in Key Vault.
+
+1. In Brevo, **SMTP & API → SMTP**: note the **SMTP login** (not your account email) and generate an SMTP key.
+2. Store the key in Key Vault without it appearing on screen (development uses the secret name `brevo-smtp`):
+
+```bash
+az keyvault secret set --vault-name $KV -n brevo-smtp --value "$(read -rsp 'Brevo SMTP key: ' k; echo >&2; echo "$k")" --query name -o tsv
+az containerapp secret set -g $RG -n ca-parenthesis-$ENV --secrets "brevo-smtp=keyvaultref:https://$KV.vault.azure.net/secrets/brevo-smtp,identityref:system"
+az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars Email__Smtp__Host=smtp-relay.brevo.com Email__Smtp__Port=587 Email__Smtp__UseStartTls=true "Email__Smtp__Username=<Brevo SMTP login>" Email__Smtp__Password=secretref:brevo-smtp Email__FromAddress=no-reply@parenthesisfamily.com Email__FromName=Parenthesis
+```
+
+Only the app sends email; the migration job doesn't need these. Then sign up with a tester address: the confirmation
+email should arrive within a minute. If it doesn't, the app logs "Failed to send account email" with the subject only
+(never the address).
+
+The development key expires in October 2027; rotate it in Brevo and store the new one with the same first command
+(the reference has no version, so the app picks it up after a restart).
+
+Still to do before families use it (TODO.md): a custom domain with HTTPS, and the data-protection key ring (S-01).
 
 **Development holds synthetic data only.** Never copy production data into it.
 
@@ -158,11 +189,17 @@ bodies. Production telemetry is real family activity, so only the production rea
 ## 3. Sign-in for GitHub Actions (OpenID Connect, no passwords)
 One identity per environment, each allowed to change only its own resource group.
 
+GitHub identifies this repository by owner and repository IDs, so the federated credential's subject must be
+`repo:esaldivar@16743046/parenthesis@1422639942:environment:<environment>`, not the plain
+`repo:esaldivar/parenthesis:...` form. With the plain form, sign-in fails with `AADSTS700213: No matching federated
+identity record` (the first development deployment, October 19, 2026). That error message quotes the exact subject
+GitHub sent.
+
 ```bash
 APP_ID="$(az ad app create --display-name github-parenthesis-$ENV --query appId -o tsv)"
 az ad sp create --id $APP_ID
 GH_ENV=development            # GitHub environment name: "development" for dev, "production" for prod
-az ad app federated-credential create --id $APP_ID --parameters "{\"name\": \"github-$GH_ENV\", \"issuer\": \"https://token.actions.githubusercontent.com\", \"subject\": \"repo:esaldivar/parenthesis:environment:$GH_ENV\", \"audiences\": [\"api://AzureADTokenExchange\"]}"
+az ad app federated-credential create --id $APP_ID --parameters "{\"name\": \"github-$GH_ENV-ids\", \"issuer\": \"https://token.actions.githubusercontent.com\", \"subject\": \"repo:esaldivar@16743046/parenthesis@1422639942:environment:$GH_ENV\", \"audiences\": [\"api://AzureADTokenExchange\"]}"
 az role assignment create --assignee $APP_ID --role Contributor --scope "$(az group show -n $RG --query id -o tsv)"
 echo "AZURE_CLIENT_ID=$APP_ID"
 echo "AZURE_TENANT_ID=$(az account show --query tenantId -o tsv)"
@@ -245,6 +282,26 @@ are variables.
    container apps.
 3. Confirm the `DISCORD_WEBHOOK_URL` secret exists (Settings → Secrets → Actions); deployments and release windows
    report there.
+
+## Troubleshooting a deployment
+The Deploy run in Actions shows which step failed. A failed migration or deployment rolls back on its own; the
+reason is in Azure's logs. Run these in Cloud Shell (one line each):
+
+```bash
+az containerapp job execution list -n job-parenthesis-migrate-$ENV -g $RG --query "[].{name:name,status:properties.status,start:properties.startTime}" -o table
+az monitor log-analytics query -w "$(az monitor log-analytics workspace show -g $RG -n log-parenthesis-$ENV --query customerId -o tsv)" --analytics-query "union ContainerAppConsoleLogs_CL, ContainerAppSystemLogs_CL | where TimeGenerated > ago(1h) | where * has 'parenthesis' | order by TimeGenerated desc | take 40 | project TimeGenerated, Reason=column_ifexists('Reason_s',''), Log=coalesce(column_ifexists('Log_s',''), column_ifexists('Log',''))" -o table
+EXEC=$(az containerapp job start -n job-parenthesis-migrate-$ENV -g $RG --query name -o tsv); sleep 60; az containerapp job execution show -n job-parenthesis-migrate-$ENV -g $RG --job-execution-name "$EXEC" --query properties.status -o tsv
+```
+
+- Logs reach Log Analytics a few minutes late, and column names vary, so the query above searches every column.
+- `FetchingSecretFromAzureKeyVaultFailed` / `403`: the identity lacks Key Vault Secrets User, or the secret was wired
+  before the role worked (see "Wire the secrets into the app and the job").
+- Check the database login with the stored connection string, without printing it:
+  `PGPASSWORD="$(az keyvault secret show --vault-name $KV -n postgres --query value -o tsv | sed -E 's/.*Password=([^;]*).*/\1/I')" psql "host=$PG.postgres.database.azure.com dbname=coparent user=parenthesisadmin sslmode=require" -c "select 1"`.
+- Firewall: `az postgres flexible-server firewall-rule list -g $RG --server-name $PG -o table` should show a
+  `0.0.0.0` rule (Azure services). The current CLI takes `--server-name`, not `--name`.
+- Live logs (`az containerapp job logs show`) only attach while a container is running; a failing migration exits
+  too fast, so use the log query instead.
 
 ## Rollback
 - **Automatic:** a failed deployment or smoke test restores the previous image.
