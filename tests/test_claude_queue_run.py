@@ -61,12 +61,42 @@ class ProtectedPathTests(unittest.TestCase):
 
 class LimitAndAuthTests(unittest.TestCase):
     def test_parse_usage(self):
-        text = "Week of Mon, Oct 26\nDevelopment PRs: 2 of 3 (#97, #98)\nCopilot reviews: 0 of 6"
+        text = "Week of Mon, Oct 26\nRelease promotions: 2 of 3 (#88, #117)\nCopilot reviews: 0 of 6"
         self.assertEqual(runner.parse_usage(text), (2, 3))
 
     def test_unreadable_usage_fails_closed(self):
         with self.assertRaises(runner.Stop):
             runner.parse_usage("error")
+
+    def test_old_broad_usage_is_not_accepted(self):
+        with self.assertRaises(runner.Stop):
+            runner.parse_usage("Development PRs: 99 of 3")
+
+    def test_only_release_to_develop_is_capped(self):
+        for source in ("feature/a", "bugfix/a", "docs/a", "chore/a", "hotfix/a", "develop", "release/"):
+            for target in ("develop", "release/0.3.0", "main"):
+                self.assertFalse(runner.weekly_limit_applies(source, target))
+        self.assertTrue(runner.weekly_limit_applies("release/0.3.0", "develop"))
+        self.assertFalse(runner.weekly_limit_applies("release/0.3.0", "main"))
+
+    def test_ordinary_admission_and_pre_pr_recheck_never_read_cap(self):
+        instance = object.__new__(runner.Runner)
+        instance.weekly_usage = mock.Mock(side_effect=AssertionError("ordinary work must not query allowance"))
+        instance.log = mock.Mock()
+        for branch in ("feature/98-calendar-tests", "bugfix/98-calendar-tests"):
+            self.assertFalse(instance.weekly_limit_reached(branch))  # admission
+            self.assertFalse(instance.weekly_limit_reached(branch))  # before push/PR
+        instance.weekly_usage.assert_not_called()
+
+    def test_in_scope_guard_rechecks_usage_and_fails_closed(self):
+        instance = object.__new__(runner.Runner)
+        instance.log = mock.Mock()
+        instance.weekly_usage = mock.Mock(side_effect=[(2, 3), (3, 3), runner.Stop("API unavailable")])
+        with mock.patch.object(runner, "ACTIVE_RELEASE", "develop"):
+            self.assertFalse(instance.weekly_limit_reached("release/0.3.0"))
+            self.assertTrue(instance.weekly_limit_reached("release/0.3.0"))
+            with self.assertRaises(runner.Stop):
+                instance.weekly_limit_reached("release/0.3.0")
 
     def test_subscription_login_required(self):
         runner.check_auth_status(json.dumps({"loggedIn": True, "authMethod": "claude.ai"}))

@@ -102,9 +102,12 @@ use it.
 ## Development workflow: PR limits, Copilot reviews, Discord
 
 [docs/development-workflow.md](docs/development-workflow.md) is the authoritative reference; follow it. In short:
-- At most **3 new development PRs a week** and **6 Copilot reviews a week, 2 per PR** (initial plus one follow-up).
+- At most **3 PRs a week from release/* into develop** (owner correction October 20, 2026). All other source/target
+  combinations are excluded: ordinary coding PRs must not be blocked by this cap. Separately, at most
+  **6 Copilot reviews a week, 2 per PR** (initial plus one follow-up).
   Weeks start Monday 12:00 AM Central. Check usage before opening a PR or requesting a Copilot review.
-- At the limit, keep working and committing on the branch; don't open the PR or request the review. Exceptions
+- At the release-promotion limit, keep ordinary coding work moving; only another release/* -> develop PR needs an exception.
+  Copilot limits apply separately. Exceptions
   need the owner's `owner-approved-pr` / `owner-approved-review` label. Group related work; no PRs for minor changes.
 - Never merge PRs automatically, and never open duplicate PRs to get around a limit.
 - Before opening a **major** PR, send the owner a Discord summary (`dev-workflow.mjs send`); report it if it fails.

@@ -42,7 +42,9 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
   active release branch (`chore/sync-develop` from it, `git merge origin/develop`), so the next release is up to date.
 - **SonarQube Cloud quality gate:** required on `main`. New code needs an A security, reliability and maintainability
   rating, at least 80% coverage, and little duplication.
-- **Weekly limits:** at most 3 new development PRs and 6 Copilot reviews a week (2 per PR). Discord notices for
+- **Weekly limits:** at most 3 PRs from `release/*` into `develop`, and separately 6 Copilot reviews a week
+  (2 per PR). Ordinary feature/fix/docs/chore PRs and every other source/target combination do not consume the
+  PR cap and must not be blocked by it (owner correction October 20, 2026). Discord notices for
   major and release PRs, and the Monday status report, are automatic. See
   [the development workflow](docs/development-workflow.md).
 - Keep PRs focused: one backlog item (or one slice of it) per PR, and group closely related changes rather than
