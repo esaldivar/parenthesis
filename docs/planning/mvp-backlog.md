@@ -112,7 +112,7 @@ Notes:
 | M-01 | Blob storage abstraction (Azurite / Azure), user-delegation SAS read URLs | P0 | M |
 | M-02 | Upload pipeline: magic-byte validation, size limits, EXIF/GPS strip, thumbnails | P0 | M |
 | M-03 | Memory CRUD (photo, artwork) linked to child; gallery UI with infinite scroll | P0 | L |
-| M-04 | MemoryDelete approval handler → soft delete → recovery → purge worker | P0 | M |
+| M-04 | MemoryDelete approval handler → soft delete → recovery → purge worker. When a parent deletes their account (A-12), their pictures and memories stay with the family if a co-parent remains (owner decision, October 20, 2026) | P0 | M |
 | M-05 | Restore during recovery period | P0 | S |
 | M-06 | Restrict / lift restriction (ADR-0005) | P0 | M |
 | M-07 | Kid dashboard: My Artwork, My Photos, My Memories | P0 | L |

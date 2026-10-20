@@ -45,6 +45,7 @@ public static class IdentityModule
             .AddDefaultTokenProviders();
         services.AddScoped<AccountEmails>();
         services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IAccountRemoval, AccountRemoval>();
 
         services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
         services.ConfigureApplicationCookie(options =>

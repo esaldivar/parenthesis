@@ -231,8 +231,9 @@ export class ApprovalsPage implements OnInit {
     return request.proposedByYou ? 'you' : this.nameOf(request.proposerMembershipId);
   }
 
+  /** Members load with the requests, so someone missing has left: they deleted their account (A-12). */
   protected nameOf(membershipId: string): string {
-    return this.members().find((m) => m.membershipId === membershipId)?.displayName ?? 'your co-parent';
+    return this.members().find((m) => m.membershipId === membershipId)?.displayName ?? 'Former parent';
   }
 
   protected explain(request: ChangeRequest): string {

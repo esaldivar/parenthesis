@@ -2,6 +2,7 @@ using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Approvals.Endpoints;
 using CoParent.Modules.Approvals.Infrastructure;
+using CoParent.SharedKernel.Accounts;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +15,7 @@ public static class ApprovalsModule
     {
         services.AddModuleDbContext<ApprovalsDbContext>();
         services.AddScoped<IChangeRequests, ChangeRequests>();
+        services.AddScoped<IParentDepartureHandler, ApprovalsDeparture>();
         services.AddOptions<ApprovalOptions>().BindConfiguration(ApprovalOptions.Section);
         services.AddSingleton<RequestExpiry>();
         services.AddSingleton<IRequestExpiry>(sp => sp.GetRequiredService<RequestExpiry>());

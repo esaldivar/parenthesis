@@ -6,11 +6,12 @@ import { AppearancePicker } from '../../shared/appearance-picker/appearance-pick
 import { ChildrenAccess } from '../family/children-access';
 import { DeviceList } from '../family/device-list';
 import { InviteCoParent } from '../family/invite-co-parent';
+import { DeleteAccount } from './delete-account';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList],
+  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, DeleteAccount],
   template: `
     <h1>Settings</h1>
     <section class="card">
@@ -45,6 +46,16 @@ import { InviteCoParent } from '../family/invite-co-parent';
           <app-device-list [familyId]="current.id" />
         </section>
       }
+    }
+
+    @if (auth.status() === 'signed-in') {
+      <section class="card" aria-labelledby="delete-account-heading">
+        <h2 id="delete-account-heading">Delete account</h2>
+        <app-delete-account
+          [familyName]="details()?.name ?? auth.currentFamily()?.name ?? null"
+          [coParentName]="details() ? coParent(details()!) : null"
+        />
+      </section>
     }
   `,
   styles: `

@@ -28,6 +28,10 @@ export function fakeAuth(
       child.set(null);
       fake.status.set('anonymous');
     },
+    deleteAccount: async () => {
+      user.set(null);
+      fake.status.set('anonymous');
+    },
     // Resolve by default; a test replaces them (vi.spyOn) to simulate the API's answers.
     signIn: async () => {
       user.set({ id: 'user-1', email: 'alex@example.test', displayName: 'Alex Rivera' });

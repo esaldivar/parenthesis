@@ -2,6 +2,7 @@ using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Calendar.Endpoints;
 using CoParent.Modules.Calendar.Infrastructure;
+using CoParent.SharedKernel.Accounts;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +18,7 @@ public static class CalendarModule
         services.AddScoped<IApprovalTargetHandler, JointEventCreateHandler>();
         services.AddScoped<IApprovalTargetHandler, CalendarModifyHandler>();
         services.AddScoped<IApprovalTargetHandler, CalendarCancelHandler>();
+        services.AddScoped<IParentDepartureHandler, CalendarDeparture>();
         return services;
     }
 
