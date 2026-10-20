@@ -239,15 +239,18 @@ def claude_command(claude, mode, prompt, settings_path):
 def commit_message(issue, kind):
     prefix = "fix" if kind == "bugfix" else "feat"
     title = re.sub(r"^\s*\[[^\]]*\]\s*", "", issue["title"]).strip()
-    return f"{prefix}: {title} (#{issue['number']})\n\nCloses #{issue['number']}\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n"
+    return f"{prefix}: {title} (#{issue['number']})\n\nRefs #{issue['number']}\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n"
 
 
 def build_pr_body(issue, kind, results, files, lines, major_reasons):
     testing = "\n".join(f"- {name}: {'passed' if ok else 'FAILED'}" for name, ok in results)
     why = "; ".join(major_reasons) if major_reasons else "not major"
     return f"""## Description
-Closes #{issue['number']}. Opened as a **draft** by the local Claude queue runner (#94) after the owner's approval
+Opened as a **draft** by the local Claude queue runner (#94) after the owner's approval
 was verified against the issue history. Claude Code ran on the owner's machine with the owner's Claude subscription.
+
+## Tracking issues
+Refs #{issue['number']}
 
 ## Summary of changes
 - {len(files)} file(s), {lines} line(s) changed. See the diff; Claude's own summary is in the local run log.

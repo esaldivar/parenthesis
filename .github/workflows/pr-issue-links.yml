@@ -1,0 +1,32 @@
+name: PR issue links
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: pr-issue-links-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Tracking issue links
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # pull_request_target executes from the default branch. Pin its trusted SHA;
+      # never execute or check out the PR head or a policy override on its target.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+      - name: Verify the current PR's tracking issues
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/pr-issue-links.mjs

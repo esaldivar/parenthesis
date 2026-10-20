@@ -101,6 +101,11 @@ use it.
 
 ## Development workflow: PR limits, Copilot reviews, Discord
 
+- Every PR must list relevant real repository issues in **Tracking issues**, one plain-text `Refs #123` per line.
+  Include releases, hotfixes and syncs; reuse the underlying issues (closed ones are allowed), never unrelated
+  issues or PR-only references. Keep issue acceptance and deployment verification separate. Use `Refs` on
+  intermediate branches; follow [the issue-link runbook](docs/runbooks/pr-issue-links.md).
+
 [docs/development-workflow.md](docs/development-workflow.md) is the authoritative reference; follow it. In short:
 - At most **3 PRs a week from release/* into develop** (owner correction October 20, 2026). All other source/target
   combinations are excluded: ordinary coding PRs must not be blocked by this cap. Separately, at most
