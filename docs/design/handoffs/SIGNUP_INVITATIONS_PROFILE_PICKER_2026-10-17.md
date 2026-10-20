@@ -39,9 +39,16 @@ in v0.2.0 (#59, #70) with the owner's decisions of October 18, 2026, which **ove
 The board's header logo is a drawn concept, not the approved export: use it as layout reference only and never copy
 it (`docs/design/BRANDING.md`).
 
-Compared against the built screens' code (not screenshots), the board still shows these, which aren't built and
-weren't decided (tracked in `TODO.md`): a show/hide password eye on password fields; "Decline all" on the co-parent's
-child approval; illustrations on empty and confirmation screens (no approved illustration assets exist); a phone
-notification for a locked PIN (email only today; push needs its own design); and an "Invitation settings" row on the
-invite screen, whose purpose isn't specified. The child's own home screen isn't part of this board; it belongs to
+Compared against the built screens' code (not screenshots), the board also shows these. The owner decided them on
+October 20, 2026:
+
+| Board shows | Decision |
+|---|---|
+| "Decline all" on the co-parent's child approval | Left out: one decision per child; a bulk decline is easy to tap by mistake. |
+| Illustrations on empty and confirmation screens | Text-only until the owner approves an illustration set; never generated stand-ins. |
+| Phone notification for a locked PIN | Email to both parents for now; push and in-app alerts come with notifications (N-01/N-02) in v0.4.0. |
+| "Invitation settings" row on the invite screen | Dropped: nothing is configurable (7-day invitations); resend and cancel are in Settings. |
+| Show/hide password eye | Not built yet; tracked in `TODO.md` under "Dashboard and design". |
+
+The child's own home screen isn't part of this board; it belongs to
 v0.5.0 (Child experience).

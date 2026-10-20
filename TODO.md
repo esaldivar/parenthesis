@@ -140,11 +140,14 @@ that points back here.
   - [x] Check the Request #1 screens against the image mockups once they're committed: board added in #40, compared
     against the built screens' code (October 20, 2026). Decided differences and gaps are in the handoff
     (`docs/design/handoffs/SIGNUP_INVITATIONS_PROFILE_PICKER_2026-10-17.md`). Gaps from the board:
-    - [ ] "Decline all" on the co-parent's review of several new children.
-    - [ ] Illustrations on empty and confirmation screens ("No children added yet", "Invitation sent", emails), once
-      approved illustration assets exist; never generated stand-ins.
-    - [ ] **Owner decision:** a phone notification for a locked PIN (needs push notifications; email only today).
-    - [ ] **Owner question:** what the "Invitation settings" row on the invite screen should do.
+    - [x] "Decline all" on the co-parent's review of several new children: left out (owner, October 20, 2026).
+      One decision per child; a bulk decline is easy to tap by mistake.
+    - [ ] Illustrations on empty and confirmation screens ("No children added yet", "Invitation sent", emails):
+      text-only until the owner approves an illustration set (owner, October 20, 2026); never generated stand-ins.
+    - [ ] Phone or in-app alert for a locked PIN: email only for now; add it with notifications N-01/N-02 in v0.4.0
+      (owner, October 20, 2026).
+    - [x] "Invitation settings" row on the invite screen: dropped (owner, October 20, 2026). Nothing is configurable;
+      invitations last 7 days and resend/cancel are in Settings.
     - The show/hide password eye is tracked under "Dashboard and design".
   - [ ] Parent tile: it asks for email and password, because the picker only knows the parent's name. Optional:
     remember the email on the device.
