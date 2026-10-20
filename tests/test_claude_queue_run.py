@@ -8,6 +8,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -112,6 +113,46 @@ class LimitAndAuthTests(unittest.TestCase):
 
 
 class ClaudeInvocationTests(unittest.TestCase):
+    def test_manual_commit_only_still_prevents_push_after_ordinary_work_is_exempt(self):
+        # All commands are mocked; no Claude, network, git or task is invoked.
+        with tempfile.TemporaryDirectory() as directory:
+            instance = object.__new__(runner.Runner)
+            instance.args = runner.parse_args(["--commit-only", "--mode", "headless"])
+            instance.repo_root = pathlib.Path(directory) / "repo"
+            instance.state_dir = pathlib.Path(directory)
+            instance.log_path = pathlib.Path(directory) / "run.log"
+            instance.log = mock.Mock()
+            instance.move = mock.Mock()
+            instance.exe = lambda name: "synthetic-" + name
+            instance.select_and_verify = mock.Mock(return_value={**ISSUE, "approved_at": "synthetic"})
+            instance.weekly_usage = mock.Mock(side_effect=AssertionError("ordinary coding cannot query cap"))
+            def fake_run(cmd, **kwargs):
+                text = ""
+                if cmd == ["gh", "auth", "token"]:
+                    text = "synthetic-token"
+                elif cmd[:3] == ["gh", "repo", "view"]:
+                    text = "esaldivar/parenthesis"
+                elif cmd == ["gh", "api", "user"]:
+                    text = '{"id":1}'
+                elif cmd[:3] == ["claude", "auth", "status"]:
+                    text = '{"loggedIn":true,"authMethod":"claude.ai"}'
+                return subprocess.CompletedProcess(cmd, 0, stdout=text)
+            instance.run = mock.Mock(side_effect=fake_run)
+            def fake_git(*args, **kwargs):
+                if args[:1] == ("rev-parse",):
+                    return "base"
+                if args[:1] == ("status",):
+                    return " M src/synthetic.cs\0"
+                if args[:3] == ("diff", "--cached", "--numstat"):
+                    return "1\t0\tsrc/synthetic.cs"
+                return ""
+            instance.git = mock.Mock(side_effect=fake_git)
+            instance.main()
+            self.assertTrue(any(call.args[0] == "commit" for call in instance.git.call_args_list))
+            self.assertFalse(any(call.args[0] == "push" for call in instance.git.call_args_list))
+            self.assertFalse(any(call.args[0][:3] == ["gh", "pr", "create"] for call in instance.run.call_args_list))
+            instance.weekly_usage.assert_not_called()
+
     def test_settings_deny_push_network_and_protected_edits(self):
         deny = runner.claude_settings()["permissions"]["deny"]
         for rule in ("Bash(git push:*)", "Bash(gh:*)", "Bash(git commit:*)", "WebFetch", "Edit(.github/**)",

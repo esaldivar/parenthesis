@@ -496,8 +496,8 @@ class Runner:
         self.git("commit", "-q", "-F", str(msg_path), cwd=worktree)
         self.log("Committed on the work branch.")
 
-        if at_limit:
-            self.log("Weekly PR limit reached: committed only. Push and open the PR next week (runbook).")
+        if at_limit or self.args.commit_only:
+            self.log("Committed locally only; nothing was pushed and no PR was opened.")
             return
 
         # Check everything again just before anything leaves this machine.
