@@ -194,6 +194,8 @@ export class Api {
     this.call(this.http.post<void>('/api/auth/register', body));
   login = (body: { email: string; password: string }) => this.call(this.http.post<void>('/api/auth/login', body));
   logout = () => this.call(this.http.post<void>('/api/auth/logout', {}));
+  /** Permanently deletes the signed-in parent's account (A-12). A wrong password is a 400 with a `password` error. */
+  deleteAccount = (password: string) => this.call(this.http.post<void>('/api/me/delete', { password }));
   confirmEmail = (body: { userId: string; token: string }) =>
     this.call(this.http.post<void>('/api/auth/confirm-email', body));
   resendConfirmation = (email: string) =>

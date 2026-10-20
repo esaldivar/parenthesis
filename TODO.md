@@ -12,19 +12,26 @@ that points back here.
   Existing open PR authors must identify relevant issues; no retroactive unrelated links. Details:
   [rollout runbook](docs/runbooks/pr-issue-links.md). Not enforced until branch settings are verified.
 - [ ] **Account deletion (A-12, v0.3.0, first item; owner decisions October 20, 2026).** A parent can delete their own
-  account, so real families can leave and the owner can rerun the sign-up flows. Today there's no way to delete one:
-  on the development site use a Gmail plus address (added to `Identity__SignUp__AllowedEmails`) for a fresh account.
-  - Settings → Delete account: re-enter the password, see what will be removed, confirm. Permanent immediately.
-  - Removes the login, profile and the parent's private data, and signs out every session and device.
-  - If a co-parent has joined: the family, children and shared history stay with them; what the leaving parent
-    created shows as "Former parent" (shared records stay for accountability). Approvals they proposed that are still
-    pending are withdrawn.
-  - If they're the only parent: the family, its child profiles, devices and pending invitations are deleted too.
-  - Emails: a confirmation to the leaving parent, and a neutral notice to the co-parent. No personal data in logs or
-    telemetry. Children never see it.
-  - Wording (owner, October 20, 2026): their records show as **"Former parent"** (no name kept). The co-parent's
-    email is neutral and names nobody: "A parent has left your family on Parenthesis. Your family, children and
-    shared history are unchanged."
+  account, so real families can leave and the owner can rerun the sign-up flows.
+  - [x] Built (October 20, 2026): Settings → Delete account. The parent re-enters their password and sees what will be
+    removed; deletion is permanent at once (`POST /api/me/delete`). It removes the sign-in, name and email, and
+    signs out; a wrong password counts toward the sign-in lockout.
+    - **With a co-parent:** the family, children and shared history stay with them, and the departing parent shows
+      as **"Former parent"** (no name kept). Their pending proposals are withdrawn. The co-parent's proposals that
+      no longer need anyone else are applied, as in a one-parent family. Their Unavailable time, the household
+      devices they registered, their unsent invitations, and the accepted invitation that held their email are
+      removed.
+    - **As the only parent:** the family goes too, with its children, devices, invitations, calendar and approvals.
+    - **Emails:** a confirmation to the parent, and a neutral notice to the co-parent that names nobody: "A parent
+      has left your family on Parenthesis." No personal data in logs (the audit rows hold ids only).
+  - [ ] Check it on the development site once it's released: delete a test account, then sign up again with the
+    same address.
+  - [ ] **Family pictures stay (owner, October 20, 2026).** When memories and uploads arrive (v0.5.0, M-01 to M-06),
+    a departing parent's photos and memories stay with the family if a co-parent remains: implement
+    `IParentDepartureHandler` in that module so it keeps them (attributed to "Former parent") and deletes them only
+    when the family is closing.
+  - Until it's released, use a Gmail plus address (added to `Identity__SignUp__AllowedEmails`) for a fresh account
+    on the development site.
 - [ ] **SonarQube Cloud (Free plan) protecting `main`** (big to-do; owner decision, October 17, 2026). It gives code
   quality, security and vulnerability analysis at no cost. The plan only covers PRs into `main` and `main` itself,
   which is all that's needed. The paid plans and the self-hosted server were ruled out on cost.
