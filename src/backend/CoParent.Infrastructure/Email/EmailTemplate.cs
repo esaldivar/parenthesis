@@ -27,10 +27,18 @@ public sealed record EmailContent(
 /// <summary>
 /// Renders every Parenthesis email the same way: an HTML version (table layout and inline styles, so it holds up in
 /// Gmail, Outlook and Apple Mail, with the design system's colors) and a plain-text version with the same words and
-/// the same single link. No images, so nothing is blocked or tracked, and the brand mark isn't approximated.
+/// the same single link.
+/// <para>
+/// The header is the brand as the app shows it (docs/design/BRANDING.md): the approved icon export, unchanged and
+/// attached inline (<see cref="LogoContentId"/>, so nothing is fetched or tracked), next to the Option B wordmark as
+/// text. The full horizontal lockup isn't used because its exports are still pending.
+/// </para>
 /// </summary>
 public static class EmailTemplate
 {
+    /// <summary>Content-ID of the inline icon. <see cref="EmailMime"/> attaches it to every message that references it.</summary>
+    public const string LogoContentId = "parenthesis-icon";
+
     // Light-theme tokens from docs/design-system.md. Dark-mode email clients invert these themselves.
     private const string Canvas = "#F7F5ED";
     private const string Surface = "#FFFFFF";
@@ -39,6 +47,8 @@ public static class EmailTemplate
     private const string Action = "#176B67";
     private const string OnAction = "#FFFFFF";
     private const string Border = "#E4EBDD";
+    private const string WordmarkParent = "#5E8F7E";
+    private const string WordmarkHesis = "#20303F";
     private const string FontStack = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
     public static EmailMessage Render(string to, EmailContent content)
@@ -92,7 +102,12 @@ public static class EmailTemplate
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{Canvas};">
             <tr><td align="center" style="padding:24px 16px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;font-family:{FontStack};">
-            <tr><td style="padding:0 4px 16px;font-size:20px;font-weight:600;line-height:1.3;color:{TextPrimary};">Parenthesis</td></tr>
+            <tr><td style="padding:0 4px 16px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="padding-right:8px;vertical-align:middle;"><img src="cid:{LogoContentId}" width="40" height="40" alt="" style="display:block;border:0;width:40px;height:40px;"></td>
+            <td style="vertical-align:middle;font-size:22px;font-weight:700;line-height:1;"><span style="color:{WordmarkParent};">Parent</span><span style="color:{WordmarkHesis};">hesis</span></td>
+            </tr></table>
+            </td></tr>
             <tr><td style="background-color:{Surface};border:1px solid {Border};border-radius:12px;padding:32px 24px;">
             <p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:{TextPrimary};">{e.Encode(Hello(content))}</p>
             {paragraphs}

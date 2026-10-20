@@ -41,7 +41,31 @@ public partial class EmailTemplateTests
         Assert.Contains("One step left", html, StringComparison.Ordinal);
         Assert.Contains(">Confirm email</a>", html, StringComparison.Ordinal);
         Assert.Contains("href=\"https://app.example.test/confirm-email?userId=1&amp;token=abc\"", html, StringComparison.Ordinal);
-        Assert.DoesNotContain("<img", html, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("src=\"cid:parenthesis-icon\"", html, StringComparison.Ordinal);
+        Assert.Contains(">Parent</span><span", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("src=\"http", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Mime_message_carries_both_versions_and_the_inline_icon()
+    {
+        var message = EmailTemplate.Render("sam@example.test", Content());
+        using var mime = EmailMime.Build(new EmailOptions { FromAddress = "no-reply@example.test", FromName = "Parenthesis" }, message);
+
+        Assert.Equal("Confirm your email", mime.Subject);
+        Assert.Equal("no-reply@example.test", Assert.Single(mime.From.Mailboxes).Address);
+        Assert.Equal(message.TextBody, mime.TextBody);
+        Assert.Equal(message.HtmlBody, mime.HtmlBody);
+        var icon = Assert.Single(mime.BodyParts.OfType<MimeKit.MimePart>(), part => part.ContentId == EmailTemplate.LogoContentId);
+        Assert.Equal("image/png", icon.ContentType.MimeType);
+    }
+
+    [Fact]
+    public void Mime_message_without_the_icon_reference_has_no_attachment()
+    {
+        using var mime = EmailMime.Build(new EmailOptions(), new EmailMessage("sam@example.test", "Hi", "text", "<p>html</p>"));
+
+        Assert.DoesNotContain(mime.BodyParts.OfType<MimeKit.MimePart>(), part => part.ContentId is not null);
     }
 
     [Fact]
