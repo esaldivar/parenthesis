@@ -6,6 +6,18 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Account deletion (A-12, v0.3.0, first item; owner decisions October 20, 2026).** A parent can delete their own
+  account, so real families can leave and the owner can rerun the sign-up flows. Today there's no way to delete one:
+  on the development site use a Gmail plus address (added to `Identity__SignUp__AllowedEmails`) for a fresh account.
+  - Settings → Delete account: re-enter the password, see what will be removed, confirm. Permanent immediately.
+  - Removes the login, profile and the parent's private data, and signs out every session and device.
+  - If a co-parent has joined: the family, children and shared history stay with them; what the leaving parent
+    created shows as "Former parent" (shared records stay for accountability). Approvals they proposed that are still
+    pending are withdrawn.
+  - If they're the only parent: the family, its child profiles, devices and pending invitations are deleted too.
+  - Emails: a confirmation to the leaving parent, and a neutral notice to the co-parent. No personal data in logs or
+    telemetry. Children never see it.
+  - Before building: decide the "Former parent" wording, and whether the co-parent's notice names the person.
 - [ ] **SonarQube Cloud (Free plan) protecting `main`** (big to-do; owner decision, October 17, 2026). It gives code
   quality, security and vulnerability analysis at no cost. The plan only covers PRs into `main` and `main` itself,
   which is all that's needed. The paid plans and the self-hosted server were ruled out on cost.
