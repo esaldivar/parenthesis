@@ -93,6 +93,10 @@ export class SettingsPage implements OnInit {
   protected readonly deletionFamilies = signal<readonly { name: string; coParentName: string | null }[] | null>(null);
 
   async ngOnInit(): Promise<void> {
+    await Promise.all([this.loadDeletionFamilies(), this.loadCurrentFamily()]);
+  }
+
+  private async loadDeletionFamilies(): Promise<void> {
     // The deletion endpoint affects every active family, not just the selected one.
     // Never show a destructive confirmation based on partial or failed loads.
     try {
@@ -103,7 +107,9 @@ export class SettingsPage implements OnInit {
     } catch (error) {
       this.deletionError.set(generalMessage(toProblem(error)));
     }
+  }
 
+  private async loadCurrentFamily(): Promise<void> {
     const family = this.auth.currentFamily();
     if (family?.role !== 'Parent') {
       return;
