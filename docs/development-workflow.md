@@ -98,8 +98,8 @@ For a moved window (a Wednesday), the same steps happen on the Monday, the day b
 1. **Release branch.** All the milestone's PRs are merged, required checks pass, stabilization is done.
 2. **`release/x.y.z` → `develop`.** Passing checks, including the **Release E2E gate**: Playwright tests the
    release candidate for this milestone and every one before it, and a failure blocks the merge
-   ([runbook](runbooks/playwright-release-gate.md)). Copilot's automatic review, with every comment resolved
-   ([Copilot reviews](#copilot-reviews)). Release notes written, no open blocking defects, and the owner's
+   ([runbook](runbooks/playwright-release-gate.md)). Copilot's automatic review (the owner turns the
+   **Copilot release review** ruleset on first), with every comment resolved ([Copilot reviews](#copilot-reviews)). Release notes written, no open blocking defects, and the owner's
    approval. Merge with a **merge commit**. The development deployment then builds the image, runs migrations and
    smoke tests, and records the tested commit (GitHub's deployment history for the `development` environment). If
    testing fails, production is blocked: fix it on the release branch and repeat.
@@ -211,12 +211,16 @@ How to run it: [the local Claude queue runbook](runbooks/claude-local-queue.md).
 
 ## Copilot reviews
 
-- **Release PRs get one automatic review** (owner decision, October 20, 2026). A ruleset on `develop` requests a
-  Copilot review when a PR into `develop` opens: releases (`release/x.y.z` → `develop`), plus the occasional hotfix
-  or `chore/sync-…` back-merge. "Review new pushes" stays **off**, so pushes don't trigger re-reviews.
-- **Findings block the release.** The same ruleset requires conversation resolution, so every Copilot comment on a
-  PR into `develop` must be resolved before it can merge. Fix real findings on a branch into the release branch;
-  answer the rest with a one-line reason, then resolve them. The owner still decides when to merge.
+- **Release PRs get one automatic review** (owner decision, October 20, 2026). The `develop` ruleset **Copilot
+  release review** requests a Copilot review when a PR into `develop` opens. "Review new pushes" stays **off**, so
+  pushes don't trigger re-reviews.
+- **It's on only around a release.** The ruleset stays **Disabled** between releases, so hotfixes and back-merges
+  into `develop` don't use reviews. The owner sets it to **Active** just before opening a `release/x.y.z` →
+  `develop` PR, and back to **Disabled** once that release merges (Settings → Rules → Rulesets → Copilot release
+  review → Enforcement status). Claude reminds the owner at both points.
+- **Findings block the release.** The same ruleset requires conversation resolution, so every Copilot comment on the
+  release PR must be resolved before it can merge. Fix real findings on a branch into the release branch; answer the
+  rest with a one-line reason, then resolve them. The owner still decides when to merge.
 - These automatic reviews **don't count toward the weekly limit**. The 2-per-PR limit still applies, so a release
   PR gets at most one follow-up review.
 - Other branches have no automatic review: Copilot reviews feature PRs only when someone asks. Review effort level
@@ -273,7 +277,7 @@ to this week, as a dry run that only shows the report).
 |---|---|
 | 3 PRs a week | **Can't stop a PR from being opened.** The **Weekly PR limit** check fails on the 4th and later PRs of the week until the owner labels them. **Owner setting:** make it a required check on `develop` to block merging them. |
 | 6 Copilot reviews a week, 2 per PR | **Can't stop or cancel a review request.** Counted and reported when it happens (PR comment, Discord, failed run). For Claude, it's a rule: check usage before requesting. Automatic reviews on PRs into `develop` count only toward the per-PR limit. |
-| No automatic re-reviews | **Repository setting:** the only Copilot automatic-review ruleset is on `develop`, with "Review new pushes" off. |
+| No automatic re-reviews | **Repository setting:** the only Copilot automatic-review ruleset is **Copilot release review** on `develop`, with "Review new pushes" off, Active only while a release PR is open. |
 | Copilot findings resolved before a release merges | **Repository setting:** "Require conversation resolution before merging" in the `develop` ruleset. |
 | Exceptions | **Owner action:** the `owner-approved-pr` or `owner-approved-review` label, accepted only from the owner. |
 | No automatic merging | Auto-merge is off for the repository, and Claude never merges. |

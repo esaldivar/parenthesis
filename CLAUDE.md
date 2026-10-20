@@ -104,6 +104,8 @@ use it.
 [docs/development-workflow.md](docs/development-workflow.md) is the authoritative reference; follow it. In short:
 - At most **3 new development PRs a week** and **6 Copilot reviews a week, 2 per PR** (initial plus one follow-up).
   Weeks start Monday 12:00 AM Central. Check usage before opening a PR or requesting a Copilot review.
+- The `develop` ruleset **Copilot release review** stays Disabled between releases. Remind the owner to set it to
+  Active before opening a `release/x.y.z` → `develop` PR, and to Disabled once that release merges.
 - At the limit, keep working and committing on the branch; don't open the PR or request the review. Exceptions
   need the owner's `owner-approved-pr` / `owner-approved-review` label. Group related work; no PRs for minor changes.
 - Never merge PRs automatically, and never open duplicate PRs to get around a limit.
