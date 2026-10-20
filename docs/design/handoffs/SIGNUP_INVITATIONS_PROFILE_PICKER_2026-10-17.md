@@ -21,3 +21,27 @@
 The owner has verbally approved the requested design direction and authorized this design-spec PR. **This text-only handoff is not a substitute for screen mockups.** Claude may review technical feasibility and prepare an implementation branch but must not invent unprovided visuals or represent unbuilt states as functional. Obtain approved image exports before fidelity implementation. Do not merge or deploy without owner approval.
 
 Related design request: #39.
+
+## Mockup and how it was built (October 20, 2026)
+The board `docs/design/parenthesis_request1_mockup.PNG` (uploaded October 18) shows all ten flows. The screens shipped
+in v0.2.0 (#59, #70) with the owner's decisions of October 18, 2026, which **override the board** where they differ:
+
+| Board | Built (owner decision) |
+|---|---|
+| Invitations expire in 14 days | 7 days, and the email says 7 days |
+| Three invalid-link screens (expired, used, revoked) | One calm generic screen |
+| Child tiles with photos and ages | Initials, no age |
+| Child PIN on a numeric keypad with dots | One number box and "Go"; 4 to 6 digits chosen by a parent; tries left shown |
+| Locked PIN: "Request unlock" button | "We've let your parents know"; both parents are emailed; Unlock is in Settings |
+| Pair a tablet: QR code and 6-digit code | 8-character code typed in a text box (QR deferred) |
+| Parent tile: password only | Email and password (the picker only knows the name) |
+
+The board's header logo is a drawn concept, not the approved export: use it as layout reference only and never copy
+it (`docs/design/BRANDING.md`).
+
+Compared against the built screens' code (not screenshots), the board still shows these, which aren't built and
+weren't decided (tracked in `TODO.md`): a show/hide password eye on password fields; "Decline all" on the co-parent's
+child approval; illustrations on empty and confirmation screens (no approved illustration assets exist); a phone
+notification for a locked PIN (email only today; push needs its own design); and an "Invitation settings" row on the
+invite screen, whose purpose isn't specified. The child's own home screen isn't part of this board; it belongs to
+v0.5.0 (Child experience).

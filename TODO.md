@@ -137,8 +137,15 @@ that points back here.
       (October 18, 2026). **Owner decision, October 18:** a child's PIN is 4 to 6 digits, chosen by the parent; the
       child types it in one number box and taps "Go". The children list now returns each child's sign-in state, the
       approvals list says which requests you proposed, and the lock email links to Settings, where Unlock is.
-  - [ ] Check the Request #1 screens against the image mockups once they're committed (the handoff is text-only, so
-    the screens follow the design system).
+  - [x] Check the Request #1 screens against the image mockups once they're committed: board added in #40, compared
+    against the built screens' code (October 20, 2026). Decided differences and gaps are in the handoff
+    (`docs/design/handoffs/SIGNUP_INVITATIONS_PROFILE_PICKER_2026-10-17.md`). Gaps from the board:
+    - [ ] "Decline all" on the co-parent's review of several new children.
+    - [ ] Illustrations on empty and confirmation screens ("No children added yet", "Invitation sent", emails), once
+      approved illustration assets exist; never generated stand-ins.
+    - [ ] **Owner decision:** a phone notification for a locked PIN (needs push notifications; email only today).
+    - [ ] **Owner question:** what the "Invitation settings" row on the invite screen should do.
+    - The show/hide password eye is tracked under "Dashboard and design".
   - [ ] Parent tile: it asks for email and password, because the picker only knows the parent's name. Optional:
     remember the email on the device.
   - [ ] Approvals: a note can be added when declining only. Optional: a note when approving too (AP-05).
