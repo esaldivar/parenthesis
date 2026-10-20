@@ -326,9 +326,10 @@ internal static class ChildAccessEndpoints
         var tiles = new List<ProfileTile>();
         if (device.Kind == DeviceKind.Household)
         {
+            // Only the parent who registered this device gets a tile, so one parent's phone never lists the other parent.
             var parents = await db.Memberships.IgnoreQueryFilters(filter)
-                .Where(m => m.FamilyId == device.FamilyId && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
-                .OrderBy(m => m.JoinedAt)
+                .Where(m => m.Id == device.CreatedByMembershipId && m.FamilyId == device.FamilyId
+                    && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
                 .ToListAsync(cancellationToken);
             var names = await directory.GetDisplayNamesAsync(parents.Select(p => p.UserId).ToList(), cancellationToken);
             tiles.AddRange(parents.Select(p => new ProfileTile("parent", p.Id, names.GetValueOrDefault(p.UserId, "Parent"), true, false)));

@@ -1,7 +1,8 @@
 name: PR branch policy
 
 # Checks that a PR's source branch may merge into its target (rules in .github/scripts/check-pr-branch-policy.sh):
-# main only accepts develop (a release) or hotfix/*; develop accepts the work-branch prefixes in CONTRIBUTING.md.
+# main only accepts develop (a tested release) or hotfix/*; develop only accepts release/x.y.z, hotfix/* or chore/sync-*;
+# release/x.y.z accepts the work-branch prefixes. See docs/development-workflow.md.
 # GitHub can't restrict a PR's source branch itself, so this required check does. It lives outside CI so that
 # retargeting a PR ("edited") re-checks it against the new target without re-running the whole build.
 on:
@@ -37,4 +38,5 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
           BASE_REPO: ${{ github.repository }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        run: bash .github/scripts/check-pr-branch-policy.sh "$BASE_REF" "$HEAD_REF" "$BASE_REPO" "$HEAD_REPO"
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash .github/scripts/check-pr-branch-policy.sh "$BASE_REF" "$HEAD_REF" "$BASE_REPO" "$HEAD_REPO" "$PR_NUMBER"

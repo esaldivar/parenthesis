@@ -16,7 +16,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
-    public async Task A_registered_household_device_shows_both_parents_and_the_child()
+    public async Task A_household_device_shows_only_the_parent_who_registered_it_and_the_child()
     {
         var family = await FamilyWithKaiAsync();
         using var _ = family;
@@ -25,11 +25,27 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
 
         Assert.Equal("Rivera Family", picker.GetProperty("familyName").GetString());
         Assert.Equal(
-            ["parent:Dad", "parent:Mom", "child:Kai"],
+            ["parent:Dad", "child:Kai"],
             picker.GetProperty("profiles").EnumerateArray().Select(p => $"{p.GetProperty("kind").GetString()}:{p.GetProperty("name").GetString()}"));
         var kai = picker.GetProperty("profiles").EnumerateArray().Last();
         Assert.True(kai.GetProperty("canSignIn").GetBoolean());
         Assert.False(kai.GetProperty("locked").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Each_parents_device_shows_only_that_parent()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        Assert.Equal(
+            HttpStatusCode.Created,
+            (await family.Mom.PostAsync($"/api/families/{family.FamilyId}/devices/household", new { name = "Mom's phone" })).StatusCode);
+
+        var picker = await JsonAsync(await family.Mom.GetAsync("/api/device/profiles"));
+
+        Assert.Equal(
+            ["parent:Mom", "child:Kai"],
+            picker.GetProperty("profiles").EnumerateArray().Select(p => $"{p.GetProperty("kind").GetString()}:{p.GetProperty("name").GetString()}"));
     }
 
     [Fact]
@@ -182,6 +198,39 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Unauthorized, oldAfter.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, newAfter.StatusCode);
     }
+
+    [Fact]
+    public async Task Parents_see_each_childs_sign_in_state()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        using var tablet = await PairedTabletAsync(family);
+        await family.Dad.PostAsync($"/api/families/{family.FamilyId}/children", new { firstName = "Aurora" });
+
+        var before = await ChildrenSignInAsync(family);
+        await family.Dad.SendAsync(HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" });
+        foreach (var pin in new[] { "1357", "1358", "1359" })
+        {
+            await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin });
+        }
+
+        var after = await ChildrenSignInAsync(family);
+
+        Assert.Equal(["Kai:True:False:False", "Aurora:False:False:False"], before);
+        Assert.Equal(["Kai:True:True:True", "Aurora:False:False:False"], after);
+    }
+
+    /// <summary>Each child as "name:enabled:locked:pinChangePending", as Mom's children list shows it.</summary>
+    private static async Task<List<string>> ChildrenSignInAsync(TestFamily family) =>
+        (await JsonAsync(await family.Mom.GetAsync($"/api/families/{family.FamilyId}/children")))
+            .EnumerateArray()
+            .Select(c =>
+            {
+                var signIn = c.GetProperty("signIn");
+                return $"{c.GetProperty("firstName").GetString()}:{signIn.GetProperty("enabled").GetBoolean()}"
+                    + $":{signIn.GetProperty("locked").GetBoolean()}:{signIn.GetProperty("pinChangePending").GetBoolean()}";
+            })
+            .ToList();
 
     [Fact]
     public async Task A_rejected_PIN_change_keeps_the_current_PIN()

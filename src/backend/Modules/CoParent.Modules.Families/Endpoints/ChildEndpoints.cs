@@ -15,7 +15,13 @@ namespace CoParent.Modules.Families.Endpoints;
 
 internal sealed record AddChildRequest(string? FirstName);
 
-internal sealed record ChildView(Guid Id, string FirstName, ChildStatus Status, Guid? ChangeRequestId);
+internal sealed record ChildView(Guid Id, string FirstName, ChildStatus Status, Guid? ChangeRequestId, ChildSignInView SignIn);
+
+/// <summary>A child's sign-in, for parents: whether a PIN is set, whether it's locked, and whether a new PIN awaits approval.</summary>
+internal sealed record ChildSignInView(bool Enabled, bool Locked, bool PinChangePending)
+{
+    public static readonly ChildSignInView None = new(false, false, false);
+}
 
 /// <summary>Children (FM-04, ADR-0006). A child only becomes usable once both parents approve.</summary>
 internal static class ChildEndpoints
@@ -90,10 +96,10 @@ internal static class ChildEndpoints
 
         return TypedResults.Created(
             $"/api/families/{tenant.FamilyId}/children/{child.Id}",
-            new ChildView(child.Id, child.FirstName, child.Status, changeRequestId));
+            new ChildView(child.Id, child.FirstName, child.Status, changeRequestId, ChildSignInView.None));
     }
 
-    /// <summary>Active and pending children; rejected or archived ones drop out of the list.</summary>
+    /// <summary>Active and pending children, with their sign-in state; rejected or archived ones drop out of the list.</summary>
     private static async Task<Results<Ok<List<ChildView>>, ForbidHttpResult>> ListAsync(
         ITenantContext tenant, FamiliesDbContext db, CancellationToken cancellationToken)
     {
@@ -105,8 +111,21 @@ internal static class ChildEndpoints
         var children = await db.Children
             .Where(c => c.Status == ChildStatus.Active || c.Status == ChildStatus.PendingApproval)
             .OrderBy(c => c.CreatedAt)
-            .Select(c => new ChildView(c.Id, c.FirstName, c.Status, null))
             .ToListAsync(cancellationToken);
-        return TypedResults.Ok(children);
+        var childIds = children.Select(c => c.Id).ToList();
+        var credentials = await db.ChildCredentials
+            .Where(c => childIds.Contains(c.ChildProfileId))
+            .ToDictionaryAsync(c => c.ChildProfileId, cancellationToken);
+
+        return TypedResults.Ok(children
+            .Select(c => new ChildView(
+                c.Id,
+                c.FirstName,
+                c.Status,
+                null,
+                credentials.TryGetValue(c.Id, out var credential)
+                    ? new ChildSignInView(true, credential.IsLocked, credential.PendingPinHash is not null)
+                    : ChildSignInView.None))
+            .ToList());
     }
 }

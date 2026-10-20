@@ -63,8 +63,9 @@ export class ParentShell {
     focusMainOnNavigation(() => this.main());
   }
 
+  /** Signing out on a registered device leads back to "Who's using Parenthesis?". */
   protected async signOut(): Promise<void> {
     await this.auth.signOut();
-    await this.router.navigateByUrl('/sign-in');
+    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in');
   }
 }
