@@ -353,4 +353,5 @@ that points back here.
 ## Platform hardening (from the architecture backlog)
 - [ ] F-09 transactional outbox.
 - [ ] S-01 data-protection key ring.
-- [ ] S-03 forwarded headers behind the proxy.
+- [x] S-03 forwarded headers behind the proxy: `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` on each container app
+  (runbook step 2), found when sign-up failed on the development site (October 20, 2026).
