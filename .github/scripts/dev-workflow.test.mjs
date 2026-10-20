@@ -14,6 +14,7 @@ import {
   sendDiscord,
   developmentPrs,
   ownerApproved,
+  prLimit,
 } from "./dev-workflow.mjs";
 
 const iso = (d) => d.toISOString();
@@ -59,19 +60,62 @@ test("previous week range ends where the current week starts", () => {
   assert.equal(iso(end), "2026-11-02T06:00:00.000Z");
 });
 
-test("development PRs count; releases, back-merges, hotfixes, bots and replacements don't", () => {
-  assert.equal(countsTowardLimit(pr()).counts, true);
-  assert.equal(countsTowardLimit(pr({ base: { ref: "release/0.2.0" } })).counts, true);
+test("only release sources into exact develop count, independent of author and replacement labels", () => {
+  assert.equal(countsTowardLimit(pr({ head: { ref: "release/0.3.0" } })).counts, true);
+  assert.equal(countsTowardLimit(pr({ base: { ref: "release/0.2.0" } })).counts, false);
   assert.equal(countsTowardLimit(pr({ base: { ref: "main" }, head: { ref: "develop" } })).counts, false);
   assert.equal(countsTowardLimit(pr({ base: { ref: "development" }, head: { ref: "release/0.2.0" } })).counts, false);
   assert.equal(countsTowardLimit(pr({ head: { ref: "chore/sync-main" } })).counts, false);
   assert.equal(countsTowardLimit(pr({ base: { ref: "main" }, head: { ref: "hotfix/login" } })).counts, false);
-  assert.equal(countsTowardLimit(pr({ user: { login: "dependabot[bot]", type: "Bot" } })).counts, false);
-  assert.equal(countsTowardLimit(pr({ labels: [{ name: "replacement" }] })).counts, false);
+  assert.equal(countsTowardLimit(pr({ head: { ref: "release/0.3.0" }, user: { login: "dependabot[bot]", type: "Bot" } })).counts, true);
+  assert.equal(countsTowardLimit(pr({ head: { ref: "release/0.3.0" }, labels: [{ name: "replacement" }] })).counts, true);
+});
+
+test("ordinary work cannot consume the cap for any target; release sources count only into develop", () => {
+  for (const head of ['feature/calendar', 'feat/a', 'fix/a', 'bugfix/a', 'docs/a', 'chore/a', 'chore/sync-main', 'hotfix/a', 'develop', 'release/']) {
+    for (const base of ['develop', 'release/0.3.0', 'main', 'development', 'feature/stack']) {
+      assert.equal(countsTowardLimit(pr({ head: { ref: head }, base: { ref: base } })).counts, false, `${head} -> ${base}`);
+    }
+  }
+  for (const head of ['release/0.3.0', 'release/calendar', 'release/nested/name']) {
+    for (const base of ['develop', 'release/0.3.0', 'main', 'development', 'feature/stack']) {
+      assert.equal(countsTowardLimit(pr({ head: { ref: head }, base: { ref: base } })).counts, base === 'develop', `${head} -> ${base}`);
+    }
+  }
 });
 
 test("PRs opened before the limits started stay valid and don't count", () => {
   assert.equal(countsTowardLimit(pr({ created_at: "2026-10-17T12:17:46Z" })).counts, false);
+});
+
+test("ordinary PR check passes without counting or looking for override", async () => {
+  await prLimit({ repo: 'esaldivar/parenthesis', get: async () => pr(),
+    async *paginate() { throw Error('ordinary PR must not query allowance'); } }, 70);
+});
+
+test("fourth promotion fails, first three pass, and owner override keeps its meaning", async () => {
+  const all = [4, 3, 2, 1].map(number => pr({ number, head: { ref: 'release/0.3.0' }, created_at: `2026-10-2${number}T12:00:00Z` }));
+  const fake = (number, approved = false) => ({ repo: 'esaldivar/parenthesis',
+    get: async () => ({ ...all.find(p => p.number === number), labels: approved ? [{ name: 'owner-approved-pr' }] : [] }),
+    async *paginate(path) {
+      if (path.includes('/pulls?')) yield* all;
+      else if (path.includes('/events?')) yield { event: 'labeled', label: { name: 'owner-approved-pr' }, actor: { login: 'esaldivar' } };
+      else yield { user: { type: 'Bot' }, body: '<!-- dev-workflow:pr-limit-over -->' };
+    }, post: async () => ({}),
+  });
+  for (const number of [1, 2, 3]) await prLimit(fake(number), number);
+  await assert.rejects(prLimit(fake(4), 4), /Weekly PR limit reached/);
+  await prLimit(fake(4, true), 4);
+});
+
+test("weekly count is half-open across the Monday reset and excludes future creations", async () => {
+  const start = new Date('2026-10-26T05:00:00Z'), end = new Date('2026-11-02T06:00:00Z');
+  const gh = { repo: 'esaldivar/parenthesis', async *paginate() {
+    for (const [number, created_at] of [[4, end.toISOString()], [3, '2026-11-02T05:59:59Z'], [2, start.toISOString()], [1, '2026-10-26T04:59:59Z']]) {
+      yield pr({ number, head: { ref: 'release/0.3.0' }, created_at });
+    }
+  } };
+  assert.deepEqual((await developmentPrs(gh, { start, end })).map(p => p.number), [2, 3]);
 });
 
 test("Copilot is recognised as a requested reviewer and as a review author", () => {
@@ -212,10 +256,10 @@ const fakeGh = (pages) => ({
 
 test("weekly PR count uses creation time, oldest first, and skips what doesn't count", async () => {
   const prs = [
-    pr({ number: 9, created_at: "2026-10-23T12:00:00Z" }),
+    pr({ number: 9, head: { ref: "release/0.3.0" }, created_at: "2026-10-23T12:00:00Z" }),
     pr({ number: 8, created_at: "2026-10-22T12:00:00Z", head: { ref: "chore/sync-main" } }),
-    pr({ number: 7, created_at: "2026-10-21T12:00:00Z", state: "closed" }), // reopening/closing doesn't matter
-    pr({ number: 6, created_at: "2026-10-20T12:00:00Z" }),
+    pr({ number: 7, head: { ref: "release/0.3.0" }, created_at: "2026-10-21T12:00:00Z", state: "closed" }), // reopening/closing doesn't matter
+    pr({ number: 6, head: { ref: "release/0.3.0" }, created_at: "2026-10-20T12:00:00Z" }),
     pr({ number: 5, created_at: "2026-10-18T12:00:00Z" }), // previous week: stops the scan
   ];
   const gh = fakeGh([["/repos/example/repo/pulls", prs]]);

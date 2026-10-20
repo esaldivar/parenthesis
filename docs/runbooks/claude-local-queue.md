@@ -81,8 +81,8 @@ Each scheduled run (`--scheduled`):
 - takes the top approved issue that doesn't already have a queue branch or PR (merged or not), so it never repeats
   one. To run an issue again, delete its branch and close or delete its PR first;
 - runs Claude **headless** (only the pre-allowed tools, 60-minute limit), then the same checks and guards as below;
-- does nothing when no issue is waiting, another run is going, or the weekly PR limit is reached (the issue waits
-  for Monday's reset). Idle checks leave no log;
+- does nothing when no issue is waiting or another run is going. The weekly cap applies only to `release/*` →
+  `develop` promotions; it never blocks this runner's feature/bugfix work into the active release branch. Idle checks leave no log;
 - writes one line to `.git/claude-queue/last-scheduled-run.txt` every time (when, and idle, stopped or finished), so
   you can confirm the hourly runs are happening;
 - moves the issue to **In Development** when it starts and **Awaiting PR Approval** when the draft PR opens;
@@ -98,9 +98,9 @@ for the backend tests.
 1. Checks that `gh` is signed in as the owner, Claude Code is signed in with the subscription, and no other run is in
    progress (lock file).
 2. Selects the issue and verifies the owner's approval (above).
-3. Checks this week's PR count (`dev-workflow.mjs usage`). At the limit of 3 it stops **before** Claude runs (a
-   scheduled run just waits). With `--commit-only` (by hand only) it runs and commits locally, with no push and no
-   PR, as the weekly-limit rules require.
+3. Applies the weekly cap only for a `release/*` source targeting `develop`. This runner generates feature/bugfix
+   PRs into `release/0.3.0`, so it does not query that cap or stop coding when release promotion slots are exhausted.
+   Owner coding approval, eligibility, one-task lock and all other guards remain required.
 4. Creates a separate worktree, `../parenthesis-claude-<n>`, from a fresh `origin/release/0.3.0`, on
    `feature/<n>-<slug>` (or `bugfix/`). It stops if the branch or folder already exists.
 5. Runs Claude Code in that worktree with the issue text marked as data. Claude can read, edit and run the build and
@@ -113,12 +113,14 @@ for the backend tests.
    - runs the same checks as CI: backend restore, build, format and tests; frontend install, lint, tests and build.
      Any failure stops the run with nothing committed.
 7. Commits (`feat: <title> (#n)` or `fix: …`).
-8. Re-checks approval, eligibility and the weekly count. Anything changed: nothing is pushed.
+8. Re-checks approval and eligibility. The same source-and-target guard protects the pre-PR count: ordinary work
+   stays exempt even if all promotion slots were used while Claude ran. Failed approval/eligibility: nothing pushed.
 9. If the change is **major** (by `dev-workflow.mjs`'s rules: migrations, auth, security, infrastructure or a large
    change), sends the Discord summary first. Without `DISCORD_WEBHOOK_URL`, or if sending fails, it stops before
    pushing.
 10. Pushes and opens a **draft** PR into `release/0.3.0` with `Closes #n`, the check results, risks and outstanding
-    work. The usual CI, branch policy, weekly limit and Discord notices apply when it's marked ready for review.
+    work. The usual CI, branch policy and Discord notices apply when it's marked ready for review; the promotion
+    cap does not apply to this source/target pair.
 
 ## The project board
 
@@ -159,8 +161,19 @@ inspection.
 - A scheduled run that stopped keeps its branch, so the next hour moves on to the next issue instead of retrying.
   Fix the cause, discard the run (below), and it's picked up again.
 - To discard a run: `git worktree remove ../parenthesis-claude-<n>` and `git branch -D feature/<n>-<slug>`.
-- At the weekly limit with `--commit-only`: when the week resets, push the branch and open the draft PR by hand,
-  following "Before opening a PR" in [the workflow guide](../development-workflow.md).
+- `--commit-only` remains an explicit manual no-push/no-PR option. Ordinary work is no longer forced into it by
+  a promotion allowance; follow "Before opening a PR" in [the workflow guide](../development-workflow.md).
+
+## October 20 policy rollout (#134)
+
+The broad development-PR cap is superseded. Merge the reviewed correction into the active release branch before
+refreshing installed queue code; get the reviewed policy onto default branch `main` through owner-approved merges
+so default-branch PR checks and the weekly report use it. Main currently lacks the weekly-limit workflow; no hosted
+cap enforcement is claimed. Only require Weekly PR limit on develop after the corrected default-branch workflow
+has demonstrated pass/fail behavior. Preserve all required checks and owner approvals. The installed task refreshes
+its checkout from the remote active release at the beginning of each scheduled run, so editing that checkout alone
+is temporary and could be overwritten. Removing the old limit can allow already-approved #98 to run at the next
+hour: coordinate explicit activation before applying unreviewed live edits. Do not start the task to validate this.
 
 ## When the release changes
 
