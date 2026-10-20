@@ -99,6 +99,13 @@ export function countsTowardLimit(pr) {
   return { counts: true, reason: "new development PR" };
 }
 
+/**
+ * Copilot reviews on PRs into develop (releases, hotfixes, back-merges) are requested automatically by the develop
+ * ruleset and don't count toward the weekly Copilot limit (owner decision, October 20, 2026). The per-PR limit
+ * still applies.
+ */
+export const copilotWeeklyExempt = (pr) => ["develop", "development"].includes(pr.base?.ref);
+
 export const isCopilot = (login = "") => /^copilot(-pull-request-reviewer)?(\[bot\])?$/i.test(login);
 
 /**
@@ -313,6 +320,7 @@ export async function copilotUsage(gh, { start, end }) {
   // A review updates its PR, so every PR reviewed since `start` has updated_at >= start.
   for await (const pr of gh.paginate(`/repos/${gh.repo}/pulls?state=all&sort=updated&direction=desc&per_page=100`)) {
     if (new Date(pr.updated_at) < start) break;
+    if (copilotWeeklyExempt(pr)) continue;
     const reviews = await allCopilotReviews(gh, pr.number);
     const inWeek = reviews.filter((r) => r.submitted_at && new Date(r.submitted_at) >= start && new Date(r.submitted_at) < end);
     const waiting = pr.state === "open" && (pr.requested_reviewers ?? []).some((u) => isCopilot(u.login)) ? 1 : 0;
@@ -401,14 +409,17 @@ async function copilotCheck(gh) {
   const week = weekRange();
   const usage = await copilotUsage(gh, week);
   const onPr = (await allCopilotReviews(gh, pr.number)).length + 1; // this request included; reopening doesn't reset
-  const weekly = usage.used + Math.max(usage.pending, 1);
-  summary(`Copilot reviews: this request makes ${onPr} of ${LIMITS.copilotPerPr} on #${pr.number}, and ${weekly} of ${LIMITS.copilotPerWeek} this week.`);
+  const exempt = copilotWeeklyExempt(pr);
+  const weekly = exempt ? usage.used : usage.used + Math.max(usage.pending, 1);
+  summary(exempt
+    ? `Copilot reviews: this request makes ${onPr} of ${LIMITS.copilotPerPr} on #${pr.number}. PRs into ${pr.base.ref} don't count toward the weekly limit.`
+    : `Copilot reviews: this request makes ${onPr} of ${LIMITS.copilotPerPr} on #${pr.number}, and ${weekly} of ${LIMITS.copilotPerWeek} this week.`);
   const existing = await comments(gh, pr.number);
   const over = [];
   if (onPr > LIMITS.copilotPerPr) over.push(`review ${onPr} on this PR (limit ${LIMITS.copilotPerPr}: one initial review and one follow-up)`);
-  if (weekly > LIMITS.copilotPerWeek) over.push(`review ${weekly} this week (limit ${LIMITS.copilotPerWeek})`);
+  if (!exempt && weekly > LIMITS.copilotPerWeek) over.push(`review ${weekly} this week (limit ${LIMITS.copilotPerWeek})`);
   if (!over.length) {
-    if (weekly >= LIMITS.copilotPerWeek - 1) {
+    if (!exempt && weekly >= LIMITS.copilotPerWeek - 1) {
       await commentOnce(gh, pr.number, existing, `copilot-week-${weekly}`,
         `ℹ️ Copilot review ${weekly} of ${LIMITS.copilotPerWeek} for this week. Requests beyond ${LIMITS.copilotPerWeek} need the owner's \`${LABELS.extraReview}\` label. The count resets Monday at 12:00 AM Central.`);
     }

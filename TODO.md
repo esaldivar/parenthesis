@@ -279,6 +279,11 @@ that points back here.
     now links to it (October 18, 2026).
   - [ ] **Owner:** once the **Weekly PR limit** check has run on a PR into `develop`, make it a required check there
     (Settings → Branches → `develop`), so PRs over the limit can't merge without `owner-approved-pr`.
+  - [ ] **Owner setting: Copilot review on release PRs** (owner decision, October 20, 2026). Settings → Rules →
+    Rulesets → New branch ruleset, target `develop`: turn on **Automatically request Copilot code review** with
+    **Review new pushes** off, and in "Require a pull request before merging" turn on **Require conversation
+    resolution before merging**. Don't change the other `develop` rules. The usage script already leaves these reviews
+    out of the weekly count; the 2-per-PR limit still applies.
   - [ ] Watch the first real runs: the first major or release PR notice, the first over-limit PR, and the first
     Monday report (it only runs once this is released to `main`).
 
