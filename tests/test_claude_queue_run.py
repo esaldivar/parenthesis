@@ -182,13 +182,16 @@ class OutputTests(unittest.TestCase):
     def test_commit_message(self):
         msg = runner.commit_message(ISSUE, "feature")
         self.assertTrue(msg.startswith("feat: Calendar reminders with subtle seen status (#72)"))
-        self.assertIn("Closes #72", msg)
+        self.assertIn("Refs #72", msg)
+        self.assertNotIn("Closes #72", msg)
         self.assertTrue(runner.commit_message(ISSUE, "bugfix").startswith("fix: "))
 
     def test_pr_body_reports_checks_and_draft(self):
         body = runner.build_pr_body(ISSUE, "feature", [("Backend tests", True), ("Frontend lint", True)],
                                     ["a", "b"], 40, [])
-        for text in ("Closes #72", "**draft**", "Backend tests: passed", "## Testing", "## Risks and known issues",
+        self.assertIn("## Tracking issues\nRefs #72", body)
+        self.assertNotIn("Closes #72", body)
+        for text in ("Refs #72", "**draft**", "Backend tests: passed", "## Testing", "## Risks and known issues",
                      "## Outstanding work", "[x] ✨ Feature"):
             self.assertIn(text, body)
 

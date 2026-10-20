@@ -6,6 +6,11 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Required tracking issues on every PR (#132, owner October 20, 2026).** Template, trusted-base read-only
+  checker and tests prepared in the implementation PR. After owner-approved merges, verify live pass/fail behavior
+  and require **Tracking issue links** on `release/*`, `develop` and `main`, preserving every existing rule.
+  Existing open PR authors must identify relevant issues; no retroactive unrelated links. Details:
+  [rollout runbook](docs/runbooks/pr-issue-links.md). Not enforced until branch settings are verified.
 - [ ] **Account deletion (A-12, v0.3.0, first item; owner decisions October 20, 2026).** A parent can delete their own
   account, so real families can leave and the owner can rerun the sign-up flows.
   - [x] Built (October 20, 2026): Settings → Delete account. The parent re-enters their password and sees what will be
@@ -305,6 +310,12 @@ that points back here.
     now links to it (October 18, 2026).
   - [ ] **Owner:** once the **Weekly PR limit** check has run on a PR into `develop`, make it a required check there
     (Settings → Branches → `develop`), so PRs over the limit can't merge without `owner-approved-pr`.
+  - [ ] **Owner setting: Copilot review on release PRs** (owner decision, October 20, 2026). Settings → Rules →
+    Rulesets → New branch ruleset named **Copilot release review**, target `develop`: turn on **Automatically
+    request Copilot code review** with **Review new pushes** off, and in "Require a pull request before merging" turn
+    on **Require conversation resolution before merging**. Don't change the other `develop` rules. Save it with
+    Enforcement status **Disabled**; it's set to Active only while a release PR is open (see
+    `docs/development-workflow.md`). The usage script already leaves these reviews out of the weekly count.
   - [ ] Watch the first real runs: the first major or release PR notice, the first over-limit PR, and the first
     Monday report (it only runs once this is released to `main`).
 
