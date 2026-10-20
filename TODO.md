@@ -17,7 +17,9 @@ that points back here.
   - If they're the only parent: the family, its child profiles, devices and pending invitations are deleted too.
   - Emails: a confirmation to the leaving parent, and a neutral notice to the co-parent. No personal data in logs or
     telemetry. Children never see it.
-  - Before building: decide the "Former parent" wording, and whether the co-parent's notice names the person.
+  - Wording (owner, October 20, 2026): their records show as **"Former parent"** (no name kept). The co-parent's
+    email is neutral and names nobody: "A parent has left your family on Parenthesis. Your family, children and
+    shared history are unchanged."
 - [ ] **SonarQube Cloud (Free plan) protecting `main`** (big to-do; owner decision, October 17, 2026). It gives code
   quality, security and vulnerability analysis at no cost. The plan only covers PRs into `main` and `main` itself,
   which is all that's needed. The paid plans and the self-hosted server were ruled out on cost.
