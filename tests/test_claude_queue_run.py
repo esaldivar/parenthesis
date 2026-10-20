@@ -115,7 +115,7 @@ class LimitAndAuthTests(unittest.TestCase):
 class ClaudeInvocationTests(unittest.TestCase):
     def test_manual_commit_only_still_prevents_push_after_ordinary_work_is_exempt(self):
         # All commands are mocked; no Claude, network, git or task is invoked.
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix=".test-queue-") as directory:
             instance = object.__new__(runner.Runner)
             instance.args = runner.parse_args(["--commit-only", "--mode", "headless"])
             instance.repo_root = pathlib.Path(directory) / "repo"
