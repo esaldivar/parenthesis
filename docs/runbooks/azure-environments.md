@@ -131,11 +131,32 @@ az containerapp job secret set -g $RG -n job-parenthesis-migrate-$ENV --secrets 
 
 ```bash
 URL="https://$(az containerapp show -g $RG -n ca-parenthesis-$ENV --query properties.configuration.ingress.fqdn -o tsv)" && echo "APP_URL for GitHub: $URL"
-az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars ConnectionStrings__Postgres=secretref:postgres App__PublicBaseUrl=$URL ASPNETCORE_ENVIRONMENT=Production
+az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars ConnectionStrings__Postgres=secretref:postgres App__PublicBaseUrl=$URL ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 az containerapp job update -g $RG -n job-parenthesis-migrate-$ENV --set-env-vars ConnectionStrings__Postgres=secretref:postgres
 ```
 
-Development's `APP_URL` is `https://ca-parenthesis-dev.calmfield-0e9f47dd.centralus.azurecontainerapps.io`.
+`ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` is required. Container Apps ends HTTPS at its ingress and forwards plain
+HTTP with `X-Forwarded-Proto`/`X-Forwarded-For`; without it the app treats every request as insecure, and creating an
+account fails with "Something went wrong" because the antiforgery cookie requires HTTPS (the development site,
+October 20, 2026). It also gives the rate limiter the visitor's real address. Only Azure's ingress can reach the app,
+so trusting these headers is safe.
+
+Development's `APP_URL` is `https://dev.parenthesisfamily.com` (custom domain, see below); the built-in address
+`https://ca-parenthesis-dev.calmfield-0e9f47dd.centralus.azurecontainerapps.io` still works.
+
+### Custom domain
+Development uses `dev.parenthesisfamily.com` with Azure's free managed certificate (October 20, 2026):
+
+```bash
+az containerapp show -n ca-parenthesis-$ENV -g $RG --query "{fqdn:properties.configuration.ingress.fqdn, verificationId:properties.customDomainVerificationId}" -o table
+az containerapp hostname add -n ca-parenthesis-$ENV -g $RG --hostname <host>
+az containerapp hostname bind -n ca-parenthesis-$ENV -g $RG --hostname <host> --environment cae-parenthesis-$ENV --validation-method CNAME
+az containerapp update -n ca-parenthesis-$ENV -g $RG --set-env-vars App__PublicBaseUrl=https://<host>
+```
+
+Before `hostname add`, create two DNS records for `parenthesisfamily.com`: a CNAME from the host's name (for example
+`dev`) to the `fqdn`, and a TXT record `asuid.<name>` with the `verificationId`. After `bind`, set the GitHub
+environment's `APP_URL` to the new address so the deploy's smoke tests use it.
 
 **Development only: invite-only sign-up.** Only the testers you list can create an account there. Separate the
 addresses with commas; an invited co-parent must be on the list too. Production leaves these unset, so anyone can sign
