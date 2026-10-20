@@ -1,4 +1,3 @@
-using System.Text.Encodings.Web;
 using CoParent.Infrastructure.Email;
 using Microsoft.Extensions.Logging;
 
@@ -10,31 +9,19 @@ internal sealed partial class ChildSafetyEmails(IEmailSender sender, PublicUrls 
     public async Task SendLockedAsync(
         IReadOnlyCollection<string> parentEmails, string childName, string deviceName, CancellationToken cancellationToken)
     {
-        var link = urls.Build("/settings", new Dictionary<string, string?>());
-        var intro = $"{childName}'s profile was locked after 3 wrong PINs on \"{deviceName}\". "
-            + "Either parent can unlock it in Settings in Parenthesis.";
-        const string footer = "If this wasn't your child, you can also remove the device from your family's device list.";
-        var html = HtmlEncoder.Default;
+        var content = new EmailContent(
+            $"{childName}'s profile is locked",
+            "A parent can unlock it in Settings",
+            null,
+            [
+                $"{childName}'s profile was locked after 3 wrong PINs on \"{deviceName}\".",
+                "Either parent can unlock it in Settings in Parenthesis.",
+            ],
+            new EmailAction("Open Parenthesis", urls.Build("/settings", new Dictionary<string, string?>())),
+            "If this wasn't your child, you can also remove the device from your family's device list.");
         foreach (var to in parentEmails)
         {
-            var message = new EmailMessage(
-                to,
-                $"{childName}'s profile is locked",
-                $"""
-                Hi,
-
-                {intro}
-
-                Open Parenthesis: {link}
-
-                {footer}
-                """,
-                $"""
-                <p>Hi,</p>
-                <p>{html.Encode(intro)}</p>
-                <p><a href="{html.Encode(link.AbsoluteUri)}">Open Parenthesis</a></p>
-                <p>{html.Encode(footer)}</p>
-                """);
+            var message = EmailTemplate.Render(to, content);
             try
             {
                 await sender.SendAsync(message, cancellationToken);

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using CoParent.Api.Hosting;
+using CoParent.Infrastructure.DataProtection;
 using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Approvals;
@@ -17,6 +18,7 @@ builder.AddPlatformLogging();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services
     .AddPersistence(postgresConnectionString)
+    .AddPlatformDataProtection()
     .AddEmail()
     .AddPlatformProblemDetails()
     .AddPlatformOpenApi()

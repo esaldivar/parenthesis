@@ -63,9 +63,22 @@ that points back here.
   - Platform: Azure, as the architecture already chose (Container Apps, Azure Database for PostgreSQL, Blob Storage,
     Key Vault). Confirm this with the owner, including AWS as the alternative, when planning.
   - Keep costs low: small tiers, and check what Azure's free offers cover.
-  - **Real email sending** for deployed environments, for example Azure Communication Services Email. Mailpit only
-    catches mail locally. Email is used for account confirmation, password resets and account-safety notices, and
-    later for approval notifications.
+  - **Real email sending** for deployed environments. Mailpit only catches mail locally. Email is used for account
+    confirmation, password resets and account-safety notices, and later for approval notifications.
+    - **Owner decision (October 20, 2026): Brevo** (SMTP relay, free tier), not SendGrid (needs a paid plan) or Azure
+      Communication Services. `parenthesisfamily.com` is authenticated in Brevo; mail comes from
+      `no-reply@parenthesisfamily.com`. The app keeps its SMTP sender, so no Brevo-specific code.
+    - [x] Branded HTML templates for every email (confirmation, already registered, password reset, co-parent
+      invitation for new and existing users, child locked), one shared layout with a plain-text twin and a single
+      link (October 20, 2026).
+    - [ ] **Owner:** wire Brevo into the development app (runbook, "Email (Brevo)"), then sign up with a tester
+      address to confirm delivery.
+    - [ ] **Owner:** production Brevo SMTP key in the production Key Vault, same settings.
+    - [ ] **Owner:** the development SMTP key (`brevo-smtp`) expires in October 2027; rotate it before then.
+    - [ ] Before production: check what Brevo stores (recipients, subjects, bodies) and add it to the privacy notes.
+      Emails carry first names, family names and links only, never diary, message or approval content.
+    - Not built: a "forgot username" email. Sign-in uses the email address as the username, so there is no separate
+      username to forget; "forgot password" covers it.
   - Domain names, HTTPS, the pipeline (deploy `develop` → dev, `main` → prod), secrets in Key Vault, database
     migrations on deploy, backups, monitoring.
 
@@ -124,8 +137,18 @@ that points back here.
       (October 18, 2026). **Owner decision, October 18:** a child's PIN is 4 to 6 digits, chosen by the parent; the
       child types it in one number box and taps "Go". The children list now returns each child's sign-in state, the
       approvals list says which requests you proposed, and the lock email links to Settings, where Unlock is.
-  - [ ] Check the Request #1 screens against the image mockups once they're committed (the handoff is text-only, so
-    the screens follow the design system).
+  - [x] Check the Request #1 screens against the image mockups once they're committed: board added in #40, compared
+    against the built screens' code (October 20, 2026). Decided differences and gaps are in the handoff
+    (`docs/design/handoffs/SIGNUP_INVITATIONS_PROFILE_PICKER_2026-10-17.md`). Gaps from the board:
+    - [x] "Decline all" on the co-parent's review of several new children: left out (owner, October 20, 2026).
+      One decision per child; a bulk decline is easy to tap by mistake.
+    - [ ] Illustrations on empty and confirmation screens ("No children added yet", "Invitation sent", emails):
+      text-only until the owner approves an illustration set (owner, October 20, 2026); never generated stand-ins.
+    - [ ] Phone or in-app alert for a locked PIN: email only for now; add it with notifications N-01/N-02 in v0.4.0
+      (owner, October 20, 2026).
+    - [x] "Invitation settings" row on the invite screen: dropped (owner, October 20, 2026). Nothing is configurable;
+      invitations last 7 days and resend/cancel are in Settings.
+    - The show/hide password eye is tracked under "Dashboard and design".
   - [ ] Parent tile: it asks for email and password, because the picker only knows the parent's name. Optional:
     remember the email on the device.
   - [ ] Approvals: a note can be added when declining only. Optional: a note when approving too (AP-05).
@@ -158,8 +181,36 @@ that points back here.
     Done. Needs the owner's OK; `gh` may need the `project` scope (`gh auth refresh -s project`).
   - [ ] Start each session by checking the board for *Ready for dev* stories (Claude) and *Ready for design* stories
     (ChatGPT, via the owner).
-  - [ ] Later, optional: a Claude agent that reacts to GitHub issues automatically. It needs a paid API key, so it's
-    deferred for cost.
+  - [x] ~~Later, optional: a Claude agent that reacts to GitHub issues automatically (paid API key).~~ Replaced by
+    the local Claude queue on the owner's Claude subscription (#94, October 19, 2026): no API key.
+  - [ ] **Local Claude queue** (#94). Runner, approval check, selector labels, CI for the Python tests, runbook
+    (`docs/runbooks/claude-local-queue.md`).
+    - [x] Labels `owner-approved-claude` and `claude-implementation` created; #95 (Actions scaffold) closed
+      (October 19, 2026).
+    - [x] **Owner:** deleted the `hotfix/claude-queue-execution-scaffold` branch (October 19, 2026).
+    - [x] **Owner:** set `DISCORD_WEBHOOK_URL` as a user environment variable on the machine that runs the queue
+      (runbook, "One-time setup") (October 19, 2026).
+    - [x] Pilot issue: #98 (calendar validation tests), approved by the owner; `--plan` selected it (October 19, 2026).
+    - [x] **Fully automated** (owner decision, October 19, 2026): an hourly Windows scheduled task on the owner's PC
+      runs `--scheduled` (headless; quiet when idle; skips issues that already have a queue branch or PR; waits at the
+      weekly limit; Discord notice when a draft PR opens or a run fails, once per problem; clears a crashed run's
+      lock). Set up with `scripts/claude_queue_schedule.ps1`.
+    - [ ] **Owner:** after this merges, run `scripts/claude_queue_schedule.ps1` once (runbook, "Running it on a
+      schedule"). The first scheduled run is the pilot: #98 runs headless once the weekly limit resets.
+    - [x] **Owner:** ran `scripts/claude_queue_schedule.ps1`; the task is registered (October 19, 2026).
+    - [x] Fixed: every scheduled run failed under Task Scheduler (exit 120; "The handle is invalid" when the runner
+      restarted itself after updating its checkout). Added `.git/claude-queue/last-scheduled-run.txt` so idle runs
+      can be confirmed (October 19, 2026).
+    - [x] Confirmed a real scheduled run after the fix: task result 0, status file updated (October 19, 2026).
+    - [x] **Board sync** (owner decision, October 19, 2026): the queue keeps Project #2's Status in step with each
+      issue's PRs (In Development, Awaiting PR Approval, Code Review, Awaiting Deployment, Done and closed; Backlog when
+      every PR closed unmerged), for any open issue a PR links with a closing keyword. `scripts/claude_queue_board.py`.
+    - [x] **Owner:** `gh auth refresh -s project` on the queue PC (October 19, 2026). First real sync moved #94 to
+      Awaiting Deployment.
+    - [x] Discord board updates (owner decision, October 19, 2026): one message per scheduled run listing each card
+      moved (issue, title, old → new status, closed at Done); none when nothing moved.
+    - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, and a draft PR opened by a
+      scheduled run. The Discord failure notice works (sent during the fix, October 19). Record the pilot on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).
   - [ ] **Owner:** install the GitHub mobile app and watch the repo (PRs, issues, releases, failed checks). It's free.
   - [ ] Optional: a free Discord server with a `#dev-updates` channel fed by a GitHub webhook.
@@ -187,13 +238,24 @@ that points back here.
     workflow `.github/workflows/playwright-release.yml`, the **Release E2E gate** check and its Discord post through
     `DISCORD_WEBHOOK_URL` (October 18, 2026).
   - [x] **Owner:** **Release E2E gate** is a required check on `develop` (October 18, 2026).
-  - [ ] Get the workflow onto `develop`. It exists only on `release/0.2.0`, so PRs into `develop` wait forever for
-    the required check (seen on #81, October 19, 2026). Plan, no early release:
+  - [x] Get the workflow onto `develop`. It existed only on `release/0.2.0`, so PRs into `develop` waited forever
+    for the required check (seen on #81, October 19, 2026):
     - [x] Merge `develop` into `release/0.2.0` (merge commit, not squash) to clear the release PR's conflicts (#82).
-    - [ ] Release week (October 26): open `release/0.2.0` → `develop`; the gate and Playwright run on it.
-    - [ ] After it merges, update #81 from `develop` so the gate runs (it passes at once for non-release PRs).
-    - [ ] **Owner:** delete the stale `release/0.3.0` branch (older, unhardened copy of the gate; #64 closed).
-  - [ ] First real run on the `release/0.2.0` → `develop` PR: check the summary, the artifacts and the Discord post.
+    - [x] `release/0.2.0` → `develop` opened early at the owner's request and merged (#88, October 19, 2026).
+    - [x] Updated #81 from `develop`; its **Release E2E gate** reported and passed, and it merged (October 19, 2026).
+    - [x] **Owner:** deleted the stale `release/0.3.0`; a fresh `release/0.3.0` was cut from `develop`
+      (October 19, 2026).
+  - [x] First real run on the `release/0.2.0` → `develop` PR (#88, October 19, 2026): Playwright passed in about
+    4 minutes, the summary ran, the HTML report and summary artifacts were uploaded, and the Discord post was sent.
+  - [x] Moved `actions/upload-artifact` (v4 → v7) and `actions/download-artifact` (v4 → v8) in
+    `playwright-release.yml` to Node.js 24 (GitHub warned on #88's run). Only new optional inputs; defaults unchanged
+    (October 19, 2026).
+- [x] **Owner:** prune inactive branches (owner request, October 19, 2026). Claude listed merged or abandoned
+  branches with their PRs; the owner deleted 28 (24 with merged PRs, 3 duplicates already in `develop`, and the
+  superseded `docs/dev-workflow-automation`). Kept: `main`, `develop`, `release/0.2.0` (until v0.2.0 reaches
+  production), `release/0.3.0` and `design/signup-invitations-profile-picker` (#40 open). Claude Code sessions
+  can't delete branches (the proxy returns 403), so the owner deletes them.
+  - [x] **Owner:** turned on Settings → General → "Automatically delete head branches" (October 19, 2026).
   - [ ] Add browser journeys as the v0.2.0 and v0.3.0 screens ship (invitations, children, profile picker, PIN
     entry, the full calendar). Until then those features are tested through the API, and the calendar page through
     its honest empty state.
@@ -243,13 +305,29 @@ that points back here.
     on `develop`; the `development` environment (deploys from `develop` only) and the `production` environment (owner
     as required reviewer, self-review allowed, no admin bypass, deploys from `main` only). The environment variables
     wait for the Azure setup.
-  - [ ] **Owner:** Azure account and both environments (runbook steps 1–3), then `DEPLOY_ENABLED` = `true` and the
-    `parenthesis-api` package made public.
+  - [x] **Owner:** Azure account (free trial, $25 monthly budget with alerts) and the **development** environment
+    (runbook steps 1–3 with `ENV=dev`, `SUFFIX=15465`): resource group, logs, Application Insights, Container Apps
+    environment, PostgreSQL 17, Key Vault, storage, the app and its migration job, Key Vault references, the GitHub
+    `development` variables and `DEPLOY_ENABLED` = `true` (October 19, 2026).
+  - [x] First deployment to the development site, through the `chore/sync-main` back-merge (#105, October 19, 2026).
+  - [ ] Development deployment passes again after `release/0.3.0` → `develop` (#117): the sign-up email is branded
+    and sign-ins survive a restart.
+  - [ ] **Owner:** the **production** environment before the first production window (October 30, 2026): runbook
+    steps 2–3 with `ENV=prod`, the GitHub `production` variables, and the production readers' role assignments.
+  - [x] **Owner:** people and roles (runbook step 3a, owner request October 19, 2026): Entra groups
+    `parenthesis-dev-contributors` (Contributor on dev and Key Vault Secrets Officer on the dev vault; the owner is a
+    member) and `parenthesis-prod-readers` (created; empty until production exists) (October 19, 2026).
+  - [ ] **Owner:** assign `parenthesis-prod-readers` its roles once production exists, and move daily work to an
+    everyday account, keeping the Owner account for emergencies.
+  - [x] **Owner:** Application Insights prep for development (runbook step 2): 0.5 GB daily ingestion cap and the
+    `appinsights` Key Vault secret (October 19, 2026). Production gets the same with `ENV=prod`.
+  - [ ] Wire up Application Insights in the API (owner plans this soon): read `APPLICATIONINSIGHTS_CONNECTION_STRING`
+    from `secretref:appinsights`, no personal data in telemetry, then add the app setting in each environment.
   - [x] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
     (application change in Identity, v0.2.0). `Identity:SignUp:InviteOnly` and `AllowedEmails`; off by default, so
     production stays open (October 19, 2026).
-  - [ ] **Owner:** when the development site exists, set the tester list (Azure runbook, "Development only:
-    invite-only sign-up"). Invited co-parents must be on it too.
+  - [x] **Owner:** set the development site's tester list (Azure runbook, "Development only: invite-only sign-up";
+    October 19, 2026).
   - [x] Before v0.2.0 reaches production: check that the unfinished Milestone 3 work already in `develop` isn't
     reachable in the app (October 19, 2026). Nothing is: the calendar page is an honest empty state, the dashboard
     shows "not available yet" (its sample data only in development builds), Quick Add is disabled with a note, the
@@ -272,6 +350,11 @@ that points back here.
 - [ ] Replace placeholder counts (`src/frontend/src/app/layout/sample-counts.ts`) with real unread and notification
   data.
 - [ ] Deferred (owner OK for now): photo avatars, kids' artwork and memory photos (initials and tiles are used).
+- [ ] Show/hide password toggle (eye icon) on every password field: sign-in, create account, reset password and
+  change password (owner request, October 20, 2026). A real button inside the field with an accessible name that
+  says what it does ("Show password" / "Hide password", `aria-pressed`), reachable by keyboard, never submits the
+  form, and the password goes back to hidden after submitting. Use the shared form components; check both themes and
+  320px.
 
 ## Backend features the dashboard is waiting on
 - [ ] Calendar and parenting-time endpoints, including change requests and approvals.
@@ -280,5 +363,10 @@ that points back here.
 
 ## Platform hardening (from the architecture backlog)
 - [ ] F-09 transactional outbox.
-- [ ] S-01 data-protection key ring.
-- [ ] S-03 forwarded headers behind the proxy.
+- [x] S-01 data-protection key ring: keys stored in PostgreSQL (`data_protection.keys`), shared by every replica and
+  restart, so sign-ins, antiforgery tokens and email links survive scaling, waking from zero and deploys. Found when
+  sign-up on the development site failed with "Invalid or missing antiforgery token" after a restart (October 20, 2026).
+- [ ] Before production: encrypt the key ring at rest with a Key Vault key (`ProtectKeysWithAzureKeyVault`, the app's
+  managed identity). Today the keys rely on database access control only, and ASP.NET Core logs a warning about it.
+- [x] S-03 forwarded headers behind the proxy: `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` on each container app
+  (runbook step 2), found when sign-up failed on the development site (October 20, 2026).

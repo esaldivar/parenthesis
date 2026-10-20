@@ -41,3 +41,7 @@ appsettings.*.local.json
 
 # Backend coverage for SonarQube Cloud (dotnet-coverage)
 coverage-*.xml
+
+# Python bytecode (queue scripts and tests)
+__pycache__/
+*.pyc
