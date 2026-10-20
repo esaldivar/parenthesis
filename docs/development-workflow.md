@@ -219,8 +219,9 @@ How to run it: [the local Claude queue runbook](runbooks/claude-local-queue.md).
   `develop` PR, and back to **Disabled** once that release merges (Settings → Rules → Rulesets → Copilot release
   review → Enforcement status). Claude reminds the owner at both points.
 - **Findings block the release.** The same ruleset requires conversation resolution, so every Copilot comment on the
-  release PR must be resolved before it can merge. Fix real findings on a branch into the release branch; answer the
-  rest with a one-line reason, then resolve them. The owner still decides when to merge.
+  release PR must be resolved before it can merge. **Fix every comment** (owner rule, October 20, 2026) on a branch
+  into the release branch, then resolve it; no reply-only dismissals. If a comment can't be fixed or would make the
+  code wrong, ask the owner before resolving it. The owner still decides when to merge.
 - These automatic reviews **don't count toward the weekly limit**. The 2-per-PR limit still applies, so a release
   PR gets at most one follow-up review.
 - Other branches have no automatic review: Copilot reviews feature PRs only when someone asks. Review effort level

@@ -106,6 +106,8 @@ use it.
   Weeks start Monday 12:00 AM Central. Check usage before opening a PR or requesting a Copilot review.
 - The `develop` ruleset **Copilot release review** stays Disabled between releases. Remind the owner to set it to
   Active before opening a `release/x.y.z` → `develop` PR, and to Disabled once that release merges.
+- Fix every Copilot review comment on a release PR (owner rule); don't dismiss one with a reply. If one can't be
+  fixed or would make the code wrong, ask the owner first.
 - At the limit, keep working and committing on the branch; don't open the PR or request the review. Exceptions
   need the owner's `owner-approved-pr` / `owner-approved-review` label. Group related work; no PRs for minor changes.
 - Never merge PRs automatically, and never open duplicate PRs to get around a limit.
