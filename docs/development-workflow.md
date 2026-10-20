@@ -104,7 +104,8 @@ For a moved window (a Wednesday), the same steps happen on the Monday, the day b
 1. **Release branch.** All the milestone's PRs are merged, required checks pass, stabilization is done.
 2. **`release/x.y.z` → `develop`.** Passing checks, including the **Release E2E gate**: Playwright tests the
    release candidate for this milestone and every one before it, and a failure blocks the merge
-   ([runbook](runbooks/playwright-release-gate.md)). Release notes written, no open blocking defects, and the owner's
+   ([runbook](runbooks/playwright-release-gate.md)). Copilot's automatic review (the owner turns the
+   **Copilot release review** ruleset on first), with every comment resolved ([Copilot reviews](#copilot-reviews)). Release notes written, no open blocking defects, and the owner's
    approval. Merge with a **merge commit**. The development deployment then builds the image, runs migrations and
    smoke tests, and records the tested commit (GitHub's deployment history for the `development` environment). If
    testing fails, production is blocked: fix it on the release branch and repeat.
@@ -183,6 +184,8 @@ in [the Azure runbook](runbooks/azure-environments.md#github-settings).
 - **Not counted:** ordinary feature/fix/docs/chore PRs into a release branch or `develop`, hotfixes and syncs,
   `develop` → `main`, release branches into any other target, and every other source/target combination.
   The prior broad development cap and its bot/replacement exemptions are superseded by this exact branch scope.
+- Copilot reviews on PRs into `develop` (the automatic release review) don't count toward the 6 a week; see
+  [Copilot reviews](#copilot-reviews).
 - **Exceptions:** only the owner grants them, with a label. GitHub records who added a label, and the workflows only
   accept it when the repository owner added it.
   - `owner-approved-pr`: allows a PR beyond the weekly limit.
@@ -219,9 +222,21 @@ How to run it: [the local Claude queue runbook](runbooks/claude-local-queue.md).
 
 ## Copilot reviews
 
-- **Settings (checked October 18, 2026):** no automatic-review ruleset, so Copilot reviews only when someone asks.
-  Review effort level is **Lite**. "Allow Copilot to approve pull requests" is **off**. Keep it this way: an
-  automatic-review ruleset would review on every push and use up the allowance.
+- **Release PRs get one automatic review** (owner decision, October 20, 2026). The `develop` ruleset **Copilot
+  release review** requests a Copilot review when a PR into `develop` opens. "Review new pushes" stays **off**, so
+  pushes don't trigger re-reviews.
+- **It's on only around a release.** The ruleset stays **Disabled** between releases, so hotfixes and back-merges
+  into `develop` don't use reviews. The owner sets it to **Active** just before opening a `release/x.y.z` →
+  `develop` PR, and back to **Disabled** once that release merges (Settings → Rules → Rulesets → Copilot release
+  review → Enforcement status). Claude reminds the owner at both points.
+- **Findings block the release.** The same ruleset requires conversation resolution, so every Copilot comment on the
+  release PR must be resolved before it can merge. **Fix every comment** (owner rule, October 20, 2026) on a branch
+  into the release branch, then resolve it; no reply-only dismissals. If a comment can't be fixed or would make the
+  code wrong, ask the owner before resolving it. The owner still decides when to merge.
+- These automatic reviews **don't count toward the weekly limit**. The 2-per-PR limit still applies, so a release
+  PR gets at most one follow-up review.
+- Other branches have no automatic review: Copilot reviews feature PRs only when someone asks. Review effort level
+  is **Lite**. "Allow Copilot to approve pull requests" is **off**. Keep it that way.
 - Request a review only for the initial review and one follow-up, and only within the weekly limit. Never request
   one after every push.
 - `.github/workflows/copilot-review-usage.yml` runs on every review request. When Copilot is the reviewer, it counts
@@ -273,8 +288,9 @@ to this week, as a dry run that only shows the report).
 | Rule | How it's handled |
 |---|---|
 | 3 release/* → develop PRs a week | **Can't stop a PR from being opened.** The **Weekly PR limit** check fails only on the 4th and later matching promotion of the creation week, unless the owner grants the existing override. All other PRs pass without counting. **Owner setting:** require the check on `develop` after the corrected trusted-base workflow is present. |
-| 6 Copilot reviews a week, 2 per PR | **Can't stop or cancel a review request.** Counted and reported when it happens (PR comment, Discord, failed run). For Claude, it's a rule: check usage before requesting. |
-| No automatic re-reviews | **Repository setting:** no Copilot automatic-review ruleset (current state). |
+| 6 Copilot reviews a week, 2 per PR | **Can't stop or cancel a review request.** Counted and reported when it happens (PR comment, Discord, failed run). For Claude, it's a rule: check usage before requesting. Automatic reviews on PRs into `develop` count only toward the per-PR limit. |
+| No automatic re-reviews | **Repository setting:** the only Copilot automatic-review ruleset is **Copilot release review** on `develop`, with "Review new pushes" off, Active only while a release PR is open. |
+| Copilot findings resolved before a release merges | **Repository setting:** "Require conversation resolution before merging" in the `develop` ruleset. |
 | Exceptions | **Owner action:** the `owner-approved-pr` or `owner-approved-review` label, accepted only from the owner. |
 | No automatic merging | Auto-merge is off for the repository, and Claude never merges. |
 | Notices and the weekly report | Automatic, through the `DISCORD_WEBHOOK_URL` repository secret. |

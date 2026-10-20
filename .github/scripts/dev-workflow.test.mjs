@@ -14,6 +14,8 @@ import {
   sendDiscord,
   developmentPrs,
   ownerApproved,
+  copilotUsage,
+  copilotWeeklyExempt,
   prLimit,
 } from "./dev-workflow.mjs";
 
@@ -278,4 +280,24 @@ test("only the owner's label counts as approval", async () => {
   assert.equal(await ownerApproved(byOwner, labeled, "owner-approved-pr", "example"), true);
   assert.equal(await ownerApproved(bySomeoneElse, labeled, "owner-approved-pr", "example"), false);
   assert.equal(await ownerApproved(byOwner, pr(), "owner-approved-pr", "example"), false);
+});
+
+test("Copilot reviews on PRs into develop don't count toward the weekly limit", async () => {
+  assert.equal(copilotWeeklyExempt(pr({ base: { ref: "develop" }, head: { ref: "release/0.3.0" } })), true);
+  assert.equal(copilotWeeklyExempt(pr({ base: { ref: "release/0.3.0" }, head: { ref: "feature/x" } })), false);
+  assert.equal(copilotWeeklyExempt(pr({ base: { ref: "main" }, head: { ref: "develop" } })), false);
+
+  const review = { user: { login: "copilot-pull-request-reviewer[bot]" }, submitted_at: "2026-10-21T12:00:00Z" };
+  const prs = [
+    pr({ number: 12, updated_at: "2026-10-21T13:00:00Z", base: { ref: "develop" }, head: { ref: "release/0.3.0" } }),
+    pr({ number: 11, updated_at: "2026-10-21T12:30:00Z", base: { ref: "release/0.3.0" } }),
+  ];
+  const gh = fakeGh([
+    ["/repos/example/repo/pulls/12/reviews", [review]],
+    ["/repos/example/repo/pulls/11/reviews", [review]],
+    ["/repos/example/repo/pulls", prs],
+  ]);
+  const usage = await copilotUsage(gh, weekRange(new Date("2026-10-22T00:00:00Z")));
+  assert.equal(usage.used, 1);
+  assert.deepEqual([...usage.perPr.keys()], [11]);
 });

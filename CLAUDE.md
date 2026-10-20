@@ -111,6 +111,10 @@ use it.
   combinations are excluded: ordinary coding PRs must not be blocked by this cap. Separately, at most
   **6 Copilot reviews a week, 2 per PR** (initial plus one follow-up).
   Weeks start Monday 12:00 AM Central. Check usage before opening a PR or requesting a Copilot review.
+- The `develop` ruleset **Copilot release review** stays Disabled between releases. Remind the owner to set it to
+  Active before opening a `release/x.y.z` → `develop` PR, and to Disabled once that release merges.
+- Fix every Copilot review comment on a release PR (owner rule); don't dismiss one with a reply. If one can't be
+  fixed or would make the code wrong, ask the owner first.
 - At the release-promotion limit, keep ordinary coding work moving; only another release/* -> develop PR needs an exception.
   Copilot limits apply separately. Exceptions
   need the owner's `owner-approved-pr` / `owner-approved-review` label. Group related work; no PRs for minor changes.
