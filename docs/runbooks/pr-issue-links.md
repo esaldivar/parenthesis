@@ -23,7 +23,7 @@ metadata fails closed. Up to 100 unique issues are supported.
 ## Security and check behavior
 
 The **Tracking issue links** job uses `pull_request_target` with read-only contents, issues and PR permissions.
-It checks out only `.github/scripts` from the event's trusted **base SHA**, never the PR head. It runs on opened,
+It checks out only `.github/scripts` from the event's trusted **default-branch SHA**, never the PR head. It runs on opened,
 reopened, synchronize, edited and ready-for-review events, including drafts. PR text never becomes shell code.
 It reads the live PR body, verifies every listed issue and rechecks the body/head/base at the end. Redirects and
 API errors fail closed. It never writes issues, PRs, project statuses, secrets or deployments.
@@ -35,19 +35,26 @@ a rerun. This check does not claim to prove acceptance, semantic relevance, comp
 
 ## Activation (owner-controlled merges first)
 
-1. Review and merge this change into the active release branch. The initial PR cannot run a trusted-base check
-   that does not yet exist on its target; its checker is validated by the normal **Workflow script tests** job.
-2. Open or edit a legitimate PR against that branch and verify **Tracking issue links** runs and passes with real
-   links, then fails when those links are removed or invalid. Restore the correct links before merge.
-3. In Settings → Rules → Rulesets, edit the existing `release/*` ruleset. Add **Tracking issue links**, supplied by
-   GitHub Actions, to required status checks. Preserve all existing checks, branch patterns, strict/up-to-date
-   enforcement, bypass restrictions and review rules. Do not enable it before step 2, which would block bootstrap.
-4. Promote this exact workflow/script through the normal approved release into `develop`, then `main`. Repeat
-   the live pass/fail test for each target, then add **Tracking issue links** to each existing branch protection's
-   required status checks (Settings → Branches). Preserve every existing protection and Sonar/security gate.
+1. Review this PR and get explicit owner merge approval. The checker is validated by the normal **Workflow script
+   tests** job, but its trusted policy workflow does not yet exist on the default branch.
+2. Get the exact reviewed workflow and checker onto **default branch main** through owner-approved merges. This
+   may use the normal approved release sequence or a separately reviewed automation-only hotfix from main; do not
+   promote unrelated application changes merely to activate this check. No main merge or deployment is authorized
+   by publishing this draft. GitHub now takes pull_request_target workflows from the default branch regardless
+   of PR target; merging only into release/* or develop does not activate this workflow.
+3. Once main contains it, open/edit a legitimate PR for each protected target and verify **Tracking issue links**
+   passes with real links and fails when those links are removed or invalid. Restore correct links before merge.
+4. In Settings → Rules → Rulesets, add **Tracking issue links** (GitHub Actions) to the existing `release/*`
+   required checks. In Settings → Branches, add it to existing main/develop required checks. Preserve all checks,
+   strict/up-to-date settings, branch patterns, bypass restrictions and review rules. Do not enable it before
+   step 3; an absent required check would block bootstrap. The default-branch policy applies uniformly to PR targets.
 5. Recheck all open PRs and the settings API to confirm the context is required for `main`, `develop` and
    `release/*`. Until the trusted workflow is present and the rule is verified for a target, describe that target
    as **not enforced**. Future release branches inherit the ruleset and must contain the workflow.
+
+GitHub's current trust model: [Securely using pull_request_target](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target).
+The existing local board synchronizer recognizes closing keywords, not the new non-closing Refs section. Human
+acceptance/deployment verification remains necessary; this PR does not broaden that synchronizer's auto-close behavior.
 
 Do not add a dummy successful check or push directly to a protected branch to bootstrap. Owner approval for
 merges and production deployments remains required. No unrelated Claude execution is activated by this change.
