@@ -63,9 +63,22 @@ that points back here.
   - Platform: Azure, as the architecture already chose (Container Apps, Azure Database for PostgreSQL, Blob Storage,
     Key Vault). Confirm this with the owner, including AWS as the alternative, when planning.
   - Keep costs low: small tiers, and check what Azure's free offers cover.
-  - **Real email sending** for deployed environments, for example Azure Communication Services Email. Mailpit only
-    catches mail locally. Email is used for account confirmation, password resets and account-safety notices, and
-    later for approval notifications.
+  - **Real email sending** for deployed environments. Mailpit only catches mail locally. Email is used for account
+    confirmation, password resets and account-safety notices, and later for approval notifications.
+    - **Owner decision (October 20, 2026): Brevo** (SMTP relay, free tier), not SendGrid (needs a paid plan) or Azure
+      Communication Services. `parenthesisfamily.com` is authenticated in Brevo; mail comes from
+      `no-reply@parenthesisfamily.com`. The app keeps its SMTP sender, so no Brevo-specific code.
+    - [x] Branded HTML templates for every email (confirmation, already registered, password reset, co-parent
+      invitation for new and existing users, child locked), one shared layout with a plain-text twin and a single
+      link (October 20, 2026).
+    - [ ] **Owner:** wire Brevo into the development app (runbook, "Email (Brevo)"), then sign up with a tester
+      address to confirm delivery.
+    - [ ] **Owner:** production Brevo SMTP key in the production Key Vault, same settings.
+    - [ ] **Owner:** the development SMTP key (`brevo-smtp`) expires in October 2027; rotate it before then.
+    - [ ] Before production: check what Brevo stores (recipients, subjects, bodies) and add it to the privacy notes.
+      Emails carry first names, family names and links only, never diary, message or approval content.
+    - Not built: a "forgot username" email. Sign-in uses the email address as the username, so there is no separate
+      username to forget; "forgot password" covers it.
   - Domain names, HTTPS, the pipeline (deploy `develop` → dev, `main` → prod), secrets in Key Vault, database
     migrations on deploy, backups, monitoring.
 
@@ -326,6 +339,11 @@ that points back here.
 - [ ] Replace placeholder counts (`src/frontend/src/app/layout/sample-counts.ts`) with real unread and notification
   data.
 - [ ] Deferred (owner OK for now): photo avatars, kids' artwork and memory photos (initials and tiles are used).
+- [ ] Show/hide password toggle (eye icon) on every password field: sign-in, create account, reset password and
+  change password (owner request, October 20, 2026). A real button inside the field with an accessible name that
+  says what it does ("Show password" / "Hide password", `aria-pressed`), reachable by keyboard, never submits the
+  form, and the password goes back to hidden after submitting. Use the shared form components; check both themes and
+  320px.
 
 ## Backend features the dashboard is waiting on
 - [ ] Calendar and parenting-time endpoints, including change requests and approvals.
