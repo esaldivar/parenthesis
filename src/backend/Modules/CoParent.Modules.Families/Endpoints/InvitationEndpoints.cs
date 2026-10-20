@@ -261,16 +261,42 @@ internal static class InvitationEndpoints
             Role = FamilyRole.Parent,
             JoinedAt = now,
         };
+        var accepted = false;
         await unitOfWork.ExecuteAsync(async ct =>
         {
+            // Share the family-row lock with account deletion. Recheck under the lock:
+            // the family may have been deleted or another parent may have joined.
+            var exists = await db.Database.SqlQuery<int>(
+                $"SELECT 1 AS \"Value\" FROM families.families WHERE \"Id\" = {invitation.FamilyId} FOR UPDATE")
+                .ToListAsync(ct);
+            if (exists.Count == 0)
+            {
+                return;
+            }
+            var activeParents = await db.Memberships
+                .IgnoreQueryFilters([TenantContext.QueryFilterName])
+                .CountAsync(m => m.FamilyId == invitation.FamilyId &&
+                    m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active, ct);
+            if (activeParents >= MaxParents)
+            {
+                return;
+            }
             // The invitee is joining this family, so the request acts in it from here on.
             tenant.Resolve(invitation.FamilyId, membership.Id, FamilyRole.Parent);
             invitation.Accept(userId, now);
             db.Memberships.Add(membership);
             await db.SaveChangesAsync(ct);
             await audit.RecordAsync(new AuditEntry(invitation.FamilyId, userId, "invitation.accepted", "invitation", invitation.Id), ct);
+            accepted = true;
         }, cancellationToken);
 
+        if (!accepted)
+        {
+            return TypedResults.Problem(
+                title: "This invitation is no longer available.",
+                detail: "The family was deleted or already has two parents.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
         return TypedResults.Ok(new FamilySummary(family.Id, family.Name, family.TimeZone, FamilyRole.Parent));
     }
 }
