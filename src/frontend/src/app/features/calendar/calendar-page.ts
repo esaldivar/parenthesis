@@ -77,6 +77,8 @@ export class CalendarPage {
   readonly week = input<string>();
   /** `?child=<id>` */
   readonly child = input<string>();
+  /** `?event=<id>`: open that event's details once it's loaded (e.g. "View request details" after a swap). */
+  readonly event = input<string>();
 
   protected readonly views = VIEWS;
   protected readonly family = this.auth.currentFamily;
@@ -155,7 +157,19 @@ export class CalendarPage {
       }
       untracked(() => void this.load(family.id, from, to));
     });
+
+    effect(() => {
+      const id = this.event();
+      const item = this.state() === 'ready' ? this.items().find((i) => i.id === id) : undefined;
+      if (item && id !== this.linked) {
+        this.linked = id;
+        untracked(() => this.selected.set(item));
+      }
+    });
   }
+
+  /** The `?event=` already opened, so closing it doesn't reopen it. */
+  private linked: string | undefined;
 
   private loadToken = 0;
 
@@ -250,6 +264,7 @@ export class CalendarPage {
         date: params.date ?? this.date() ?? this.week() ?? null,
         week: null,
         child: params.child === undefined ? (this.childFilter() ?? null) : params.child,
+        event: null,
       },
       replaceUrl: true,
     });

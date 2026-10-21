@@ -259,9 +259,12 @@ that points back here.
     hatched, "Change pending", "Confirmed before your co-parent joined", Unavailable in grey with private notes kept
     private; event details with Cancel (approval-gated for parenting time and family events); Add Event with the
     block-highlight type cards; calendar requests in the approvals inbox, linked from Calendar.
-  - [ ] Frontend: edit an event (and its approval), Request Swap (board uploaded October 21, 2026), recurring unavailable
-    time with This event / This and following / All events, tasks and reminders, and declined requests on the
-    calendar.
+  - [x] Request Swap (October 21, 2026, from the approved board): new dates and times with an optional reason; a
+    server check before sending, with **Send anyway** / **Choose different dates** when the other parent is
+    unavailable; review (current → proposed); "Swap request sent"; request details with status and Withdraw. Owner
+    decisions: the reason shows in the app only (never in email), and a swap changes dates and times only.
+  - [ ] Frontend: edit an event (and its approval), recurring unavailable time with This event / This and following /
+    All events, tasks and reminders, and declined requests on the calendar.
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
   - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
     (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).

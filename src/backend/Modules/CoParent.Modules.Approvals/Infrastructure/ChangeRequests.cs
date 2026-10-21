@@ -18,6 +18,7 @@ internal sealed class ChangeRequests(ApprovalsDbContext db, ITenantContext tenan
             TargetId = proposal.TargetId,
             Summary = proposal.Summary,
             ProposerMembershipId = proposal.ProposerMembershipId,
+            Reason = string.IsNullOrWhiteSpace(proposal.Reason) ? null : proposal.Reason.Trim(),
             CreatedAt = clock.GetUtcNow(),
         };
         db.ChangeRequests.Add(request);

@@ -59,6 +59,9 @@ const COMMENT_MAX = 500;
                   {{ request.approvals }} of {{ request.requiredApprovals }} approvals
                 </p>
                 <p>{{ explain(request) }}</p>
+                @if (request.reason) {
+                  <p class="comment"><span class="visually-hidden">Reason from</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
+                }
 
                 @if (request.canDecide) {
                   @if (declining() === request.id) {
@@ -109,6 +112,9 @@ const COMMENT_MAX = 500;
                 <p class="muted">
                   Proposed by {{ proposer(request) }} · {{ outcome(request) }} {{ request.resolvedAt | date: 'mediumDate' }}
                 </p>
+                @if (request.reason) {
+                  <p class="comment"><span class="visually-hidden">Reason from</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
+                }
                 @for (decision of request.decisions; track decision.decidedAt) {
                   @if (decision.comment) {
                     <p class="comment">

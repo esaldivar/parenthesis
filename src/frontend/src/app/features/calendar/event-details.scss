@@ -104,6 +104,38 @@ dd {
   margin: 0;
   color: var(--color-danger);
 }
+.danger-outline {
+  --mat-button-outlined-label-text-color: var(--color-danger);
+  --mat-button-outlined-outline-color: var(--color-danger);
+}
+.timeline h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+}
+.timeline ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.timeline li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: var(--space-2);
+  align-items: start;
+}
+.timeline li[data-done='true'] app-icon {
+  color: var(--color-action);
+}
+.timeline .dot {
+  width: 12px;
+  height: 12px;
+  margin: 4px 0 0 2px;
+  border: 2px solid var(--color-outline);
+  border-radius: 50%;
+}
+a[mat-flat-button],
 a[mat-stroked-button],
 button[mat-stroked-button],
 button[mat-flat-button],
