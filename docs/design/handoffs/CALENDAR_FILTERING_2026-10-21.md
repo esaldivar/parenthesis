@@ -1,11 +1,11 @@
 # Calendar filtering — design handoff (October 21, 2026)
 
-**Issue:** #162 · **Milestone:** M3 — Calendar · **Target:** `release/0.3.0` · **Status:** Visual direction approved by owner; design-only handoff pending final asset upload and review.
+**Issue:** #162 · **Milestone:** M3 — Calendar · **Target:** `release/0.3.0` · **Status:** Owner-reviewed visual reference and composite committed via merged PR #163; design-only issue remains In Design pending explicit workflow transition.
 
 ## Source of truth and visual continuity
 Extend the existing calendar overview and #48; preserve Week (default), Month, List, All/Kai/Aurora child controls, the seven-item sidebar (Home, Calendar, Messages, From Your Kids, Family Memories, Child Essentials, Settings), botanical “Different homes. Same love.” illustration, and mobile navigation. Follow `docs/design/BRANDING.md`, `docs/design-system.md`, `docs/design/CALENDAR_DECISIONS.md`, and `docs/design/handoffs/2026-10-20-calendar.md`. Ivory/sage/teal light mode and forest-green dark mode; use existing semantic tokens, not the blue-heavy first draft. Do **not** redraw or approximate the locked logo: reuse approved source assets. All screenshots are visual direction; written product decisions override inaccurate generated details.
 
-**Asset awaiting owner upload:** `docs/design/assets/calendar/calendar-filtering-mobile-desktop.png` (approved light/dark desktop/mobile composite, October 21). Do not claim it is present until verified. If the owner chooses a different filename, update this link and the issue. This branch deliberately does not include the image; owner will upload it.
+**Committed asset:** `docs/design/assets/calendar/calendar-filtering-composite.png` (desktop/mobile light/dark composite, included in merged PR #163). The written privacy and swap eligibility rules override illustrative errors.
 
 ## Interaction specification
 1. Place a labeled **Filters** action near Week / Month / List. A desktop popover and mobile bottom sheet expose the same dimensions. Show a count/indicator of active filter dimensions and removable selections where space permits; preserve approved calendar layout.
@@ -30,4 +30,4 @@ Default/unfiltered; one and multiple filters; reset; filtered-empty vs genuinely
 - Test keyboard, screen reader, focus, narrow viewport, zoom and both themes.
 
 ## Boundaries and sign-off
-No Google Calendar integration, new event types, new approval logic, custody changes, schema changes without separate review, named presets, or implementation code. Owner approved the overall visual direction in conversation October 21; this does **not** establish that all product edge cases or a merged asset/handoff have been accepted. Resolve outstanding childless-filter and zero-selection semantics before implementation readiness. Follow #152: design sign-off, Claude execution approval and acceptance testing are separate gates. Keep #162 in **In Design** until final asset and handoff are reviewed; do not add implementation/approval labels or trigger Claude.
+No Google Calendar integration, new event types, new approval logic, custody changes, schema changes without separate review, named presets, or implementation code. Owner approved the overall visual direction in conversation October 21; this does **not** establish that all product edge cases or implementation readiness have been accepted. Resolve outstanding childless-filter and zero-selection semantics before implementation readiness. Follow #152: design sign-off, Claude execution approval and acceptance testing are separate gates. Keep #162 in **In Design** until an explicit owner-authorized workflow transition; do not add implementation/approval labels or trigger Claude.
