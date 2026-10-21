@@ -153,6 +153,53 @@ class ClaudeInvocationTests(unittest.TestCase):
             self.assertFalse(any(call.args[0][:3] == ["gh", "pr", "create"] for call in instance.run.call_args_list))
             instance.weekly_usage.assert_not_called()
 
+    def _claude_fails(self, directory, claude_output):
+        """A headless run where Claude Code exits with 1 and prints claude_output. Everything is mocked."""
+        instance = object.__new__(runner.Runner)
+        instance.args = runner.parse_args(["--commit-only", "--mode", "headless"])
+        instance.repo_root = pathlib.Path(directory) / "repo"
+        instance.state_dir = pathlib.Path(directory)
+        instance.log_path = pathlib.Path(directory) / "run.log"
+        instance.log = mock.Mock()
+        instance.move = mock.Mock()
+        instance.exe = lambda name: "synthetic-" + name
+        instance.select_and_verify = mock.Mock(return_value={**ISSUE, "approved_at": "synthetic"})
+        answers = {("gh", "auth", "token"): "synthetic-token", ("gh", "repo", "view"): "esaldivar/parenthesis",
+                   ("gh", "api", "user"): '{"id":1}', ("claude", "auth", "status"): '{"loggedIn":true,"authMethod":"claude.ai"}'}
+        def fake_run(cmd, **kwargs):
+            if cmd[0] == "synthetic-claude":
+                return subprocess.CompletedProcess(cmd, 1, stdout=claude_output)
+            return subprocess.CompletedProcess(cmd, 0, stdout=answers.get(tuple(cmd[:3]), ""))
+        instance.run = mock.Mock(side_effect=fake_run)
+        instance.git = mock.Mock(side_effect=lambda *args, **kwargs: "base" if args[:1] == ("rev-parse",) else "")
+        return instance
+
+    def test_usage_limit_cleans_up_and_pauses_for_a_later_retry(self):
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix=".test-queue-") as directory:
+            instance = self._claude_fails(directory, "You've hit your session limit · resets 10:30am (America/Chicago)\n")
+            with self.assertRaises(runner.Paused) as raised:
+                instance.main()
+            git_calls = [call.args for call in instance.git.call_args_list]
+            self.assertIn(("worktree", "remove", "--force", str(pathlib.Path(directory) / "parenthesis-claude-72")), git_calls)
+            self.assertTrue(any(args[:2] == ("branch", "-D") and args[2].startswith("feature/72-") for args in git_calls))
+            instance.move.assert_called_with(72, runner.board.READY)
+            self.assertIn("resets 10:30am (America/Chicago)", str(raised.exception))
+            self.assertFalse(issubclass(runner.Paused, runner.Stop))
+
+    def test_other_claude_failures_still_stop_and_keep_the_worktree(self):
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix=".test-queue-") as directory:
+            instance = self._claude_fails(directory, "Error: something else went wrong\n")
+            with self.assertRaisesRegex(runner.Stop, "Claude Code exited with 1; the worktree is kept"):
+                instance.main()
+            self.assertFalse(any(call.args[:2] == ("worktree", "remove") for call in instance.git.call_args_list))
+
+    def test_usage_limit_detection(self):
+        self.assertEqual(runner.usage_limit("You've hit your session limit · resets 10:30am (America/Chicago)"),
+                         "10:30am (America/Chicago)")
+        self.assertEqual(runner.usage_limit("Claude AI usage limit reached"), "")
+        self.assertIsNone(runner.usage_limit("Tests failed"))
+        self.assertIsNone(runner.usage_limit(""))
+
     def test_settings_deny_push_network_and_protected_edits(self):
         deny = runner.claude_settings()["permissions"]["deny"]
         for rule in ("Bash(git push:*)", "Bash(gh:*)", "Bash(git commit:*)", "WebFetch", "Edit(.github/**)",

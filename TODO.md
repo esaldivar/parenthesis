@@ -235,6 +235,11 @@ that points back here.
       Awaiting Deployment.
     - [x] Discord board updates (owner decision, October 19, 2026): one message per scheduled run listing each card
       moved (issue, title, old → new status, closed at Done); none when nothing moved.
+    - [x] Fixed: a run that hits the Claude usage limit is paused, not stopped; it cleans up its worktree and branch,
+      puts the card back to Ready For Development and is retried later. The Windows-only email test failure that
+      stopped the #160 run was fixed in #164 (October 21, 2026).
+    - [ ] **Owner:** remove the #72 and #73 runs left by the usage limit on October 21, 2026 (worktree and branch),
+      so the queue retries them.
     - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, and a draft PR opened by a
       scheduled run. The Discord failure notice works (sent during the fix, October 19). Record the pilot on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).
