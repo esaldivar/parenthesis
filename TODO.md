@@ -24,8 +24,7 @@ that points back here.
     - **As the only parent:** the family goes too, with its children, devices, invitations, calendar and approvals.
     - **Emails:** a confirmation to the parent, and a neutral notice to the co-parent that names nobody: "A parent
       has left your family on Parenthesis." No personal data in logs (the audit rows hold ids only).
-  - [ ] Check it on the development site once it's released: delete a test account, then sign up again with the
-    same address.
+  - [x] Checked on the development site by the owner (October 21, 2026, after #139): deletion works.
   - [ ] **Family pictures stay (owner, October 20, 2026).** When memories and uploads arrive (v0.5.0, M-01 to M-06),
     a departing parent's photos and memories stay with the family if a co-parent remains: implement
     `IParentDepartureHandler` in that module so it keeps them (attributed to "Former parent") and deletes them only
