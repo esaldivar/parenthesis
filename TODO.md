@@ -261,8 +261,10 @@ that points back here.
     (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).
     - [ ] **Owner:** upload the approved Request Swap board. `calendar-request-swap-composite.png` is currently a copy
       of the Approvals Inbox board.
-    - [ ] **Owner decisions** before tasks and reminders are built: attachments; task assignee and a task-level
-      "mark complete"; reminder recurrence and location; who may edit or delete tasks and reminders.
+    - [x] **Owner decisions** (October 21, 2026, recorded in the handoff): no attachments in v0.3.0; shared tasks
+      with no assignee that complete when the last required item is ticked (or **Mark done** without a checklist);
+      reminders repeat but have no location; either parent edits or deletes tasks and reminders at once.
+    - [ ] Attachments on calendar items, with uploads and storage in v0.5.0 (#115).
     - [ ] **Owner:** delete `release/0.4.0` once the handoff is in `release/0.3.0`; cut it fresh for v0.4.0.
 
 - [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Every `release/x.y.z` → `develop`
