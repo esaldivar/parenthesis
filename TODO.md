@@ -6,6 +6,12 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Owner testing and design readiness (#152).** Supervised implementation prepared: one waiting testing slot,
+  owner acceptance/deployment evidence, priority rework with comments and fresh branches, explicit design/no-design
+  readiness, and a local activation gate. See `docs/runbooks/claude-owner-testing.md`.
+  - [ ] Review and merge the implementation PR through normal checks.
+  - [ ] Owner-supervised live board/Windows smoke test, exact labels and built-in workflow configuration verified.
+  - [ ] Owner explicitly approves installed-runner activation; keep off until then. No pilot #98 run implied.
 - [ ] **Required tracking issues on every PR (#132, owner October 20, 2026).** Template, trusted-base read-only
   checker and tests prepared in the implementation PR. After owner-approved merges, verify live pass/fail behavior
   and require **Tracking issue links** on `release/*`, `develop` and `main`, preserving every existing rule.

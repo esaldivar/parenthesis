@@ -35,7 +35,7 @@ APPROVAL_LABEL = "owner-approved-claude"
 REQUIRED_LABELS = (CODING_LABEL, APPROVAL_LABEL)
 
 
-def eligible(issues, milestone, project_number, allowed_statuses=("Ready For Development",)):
+def eligible(issues, milestone, project_number, allowed_statuses=("Ready For Development",), prioritize_rework=False):
     """Never infer status or priority from titles; missing metadata fails closed.
 
     `allowed_statuses`: only the local runner's re-check before pushing also accepts "In Development", the status
@@ -76,13 +76,19 @@ def eligible(issues, milestone, project_number, allowed_statuses=("Ready For Dev
             # Non-coding issues never get "claude-implementation"; unapproved issues lack "owner-approved-claude".
             excluded["labels"] += 1
             continue
+        work_types = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Work Type"]
+        if "design" in labels or "Design" in work_types:
+            excluded["labels"] += 1
+            continue
         project_priorities = [v.get("name") for v in fields if (v.get("field") or {}).get("name") == "Priority"]
         priority_map = {"P0 - Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
         if len(project_priorities) != 1 or project_priorities[0] not in priority_map:
             excluded["priority"] += 1
             continue
         ranked.append((priority_map[project_priorities[0]], issue["number"], issue))
-    ranked.sort(key=lambda row: (row[0], row[1]))
+    ranked.sort(key=lambda row: (0 if prioritize_rework and any(
+        l['name'] == 'acceptance changes requested' for l in row[2].get('labels', {}).get('nodes', [])) else 1,
+        row[0], row[1]))
     return ([{"number": issue["number"], "title": issue["title"], "url": issue["url"],
              "priority": "P" + str(priority)} for priority, _, issue in ranked], excluded, status_diagnostics)
 
