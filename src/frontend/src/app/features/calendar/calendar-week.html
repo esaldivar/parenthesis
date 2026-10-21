@@ -1,0 +1,89 @@
+<!-- Wide screens: the week grid. -->
+<div class="grid" [style.--span-lanes]="spanLanes()">
+  <div class="grid__corner" aria-hidden="true"></div>
+  @for (day of days(); track day.date) {
+    <div class="grid__head" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+      <span class="visually-hidden">{{ day.longLabel }}{{ day.isToday ? ', today' : '' }}</span>
+      <span aria-hidden="true" class="grid__weekday">{{ day.weekday }}</span>
+      <span aria-hidden="true" class="grid__date">{{ day.monthDay }}</span>
+    </div>
+  }
+
+  <div class="grid__allday-label" aria-hidden="true">All day</div>
+  <ul class="allday" aria-label="All-day and multi-day">
+    @for (span of spans(); track span.item.id) {
+      <li [style.grid-column]="span.start + ' / ' + span.end" [style.grid-row]="span.lane">
+        <button
+          type="button"
+          class="item item--span"
+          [attr.data-kind]="span.item.kind"
+          [attr.data-category]="span.item.category"
+          [attr.data-status]="span.item.status"
+          (click)="selected.emit(span.item)"
+        >
+          <app-item-text [item]="span.item" [avatars]="false" />
+        </button>
+      </li>
+    }
+  </ul>
+
+  <div #scroller class="grid__body" tabindex="0" role="region" aria-label="Events by time of day, scrollable">
+    <div class="grid__hours" aria-hidden="true">
+      @for (mark of hourMarks; track mark.row) {
+        <span [style.grid-row]="mark.row">{{ mark.label }}</span>
+      }
+    </div>
+    @for (day of timed(); track day.date) {
+      <ul class="daycol" [attr.aria-label]="'Timed events on ' + day.label" [style.--lanes]="day.lanes">
+        @for (slot of day.placed; track slot.item.id) {
+          <li [style.grid-row]="slot.row + ' / span ' + slot.span" [style.grid-column]="slot.lane">
+            <button
+              type="button"
+              class="item item--timed"
+              [attr.data-kind]="slot.item.kind"
+              [attr.data-category]="slot.item.category"
+              [attr.data-status]="slot.item.status"
+              (click)="selected.emit(slot.item)"
+            >
+              <app-item-text [item]="slot.item" />
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>
+
+<!-- Narrow screens: day by day. -->
+<ol class="agenda" aria-label="This week, day by day">
+  @for (day of days(); track day.date) {
+    <li class="agenda__day" [class.is-today]="day.isToday">
+      <h3 class="agenda__date">
+        <span>{{ day.weekday }}</span> <span>{{ day.monthDay }}</span>
+        @if (day.isToday) {
+          <span class="visually-hidden">, today</span>
+        }
+      </h3>
+      @if (day.items.length === 0) {
+        <p class="agenda__none">Nothing scheduled</p>
+      } @else {
+        <ul class="agenda__items">
+          @for (item of day.items; track item.id) {
+            <li>
+              <button
+                type="button"
+                class="item item--row"
+                [attr.data-kind]="item.kind"
+                [attr.data-category]="item.category"
+                [attr.data-status]="item.status"
+                (click)="selected.emit(item)"
+              >
+                <app-item-text [item]="item" />
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </li>
+  }
+</ol>

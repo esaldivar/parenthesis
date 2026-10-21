@@ -254,8 +254,15 @@ that points back here.
     caregiver, and unavailable time over your own parenting time (October 17, 2026).
   - [x] Backend: approvals history and decision comments (AP-04/05); request expiry after 14 days (AP-06) (October 17, 2026).
   - [ ] Backend: recurrence (C-05), reminders (C-04, with notifications), the .ics feed (C-07).
-  - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
-    data source. The inbox exists since v0.2.0 but shows only child requests; show calendar requests there too.
+  - [x] Frontend: the calendar page (October 21, 2026, from the 2026-10-20 handoff): Week (default), Month and List with
+    real events in the family's time zone; child filter; loading, error and empty states; pending items labelled and
+    hatched, "Change pending", "Confirmed before your co-parent joined", Unavailable in grey with private notes kept
+    private; event details with Cancel (approval-gated for parenting time and family events); Add Event with the
+    block-highlight type cards; calendar requests in the approvals inbox, linked from Calendar.
+  - [ ] Frontend: edit an event (and its approval), Request Swap (waits for the real board), recurring unavailable
+    time with This event / This and following / All events, tasks and reminders, and declined requests on the
+    calendar.
+  - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
   - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
     (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).
     - [ ] **Owner:** upload the approved Request Swap board. `calendar-request-swap-composite.png` is currently a copy

@@ -1,0 +1,104 @@
+<div class="backdrop" (click)="closed.emit()" aria-hidden="true"></div>
+<section
+  class="panel"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="event-details-title"
+  cdkTrapFocus
+  [cdkTrapFocusAutoCapture]="true"
+  [attr.data-kind]="item().kind"
+>
+  <header class="panel__head">
+    <span class="panel__icon"><app-icon [name]="item().icon" [size]="24" /></span>
+    <div class="panel__titles">
+      <h2 id="event-details-title" tabindex="-1" cdkFocusInitial>{{ item().title }}</h2>
+      <p class="panel__type">{{ item().categoryLabel }}</p>
+    </div>
+    <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close details">
+      <app-icon name="close" />
+    </button>
+  </header>
+
+  <p class="status" [attr.data-status]="item().status">{{ status() }}</p>
+
+  @switch (item().status) {
+    @case ('pending') {
+      <p class="explain">
+        @if (item().isMine) {
+          Waiting for {{ coParent() ?? 'your co-parent' }}’s approval. It isn’t on the schedule until they accept.
+        } @else {
+          Waiting for your approval. It isn’t on the schedule until you accept.
+        }
+      </p>
+      <a mat-stroked-button routerLink="/approvals">{{ item().isMine ? 'See it in Approvals' : 'Review in Approvals' }}</a>
+    }
+    @case ('change-pending') {
+      <p class="explain">
+        @if (item().pendingChange === 'Cancel') {
+          A cancellation is waiting for approval. The event stays as it is until then.
+        } @else {
+          A change is waiting for approval. The event stays as it is until then.
+        }
+      </p>
+      @if (proposed(); as change) {
+        <dl class="change">
+          <dt>Proposed</dt>
+          <dd>{{ change.title }}: {{ change.from }} – {{ change.to }}{{ change.location ? ' · ' + change.location : '' }}</dd>
+        </dl>
+      }
+      <a mat-stroked-button routerLink="/approvals">Review in Approvals</a>
+    }
+  }
+
+  @if (item().beforeCoParentJoined) {
+    <p class="explain">Confirmed before your co-parent joined. They can see it and propose a change.</p>
+  }
+
+  <dl class="facts">
+    <dt>When</dt>
+    <dd>{{ date() }} · {{ when() }}</dd>
+    @if (people()) {
+      <dt>Who</dt>
+      <dd>{{ people() }}</dd>
+    }
+    @if (item().location; as location) {
+      <dt>Where</dt>
+      <dd>{{ location }}</dd>
+    }
+    @if (item().kind === 'unavailable') {
+      @if (item().isMine) {
+        @if (item().notes; as notes) {
+          <dt>Private note</dt>
+          <dd>{{ notes }} <span class="hint">Only you can see this.</span></dd>
+        }
+      } @else {
+        <dt>Details</dt>
+        <dd>Private details aren’t shared.</dd>
+      }
+    } @else if (item().notes; as notes) {
+      <dt>Notes</dt>
+      <dd>{{ notes }}</dd>
+    }
+    <dt>Added by</dt>
+    <dd>{{ item().isMine ? 'You' : item().ownerName }}</dd>
+  </dl>
+
+  @if (canCancel()) {
+    <div class="actions">
+      @if (!confirming()) {
+        <button mat-stroked-button type="button" (click)="confirming.set(true)">Cancel event…</button>
+      } @else {
+        <p class="explain">{{ cancelExplanation() }}</p>
+        @if (error(); as error) {
+          <p class="error" role="alert">{{ error }}</p>
+        }
+        <div class="actions__row">
+          <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel()">
+            {{ busy() ? 'Cancelling…' : 'Yes, cancel event' }}
+          </button>
+          <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep it</button>
+        </div>
+      }
+    </div>
+  }
+</section>
