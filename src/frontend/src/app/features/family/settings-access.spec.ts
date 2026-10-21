@@ -49,6 +49,7 @@ function request(overrides: Partial<ChangeRequest>): ChangeRequest {
     targetType: 'child',
     targetId: 'milo',
     summary: 'Add Milo to the family',
+    reason: null,
     status: 'Pending',
     proposerMembershipId: 'm-sam',
     createdAt: '2026-10-18T12:00:00Z',

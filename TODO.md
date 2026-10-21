@@ -241,6 +241,11 @@ that points back here.
       Awaiting Deployment.
     - [x] Discord board updates (owner decision, October 19, 2026): one message per scheduled run listing each card
       moved (issue, title, old → new status, closed at Done); none when nothing moved.
+    - [x] Fixed: a run that hits the Claude usage limit is paused, not stopped; it cleans up its worktree and branch,
+      puts the card back to Ready For Development and is retried later. The Windows-only email test failure that
+      stopped the #160 run was fixed in #164 (October 21, 2026).
+    - [ ] **Owner:** remove the #72 and #73 runs left by the usage limit on October 21, 2026 (worktree and branch),
+      so the queue retries them.
     - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, and a draft PR opened by a
       scheduled run. The Discord failure notice works (sent during the fix, October 19). Record the pilot on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).
@@ -265,9 +270,12 @@ that points back here.
     hatched, "Change pending", "Confirmed before your co-parent joined", Unavailable in grey with private notes kept
     private; event details with Cancel (approval-gated for parenting time and family events); Add Event with the
     block-highlight type cards; calendar requests in the approvals inbox, linked from Calendar.
-  - [ ] Frontend: edit an event (and its approval), Request Swap (board uploaded October 21, 2026), recurring unavailable
-    time with This event / This and following / All events, tasks and reminders, and declined requests on the
-    calendar.
+  - [x] Request Swap (October 21, 2026, from the approved board): new dates and times with an optional reason; a
+    server check before sending, with **Send anyway** / **Choose different dates** when the other parent is
+    unavailable; review (current → proposed); "Swap request sent"; request details with status and Withdraw. Owner
+    decisions: the reason shows in the app only (never in email), and a swap changes dates and times only.
+  - [ ] Frontend: edit an event (and its approval), recurring unavailable time with This event / This and following /
+    All events, tasks and reminders, and declined requests on the calendar.
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
   - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
     (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).

@@ -1,3 +1,4 @@
+using CoParent.Modules.Approvals.Contracts;
 using CoParent.SharedKernel.Domain;
 
 namespace CoParent.Modules.Approvals.Domain;
@@ -27,6 +28,8 @@ internal sealed class ChangeRequest : Entity, IFamilyScoped
 {
     public const int SummaryMaxLength = 200;
 
+    public const int ReasonMaxLength = ChangeRequestProposal.ReasonMaxLength;
+
     public Guid FamilyId { get; init; }
 
     public required string Type { get; init; }
@@ -38,6 +41,9 @@ internal sealed class ChangeRequest : Entity, IFamilyScoped
     public required string Summary { get; init; }
 
     public Guid ProposerMembershipId { get; init; }
+
+    /// <summary>The proposer's optional note, e.g. "I have a work obligation that weekend."</summary>
+    public string? Reason { get; init; }
 
     public ChangeRequestStatus Status { get; private set; } = ChangeRequestStatus.Pending;
 

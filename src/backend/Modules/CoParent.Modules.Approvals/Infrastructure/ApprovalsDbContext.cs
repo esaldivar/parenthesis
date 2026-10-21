@@ -28,6 +28,7 @@ internal sealed class ApprovalsDbContext(DbContextOptions<ApprovalsDbContext> op
             request.Property(r => r.Type).HasMaxLength(40);
             request.Property(r => r.TargetType).HasMaxLength(40);
             request.Property(r => r.Summary).HasMaxLength(ChangeRequest.SummaryMaxLength);
+            request.Property(r => r.Reason).HasMaxLength(ChangeRequest.ReasonMaxLength);
             request.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
             request.Property(r => r.Version).IsRowVersion();
             request.HasMany(r => r.Decisions).WithOne().HasForeignKey(d => d.ChangeRequestId);

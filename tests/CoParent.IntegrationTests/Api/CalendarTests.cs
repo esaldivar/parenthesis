@@ -218,6 +218,65 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_swap_reason_travels_with_the_request_to_both_parents()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+
+        var tooLong = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { startsAt = _monday.AddDays(1), reason = new string('x', 501) });
+        var swap = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { startsAt = _monday.AddDays(1), reason = "  I have a work trip that weekend.  " });
+        var momInbox = Assert.Single((await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
+        var dadInbox = Assert.Single((await JsonAsync(await f.Dad.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
+
+        Assert.Equal(HttpStatusCode.BadRequest, tooLong.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, swap.StatusCode);
+        Assert.Equal("I have a work trip that weekend.", momInbox.GetProperty("reason").GetString());
+        Assert.Equal(id, momInbox.GetProperty("targetId").GetGuid());
+        Assert.Equal("I have a work trip that weekend.", dadInbox.GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task Checking_a_swap_for_conflicts_warns_and_changes_nothing()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+        await f.Mom.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddDays(8), endsAt = _monday.AddDays(9), allDay = true });
+
+        var clash = await f.Dad.GetAsync($"{Events(f)}/{id}/conflicts?startsAt={Q(_monday.AddDays(7))}&endsAt={Q(_monday.AddDays(10))}");
+        var clear = await f.Dad.GetAsync($"{Events(f)}/{id}/conflicts?startsAt={Q(_monday.AddDays(1))}&endsAt={Q(_monday.AddDays(6))}");
+        var backwards = await f.Dad.GetAsync($"{Events(f)}/{id}/conflicts?startsAt={Q(_monday.AddDays(2))}&endsAt={Q(_monday.AddDays(1))}");
+        var after = await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"));
+
+        Assert.Equal(["OverlapsCoParentUnavailable"], (await JsonAsync(clash)).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+        // The event's own time doesn't count against itself.
+        Assert.Empty((await JsonAsync(clear)).GetProperty("warnings").EnumerateArray());
+        Assert.Equal(HttpStatusCode.BadRequest, backwards.StatusCode);
+        Assert.Equal("None", after.GetProperty("pendingChange").GetString());
+        Assert.Equal(_monday, after.GetProperty("startsAt").GetDateTimeOffset());
+    }
+
+    [Fact]
+    public async Task One_event_is_shown_to_parents_but_not_to_a_child()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+        using var kai = await KaiSignedInAsync(f);
+
+        var mom = await f.Mom.GetAsync($"{Events(f)}/{id}");
+        var missing = await f.Mom.GetAsync($"{Events(f)}/{Guid.CreateVersion7()}");
+        var child = await kai.GetAsync($"{Events(f)}/{id}");
+        var childConflicts = await kai.GetAsync($"{Events(f)}/{id}/conflicts?startsAt={Q(_monday)}&endsAt={Q(_monday.AddDays(1))}");
+
+        Assert.Equal("Time with Dad", (await JsonAsync(mom)).GetProperty("title").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, child.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, childConflicts.StatusCode);
+    }
+
+    [Fact]
     public async Task Cancelling_parenting_time_needs_the_other_parent_and_a_second_request_waits()
     {
         var f = await FamilyAsync();

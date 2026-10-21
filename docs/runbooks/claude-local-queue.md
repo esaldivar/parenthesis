@@ -90,7 +90,7 @@ Each scheduled run (`--scheduled`):
 - runs Claude **headless** (only the pre-allowed tools, 60-minute limit), then the same checks and guards as below;
 - does nothing when no issue is waiting or another run is going. The weekly cap applies only to `release/*` →
   `develop` promotions; it never blocks this runner's feature/bugfix work into the active release branch. Idle checks leave no log;
-- writes one line to `.git/claude-queue/last-scheduled-run.txt` every time (when, and idle, stopped or finished), so
+- writes one line to `.git/claude-queue/last-scheduled-run.txt` every time (when, and idle, paused, stopped or finished), so
   you can confirm the hourly runs are happening;
 - moves the issue to **In Development** when it starts and **Awaiting PR Approval** when the draft PR opens;
 - sends one Discord line when it opens a draft PR, and one when it stops on a problem. The same problem isn't
@@ -160,6 +160,11 @@ with "Closes #n" (or Fixes/Resolves) at the start of a line, bullet or sentence 
 
 Every stop says why, and nothing leaves the machine unless every step passed. The worktree and branch are kept for
 inspection.
+
+- **Claude usage limit** (the Claude plan's session or weekly limit, shared with your other Claude sessions): the run
+  is *paused*, not stopped. Nothing was committed, so it removes its own worktree and branch, moves the card back to
+  **Ready For Development**, and sends one Discord line with the reset time. A later hourly run retries the issue from
+  scratch; there's nothing to clean up.
 
 - Logs, the lock file and Claude's settings for the run are in `.git/claude-queue/` (never committed). Tokens and
   webhook URLs are removed from the logs.

@@ -82,6 +82,11 @@ namespace CoParent.Modules.Approvals.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("proposer_membership_id");
 
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
                     b.Property<DateTimeOffset?>("ResolvedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("resolved_at");

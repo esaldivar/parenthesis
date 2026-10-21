@@ -77,6 +77,23 @@ class Idle(Exception):
     """Nothing to do right now (no approved issue, the weekly limit, another run). Not a failure."""
 
 
+class Paused(Exception):
+    """Claude's usage limit stopped the run. The run cleaned up after itself; the next hourly run retries. Not a failure."""
+
+
+_USAGE_LIMIT = re.compile(r"\bhit your [\w ]*limit\b|\busage limit (?:reached|exceeded)\b", re.IGNORECASE)
+_LIMIT_RESET = re.compile(r"\bresets ([^\r\n]+)", re.IGNORECASE)
+
+
+def usage_limit(output):
+    """When Claude Code stopped because the Claude plan's usage limit was reached: the reset time ("" if not given).
+    None for any other failure."""
+    if not output or not _USAGE_LIMIT.search(output):
+        return None
+    reset = _LIMIT_RESET.search(output)
+    return reset.group(1).strip() if reset else ""
+
+
 # Set by --scheduled on Windows so git, dotnet, npm and Claude never open console windows on the owner's screen.
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 _creationflags = 0
@@ -546,6 +563,12 @@ class Runner:
         result = self.run(command, cwd=worktree, env=claude_env(os.environ), check=False, capture=headless,
                           timeout=self.args.timeout_minutes * 60 if headless else None)
         if result.returncode != 0:
+            reset = usage_limit(result.stdout) if headless else None
+            if reset is not None:
+                self.discard(issue["number"], worktree, branch)
+                when = f" (it resets {reset})" if reset else ""
+                raise Paused(f"Claude's usage limit was reached{when}. #{issue['number']} was cleaned up and goes back "
+                             "to Ready For Development; a later hourly run retries it.")
             raise Stop(f"Claude Code exited with {result.returncode}; the worktree is kept for inspection")
 
         if self.git("rev-parse", "HEAD", cwd=worktree).strip() != base:
@@ -791,6 +814,18 @@ class Runner:
             self.log(f"Board: couldn't move #{number} to {status}: {exc}")
             self.notify(f"Claude queue: couldn't move #{number} to {status} on the board: {exc}")
 
+    def discard(self, number, worktree, branch):
+        """Removes a run's worktree and local branch (nothing was committed or pushed) and puts the card back, so the
+        issue can be retried without manual cleanup. If removal fails, stop and keep everything for inspection."""
+        try:
+            self.git("worktree", "remove", "--force", str(worktree))
+            self.git("branch", "-D", branch)
+        except Stop as exc:
+            raise Stop(f"Claude's usage limit was reached, and cleaning up failed ({exc}); remove {worktree} and "
+                       f"the {branch} branch by hand") from None
+        self.log(f"Removed {worktree} and the {branch} branch.")
+        self.move(number, board.READY)
+
     # ----- Scheduled-run notices -----
 
     def announce_board(self):
@@ -968,6 +1003,11 @@ def main(argv=None):
             record("idle", str(exc) + (f" Board updated (log: {runner.log_path})." if runner.board_changed else ""))
         else:
             runner.log(f"Nothing to do: {exc}")
+        return 0
+    except Paused as exc:
+        runner.log(f"Paused: {exc}")
+        runner.notify(f"Claude queue paused: {exc}\nLog: {runner.log_path}")
+        record("paused", f"{exc} (log: {runner.log_path})")
         return 0
     except Stop as exc:
         runner.log(f"Stopped: {exc}")
