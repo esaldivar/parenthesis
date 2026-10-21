@@ -24,8 +24,7 @@ that points back here.
     - **As the only parent:** the family goes too, with its children, devices, invitations, calendar and approvals.
     - **Emails:** a confirmation to the parent, and a neutral notice to the co-parent that names nobody: "A parent
       has left your family on Parenthesis." No personal data in logs (the audit rows hold ids only).
-  - [ ] Check it on the development site once it's released: delete a test account, then sign up again with the
-    same address.
+  - [x] Checked on the development site by the owner (October 21, 2026, after #139): deletion works.
   - [ ] **Family pictures stay (owner, October 20, 2026).** When memories and uploads arrive (v0.5.0, M-01 to M-06),
     a departing parent's photos and memories stay with the family if a co-parent remains: implement
     `IParentDepartureHandler` in that module so it keeps them (attributed to "Former parent") and deletes them only
@@ -264,6 +263,15 @@ that points back here.
     time with This event / This and following / All events, tasks and reminders, and declined requests on the
     calendar.
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
+  - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
+    (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).
+    - [ ] **Owner:** upload the approved Request Swap board. `calendar-request-swap-composite.png` is currently a copy
+      of the Approvals Inbox board.
+    - [x] **Owner decisions** (October 21, 2026, recorded in the handoff): no attachments in v0.3.0; shared tasks
+      with no assignee that complete when the last required item is ticked (or **Mark done** without a checklist);
+      reminders repeat but have no location; either parent edits or deletes tasks and reminders at once.
+    - [ ] Attachments on calendar items, with uploads and storage in v0.5.0 (#115).
+    - [ ] **Owner:** delete `release/0.4.0` once the handoff is in `release/0.3.0`; cut it fresh for v0.4.0.
 
 - [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Every `release/x.y.z` → `develop`
   PR runs Playwright against the release candidate, for the current milestone and every one before it. Runbook:
