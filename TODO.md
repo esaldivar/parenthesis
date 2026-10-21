@@ -256,6 +256,15 @@ that points back here.
   - [ ] Backend: recurrence (C-05), reminders (C-04, with notifications), the .ics feed (C-07).
   - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
     data source. The inbox exists since v0.2.0 but shows only child requests; show calendar requests there too.
+  - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
+    (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).
+    - [ ] **Owner:** upload the approved Request Swap board. `calendar-request-swap-composite.png` is currently a copy
+      of the Approvals Inbox board.
+    - [x] **Owner decisions** (October 21, 2026, recorded in the handoff): no attachments in v0.3.0; shared tasks
+      with no assignee that complete when the last required item is ticked (or **Mark done** without a checklist);
+      reminders repeat but have no location; either parent edits or deletes tasks and reminders at once.
+    - [ ] Attachments on calendar items, with uploads and storage in v0.5.0 (#115).
+    - [ ] **Owner:** delete `release/0.4.0` once the handoff is in `release/0.3.0`; cut it fresh for v0.4.0.
 
 - [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Every `release/x.y.z` → `develop`
   PR runs Playwright against the release candidate, for the current milestone and every one before it. Runbook:
