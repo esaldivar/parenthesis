@@ -11,6 +11,11 @@ that points back here.
   and require **Tracking issue links** on `release/*`, `develop` and `main`, preserving every existing rule.
   Existing open PR authors must identify relevant issues; no retroactive unrelated links. Details:
   [rollout runbook](docs/runbooks/pr-issue-links.md). Not enforced until branch settings are verified.
+- [ ] **Require the `design approved` label on design PRs (owner, October 21, 2026).** Design handoff PRs (under
+  `docs/design/`) need the owner's `design approved` label before they merge. Today nothing checks it: #163 was missing
+  it and only the tracking-issues check held it. Add a required check (with tests) that fails a PR changing
+  `docs/design/**` without the label, re-runs when labels change, and goes in its own reviewed PR, like other policy
+  changes.
 - [ ] **Account deletion (A-12, v0.3.0, first item; owner decisions October 20, 2026).** A parent can delete their own
   account, so real families can leave and the owner can rerun the sign-up flows.
   - [x] Built (October 20, 2026): Settings → Delete account. The parent re-enters their password and sees what will be
@@ -238,8 +243,7 @@ that points back here.
     - [x] Fixed: a run that hits the Claude usage limit is paused, not stopped; it cleans up its worktree and branch,
       puts the card back to Ready For Development and is retried later. The Windows-only email test failure that
       stopped the #160 run was fixed in #164 (October 21, 2026).
-    - [ ] **Owner:** remove the #72 and #73 runs left by the usage limit on October 21, 2026 (worktree and branch),
-      so the queue retries them.
+    - [x] **Owner:** removed the #72 and #73 runs left by the usage limit, so the queue retries them (October 21, 2026).
     - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, and a draft PR opened by a
       scheduled run. The Discord failure notice works (sent during the fix, October 19). Record the pilot on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).
