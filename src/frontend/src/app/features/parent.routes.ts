@@ -11,6 +11,11 @@ const comingSoon = (title: string, data: Record<string, string>) => ({
 export const PARENT_ROUTES: Routes = [
   { path: '', title: 'Home', loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage) },
   {
+    path: 'calendar/new',
+    title: 'Add event',
+    loadComponent: () => import('./calendar/add-event-page').then((m) => m.AddEventPage),
+  },
+  {
     path: 'calendar',
     title: 'Calendar',
     loadComponent: () => import('./calendar/calendar-page').then((m) => m.CalendarPage),

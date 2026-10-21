@@ -350,9 +350,9 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       (await vi.waitFor(() => http.expectOne(`${F}/approvals/r1/withdraw`))).flush(null, { status: 204, statusText: 'No Content' });
     });
 
-    it('lists decisions with their notes, and leaves calendar requests for the calendar release', async () => {
+    it('lists decisions with their notes, and shows calendar requests with what they mean', async () => {
       const { body } = await approvals(
-        [request({ id: 'cal', type: 'CalendarCreate' as ChangeRequest['type'], summary: 'Parenting time' })],
+        [request({ id: 'cal', type: 'CalendarCreate', targetType: 'calendar_event', summary: 'Parenting time with Sam' })],
         [
           request({
             status: 'Rejected',
@@ -363,7 +363,9 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
         ],
       );
 
-      expect(text(body, 'section[aria-labelledby="waiting-heading"]')).toContain('Nothing is waiting for either of you.');
+      const waiting = text(body, 'section[aria-labelledby="waiting-heading"]');
+      expect(waiting).toContain('Parenting time with Sam');
+      expect(waiting).toContain('It goes on the shared calendar once you both approve.');
       const decided = item(body, 'history-heading', 'Add Milo');
       expect(text(decided)).toContain('Declined');
       expect(text(decided)).toContain('Alex Rivera: “Let’s talk first.”');

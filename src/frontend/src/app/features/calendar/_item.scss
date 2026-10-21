@@ -1,0 +1,51 @@
+@use '../dashboard/proposed-fill' as *;
+
+// One look for a calendar item in every view: the kind or category sets a calm fill with primary text, pending
+// items get the hatched, dashed proposal pattern (always with a text label too), unavailable time is neutral grey.
+@mixin item-colors {
+  color: var(--color-text);
+  border: 1px solid color-mix(in srgb, var(--color-outline) 45%, transparent);
+  background: var(--color-cat-other-bg);
+
+  &[data-kind='parenting'] {
+    background: var(--color-parenting-bg);
+  }
+  &[data-kind='family'] {
+    background: var(--color-cat-family-bg);
+  }
+  &[data-category='School'] {
+    background: var(--color-cat-school-bg);
+  }
+  &[data-category='Medical'],
+  &[data-category='Dental'] {
+    background: var(--color-cat-medical-bg);
+  }
+  &[data-category='Activity'] {
+    background: var(--color-cat-sport-bg);
+  }
+  &[data-category='Birthday'] {
+    background: var(--color-cat-art-bg);
+  }
+  &[data-kind='unavailable'] {
+    background: var(--color-cat-unavailable-bg);
+    border-style: dotted;
+  }
+  &[data-status='pending'] {
+    @include proposed-fill;
+  }
+  &[data-status='change-pending'] {
+    border: 2px dashed var(--color-outline);
+  }
+}
+
+// A calendar item is a button: no default chrome, full keyboard focus, 44px tall where it stands alone.
+@mixin item-button {
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  border-radius: var(--radius-control);
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}

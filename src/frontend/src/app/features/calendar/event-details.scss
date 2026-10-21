@@ -1,0 +1,113 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+}
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(16 37 30 / 45%);
+}
+.panel {
+  position: relative;
+  width: min(440px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+.panel__head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-2);
+  align-items: start;
+}
+.panel__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-surface-soft);
+}
+.panel__titles h2 {
+  margin: 0;
+  font-size: var(--font-size-h3);
+  overflow-wrap: anywhere;
+}
+.panel__titles h2:focus {
+  outline: none;
+}
+.panel__type {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+.status {
+  justify-self: start;
+  margin: 0;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-outline);
+  background: var(--color-status-confirmed-bg);
+  font-weight: 600;
+}
+.status[data-status='pending'],
+.status[data-status='change-pending'] {
+  border-style: dashed;
+  background: var(--color-status-pending-bg);
+}
+.explain {
+  margin: 0;
+}
+.facts,
+.change {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+}
+dt {
+  font-weight: 600;
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.hint {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+.actions {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-surface-soft);
+}
+.actions__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.danger {
+  --mat-button-filled-container-color: var(--color-danger);
+  --mat-button-filled-label-text-color: var(--color-surface);
+}
+.error {
+  margin: 0;
+  color: var(--color-danger);
+}
+a[mat-stroked-button],
+button[mat-stroked-button],
+button[mat-flat-button],
+button[mat-button] {
+  min-height: var(--target-min);
+  justify-self: start;
+}

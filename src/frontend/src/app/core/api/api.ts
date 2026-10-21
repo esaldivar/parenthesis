@@ -25,6 +25,8 @@ export interface FamilyMember {
   readonly displayName: string;
   readonly role: FamilyRole;
   readonly joinedAt: string;
+  /** The signed-in user's own membership. */
+  readonly isYou: boolean;
 }
 
 export interface FamilyDetails {
@@ -62,7 +64,13 @@ export interface ChildSignIn {
   readonly pinChangePending: boolean;
 }
 
-export type ChangeRequestType = 'ChildCreate' | 'ChildPinChange';
+export type ChangeRequestType =
+  | 'ChildCreate'
+  | 'ChildPinChange'
+  | 'CalendarCreate'
+  | 'JointEventCreate'
+  | 'CalendarModify'
+  | 'CalendarCancel';
 
 export interface ChangeRequest {
   readonly id: string;

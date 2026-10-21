@@ -1,0 +1,126 @@
+<header class="head">
+  <h1>Calendar</h1>
+  <div class="head__actions">
+    <a mat-stroked-button class="add" routerLink="/approvals">Approvals</a>
+    <a mat-flat-button class="add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">
+      <app-icon name="plus" [size]="20" /> Add
+    </a>
+  </div>
+</header>
+
+<div aria-live="polite">
+  @if (notice(); as message) {
+    <p class="notice">
+      {{ message }}
+      <button mat-button type="button" (click)="notice.set(null)">Dismiss</button>
+    </p>
+  }
+</div>
+
+<div class="toolbar">
+  <div class="period">
+    <span class="period__nav">
+      <button mat-icon-button type="button" (click)="step(-1)" [attr.aria-label]="'Previous ' + current()">
+        <app-icon name="chevron-left" />
+      </button>
+      <h2 class="period__label" aria-live="polite">{{ heading() }}</h2>
+      <button mat-icon-button type="button" (click)="step(1)" [attr.aria-label]="'Next ' + current()">
+        <app-icon name="chevron-right" />
+      </button>
+    </span>
+    <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">Today</button>
+  </div>
+  <div class="segmented" role="group" aria-label="Calendar view">
+    @for (v of views; track v.id) {
+      <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label }}</button>
+    }
+  </div>
+</div>
+
+@if (activeChildren().length > 0) {
+  <div class="filters" role="group" aria-label="Show events for">
+    <button type="button" class="chip" [attr.aria-pressed]="childFilter() === null" (click)="setChild(null)">All</button>
+    @for (child of activeChildren(); track child.id) {
+      <button type="button" class="chip" [attr.aria-pressed]="childFilter() === child.id" (click)="setChild(child.id)">
+        {{ child.firstName }}
+      </button>
+    }
+  </div>
+}
+
+<div class="body" [attr.aria-busy]="state() === 'loading'">
+  @switch (state()) {
+    @case ('loading') {
+      <p class="visually-hidden">Loading the calendar…</p>
+      <div class="skeleton" aria-hidden="true">
+        @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+          <span class="skeleton__bar"></span>
+        }
+      </div>
+    }
+    @case ('error') {
+      <div class="error" role="alert">
+        <p class="error__title">We couldn’t load your calendar.</p>
+        <p class="error__body">{{ loadError() }}</p>
+        <div class="error__actions">
+          <button mat-flat-button type="button" (click)="retry()">Try again</button>
+          <button mat-stroked-button type="button" (click)="goToToday()">Go to today</button>
+        </div>
+      </div>
+    }
+    @default {
+      @if (items().length === 0) {
+        <app-empty-state
+          icon="calendar"
+          title="No events yet"
+          body="Start by adding an event or time you’re unavailable. Your co-parent sees it here too."
+        >
+          <a mat-flat-button class="empty-add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">Add to Calendar</a>
+        </app-empty-state>
+      } @else if (shown().length === 0) {
+        <p class="filtered-out">
+          Nothing for this child here.
+          <button mat-button type="button" (click)="setChild(null)">Show everyone</button>
+        </p>
+      } @else {
+        @switch (current()) {
+          @case ('week') {
+            <app-calendar-week [weekStart]="range().from" [today]="today()" [items]="shown()" (selected)="open($event)" />
+          }
+          @case ('month') {
+            <app-calendar-month
+              [date]="anchor()"
+              [today]="today()"
+              [items]="shown()"
+              [label]="heading()"
+              (selected)="open($event)"
+              (openDay)="openWeekOf($event)"
+            />
+          }
+          @case ('list') {
+            <app-calendar-list [from]="range().from" [to]="range().to" [today]="today()" [items]="shown()" (selected)="open($event)" />
+          }
+        }
+        <ul class="key" aria-label="Calendar key">
+          <li><span class="swatch" data-kind="parenting"></span>Parenting time</li>
+          <li><span class="swatch" data-kind="family"></span>Family event (both parents)</li>
+          <li><span class="swatch" data-kind="activity" data-category="Activity"></span>Activity</li>
+          <li><span class="swatch" data-kind="activity" data-status="pending"></span>Pending approval</li>
+          <li><span class="swatch" data-kind="unavailable"></span>Unavailable</li>
+        </ul>
+      }
+    }
+  }
+</div>
+
+@if (selected(); as item) {
+  <app-event-details
+    [item]="item"
+    [event]="selectedEvent()"
+    [members]="members()"
+    [familyId]="family()!.id"
+    [timeZone]="family()!.timeZone"
+    (closed)="close()"
+    (changed)="changed($event)"
+  />
+}

@@ -1,37 +1,194 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { CalendarPage } from './calendar-page';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { routes } from '../../app.routes';
+import { CalendarEvent } from '../../core/api/api';
+import { axeViolations } from '../../../testing/axe';
+import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
+import { fakeAuth } from '../../../testing/fake-auth';
 
-describe('CalendarPage', () => {
-  function render(inputs: Record<string, string>) {
-    TestBed.configureTestingModule({ providers: [provideRouter([])] });
-    const fixture = TestBed.createComponent(CalendarPage);
-    for (const [name, value] of Object.entries(inputs)) {
-      fixture.componentRef.setInput(name, value);
+const F = '/api/families/family-1';
+const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
+
+describe('the calendar page', () => {
+  let http: HttpTestingController;
+
+  async function settle(harness: RouterTestingHarness) {
+    for (let i = 0; i < 3; i++) {
+      await harness.fixture.whenStable();
+      harness.fixture.detectChanges();
     }
-    fixture.detectChanges();
-    return fixture.nativeElement as HTMLElement;
   }
 
-  it('keeps the view and week chosen on the dashboard', () => {
-    const el = render({ view: 'month', week: '2026-10-21' });
+  const eventsRequest = () =>
+    vi.waitFor(() => {
+      const found = http.match((r) => r.url === `${F}/calendar/events`);
+      expect(found.length).toBeGreaterThan(0);
+      return found[found.length - 1];
+    });
 
-    expect(el.querySelector('.context')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      'Month view · week of Oct 18 – 24, 2026',
-    );
-    expect(el.querySelector('a')!.getAttribute('href')).toBe('/?week=2026-10-21');
+  async function open(url: string, events: CalendarEvent[] | 'error' = []) {
+    TestBed.configureTestingModule({
+      providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
+    });
+    const harness = await RouterTestingHarness.create(url);
+    http = TestBed.inject(HttpTestingController);
+    const request = await eventsRequest();
+    for (const r of http.match(F)) r.flush(FAMILY);
+    for (const r of http.match(`${F}/children`)) r.flush(CHILDREN);
+    if (events === 'error') {
+      request.flush({ title: 'Server error' }, { status: 500, statusText: 'Server error' });
+    } else {
+      request.flush(events);
+    }
+    await settle(harness);
+    return { harness, body: document.body, request };
+  }
+
+  const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
+  const main = () => document.querySelector('app-calendar-page') as HTMLElement;
+
+  function click(label: string, within: Element = main()) {
+    const match = [...within.querySelectorAll<HTMLElement>('button, a')].find((b) => text(b) === label);
+    if (!match) {
+      throw new Error(`No button "${label}"`);
+    }
+    match.click();
+  }
+
+  it('opens on the week the dashboard was showing and asks only for that week, in the family’s time zone', async () => {
+    const { request } = await open('/calendar?week=2026-10-21', [event()]);
+
+    expect(text(main().querySelector('.period__label'))).toBe('October 18 – 24, 2026');
+    expect(request.request.params.get('from')).toBe('2026-10-18T05:00:00.000Z');
+    expect(request.request.params.get('to')).toBe('2026-10-25T05:00:00.000Z');
+    expect(main().querySelector('.segmented [aria-pressed="true"]')!.textContent!.trim()).toBe('Week');
   });
 
-  it('says plainly that the full calendar is not available yet', () => {
-    const el = render({ view: 'list' });
+  it('labels pending items in words, never as confirmed', async () => {
+    await open('/calendar?date=2026-10-20', [
+      event({ id: 'p', title: 'Time with Sam', category: 'ParentingTime', status: 'PendingApproval', caregiverMembershipId: 'm-sam' }),
+    ]);
 
-    expect(el.textContent).toContain('The full calendar isn’t available yet');
-    expect(el.textContent).toContain('List view');
+    const item = main().querySelector('app-calendar-week button.item')!;
+    expect(item.getAttribute('data-status')).toBe('pending');
+    expect(text(item)).toContain('Pending approval');
+    expect(text(item)).not.toContain('Confirmed');
   });
 
-  it('ignores a malformed week', () => {
-    const el = render({ week: 'not-a-date' });
+  it('shows a calm loading state, then an error with Try again that reloads', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', 'error');
 
-    expect(el.querySelector('.context')!.textContent!.trim()).toBe('Week view');
+    expect(text(main().querySelector('[role="alert"]'))).toContain('We couldn’t load your calendar.');
+    click('Try again');
+    await settle(harness);
+    expect(main().querySelector('.body')!.getAttribute('aria-busy')).toBe('true');
+    const retry = await eventsRequest();
+    // The first load failed, so the family and children are fetched again with it.
+    for (const r of http.match(F)) r.flush(FAMILY);
+    for (const r of http.match(`${F}/children`)) r.flush(CHILDREN);
+    retry.flush([event()]);
+    await settle(harness);
+    expect(main().querySelector('app-calendar-week')).not.toBeNull();
+  });
+
+  it('says honestly that there’s nothing yet, with a way to add', async () => {
+    await open('/calendar?date=2026-10-20', []);
+
+    expect(text(main())).toContain('No events yet');
+    const add = [...main().querySelectorAll('a')].find((a) => text(a) === 'Add to Calendar')!;
+    expect(add.getAttribute('href')).toBe('/calendar/new?date=2026-10-20');
+  });
+
+  it('filters by child and keeps the choice in the address', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [
+      event({ id: 'kai', title: 'Kai’s practice' }),
+      event({ id: 'aurora', title: 'Aurora’s recital', childIds: ['aurora'] }),
+    ]);
+
+    click('Aurora', main().querySelector('.filters')!);
+    await settle(harness);
+    const request = await eventsRequest().catch(() => null);
+    request?.flush([event({ id: 'kai', title: 'Kai’s practice' }), event({ id: 'aurora', title: 'Aurora’s recital', childIds: ['aurora'] })]);
+    await settle(harness);
+
+    expect(TestBed.inject(Router).url).toContain('child=aurora');
+    const titles = [...main().querySelectorAll('app-calendar-week .agenda .title')].map((t) => text(t));
+    expect(titles).toEqual(['Aurora’s recital']);
+  });
+
+  it('switches to Month and List and fetches their ranges', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [event()]);
+
+    click('Month', main().querySelector('.segmented')!);
+    await settle(harness);
+    const month = await eventsRequest();
+    expect(month.request.params.get('from')).toBe('2026-09-27T05:00:00.000Z');
+    expect(month.request.params.get('to')).toBe('2026-11-08T06:00:00.000Z');
+    month.flush([event()]);
+    await settle(harness);
+    expect(text(main().querySelector('.period__label'))).toBe('October 2026');
+    expect(main().querySelector('app-calendar-month')).not.toBeNull();
+
+    click('List', main().querySelector('.segmented')!);
+    await settle(harness);
+    const list = await eventsRequest();
+    expect(list.request.params.get('from')).toBe('2026-10-01T05:00:00.000Z');
+    list.flush([event()]);
+    await settle(harness);
+    expect(text(main().querySelector('app-calendar-list'))).toContain('Tuesday, October 20');
+  });
+
+  it('opens details, and cancelling parenting time asks the co-parent first', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [
+      event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex', allDay: true, startsAt: '2026-10-20T05:00:00Z', endsAt: '2026-10-21T05:00:00Z' }),
+    ]);
+
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    const dialog = document.querySelector('[role="dialog"]')!;
+    expect(text(dialog.querySelector('h2'))).toBe('Time with Alex');
+    expect(text(dialog)).toContain('Confirmed');
+
+    click('Cancel event…', dialog);
+    await settle(harness);
+    expect(text(dialog)).toContain('This asks Sam to approve cancelling it.');
+    click('Yes, cancel event', dialog);
+    const cancel = await vi.waitFor(() => http.expectOne((r) => r.method === 'DELETE' && r.url === `${F}/calendar/events/pt`));
+    cancel.flush(event({ id: 'pt', category: 'ParentingTime', pendingChange: 'Cancel' }));
+    const reload = await eventsRequest();
+    reload.flush([]);
+    await settle(harness);
+
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(text(main())).toContain('Cancellation sent to Sam for approval.');
+  });
+
+  it('keeps the other parent’s unavailable notes private and offers them no cancel', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [
+      event({ id: 'u', title: 'Unavailable', category: 'Unavailable', childIds: [], ownerMembershipId: 'm-sam' }),
+    ]);
+
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    const dialog = document.querySelector('[role="dialog"]')!;
+
+    expect(text(dialog)).toContain('Private details aren’t shared.');
+    expect([...dialog.querySelectorAll('button')].some((b) => text(b) === 'Cancel event…')).toBe(false);
+  });
+
+  it('has no axe violations with events and with details open', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [
+      event(),
+      event({ id: 'f', title: 'School play', category: 'Joint', status: 'PendingApproval', childIds: [] }),
+    ]);
+    expect(await axeViolations(document.body)).toEqual([]);
+
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    expect(await axeViolations(document.body)).toEqual([]);
   });
 });
+

@@ -1,0 +1,145 @@
+@use 'item' as *;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+ul,
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  @include item-button;
+  @include item-colors;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-1) var(--space-2);
+  overflow: hidden;
+}
+
+/* The grid shows from 720px; below that, the day-by-day list. */
+.grid {
+  display: none;
+}
+
+
+.grid__head {
+  display: grid;
+  justify-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-surface-soft);
+  font-size: 0.875rem;
+}
+.grid__head.is-today .grid__date {
+  background: var(--color-action);
+  color: var(--color-on-action);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+}
+.grid__weekday {
+  font-weight: 600;
+}
+.grid__allday-label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--color-surface-soft);
+}
+.allday {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: minmax(var(--target-min), auto);
+  gap: 4px;
+  padding: 4px;
+  min-height: calc(var(--target-min) + 8px);
+  border-bottom: 1px solid var(--color-surface-soft);
+}
+
+.grid__body {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 56px repeat(7, minmax(0, 1fr));
+  height: 560px;
+  overflow-y: auto;
+}
+.grid__body:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+.grid__hours,
+.daycol {
+  display: grid;
+  grid-template-rows: repeat(48, 28px);
+}
+.grid__hours span {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding-inline-end: var(--space-1);
+  text-align: end;
+  transform: translateY(-0.5em);
+}
+.daycol {
+  grid-template-columns: repeat(var(--lanes), minmax(0, 1fr));
+  gap: 0 2px;
+  padding: 0 2px;
+  border-inline-start: 1px solid var(--color-surface-soft);
+  background-image: linear-gradient(var(--color-surface-soft) 1px, transparent 1px);
+  background-size: 100% 112px;
+}
+.daycol li {
+  min-width: 0;
+  padding: 1px 0;
+}
+.item--timed {
+  min-height: 0;
+}
+
+.agenda {
+  display: grid;
+  gap: var(--space-3);
+}
+.agenda__day {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: var(--space-2);
+}
+.agenda__date {
+  margin: 0;
+  font-size: 0.9375rem;
+  display: grid;
+  align-content: start;
+}
+.agenda__day.is-today .agenda__date {
+  color: var(--color-action);
+}
+.agenda__none {
+  margin: 0;
+  color: var(--color-text-secondary);
+  align-self: center;
+}
+.agenda__items {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* Last, so it overrides the day-by-day list's own display. */
+@container (min-width: 720px) {
+  .grid {
+    display: grid;
+    grid-template-columns: 56px repeat(7, minmax(0, 1fr));
+    border: 1px solid var(--color-surface-soft);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    overflow: hidden;
+  }
+  .agenda {
+    display: none;
+  }
+}
