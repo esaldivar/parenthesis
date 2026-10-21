@@ -1,0 +1,33 @@
+# Calendar filtering — design handoff (October 21, 2026)
+
+**Issue:** #162 · **Milestone:** M3 — Calendar · **Target:** `release/0.3.0` · **Status:** Visual direction approved by owner; design-only handoff pending final asset upload and review.
+
+## Source of truth and visual continuity
+Extend the existing calendar overview and #48; preserve Week (default), Month, List, All/Kai/Aurora child controls, the seven-item sidebar (Home, Calendar, Messages, From Your Kids, Family Memories, Child Essentials, Settings), botanical “Different homes. Same love.” illustration, and mobile navigation. Follow `docs/design/BRANDING.md`, `docs/design-system.md`, `docs/design/CALENDAR_DECISIONS.md`, and `docs/design/handoffs/2026-10-20-calendar.md`. Ivory/sage/teal light mode and forest-green dark mode; use existing semantic tokens, not the blue-heavy first draft. Do **not** redraw or approximate the locked logo: reuse approved source assets. All screenshots are visual direction; written product decisions override inaccurate generated details.
+
+**Asset awaiting owner upload:** `docs/design/assets/calendar/calendar-filtering-mobile-desktop.png` (approved light/dark desktop/mobile composite, October 21). Do not claim it is present until verified. If the owner chooses a different filename, update this link and the issue. This branch deliberately does not include the image; owner will upload it.
+
+## Interaction specification
+1. Place a labeled **Filters** action near Week / Month / List. A desktop popover and mobile bottom sheet expose the same dimensions. Show a count/indicator of active filter dimensions and removable selections where space permits; preserve approved calendar layout.
+2. **Event type:** Parenting Time, Activity, Family Event, Unavailable, Task, Reminder, only where supported/rendered. Multiple selections within the type dimension are OR.
+3. **Parent:** Created by me, Created by co-parent, Involving me, Involving co-parent; distinguish creator from participants and from parenting-time caregiver. Confirm metadata availability before implementation; never infer caregiver from creator.
+4. **Child:** retain All / Kai / Aurora and correctly handle events with both children; events without child association remain accessible in All. Final behavior for childless events under an individual child filter requires explicit review.
+5. **Approval:** All, Pending, Confirmed, and Declined/Withdrawn only if ordinarily visible and meaningful to that item type. Tasks/reminders without approval lifecycle must not be mislabeled. Pending and confirmed remain visibly distinct.
+6. Across dimensions use AND; within multi-select dimensions use OR. **Reset Filters** restores defaults across all dimensions, including showing Unavailable. Zero selections should have an explicit, predictable behavior; finalize this detail before development. Apply consistently to Week/Month/List and preserve state across view switches.
+7. **Personal persistence:** Each parent has their own filter selections, restored when returning to the calendar, isolated by authenticated user and household; Reset clears that parent's saved choices. Named saved filter presets are **not** part of #162.
+8. **Hide Unavailable:** Hidden blocks disappear from ordinary calendar rendering but never from authorization, availability, conflict detection or server-side scheduling logic. At a hidden interval, offer a subtle discoverable hover/focus cue and accessible tap equivalent. Clicking/tapping opens details rather than automatically starting a swap. Display the parent and time range, plus only fields authorized for the viewer; optional private blackout notes/reasons must never be revealed to the other parent. The mockup's visible “Personal appointment” reason and unconditional swap button are **illustrative errors**, not approved behavior.
+9. **Conditional swap action:** Offer **Request Parenting Time Swap** only when the interval relates to a swappable existing parenting-time event and the viewer has permission; otherwise present appropriate permitted actions or simply Close. Viewing details does not create a request or modify parenting time. Existing swap flow requires explicit review/send, approval and non-blocking conflict warnings with **Send Anyway** and **Choose Different Dates** where applicable.
+10. Mobile: bottom sheets for filters/details; no mobile calendar legend. Support keyboard focus/activation, screen-reader announcements, return focus, 44px targets, reduced motion, WCAG AA contrast, 320px layout and light/dark parity. Ensure an invisible block is discoverable without requiring a mouse hover.
+
+## Design states to verify
+Default/unfiltered; one and multiple filters; reset; filtered-empty vs genuinely empty; loading/error; unsupported approval state; changed events; per-parent persistence across refresh and account switching; Week/Month/List; dark/light; mobile/desktop; hidden unavailability hover/focus/tap; overlapping blocks; authorized vs unauthorized details; swap applicable vs inapplicable; existing conflict warning and approval gate.
+
+## Implementation acceptance and test handoff (not authorization)
+- Filtering only changes personal display state; shared records, parenting assignments, approvals and conflicts remain unchanged.
+- With a synthetic two-parent/two-child household, exercise every filter dimension and combined AND/OR selections, childless joint events, task/reminder states, reset and account isolation.
+- Hide a private unavailable block and test discoverability and detail authorization as both parents; ensure no private reason appears in labels, counts, responses, cache or accessibility text.
+- Try overlapping family-event and swap requests while unavailable blocks are hidden; same server-side warning, Send Anyway/Choose Different Dates, and approval rules must apply.
+- Test keyboard, screen reader, focus, narrow viewport, zoom and both themes.
+
+## Boundaries and sign-off
+No Google Calendar integration, new event types, new approval logic, custody changes, schema changes without separate review, named presets, or implementation code. Owner approved the overall visual direction in conversation October 21; this does **not** establish that all product edge cases or a merged asset/handoff have been accepted. Resolve outstanding childless-filter and zero-selection semantics before implementation readiness. Follow #152: design sign-off, Claude execution approval and acceptance testing are separate gates. Keep #162 in **In Design** until final asset and handoff are reviewed; do not add implementation/approval labels or trigger Claude.
