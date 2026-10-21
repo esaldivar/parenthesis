@@ -259,14 +259,13 @@ that points back here.
     hatched, "Change pending", "Confirmed before your co-parent joined", Unavailable in grey with private notes kept
     private; event details with Cancel (approval-gated for parenting time and family events); Add Event with the
     block-highlight type cards; calendar requests in the approvals inbox, linked from Calendar.
-  - [ ] Frontend: edit an event (and its approval), Request Swap (waits for the real board), recurring unavailable
+  - [ ] Frontend: edit an event (and its approval), Request Swap (board uploaded October 21, 2026), recurring unavailable
     time with This event / This and following / All events, tasks and reminders, and declined requests on the
     calendar.
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
   - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
     (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).
-    - [ ] **Owner:** upload the approved Request Swap board. `calendar-request-swap-composite.png` is currently a copy
-      of the Approvals Inbox board.
+    - [x] **Owner:** uploaded the approved Request Swap board (October 21, 2026).
     - [x] **Owner decisions** (October 21, 2026, recorded in the handoff): no attachments in v0.3.0; shared tasks
       with no assignee that complete when the last required item is ticked (or **Mark done** without a checklist);
       reminders repeat but have no location; either parent edits or deletes tasks and reminders at once.
