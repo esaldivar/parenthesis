@@ -85,7 +85,8 @@ def tracking_links(body):
 
 def signal(issue, prs):
     return fingerprint([scope(issue), revision(prs), issue.get("control"), issue.get("labels"),
-                        issue.get("positive"), issue.get("negative"), issue.get("design_approved")])
+                        issue.get("positive"), issue.get("negative"), issue.get("design_approved"),
+                        issue.get("dependencies_ready"), issue.get("deployment_verified")])
 
 
 def plan(issues, prs_by_issue, last):

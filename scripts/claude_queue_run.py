@@ -469,6 +469,10 @@ class Runner:
         name = self.run(["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]).stdout.strip()
         self.owner, self.repo = name.split("/", 1)
         self.user_id = json.loads(self.run(["gh", "api", "user"]).stdout)["id"]
+        if self.workflow_enabled():
+            owner_id = json.loads(self.run(["gh", "api", f"users/{self.owner}"]).stdout).get("id")
+            if self.user_id != owner_id:
+                raise Stop("Only the repository owner may activate or reconcile the testing workflow")
         if self.args.board_plan:
             self.sync_board(apply=False)
             return
