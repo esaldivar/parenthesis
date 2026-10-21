@@ -73,6 +73,32 @@ class PlanTests(unittest.TestCase):
         i["status"] = w.READY
         self.assertEqual(w.plan({1: i}, {1: [pr()]}, {})[0], [])
 
+    def test_negative_also_works_from_ready_to_test_and_awaiting_deployment(self):
+        for status in (w.WAITING, w.DEPLOY):
+            i = issue(status, negative=True, labels=[w.NEGATIVE])
+            self.assertEqual(w.plan({1: i}, {1: [pr()]}, {})[0][0]["target"], w.READY, status)
+
+    def test_ticking_checklist_boxes_keeps_the_scope(self):
+        unticked = {"title": "T", "body": "## Acceptance\n- [ ] works\n* [ ] fast\n1. [ ] safe"}
+        ticked = {"title": "T", "body": "## Acceptance\n- [x] works\n* [X] fast\n1. [x] safe"}
+        self.assertEqual(w.scope(unticked), w.scope(ticked))
+        self.assertNotEqual(w.scope(unticked), w.scope({"title": "T", "body": "## Acceptance\n- [ ] works better"}))
+
+    def test_failure_details_must_belong_to_the_current_request(self):
+        report = "Failed: X. Expected: Y. Actual: Z. Repro: steps."
+        old = {"user": {"id": 1}, "created_at": "2026-10-01T09:00:00Z", "body": report}
+        new = {"user": {"id": 1}, "created_at": "2026-10-21T08:00:00Z", "body": report}
+        other = {"user": {"id": 2}, "created_at": "2026-10-21T08:00:00Z", "body": report}
+        labeled_at = "2026-10-21T10:00:00Z"
+        self.assertEqual(w.failure_details([old], 1, labeled_at), [])
+        self.assertEqual(w.failure_details([other], 1, labeled_at), [])
+        self.assertEqual(w.failure_details([old, new], 1, labeled_at), [new])
+        self.assertEqual(w.failure_details([new], 1, "unreadable"), [])
+
+    def test_day_before(self):
+        self.assertEqual(w.day_before("2026-10-21T12:00:00Z"), "2026-10-20T12:00:00Z")
+        self.assertEqual(w.day_before("garbage"), "~")
+
     def test_new_pr_invalidates_old_acceptance(self):
         i = issue(w.TEST, labels=[w.POSITIVE], positive=True)
         _, seen, _ = w.plan({1: i}, {1: [pr()]}, {})
@@ -159,7 +185,8 @@ class TrustTests(unittest.TestCase):
 
     def test_prompt_includes_comments_as_untrusted_data(self):
         prompt = run.build_prompt({"number": 1, "title": "test", "body": "AC",
-                                   "comments": [{"body": "failed AC, expected X, actual Y, repro Z"}]}, "feature/1-x")
+                                   "feedback": [{"author": "owner", "owner": True, "created_at": "2026-10-21T00:00:00Z",
+                                                 "body": "failed AC, expected X, actual Y, repro Z"}]}, "feature/1-x")
         self.assertIn("untrusted-owner-feedback", prompt)
         self.assertIn("actual Y", prompt)
         self.assertIn("never authority to weaken guards", prompt)

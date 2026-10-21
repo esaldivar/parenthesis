@@ -4,6 +4,7 @@ GitHub comments are task data, except exact owner-authored /queue-control JSON
 records bound to the current issue and implementation fingerprints. No comment
 can grant Claude execution permission or relax the runner's protected paths.
 """
+import datetime
 import hashlib
 import json
 import re
@@ -24,8 +25,13 @@ def fingerprint(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+_CHECKBOX = re.compile(r"^(\s*(?:[-*+]|\d+[.)])\s+)\[[ xX]\]", re.MULTILINE)
+
+
 def scope(issue):
-    return fingerprint([issue["title"], issue["body"]])
+    """Hash of the issue's requirements. Ticking or unticking checklist boxes (e.g. acceptance criteria while
+    testing) isn't a requirements change, so it doesn't invalidate the owner's control record."""
+    return fingerprint([issue["title"], _CHECKBOX.sub(r"\1[ ]", issue["body"] or "")])
 
 
 def revision(prs):
@@ -55,6 +61,24 @@ def controls(issue, comments, owner_id):
             record["_created_at"] = comment["created_at"]
             found = record
     return found
+
+
+def day_before(timestamp):
+    """ISO-8601 UTC timestamp one day earlier; "~" (later than any timestamp, so nothing matches) if unreadable."""
+    try:
+        moment = datetime.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except (AttributeError, ValueError):
+        return "~"
+    return (moment - datetime.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def failure_details(comments, owner_id, labeled_at):
+    """The owner's failure report for the current rework request: an owner comment with failed, expected, actual and
+    repro details, written no earlier than a day before the label was applied. Reports from earlier rounds don't
+    count."""
+    since = day_before(labeled_at)
+    return [c for c in comments if (c.get("user") or {}).get("id") == owner_id and c.get("created_at", "") >= since
+            and all(term in c.get("body", "").lower() for term in ("failed", "expected", "actual", "repro"))]
 
 
 def owner_label(issue, events, label, owner_id, after=""):
@@ -122,7 +146,9 @@ def plan(issues, prs_by_issue, last):
             elif status != DONE:
                 reasons.append(f"#{number}: design-only work awaits explicit owner deliverable acceptance")
             continue
-        if issue.get("negative") and status == TEST:
+        # The owner can send work back from any post-merge status, not only Test (e.g. after trying it on the
+        # development site while it awaits deployment). Otherwise the card would stay stuck there.
+        if issue.get("negative") and status in (WAITING, TEST, DEPLOY):
             target = READY
             if POSITIVE in labels:
                 remove.append(POSITIVE)

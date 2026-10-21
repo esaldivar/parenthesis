@@ -23,15 +23,16 @@ development/production environment, and all merged implementation commits reacha
 The owner record supplies post-deployment verification; an Actions success or main commit alone is insufficient.
 Deployment systems must publish GitHub Deployment/status evidence; without it the card stays open, pending evidence.
 
-**acceptance changes requested** wins over acceptance. In Test it removes stale positive acceptance, moves to
-Ready For Development and remains attached. Eligible rework ranks before ordinary work but never bypasses queue
+**acceptance changes requested** wins over acceptance. In Ready to Test, Test or Awaiting Deployment it removes
+stale positive acceptance, moves to Ready For Development and remains attached. Eligible rework ranks before ordinary work but never bypasses queue
 approval, milestone, priority or blocking. A shared local run lock is the claim. After confirmed In Development the
 runner removes the negative label. Failures restore it and return the issue to Ready For Development. An interrupted
 claim has a durable local recovery record. Existing worktrees stop a new attempt for inspection; open linked PRs
 prevent duplicate rework. Historical merged PRs do not prevent a fresh branch keyed by the new owner label event.
 
 For actionable rework, the owner comment must include **failed**, **expected**, **actual**, and **repro** details
-(for example headings). All comments reach Claude as untrusted task data. Report repairs with evidence for every
+(for example headings), written no earlier than a day before the label: a report from an earlier rework round
+doesn't count. All comments reach Claude as untrusted task data (text, author, date and whether the owner wrote it). Report repairs with evidence for every
 unresolved criterion. Rework must repeat review and fresh owner acceptance. No details means no claim of repair.
 
 ## Owner control records
@@ -42,7 +43,8 @@ It needs existing read access through owner-authenticated `gh`; it cannot prove 
 
 Owner-authored comments use one exact line, `/queue-control ` followed by JSON. Records must be **new, unedited
 comments**; the latest valid full record replaces the prior one. No agent adds one on the owner's behalf. The
-scope must match current text; reissue the control after changing requirements. Comments are not shell commands.
+scope must match current text; reissue the control after changing requirements. Ticking or unticking checklist
+boxes in the issue doesn't change the scope. Comments are not shell commands.
 Replace the hash placeholders with preview values:
 
 ```text
