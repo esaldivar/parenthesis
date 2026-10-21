@@ -64,8 +64,9 @@ public partial class EmailTemplateTests
 
         Assert.Equal("Confirm your email", mime.Subject);
         Assert.Equal("no-reply@example.test", Assert.Single(mime.From.Mailboxes).Address);
-        Assert.Equal(message.TextBody, mime.TextBody);
-        Assert.Equal(message.HtmlBody, mime.HtmlBody);
+        // MimeKit hands bodies back with the platform's line endings (\r\n on Windows), so compare the text itself.
+        Assert.Equal(message.TextBody.ReplaceLineEndings("\n"), mime.TextBody?.ReplaceLineEndings("\n"));
+        Assert.Equal(message.HtmlBody.ReplaceLineEndings("\n"), mime.HtmlBody?.ReplaceLineEndings("\n"));
         var icon = Assert.Single(mime.BodyParts.OfType<MimeKit.MimePart>(), part => part.ContentId == EmailTemplate.LogoContentId);
         Assert.Equal("image/png", icon.ContentType.MimeType);
     }
