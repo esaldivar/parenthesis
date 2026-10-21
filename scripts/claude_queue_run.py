@@ -73,6 +73,11 @@ class Stop(Exception):
     """Stops the run (fail closed). The message tells the owner what happened and what to do."""
 
 
+class Skipped(Stop):
+    """One request needs the owner's attention before it can start. A scheduled run skips it and moves on; a run for
+    that one issue stops (it's a Stop)."""
+
+
 class Idle(Exception):
     """Nothing to do right now (no approved issue, the weekly limit, another run). Not a failure."""
 
@@ -417,7 +422,36 @@ class Runner:
             if not waiting:
                 skipped = f"; already handled: {sorted(set(numbers) & handled)}" if numbers else ""
                 raise Idle(f"No eligible issue waiting in {ACTIVE_MILESTONE}{skipped}. Exclusions: {excluded}")
-            number = waiting[0]
+            # Owner decision (October 21, 2026): a request that can't start yet is skipped, with one Discord line
+            # saying what it needs, and the next approved issue runs. It never stalls the whole queue.
+            needs = []
+            for candidate in waiting:
+                try:
+                    issue = self.verify_issue(candidate, enabled, rework, recheck)
+                except Skipped as exc:
+                    needs.append(str(exc))
+                    self.log(f"Skipped: {exc}")
+                    self.notify_skip(candidate, str(exc))
+                    continue
+                self.clear_skip(candidate)
+                return issue
+            raise Idle("Every waiting issue needs the owner first: " + "; ".join(needs))
+        return self.verify_issue(number, enabled, rework, recheck)
+
+    def notify_skip(self, number, reason):
+        """One Discord line per skipped request, sent again only when the reason changes."""
+        path = self.state_dir / f"skipped-{number}.txt"
+        if path.exists() and path.read_text(encoding="utf-8") == reason:
+            return
+        if self.notify(f"Claude queue skipped {reason}", dedupe=False, clear_last=False):
+            path.write_text(reason, encoding="utf-8")  # only once it was sent, so a failed notice is retried
+
+    def clear_skip(self, number):
+        (self.state_dir / f"skipped-{number}.txt").unlink(missing_ok=True)
+
+    def verify_issue(self, number, enabled, rework, recheck):
+        """Approval, milestone and owner checks for one issue, plus the owner-testing workflow's checks when it's on.
+        Raises Skipped for a request that only needs the owner's attention, Stop for anything else."""
         repository = approval.fetch_issue(self.token, self.owner, self.repo, number)
         try:
             issue = approval.verify(repository)
@@ -431,7 +465,7 @@ class Runner:
             issue["comments"] = self.comments(number)
             control = workflow.controls(issue, issue["comments"], self.user_id)
             if control.get("work_type") == "design":
-                raise Stop(f"#{number}: design-only work cannot enter the coding queue")
+                raise Skipped(f"#{number}: it's classified as design-only work, which never enters the coding queue")
             # Claude gets each comment's text, author and date (not GitHub's full objects), marked by whether
             # the owner wrote it. All of it stays untrusted task data.
             issue["feedback"] = [{"author": (c.get("user") or {}).get("login"),
@@ -444,17 +478,20 @@ class Runner:
                     prs = workflow.Snapshot(self.board(), self.user_id).pages(
                         f"repos/{self.owner}/{self.repo}/pulls?state=open&per_page=100")
                     if any(number in workflow.tracking_links(p.get("body")) for p in prs):
-                        raise Stop(f"#{number}: open linked work already exists; do not start duplicate rework")
+                        raise Skipped(f"#{number}: an open PR already works on it; finish or close that PR before rework")
+                    existing = self.git("worktree", "list", "--porcelain")
+                    if re.search(rf"^worktree .*parenthesis-claude-{number}(?:-|$)", existing, re.MULTILINE):
+                        raise Skipped(f"#{number}: an earlier run's worktree remains; inspect and remove it before rework")
                 events = workflow.Snapshot(self.board(), self.user_id).pages(
                     f"repos/{self.owner}/{self.repo}/issues/{number}/events?per_page=100")
                 if not workflow.owner_label({"labels": [workflow.NEGATIVE]}, events,
                                             workflow.NEGATIVE, self.user_id):
-                    raise Stop(f"#{number}: rework label is not owner-authored")
+                    raise Skipped(f"#{number}: the rework label wasn't applied by the owner; re-apply it yourself")
                 labeled = max((e for e in events if (e.get("label") or {}).get("name") == workflow.NEGATIVE
                                and e.get("event") == "labeled"), key=lambda e: e["id"])
                 issue["rework_event"] = labeled["id"]
                 if not workflow.failure_details(issue["comments"], self.user_id, labeled.get("created_at", "")):
-                    raise Stop(f"#{number}: rework has no owner failure details; add failed criteria and reproduction steps")
+                    raise Skipped(f"#{number}: add a failure report comment (failed, expected, actual, repro) for this rework")
         return issue
 
     def weekly_usage(self):

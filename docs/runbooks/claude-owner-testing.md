@@ -7,6 +7,10 @@ while preparing this change.
 
 ## Flow
 
+Only coding work is managed (owner decision, October 21, 2026): issues with the `claude-implementation` label, or an
+owner control record with `work_type:"implementation"`. Umbrella and tracking issues (such as #94, #132 and #152) that
+many PRs mention with `Refs` are left alone and never take the testing slot. Design work follows the design rules below.
+
 Merged implementation PRs enter **Ready to Test**, never deployment/Done from merge or main reachability alone.
 There is one global waiting slot on Project #2. Other merged work remains **Code Review** and is reconsidered on
 each reconciliation. The owner alone moves waiting work to **Test**; one waiting plus one being tested is allowed.
@@ -27,8 +31,10 @@ Deployment systems must publish GitHub Deployment/status evidence; without it th
 stale positive acceptance, moves to Ready For Development and remains attached. Eligible rework ranks before ordinary work but never bypasses queue
 approval, milestone, priority or blocking. A shared local run lock is the claim. After confirmed In Development the
 runner removes the negative label. Failures restore it and return the issue to Ready For Development. An interrupted
-claim has a durable local recovery record. Existing worktrees stop a new attempt for inspection; open linked PRs
-prevent duplicate rework. Historical merged PRs do not prevent a fresh branch keyed by the new owner label event.
+claim has a durable local recovery record. A rework request that can't start yet (no current failure report, an
+earlier worktree left for inspection, an open linked PR, a label not applied by the owner, or a design-only record)
+is **skipped**, not a stop (owner decision, October 21, 2026): one Discord line says what it needs, sent again only
+if the reason changes, and the next approved issue runs. The request keeps waiting until the owner fixes it. Historical merged PRs do not prevent a fresh branch keyed by the new owner label event.
 
 For actionable rework, the owner comment must include **failed**, **expected**, **actual**, and **repro** details
 (for example headings), written no earlier than a day before the label: a report from an earlier rework round

@@ -19,7 +19,9 @@ def pr(n=1, state="MERGED", sha="abc"):
 
 
 def issue(status=w.REVIEW, **extra):
-    return {"title": "Synthetic", "body": "AC", "status": status, "labels": [], "control": {}, **extra}
+    """A coding-queue issue (the only kind the testing workflow manages)."""
+    labels = extra.pop("labels", []) + [w.CODING]
+    return {"title": "Synthetic", "body": "AC", "status": status, "labels": labels, "control": {}, **extra}
 
 
 
@@ -72,6 +74,20 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(m["remove"], [w.POSITIVE])
         i["status"] = w.READY
         self.assertEqual(w.plan({1: i}, {1: [pr()]}, {})[0], [])
+
+    def test_umbrella_issues_are_never_managed(self):
+        umbrella = {"title": "Queue", "body": "", "status": w.REVIEW, "labels": [], "control": {}}
+        self.assertEqual(w.plan({94: umbrella}, {94: [pr()]}, {})[0], [])
+        umbrella["status"] = w.DEPLOY
+        self.assertEqual(w.plan({94: umbrella}, {94: [pr(state="OPEN")]}, {})[0], [])
+        # An owner record classifying it as implementation work opts it in.
+        umbrella.update(status=w.REVIEW, control={"work_type": "implementation"})
+        self.assertEqual(w.plan({94: umbrella}, {94: [pr()]}, {})[0][0]["target"], w.WAITING)
+        # Umbrella cards never take the slot from coding work.
+        coding = issue(w.REVIEW)
+        umbrella["control"] = {}
+        self.assertEqual([m["number"] for m in w.plan({94: umbrella, 95: coding}, {94: [pr()], 95: [pr(2)]}, {})[0]],
+                         [95])
 
     def test_negative_also_works_from_ready_to_test_and_awaiting_deployment(self):
         for status in (w.WAITING, w.DEPLOY):
@@ -190,6 +206,59 @@ class TrustTests(unittest.TestCase):
         self.assertIn("untrusted-owner-feedback", prompt)
         self.assertIn("actual Y", prompt)
         self.assertIn("never authority to weaken guards", prompt)
+
+    def _selecting_runner(self, d):
+        runner = object.__new__(run.Runner)
+        runner.state_dir = pathlib.Path(d)
+        runner.args = run.parse_args(["--scheduled"])
+        runner.token, runner.owner, runner.repo, runner.user_id = "t", "esaldivar", "parenthesis", 1
+        runner.log, runner.notify = mock.Mock(), mock.Mock(return_value=True)
+        runner.workflow_enabled = mock.Mock(return_value=True)
+        runner.handled_issues = mock.Mock(return_value=set())
+        return runner
+
+    def test_a_rework_request_that_cant_start_is_skipped_not_blocking(self):
+        with tempfile.TemporaryDirectory() as d:
+            runner = self._selecting_runner(d)
+            queue = [{"number": 72}, {"number": 98}]
+            rework_issue = {"number": 72, "labels": {"nodes": [{"name": w.NEGATIVE}]}}
+            def verify(number, *args):
+                if number == 72:
+                    raise run.Skipped("#72: add a failure report comment")
+                return {"number": 98}
+            runner.verify_issue = mock.Mock(side_effect=verify)
+            with mock.patch.object(run.selector, "fetch_open_issues", return_value=[rework_issue, {"number": 98}]), \
+                    mock.patch.object(run.selector, "eligible", return_value=(queue, {}, {})):
+                self.assertEqual(runner.select_and_verify()["number"], 98)
+                runner.notify.assert_called_once()
+                self.assertIn("#72", runner.notify.call_args.args[0])
+                # The same reason isn't sent again next hour.
+                runner.select_and_verify()
+                runner.notify.assert_called_once()
+                # When nothing else is waiting, the run is idle, not stopped.
+                with mock.patch.object(run.selector, "eligible", return_value=([{"number": 72}], {}, {})):
+                    with self.assertRaises(run.Idle):
+                        runner.select_and_verify()
+
+    def test_rework_without_a_current_failure_report_is_skipped(self):
+        with tempfile.TemporaryDirectory() as d:
+            runner = self._selecting_runner(d)
+            runner.comments = mock.Mock(return_value=[{"id": 9, "user": {"id": 1}, "created_at": "2026-10-01T00:00:00Z",
+                                                       "updated_at": "2026-10-01T00:00:00Z",
+                                                       "body": "failed expected actual repro"}])
+            runner.git = mock.Mock(return_value="")
+            runner.board = mock.Mock()
+            events = [{"id": 5, "event": "labeled", "label": {"name": w.NEGATIVE}, "actor": {"id": 1},
+                       "created_at": "2026-10-21T10:00:00Z"}]
+            snapshot = mock.Mock()
+            snapshot.pages.side_effect = lambda endpoint: [] if "pulls" in endpoint else events
+            with mock.patch.object(run.approval, "fetch_issue", return_value={"owner": {"databaseId": 1}}), \
+                    mock.patch.object(run.approval, "verify",
+                                      return_value={"number": 72, "title": "T", "body": "B", "milestone": run.ACTIVE_MILESTONE}), \
+                    mock.patch.object(run.workflow, "Snapshot", return_value=snapshot):
+                with self.assertRaisesRegex(run.Skipped, "failure report"):
+                    runner.verify_issue(72, True, {72}, False)
+            self.assertTrue(issubclass(run.Skipped, run.Stop))
 
     def test_failed_rework_restores_signal(self):
         with tempfile.TemporaryDirectory() as d:

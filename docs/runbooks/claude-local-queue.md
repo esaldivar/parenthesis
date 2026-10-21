@@ -8,7 +8,8 @@ Claude runs in GitHub Actions. It never merges, deploys or changes labels. It do
 step with the work (owner decision, October 19, 2026; see "The project board" below).
 
 **#152 rollout:** the owner-testing workflow is implemented but **off by default**. The legacy behavior below
-continues until explicit local activation. Read [owner-testing rollout](claude-owner-testing.md) before installing
+continues until explicit local activation, with one exception that applies from merge (owner decision, October 21,
+2026): issues with the `design` label or Work Type **Design** are never picked for coding. Read [owner-testing rollout](claude-owner-testing.md) before installing
 or activating it. In activated mode only, the runner may remove stale acceptance and consume/restore rework labels;
 it never adds design approval, positive acceptance or Claude execution approval. `--workflow-plan` previews the new
 rules without activation, GitHub mutations, notifications, Claude execution or state writes.

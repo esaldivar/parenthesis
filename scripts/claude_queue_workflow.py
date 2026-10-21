@@ -19,6 +19,7 @@ DONE = "Done"
 NEGATIVE = "acceptance changes requested"
 POSITIVE = "meets all acceptance criteria"
 DESIGN_APPROVED = "design approved"  # the exact GitHub label name (with a space)
+CODING = "claude-implementation"
 
 
 def fingerprint(value):
@@ -145,6 +146,10 @@ def plan(issues, prs_by_issue, last):
                               "remove": [], "revision": rev})
             elif status != DONE:
                 reasons.append(f"#{number}: design-only work awaits explicit owner deliverable acceptance")
+            continue
+        # Owner decision (October 21, 2026): only coding work goes through owner testing. Umbrella and tracking
+        # issues (#94, #132, #152...) are mentioned by many PRs and must never take the Ready to Test slot.
+        if CODING not in labels and control.get("work_type") != "implementation":
             continue
         # The owner can send work back from any post-merge status, not only Test (e.g. after trying it on the
         # development site while it awaits deployment). Otherwise the card would stay stuck there.
