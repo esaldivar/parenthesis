@@ -17,7 +17,7 @@ DEPLOY = "Awaiting Deployment"
 DONE = "Done"
 NEGATIVE = "acceptance changes requested"
 POSITIVE = "meets all acceptance criteria"
-DESIGN_APPROVED = "design-approved"
+DESIGN_APPROVED = "design approved"  # the exact GitHub label name (with a space)
 
 
 def fingerprint(value):

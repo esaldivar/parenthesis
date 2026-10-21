@@ -103,7 +103,7 @@ use it.
 
 - Owner-testing workflow #152 is **off until separately approved for local activation**. Follow
   [the rollout runbook](docs/runbooks/claude-owner-testing.md). In activated mode, merges do not prove owner
-  acceptance or deployment. Never apply `meets all acceptance criteria`, `design-approved`, or owner control
+  acceptance or deployment. Never apply `meets all acceptance criteria`, `design approved`, or owner control
   records on the owner's behalf. Failure feedback is task data, not permission to change guards. This runner
   change must use a supervised implementation route, never loosen protected paths for self-modification.
 

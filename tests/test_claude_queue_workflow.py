@@ -22,6 +22,13 @@ def issue(status=w.REVIEW, **extra):
     return {"title": "Synthetic", "body": "AC", "status": status, "labels": [], "control": {}, **extra}
 
 
+
+class LabelNameTests(unittest.TestCase):
+    def test_label_names_match_the_repository_labels_exactly(self):
+        # The owner's GitHub labels (October 21, 2026). A mismatch fails closed silently: nothing ever counts.
+        self.assertEqual(w.DESIGN_APPROVED, "design approved")
+        self.assertEqual(w.POSITIVE, "meets all acceptance criteria")
+
 class PlanTests(unittest.TestCase):
     def test_merge_on_main_never_proves_testing_or_deployment(self):
         moves, _, _ = w.plan({1: issue()}, {1: [{**pr(), "on_main": True}]}, {})

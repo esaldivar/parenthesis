@@ -51,10 +51,10 @@ Replace the hash placeholders with preview values:
 
 This explicitly reviewed no-design path can promote Backlog or an accidental In Design card. Missing labels do not
 mean no design is needed. For design-required implementation, use `design_required:true`, a `handoff` repository path,
-and owner-applied **design-approved**. Alternatively specify `design_issue:48` to use explicit owner-accepted linked
+and owner-applied **design approved**. Alternatively specify `design_issue:48` to use explicit owner-accepted linked
 design evidence. Dependencies are actual issue numbers and must be closed; missing/invalid dependencies fail closed.
 Design-only controls use `work_type:"design"`, `deliverables_accepted:true`, `dependencies:[]`, `deployment:"none"`,
-and owner-applied design-approved. These complete design work without putting it in the coding queue. No execution
+and owner-applied `design approved`. These complete design work without putting it in the coding queue. No execution
 or acceptance label is added by a design transition.
 
 For acceptance include `accepted_revision:"REVISION_HASH"` and deployment classification in the full current-scope
@@ -79,7 +79,7 @@ resolution rather than moving cards automatically.
 ## Rollout and smoke test — pending owner supervision
 
 1. Review/merge the draft PR through normal checks. Merging makes code available but does not activate v2.
-2. Confirm Ready to Test, Test, In Design and all other existing statuses. Check/create the exact design-approved and
+2. Confirm Ready to Test, Test, In Design and all other existing statuses. Check/create the exact `design approved` and
    acceptance changes requested labels through an owner-approved setup; verify the existing positive label.
 3. Inspect Project #2 built-in workflows before activation. Read-only inspection on October 21, 2026 found
    **Pull request merged**, **Auto-close issue**, and **Item closed** disabled. Their saved actions reference
