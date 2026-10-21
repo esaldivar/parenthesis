@@ -25,8 +25,18 @@ internal sealed record CreateEventRequest(
     IReadOnlyList<Guid>? ChildIds,
     Guid? CaregiverMembershipId);
 
+/// <summary><paramref name="Reason"/>: an optional note to the other parent, kept with the approval request (a swap's reason).</summary>
 internal sealed record UpdateEventRequest(
-    string? Title, DateTimeOffset? StartsAt, DateTimeOffset? EndsAt, bool? AllDay, string? Location, string? Notes, Guid? CaregiverMembershipId);
+    string? Title,
+    DateTimeOffset? StartsAt,
+    DateTimeOffset? EndsAt,
+    bool? AllDay,
+    string? Location,
+    string? Notes,
+    Guid? CaregiverMembershipId,
+    string? Reason = null);
+
+internal sealed record ConflictsView(IReadOnlyList<string> Warnings);
 
 internal sealed record EventView(
     Guid Id,
@@ -61,6 +71,8 @@ internal static class CalendarEndpoints
         var calendar = family.MapGroup("/calendar/events").WithTags("Calendar");
         calendar.MapGet("/", ListAsync).WithMetadata(new ChildSessionAllowed());
         calendar.MapPost("/", CreateAsync);
+        calendar.MapGet("/{eventId:guid}", GetAsync);
+        calendar.MapGet("/{eventId:guid}/conflicts", ConflictsAsync);
         calendar.MapPatch("/{eventId:guid}", UpdateAsync);
         calendar.MapDelete("/{eventId:guid}", CancelAsync);
     }
@@ -181,6 +193,61 @@ internal static class CalendarEndpoints
             View(calendarEvent, tenant, changeRequestId, warnings));
     }
 
+    /// <summary>One event, for a parent: the same view the list gives (an Unavailable event's notes only to its owner).</summary>
+    private static async Task<Results<Ok<EventView>, NotFound, ForbidHttpResult>> GetAsync(
+        Guid eventId, ITenantContext tenant, CalendarDbContext db, CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        var e = await db.Events.SingleOrDefaultAsync(
+            x => x.Id == eventId && (x.Status == EventStatus.Confirmed || x.Status == EventStatus.PendingApproval),
+            cancellationToken);
+        return e is null ? TypedResults.NotFound() : TypedResults.Ok(View(e, tenant, changeRequestId: null, []));
+    }
+
+    /// <summary>
+    /// The gentle warnings a change to an event would get, without changing anything, so a parent can choose to send
+    /// anyway or pick different dates before a swap is sent (handoff 2026-10-20). They never block a request.
+    /// </summary>
+    private static async Task<Results<Ok<ConflictsView>, NotFound, ValidationProblem, ForbidHttpResult>> ConflictsAsync(
+        Guid eventId,
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (endsAt <= startsAt || endsAt - startsAt > MaxDuration)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["endsAt"] = [$"Choose an end that's after the start, at most {MaxDuration.TotalDays:0} days later."],
+            });
+        }
+
+        var e = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, cancellationToken);
+        if (e is null || e.Status is EventStatus.Cancelled or EventStatus.Rejected
+            || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId))
+        {
+            return TypedResults.NotFound();
+        }
+
+        var warnings = await WarningsAsync(
+            db,
+            new WarningCheck(e.Category, startsAt.ToUniversalTime(), endsAt.ToUniversalTime(), tenant.MembershipId,
+                e.CaregiverMembershipId, e.Children.Select(c => c.ChildProfileId).ToList(), ExcludeEventId: e.Id),
+            cancellationToken);
+        return TypedResults.Ok(new ConflictsView(warnings));
+    }
+
     /// <summary>
     /// Edits an event. Activities (either parent) and unavailable time (its owner) change at once. A confirmed
     /// parenting-time, holiday or joint event keeps its current values and gets a CalendarModify request ("change
@@ -226,6 +293,11 @@ internal static class CalendarEndpoints
 
         var parents = await roster.ActiveParentMembershipIdsAsync(cancellationToken);
         var errors = ValidateChange(change, e.Category, parents, request.Notes);
+        if ((request.Reason?.Trim().Length ?? 0) > ChangeRequestProposal.ReasonMaxLength)
+        {
+            errors["reason"] = [$"Keep the reason under {ChangeRequestProposal.ReasonMaxLength} characters."];
+        }
+
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -260,7 +332,8 @@ internal static class CalendarEndpoints
             {
                 changeRequestId = await changeRequests.ProposeAsync(
                     new ChangeRequestProposal(
-                        ChangeRequestTypes.CalendarModify, "calendar_event", e.Id, $"Change {e.Title}", tenant.MembershipId, userId),
+                        ChangeRequestTypes.CalendarModify, "calendar_event", e.Id, $"Change {e.Title}", tenant.MembershipId, userId,
+                        request.Reason),
                     ct);
             }
 
