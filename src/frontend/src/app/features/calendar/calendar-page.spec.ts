@@ -166,6 +166,76 @@ describe('the calendar page', () => {
     expect(text(main())).toContain('Cancellation sent to Sam for approval.');
   });
 
+  it('offers Request swap on confirmed parenting time', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [
+      event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex' }),
+    ]);
+
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    const swap = [...document.querySelectorAll('[role="dialog"] a')].find((a) => text(a) === 'Request swap')!;
+
+    expect(swap.getAttribute('href')).toBe('/calendar/pt/swap');
+  });
+
+  it('opens a waiting swap from a link, with its reason and status, and lets its sender withdraw it', async () => {
+    const pending = event({
+      id: 'pt',
+      title: 'Time with Alex',
+      category: 'ParentingTime',
+      caregiverMembershipId: 'm-alex',
+      pendingChange: 'Modify',
+      proposed: {
+        title: 'Time with Alex',
+        startsAt: '2026-10-24T13:00:00Z',
+        endsAt: '2026-10-24T20:00:00Z',
+        allDay: false,
+        location: null,
+        caregiverMembershipId: 'm-alex',
+      },
+    });
+    const { harness } = await open('/calendar?date=2026-10-20&event=pt', [pending]);
+    const approvals = await vi.waitFor(() => http.expectOne(`${F}/approvals`));
+    approvals.flush([
+      {
+        id: 'r1',
+        type: 'CalendarModify',
+        targetType: 'calendar_event',
+        targetId: 'pt',
+        summary: 'Change Time with Alex',
+        reason: 'I have a work trip that weekend.',
+        status: 'Pending',
+        proposerMembershipId: 'm-alex',
+        createdAt: '2026-10-20T19:14:00Z',
+        approvals: 1,
+        requiredApprovals: 2,
+        canDecide: false,
+        proposedByYou: true,
+        resolvedAt: null,
+        decisions: [],
+      },
+    ]);
+    await settle(harness);
+
+    const dialog = document.querySelector('[role="dialog"]')!;
+    expect(text(dialog)).toContain('Change pending');
+    expect(text(dialog)).toContain('ProposedSaturday, October 24 · 8:00 AM – 3:00 PMReasonI have a work trip that weekend.');
+    expect(text(dialog)).toContain('Request sent Tue, Oct 20, 2:14 PM');
+    expect(text(dialog)).toContain('Sam’s answer Waiting');
+    expect(text(dialog)).toContain('Calendar updated Happens automatically once approved');
+
+    click('Withdraw request…', dialog);
+    await settle(harness);
+    click('Yes, withdraw', dialog);
+    const withdraw = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/approvals/r1/withdraw`));
+    withdraw.flush(null);
+    (await eventsRequest()).flush([event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime' })]);
+    await settle(harness);
+
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(text(main())).toContain('You withdrew your request. “Time with Alex” stays as it was.');
+  });
+
   it('keeps the other parent’s unavailable notes private and offers them no cancel', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [
       event({ id: 'u', title: 'Unavailable', category: 'Unavailable', childIds: [], ownerMembershipId: 'm-sam' }),

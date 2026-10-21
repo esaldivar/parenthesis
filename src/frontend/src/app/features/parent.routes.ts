@@ -16,6 +16,11 @@ export const PARENT_ROUTES: Routes = [
     loadComponent: () => import('./calendar/add-event-page').then((m) => m.AddEventPage),
   },
   {
+    path: 'calendar/:eventId/swap',
+    title: 'Request swap',
+    loadComponent: () => import('./calendar/swap-request-page').then((m) => m.SwapRequestPage),
+  },
+  {
     path: 'calendar',
     title: 'Calendar',
     loadComponent: () => import('./calendar/calendar-page').then((m) => m.CalendarPage),

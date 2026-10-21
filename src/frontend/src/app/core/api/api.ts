@@ -78,6 +78,8 @@ export interface ChangeRequest {
   readonly targetType: string;
   readonly targetId: string;
   readonly summary: string;
+  /** The proposer's optional note to the other parent (e.g. why they ask for a swap). Shown in the app only. */
+  readonly reason: string | null;
   readonly status: 'Pending' | 'Approved' | 'Rejected' | 'Withdrawn';
   readonly proposerMembershipId: string;
   readonly createdAt: string;
@@ -188,7 +190,10 @@ export interface NewCalendarEvent {
   readonly caregiverMembershipId?: string;
 }
 
-export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'childIds'>>;
+export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'childIds'>> & {
+  /** An optional note to the other parent, kept with the approval request (a swap's reason). Up to 500 characters. */
+  readonly reason?: string;
+};
 
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
@@ -272,6 +277,16 @@ export class Api {
   // The shared calendar. A range spans at most 62 days. Children may list (they see only their confirmed events).
   calendarEvents = (familyId: string, from: string, to: string) =>
     this.call(this.http.get<CalendarEvent[]>(`/api/families/${familyId}/calendar/events`, { params: { from, to } }));
+  /** One event, for a parent. */
+  calendarEvent = (familyId: string, eventId: string) =>
+    this.call(this.http.get<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`));
+  /** The gentle warnings a change to these times would get. Checks only; nothing is saved. */
+  eventConflicts = (familyId: string, eventId: string, startsAt: string, endsAt: string) =>
+    this.call(
+      this.http.get<{ warnings: CalendarWarning[] }>(`/api/families/${familyId}/calendar/events/${eventId}/conflicts`, {
+        params: { startsAt, endsAt },
+      }),
+    );
   /** Parenting time, holidays and joint events come back PendingApproval with a changeRequestId. */
   createEvent = (familyId: string, event: NewCalendarEvent) =>
     this.call(this.http.post<CalendarEvent>(`/api/families/${familyId}/calendar/events`, event));
