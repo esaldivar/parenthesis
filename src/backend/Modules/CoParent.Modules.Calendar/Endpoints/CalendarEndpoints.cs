@@ -165,7 +165,7 @@ internal static class CalendarEndpoints
             return await CreateSeriesAsync(request, repeat, http, tenant, db, roster, unitOfWork, audit, clock, cancellationToken);
         }
 
-        var title = string.IsNullOrWhiteSpace(request.Title) ? "Unavailable" : request.Title.Trim();
+        var (title, location) = Shareable(category, request.Title, request.Location);
         var needsApproval = CalendarEvent.NeedsApproval(category);
 
         // Decision 7: while a family has one parent, approval-gated events are confirmed and labelled, so the
@@ -179,7 +179,7 @@ internal static class CalendarEndpoints
             StartsAt = request.StartsAt!.Value.ToUniversalTime(),
             EndsAt = request.EndsAt!.Value.ToUniversalTime(),
             AllDay = request.AllDay,
-            Location = string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim(),
+            Location = location,
             Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
             Status = needsApproval && !soloConfirm ? EventStatus.PendingApproval : EventStatus.Confirmed,
             CaregiverMembershipId = category == EventCategory.ParentingTime ? request.CaregiverMembershipId : null,
@@ -378,6 +378,7 @@ internal static class CalendarEndpoints
             request.AllDay ?? current.AllDay,
             request.Location is null ? current.Location : (string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim()),
             e.Category == EventCategory.ParentingTime ? request.CaregiverMembershipId ?? current.CaregiverMembershipId : null);
+        change = UnavailableSafe(e.Category, change);
 
         var parents = await roster.ActiveParentMembershipIdsAsync(cancellationToken);
         var errors = ValidateChange(change, e.Category, parents, request.Notes);
@@ -593,8 +594,7 @@ internal static class CalendarEndpoints
             Count = repeat.Count,
             CreatedAt = now,
         };
-        var title = string.IsNullOrWhiteSpace(request.Title) ? "Unavailable" : request.Title.Trim();
-        var location = string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim();
+        var (title, location) = Shareable(category, request.Title, request.Location);
         var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
         var childIds = (request.ChildIds ?? []).Distinct().ToList();
         var events = dates.Select(date =>
@@ -661,6 +661,7 @@ internal static class CalendarEndpoints
             request.AllDay ?? current.AllDay,
             request.Location is null ? current.Location : (string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim()),
             null);
+        change = UnavailableSafe(e.Category, change);
         var errors = ValidateChange(change, e.Category, await roster.ActiveParentMembershipIdsAsync(cancellationToken), request.Notes);
         if (errors.Count == 0 && request.StartsAt is not null
             && EventSchedule.LocalDate(change.StartsAt, zone) != EventSchedule.LocalDate(e.StartsAt, zone))
@@ -691,11 +692,11 @@ internal static class CalendarEndpoints
                 : (own.StartsAt, own.EndsAt);
             target.Apply(own with
             {
-                Title = string.IsNullOrWhiteSpace(request.Title) ? own.Title : change.Title,
+                Title = string.IsNullOrWhiteSpace(request.Title) && e.Category != EventCategory.Unavailable ? own.Title : change.Title,
                 StartsAt = start,
                 EndsAt = end,
                 AllDay = request.AllDay ?? own.AllDay,
-                Location = request.Location is null ? own.Location : change.Location,
+                Location = request.Location is null && e.Category != EventCategory.Unavailable ? own.Location : change.Location,
             });
             if (request.Notes is not null)
             {
@@ -940,6 +941,27 @@ internal static class CalendarEndpoints
     private static string Summary(CalendarEvent e) =>
         $"{(e.Category == EventCategory.Joint ? "Family event" : "Add")}: {e.Title}, {e.StartsAt:MMM d}";
 
+    private const string UnavailableTitle = "Unavailable";
+
+    /// <summary>
+    /// Unavailable time is shared only as "Unavailable": its private reason belongs in the owner-only notes. So it's
+    /// stored with that title and no location, whatever the request sends.
+    /// </summary>
+    private static (string Title, string? Location) Shareable(EventCategory category, string? title, string? location) =>
+        category == EventCategory.Unavailable
+            ? (UnavailableTitle, null)
+            : (string.IsNullOrWhiteSpace(title) ? UnavailableTitle : title.Trim(), string.IsNullOrWhiteSpace(location) ? null : location.Trim());
+
+    private static ProposedTimes UnavailableSafe(EventCategory category, ProposedTimes change) =>
+        category == EventCategory.Unavailable ? change with { Title = UnavailableTitle, Location = null } : change;
+
+    /// <summary>
+    /// Whether this viewer sees only "Unavailable": anyone but its owner. Also covers anything stored before titles
+    /// and locations were normalized.
+    /// </summary>
+    private static bool HiddenFrom(CalendarEvent e, ITenantContext tenant) =>
+        e.Category == EventCategory.Unavailable && (tenant.Role == FamilyRole.Child || e.OwnerMembershipId != tenant.MembershipId);
+
     private static EventView View(
         CalendarEvent e,
         ITenantContext tenant,
@@ -947,12 +969,12 @@ internal static class CalendarEndpoints
         IReadOnlyList<string> warnings,
         IReadOnlyDictionary<Guid, CalendarSeries>? series = null) => new(
         e.Id,
-        e.Title,
+        HiddenFrom(e, tenant) ? UnavailableTitle : e.Title,
         e.Category,
         e.StartsAt,
         e.EndsAt,
         e.AllDay,
-        e.Location,
+        HiddenFrom(e, tenant) ? null : e.Location,
         Notes: tenant.Role == FamilyRole.Child || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId)
             ? null
             : e.Notes,

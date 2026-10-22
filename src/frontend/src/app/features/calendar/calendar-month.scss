@@ -46,7 +46,8 @@ ul {
 .day__number {
   justify-self: start;
   min-width: var(--target-min);
-  min-height: 32px;
+  // 44px targets on every screen size, not only phones (calendar acceptance checklist).
+  min-height: var(--target-min);
   border: 0;
   background: transparent;
   font: inherit;
@@ -85,7 +86,7 @@ ul {
   font-size: 0.8125rem;
   color: var(--color-action);
   cursor: pointer;
-  min-height: 24px;
+  min-height: var(--target-min);
 }
 .day__dots {
   display: none;
