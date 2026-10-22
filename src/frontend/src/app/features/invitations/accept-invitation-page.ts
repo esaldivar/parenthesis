@@ -68,10 +68,13 @@ const RETURN_URL = '/invitations/accept';
         @case ('wrong-email') {
           <h1>Join your co-parent's family</h1>
           <div class="alert" role="alert">This invitation was sent to a different email address.</div>
-          <p>Sign in with the email address the invitation was sent to, then open the link again.</p>
+          <p>
+            Sign in with the email address the invitation was sent to, or create an account with it. This device keeps
+            the invitation until then.
+          </p>
           <div class="actions">
             <button mat-flat-button type="button" (click)="switchAccount()">Sign in with another account</button>
-            <a mat-button routerLink="/">Not now</a>
+            <button mat-button type="button" (click)="notNow()">Not now</button>
           </div>
         }
         @case ('existing-family') {
@@ -91,7 +94,7 @@ const RETURN_URL = '/invitations/accept';
             <button mat-flat-button type="button" [disabled]="busy()" (click)="accept(true)">
               {{ busy() ? 'Joining…' : 'Join as a separate family' }}
             </button>
-            <a mat-button routerLink="/">Not now</a>
+            <button mat-button type="button" (click)="notNow()">Not now</button>
           </div>
         }
         @case ('error') {
@@ -204,6 +207,15 @@ export class AcceptInvitationPage implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /**
+   * Leave the invitation for now. It stays on this device, but the app stops bringing the parent back to it until a
+   * reload, so home is home for a parent with a family, and new-family setup for one without (#211).
+   */
+  protected async notNow(): Promise<void> {
+    this.pending.defer();
+    await this.router.navigateByUrl('/');
   }
 
   protected async switchAccount(): Promise<void> {

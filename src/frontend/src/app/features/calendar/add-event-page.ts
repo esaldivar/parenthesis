@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +17,7 @@ import { addDays, monthDay, todayIn, weekdayShort } from '../dashboard/week';
 import { ReminderForm } from './reminder-form';
 import { MAX_DATES, WEEKDAYS, lastAllowed, seriesDates, weekdayOf } from './series';
 import { TaskForm } from './task-form';
+import { revealFirstProblem } from './reveal-problem';
 import { fromFamilyLocal } from './time';
 
 export type EventType = 'activity' | 'parenting' | 'family' | 'unavailable';
@@ -98,6 +99,8 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
 })
 export class AddEventPage implements OnInit {
   private readonly api = inject(Api);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
 
@@ -144,6 +147,8 @@ export class AddEventPage implements OnInit {
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
 
   protected readonly activeChildren = computed(() => this.children().filter((c) => c.status === 'Active'));
+  /** Children added but still waiting for the other parent's approval (ADR-0006). */
+  protected readonly pendingChildren = computed(() => this.children().some((c) => c.status === 'PendingApproval'));
   protected readonly parents = computed(() => this.members().filter((m) => m.role === 'Parent'));
   protected readonly coParent = computed(() => this.parents().find((m) => !m.isYou)?.displayName ?? null);
   protected readonly allDay = computed(() => this.value().allDay ?? false);
@@ -250,16 +255,24 @@ export class AddEventPage implements OnInit {
     this.form.patchValue({ childIds: checked ? this.activeChildren().map((c) => c.id) : [] });
   }
 
+  /** Shows the first problem after a refused save (see revealFirstProblem). */
+  private revealProblem(): void {
+    afterNextRender(() => revealFirstProblem(this.host.nativeElement), { injector: this.injector });
+  }
+
   protected async submit(): Promise<void> {
     const type = this.type();
     const family = this.family();
     if (!type || !family) {
       return;
     }
+    // Clear the last attempt's messages first, so only this attempt's problem is shown and focused.
+    this.error.set(null);
     const errors = this.validate(type);
     this.fieldErrors.set(errors);
     if (Object.keys(errors).length > 0) {
       this.form.markAllAsTouched();
+      this.revealProblem();
       return;
     }
 
@@ -288,6 +301,7 @@ export class AddEventPage implements OnInit {
       } else {
         this.error.set(generalMessage(problem));
       }
+      this.revealProblem();
     } finally {
       this.busy.set(false);
     }

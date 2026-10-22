@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { CanMatchFn, Router, UrlSegment, UrlTree } from '@angular/router';
+import { PendingInvitation } from '../invitations/pending-invitation';
 import { AuthStore } from './auth.store';
 
 /**
@@ -39,6 +40,26 @@ export const kidSpace: CanMatchFn = (_route, segments) => {
 export const signedOut: CanMatchFn = () =>
   inject(AuthStore).status() !== 'signed-in' || inject(Router).createUrlTree(['/']);
 
+/**
+ * Registration is for signed-out visitors. An invitation's "Sign up to join" link opened while someone else is signed
+ * in on this browser (the inviter, say) keeps its invitation and goes to it, where a wrong account is told so and can
+ * switch (#211). Before, the redirect home dropped the invitation, and the new account later landed in new-family
+ * setup.
+ */
+export const registerPage: CanMatchFn = () => {
+  const auth = inject(AuthStore);
+  const router = inject(Router);
+  if (auth.status() !== 'signed-in') {
+    return true;
+  }
+  const token = router.currentNavigation()?.extractedUrl.queryParamMap.get('token');
+  if (token) {
+    inject(PendingInvitation).save(token);
+    return router.createUrlTree(['/invitations/accept']);
+  }
+  return router.createUrlTree(['/']);
+};
+
 /** "Who's using Parenthesis?" needs a registered device and nobody signed in (switching profiles signs out first). */
 export const pickerAvailable: CanMatchFn = () => {
   const auth = inject(AuthStore);
@@ -53,16 +74,43 @@ export const pickerAvailable: CanMatchFn = () => {
   }
 };
 
-/** A signed-in parent without a family yet sets one up first. */
+/**
+ * A signed-in parent without a family sets one up first, unless an invitation is waiting on this device: then they
+ * answer it, so an invited co-parent joins the existing family instead of creating a second one (#211). The
+ * invitation page never sends them back here in a loop: its "Not now" defers the invitation until a reload.
+ */
 export const hasFamily: CanMatchFn = async () => {
   // Inject before awaiting: the injection context ends at the first await.
   const auth = inject(AuthStore);
   const router = inject(Router);
+  const pending = inject(PendingInvitation);
 
   // canMatch guards run in parallel; when no parent is signed in, `signedIn` redirects and this one stays out of it.
   if (auth.status() !== 'signed-in') {
     return true;
   }
   const families = auth.families() ?? (await auth.loadFamilies().catch(() => []));
-  return families.length > 0 || router.createUrlTree(['/welcome']);
+  if (families.length > 0) {
+    return true;
+  }
+  return router.createUrlTree([pending.waiting() ? '/invitations/accept' : '/welcome']);
+};
+
+/**
+ * New-family setup is only for a signed-in parent with no family and no waiting invitation, however they get there
+ * (a link, a return URL): a parent with a family goes home, and an invited one to their invitation first (#211).
+ */
+export const needsFamily: CanMatchFn = async () => {
+  const auth = inject(AuthStore);
+  const router = inject(Router);
+  const pending = inject(PendingInvitation);
+
+  if (auth.status() !== 'signed-in') {
+    return true; // `signedIn` handles everyone else.
+  }
+  const families = auth.families() ?? (await auth.loadFamilies().catch(() => []));
+  if (families.length > 0) {
+    return router.createUrlTree(['/']);
+  }
+  return pending.waiting() ? router.createUrlTree(['/invitations/accept']) : true;
 };

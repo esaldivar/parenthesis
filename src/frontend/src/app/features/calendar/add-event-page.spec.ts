@@ -21,14 +21,14 @@ describe('Add event', () => {
     }
   }
 
-  async function open() {
+  async function open(children = CHILDREN) {
     TestBed.configureTestingModule({
       providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
     });
     const harness = await RouterTestingHarness.create('/calendar/new?date=2026-10-20');
     http = TestBed.inject(HttpTestingController);
     await vi.waitFor(() => http.expectOne(F)).then((r) => r.flush(FAMILY));
-    await vi.waitFor(() => http.expectOne(`${F}/children`)).then((r) => r.flush(CHILDREN));
+    await vi.waitFor(() => http.expectOne(`${F}/children`)).then((r) => r.flush(children));
     await settle(harness);
     return harness;
   }
@@ -59,6 +59,65 @@ describe('Add event', () => {
     page().querySelector('form')!.dispatchEvent(new Event('submit'));
     await settle(harness);
   }
+
+  it('never seems to do nothing: a refused save brings the problem into view and focuses its field', async () => {
+    const harness = await open();
+    await choose(harness, 'Parenting time');
+    await submit(harness);
+
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    const kids = page().querySelector('fieldset.kids')!;
+    expect(text(kids)).toContain('Choose which children this parenting time is for.');
+    // The keyboard (and the screen) moves to the children's first checkbox.
+    await vi.waitFor(() => expect(kids.contains(document.activeElement)).toBe(true));
+  });
+
+  it('shows a server error that isn’t about one field and focuses it', async () => {
+    const harness = await open();
+    await choose(harness, 'Parenting time');
+    check('Kai');
+    await submit(harness);
+
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
+      { title: 'Something went wrong' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    await settle(harness);
+    const alert = page().querySelector('form .alert') as HTMLElement;
+    expect(alert).not.toBeNull();
+    await vi.waitFor(() => expect(document.activeElement).toBe(alert));
+  });
+
+  it('focuses this attempt’s problem, not an error left from the last one', async () => {
+    const harness = await open();
+    await choose(harness, 'Parenting time');
+    check('Kai');
+    await submit(harness);
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
+      { title: 'Something went wrong' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    await settle(harness);
+    expect(page().querySelector('form .alert')).not.toBeNull();
+
+    check('Kai'); // Now no child: a new problem.
+    await submit(harness);
+
+    expect(page().querySelector('form .alert')).toBeNull();
+    const kids = page().querySelector('fieldset.kids')!;
+    await vi.waitFor(() => expect(kids.contains(document.activeElement)).toBe(true));
+  });
+
+  it('says why parenting time has no children to choose yet, instead of failing quietly', async () => {
+    const waiting = CHILDREN.map((c) => ({ ...c, status: 'PendingApproval' as const }));
+    const harness = await open(waiting);
+    await choose(harness, 'Parenting time');
+
+    expect(text(page().querySelector('fieldset.kids'))).toContain('Your children are waiting for Sam’s approval.');
+    await submit(harness);
+    expect(text(page().querySelector('fieldset.kids'))).toContain('Choose which children this parenting time is for.');
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+  });
 
   it('offers the four types as whole cards, highlighted when chosen, with no radio buttons or checkmarks', async () => {
     const harness = await open();

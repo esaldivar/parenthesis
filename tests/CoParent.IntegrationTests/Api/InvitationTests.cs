@@ -205,6 +205,84 @@ public sealed class InvitationTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, send.StatusCode);
     }
 
+    // Issue #211: an invited co-parent must join the existing family, never end up with a second one.
+    [Fact]
+    public async Task A_new_account_made_for_the_invitation_joins_the_existing_family_and_creates_none()
+    {
+        var momEmail = ApiSession.NewEmail();
+        using var dad = await ApiSession.SignedInAsync(api, displayName: "Dad");
+        var familyId = await dad.CreateFamilyAsync("Rivera Family");
+        var kai = await JsonAsync(await dad.PostAsync($"/api/families/{familyId}/children", new { firstName = "Kai" }));
+        await dad.PostAsync($"/api/families/{familyId}/invitations", new { email = momEmail });
+        var link = dad.Emails.LatestLink(momEmail, "invited");
+
+        // One device, as in the browser: register from the "Sign up to join" link, confirm from the email, sign in, accept.
+        using var mom = await ApiSession.StartAsync(api);
+        await mom.RegisterConfirmedAsync(momEmail, displayName: "Mom");
+        Assert.Equal(HttpStatusCode.NoContent, (await mom.LoginAsync(momEmail)).StatusCode);
+        var beforeAccepting = await JsonAsync(await mom.GetAsync("/api/me/families"));
+        var accepted = await mom.PostAsync("/api/invitations/accept", new { token = TokenFrom(link) });
+
+        Assert.Equal("/register", link.AbsolutePath);
+        Assert.Empty(beforeAccepting.EnumerateArray());
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        var families = (await JsonAsync(await mom.GetAsync("/api/me/families"))).EnumerateArray().ToList();
+        Assert.Equal([familyId], families.Select(f => f.GetProperty("id").GetGuid()));
+        Assert.Equal([familyId], (await JsonAsync(await dad.GetAsync("/api/me/families"))).EnumerateArray().Select(f => f.GetProperty("id").GetGuid()));
+        // Kai, added by Dad, is the same child for Mom, waiting for her approval (ADR-0006): nothing to recreate.
+        var children = (await JsonAsync(await mom.GetAsync($"/api/families/{familyId}/children"))).EnumerateArray().ToList();
+        Assert.Equal([kai.GetProperty("id").GetGuid()], children.Select(c => c.GetProperty("id").GetGuid()));
+        Assert.Equal("PendingApproval", children[0].GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task A_wrong_account_does_not_use_up_the_invitation_and_answering_twice_changes_nothing()
+    {
+        var momEmail = ApiSession.NewEmail();
+        using var dad = await ApiSession.SignedInAsync(api, displayName: "Dad");
+        var familyId = await dad.CreateFamilyAsync();
+        await dad.PostAsync($"/api/families/{familyId}/invitations", new { email = momEmail });
+        var token = TokenFrom(dad.Emails.LatestLink(momEmail, "invited"));
+        using var someoneElse = await ApiSession.SignedInAsync(api);
+        using var mom = await ApiSession.SignedInAsync(api, displayName: "Mom", email: momEmail);
+
+        var wrong = await someoneElse.PostAsync("/api/invitations/accept", new { token });
+        // A double tap: the same request twice at once.
+        var answers = await Task.WhenAll(
+            mom.PostAsync("/api/invitations/accept", new { token }),
+            mom.PostAsync("/api/invitations/accept", new { token }));
+
+        Assert.Equal(HttpStatusCode.Forbidden, wrong.StatusCode);
+        Assert.Empty((await JsonAsync(await someoneElse.GetAsync("/api/me/families"))).EnumerateArray());
+        Assert.Single(answers, a => a.StatusCode == HttpStatusCode.OK);
+        Assert.All(answers.Where(a => a.StatusCode != HttpStatusCode.OK), a => Assert.True((int)a.StatusCode is 404 or 409, a.StatusCode.ToString()));
+        Assert.Equal([familyId], (await JsonAsync(await mom.GetAsync("/api/me/families"))).EnumerateArray().Select(f => f.GetProperty("id").GetGuid()));
+        Assert.Equal(2, (await JsonAsync(await dad.GetAsync($"/api/families/{familyId}"))).GetProperty("members").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task On_an_invite_only_site_an_invited_co_parent_must_still_be_listed()
+    {
+        var dadEmail = ApiSession.NewEmail();
+        var listed = ApiSession.NewEmail();
+        var unlisted = ApiSession.NewEmail();
+        await using var inviteOnly = api.WithWebHostBuilder(b => b
+            .UseSetting("Identity:SignUp:InviteOnly", "true")
+            .UseSetting("Identity:SignUp:AllowedEmails", $"{dadEmail},{listed}"));
+        using var dad = await ApiSession.SignedInAsync(inviteOnly, displayName: "Dad", email: dadEmail);
+        var familyId = await dad.CreateFamilyAsync();
+        await dad.PostAsync($"/api/families/{familyId}/invitations", new { email = unlisted });
+        using var stranger = await ApiSession.StartAsync(inviteOnly);
+
+        // An invitation isn't a way past the tester list.
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.RegisterAsync(unlisted)).StatusCode);
+
+        await dad.PostAsync($"/api/families/{familyId}/invitations", new { email = listed });
+        var token = TokenFrom(dad.Emails.LatestLink(listed, "invited"));
+        using var mom = await ApiSession.SignedInAsync(inviteOnly, displayName: "Mom", email: listed);
+        Assert.Equal(HttpStatusCode.OK, (await mom.PostAsync("/api/invitations/accept", new { token })).StatusCode);
+    }
+
     private static string TokenFrom(Uri link) => QueryHelpers.ParseQuery(link.Query)["token"].ToString();
 
     private static async Task<JsonElement> JsonAsync(HttpResponseMessage response) =>

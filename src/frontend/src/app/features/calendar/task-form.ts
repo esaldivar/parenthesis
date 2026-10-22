@@ -14,6 +14,7 @@ import { Icon } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
 import { PlainDate } from '../dashboard/model';
 import { todayIn } from '../dashboard/week';
+import { revealFirstProblem } from './reveal-problem';
 
 export const TASK_TITLE_MAX = 80;
 export const TASK_DETAILS_MAX = 1000;
@@ -153,15 +154,24 @@ export class TaskForm implements OnInit {
     }
   }
 
+  /** Shows the first problem after a refused save (see revealFirstProblem). */
+  private revealProblem(): void {
+    afterNextRender(() => revealFirstProblem(this.host.nativeElement), { injector: this.injector });
+  }
+
   protected async submit(): Promise<void> {
     const family = this.family();
     if (!family || this.busy()) {
       return;
     }
+    // Clear the last attempt's messages first, so only this attempt's problem is shown and focused.
+    this.error.set(null);
+    this.conflict.set(false);
     const errors = this.validate();
     this.fieldErrors.set(errors);
     if (Object.keys(errors).length > 0) {
       this.form.markAllAsTouched();
+      this.revealProblem();
       return;
     }
 
@@ -187,6 +197,7 @@ export class TaskForm implements OnInit {
       } else {
         this.error.set(generalMessage(problem));
       }
+      this.revealProblem();
     } finally {
       this.busy.set(false);
     }
