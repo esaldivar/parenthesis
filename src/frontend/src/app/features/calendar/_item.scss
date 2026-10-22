@@ -52,6 +52,13 @@
   &[data-status='change-pending'] {
     border: 2px dashed var(--color-outline);
   }
+  // Declined (#199): a plain surface, struck-through title and the "Declined" label. Neither the solid fill of a
+  // confirmed item nor the hatching of a pending one.
+  &[data-status='declined'] {
+    background: var(--color-surface);
+    border: 1px solid var(--color-outline);
+    color: var(--color-text-secondary);
+  }
 }
 
 // A calendar item is a button: no default chrome, full keyboard focus, 44px tall where it stands alone.

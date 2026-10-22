@@ -14,6 +14,8 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
 
     public DbSet<CalendarEvent> Events => Set<CalendarEvent>();
 
+    public DbSet<EventDismissal> Dismissals => Set<EventDismissal>();
+
     public DbSet<CalendarSeries> Series => Set<CalendarSeries>();
 
     public DbSet<Reminder> Reminders => Set<Reminder>();
@@ -123,6 +125,13 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
             s.ToTable("task_seen");
             s.HasKey(x => new { x.TaskId, x.MembershipId });
             s.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<EventDismissal>(d =>
+        {
+            d.ToTable("event_dismissals");
+            d.HasKey(x => new { x.EventId, x.MembershipId });
+            d.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<EventChild>(c =>

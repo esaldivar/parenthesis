@@ -76,6 +76,12 @@ internal sealed class CalendarEvent : Entity, IFamilyScoped
     /// <summary>Auto-confirmed while the family had one parent (architecture decision 7); shown so the co-parent can review it.</summary>
     public bool ConfirmedBeforeCoParentJoined { get; set; }
 
+    /// <summary>
+    /// A parent declined this proposed event (#199): it shows to both parents as Declined until its dates pass or each
+    /// removes it from their own calendar. False when a request was withdrawn or expired; those just go.
+    /// </summary>
+    public bool DeclinedByParent { get; set; }
+
     public DateTimeOffset CreatedAt { get; init; }
 
     /// <summary>The repeating series this date belongs to (#193), if any. Each date is still its own event.</summary>
@@ -124,6 +130,21 @@ internal sealed class EventChild : IFamilyScoped
     public Guid EventId { get; init; }
 
     public Guid ChildProfileId { get; init; }
+}
+
+/// <summary>
+/// A parent removed a declined request from their own calendar (#199). Only that parent's view changes: the co-parent
+/// still sees it, and the approvals history keeps the decision either way.
+/// </summary>
+internal sealed class EventDismissal : IFamilyScoped
+{
+    public Guid FamilyId { get; init; }
+
+    public Guid EventId { get; init; }
+
+    public Guid MembershipId { get; init; }
+
+    public DateTimeOffset DismissedAt { get; init; }
 }
 
 /// <summary>The editable "material" fields of an event: what a change request proposes (before → after).</summary>

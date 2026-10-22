@@ -52,6 +52,10 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<bool>("DeclinedByParent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("declined_by_parent");
+
                     b.Property<DateTimeOffset>("EndsAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ends_at");
@@ -182,6 +186,30 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasDatabaseName("ix_event_children_child_profile_id");
 
                     b.ToTable("event_children", "calendar");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.EventDismissal", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<DateTimeOffset>("DismissedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dismissed_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.HasKey("EventId", "MembershipId")
+                        .HasName("pk_event_dismissals");
+
+                    b.ToTable("event_dismissals", "calendar");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Calendar.Domain.Reminder", b =>

@@ -141,7 +141,7 @@ internal static class ApprovalEndpoints
                 if (decision == Decision.Reject)
                 {
                     request.Resolve(ChangeRequestStatus.Rejected, now);
-                    await handler.RejectAsync(target, ct);
+                    await handler.RejectAsync(target with { DeclinedByParent = true }, ct);
                 }
                 else if (request.Approvals >= Required(request, s.Handlers, parents))
                 {

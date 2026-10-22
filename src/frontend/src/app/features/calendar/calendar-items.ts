@@ -13,9 +13,10 @@ export type ItemKind = 'parenting' | 'family' | 'activity' | 'unavailable' | 're
 
 /**
  * Text first, never colour alone. `pending` waits for the other parent and is not on the schedule yet;
- * `change-pending` is confirmed, with a change or cancellation waiting for approval (it stays as it is until then).
+ * `change-pending` is confirmed, with a change or cancellation waiting for approval (it stays as it is until then);
+ * `declined` was proposed and a parent declined it (#199): never on the schedule, shown until removed or past.
  */
-export type ItemStatus = 'confirmed' | 'pending' | 'change-pending';
+export type ItemStatus = 'confirmed' | 'pending' | 'change-pending' | 'declined';
 
 export interface Person {
   readonly id: string;
@@ -105,6 +106,17 @@ function kindOf(category: CalendarCategory): ItemKind {
   }
 }
 
+function statusOf(event: CalendarEvent): ItemStatus {
+  switch (event.status) {
+    case 'PendingApproval':
+      return 'pending';
+    case 'Rejected':
+      return 'declined';
+    default:
+      return event.pendingChange !== 'None' ? 'change-pending' : 'confirmed';
+  }
+}
+
 /** Builds the calendar's items from API events. Children who aren't active (or were removed) are left out. */
 export function toItems(
   events: readonly CalendarEvent[],
@@ -144,7 +156,7 @@ export function toItems(
       lastDate: last,
       allDay: event.allDay,
       spansDays: event.allDay || last > firstDate,
-      status: event.status === 'PendingApproval' ? 'pending' : event.pendingChange !== 'None' ? 'change-pending' : 'confirmed',
+      status: statusOf(event),
       pendingChange: event.pendingChange,
       beforeCoParentJoined: event.confirmedBeforeCoParentJoined,
       children: event.childIds

@@ -226,6 +226,12 @@
   height: 14px;
   border-radius: 4px;
 }
+/* A declined swatch is struck through, like a declined item's title. */
+.swatch[data-status='declined'] {
+  background:
+    linear-gradient(to top right, transparent 44%, var(--color-text-secondary) 44% 56%, transparent 56%),
+    var(--color-surface);
+}
 /* The calendar key is for desktop; phones don't show a legend (handoff). */
 @container (min-width: 720px) {
   .key {

@@ -47,7 +47,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_rejected_joint_event_leaves_the_calendar()
+    public async Task A_declined_joint_event_whose_dates_have_passed_isnt_shown()
     {
         var f = await FamilyAsync();
         using var _ = f;
@@ -122,13 +122,34 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         await f.Dad.PostAsync(Events(f), Activity("Piano Lesson", f.AuroraId));
         await f.Dad.PostAsync(Events(f), ParentingTime("Time with Dad", f.DadMembershipId, f.KaiId));
         await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddHours(8), endsAt = _monday.AddHours(9), notes = "Private" });
+        // A declined request (#199) that parents still see: always ahead of the real clock.
+        var later = new DateTimeOffset(DateTime.UtcNow.Date.AddDays(14), TimeSpan.Zero);
+        var declined = await JsonAsync(await f.Dad.PostAsync(Events(f), new
+        {
+            category = "ParentingTime",
+            title = "Long weekend with Dad",
+            startsAt = later,
+            endsAt = later.AddDays(2),
+            allDay = true,
+            childIds = new[] { f.KaiId },
+            caregiverMembershipId = f.DadMembershipId,
+        }));
+        await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{declined.GetProperty("changeRequestId").GetGuid()}/reject");
+        var laterRange = $"{Events(f)}?from={Q(later.AddDays(-1))}&to={Q(later.AddDays(7))}";
         using var kai = await KaiSignedInAsync(f);
 
         var kaisWeek = await WeekAsync(kai, f);
+        var kaisLater = (await JsonAsync(await kai.GetAsync(laterRange))).EnumerateArray().ToList();
+        var dadsLater = (await JsonAsync(await f.Dad.GetAsync(laterRange))).EnumerateArray().ToList();
 
         Assert.Equal(["Soccer Practice"], kaisWeek.Select(e => e.GetProperty("title").GetString()));
         Assert.All(kaisWeek, e => Assert.Equal(JsonValueKind.Null, e.GetProperty("notes").ValueKind));
         Assert.Equal(HttpStatusCode.Forbidden, (await kai.PostAsync(Events(f), Activity("Sleepover", f.KaiId))).StatusCode);
+        Assert.Empty(kaisLater);
+        Assert.Equal("Rejected", Assert.Single(dadsLater).GetProperty("status").GetString());
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await kai.PostAsync($"{Events(f)}/{declined.GetProperty("id").GetGuid()}/dismiss")).StatusCode);
     }
 
     [Theory]

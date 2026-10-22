@@ -63,6 +63,9 @@
   border-style: dashed;
   background: var(--color-status-pending-bg);
 }
+.status[data-status='declined'] {
+  background: var(--color-status-rejected-bg);
+}
 .explain {
   margin: 0;
 }

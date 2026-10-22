@@ -22,7 +22,10 @@ export function whenText(item: CalendarItem): string {
     : `${timeLabel(item.start.slice(11))} – ${timeLabel(item.end.slice(11))}`;
 }
 
-/** The status in words. Pending items are not on the schedule; a pending change leaves the event as it is for now. */
+/**
+ * The status in words. Pending and declined items are not on the schedule; a pending change leaves the event as it is
+ * for now.
+ */
 export function statusText(item: CalendarItem): string | null {
   if (item.kind === 'task') {
     return item.done ? 'Done' : null;
@@ -32,6 +35,8 @@ export function statusText(item: CalendarItem): string | null {
       return 'Pending approval';
     case 'change-pending':
       return item.pendingChange === 'Cancel' ? 'Cancellation pending' : 'Change pending';
+    case 'declined':
+      return 'Declined';
     default:
       return null;
   }
@@ -65,7 +70,9 @@ export function itemSummary(item: CalendarItem): string {
     <span class="visually-hidden">{{ summary() }}</span>
     <span class="row" aria-hidden="true">
       <app-icon class="icon" [name]="item().icon" [size]="18" />
-      <span class="title">{{ item().concealed ? 'Hidden: unavailable' : item().title }}</span>
+      <span class="title" [class.title--declined]="item().status === 'declined'">{{
+        item().concealed ? 'Hidden: unavailable' : item().title
+      }}</span>
     </span>
     @if (!compact()) {
       <span class="when" aria-hidden="true">{{ when() }}</span>
@@ -81,7 +88,9 @@ export function itemSummary(item: CalendarItem): string {
       }
     }
     @if (status(); as status) {
-      <span class="status" aria-hidden="true" [attr.data-done]="item().done ? 'true' : null">{{ status }}</span>
+      <span class="status" aria-hidden="true" [attr.data-done]="item().done ? 'true' : null" [attr.data-status]="item().status">{{
+        status
+      }}</span>
     }
   `,
   styles: `
@@ -126,6 +135,14 @@ export function itemSummary(item: CalendarItem): string {
       border: 1px dashed var(--color-outline);
       background: var(--color-surface);
       white-space: nowrap;
+    }
+    /* Declined (#199): struck through and labelled, so it never reads as a confirmed plan. */
+    .title--declined {
+      text-decoration: line-through;
+    }
+    .status[data-status='declined'] {
+      border-style: solid;
+      background: var(--color-status-rejected-bg);
     }
     /* A done task: solid, never the dashed look of something pending. */
     .status[data-done='true'] {

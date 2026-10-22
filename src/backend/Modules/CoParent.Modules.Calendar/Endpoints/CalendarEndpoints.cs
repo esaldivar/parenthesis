@@ -92,18 +92,25 @@ internal static class CalendarEndpoints
         calendar.MapGet("/{eventId:guid}/conflicts", ConflictsAsync);
         calendar.MapPatch("/{eventId:guid}", UpdateAsync);
         calendar.MapDelete("/{eventId:guid}", CancelAsync);
+        calendar.MapPost("/{eventId:guid}/dismiss", DismissAsync);
     }
 
     /// <summary>Non-blocking: the proposed parenting time overlaps the other parent's unavailable time (CALENDAR_DECISIONS.md).</summary>
     public const string OverlapsCoParentUnavailable = "OverlapsCoParentUnavailable";
 
     /// <summary>
-    /// Events overlapping [from, to). Parents see pending and confirmed events; an Unavailable event's notes are shown
-    /// only to its owner. A child sees only confirmed events that include them, with no notes, no unavailability and
-    /// nothing pending (children never see approvals or disagreements).
+    /// Events overlapping [from, to). Parents see pending and confirmed events, and declined requests until their dates
+    /// pass or they remove them from their own calendar (#199); an Unavailable event's notes are shown only to its
+    /// owner. A child sees only confirmed events that include them, with no notes, no unavailability and nothing
+    /// pending or declined (children never see approvals or disagreements).
     /// </summary>
     private static async Task<Results<Ok<List<EventView>>, ValidationProblem>> ListAsync(
-        DateTimeOffset from, DateTimeOffset to, ITenantContext tenant, CalendarDbContext db, CancellationToken cancellationToken)
+        DateTimeOffset from,
+        DateTimeOffset to,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
     {
         if (to <= from || to - from > MaxRange)
         {
@@ -120,7 +127,7 @@ internal static class CalendarEndpoints
             ? query.Where(e => e.Status == EventStatus.Confirmed
                 && e.Category != EventCategory.Unavailable
                 && e.Children.Any(c => c.ChildProfileId == tenant.MembershipId))
-            : query.Where(e => e.Status == EventStatus.Confirmed || e.Status == EventStatus.PendingApproval);
+            : DeclinedStillShown(query, db, tenant.MembershipId, clock.GetUtcNow());
 
         var events = await query.OrderBy(e => e.StartsAt).ToListAsync(cancellationToken);
         var series = await SeriesForAsync(db, tenant, events, cancellationToken);
@@ -217,6 +224,51 @@ internal static class CalendarEndpoints
     }
 
     /// <summary>One event, for a parent: the same view the list gives (an Unavailable event's notes only to its owner).</summary>
+    /// <summary>
+    /// A parent's list: pending and confirmed events, plus declined requests (owner decisions, October 22, 2026) that
+    /// haven't ended yet and that this parent hasn't removed from their calendar.
+    /// </summary>
+    private static IQueryable<CalendarEvent> DeclinedStillShown(
+        IQueryable<CalendarEvent> query, CalendarDbContext db, Guid membershipId, DateTimeOffset now) =>
+        query.Where(e => e.Status == EventStatus.Confirmed
+            || e.Status == EventStatus.PendingApproval
+            || (e.Status == EventStatus.Rejected
+                && e.DeclinedByParent
+                && e.EndsAt > now
+                && !db.Dismissals.Any(d => d.EventId == e.Id && d.MembershipId == membershipId)));
+
+    /// <summary>
+    /// Removes a declined request from the caller's own calendar (#199). Only ever the caller's: the membership comes
+    /// from the signed-in session. The co-parent's calendar and the approvals history don't change.
+    /// </summary>
+    private static async Task<Results<NoContent, NotFound, ForbidHttpResult>> DismissAsync(
+        Guid eventId, ITenantContext tenant, CalendarDbContext db, TimeProvider clock, CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (!await db.Events.AnyAsync(e => e.Id == eventId && e.Status == EventStatus.Rejected && e.DeclinedByParent, cancellationToken))
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!await db.Dismissals.AnyAsync(d => d.EventId == eventId && d.MembershipId == tenant.MembershipId, cancellationToken))
+        {
+            db.Dismissals.Add(new EventDismissal
+            {
+                FamilyId = tenant.FamilyId,
+                EventId = eventId,
+                MembershipId = tenant.MembershipId,
+                DismissedAt = clock.GetUtcNow(),
+            });
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return TypedResults.NoContent();
+    }
+
     private static async Task<Results<Ok<EventView>, NotFound, ForbidHttpResult>> GetAsync(
         Guid eventId, ITenantContext tenant, CalendarDbContext db, CancellationToken cancellationToken)
     {
