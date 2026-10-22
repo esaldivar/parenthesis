@@ -107,6 +107,7 @@
           <li><span class="swatch" data-kind="activity" data-category="Activity"></span>Activity</li>
           <li><span class="swatch" data-kind="activity" data-status="pending"></span>Pending approval</li>
           <li><span class="swatch" data-kind="unavailable"></span>Unavailable</li>
+          <li><span class="swatch" data-kind="reminder"></span>Reminder</li>
         </ul>
       }
     }
@@ -114,13 +115,24 @@
 </div>
 
 @if (selected(); as item) {
-  <app-event-details
-    [item]="item"
-    [event]="selectedEvent()"
-    [members]="members()"
-    [familyId]="family()!.id"
-    [timeZone]="family()!.timeZone"
-    (closed)="close()"
-    (changed)="changed($event)"
-  />
+  @if (selectedReminder(); as reminder) {
+    <app-reminder-details
+      [item]="item"
+      [reminder]="reminder"
+      [members]="members()"
+      [familyId]="family()!.id"
+      (closed)="close()"
+      (changed)="changed($event)"
+    />
+  } @else {
+    <app-event-details
+      [item]="item"
+      [event]="selectedEvent()"
+      [members]="members()"
+      [familyId]="family()!.id"
+      [timeZone]="family()!.timeZone"
+      (closed)="close()"
+      (changed)="changed($event)"
+    />
+  }
 }

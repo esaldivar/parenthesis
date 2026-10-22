@@ -190,6 +190,32 @@ export interface NewCalendarEvent {
   readonly caregiverMembershipId?: string;
 }
 
+export type RepeatFrequency = 'None' | 'Daily' | 'Weekly' | 'Monthly';
+
+/**
+ * A shared reminder (#72). Either parent changes it at once, with no approval. In a list, a repeating reminder comes
+ * once per occurrence: `startsAt` is that occurrence and `seriesStartsAt` the first one.
+ */
+export interface Reminder {
+  readonly id: string;
+  readonly title: string;
+  readonly startsAt: string;
+  readonly allDay: boolean;
+  readonly childId: string | null;
+  readonly details: string | null;
+  readonly createdByMembershipId: string;
+  readonly createdAt: string;
+  /** The other parent who last edited it (null when nobody did, or you did): the quiet "edited by" note. */
+  readonly editedBy: string | null;
+  readonly lastEditedAt: string | null;
+  /** Parents who opened its details, and when. Set only by opening the details. */
+  readonly seenBy: readonly { membershipId: string; seenAt: string }[];
+  readonly repeat: RepeatFrequency;
+  readonly repeatUntil: string | null;
+  readonly repeatCount: number | null;
+  readonly seriesStartsAt: string;
+}
+
 export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'childIds'>> & {
   /** An optional note to the other parent, kept with the approval request (a swap's reason). Up to 500 characters. */
   readonly reason?: string;
@@ -296,6 +322,15 @@ export class Api {
   /** 204 when cancelled at once; 202 with the event when it waits for the other parent. */
   cancelEvent = (familyId: string, eventId: string) =>
     this.call(this.http.delete<CalendarEvent | null>(`/api/families/${familyId}/calendar/events/${eventId}`));
+
+  // Shared reminders (parents only). Listing never marks anything seen; opening the details calls reminderSeen.
+  reminders = (familyId: string, from: string, to: string) =>
+    this.call(this.http.get<Reminder[]>(`/api/families/${familyId}/calendar/reminders`, { params: { from, to } }));
+  reminderSeen = (familyId: string, reminderId: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}/seen`, {}));
+  /** Deletes the reminder (every repeat of it) for both parents, at once. */
+  deleteReminder = (familyId: string, reminderId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}`));
 
   private call<T>(request: import('rxjs').Observable<T>): Promise<T> {
     return firstValueFrom(request);

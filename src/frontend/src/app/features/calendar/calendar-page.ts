@@ -12,18 +12,19 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
-import { Api, CalendarEvent, Child, FamilyMember } from '../../core/api/api';
+import { Api, CalendarEvent, Child, FamilyMember, Reminder } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Icon } from '../../shared/icon/icon';
 import { PlainDate } from '../dashboard/model';
 import { addDays, startOfWeek, todayIn, weekLabelLong } from '../dashboard/week';
-import { CalendarItem, forChild, toItems } from './calendar-items';
+import { CalendarItem, forChild, reminderItems, toItems } from './calendar-items';
 import { CalendarList } from './calendar-list';
 import { CalendarMonth, monthGrid, startOfMonth } from './calendar-month';
 import { CalendarWeek } from './calendar-week';
 import { EventDetails } from './event-details';
+import { ReminderDetails } from './reminder-details';
 import { fromFamilyLocal } from './time';
 
 export type CalendarView = 'week' | 'month' | 'list';
@@ -59,7 +60,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
 @Component({
   selector: 'app-calendar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, EmptyState, Icon, CalendarWeek, CalendarMonth, CalendarList, EventDetails],
+  imports: [MatButtonModule, RouterLink, EmptyState, Icon, CalendarWeek, CalendarMonth, CalendarList, EventDetails, ReminderDetails],
   templateUrl: './calendar-page.html',
   styleUrl: './calendar-page.scss',
 })
@@ -123,13 +124,17 @@ export class CalendarPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly loadError = signal<string | null>(null);
   private readonly events = signal<readonly CalendarEvent[]>([]);
+  private readonly reminders = signal<readonly Reminder[]>([]);
   protected readonly members = signal<readonly FamilyMember[]>([]);
   protected readonly children = signal<readonly Child[]>([]);
   private readonly reloads = signal(0);
   /** A message after adding or cancelling, read out politely. */
   protected readonly notice = signal<string | null>(null);
 
-  protected readonly items = computed(() => toItems(this.events(), this.members(), this.children(), this.timeZone()));
+  protected readonly items = computed(() => [
+    ...toItems(this.events(), this.members(), this.children(), this.timeZone()),
+    ...reminderItems(this.reminders(), this.members(), this.children(), this.timeZone()),
+  ]);
   protected readonly childFilter = computed(() => {
     const child = this.child();
     return this.children().some((c) => c.id === child) ? child! : null;
@@ -139,6 +144,10 @@ export class CalendarPage {
 
   protected readonly selected = signal<CalendarItem | null>(null);
   protected readonly selectedEvent = computed(() => this.events().find((e) => e.id === this.selected()?.id) ?? null);
+  protected readonly selectedReminder = computed(() => {
+    const item = this.selected();
+    return item?.reminderId ? (this.reminders().find((r) => `reminder:${r.id}:${r.startsAt}` === item.id) ?? null) : null;
+  });
   private opener: HTMLElement | null = null;
 
   constructor() {
@@ -179,8 +188,10 @@ export class CalendarPage {
     try {
       const zone = this.timeZone();
       const needsFamily = this.members().length === 0;
-      const [events, details, children] = await Promise.all([
-        this.api.calendarEvents(familyId, fromFamilyLocal(`${from}T00:00`, zone), fromFamilyLocal(`${to}T00:00`, zone)),
+      const [fromInstant, toInstant] = [fromFamilyLocal(`${from}T00:00`, zone), fromFamilyLocal(`${to}T00:00`, zone)];
+      const [events, reminders, details, children] = await Promise.all([
+        this.api.calendarEvents(familyId, fromInstant, toInstant),
+        this.api.reminders(familyId, fromInstant, toInstant),
         needsFamily ? this.api.family(familyId) : Promise.resolve(null),
         needsFamily ? this.api.children(familyId) : Promise.resolve(null),
       ]);
@@ -194,9 +205,10 @@ export class CalendarPage {
         this.children.set(children);
       }
       this.events.set(events);
+      this.reminders.set(reminders);
       this.state.set('ready');
       const open = this.selected();
-      if (open && !events.some((e) => e.id === open.id)) {
+      if (open && !this.items().some((i) => i.id === open.id)) {
         this.selected.set(null);
       }
     } catch (error) {

@@ -1,11 +1,14 @@
-import { CalendarCategory, CalendarEvent, CalendarWarning, Child, FamilyMember } from '../../core/api/api';
+import { CalendarCategory, CalendarEvent, CalendarWarning, Child, FamilyMember, Reminder } from '../../core/api/api';
 import { IconName } from '../../shared/icon/icon';
 import { LocalDateTime, PlainDate } from '../dashboard/model';
-import { daysBetween } from '../dashboard/week';
+import { addDays, daysBetween } from '../dashboard/week';
 import { lastDate, toFamilyLocal } from './time';
 
-/** How an item reads on the calendar. Activities cover school, medical, dental, birthdays and the rest. */
-export type ItemKind = 'parenting' | 'family' | 'activity' | 'unavailable';
+/**
+ * How an item reads on the calendar. Activities cover school, medical, dental, birthdays and the rest. Reminders
+ * (#72) are shared notes for a day, not events: no location, approval or completion.
+ */
+export type ItemKind = 'parenting' | 'family' | 'activity' | 'unavailable' | 'reminder';
 
 /**
  * Text first, never colour alone. `pending` waits for the other parent and is not on the schedule yet;
@@ -23,7 +26,7 @@ export interface CalendarItem {
   readonly id: string;
   readonly title: string;
   readonly kind: ItemKind;
-  readonly category: CalendarCategory;
+  readonly category: CalendarCategory | 'Reminder';
   readonly categoryLabel: string;
   readonly icon: IconName;
   readonly start: LocalDateTime;
@@ -47,6 +50,8 @@ export interface CalendarItem {
   /** Unavailable notes are only ever sent to their owner. */
   readonly notes: string | null;
   readonly warnings: readonly CalendarWarning[];
+  /** Reminders only: the reminder's id (`id` is per occurrence, so repeats stay distinct). */
+  readonly reminderId?: string;
 }
 
 const CATEGORY_LABELS: Record<CalendarCategory, string> = {
@@ -144,6 +149,53 @@ export function toItems(
       location: event.location,
       notes: event.notes,
       warnings: event.warnings,
+    } satisfies CalendarItem;
+  });
+}
+
+/** A timed reminder is a moment; it takes one half-hour slot on the week grid. */
+const REMINDER_SLOT_MINUTES = 30;
+
+/** Builds the calendar's items from reminders (one per occurrence). A child who isn't active is left out. */
+export function reminderItems(
+  reminders: readonly Reminder[],
+  members: readonly FamilyMember[],
+  children: readonly Child[],
+  timeZone: string,
+): CalendarItem[] {
+  const name = (membershipId: string) => members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
+  const me = members.find((m) => m.isYou)?.membershipId;
+  return reminders.map((reminder) => {
+    const start = toFamilyLocal(reminder.startsAt, timeZone);
+    const date = start.slice(0, 10);
+    const end = reminder.allDay
+      ? `${addDays(date, 1)}T00:00`
+      : toFamilyLocal(new Date(Date.parse(reminder.startsAt) + REMINDER_SLOT_MINUTES * 60_000).toISOString(), timeZone);
+    const child = children.find((c) => c.id === reminder.childId);
+    return {
+      id: `reminder:${reminder.id}:${reminder.startsAt}`,
+      reminderId: reminder.id,
+      title: reminder.title,
+      kind: 'reminder',
+      category: 'Reminder',
+      categoryLabel: 'Reminder',
+      icon: 'bell',
+      start,
+      end,
+      firstDate: date,
+      lastDate: date,
+      allDay: reminder.allDay,
+      spansDays: reminder.allDay,
+      status: 'confirmed',
+      pendingChange: 'None',
+      beforeCoParentJoined: false,
+      children: child ? [{ id: child.id, name: child.firstName }] : [],
+      parents: [],
+      ownerName: name(reminder.createdByMembershipId),
+      isMine: reminder.createdByMembershipId === me,
+      location: null,
+      notes: reminder.details,
+      warnings: [],
     } satisfies CalendarItem;
   });
 }
