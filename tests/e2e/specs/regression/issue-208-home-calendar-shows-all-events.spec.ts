@@ -42,9 +42,9 @@ test.describe('Issue #208: the home calendar shows the week’s events', { tag: 
         await page.emulateMedia({ colorScheme: scheme });
         await page.goto(`/?week=${day}`);
         const grid = page.locator('app-week-calendar .grid');
-        await expect(grid.getByText('Dentist')).toBeVisible();
+        await expect(grid.getByText('Dentist', { exact: true })).toBeVisible();
         for (const title of ['Field trip', 'Teacher workday', 'Two-day camp', 'You’re unavailable']) {
-          await expect(grid.locator('.allday').getByText(title), `${title} (${scheme})`).toBeVisible();
+          await expect(grid.locator('.allday').getByText(title, { exact: true }), `${title} (${scheme})`).toBeVisible();
         }
       }
     } finally {

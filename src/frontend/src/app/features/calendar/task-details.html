@@ -16,7 +16,7 @@
     </div>
   }
 
-  <header class="panel__head">
+  <div class="panel__head">
     <span class="panel__icon"><app-icon name="note" [size]="24" /></span>
     <div class="panel__titles">
       <h2 id="task-details-title" tabindex="-1" cdkFocusInitial>{{ current().title }}</h2>
@@ -25,7 +25,7 @@
     <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close details">
       <app-icon name="close" />
     </button>
-  </header>
+  </div>
 
   <p class="status" [attr.data-done]="done() ? 'true' : null">{{ done() ? 'Done' : 'To do' }}</p>
 

@@ -267,4 +267,66 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await family.dispose();
     }
   });
+
+  test('an event’s block on the home page opens its details, and Escape returns to it (#213)', async ({ page }) => {
+    const family = await familyWithKai();
+    const { dad, familyId, kaiId } = family;
+    try {
+      await dad.json(dad.post(events(familyId), { category: 'Activity', title: 'Swim lesson', childIds: [kaiId], startsAt: at(20), endsAt: at(21) }));
+
+      await signIn(page, dad.email);
+      await page.goto(`/?week=${tuesday}`);
+      const block = page.getByRole('button', { name: 'Open details: Swim lesson' }).first();
+      await block.click();
+
+      await expect(details(page).getByRole('heading', { name: 'Swim lesson' })).toBeVisible();
+      await expect(details(page)).toContainText('Confirmed');
+      await page.keyboard.press('Escape');
+      await expect(details(page)).toHaveCount(0);
+      await expect(block).toBeFocused();
+      // Still on the home page: nothing was changed or saved by opening it.
+      await expect(page).toHaveURL(/\/\?week=/);
+    } finally {
+      await family.dispose();
+    }
+  });
+
+  test('tapping empty time on the Calendar and home weeks opens Add at that day and half-hour (#212)', async ({ page }) => {
+    const family = await familyWithKai();
+    const { dad, familyId, kaiId } = family;
+    try {
+      await dad.json(dad.post(events(familyId), { category: 'Activity', title: 'Piano lesson', childIds: [kaiId], startsAt: at(15), endsAt: at(16) }));
+      await signIn(page, dad.email);
+
+      /** Taps 5:00 PM in Tuesday's column of a week grid (the column covers the whole day). */
+      async function tapFivePm(column: ReturnType<Page['locator']>) {
+        await column.evaluate((el, fraction) => {
+          const scroller = el.closest('.grid__body') as HTMLElement;
+          scroller.scrollTop = el.getBoundingClientRect().height * fraction - 100;
+        }, 17 / 24);
+        const box = (await column.boundingBox())!;
+        await page.mouse.click(box.x + box.width / 2, box.y + (box.height * 17) / 24 + 4);
+      }
+
+      for (const [where, url] of [
+        ['Calendar', `/calendar?date=${tuesday}`],
+        ['home', `/?week=${tuesday}`],
+      ] as const) {
+        await test.step(where, async () => {
+          await page.goto(url);
+          await tapFivePm(page.getByRole('button', { name: /^Add on Tuesday/ }));
+          await expect(page).toHaveURL(new RegExp(`/calendar/new\\?date=${tuesday}&time=17:00$`));
+          await page.getByRole('button', { name: /Activity/ }).click();
+          await expect(page.locator('input[formcontrolname="startTime"]')).toHaveValue('17:00');
+          await expect(page.locator('input[formcontrolname="endTime"]')).toHaveValue('18:00');
+        });
+      }
+
+      // Nothing was added by tapping: only the piano lesson is there.
+      const week = await dad.json<CalendarEvent[]>(dad.get(events(familyId), { from: monday.toISOString(), to: addHours(monday, 24 * 7).toISOString() }));
+      expect(week.map((e) => e.title)).toEqual(['Piano lesson']);
+    } finally {
+      await family.dispose();
+    }
+  });
 });

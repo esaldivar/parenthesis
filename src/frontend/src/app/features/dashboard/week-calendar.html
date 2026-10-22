@@ -51,6 +51,13 @@
         @if (state() === 'ready') {
           <div class="grid__allday-label" aria-hidden="true">All day</div>
           <ol class="allday" aria-label="All day" [style.--lanes]="allDayLanes()">
+            @if (live()) {
+              <!-- A tap on the row's empty space adds on that day (#212): pointer only, as the day columns below do it
+                   for keyboards. -->
+              <li class="tap-add" aria-hidden="true">
+                <button type="button" class="tap-add__button" tabindex="-1" (click)="addInAllDayRow($event)"></button>
+              </li>
+            }
             @for (block of allDay(); track block.key) {
               @let place = placement(block);
               @if (place) {
@@ -101,6 +108,11 @@
                       }
                     </span>
                   }
+                  @if (live() && eventOf(block); as id) {
+                    <button type="button" class="open" (click)="openEvent.emit(id)">
+                      <span class="visually-hidden">Open details: {{ block.title }}</span>
+                    </button>
+                  }
                 </li>
               }
             }
@@ -138,6 +150,11 @@
                   @if (block.event.status !== 'confirmed') {
                     <app-status-label [status]="block.event.status" />
                   }
+                  @if (live()) {
+                    <button type="button" class="open" (click)="openEvent.emit(block.event.id)">
+                      <span class="visually-hidden">Open details: {{ block.event.title }}</span>
+                    </button>
+                  }
                 </li>
               }
             }
@@ -159,6 +176,14 @@
           </div>
           @for (day of days(); track day.date) {
             <ol class="daycol" [attr.aria-label]="'Activities on ' + day.longLabel" [style.--lanes]="day.lanes">
+              <!-- Behind the activities: a tap adds at that half-hour; from the keyboard it adds on that day (#212). -->
+              @if (live()) {
+                <li class="slot-add">
+                  <button type="button" class="slot-add__button" (click)="addInColumn($event, day.date)">
+                    <span class="slot-add__label">Add on {{ day.longLabel }}</span>
+                  </button>
+                </li>
+              }
               @for (event of day.events; track event.id) {
                 @let slot = day.placements.get(event.id);
                 @if (slot) {
@@ -188,6 +213,11 @@
                     </span>
                     @if (event.status !== 'confirmed') {
                       <app-status-label [status]="event.status" />
+                    }
+                    @if (live()) {
+                      <button type="button" class="open" (click)="openEvent.emit(event.id)">
+                        <span class="visually-hidden">Open details: {{ event.title }}</span>
+                      </button>
                     }
                   </li>
                 }
@@ -245,6 +275,11 @@
                   </ul>
                 }
               </span>
+              @if (live() && eventOf(block); as id) {
+                <button type="button" class="open" (click)="openEvent.emit(id)">
+                  <span class="visually-hidden">Open details: {{ block.title }}</span>
+                </button>
+              }
             </li>
           }
         </ol>
@@ -253,6 +288,10 @@
       <ol class="agenda__days" aria-label="Activities by day">
         @for (day of days(); track day.date) {
           <li class="agenda__day" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+            @if (live()) {
+              <!-- A tap on the day's empty space adds on that day (#212); pointer only, beside Quick Add's Event. -->
+              <button type="button" class="tap-add__button" tabindex="-1" aria-hidden="true" (click)="addOnDay(day.date)"></button>
+            }
             <p class="agenda__date">
               {{ day.longLabel }}
               @if (day.isToday) {
@@ -280,6 +319,11 @@
                     </span>
                     @if (event.status !== 'confirmed') {
                       <app-status-label [status]="event.status" />
+                    }
+                    @if (live()) {
+                      <button type="button" class="open" (click)="openEvent.emit(event.id)">
+                        <span class="visually-hidden">Open details: {{ event.title }}</span>
+                      </button>
                     }
                   </li>
                 }

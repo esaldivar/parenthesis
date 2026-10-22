@@ -21,7 +21,7 @@
 </section>
 
 @if (creating() === 'reminder') {
-  <app-reminder-form [date]="form.controls.startDate.value" />
+  <app-reminder-form [date]="form.controls.startDate.value" [time]="slotTime()" />
 } @else if (creating() === 'task') {
   <app-task-form [date]="form.controls.startDate.value" />
 } @else {

@@ -14,6 +14,8 @@
           family’s schedule, and nothing here can be changed.
         </p>
       }
+      <!-- Always present, so screen readers announce what changed from an event's details (#213). -->
+      <p class="notice" role="status">{{ notice() }}</p>
     </div>
     <app-leaves class="welcome__leaves" variant="header" />
   </header>
@@ -33,6 +35,8 @@
     (viewChange)="inlineView.set($event)"
     (splitChange)="setSplit($event)"
     (retry)="reload()"
+    (openEvent)="openEvent($event)"
+    (add)="addAt($event)"
   />
 
   <section class="card area-upcoming" aria-labelledby="upcoming-heading">
@@ -201,3 +205,15 @@
     }
   </section>
 </div>
+
+@if (details(); as d) {
+  <app-event-details
+    [item]="d.item"
+    [event]="d.event"
+    [members]="d.members"
+    [familyId]="d.familyId"
+    [timeZone]="familyTimeZone()"
+    (closed)="closeDetails()"
+    (changed)="detailsChanged($event)"
+  />
+}

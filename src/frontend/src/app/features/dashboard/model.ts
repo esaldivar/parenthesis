@@ -37,6 +37,8 @@ export interface ParentingTime {
   readonly changePending?: boolean;
   /** Optional descriptive title a parent gave it (e.g. "Dad's SeaWorld Adventure"); otherwise "Time with …". */
   readonly title?: string;
+  /** The calendar event it comes from, so its details can open from the week (#213). Absent in sample data. */
+  readonly eventId?: string;
 }
 
 /** Activity categories for icons and colour accents (always alongside text). */
@@ -47,6 +49,7 @@ export interface ParentingTime {
 export type EventCategory = 'school' | 'medical' | 'music' | 'sport' | 'art' | 'family' | 'unavailable' | 'other';
 
 export interface FamilyEvent {
+  /** The calendar event's id (live data); its details open from the week (#213). */
   readonly id: string;
   readonly title: string;
   readonly date: PlainDate;

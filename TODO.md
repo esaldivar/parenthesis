@@ -348,6 +348,16 @@ that points back here.
     using the same approvals API as the inbox; the proposer still sees only Withdraw. A request answered elsewhere
     shows calmly with no stale buttons. Unit tests and a browser journey (Mom approves from the details).
     - [ ] **Owner:** test it on the development site, then close #218.
+  - [ ] **Open an event's details from its block (#213, critical).** On `feat/213-open-event-details`: every event and
+    parenting-time block on the home page (week grid, all-day row and day list) opens the same details sheet as the
+    Calendar page, loaded fresh, with focus back on the block when it closes; an event that's gone says so and the
+    week refreshes. The Calendar page's Week, Month and List items already opened details (audited, now tested).
+    - [ ] **Owner:** retest on the development site after #208, then close #213.
+  - [ ] **Tap empty calendar space to add (#212, critical).** On `feat/213-open-event-details`: on the Calendar page
+    (Week, Month, all-day row, day lists) and the home week, tapping empty space opens Add with the date, and on a
+    week's time grid the half-hour tapped (an hour long). Keyboards use each day column's "Add on …" button. Defaults
+    are in `docs/design/CALENDAR_DECISIONS.md`.
+    - [ ] **Owner:** retest on Home and the Calendar page (phone and desktop), then close #212.
   - [ ] **Invited co-parent joins the existing family (#211, critical).** Fixed on `fix/211-invited-co-parent-joins-family`:
     a "Sign up to join" link opened while someone else is signed in on that browser keeps its invitation and goes to
     it (it was dropped, so the new account landed in new-family setup), and a signed-in parent with no family goes to
