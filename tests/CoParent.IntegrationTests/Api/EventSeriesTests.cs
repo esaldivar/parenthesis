@@ -203,28 +203,72 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Repeating_unavailable_time_over_your_own_parenting_time_gets_a_gentle_warning()
+    public async Task Repeating_unavailable_time_over_your_own_parenting_time_is_refused_without_adding_any_date()
     {
         var f = await FamilyAsync();
         using var _ = f;
-        // Dad's parenting time on Wednesday, November 4, confirmed by Mom.
+        await DadsParentingTimeOnNovember4Async(f);
+
+        var dads = await f.Dad.PostAsync(Events(f), Unavailable(new { days = _wednesdays, count = 3 }));
+        var moms = await JsonAsync(await f.Mom.PostAsync(Events(f), Unavailable(new { days = _wednesdays, count = 3 })));
+
+        // A parent can't have the children and be unavailable at once (#210); no date of the series is added.
+        Assert.Equal(HttpStatusCode.BadRequest, dads.StatusCode);
+        Assert.True((await JsonAsync(dads)).GetProperty("errors").TryGetProperty("overlapsYourParentingTime", out var _));
+        Assert.DoesNotContain(
+            await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30)),
+            e => e.GetProperty("category").GetString() == "Unavailable" && e.GetProperty("ownerMembershipId").GetGuid() == f.DadMembershipId);
+        // Mom's dates are her own business: nothing to warn about.
+        Assert.Empty(moms.GetProperty("warnings").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Moving_every_date_of_a_series_into_your_own_parenting_time_changes_none_of_them()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        // Dad's unavailable time, Wednesdays 9:00 to noon, three times; his parenting time on November 4 starts at 1:00 PM.
+        var created = await JsonAsync(await f.Dad.PostAsync(Events(f), Unavailable(new { days = _wednesdays, count = 3 })));
+        await DadsParentingTimeOnNovember4Async(f, afternoonOnly: true);
+
+        var before = await UnavailableStartsAsync(f);
+
+        var moved = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{created.GetProperty("id").GetGuid()}?scope=all", new
+        {
+            startsAt = _wednesday.AddHours(5),
+            endsAt = _wednesday.AddHours(7),
+        });
+        var renamed = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{created.GetProperty("id").GetGuid()}?scope=all", new { notes = "Physio" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, moved.StatusCode);
+        Assert.True((await JsonAsync(moved)).GetProperty("errors").TryGetProperty("overlapsYourParentingTime", out var _));
+        // A notes-only change still works.
+        Assert.Equal(HttpStatusCode.OK, renamed.StatusCode);
+        Assert.Equal(3, before.Count);
+        Assert.Equal(before, await UnavailableStartsAsync(f));
+    }
+
+    private static async Task<List<DateTimeOffset>> UnavailableStartsAsync(Family f) =>
+        (await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30)))
+            .Where(e => e.GetProperty("category").GetString() == "Unavailable")
+            .Select(e => e.GetProperty("startsAt").GetDateTimeOffset())
+            .ToList();
+
+    /// <summary>Dad's parenting time on Wednesday, November 4 (all day, or 1:00 to 6:00 PM), confirmed by Mom.</summary>
+    private static async Task DadsParentingTimeOnNovember4Async(Family f, bool afternoonOnly = false)
+    {
+        var day = new DateTimeOffset(2026, 11, 4, 0, 0, 0, TimeSpan.FromHours(-6));
         var proposed = await JsonAsync(await f.Dad.PostAsync(Events(f), new
         {
             category = "ParentingTime",
             title = "Time with Dad",
-            startsAt = new DateTimeOffset(2026, 11, 4, 0, 0, 0, TimeSpan.FromHours(-6)),
-            endsAt = new DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.FromHours(-6)),
-            allDay = true,
+            startsAt = afternoonOnly ? day.AddHours(13) : day,
+            endsAt = afternoonOnly ? day.AddHours(18) : day.AddDays(1),
+            allDay = !afternoonOnly,
             childIds = new[] { f.KaiId },
             caregiverMembershipId = f.DadMembershipId,
         }));
         await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{proposed.GetProperty("changeRequestId").GetGuid()}/approve");
-
-        var dads = await JsonAsync(await f.Dad.PostAsync(Events(f), Unavailable(new { days = _wednesdays, count = 3 })));
-        var moms = await JsonAsync(await f.Mom.PostAsync(Events(f), Unavailable(new { days = _wednesdays, count = 3 })));
-
-        Assert.Equal(["OverlapsYourParentingTime"], dads.GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
-        Assert.Empty(moms.GetProperty("warnings").EnumerateArray());
     }
 
     private static object Unavailable(object repeat) =>

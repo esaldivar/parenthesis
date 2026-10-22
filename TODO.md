@@ -335,6 +335,14 @@ that points back here.
     - [ ] **Home calendar shows every event (#208, critical):** on desktop the week grid left out all-day events (an
       all-day activity, a holiday, a day of unavailable time), and a multi-day event showed on its first day only. They
       now sit in the all-day row across their dates. **Owner:** retest on the development site, then close #208.
+  - [ ] **A parent can't have the children and be unavailable at once (#210).** Built on
+    `feat/210-block-own-overlaps`: the API refuses parenting time over its caregiver's unavailable time (whoever adds
+    it) and unavailable time over the owner's pending or confirmed parenting time, for new items, repeating ones and
+    edits that change times or the caregiver; a series is checked whole. A swap into the caregiver's unavailable time
+    has no Send anyway. Existing overlaps stay; title and notes edits still work.
+    - [x] **Owner decisions (October 22, 2026):** pending parenting time counts (declined and withdrawn don't); it
+      applies whoever adds it; existing overlaps are left alone.
+    - [ ] **Owner:** test it on the development site, then close #210.
   - [ ] **Approve or decline from an event's details (#218).** Built on `feat/218-decide-from-details`: the parent who
     can decide sees Approve and Decline… (with an optional comment) on a pending event, change, swap or cancellation,
     using the same approvals API as the inbox; the proposer still sees only Withdraw. A request answered elsewhere

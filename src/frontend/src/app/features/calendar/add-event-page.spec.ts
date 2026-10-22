@@ -108,6 +108,36 @@ describe('Add event', () => {
     await vi.waitFor(() => expect(kids.contains(document.activeElement)).toBe(true));
   });
 
+  it('says the parent with the children is unavailable then, at the time, when the server refuses it (#210)', async () => {
+    const harness = await open();
+    await choose(harness, 'Parenting time');
+    check('Kai');
+    await submit(harness);
+
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
+      { status: 400, errors: { caregiverUnavailable: ['The parent with the children is unavailable then.'] } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle(harness);
+
+    expect(text(page())).toContain('You marked yourself unavailable then. Choose another time, or change your unavailable time first.');
+    expect(text(page())).not.toContain('The parent with the children is unavailable then.');
+  });
+
+  it('says you have parenting time then when your unavailable time is refused (#210)', async () => {
+    const harness = await open();
+    await choose(harness, 'I’m unavailable');
+    await submit(harness);
+
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
+      { status: 400, errors: { overlapsYourParentingTime: ['You have parenting time then.'] } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle(harness);
+
+    expect(text(page())).toContain('You have parenting time then. Choose another time, or change that parenting time first.');
+  });
+
   it('says why parenting time has no children to choose yet, instead of failing quietly', async () => {
     const waiting = CHILDREN.map((c) => ({ ...c, status: 'PendingApproval' as const }));
     const harness = await open(waiting);
