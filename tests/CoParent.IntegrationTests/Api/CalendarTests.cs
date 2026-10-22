@@ -214,6 +214,112 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Dad.PostAsync(Events(f), body)).StatusCode);
     }
 
+    // The remaining validation rules and their boundaries (#98), so later work can't loosen them unnoticed. Each refused
+    // request names the field that's wrong.
+    [Theory]
+    [InlineData("missing-category", "category")]
+    [InlineData("empty-title", "title")]
+    [InlineData("whitespace-title", "title")]
+    [InlineData("title-121", "title")]
+    [InlineData("location-201", "location")]
+    [InlineData("notes-1001", "notes")]
+    [InlineData("longer-than-31-days", "endsAt")]
+    [InlineData("parenting-time-without-children", "childIds")]
+    [InlineData("caregiver-not-a-parent", "caregiverMembershipId")]
+    public async Task Each_invalid_event_names_the_field_that_is_wrong(string problem, string field)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        object body = problem switch
+        {
+            "missing-category" => new { title = "Soccer", startsAt = _monday.AddHours(17), endsAt = _monday.AddHours(18) },
+            "empty-title" => ActivityWith(title: ""),
+            "whitespace-title" => ActivityWith(title: "   "),
+            "title-121" => ActivityWith(title: new string('a', 121)),
+            "location-201" => ActivityWith(location: new string('a', 201)),
+            "notes-1001" => ActivityWith(notes: new string('a', 1001)),
+            "longer-than-31-days" => ActivityWith(endsAt: _monday.AddHours(17).AddDays(31).AddMinutes(1)),
+            "parenting-time-without-children" => new
+            {
+                category = "ParentingTime",
+                title = "Time with Dad",
+                startsAt = _monday,
+                endsAt = _monday.AddDays(2),
+                childIds = Array.Empty<Guid>(),
+                caregiverMembershipId = f.DadMembershipId,
+            },
+            // A child's id, or anyone else's, is not a parent in this family.
+            _ => new
+            {
+                category = "ParentingTime",
+                title = "Time with Kai",
+                startsAt = _monday,
+                endsAt = _monday.AddDays(2),
+                childIds = new[] { f.KaiId },
+                caregiverMembershipId = f.KaiId,
+            },
+        };
+
+        var response = await f.Dad.PostAsync(Events(f), body);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True((await JsonAsync(response)).GetProperty("errors").TryGetProperty(field, out var _), $"{problem}: no {field} error");
+        Assert.Empty(await WeekAsync(f.Dad, f));
+    }
+
+    [Fact]
+    public async Task The_boundaries_are_accepted()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+
+        var longestTitle = await f.Dad.PostAsync(Events(f), ActivityWith(title: new string('a', 120), location: new string('b', 200), notes: new string('c', 1000)));
+        var exactly31Days = await f.Dad.PostAsync(Events(f), ActivityWith(endsAt: _monday.AddHours(17).AddDays(31)));
+        var untitledUnavailable = await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddHours(8), endsAt = _monday.AddHours(12) });
+
+        Assert.Equal(HttpStatusCode.Created, longestTitle.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, exactly31Days.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, untitledUnavailable.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("end-before-start", "endsAt")]
+    [InlineData("longer-than-31-days", "endsAt")]
+    [InlineData("title-121", "title")]
+    public async Task An_invalid_edit_names_the_field_and_changes_nothing(string problem, string field)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = (await JsonAsync(await f.Dad.PostAsync(Events(f), Activity("Soccer Practice", f.KaiId)))).GetProperty("id").GetGuid();
+        var before = (await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"))).ToString();
+        object change = problem switch
+        {
+            "end-before-start" => new { startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(17) },
+            "longer-than-31-days" => new { endsAt = _monday.AddDays(32) },
+            _ => new { title = new string('a', 121) },
+        };
+
+        var response = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", change);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True((await JsonAsync(response)).GetProperty("errors").TryGetProperty(field, out var _), $"{problem}: no {field} error");
+        Assert.Equal(before, (await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"))).ToString());
+    }
+
+    [Fact]
+    public async Task A_blank_title_in_an_edit_keeps_the_current_title()
+    {
+        // An edit sends only what changes, so a blank title means "unchanged", never an untitled event (#98).
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = (await JsonAsync(await f.Dad.PostAsync(Events(f), Activity("Soccer Practice", f.KaiId)))).GetProperty("id").GetGuid();
+
+        var response = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { title = "  ", location = "Field 3" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Soccer Practice", (await JsonAsync(response)).GetProperty("title").GetString());
+    }
+
     [Fact]
     public async Task A_list_range_is_required_to_be_sensible()
     {
@@ -554,6 +660,10 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 
     private static object Activity(string title, Guid child) =>
         new { category = "Activity", title, startsAt = _monday.AddHours(17), endsAt = _monday.AddHours(18), childIds = new[] { child } };
+
+    /// <summary>An activity on Monday evening, 5:00 to 6:00 PM unless given another end, with the fields given.</summary>
+    private static object ActivityWith(string title = "Soccer", string? location = null, string? notes = null, DateTimeOffset? endsAt = null) =>
+        new { category = "Activity", title, startsAt = _monday.AddHours(17), endsAt = endsAt ?? _monday.AddHours(18), location, notes };
 
     private static object ParentingTime(string title, Guid caregiver, Guid child) => new
     {
