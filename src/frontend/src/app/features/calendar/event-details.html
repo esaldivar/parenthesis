@@ -1,0 +1,225 @@
+<div class="backdrop" (click)="closed.emit()" aria-hidden="true"></div>
+<section
+  class="panel"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="event-details-title"
+  cdkTrapFocus
+  [cdkTrapFocusAutoCapture]="true"
+  [attr.data-kind]="item().kind"
+>
+  <header class="panel__head">
+    <span class="panel__icon"><app-icon [name]="item().icon" [size]="24" /></span>
+    <div class="panel__titles">
+      <h2 id="event-details-title" tabindex="-1" cdkFocusInitial>{{ item().title }}</h2>
+      <p class="panel__type">{{ item().categoryLabel }}</p>
+    </div>
+    <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close details">
+      <app-icon name="close" />
+    </button>
+  </header>
+
+  <p class="status" [attr.data-status]="item().status">{{ status() }}</p>
+
+  @switch (item().status) {
+    @case ('pending') {
+      <p class="explain">
+        @if (item().isMine) {
+          Waiting for {{ coParent() ?? 'your co-parent' }}’s approval. It isn’t on the schedule until they accept.
+        } @else {
+          Waiting for your approval. It isn’t on the schedule until you accept.
+        }
+      </p>
+    }
+    @case ('declined') {
+      <p class="explain">
+        @if (decline(); as decline) {
+          {{ decline.by }} declined this request on {{ decline.on }}.
+        } @else {
+          This request was declined.
+        }
+        It isn’t on the schedule.
+      </p>
+      @if (decline()?.comment; as comment) {
+        <dl class="change">
+          <dt>Comment</dt>
+          <dd>{{ comment }}</dd>
+        </dl>
+      }
+    }
+    @case ('change-pending') {
+      <p class="explain">
+        @if (item().pendingChange === 'Cancel') {
+          A cancellation is waiting for approval. The event stays as it is until then.
+        } @else {
+          A change is waiting for approval. The event stays as it is until then.
+        }
+      </p>
+    }
+  }
+
+  @if (proposed() || request()?.reason) {
+    <dl class="change">
+      @if (proposed(); as change) {
+        <dt>Original</dt>
+        <dd>{{ item().lastDate > item().firstDate ? when() : date() + ' · ' + when() }}</dd>
+        <dt>Proposed</dt>
+        <dd>{{ change }}</dd>
+      }
+      @if (request()?.reason; as reason) {
+        <dt>Reason</dt>
+        <dd>{{ reason }}</dd>
+      }
+    </dl>
+  }
+
+  @if (item().status === 'pending' || item().status === 'change-pending') {
+    @if (request(); as request) {
+      <section class="timeline" aria-labelledby="timeline-heading">
+        <h3 id="timeline-heading">Status</h3>
+        <ol>
+          <li data-done="true">
+            <app-icon name="check" [size]="16" />
+            <span>Request sent <span class="hint">{{ sentAt() }}</span></span>
+          </li>
+          <li>
+            <span class="dot" aria-hidden="true"></span>
+            <span>{{ answerLabel() }} <span class="hint">Waiting</span></span>
+          </li>
+          <li>
+            <span class="dot" aria-hidden="true"></span>
+            <span>
+              {{ item().status === 'pending' ? 'On the calendar' : 'Calendar updated' }}
+              <span class="hint">Happens automatically once approved</span>
+            </span>
+          </li>
+        </ol>
+      </section>
+    }
+    @if (request()?.proposedByYou) {
+      <div class="actions">
+        @if (!withdrawing()) {
+          <button mat-stroked-button type="button" class="danger-outline" (click)="withdrawing.set(true)">Withdraw request…</button>
+        } @else {
+          <p class="explain">This takes your request back. {{ coParent() ?? 'Your co-parent' }} won’t be asked to decide it.</p>
+          @if (error(); as error) {
+            <p class="error" role="alert">{{ error }}</p>
+          }
+          <div class="actions__row">
+            <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="withdraw()">
+              {{ busy() ? 'Withdrawing…' : 'Yes, withdraw' }}
+            </button>
+            <button mat-button type="button" [disabled]="busy()" (click)="withdrawing.set(false)">Keep it</button>
+          </div>
+        }
+      </div>
+    } @else {
+      <a mat-stroked-button routerLink="/approvals">{{ item().isMine ? 'See it in Approvals' : 'Review in Approvals' }}</a>
+    }
+  }
+
+  @if (item().beforeCoParentJoined) {
+    <p class="explain">Confirmed before your co-parent joined. They can see it and propose a change.</p>
+  }
+
+  <dl class="facts">
+    <dt>When</dt>
+    <dd>{{ date() }} · {{ when() }}</dd>
+    @if (repeats(); as repeats) {
+      <dt>Repeats</dt>
+      <dd>{{ repeats }}</dd>
+    }
+    @if (people()) {
+      <dt>Who</dt>
+      <dd>{{ people() }}</dd>
+    }
+    @if (item().location; as location) {
+      <dt>Where</dt>
+      <dd>{{ location }}</dd>
+    }
+    @if (item().kind === 'unavailable') {
+      @if (item().isMine) {
+        @if (item().notes; as notes) {
+          <dt>Private note</dt>
+          <dd>{{ notes }} <span class="hint">Only you can see this.</span></dd>
+        }
+      } @else {
+        <dt>Details</dt>
+        <dd>Private details aren’t shared.</dd>
+      }
+    } @else if (item().notes; as notes) {
+      <dt>Notes</dt>
+      <dd>{{ notes }}</dd>
+    }
+    <dt>Added by</dt>
+    <dd>{{ item().isMine ? 'You' : item().ownerName }}</dd>
+  </dl>
+
+  @if (item().kind === 'unavailable' && swapTarget() && coParent()) {
+    <div class="actions">
+      <p class="explain">
+        {{ swapTarget()!.parents[0]?.name }} has parenting time then ({{ swapTargetWhen() }}). You can ask to swap it; nothing
+        changes unless you send a request and it’s approved.
+      </p>
+      <a mat-stroked-button [routerLink]="['/calendar', swapTarget()!.id, 'swap']">
+        <app-icon name="swap" [size]="18" /> Request parenting time swap
+      </a>
+    </div>
+  }
+
+  @if (item().status === 'declined') {
+    <div class="actions">
+      <p class="explain">Removing it changes only your calendar. The decision stays in the approvals history.</p>
+      @if (error(); as error) {
+        <p class="error" role="alert">{{ error }}</p>
+      }
+      <div class="actions__row">
+        <button mat-stroked-button type="button" [disabled]="busy()" (click)="dismiss()">
+          {{ busy() ? 'Removing…' : 'Remove from my calendar' }}
+        </button>
+        <a mat-button routerLink="/approvals">See it in Approvals</a>
+      </div>
+    </div>
+  }
+
+  @if (canCancel()) {
+    <div class="actions">
+      @if (!confirming()) {
+        <a mat-stroked-button [routerLink]="['/calendar', item().id, 'edit']">Edit event</a>
+      }
+      @if (canSwap() && !confirming()) {
+        <a mat-flat-button [routerLink]="['/calendar', item().id, 'swap']">
+          <app-icon name="swap" [size]="18" /> Request swap
+        </a>
+      }
+      @if (!confirming()) {
+        <button mat-stroked-button type="button" (click)="confirming.set(true)">Cancel event…</button>
+      } @else {
+        @if (error(); as error) {
+          <p class="error" role="alert">{{ error }}</p>
+        }
+        @if (repeats()) {
+          <p class="explain">This repeats. Which dates do you want to cancel? It’s removed for both of you.</p>
+          <div class="actions__row">
+            <button mat-stroked-button type="button" class="danger-outline" [disabled]="busy()" (click)="cancel('this')">
+              This event
+            </button>
+            <button mat-stroked-button type="button" class="danger-outline" [disabled]="busy()" (click)="cancel('following')">
+              This and following
+            </button>
+            <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel('all')">All events</button>
+            <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep them</button>
+          </div>
+        } @else {
+          <p class="explain">{{ cancelExplanation() }}</p>
+          <div class="actions__row">
+            <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel()">
+              {{ busy() ? 'Cancelling…' : 'Yes, cancel event' }}
+            </button>
+            <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep it</button>
+          </div>
+        }
+      }
+    </div>
+  }
+</section>

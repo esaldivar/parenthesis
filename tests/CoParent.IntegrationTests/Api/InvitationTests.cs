@@ -69,6 +69,9 @@ public sealed class InvitationTests(ApiFactory api) : IAsyncLifetime
             ["Dad", "Mom"],
             family.GetProperty("members").EnumerateArray().Select(m => m.GetProperty("displayName").GetString()));
         Assert.All(family.GetProperty("members").EnumerateArray(), m => Assert.Equal("Parent", m.GetProperty("role").GetString()));
+        Assert.Equal(
+            ["Mom"],
+            family.GetProperty("members").EnumerateArray().Where(m => m.GetProperty("isYou").GetBoolean()).Select(m => m.GetProperty("displayName").GetString()));
         Assert.Empty((await JsonAsync(await dad.GetAsync($"/api/families/{familyId}/invitations"))).EnumerateArray());
     }
 

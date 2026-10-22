@@ -1,6 +1,6 @@
-// Shapes the dashboard needs. There are no calendar, approval, child-profile or memory endpoints yet
-// (Milestone 2+); these types are the contract a future API should satisfy, and today they are only filled by the
-// development-only sample data.
+// Shapes the dashboard needs. The live source fills them from the calendar, approvals, reminders and tasks APIs
+// (#196); messages, memories and children's shares stay empty until those features exist. The development-only sample
+// data fills everything.
 
 /** A calendar date in the family's time zone, "YYYY-MM-DD". */
 export type PlainDate = string;
@@ -90,6 +90,17 @@ export interface SharedMemory {
   readonly date: PlainDate;
 }
 
+/** A shared reminder or task for Upcoming (#196). Tasks that are done aren't listed. */
+export interface DashboardNote {
+  readonly id: string;
+  readonly kind: 'reminder' | 'task';
+  readonly title: string;
+  readonly date: PlainDate;
+  /** "HH:mm" for a timed reminder; absent for all-day reminders and tasks (due that day). */
+  readonly time?: string;
+  readonly children: readonly ChildRef[];
+}
+
 export interface DashboardWeek {
   /** "sample" data is synthetic and must be labelled as such wherever it is shown. */
   readonly source: 'live' | 'sample';
@@ -99,4 +110,6 @@ export interface DashboardWeek {
   readonly kidShares: readonly KidShare[];
   readonly recentMessages: readonly RecentMessage[];
   readonly recentMemories: readonly SharedMemory[];
+  /** This week's reminders and tasks due, for Upcoming only (owner decision, October 22, 2026). */
+  readonly notes?: readonly DashboardNote[];
 }

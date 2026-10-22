@@ -23,6 +23,7 @@ internal sealed record ChangeRequestView(
     string TargetType,
     Guid TargetId,
     string Summary,
+    string? Reason,
     string Status,
     Guid ProposerMembershipId,
     DateTimeOffset CreatedAt,
@@ -140,7 +141,7 @@ internal static class ApprovalEndpoints
                 if (decision == Decision.Reject)
                 {
                     request.Resolve(ChangeRequestStatus.Rejected, now);
-                    await handler.RejectAsync(target, ct);
+                    await handler.RejectAsync(target with { DeclinedByParent = true }, ct);
                 }
                 else if (request.Approvals >= Required(request, s.Handlers, parents))
                 {
@@ -199,6 +200,7 @@ internal static class ApprovalEndpoints
         r.TargetType,
         r.TargetId,
         r.Summary,
+        r.Reason,
         r.Status.ToString(),
         r.ProposerMembershipId,
         r.CreatedAt,

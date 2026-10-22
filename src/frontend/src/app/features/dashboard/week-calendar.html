@@ -231,10 +231,7 @@
                     <app-icon class="act__icon" [name]="icons[event.category]" [size]="22" />
                     <span class="act__title">{{ event.title }}</span>
                     <span class="act__time">
-                      @if (event.time) {
-                        {{ timeLabel(event.time) }} ·
-                      }
-                      {{ childNames(event.children) }}{{ event.parents?.length ? ' · with ' + parentNames(event) : '' }}
+                      {{ actMeta(event) }}
                     </span>
                     <span class="act__avatars" aria-hidden="true">
                       @for (parent of event.parents ?? []; track parent.membershipId) {
@@ -269,8 +266,8 @@
     </footer>
   } @else if (state() === 'unavailable') {
     <p class="note">
-      The shared calendar isn’t available yet. When it is, parenting time and activities for this week will appear
-      here. Nothing shown on this page is a schedule.
+      Once your family is set up, its parenting time and activities for this week will appear here. Nothing shown on
+      this page is a schedule yet.
     </p>
   }
 </section>

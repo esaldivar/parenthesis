@@ -1,0 +1,288 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Microsoft.AspNetCore.WebUtilities;
+
+namespace CoParent.IntegrationTests.Api;
+
+/// <summary>Repeating unavailable time and activities (#193, C-05). Synthetic family only: Dad, Mom and Kai.</summary>
+[Collection(ApiCollectionDefinition.Name)]
+public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
+{
+    // Wednesday, October 28, 2026, 9:00 AM in Chicago (CDT). Daylight saving ends Sunday, November 1.
+    private static readonly DateTimeOffset _wednesday = new(2026, 10, 28, 9, 0, 0, TimeSpan.FromHours(-5));
+
+    private static readonly string[] _wednesdays = ["Wednesday"];
+    private static readonly string[] _wednesdayAndFriday = ["Wednesday", "Friday"];
+
+    public async ValueTask InitializeAsync() => await api.ResetDatabaseAsync();
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+    [Fact]
+    public async Task Unavailable_time_repeats_on_chosen_days_at_the_same_local_time_and_stays_private()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+
+        var created = await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Unavailable",
+            startsAt = _wednesday,
+            endsAt = _wednesday.AddHours(3),
+            notes = "Physical therapy",
+            repeat = new { days = _wednesdayAndFriday, until = "2026-11-13" },
+        });
+        var first = await JsonAsync(created);
+        var dadSees = await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(20));
+        var momSees = await RangeAsync(f.Mom, f, _wednesday.AddDays(-1), _wednesday.AddDays(20));
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal(["Wednesday", "Friday"], first.GetProperty("repeat").GetProperty("days").EnumerateArray().Select(d => d.GetString()));
+        Assert.Equal("2026-11-13", first.GetProperty("repeat").GetProperty("until").GetString());
+        // Oct 28 and 30 at 9:00 AM CDT (14:00 UTC); from Nov 4, 9:00 AM CST (15:00 UTC).
+        Assert.Equal(
+            [Utc(10, 28, 14), Utc(10, 30, 14), Utc(11, 4, 15), Utc(11, 6, 15), Utc(11, 11, 15), Utc(11, 13, 15)],
+            dadSees.Select(e => e.GetProperty("startsAt").GetDateTimeOffset()));
+        Assert.All(dadSees, e => Assert.Equal(first.GetProperty("seriesId").GetGuid(), e.GetProperty("seriesId").GetGuid()));
+        Assert.All(dadSees, e => Assert.Equal("Physical therapy", e.GetProperty("notes").GetString()));
+        // Mom sees each date as Unavailable, never the note.
+        Assert.Equal(6, momSees.Count);
+        Assert.All(momSees, e => Assert.Equal(JsonValueKind.Null, e.GetProperty("notes").ValueKind));
+    }
+
+    [Fact]
+    public async Task An_activity_repeats_a_number_of_times_with_its_children()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+
+        var created = await f.Mom.PostAsync(Events(f), new
+        {
+            category = "Activity",
+            title = "Swim lessons",
+            startsAt = _wednesday.AddHours(8),
+            endsAt = _wednesday.AddHours(9),
+            childIds = new[] { f.KaiId },
+            repeat = new { days = _wednesdays, count = 3 },
+        });
+        var dates = await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30));
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal(3, dates.Count);
+        Assert.All(dates, e => Assert.Equal(f.KaiId, Assert.Single(e.GetProperty("childIds").EnumerateArray()).GetGuid()));
+        Assert.All(dates, e => Assert.Equal("Confirmed", e.GetProperty("status").GetString()));
+        Assert.Empty((await JsonAsync(await f.Dad.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
+    }
+
+    [Theory]
+    [InlineData("parenting-time")]
+    [InlineData("family-event")]
+    [InlineData("no-days")]
+    [InlineData("both-ends")]
+    [InlineData("no-end")]
+    [InlineData("count-one")]
+    [InlineData("until-before")]
+    [InlineData("until-past-a-year")]
+    [InlineData("count-past-a-year")]
+    public async Task Invalid_repeats_are_rejected_and_nothing_is_added(string problem)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var weekly = _wednesdays;
+        object body = problem switch
+        {
+            "parenting-time" => new
+            {
+                category = "ParentingTime",
+                title = "Time with Dad",
+                startsAt = _wednesday,
+                endsAt = _wednesday.AddHours(8),
+                childIds = new[] { f.KaiId },
+                caregiverMembershipId = f.DadMembershipId,
+                repeat = new { days = weekly, count = 4 },
+            },
+            "family-event" => new { category = "Joint", title = "Dinner", startsAt = _wednesday, endsAt = _wednesday.AddHours(2), repeat = new { days = weekly, count = 4 } },
+            "no-days" => Unavailable(new { days = Array.Empty<string>(), count = 4 }),
+            "both-ends" => Unavailable(new { days = weekly, count = 4, until = "2026-12-01" }),
+            "no-end" => Unavailable(new { days = weekly }),
+            "count-one" => Unavailable(new { days = weekly, count = 1 }),
+            "until-before" => Unavailable(new { days = weekly, until = "2026-10-27" }),
+            "until-past-a-year" => Unavailable(new { days = weekly, until = "2027-10-29" }),
+            _ => Unavailable(new { days = weekly, count = 60 }),
+        };
+
+        var response = await f.Dad.PostAsync(Events(f), body);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(50)));
+    }
+
+    [Fact]
+    public async Task This_event_this_and_following_and_all_events_change_the_right_dates()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var ids = await SwimSeriesAsync(f);
+
+        // Following, from the second date: new title and 4:00–5:30 PM, each on its own day.
+        var following = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{ids[1]}?scope=following", new
+        {
+            title = "Swim team",
+            startsAt = new DateTimeOffset(2026, 11, 4, 16, 0, 0, TimeSpan.FromHours(-6)),
+            endsAt = new DateTimeOffset(2026, 11, 4, 17, 30, 0, TimeSpan.FromHours(-6)),
+        });
+        // All: a new place for every date (Mom can change shared activities too).
+        var all = await f.Mom.SendAsync(HttpMethod.Patch, $"{Events(f)}/{ids[0]}?scope=all", new { location = "North Pool" });
+        // This one only: the third date gets a note.
+        var one = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{ids[2]}", new { notes = "Bring goggles" });
+        var dates = await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30));
+
+        Assert.Equal(HttpStatusCode.OK, following.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, all.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, one.StatusCode);
+        Assert.Equal(["Swim lessons", "Swim team", "Swim team", "Swim team"], dates.Select(e => e.GetProperty("title").GetString()));
+        // 5:00 PM CDT on Oct 28; 4:00 PM CST (22:00 UTC) from Nov 4, across the daylight-saving change.
+        Assert.Equal([Utc(10, 28, 22), Utc(11, 4, 22), Utc(11, 11, 22), Utc(11, 18, 22)], dates.Select(e => e.GetProperty("startsAt").GetDateTimeOffset()));
+        Assert.Equal(Utc(11, 18, 23).AddMinutes(30), dates[3].GetProperty("endsAt").GetDateTimeOffset());
+        Assert.All(dates, e => Assert.Equal("North Pool", e.GetProperty("location").GetString()));
+        Assert.Equal([null, null, "Bring goggles", null], dates.Select(e => e.GetProperty("notes").GetString()));
+    }
+
+    [Fact]
+    public async Task A_change_to_several_dates_cant_move_them_to_other_days()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var ids = await SwimSeriesAsync(f);
+
+        var moved = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{ids[1]}?scope=all", new
+        {
+            startsAt = _wednesday.AddDays(8).AddHours(8),
+            endsAt = _wednesday.AddDays(8).AddHours(9),
+        });
+        var badScope = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{ids[1]}?scope=everything", new { title = "Swim" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, moved.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badScope.StatusCode);
+        Assert.All(await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30)),
+            e => Assert.Equal(DayOfWeek.Wednesday, e.GetProperty("startsAt").GetDateTimeOffset().ToOffset(TimeSpan.FromHours(-6)).DayOfWeek));
+    }
+
+    [Fact]
+    public async Task Cancelling_this_and_following_keeps_earlier_dates_and_all_events_removes_the_rest()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var ids = await SwimSeriesAsync(f);
+
+        var following = await f.Mom.SendAsync(HttpMethod.Delete, $"{Events(f)}/{ids[2]}?scope=following");
+        var afterFollowing = await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30));
+        var all = await f.Dad.SendAsync(HttpMethod.Delete, $"{Events(f)}/{ids[0]}?scope=all");
+        var afterAll = await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30));
+
+        Assert.Equal(HttpStatusCode.NoContent, following.StatusCode);
+        Assert.Equal([ids[0], ids[1]], afterFollowing.Select(e => e.GetProperty("id").GetGuid()));
+        Assert.Equal(HttpStatusCode.NoContent, all.StatusCode);
+        Assert.Empty(afterAll);
+    }
+
+    [Fact]
+    public async Task Only_the_owner_changes_repeating_unavailable_time_and_other_households_get_404()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var created = await JsonAsync(await f.Dad.PostAsync(Events(f), Unavailable(new { days = _wednesdays, count = 3 })));
+        var id = created.GetProperty("id").GetGuid();
+        using var outsider = await ApiSession.SignedInAsync(api);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await f.Mom.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}?scope=all", new { notes = "Mine" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await f.Mom.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}?scope=all")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await outsider.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}?scope=all")).StatusCode);
+        Assert.Equal(3, (await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30))).Count);
+    }
+
+    [Fact]
+    public async Task Repeating_unavailable_time_over_your_own_parenting_time_gets_a_gentle_warning()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        // Dad's parenting time on Wednesday, November 4, confirmed by Mom.
+        var proposed = await JsonAsync(await f.Dad.PostAsync(Events(f), new
+        {
+            category = "ParentingTime",
+            title = "Time with Dad",
+            startsAt = new DateTimeOffset(2026, 11, 4, 0, 0, 0, TimeSpan.FromHours(-6)),
+            endsAt = new DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.FromHours(-6)),
+            allDay = true,
+            childIds = new[] { f.KaiId },
+            caregiverMembershipId = f.DadMembershipId,
+        }));
+        await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{proposed.GetProperty("changeRequestId").GetGuid()}/approve");
+
+        var dads = await JsonAsync(await f.Dad.PostAsync(Events(f), Unavailable(new { days = _wednesdays, count = 3 })));
+        var moms = await JsonAsync(await f.Mom.PostAsync(Events(f), Unavailable(new { days = _wednesdays, count = 3 })));
+
+        Assert.Equal(["OverlapsYourParentingTime"], dads.GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+        Assert.Empty(moms.GetProperty("warnings").EnumerateArray());
+    }
+
+    private static object Unavailable(object repeat) =>
+        new { category = "Unavailable", startsAt = _wednesday, endsAt = _wednesday.AddHours(3), repeat };
+
+    /// <summary>Swim lessons, Wednesdays 5:00–6:00 PM, four times from October 28. Returns the dates' ids in order.</summary>
+    private static async Task<List<Guid>> SwimSeriesAsync(Family f)
+    {
+        var created = await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Activity",
+            title = "Swim lessons",
+            startsAt = _wednesday.AddHours(8),
+            endsAt = _wednesday.AddHours(9),
+            childIds = new[] { f.KaiId },
+            repeat = new { days = _wednesdays, count = 4 },
+        });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        return (await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30))).Select(e => e.GetProperty("id").GetGuid()).ToList();
+    }
+
+    private static DateTimeOffset Utc(int month, int day, int hour) => new(2026, month, day, hour, 0, 0, TimeSpan.Zero);
+
+    private static string Events(Family f) => $"/api/families/{f.FamilyId}/calendar/events";
+
+    private static string Q(DateTimeOffset value) => Uri.EscapeDataString(value.ToString("O"));
+
+    private static async Task<List<JsonElement>> RangeAsync(ApiSession session, Family f, DateTimeOffset from, DateTimeOffset to) =>
+        (await JsonAsync(await session.GetAsync($"{Events(f)}?from={Q(from)}&to={Q(to)}"))).EnumerateArray().ToList();
+
+    /// <summary>Dad and Mom; Kai approved by both.</summary>
+    private async Task<Family> FamilyAsync()
+    {
+        var momEmail = ApiSession.NewEmail();
+        var dad = await ApiSession.SignedInAsync(api, displayName: "Dad");
+        var familyId = await dad.CreateFamilyAsync("Rivera Family");
+        var kai = await JsonAsync(await dad.PostAsync($"/api/families/{familyId}/children", new { firstName = "Kai" }));
+        await dad.PostAsync($"/api/families/{familyId}/invitations", new { email = momEmail });
+        var token = QueryHelpers.ParseQuery(dad.Emails.LatestLink(momEmail, "invited").Query)["token"].ToString();
+        var mom = await ApiSession.SignedInAsync(api, displayName: "Mom", email: momEmail);
+        await mom.PostAsync("/api/invitations/accept", new { token });
+        await mom.PostAsync($"/api/families/{familyId}/approvals/{kai.GetProperty("changeRequestId").GetGuid()}/approve");
+
+        var members = (await JsonAsync(await dad.GetAsync($"/api/families/{familyId}"))).GetProperty("members").EnumerateArray().ToList();
+        Guid Membership(string name) => members.Single(m => m.GetProperty("displayName").GetString() == name).GetProperty("membershipId").GetGuid();
+        return new Family(dad, mom, familyId, kai.GetProperty("id").GetGuid(), Membership("Dad"), Membership("Mom"));
+    }
+
+    private sealed record Family(ApiSession Dad, ApiSession Mom, Guid FamilyId, Guid KaiId, Guid DadMembershipId, Guid MomMembershipId)
+        : IDisposable
+    {
+        public void Dispose()
+        {
+            Dad.Dispose();
+            Mom.Dispose();
+        }
+    }
+
+    private static async Task<JsonElement> JsonAsync(HttpResponseMessage response) =>
+        await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+}

@@ -21,6 +21,8 @@ internal abstract class EventCreateHandler(CalendarDbContext db) : IApprovalTarg
     {
         var calendarEvent = await db.Events.SingleAsync(e => e.Id == target.TargetId, cancellationToken);
         calendarEvent.Status = status;
+        // Only a parent's Decline shows on the calendar as declined (#199); a withdrawn or expired request just goes.
+        calendarEvent.DeclinedByParent = status == EventStatus.Rejected && target.DeclinedByParent;
         await db.SaveChangesAsync(cancellationToken);
     }
 }

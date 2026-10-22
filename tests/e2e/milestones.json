@@ -11,7 +11,7 @@
     },
     {
       "tag": "@m3",
-      "name": "v0.3.0 Calendar and approvals (events, proposals, approvals)"
+      "name": "v0.3.0 Calendar and approvals (events, proposals, approvals, declined requests, repeats, filters, reminders, tasks, home page)"
     }
   ],
   "regressionTag": "@regression"

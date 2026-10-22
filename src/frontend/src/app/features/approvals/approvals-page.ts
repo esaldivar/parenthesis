@@ -8,8 +8,15 @@ import { Api, ChangeRequest, ChangeRequestType, Child, FamilyMember } from '../.
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 
-/** The request types this release shows. Calendar requests arrive with the calendar screens (v0.3.0). */
-const SHOWN: readonly string[] = ['ChildCreate', 'ChildPinChange'] satisfies ChangeRequestType[];
+/** The request types the inbox shows: children, PINs and the calendar (the handoff keeps approvals in this inbox). */
+const SHOWN: readonly string[] = [
+  'ChildCreate',
+  'ChildPinChange',
+  'CalendarCreate',
+  'JointEventCreate',
+  'CalendarModify',
+  'CalendarCancel',
+] satisfies ChangeRequestType[];
 
 /** Matches the API's limit (ApprovalDecision.CommentMaxLength). */
 const COMMENT_MAX = 500;
@@ -52,6 +59,9 @@ const COMMENT_MAX = 500;
                   {{ request.approvals }} of {{ request.requiredApprovals }} approvals
                 </p>
                 <p>{{ explain(request) }}</p>
+                @if (request.reason) {
+                  <p class="comment"><span class="visually-hidden">Reason from</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
+                }
 
                 @if (request.canDecide) {
                   @if (declining() === request.id) {
@@ -102,6 +112,9 @@ const COMMENT_MAX = 500;
                 <p class="muted">
                   Proposed by {{ proposer(request) }} · {{ outcome(request) }} {{ request.resolvedAt | date: 'mediumDate' }}
                 </p>
+                @if (request.reason) {
+                  <p class="comment"><span class="visually-hidden">Reason from</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
+                }
                 @for (decision of request.decisions; track decision.decidedAt) {
                   @if (decision.comment) {
                     <p class="comment">
@@ -237,6 +250,16 @@ export class ApprovalsPage implements OnInit {
   }
 
   protected explain(request: ChangeRequest): string {
+    switch (request.type) {
+      case 'CalendarCreate':
+        return 'It goes on the shared calendar once you both approve. Until then it shows as pending.';
+      case 'JointEventCreate':
+        return 'A family event both parents attend. It’s confirmed once you both approve.';
+      case 'CalendarModify':
+        return 'The event stays as it is until you both approve the change.';
+      case 'CalendarCancel':
+        return 'The event stays on the calendar until you both approve cancelling it.';
+    }
     const name = this.children().find((c) => c.id === request.targetId)?.firstName;
     if (request.type === 'ChildCreate') {
       return `${name ?? 'This child'} can start using Parenthesis once you both approve.`;

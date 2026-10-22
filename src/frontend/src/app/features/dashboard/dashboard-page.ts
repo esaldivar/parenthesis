@@ -45,8 +45,9 @@ interface UpcomingItem {
  * weekly calendar as the centrepiece, Upcoming and Quick Add, then From Your Kids, Recent Messages and Family
  * Memories.
  *
- * Until the calendar, approvals, messages and memories APIs exist, the live dashboard shows honest "not available
- * yet" states. In development builds, `?sample=1` previews the layout with clearly labelled synthetic data.
+ * The week, Upcoming and Quick Add use the real calendar, approvals, reminders and tasks (#196). Messages, memories and
+ * children's shares keep honest "not available yet" states until those features exist. In development builds,
+ * `?sample=1` previews the layout with clearly labelled synthetic data.
  */
 @Component({
   selector: 'app-dashboard-page',
@@ -122,10 +123,10 @@ export class DashboardPage {
         status: b.status,
         note: b.changePending ? 'Change pending' : undefined,
       }));
-    const events: UpcomingItem[] = data.events
+    const events: (UpcomingItem & { sort: string })[] = data.events
       .filter((e) => e.date >= this.today())
-      .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
       .map((e) => ({
+        sort: e.date + (e.time ?? ''),
         key: `ev-${e.id}`,
         icon: CATEGORY_ICONS[e.category],
         category: e.category,
@@ -137,19 +138,40 @@ export class DashboardPage {
         ],
         status: e.status,
       }));
-    return [...reviews, ...parenting, ...events].slice(0, 5);
+    // Reminders and tasks due, in Upcoming only (owner decision, October 22, 2026); never on the week calendar.
+    const notes: (UpcomingItem & { sort: string })[] = (data.notes ?? [])
+      .filter((n) => n.date >= this.today())
+      .map((n) => ({
+        sort: n.date + (n.time ?? ''),
+        key: `${n.kind}-${n.id}`,
+        icon: n.kind === 'reminder' ? 'bell' : 'note',
+        category: n.kind,
+        title: n.title,
+        when:
+          n.kind === 'task'
+            ? `Task · due ${dayLong(n.date)}`
+            : `Reminder · ${n.time ? dateTimeLabel(`${n.date}T${n.time}`).replace(/, (\d)/, ' · $1') : dayLong(n.date)}`,
+        people: n.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+        status: 'confirmed',
+        link: '/calendar',
+      }));
+    const dated: UpcomingItem[] = [...events, ...notes].sort((a, b) => a.sort.localeCompare(b.sort));
+    return [...reviews, ...parenting, ...dated].slice(0, 5);
   });
 
   protected readonly memoryIndex = signal(0);
   protected readonly memories = computed(() => this.data()?.recentMemories ?? []);
   protected readonly currentMemory = computed(() => this.memories()[this.memoryIndex()] ?? null);
 
-  /** Shown as in the approved design, but honest: none of these flows exist yet, so they're marked unavailable. */
-  protected readonly quickActions: readonly { label: string; icon: IconName }[] = [
-    { label: 'Event', icon: 'calendar' },
+  /**
+   * As in the approved design. Event and Note open Add to calendar (a note is a shared reminder); messages and
+   * memories don't exist yet, so those stay marked unavailable (owner decision, October 22, 2026).
+   */
+  protected readonly quickActions: readonly { label: string; icon: IconName; kind?: 'event' | 'reminder' }[] = [
+    { label: 'Event', icon: 'calendar', kind: 'event' },
     { label: 'Message', icon: 'messages' },
     { label: 'Memory', icon: 'image' },
-    { label: 'Note', icon: 'plus' },
+    { label: 'Note', icon: 'plus', kind: 'reminder' },
   ];
 
   protected readonly personRef = (person: { name: string }) => ({ id: person.name, name: person.name });

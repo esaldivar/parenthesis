@@ -22,12 +22,22 @@ public static class ChangeRequestTypes
     public const string CalendarCancel = "CalendarCancel";
 }
 
-/// <summary>A proposal raised by a parent. The proposer's own approval is implied.</summary>
+/// <summary>
+/// A proposal raised by a parent. The proposer's own approval is implied. <paramref name="Reason"/> is the proposer's
+/// optional note to the other parent (e.g. why they ask for a swap): shown to parents in the app, never in email.
+/// </summary>
 public sealed record ChangeRequestProposal(
-    string Type, string TargetType, Guid TargetId, string Summary, Guid ProposerMembershipId, Guid ProposerUserId);
+    string Type, string TargetType, Guid TargetId, string Summary, Guid ProposerMembershipId, Guid ProposerUserId, string? Reason = null)
+{
+    public const int ReasonMaxLength = 500;
+}
 
-/// <summary>What a decided request is about, passed to the module that owns the target.</summary>
-public sealed record ApprovalTarget(Guid ChangeRequestId, Guid FamilyId, string TargetType, Guid TargetId);
+/// <summary>
+/// What a decided request is about, passed to the module that owns the target. <paramref name="DeclinedByParent"/> is
+/// true only when a parent answered Decline, not when the request was withdrawn or expired, so the calendar can show a
+/// declined request as declined (#199).
+/// </summary>
+public sealed record ApprovalTarget(Guid ChangeRequestId, Guid FamilyId, string TargetType, Guid TargetId, bool DeclinedByParent = false);
 
 /// <summary>Raises change requests. Called inside the caller's unit of work, so the request commits with the change.</summary>
 public interface IChangeRequests

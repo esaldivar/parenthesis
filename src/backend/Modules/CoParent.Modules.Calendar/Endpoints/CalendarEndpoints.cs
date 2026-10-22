@@ -23,10 +23,35 @@ internal sealed record CreateEventRequest(
     string? Location,
     string? Notes,
     IReadOnlyList<Guid>? ChildIds,
-    Guid? CaregiverMembershipId);
+    Guid? CaregiverMembershipId,
+    EventRepeatRequest? Repeat = null);
 
+/// <summary>Repeat weekly on <paramref name="Days"/>, ending on <paramref name="Until"/> or after <paramref name="Count"/> times (#193).</summary>
+internal sealed record EventRepeatRequest(IReadOnlyList<DayOfWeek>? Days, DateOnly? Until, int? Count);
+
+/// <summary>How a repeating event repeats, for its details ("Every Wed and Fri until Dec 30").</summary>
+internal sealed record SeriesView(IReadOnlyList<DayOfWeek> Days, DateOnly? Until, int? Count);
+
+/// <summary>Which dates of a repeating event an edit or cancel applies to (#193). One-off events ignore it.</summary>
+internal enum EditScope
+{
+    This,
+    Following,
+    All,
+}
+
+/// <summary><paramref name="Reason"/>: an optional note to the other parent, kept with the approval request (a swap's reason).</summary>
 internal sealed record UpdateEventRequest(
-    string? Title, DateTimeOffset? StartsAt, DateTimeOffset? EndsAt, bool? AllDay, string? Location, string? Notes, Guid? CaregiverMembershipId);
+    string? Title,
+    DateTimeOffset? StartsAt,
+    DateTimeOffset? EndsAt,
+    bool? AllDay,
+    string? Location,
+    string? Notes,
+    Guid? CaregiverMembershipId,
+    string? Reason = null);
+
+internal sealed record ConflictsView(IReadOnlyList<string> Warnings);
 
 internal sealed record EventView(
     Guid Id,
@@ -45,7 +70,9 @@ internal sealed record EventView(
     Guid? ChangeRequestId,
     PendingChange PendingChange,
     ProposedTimes? Proposed,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings,
+    Guid? SeriesId = null,
+    SeriesView? Repeat = null);
 
 /// <summary>The shared calendar (C-01, AP-03; docs/design/CALENDAR_DECISIONS.md).</summary>
 internal static class CalendarEndpoints
@@ -61,20 +88,29 @@ internal static class CalendarEndpoints
         var calendar = family.MapGroup("/calendar/events").WithTags("Calendar");
         calendar.MapGet("/", ListAsync).WithMetadata(new ChildSessionAllowed());
         calendar.MapPost("/", CreateAsync);
+        calendar.MapGet("/{eventId:guid}", GetAsync);
+        calendar.MapGet("/{eventId:guid}/conflicts", ConflictsAsync);
         calendar.MapPatch("/{eventId:guid}", UpdateAsync);
         calendar.MapDelete("/{eventId:guid}", CancelAsync);
+        calendar.MapPost("/{eventId:guid}/dismiss", DismissAsync);
     }
 
     /// <summary>Non-blocking: the proposed parenting time overlaps the other parent's unavailable time (CALENDAR_DECISIONS.md).</summary>
     public const string OverlapsCoParentUnavailable = "OverlapsCoParentUnavailable";
 
     /// <summary>
-    /// Events overlapping [from, to). Parents see pending and confirmed events; an Unavailable event's notes are shown
-    /// only to its owner. A child sees only confirmed events that include them, with no notes, no unavailability and
-    /// nothing pending (children never see approvals or disagreements).
+    /// Events overlapping [from, to). Parents see pending and confirmed events, and declined requests until their dates
+    /// pass or they remove them from their own calendar (#199); an Unavailable event's notes are shown only to its
+    /// owner. A child sees only confirmed events that include them, with no notes, no unavailability and nothing
+    /// pending or declined (children never see approvals or disagreements).
     /// </summary>
     private static async Task<Results<Ok<List<EventView>>, ValidationProblem>> ListAsync(
-        DateTimeOffset from, DateTimeOffset to, ITenantContext tenant, CalendarDbContext db, CancellationToken cancellationToken)
+        DateTimeOffset from,
+        DateTimeOffset to,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
     {
         if (to <= from || to - from > MaxRange)
         {
@@ -91,10 +127,11 @@ internal static class CalendarEndpoints
             ? query.Where(e => e.Status == EventStatus.Confirmed
                 && e.Category != EventCategory.Unavailable
                 && e.Children.Any(c => c.ChildProfileId == tenant.MembershipId))
-            : query.Where(e => e.Status == EventStatus.Confirmed || e.Status == EventStatus.PendingApproval);
+            : DeclinedStillShown(query, db, tenant.MembershipId, clock.GetUtcNow());
 
         var events = await query.OrderBy(e => e.StartsAt).ToListAsync(cancellationToken);
-        return TypedResults.Ok(events.Select(e => View(e, tenant, changeRequestId: null, [])).ToList());
+        var series = await SeriesForAsync(db, tenant, events, cancellationToken);
+        return TypedResults.Ok(events.Select(e => View(e, tenant, changeRequestId: null, [], series)).ToList());
     }
 
     private static async Task<Results<Created<EventView>, ValidationProblem, ForbidHttpResult>> CreateAsync(
@@ -123,7 +160,12 @@ internal static class CalendarEndpoints
         }
 
         var category = request.Category!.Value;
-        var title = string.IsNullOrWhiteSpace(request.Title) ? "Unavailable" : request.Title.Trim();
+        if (request.Repeat is { } repeat)
+        {
+            return await CreateSeriesAsync(request, repeat, http, tenant, db, roster, unitOfWork, audit, clock, cancellationToken);
+        }
+
+        var (title, location) = Shareable(category, request.Title, request.Location);
         var needsApproval = CalendarEvent.NeedsApproval(category);
 
         // Decision 7: while a family has one parent, approval-gated events are confirmed and labelled, so the
@@ -137,7 +179,7 @@ internal static class CalendarEndpoints
             StartsAt = request.StartsAt!.Value.ToUniversalTime(),
             EndsAt = request.EndsAt!.Value.ToUniversalTime(),
             AllDay = request.AllDay,
-            Location = string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim(),
+            Location = location,
             Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
             Status = needsApproval && !soloConfirm ? EventStatus.PendingApproval : EventStatus.Confirmed,
             CaregiverMembershipId = category == EventCategory.ParentingTime ? request.CaregiverMembershipId : null,
@@ -181,6 +223,108 @@ internal static class CalendarEndpoints
             View(calendarEvent, tenant, changeRequestId, warnings));
     }
 
+    /// <summary>One event, for a parent: the same view the list gives (an Unavailable event's notes only to its owner).</summary>
+    /// <summary>
+    /// A parent's list: pending and confirmed events, plus declined requests (owner decisions, October 22, 2026) that
+    /// haven't ended yet and that this parent hasn't removed from their calendar.
+    /// </summary>
+    private static IQueryable<CalendarEvent> DeclinedStillShown(
+        IQueryable<CalendarEvent> query, CalendarDbContext db, Guid membershipId, DateTimeOffset now) =>
+        query.Where(e => e.Status == EventStatus.Confirmed
+            || e.Status == EventStatus.PendingApproval
+            || (e.Status == EventStatus.Rejected
+                && e.DeclinedByParent
+                && e.EndsAt > now
+                && !db.Dismissals.Any(d => d.EventId == e.Id && d.MembershipId == membershipId)));
+
+    /// <summary>
+    /// Removes a declined request from the caller's own calendar (#199). Only ever the caller's: the membership comes
+    /// from the signed-in session. The co-parent's calendar and the approvals history don't change.
+    /// </summary>
+    private static async Task<Results<NoContent, NotFound, ForbidHttpResult>> DismissAsync(
+        Guid eventId, ITenantContext tenant, CalendarDbContext db, TimeProvider clock, CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (!await db.Events.AnyAsync(e => e.Id == eventId && e.Status == EventStatus.Rejected && e.DeclinedByParent, cancellationToken))
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!await db.Dismissals.AnyAsync(d => d.EventId == eventId && d.MembershipId == tenant.MembershipId, cancellationToken))
+        {
+            db.Dismissals.Add(new EventDismissal
+            {
+                FamilyId = tenant.FamilyId,
+                EventId = eventId,
+                MembershipId = tenant.MembershipId,
+                DismissedAt = clock.GetUtcNow(),
+            });
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<Ok<EventView>, NotFound, ForbidHttpResult>> GetAsync(
+        Guid eventId, ITenantContext tenant, CalendarDbContext db, CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        var e = await db.Events.SingleOrDefaultAsync(
+            x => x.Id == eventId && (x.Status == EventStatus.Confirmed || x.Status == EventStatus.PendingApproval),
+            cancellationToken);
+        return e is null
+            ? TypedResults.NotFound()
+            : TypedResults.Ok(View(e, tenant, changeRequestId: null, [], await SeriesForAsync(db, tenant, [e], cancellationToken)));
+    }
+
+    /// <summary>
+    /// The gentle warnings a change to an event would get, without changing anything, so a parent can choose to send
+    /// anyway or pick different dates before a swap is sent (handoff 2026-10-20). They never block a request.
+    /// </summary>
+    private static async Task<Results<Ok<ConflictsView>, NotFound, ValidationProblem, ForbidHttpResult>> ConflictsAsync(
+        Guid eventId,
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (endsAt <= startsAt || endsAt - startsAt > MaxDuration)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["endsAt"] = [$"Choose an end that's after the start, at most {MaxDuration.TotalDays:0} days later."],
+            });
+        }
+
+        var e = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, cancellationToken);
+        if (e is null || e.Status is EventStatus.Cancelled or EventStatus.Rejected
+            || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId))
+        {
+            return TypedResults.NotFound();
+        }
+
+        var warnings = await WarningsAsync(
+            db,
+            new WarningCheck(e.Category, startsAt.ToUniversalTime(), endsAt.ToUniversalTime(), tenant.MembershipId,
+                e.CaregiverMembershipId, e.Children.Select(c => c.ChildProfileId).ToList(), ExcludeEventId: e.Id),
+            cancellationToken);
+        return TypedResults.Ok(new ConflictsView(warnings));
+    }
+
     /// <summary>
     /// Edits an event. Activities (either parent) and unavailable time (its owner) change at once. A confirmed
     /// parenting-time, holiday or joint event keeps its current values and gets a CalendarModify request ("change
@@ -189,6 +333,7 @@ internal static class CalendarEndpoints
     private static async Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> UpdateAsync(
         Guid eventId,
         UpdateEventRequest request,
+        string? scope,
         HttpContext http,
         ITenantContext tenant,
         CalendarDbContext db,
@@ -215,6 +360,16 @@ internal static class CalendarEndpoints
             return RequestWaiting("Wait for your co-parent's answer, or withdraw the request, before changing it again.");
         }
 
+        if (ParseScope(scope) is not { } editScope)
+        {
+            return InvalidScope();
+        }
+
+        if (editScope != EditScope.This && e.SeriesId is not null)
+        {
+            return await UpdateSeriesAsync(e, editScope, request, http, tenant, db, roster, unitOfWork, audit, cancellationToken);
+        }
+
         var current = e.Current();
         var change = new ProposedTimes(
             string.IsNullOrWhiteSpace(request.Title) ? current.Title : request.Title.Trim(),
@@ -223,9 +378,15 @@ internal static class CalendarEndpoints
             request.AllDay ?? current.AllDay,
             request.Location is null ? current.Location : (string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim()),
             e.Category == EventCategory.ParentingTime ? request.CaregiverMembershipId ?? current.CaregiverMembershipId : null);
+        change = UnavailableSafe(e.Category, change);
 
         var parents = await roster.ActiveParentMembershipIdsAsync(cancellationToken);
         var errors = ValidateChange(change, e.Category, parents, request.Notes);
+        if ((request.Reason?.Trim().Length ?? 0) > ChangeRequestProposal.ReasonMaxLength)
+        {
+            errors["reason"] = [$"Keep the reason under {ChangeRequestProposal.ReasonMaxLength} characters."];
+        }
+
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -260,7 +421,8 @@ internal static class CalendarEndpoints
             {
                 changeRequestId = await changeRequests.ProposeAsync(
                     new ChangeRequestProposal(
-                        ChangeRequestTypes.CalendarModify, "calendar_event", e.Id, $"Change {e.Title}", tenant.MembershipId, userId),
+                        ChangeRequestTypes.CalendarModify, "calendar_event", e.Id, $"Change {e.Title}", tenant.MembershipId, userId,
+                        request.Reason),
                     ct);
             }
 
@@ -276,8 +438,9 @@ internal static class CalendarEndpoints
     /// Cancels an event. Activities and unavailable time cancel at once; a confirmed approval-gated event gets a
     /// CalendarCancel request. A still-pending event is withdrawn from the approvals inbox instead.
     /// </summary>
-    private static async Task<Results<NoContent, Accepted<EventView>, NotFound, ProblemHttpResult, ForbidHttpResult>> CancelAsync(
+    private static async Task<Results<NoContent, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> CancelAsync(
         Guid eventId,
+        string? scope,
         HttpContext http,
         ITenantContext tenant,
         CalendarDbContext db,
@@ -302,6 +465,25 @@ internal static class CalendarEndpoints
         if (e.Status == EventStatus.PendingApproval || e.PendingChange != PendingChange.None)
         {
             return RequestWaiting("Withdraw that request from the approvals inbox instead.");
+        }
+
+        if (ParseScope(scope) is not { } cancelScope)
+        {
+            return InvalidScope();
+        }
+
+        if (cancelScope != EditScope.This && e.SeriesId is { } seriesId)
+        {
+            // Series only ever hold categories that cancel at once (no approvals).
+            var targets = await SeriesTargetsAsync(db, seriesId, e, cancelScope, cancellationToken);
+            var actor = http.User.GetUserId()!.Value;
+            await unitOfWork.ExecuteAsync(async ct =>
+            {
+                targets.ForEach(t => t.Status = EventStatus.Cancelled);
+                await db.SaveChangesAsync(ct);
+                await audit.RecordAsync(new AuditEntry(tenant.FamilyId, actor, "calendar_series.cancelled", "calendar_series", seriesId), ct);
+            }, cancellationToken);
+            return TypedResults.NoContent();
         }
 
         var parents = await roster.ActiveParentMembershipIdsAsync(cancellationToken);
@@ -336,6 +518,260 @@ internal static class CalendarEndpoints
             ? TypedResults.Accepted((string?)null, View(e, tenant, changeRequestId, []))
             : TypedResults.NoContent();
     }
+
+    /// <summary>
+    /// Creates a repeating event (#193): every date at once, each its own confirmed event in one series. Only categories
+    /// confirmed at once can repeat, so no date ever waits for approval. A repeat always ends within a year.
+    /// </summary>
+    private static async Task<Results<Created<EventView>, ValidationProblem, ForbidHttpResult>> CreateSeriesAsync(
+        CreateEventRequest request,
+        EventRepeatRequest repeat,
+        HttpContext http,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IFamilyRoster roster,
+        IUnitOfWork unitOfWork,
+        IAuditLog audit,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
+        var category = request.Category!.Value;
+        var zone = await roster.TimeZoneAsync(cancellationToken);
+        var (starts, ends) = (request.StartsAt!.Value.ToUniversalTime(), request.EndsAt!.Value.ToUniversalTime());
+        var days = EventSchedule.ToFlags(repeat.Days ?? []);
+        var errors = new Dictionary<string, string[]>();
+        IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> dates = [];
+        if (!CalendarSeries.CanRepeat(category))
+        {
+            errors["repeat"] = ["Parenting time, holidays and family events can't repeat yet. Add each date on its own."];
+        }
+        else if (days == WeekDays.None)
+        {
+            errors["repeat"] = ["Choose the days it repeats on."];
+        }
+        else if (repeat.Until is null == repeat.Count is null)
+        {
+            errors["repeat"] = ["Choose when it ends: on a date or after a number of times."];
+        }
+        else
+        {
+            var first = EventSchedule.LocalDate(starts, zone);
+            if (repeat.Count is { } count && count is < 2 or > EventSchedule.MaxOccurrences)
+            {
+                errors["repeatCount"] = [$"Repeat it 2 to {EventSchedule.MaxOccurrences} times."];
+            }
+            else if (repeat.Until is { } until && (until < first || until > EventSchedule.LastAllowed(first)))
+            {
+                errors["repeatUntil"] = ["Choose an end date from the first day to a year later."];
+            }
+            else
+            {
+                dates = EventSchedule.Occurrences(starts, ends, days, repeat.Until, repeat.Count, zone);
+                if (dates.Count == 0)
+                {
+                    errors["repeat"] = ["None of the chosen days fall before the end date."];
+                }
+                else if (repeat.Count is { } wanted && dates.Count < wanted)
+                {
+                    errors["repeatCount"] = ["That many times goes past a year. Choose fewer, or an end date."];
+                }
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        var now = clock.GetUtcNow();
+        var series = new CalendarSeries
+        {
+            FamilyId = tenant.FamilyId,
+            Category = category,
+            OwnerMembershipId = tenant.MembershipId,
+            Days = days,
+            Until = repeat.Until,
+            Count = repeat.Count,
+            CreatedAt = now,
+        };
+        var (title, location) = Shareable(category, request.Title, request.Location);
+        var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        var childIds = (request.ChildIds ?? []).Distinct().ToList();
+        var events = dates.Select(date =>
+        {
+            var e = new CalendarEvent
+            {
+                FamilyId = tenant.FamilyId,
+                Title = title,
+                Category = category,
+                StartsAt = date.Start,
+                EndsAt = date.End,
+                AllDay = request.AllDay,
+                Location = location,
+                Notes = notes,
+                Status = EventStatus.Confirmed,
+                OwnerMembershipId = tenant.MembershipId,
+                CreatedAt = now,
+                SeriesId = series.Id,
+            };
+            e.Children.AddRange(childIds.Select(id => new EventChild { FamilyId = tenant.FamilyId, EventId = e.Id, ChildProfileId = id }));
+            return e;
+        }).ToList();
+
+        // Reads first: once the unit of work commits, its transaction is finished.
+        var warnings = await SeriesWarningsAsync(db, category, tenant.MembershipId, dates, cancellationToken);
+        var userId = http.User.GetUserId()!.Value;
+        await unitOfWork.ExecuteAsync(async ct =>
+        {
+            db.Series.Add(series);
+            db.Events.AddRange(events);
+            await db.SaveChangesAsync(ct);
+            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_series.created", "calendar_series", series.Id), ct);
+        }, cancellationToken);
+
+        return TypedResults.Created(
+            $"/api/families/{tenant.FamilyId}/calendar/events/{events[0].Id}",
+            View(events[0], tenant, changeRequestId: null, warnings, new Dictionary<Guid, CalendarSeries> { [series.Id] = series }));
+    }
+
+    /// <summary>
+    /// Edits this and the following dates, or every date, of a repeating event (#193), at once: series never need
+    /// approval. Only the fields sent change, so a date edited on its own keeps its other differences. Each date keeps
+    /// its own day; times change as a time of day. Moving the dates to other weekdays isn't supported: cancel them from
+    /// that date and add them again.
+    /// </summary>
+    private static async Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> UpdateSeriesAsync(
+        CalendarEvent e,
+        EditScope scope,
+        UpdateEventRequest request,
+        HttpContext http,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IFamilyRoster roster,
+        IUnitOfWork unitOfWork,
+        IAuditLog audit,
+        CancellationToken cancellationToken)
+    {
+        var zone = await roster.TimeZoneAsync(cancellationToken);
+        var current = e.Current();
+        var change = new ProposedTimes(
+            string.IsNullOrWhiteSpace(request.Title) ? current.Title : request.Title.Trim(),
+            request.StartsAt?.ToUniversalTime() ?? current.StartsAt,
+            request.EndsAt?.ToUniversalTime() ?? current.EndsAt,
+            request.AllDay ?? current.AllDay,
+            request.Location is null ? current.Location : (string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim()),
+            null);
+        change = UnavailableSafe(e.Category, change);
+        var errors = ValidateChange(change, e.Category, await roster.ActiveParentMembershipIdsAsync(cancellationToken), request.Notes);
+        if (errors.Count == 0 && request.StartsAt is not null
+            && EventSchedule.LocalDate(change.StartsAt, zone) != EventSchedule.LocalDate(e.StartsAt, zone))
+        {
+            errors["startsAt"] =
+            [
+                "A change to several dates keeps each on its own day. To move them to other days, cancel them from this date and add them again.",
+            ];
+        }
+
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        var seriesId = e.SeriesId!.Value;
+        var targets = await SeriesTargetsAsync(db, seriesId, e, scope, cancellationToken);
+        var notes = request.Notes is null ? null : (string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim());
+        var retime = request.StartsAt is not null || request.EndsAt is not null || request.AllDay is not null;
+        var dates = new List<(DateTimeOffset Start, DateTimeOffset End)>();
+        foreach (var target in targets)
+        {
+            // Only what the parent changed: a date that was renamed or moved on its own keeps that, unless this edit
+            // changes the same field.
+            var own = target.Current();
+            var (start, end) = retime
+                ? EventSchedule.Retime(target.StartsAt, change.StartsAt, change.EndsAt, zone)
+                : (own.StartsAt, own.EndsAt);
+            target.Apply(own with
+            {
+                Title = string.IsNullOrWhiteSpace(request.Title) && e.Category != EventCategory.Unavailable ? own.Title : change.Title,
+                StartsAt = start,
+                EndsAt = end,
+                AllDay = request.AllDay ?? own.AllDay,
+                Location = request.Location is null && e.Category != EventCategory.Unavailable ? own.Location : change.Location,
+            });
+            if (request.Notes is not null)
+            {
+                target.Notes = notes;
+            }
+
+            dates.Add((start, end));
+        }
+
+        var warnings = await SeriesWarningsAsync(db, e.Category, e.OwnerMembershipId, dates, cancellationToken);
+        var series = await SeriesForAsync(db, tenant, [e], cancellationToken);
+        var userId = http.User.GetUserId()!.Value;
+        await unitOfWork.ExecuteAsync(async ct =>
+        {
+            await db.SaveChangesAsync(ct);
+            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_series.updated", "calendar_series", seriesId), ct);
+        }, cancellationToken);
+
+        return TypedResults.Ok(View(e, tenant, changeRequestId: null, warnings, series));
+    }
+
+    /// <summary>The confirmed dates a scope covers: from this one on, or all of them.</summary>
+    private static Task<List<CalendarEvent>> SeriesTargetsAsync(
+        CalendarDbContext db, Guid seriesId, CalendarEvent from, EditScope scope, CancellationToken cancellationToken) =>
+        db.Events
+            .Where(x => x.SeriesId == seriesId && x.Status == EventStatus.Confirmed && (scope == EditScope.All || x.StartsAt >= from.StartsAt))
+            .OrderBy(x => x.StartsAt)
+            .ToListAsync(cancellationToken);
+
+    /// <summary>The series behind these events, for "Repeats …" in their details. Children never see it.</summary>
+    private static async Task<IReadOnlyDictionary<Guid, CalendarSeries>> SeriesForAsync(
+        CalendarDbContext db, ITenantContext tenant, IEnumerable<CalendarEvent> events, CancellationToken cancellationToken)
+    {
+        var ids = events.Select(e => e.SeriesId).OfType<Guid>().Distinct().ToList();
+        return ids.Count == 0 || tenant.Role == FamilyRole.Child
+            ? new Dictionary<Guid, CalendarSeries>()
+            : await db.Series.Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, cancellationToken);
+    }
+
+    /// <summary>
+    /// The series' gentle warnings, once for all its dates: new unavailable time over the owner's own confirmed
+    /// parenting time (as for a single date). Activities get none.
+    /// </summary>
+    private static async Task<IReadOnlyList<string>> SeriesWarningsAsync(
+        CalendarDbContext db,
+        EventCategory category,
+        Guid owner,
+        IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> dates,
+        CancellationToken cancellationToken)
+    {
+        if (category != EventCategory.Unavailable || dates.Count == 0)
+        {
+            return [];
+        }
+
+        var (first, last) = (dates.Min(d => d.Start), dates.Max(d => d.End));
+        var parenting = await db.Events
+            .Where(x => x.Category == EventCategory.ParentingTime && x.Status == EventStatus.Confirmed
+                && x.CaregiverMembershipId == owner && x.StartsAt < last && x.EndsAt > first)
+            .Select(x => new { x.StartsAt, x.EndsAt })
+            .ToListAsync(cancellationToken);
+        return parenting.Any(p => dates.Any(d => d.Start < p.EndsAt && d.End > p.StartsAt)) ? [OverlapsYourParentingTime] : [];
+    }
+
+    private static EditScope? ParseScope(string? scope) =>
+        string.IsNullOrEmpty(scope)
+            ? EditScope.This
+            : Enum.TryParse<EditScope>(scope, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) && !int.TryParse(scope, out _)
+                ? parsed
+                : null;
+
+    private static ValidationProblem InvalidScope() => TypedResults.ValidationProblem(new Dictionary<string, string[]>
+    {
+        ["scope"] = ["Choose this event, this and following, or all events."],
+    });
 
     private static ProblemHttpResult RequestWaiting(string detail) => TypedResults.Problem(
         title: "This event already has a request waiting for an answer.", detail: detail, statusCode: StatusCodes.Status409Conflict);
@@ -505,14 +941,40 @@ internal static class CalendarEndpoints
     private static string Summary(CalendarEvent e) =>
         $"{(e.Category == EventCategory.Joint ? "Family event" : "Add")}: {e.Title}, {e.StartsAt:MMM d}";
 
-    private static EventView View(CalendarEvent e, ITenantContext tenant, Guid? changeRequestId, IReadOnlyList<string> warnings) => new(
+    private const string UnavailableTitle = "Unavailable";
+
+    /// <summary>
+    /// Unavailable time is shared only as "Unavailable": its private reason belongs in the owner-only notes. So it's
+    /// stored with that title and no location, whatever the request sends.
+    /// </summary>
+    private static (string Title, string? Location) Shareable(EventCategory category, string? title, string? location) =>
+        category == EventCategory.Unavailable
+            ? (UnavailableTitle, null)
+            : (string.IsNullOrWhiteSpace(title) ? UnavailableTitle : title.Trim(), string.IsNullOrWhiteSpace(location) ? null : location.Trim());
+
+    private static ProposedTimes UnavailableSafe(EventCategory category, ProposedTimes change) =>
+        category == EventCategory.Unavailable ? change with { Title = UnavailableTitle, Location = null } : change;
+
+    /// <summary>
+    /// Whether this viewer sees only "Unavailable": anyone but its owner. Also covers anything stored before titles
+    /// and locations were normalized.
+    /// </summary>
+    private static bool HiddenFrom(CalendarEvent e, ITenantContext tenant) =>
+        e.Category == EventCategory.Unavailable && (tenant.Role == FamilyRole.Child || e.OwnerMembershipId != tenant.MembershipId);
+
+    private static EventView View(
+        CalendarEvent e,
+        ITenantContext tenant,
+        Guid? changeRequestId,
+        IReadOnlyList<string> warnings,
+        IReadOnlyDictionary<Guid, CalendarSeries>? series = null) => new(
         e.Id,
-        e.Title,
+        HiddenFrom(e, tenant) ? UnavailableTitle : e.Title,
         e.Category,
         e.StartsAt,
         e.EndsAt,
         e.AllDay,
-        e.Location,
+        HiddenFrom(e, tenant) ? null : e.Location,
         Notes: tenant.Role == FamilyRole.Child || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId)
             ? null
             : e.Notes,
@@ -525,5 +987,9 @@ internal static class CalendarEndpoints
         // Children never see pending changes (they never see approvals or disagreements).
         tenant.Role == FamilyRole.Child ? PendingChange.None : e.PendingChange,
         tenant.Role == FamilyRole.Child ? null : e.Proposed,
-        warnings);
+        warnings,
+        tenant.Role == FamilyRole.Child ? null : e.SeriesId,
+        tenant.Role != FamilyRole.Child && e.SeriesId is { } id && series?.GetValueOrDefault(id) is { } r
+            ? new SeriesView(EventSchedule.FromFlags(r.Days), r.Until, r.Count)
+            : null);
 }

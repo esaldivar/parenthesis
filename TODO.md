@@ -6,11 +6,22 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Owner testing and design readiness (#152).** Supervised implementation prepared: one waiting testing slot,
+  owner acceptance/deployment evidence, priority rework with comments and fresh branches, explicit design/no-design
+  readiness, and a local activation gate. See `docs/runbooks/claude-owner-testing.md`.
+  - [ ] Review and merge the implementation PR through normal checks.
+  - [ ] Owner-supervised live board/Windows smoke test, exact labels and built-in workflow configuration verified.
+  - [ ] Owner explicitly approves installed-runner activation; keep off until then. No pilot #98 run implied.
 - [ ] **Required tracking issues on every PR (#132, owner October 20, 2026).** Template, trusted-base read-only
   checker and tests prepared in the implementation PR. After owner-approved merges, verify live pass/fail behavior
   and require **Tracking issue links** on `release/*`, `develop` and `main`, preserving every existing rule.
   Existing open PR authors must identify relevant issues; no retroactive unrelated links. Details:
   [rollout runbook](docs/runbooks/pr-issue-links.md). Not enforced until branch settings are verified.
+- [ ] **Require the `design approved` label on design PRs (owner, October 21, 2026).** Design handoff PRs (under
+  `docs/design/`) need the owner's `design approved` label before they merge. Today nothing checks it: #163 was missing
+  it and only the tracking-issues check held it. Add a required check (with tests) that fails a PR changing
+  `docs/design/**` without the label, re-runs when labels change, and goes in its own reviewed PR, like other policy
+  changes.
 - [ ] **Account deletion (A-12, v0.3.0, first item; owner decisions October 20, 2026).** A parent can delete their own
   account, so real families can leave and the owner can rerun the sign-up flows.
   - [x] Built (October 20, 2026): Settings → Delete account. The parent re-enters their password and sees what will be
@@ -24,8 +35,7 @@ that points back here.
     - **As the only parent:** the family goes too, with its children, devices, invitations, calendar and approvals.
     - **Emails:** a confirmation to the parent, and a neutral notice to the co-parent that names nobody: "A parent
       has left your family on Parenthesis." No personal data in logs (the audit rows hold ids only).
-  - [ ] Check it on the development site once it's released: delete a test account, then sign up again with the
-    same address.
+  - [x] Checked on the development site by the owner (October 21, 2026, after #139): deletion works.
   - [ ] **Family pictures stay (owner, October 20, 2026).** When memories and uploads arrive (v0.5.0, M-01 to M-06),
     a departing parent's photos and memories stay with the family if a co-parent remains: implement
     `IParentDepartureHandler` in that module so it keeps them (attributed to "Former parent") and deletes them only
@@ -236,6 +246,10 @@ that points back here.
       Awaiting Deployment.
     - [x] Discord board updates (owner decision, October 19, 2026): one message per scheduled run listing each card
       moved (issue, title, old → new status, closed at Done); none when nothing moved.
+    - [x] Fixed: a run that hits the Claude usage limit is paused, not stopped; it cleans up its worktree and branch,
+      puts the card back to Ready For Development and is retried later. The Windows-only email test failure that
+      stopped the #160 run was fixed in #164 (October 21, 2026).
+    - [x] **Owner:** removed the #72 and #73 runs left by the usage limit, so the queue retries them (October 21, 2026).
     - [ ] Not yet verified end to end: the Claude permission rules in a real headless run, and a draft PR opened by a
       scheduled run. The Discord failure notice works (sent during the fix, October 19). Record the pilot on #94.
 - [ ] **Notifications** (owner idea, October 17, 2026).
@@ -254,9 +268,87 @@ that points back here.
   - [x] Backend: overlap detection (C-06). Non-blocking warnings for double-booked parenting time, an unavailable
     caregiver, and unavailable time over your own parenting time (October 17, 2026).
   - [x] Backend: approvals history and decision comments (AP-04/05); request expiry after 14 days (AP-06) (October 17, 2026).
-  - [ ] Backend: recurrence (C-05), reminders (C-04, with notifications), the .ics feed (C-07).
-  - [ ] Frontend: the calendar page and the approvals inbox once Design Request #2 is approved; the dashboard's live
-    data source. The inbox exists since v0.2.0 but shows only child requests; show calendar requests there too.
+  - [x] Reminders' notifications (C-04) and the .ics feed (C-07): moved to M6 — Performance, Accessibility & Final
+    Polish, as a stretch goal (owner decision, October 22, 2026); tracked in #198.
+  - [x] **Repeating events (#193, C-05).** Built; the owner closes #193 after testing.
+    - [x] Backend: weekly on chosen days for unavailable time and activities, ending on a date or after a number of
+      times within a year, each date its own event; edit and cancel with This event / This and following / All
+      events; series warnings (October 22, 2026).
+    - [x] **Owner decisions (October 22, 2026):** unavailable time and activities can repeat (parenting time,
+      holidays and family events stay one-off); a repeat always ends within a year; one form with a date preview.
+    - [x] Frontend: Repeat in the Add form (activities and unavailable time) with a preview of the dates, the This
+      event / This and following / All events choice when editing or cancelling, and "Repeats …" in the details
+      (October 22, 2026).
+    - [ ] Later: moving a series to other weekdays (cancel and add again for now), longer or open-ended repeats, and
+      repeating parenting-time schedules (with approval).
+  - [x] Frontend: the calendar page (October 21, 2026, from the 2026-10-20 handoff): Week (default), Month and List with
+    real events in the family's time zone; child filter; loading, error and empty states; pending items labelled and
+    hatched, "Change pending", "Confirmed before your co-parent joined", Unavailable in grey with private notes kept
+    private; event details with Cancel (approval-gated for parenting time and family events); Add Event with the
+    block-highlight type cards; calendar requests in the approvals inbox, linked from Calendar.
+  - [x] Request Swap (October 21, 2026, from the approved board): new dates and times with an optional reason; a
+    server check before sending, with **Send anyway** / **Choose different dates** when the other parent is
+    unavailable; review (current → proposed); "Swap request sent"; request details with status and Withdraw. Owner
+    decisions: the reason shows in the app only (never in email), and a swap changes dates and times only.
+  - [x] **Reminders (#72)**, split into four queue-sized parts (all built October 22, 2026; the owner closes #72 after testing):
+    - [x] #170 backend: one-off reminders, history, the "edited by" note and per-parent Seen (October 22, 2026).
+    - [x] #171 backend: daily, weekly and monthly repeats with an end date or a number of times, in the family's
+      time zone (October 22, 2026). Edits apply to the whole series.
+    - [x] #172 frontend: reminders in Week, Month and List (bell icon, gold edge, "Reminder" label, child filter) and
+      their details, with Seen on opening, the edited-by and seen-by notes, and Delete (October 22, 2026).
+    - [x] #173 frontend: add and edit, with the Event / Task / Reminder choice (October 22, 2026).
+    - [x] **Owner decisions (October 22, 2026):** a monthly reminder on the 29th–31st falls on the last day of shorter
+      months (Jan 31 → Feb 28 → Mar 31); edits, deletes, Seen and history are per series in v0.3.0.
+    - [ ] Later, if missed: change or delete a single occurrence of a repeating reminder (This one / This and following /
+      All, like recurring unavailable time).
+    - [x] **Owner decisions (October 22, 2026):** children don't see reminders (parents only; the child experience in
+      v0.5.0 can revisit it); a real edit clears the other parent's Seen (the editor's stays).
+  - [x] **Tasks (#73)**, split into four parts (all built October 22, 2026; the owner closes #73 after testing):
+    - [x] #174 backend: shared tasks, Mark done (and undo), history, the "edited by" note and per-parent Seen
+      (October 22, 2026).
+    - [x] #175 backend: checklists with required and optional items, automatic completion and reopening, and a
+      version check so neither parent's change is silently lost (October 22, 2026).
+    - [x] #176 frontend: tasks in Week, Month and List, their details with the checklist, Mark done, Delete, the
+      conflict refresh and the "Great teamwork!" celebration (October 22, 2026).
+    - [x] #177 frontend: add and edit a task, with its checklist (add, remove, reorder with Move up/down, required or
+      optional), and the "load their latest version" path when the other parent changed it first (October 22, 2026).
+    - [x] **Owner decisions (October 22, 2026):** children don't see tasks (parents only; child sessions get 403). Mark
+      done and undo are recorded in history but aren't edits: they keep both parents' Seen and don't set "edited by".
+      A real edit clears the other parent's Seen, as for reminders. A checklist with no required items is done when
+      every item is ticked. Adding, renaming, reordering or removing items is an ordinary edit by either parent, and
+      completion is recalculated (removing the last unticked required item completes the task; adding one reopens it).
+  - [x] Frontend: edit an event (#188, October 22, 2026): title, when, place, notes and the caregiver, from the event's
+    details. Parenting time, holidays and family events send a change for approval ("Change pending"); notes and
+    other events change at once; the form says which before saving.
+  - [x] **Declined requests on the calendar (#199, October 22, 2026).** A declined new event shows to both parents
+    as **Declined** (struck through, labelled, never like a confirmed or pending item), with who declined it, when and
+    their comment, and **Remove from my calendar**, which changes only that parent's calendar. It also drops off once
+    its dates pass. Children never see it; it never counts in conflict checks; the home page leaves it out. A
+    **Declined** approval filter is on by default (saved filters from before start with it ticked).
+    - [x] **Owner decisions (October 22, 2026):** declined new events only (a declined change or swap leaves the event
+      as it was, and its outcome stays in the approvals history); both parents see it; it stays until removed or
+      past; the filter option is on by default.
+    - Withdrawn and expired requests still just disappear. Requests declined before this change aren't marked, so
+      they don't reappear.
+  - [ ] Changing an event's children after it's created (the API doesn't support it yet).
+  - [x] Frontend: the dashboard's live data source (#196).
+  - [x] **Calendar filters (#190, design #162).** Built; the owner closes #190 after testing.
+    - [x] Type, parent (created by / involving) and approval filters with Reset filters, removable chips, a
+      filtered-empty state, and choices remembered in this browser per parent and family (October 22, 2026).
+    - [x] **Owner decisions (October 22, 2026):** items about no child still show under one child; nothing ticked in a
+      dimension matches nothing (with Reset); filters are remembered in the browser, not the account.
+    - [x] Hidden Unavailable markers: a thin strip in Week (widening on hover or focus), a dashed "Hidden: unavailable"
+      row on phones, in Month and List; they open the details, which offer a swap only when the time overlaps that
+      parent's confirmed parenting time (October 22, 2026).
+    - [ ] Later, separate issue: named saved filter presets (out of scope for #162).
+  - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
+    (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).
+    - [x] **Owner:** uploaded the approved Request Swap board (October 21, 2026).
+    - [x] **Owner decisions** (October 21, 2026, recorded in the handoff): no attachments in v0.3.0; shared tasks
+      with no assignee that complete when the last required item is ticked (or **Mark done** without a checklist);
+      reminders repeat but have no location; either parent edits or deletes tasks and reminders at once.
+    - [ ] Attachments on calendar items, with uploads and storage in v0.5.0 (#115).
+    - [ ] **Owner:** delete `release/0.4.0` once the handoff is in `release/0.3.0`; cut it fresh for v0.4.0.
 
 - [ ] **Playwright release gate on `develop`** (owner decision, October 18, 2026). Every `release/x.y.z` → `develop`
   PR runs Playwright against the release candidate, for the current milestone and every one before it. Runbook:
@@ -288,7 +380,13 @@ that points back here.
     its honest empty state.
     - [x] v0.2.0: the profile picker, PIN entry (tries left), switching profile, approving a PIN change in the inbox,
       and pairing a tablet, in `specs/m2-accounts/profiles-in-the-browser.spec.ts` (October 18, 2026).
-    - [ ] Invitations in the browser, and the v0.3.0 calendar screens.
+    - [x] v0.3.0 calendar screens, in `specs/m3-calendar/calendar-in-the-browser.spec.ts` (October 22, 2026): adding
+      and editing an activity, parenting time approved in the co-parent's inbox, a declined request with its decision
+      and Remove from my calendar, repeating unavailable time with its preview, filters remembered after a reload and
+      reset, and the home page's real week with reminders and tasks in Upcoming. The two older calendar tests were
+      updated for the shipped calendar and for declined requests (#199), which would otherwise have failed the
+      release gate.
+    - [ ] Invitations in the browser.
   - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
     the sign-in limit, for the test instance only.
 

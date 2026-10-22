@@ -15,4 +15,7 @@ internal sealed class FamilyRoster(FamiliesDbContext db) : IFamilyRoster
             .Where(m => m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
             .Select(m => m.Id)
             .ToListAsync(cancellationToken)).ToHashSet();
+
+    public async Task<string> TimeZoneAsync(CancellationToken cancellationToken = default) =>
+        await db.Families.Select(f => f.TimeZone).SingleAsync(cancellationToken);
 }

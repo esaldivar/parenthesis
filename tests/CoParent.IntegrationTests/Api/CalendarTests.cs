@@ -11,6 +11,8 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 {
     private static readonly DateTimeOffset _monday = new(2026, 10, 12, 0, 0, 0, TimeSpan.FromHours(-5));
 
+    private static readonly string[] _mondays = ["Monday"];
+
     public async ValueTask InitializeAsync() => await api.ResetDatabaseAsync();
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
@@ -47,7 +49,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_rejected_joint_event_leaves_the_calendar()
+    public async Task A_declined_joint_event_whose_dates_have_passed_isnt_shown()
     {
         var f = await FamilyAsync();
         using var _ = f;
@@ -114,6 +116,46 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Unavailable_time_never_shares_a_title_or_place_even_when_a_request_sends_them()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+
+        // A client that sends a private reason as the title or a place: neither is kept, one-off or repeating.
+        var oneOff = await JsonAsync(await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Unavailable",
+            title = "Doctor appointment",
+            location = "North Clinic",
+            startsAt = _monday.AddHours(8),
+            endsAt = _monday.AddHours(10),
+        }));
+        await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Unavailable",
+            title = "Therapy",
+            location = "Downtown",
+            startsAt = _monday.AddHours(12),
+            endsAt = _monday.AddHours(13),
+            repeat = new { days = _mondays, count = 2 },
+        });
+        var edited = await f.Dad.SendAsync(
+            HttpMethod.Patch, $"{Events(f)}/{oneOff.GetProperty("id").GetGuid()}", new { title = "Court date", location = "Courthouse" });
+
+        Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        foreach (var session in new[] { f.Dad, f.Mom })
+        {
+            var week = await WeekAsync(session, f);
+            Assert.Equal(2, week.Count);
+            Assert.All(week, e =>
+            {
+                Assert.Equal("Unavailable", e.GetProperty("title").GetString());
+                Assert.Equal(JsonValueKind.Null, e.GetProperty("location").ValueKind);
+            });
+        }
+    }
+
+    [Fact]
     public async Task A_child_sees_only_confirmed_events_that_include_them()
     {
         var f = await FamilyAsync();
@@ -122,13 +164,34 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         await f.Dad.PostAsync(Events(f), Activity("Piano Lesson", f.AuroraId));
         await f.Dad.PostAsync(Events(f), ParentingTime("Time with Dad", f.DadMembershipId, f.KaiId));
         await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddHours(8), endsAt = _monday.AddHours(9), notes = "Private" });
+        // A declined request (#199) that parents still see: always ahead of the real clock.
+        var later = new DateTimeOffset(DateTime.UtcNow.Date.AddDays(14), TimeSpan.Zero);
+        var declined = await JsonAsync(await f.Dad.PostAsync(Events(f), new
+        {
+            category = "ParentingTime",
+            title = "Long weekend with Dad",
+            startsAt = later,
+            endsAt = later.AddDays(2),
+            allDay = true,
+            childIds = new[] { f.KaiId },
+            caregiverMembershipId = f.DadMembershipId,
+        }));
+        await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{declined.GetProperty("changeRequestId").GetGuid()}/reject");
+        var laterRange = $"{Events(f)}?from={Q(later.AddDays(-1))}&to={Q(later.AddDays(7))}";
         using var kai = await KaiSignedInAsync(f);
 
         var kaisWeek = await WeekAsync(kai, f);
+        var kaisLater = (await JsonAsync(await kai.GetAsync(laterRange))).EnumerateArray().ToList();
+        var dadsLater = (await JsonAsync(await f.Dad.GetAsync(laterRange))).EnumerateArray().ToList();
 
         Assert.Equal(["Soccer Practice"], kaisWeek.Select(e => e.GetProperty("title").GetString()));
         Assert.All(kaisWeek, e => Assert.Equal(JsonValueKind.Null, e.GetProperty("notes").ValueKind));
         Assert.Equal(HttpStatusCode.Forbidden, (await kai.PostAsync(Events(f), Activity("Sleepover", f.KaiId))).StatusCode);
+        Assert.Empty(kaisLater);
+        Assert.Equal("Rejected", Assert.Single(dadsLater).GetProperty("status").GetString());
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await kai.PostAsync($"{Events(f)}/{declined.GetProperty("id").GetGuid()}/dismiss")).StatusCode);
     }
 
     [Theory]
@@ -215,6 +278,65 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 
         Assert.Equal(f.DadMembershipId, after.GetProperty("caregiverMembershipId").GetGuid());
         Assert.Equal("None", after.GetProperty("pendingChange").GetString());
+    }
+
+    [Fact]
+    public async Task A_swap_reason_travels_with_the_request_to_both_parents()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+
+        var tooLong = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { startsAt = _monday.AddDays(1), reason = new string('x', 501) });
+        var swap = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { startsAt = _monday.AddDays(1), reason = "  I have a work trip that weekend.  " });
+        var momInbox = Assert.Single((await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
+        var dadInbox = Assert.Single((await JsonAsync(await f.Dad.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
+
+        Assert.Equal(HttpStatusCode.BadRequest, tooLong.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, swap.StatusCode);
+        Assert.Equal("I have a work trip that weekend.", momInbox.GetProperty("reason").GetString());
+        Assert.Equal(id, momInbox.GetProperty("targetId").GetGuid());
+        Assert.Equal("I have a work trip that weekend.", dadInbox.GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task Checking_a_swap_for_conflicts_warns_and_changes_nothing()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+        await f.Mom.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddDays(8), endsAt = _monday.AddDays(9), allDay = true });
+
+        var clash = await f.Dad.GetAsync($"{Events(f)}/{id}/conflicts?startsAt={Q(_monday.AddDays(7))}&endsAt={Q(_monday.AddDays(10))}");
+        var clear = await f.Dad.GetAsync($"{Events(f)}/{id}/conflicts?startsAt={Q(_monday.AddDays(1))}&endsAt={Q(_monday.AddDays(6))}");
+        var backwards = await f.Dad.GetAsync($"{Events(f)}/{id}/conflicts?startsAt={Q(_monday.AddDays(2))}&endsAt={Q(_monday.AddDays(1))}");
+        var after = await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"));
+
+        Assert.Equal(["OverlapsCoParentUnavailable"], (await JsonAsync(clash)).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+        // The event's own time doesn't count against itself.
+        Assert.Empty((await JsonAsync(clear)).GetProperty("warnings").EnumerateArray());
+        Assert.Equal(HttpStatusCode.BadRequest, backwards.StatusCode);
+        Assert.Equal("None", after.GetProperty("pendingChange").GetString());
+        Assert.Equal(_monday, after.GetProperty("startsAt").GetDateTimeOffset());
+    }
+
+    [Fact]
+    public async Task One_event_is_shown_to_parents_but_not_to_a_child()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await ConfirmedParentingTimeAsync(f);
+        using var kai = await KaiSignedInAsync(f);
+
+        var mom = await f.Mom.GetAsync($"{Events(f)}/{id}");
+        var missing = await f.Mom.GetAsync($"{Events(f)}/{Guid.CreateVersion7()}");
+        var child = await kai.GetAsync($"{Events(f)}/{id}");
+        var childConflicts = await kai.GetAsync($"{Events(f)}/{id}/conflicts?startsAt={Q(_monday)}&endsAt={Q(_monday.AddDays(1))}");
+
+        Assert.Equal("Time with Dad", (await JsonAsync(mom)).GetProperty("title").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, child.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, childConflicts.StatusCode);
     }
 
     [Fact]

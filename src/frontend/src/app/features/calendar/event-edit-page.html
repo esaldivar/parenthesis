@@ -1,0 +1,117 @@
+<p class="back"><a routerLink="/calendar" [queryParams]="{ date: back() }">← Calendar</a></p>
+<h1>Edit event</h1>
+
+@if (loadError(); as message) {
+  <div class="alert" role="alert">{{ message }}</div>
+} @else if (!event()) {
+  <p role="status">Loading…</p>
+} @else if (blocked(); as message) {
+  <div class="alert" role="alert">{{ message }}</div>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="details-heading">
+    <h2 id="details-heading" class="step">{{ event()!.title }}</h2>
+    <p class="note">{{ note() }}</p>
+    @if (repeats(); as repeats) {
+      <fieldset class="when scope">
+        <legend>This repeats: {{ repeats }}. Change which dates?</legend>
+        @for (option of scopes; track option.id) {
+          <label class="scope__option">
+            <input type="radio" name="scope" [checked]="scope() === option.id" (change)="setScope(option.id)" />
+            {{ option.label }}
+          </label>
+        }
+        @if (scope() !== 'this') {
+          <p class="legend-hint">Each date keeps its own day. You can change the times, title, place and notes.</p>
+        }
+      </fieldset>
+    }
+    @if (error(); as message) {
+      <div class="alert" role="alert">{{ message }}</div>
+    }
+
+    @if (!unavailable()) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Title{{ parenting() ? ' (optional)' : '' }}</mat-label>
+        <input matInput formControlName="title" maxlength="120" [required]="!parenting()" />
+        @if (fieldError('title'); as e) {
+          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+        } @else if (parenting()) {
+          <mat-hint>Leave blank to keep “{{ event()!.title }}”.</mat-hint>
+        }
+      </mat-form-field>
+    }
+
+    @if (parenting()) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Who has the children?</mat-label>
+        <mat-select formControlName="caregiver" required>
+          @for (p of parents(); track p.membershipId) {
+            <mat-option [value]="p.membershipId">{{ p.isYou ? p.displayName + ' (you)' : p.displayName }}</mat-option>
+          }
+        </mat-select>
+        @if (fieldError('caregiverMembershipId'); as e) {
+          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+        }
+      </mat-form-field>
+    }
+
+    <fieldset class="when">
+      <legend>When</legend>
+      <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+      <div class="when__row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Start date</mat-label>
+          <input matInput type="date" formControlName="startDate" required />
+        </mat-form-field>
+        @if (!allDay()) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Start time</mat-label>
+            <input matInput type="time" formControlName="startTime" required />
+          </mat-form-field>
+        }
+      </div>
+      <div class="when__row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>End date</mat-label>
+          <input matInput type="date" formControlName="endDate" required />
+        </mat-form-field>
+        @if (!allDay()) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>End time</mat-label>
+            <input matInput type="time" formControlName="endTime" required />
+          </mat-form-field>
+        }
+      </div>
+      @if (fieldError('endsAt') ?? fieldError('startsAt'); as e) {
+        <p class="field-error" role="alert">{{ e }}</p>
+      }
+    </fieldset>
+
+    @if (!unavailable()) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Location (optional)</mat-label>
+        <input matInput formControlName="location" maxlength="200" />
+        @if (fieldError('location'); as e) {
+          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+        }
+      </mat-form-field>
+    }
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ unavailable() ? 'Private note (optional)' : 'Notes (optional)' }}</mat-label>
+      <textarea matInput formControlName="notes" rows="3" maxlength="1000"></textarea>
+      @if (fieldError('notes'); as e) {
+        <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+      } @else if (unavailable()) {
+        <mat-hint>Only you can see this. Your co-parent sees “Unavailable”.</mat-hint>
+      }
+    </mat-form-field>
+
+    <div class="actions">
+      <button mat-flat-button type="submit" [disabled]="busy()">
+        {{ busy() ? 'Saving…' : needsApproval() && materialChange() ? 'Send for approval' : 'Save changes' }}
+      </button>
+      <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">Cancel</a>
+    </div>
+  </form>
+}

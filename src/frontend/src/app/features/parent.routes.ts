@@ -11,6 +11,31 @@ const comingSoon = (title: string, data: Record<string, string>) => ({
 export const PARENT_ROUTES: Routes = [
   { path: '', title: 'Home', loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage) },
   {
+    path: 'calendar/new',
+    title: 'Add to calendar',
+    loadComponent: () => import('./calendar/add-event-page').then((m) => m.AddEventPage),
+  },
+  {
+    path: 'calendar/reminders/:reminderId/edit',
+    title: 'Edit reminder',
+    loadComponent: () => import('./calendar/reminder-edit-page').then((m) => m.ReminderEditPage),
+  },
+  {
+    path: 'calendar/tasks/:taskId/edit',
+    title: 'Edit task',
+    loadComponent: () => import('./calendar/task-edit-page').then((m) => m.TaskEditPage),
+  },
+  {
+    path: 'calendar/:eventId/edit',
+    title: 'Edit event',
+    loadComponent: () => import('./calendar/event-edit-page').then((m) => m.EventEditPage),
+  },
+  {
+    path: 'calendar/:eventId/swap',
+    title: 'Request swap',
+    loadComponent: () => import('./calendar/swap-request-page').then((m) => m.SwapRequestPage),
+  },
+  {
     path: 'calendar',
     title: 'Calendar',
     loadComponent: () => import('./calendar/calendar-page').then((m) => m.CalendarPage),

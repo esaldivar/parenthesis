@@ -26,6 +26,8 @@ public static class CalendarModule
     public static IEndpointRouteBuilder MapCalendarEndpoints(this IEndpointRouteBuilder family)
     {
         CalendarEndpoints.Map(family);
+        ReminderEndpoints.Map(family);
+        TaskEndpoints.Map(family);
         return family;
     }
 }

@@ -7,6 +7,13 @@ decision, October 19, 2026), so approving an issue is all it takes. No Claude cr
 Claude runs in GitHub Actions. It never merges, deploys or changes labels. It does keep the board's **Status** in
 step with the work (owner decision, October 19, 2026; see "The project board" below).
 
+**#152 rollout:** the owner-testing workflow is implemented but **off by default**. The legacy behavior below
+continues until explicit local activation, with one exception that applies from merge (owner decision, October 21,
+2026): issues with the `design` label or Work Type **Design** are never picked for coding. Read [owner-testing rollout](claude-owner-testing.md) before installing
+or activating it. In activated mode only, the runner may remove stale acceptance and consume/restore rework labels;
+it never adds design approval, positive acceptance or Claude execution approval. `--workflow-plan` previews the new
+rules without activation, GitHub mutations, notifications, Claude execution or state writes.
+
 | | |
 |---|---|
 | Runner | [`scripts/claude_queue_run.py`](../../scripts/claude_queue_run.py) |
@@ -79,11 +86,12 @@ Each scheduled run (`--scheduled`):
 
 - updates the dedicated checkout to `origin/release/0.3.0` first, so merged runner changes apply at once;
 - takes the top approved issue that doesn't already have a queue branch or PR (merged or not), so it never repeats
-  one. To run an issue again, delete its branch and close or delete its PR first;
+  one. With #152 activated, owner-requested rework uses a fresh event-ID-suffixed branch and preserves historical
+  branches and PRs. Never delete PR history to enable rework;
 - runs Claude **headless** (only the pre-allowed tools, 60-minute limit), then the same checks and guards as below;
 - does nothing when no issue is waiting or another run is going. The weekly cap applies only to `release/*` →
   `develop` promotions; it never blocks this runner's feature/bugfix work into the active release branch. Idle checks leave no log;
-- writes one line to `.git/claude-queue/last-scheduled-run.txt` every time (when, and idle, stopped or finished), so
+- writes one line to `.git/claude-queue/last-scheduled-run.txt` every time (when, and idle, paused, stopped or finished), so
   you can confirm the hourly runs are happening;
 - moves the issue to **In Development** when it starts and **Awaiting PR Approval** when the draft PR opens;
 - sends one Discord line when it opens a draft PR, and one when it stops on a problem. The same problem isn't
@@ -153,6 +161,11 @@ with "Closes #n" (or Fixes/Resolves) at the start of a line, bullet or sentence 
 
 Every stop says why, and nothing leaves the machine unless every step passed. The worktree and branch are kept for
 inspection.
+
+- **Claude usage limit** (the Claude plan's session or weekly limit, shared with your other Claude sessions): the run
+  is *paused*, not stopped. Nothing was committed, so it removes its own worktree and branch, moves the card back to
+  **Ready For Development**, and sends one Discord line with the reset time. A later hourly run retries the issue from
+  scratch; there's nothing to clean up.
 
 - Logs, the lock file and Claude's settings for the run are in `.git/claude-queue/` (never committed). Tokens and
   webhook URLs are removed from the logs.

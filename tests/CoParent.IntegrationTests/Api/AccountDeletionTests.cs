@@ -83,6 +83,17 @@ public sealed class AccountDeletionTests(ApiFactory api) : IAsyncLifetime
             await dad.PostAsync(Events(familyId), new { category = "Unavailable", startsAt = _monday.AddHours(8), endsAt = _monday.AddHours(9), notes = "Private" });
             var dadsProposal = await JsonAsync(await dad.PostAsync(Events(familyId), Joint("Recital", kaiId)));
             var momsProposal = await JsonAsync(await mom.PostAsync(Events(familyId), ParentingTime(momMembership, kaiId)));
+            var reminders = $"/api/families/{familyId}/calendar/reminders";
+            var spiritDay = (await JsonAsync(await dad.PostAsync(reminders, new { title = "Spirit Day", startsAt = _monday.AddHours(7) })))
+                .GetProperty("id").GetGuid();
+            await dad.PostAsync($"{reminders}/{spiritDay}/seen");
+            await mom.PostAsync($"{reminders}/{spiritDay}/seen");
+            var tasks = $"/api/families/{familyId}/calendar/tasks";
+            var poster = (await JsonAsync(await dad.PostAsync(tasks, new { title = "Science fair poster", dueDate = "2026-10-21" })))
+                .GetProperty("id").GetGuid();
+            await dad.PostAsync($"{tasks}/{poster}/done");
+            await dad.PostAsync($"{tasks}/{poster}/seen");
+            await mom.PostAsync($"{tasks}/{poster}/seen");
 
             var response = await dad.PostAsync("/api/me/delete", new { password = ApiSession.Password });
 
@@ -100,6 +111,16 @@ public sealed class AccountDeletionTests(ApiFactory api) : IAsyncLifetime
                 .EnumerateArray().ToList();
             Assert.Contains(week, e => e.GetProperty("id").GetGuid() == soccer.GetProperty("id").GetGuid());
             Assert.DoesNotContain(week, e => e.GetProperty("category").GetString() == "Unavailable");
+
+            // Dad's shared reminder stays with the family; only his own Seen mark goes.
+            var reminder = await JsonAsync(await mom.GetAsync($"{reminders}/{spiritDay}"));
+            Assert.Equal("Spirit Day", reminder.GetProperty("title").GetString());
+            Assert.Equal(momMembership, Assert.Single(reminder.GetProperty("seenBy").EnumerateArray()).GetProperty("membershipId").GetGuid());
+
+            // The same for his shared task, which still says it was done (by a former parent).
+            var task = await JsonAsync(await mom.GetAsync($"{tasks}/{poster}"));
+            Assert.NotEqual(JsonValueKind.Null, task.GetProperty("completedBy").ValueKind);
+            Assert.Equal(momMembership, Assert.Single(task.GetProperty("seenBy").EnumerateArray()).GetProperty("membershipId").GetGuid());
 
             // Dad's pending proposal is withdrawn; Mom's no longer waits for anyone and is applied.
             var history = (await JsonAsync(await mom.GetAsync($"/api/families/{familyId}/approvals?view=history"))).EnumerateArray().ToList();

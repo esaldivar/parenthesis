@@ -79,6 +79,11 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.GetAsync("/api/me/families")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.GetAsync($"/api/families/{family.FamilyId}/approvals")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.PostAsync("/api/families", new { name = "Kai's family", timeZone = "UTC" })).StatusCode);
+        // Reminders and tasks are parents only (owner decisions, October 22, 2026; #170, #174).
+        var week = "from=2026-10-12T00:00:00Z&to=2026-10-19T00:00:00Z";
+        Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.GetAsync($"/api/families/{family.FamilyId}/calendar/reminders?{week}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.GetAsync($"/api/families/{family.FamilyId}/calendar/tasks?from=2026-10-12&to=2026-10-19")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.PostAsync($"/api/families/{family.FamilyId}/calendar/tasks", new { title = "Kai's task", dueDate = "2026-10-16" })).StatusCode);
 
         // Back to a parent profile only with the parent's full password. Antiforgery tokens are tied to who is signed
         // in, so the app fetches a fresh one whenever the profile changes.

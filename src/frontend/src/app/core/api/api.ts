@@ -25,6 +25,8 @@ export interface FamilyMember {
   readonly displayName: string;
   readonly role: FamilyRole;
   readonly joinedAt: string;
+  /** The signed-in user's own membership. */
+  readonly isYou: boolean;
 }
 
 export interface FamilyDetails {
@@ -62,7 +64,13 @@ export interface ChildSignIn {
   readonly pinChangePending: boolean;
 }
 
-export type ChangeRequestType = 'ChildCreate' | 'ChildPinChange';
+export type ChangeRequestType =
+  | 'ChildCreate'
+  | 'ChildPinChange'
+  | 'CalendarCreate'
+  | 'JointEventCreate'
+  | 'CalendarModify'
+  | 'CalendarCancel';
 
 export interface ChangeRequest {
   readonly id: string;
@@ -70,6 +78,8 @@ export interface ChangeRequest {
   readonly targetType: string;
   readonly targetId: string;
   readonly summary: string;
+  /** The proposer's optional note to the other parent (e.g. why they ask for a swap). Shown in the app only. */
+  readonly reason: string | null;
   readonly status: 'Pending' | 'Approved' | 'Rejected' | 'Withdrawn';
   readonly proposerMembershipId: string;
   readonly createdAt: string;
@@ -166,6 +176,9 @@ export interface CalendarEvent {
   readonly pendingChange: 'None' | 'Modify' | 'Cancel';
   readonly proposed: ProposedTimes | null;
   readonly warnings: readonly CalendarWarning[];
+  /** A repeating event's series (#193): each date is its own event; `repeat` says how it repeats. */
+  readonly seriesId?: string | null;
+  readonly repeat?: EventRepeat | null;
 }
 
 export interface NewCalendarEvent {
@@ -178,9 +191,117 @@ export interface NewCalendarEvent {
   readonly notes?: string;
   readonly childIds?: readonly string[];
   readonly caregiverMembershipId?: string;
+  /** Unavailable time and activities only (#193): weekly on these days, ending on `until` or after `count` times. */
+  readonly repeat?: { readonly days: readonly Weekday[]; readonly until?: string; readonly count?: number };
 }
 
-export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'childIds'>>;
+/** Weekdays as the API names them (#193). */
+export type Weekday = 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
+
+/** How a repeating event repeats. */
+export interface EventRepeat {
+  readonly days: readonly Weekday[];
+  /** `YYYY-MM-DD`, inclusive. */
+  readonly until: string | null;
+  readonly count: number | null;
+}
+
+/** Which dates of a repeating event an edit or cancel applies to. */
+export type EditScope = 'this' | 'following' | 'all';
+
+export type RepeatFrequency = 'None' | 'Daily' | 'Weekly' | 'Monthly';
+
+/**
+ * A shared reminder (#72). Either parent changes it at once, with no approval. In a list, a repeating reminder comes
+ * once per occurrence: `startsAt` is that occurrence and `seriesStartsAt` the first one.
+ */
+export interface Reminder {
+  readonly id: string;
+  readonly title: string;
+  readonly startsAt: string;
+  readonly allDay: boolean;
+  readonly childId: string | null;
+  readonly details: string | null;
+  readonly createdByMembershipId: string;
+  readonly createdAt: string;
+  /** The other parent who last edited it (null when nobody did, or you did): the quiet "edited by" note. */
+  readonly editedBy: string | null;
+  readonly lastEditedAt: string | null;
+  /** Parents who opened its details, and when. Set only by opening the details. */
+  readonly seenBy: readonly { membershipId: string; seenAt: string }[];
+  readonly repeat: RepeatFrequency;
+  readonly repeatUntil: string | null;
+  readonly repeatCount: number | null;
+  readonly seriesStartsAt: string;
+}
+
+/** A checklist line on a task, with who ticked it and when (#175). */
+export interface ChecklistItem {
+  readonly id: string;
+  readonly text: string;
+  readonly required: boolean;
+  readonly completedBy: string | null;
+  readonly completedAt: string | null;
+}
+
+/**
+ * A shared task (#73), due on a local date, with no assignee. Either parent changes it at once, with no approval. With
+ * a checklist, it's done when its deciding items are (the required ones, or all when none are); without one, Mark
+ * done decides. `justCompleted` is true only in the response to the change that completed it.
+ */
+export interface SharedTask {
+  readonly id: string;
+  readonly title: string;
+  /** `YYYY-MM-DD` in the family's time zone. */
+  readonly dueDate: string;
+  readonly childId: string | null;
+  readonly details: string | null;
+  readonly createdByMembershipId: string;
+  readonly createdAt: string;
+  /** The other parent who last edited it (null when nobody did, or you did). */
+  readonly editedBy: string | null;
+  readonly lastEditedAt: string | null;
+  readonly completedBy: string | null;
+  readonly completedAt: string | null;
+  readonly seenBy: readonly { membershipId: string; seenAt: string }[];
+  readonly items: readonly ChecklistItem[];
+  readonly progressDone: number;
+  readonly progressTotal: number;
+  /** Send it back with an edit; a stale one gets 409 instead of overwriting the other parent's change. */
+  readonly version: number;
+  readonly justCompleted: boolean;
+}
+
+/**
+ * Create and edit a task (an edit replaces the whole task, checklist included). An item with an `id` keeps its tick;
+ * one without is new. Edits send the `version` they were made from.
+ */
+export interface TaskInput {
+  readonly title: string;
+  readonly dueDate: string;
+  readonly childId?: string | null;
+  readonly details?: string;
+  readonly items: readonly { id?: string; text: string; required: boolean }[];
+  readonly version?: number;
+}
+
+/** Create and edit (an edit replaces the whole reminder; repeats change for the whole series). */
+export interface ReminderInput {
+  readonly title: string;
+  readonly startsAt: string;
+  readonly allDay: boolean;
+  readonly childId?: string | null;
+  readonly details?: string;
+  readonly repeat: RepeatFrequency;
+  /** `YYYY-MM-DD`, inclusive. Exactly one of repeatUntil or repeatCount when it repeats. */
+  readonly repeatUntil?: string;
+  readonly repeatCount?: number;
+}
+
+export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'childIds'>> & {
+  /** An optional note to the other parent, kept with the approval request (a swap's reason). Up to 500 characters. */
+  readonly reason?: string;
+};
 
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
@@ -264,15 +385,81 @@ export class Api {
   // The shared calendar. A range spans at most 62 days. Children may list (they see only their confirmed events).
   calendarEvents = (familyId: string, from: string, to: string) =>
     this.call(this.http.get<CalendarEvent[]>(`/api/families/${familyId}/calendar/events`, { params: { from, to } }));
+  /** One event, for a parent. */
+  calendarEvent = (familyId: string, eventId: string) =>
+    this.call(this.http.get<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`));
+  /** The gentle warnings a change to these times would get. Checks only; nothing is saved. */
+  eventConflicts = (familyId: string, eventId: string, startsAt: string, endsAt: string) =>
+    this.call(
+      this.http.get<{ warnings: CalendarWarning[] }>(`/api/families/${familyId}/calendar/events/${eventId}/conflicts`, {
+        params: { startsAt, endsAt },
+      }),
+    );
   /** Parenting time, holidays and joint events come back PendingApproval with a changeRequestId. */
   createEvent = (familyId: string, event: NewCalendarEvent) =>
     this.call(this.http.post<CalendarEvent>(`/api/families/${familyId}/calendar/events`, event));
   /** 200 when applied at once; 202 when it waits for the other parent (a swap is such a change). */
-  updateEvent = (familyId: string, eventId: string, change: CalendarEventChange) =>
-    this.call(this.http.patch<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`, change));
+  updateEvent = (familyId: string, eventId: string, change: CalendarEventChange, scope: EditScope = 'this') =>
+    this.call(
+      this.http.patch<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`, change, {
+        params: scope === 'this' ? {} : { scope },
+      }),
+    );
   /** 204 when cancelled at once; 202 with the event when it waits for the other parent. */
-  cancelEvent = (familyId: string, eventId: string) =>
-    this.call(this.http.delete<CalendarEvent | null>(`/api/families/${familyId}/calendar/events/${eventId}`));
+  /** Removes a declined request from this parent's own calendar (#199); the co-parent's calendar doesn't change. */
+  dismissEvent = (familyId: string, eventId: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/calendar/events/${eventId}/dismiss`, {}));
+
+  cancelEvent = (familyId: string, eventId: string, scope: EditScope = 'this') =>
+    this.call(
+      this.http.delete<CalendarEvent | null>(`/api/families/${familyId}/calendar/events/${eventId}`, {
+        params: scope === 'this' ? {} : { scope },
+      }),
+    );
+
+  // Shared reminders (parents only). Listing never marks anything seen; opening the details calls reminderSeen.
+  reminders = (familyId: string, from: string, to: string) =>
+    this.call(this.http.get<Reminder[]>(`/api/families/${familyId}/calendar/reminders`, { params: { from, to } }));
+  reminder = (familyId: string, reminderId: string) =>
+    this.call(this.http.get<Reminder>(`/api/families/${familyId}/calendar/reminders/${reminderId}`));
+  /** On the calendar at once, for both parents: no approval. */
+  createReminder = (familyId: string, input: ReminderInput) =>
+    this.call(this.http.post<Reminder>(`/api/families/${familyId}/calendar/reminders`, input));
+  updateReminder = (familyId: string, reminderId: string, input: ReminderInput) =>
+    this.call(this.http.put<Reminder>(`/api/families/${familyId}/calendar/reminders/${reminderId}`, input));
+  reminderSeen = (familyId: string, reminderId: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}/seen`, {}));
+  // Shared tasks (parents only). Listing never marks anything seen; opening the details calls taskSeen.
+  tasks = (familyId: string, from: string, to: string) =>
+    this.call(this.http.get<SharedTask[]>(`/api/families/${familyId}/calendar/tasks`, { params: { from, to } }));
+  task = (familyId: string, taskId: string) =>
+    this.call(this.http.get<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}`));
+  createTask = (familyId: string, input: TaskInput) =>
+    this.call(this.http.post<SharedTask>(`/api/families/${familyId}/calendar/tasks`, input));
+  /** 409 when the other parent changed it since `input.version`. */
+  updateTask = (familyId: string, taskId: string, input: TaskInput) =>
+    this.call(this.http.put<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}`, input));
+  taskSeen = (familyId: string, taskId: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/calendar/tasks/${taskId}/seen`, {}));
+  /** Mark done (true) or undo it (false). Only for a task without a checklist. */
+  setTaskDone = (familyId: string, taskId: string, done: boolean) =>
+    this.call(
+      done
+        ? this.http.post<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}/done`, {})
+        : this.http.delete<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}/done`),
+    );
+  /** Tick (true) or untick (false) a checklist item, as yourself. */
+  setTaskItem = (familyId: string, taskId: string, itemId: string, ticked: boolean) =>
+    this.call(
+      ticked
+        ? this.http.post<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}/items/${itemId}/done`, {})
+        : this.http.delete<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}/items/${itemId}/done`),
+    );
+  deleteTask = (familyId: string, taskId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/calendar/tasks/${taskId}`));
+  /** Deletes the reminder (every repeat of it) for both parents, at once. */
+  deleteReminder = (familyId: string, reminderId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}`));
 
   private call<T>(request: import('rxjs').Observable<T>): Promise<T> {
     return firstValueFrom(request);

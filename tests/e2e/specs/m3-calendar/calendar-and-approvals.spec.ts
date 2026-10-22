@@ -43,7 +43,8 @@ test.describe('Shared calendar and approvals', { tag: '@m3' }, () => {
     }
   });
 
-  test('a rejected proposal leaves the calendar', async () => {
+  // Declined requests stay visible, labelled, until each parent removes them (#199); a withdrawn one just goes.
+  test('a declined proposal shows as declined, and a withdrawn one leaves the calendar', async () => {
     const family = await familyWithKai();
     const { dad, mom, familyId, kaiId } = family;
     try {
@@ -57,9 +58,20 @@ test.describe('Shared calendar and approvals', { tag: '@m3' }, () => {
         }),
       );
 
-      await mom.json(mom.post(`/api/families/${familyId}/approvals/${proposed.changeRequestId}/reject`, {}));
+      const withdrawn = await dad.json<CalendarEvent>(
+        dad.post(events(familyId), {
+          category: 'Joint',
+          title: 'Bake sale',
+          startsAt: addHours(monday, 20).toISOString(),
+          endsAt: addHours(monday, 21).toISOString(),
+          childIds: [kaiId],
+        }),
+      );
 
-      expect(await weekOf(dad, familyId)).toEqual([]);
+      await mom.json(mom.post(`/api/families/${familyId}/approvals/${proposed.changeRequestId}/reject`, {}));
+      expect((await dad.post(`/api/families/${familyId}/approvals/${withdrawn.changeRequestId}/withdraw`)).ok()).toBeTruthy();
+
+      expect(await weekOf(dad, familyId)).toEqual([expect.objectContaining({ title: 'Parent-teacher night', status: 'Rejected' })]);
     } finally {
       await family.dispose();
     }
@@ -106,9 +118,7 @@ test.describe('Shared calendar and approvals', { tag: '@m3' }, () => {
     }
   });
 
-  // The calendar screen isn't built yet: it must say so, not show an empty grid that looks real. Update this test
-  // when the calendar UI ships.
-  test('a parent opens the calendar from the navigation and sees an honest empty state', async ({ page }) => {
+  test('a parent opens the calendar from the navigation', async ({ page }) => {
     const family = await familyWithKai();
     try {
       await page.goto('/sign-in');
@@ -121,7 +131,9 @@ test.describe('Shared calendar and approvals', { tag: '@m3' }, () => {
 
       await expect(page).toHaveURL(/\/calendar/);
       await expect(page.getByRole('heading', { level: 1, name: 'Calendar' })).toBeVisible();
-      await expect(page.getByText('The full calendar isn’t available yet')).toBeVisible();
+      // The real calendar (v0.3.0): its views, and nothing claiming it isn't built.
+      await expect(page.getByRole('group', { name: 'Calendar view' })).toBeVisible();
+      await expect(page.getByText('isn’t available yet')).toHaveCount(0);
     } finally {
       await family.dispose();
     }
