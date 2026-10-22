@@ -675,3 +675,80 @@ ul {
   position: relative;
   z-index: 1;
 }
+
+// Adding from a tap (#212), as on the Calendar page: each day column's background is a button behind its activities.
+// A tap adds at that half-hour; from the keyboard it adds on that day, and says so where it is.
+.daycol {
+  position: relative;
+}
+.slot-add {
+  position: absolute;
+  inset: 0;
+}
+.slot-add__button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+  }
+}
+.slot-add__label {
+  // Sticks to the top of the visible hours, so a keyboard user sees which day they're on.
+  position: sticky;
+  top: var(--space-1);
+  display: block;
+  margin: var(--space-1);
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  text-align: start;
+}
+.slot-add__button:not(:focus-visible) .slot-add__label {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+// The pointer-only layer behind the all-day row and each day of the list (#212). What's above it lets taps through,
+// except its own buttons.
+.allday,
+.agenda__day {
+  position: relative;
+}
+.tap-add {
+  position: absolute;
+  inset: 0;
+}
+.tap-add__button {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.allday > li:not(.tap-add),
+.agenda__day > :not(.tap-add__button) {
+  position: relative;
+  pointer-events: none;
+}
+.allday > li:not(.tap-add) button,
+.agenda__day > :not(.tap-add__button) button {
+  pointer-events: auto;
+}

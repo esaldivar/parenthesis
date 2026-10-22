@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
@@ -334,6 +334,53 @@ describe('DashboardPage (approved design)', () => {
     it('offers nothing to open on the sample week', async () => {
       const { el } = await render({ sample: true });
       expect(el.querySelectorAll('button.open')).toHaveLength(0);
+    });
+  });
+
+  describe('adding from a tap on the week’s empty space (#212)', () => {
+    const LIVE: DashboardWeek = {
+      ...EMPTY_WEEK,
+      events: [{ id: 'swim', title: 'Swim lesson', date: '2026-10-14', time: '17:00', durationMinutes: 60, category: 'sport', children: [], status: 'confirmed' }],
+    };
+    const column = (el: HTMLElement, label: string) =>
+      [...el.querySelectorAll<HTMLButtonElement>('.slot-add__button')].find((b) => text(b) === `Add on ${label}`)!;
+
+    async function renderWithRouter(live: DashboardWeek | undefined, sample = false) {
+      const rendered = await render(sample ? { sample: true } : { live });
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      return { ...rendered, navigate };
+    }
+
+    it('opens Add on the day and half-hour tapped in the time grid', async () => {
+      const { el, navigate } = await renderWithRouter(LIVE);
+      const thursday = column(el, 'Thursday, October 15');
+      thursday.getBoundingClientRect = () => ({ top: 0, height: 480, left: 0, width: 100 }) as DOMRect;
+      thursday.dispatchEvent(new MouseEvent('click', { bubbles: true, clientY: 165, detail: 1 })); // 8:00 AM.
+
+      expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15', time: '08:00' } });
+    });
+
+    it('from the keyboard, adds on that day', async () => {
+      const { el, navigate } = await renderWithRouter(LIVE);
+      column(el, 'Thursday, October 15').click();
+      expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15' } });
+    });
+
+    it('adds on a day of the list tapped on its empty space, but never when an activity is tapped', async () => {
+      const { fixture, el, navigate } = await renderWithRouter(LIVE);
+      const days = [...el.querySelectorAll<HTMLElement>('.agenda__day')];
+      days[4].querySelector<HTMLElement>('.tap-add__button')!.click(); // Thursday's empty space.
+      expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15' } });
+
+      navigate.mockClear();
+      days[3].querySelector<HTMLElement>('button.open')!.click(); // Wednesday's swim lesson.
+      await settle(fixture);
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('offers nothing to add on the sample week', async () => {
+      const { el } = await renderWithRouter(undefined, true);
+      expect(el.querySelectorAll('.slot-add__button')).toHaveLength(0);
     });
   });
 

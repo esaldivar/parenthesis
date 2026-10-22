@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { PlainDate } from '../dashboard/model';
 import { dayLong, hourLabel, monthDay, weekDays, weekdayShort } from '../dashboard/week';
+import { AddAt, addFromColumn, dayInRow } from './slot';
 import { CalendarItem, byStart, onDate } from './calendar-items';
 import { ItemText, itemSummary } from './item-text';
 import { minutesOfDay } from './time';
@@ -61,6 +62,23 @@ export class CalendarWeek {
   readonly today = input.required<PlainDate>();
   readonly items = input.required<readonly CalendarItem[]>();
   readonly selected = output<CalendarItem>();
+  /** A tap on empty space (#212): add on that day, at the half-hour tapped in the time grid. */
+  readonly add = output<AddAt>();
+
+  protected addInColumn(event: MouseEvent, date: PlainDate): void {
+    this.add.emit(addFromColumn(event, date, 0, 24));
+  }
+
+  protected addInAllDayRow(event: MouseEvent): void {
+    const date = dayInRow(event, this.days().map((d) => d.date));
+    if (date) {
+      this.add.emit({ date });
+    }
+  }
+
+  protected addOnDay(date: PlainDate): void {
+    this.add.emit({ date });
+  }
 
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 

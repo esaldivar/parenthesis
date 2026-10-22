@@ -16,6 +16,13 @@ Status: approved design decisions for future implementation. Do not interrupt th
 - Blackouts do not change existing parenting responsibilities. If a blackout overlaps the owner's confirmed parenting time, gently flag the conflict and suggest arranging coverage, but never automatically reassign.
 - Upcoming blackout reminders are optional and **off by default**. New schedule/conflict request notifications are **on by default**. Keep notifications calm; maintain an activity center. Avoid noisy notifications for routine availability edits.
 
+## Adding from the calendar (#212, October 22, 2026)
+- Tapping empty space opens the existing Add page (Event, Task or Reminder); nothing is saved until the parent sends it. The Add buttons stay.
+- Week time grids (Calendar and Home): the date and the start of the half-hour tapped, in the family's time zone. Events and reminders start then and last an hour (the form's usual length), ending the next day after 11 PM. A tapped time keeps its time whichever type is chosen; a task takes the date as its due date.
+- The all-day row, Month days and the day lists: the date only.
+- Tapping an event always opens its details, never Add.
+- Keyboard: each week day column is a labelled button ("Add on Wednesday, October 28") that adds on that day; Month and the lists rely on it and the page's Add button rather than adding more tab stops.
+
 ## Joint events
 - Support a **Joint Event** for occasions involving both parents (school events, holidays, birthdays, etc.), including occasions with no children present.
 - Event fields: title, date, time, location; children multi-select with **None**, any selected children, or **All children**; optional category dropdown (**School**, **Holiday**, **Birthday**, **Other**) and free-text details.

@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
+import { AddAt, addFromColumn, dayInRow } from '../calendar/slot';
 import { CalendarKey } from './calendar-key';
 import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from './grouping';
 import { DashboardWeek, FamilyEvent, PlainDate } from './model';
@@ -84,9 +85,26 @@ export class WeekCalendar {
   readonly retry = output();
   /** Opens an event's details over the page (#213), with the calendar event's id. */
   readonly openEvent = output<string>();
+  /** A tap on empty space (#212): add on that day, at the half-hour tapped in the time grid. */
+  readonly add = output<AddAt>();
 
-  /** Only live data has real events to open; the development sample doesn't. */
-  protected readonly canOpen = computed(() => this.week()?.source === 'live');
+  protected addInColumn(event: MouseEvent, date: PlainDate): void {
+    this.add.emit(addFromColumn(event, date, this.hours().startHour, this.hours().endHour));
+  }
+
+  protected addInAllDayRow(event: MouseEvent): void {
+    const date = dayInRow(event, this.days().map((d) => d.date));
+    if (date) {
+      this.add.emit({ date });
+    }
+  }
+
+  protected addOnDay(date: PlainDate): void {
+    this.add.emit({ date });
+  }
+
+  /** Only live data has real events to open or a real calendar to add to; the development sample doesn't. */
+  protected readonly live = computed(() => this.week()?.source === 'live');
 
   /** The calendar event behind a parenting-time block (a grouped block opens its first child's event). */
   protected eventOf(block: ScheduleBlock): string | null {

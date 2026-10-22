@@ -110,6 +110,65 @@ describe('the calendar page', () => {
     });
   }
 
+  describe('adding from a tap on empty space (#212)', () => {
+    /** A click at `y` px down a day column 480px tall (10px per half-hour), as a pointer makes it. */
+    function tapAt(target: HTMLElement, y: number) {
+      target.getBoundingClientRect = () => ({ top: 100, height: 480, left: 0, width: 100 }) as DOMRect;
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true, clientY: 100 + y, detail: 1 }));
+    }
+    const column = (label: string) =>
+      [...main().querySelectorAll<HTMLButtonElement>('app-calendar-week .slot-add__button')].find((b) => text(b) === `Add on ${label}`)!;
+
+    it('opens Add on the day and half-hour tapped in the week’s time grid, saving nothing', async () => {
+      const { harness } = await open('/calendar?date=2026-10-20', [event()]);
+      tapAt(column('Wednesday, October 21'), 345); // 5:00 PM.
+      await settle(harness);
+
+      expect(TestBed.inject(Router).url).toBe('/calendar/new?date=2026-10-21&time=17:00');
+      expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+    });
+
+    it('from the keyboard, each day column is a labelled button that adds on that day', async () => {
+      const { harness } = await open('/calendar?date=2026-10-20', [event()]);
+      const wednesday = column('Wednesday, October 21');
+      expect(wednesday.tagName).toBe('BUTTON');
+      wednesday.click(); // A keyboard press: no pointer position.
+      await settle(harness);
+
+      expect(TestBed.inject(Router).url).toBe('/calendar/new?date=2026-10-21');
+    });
+
+    it('never adds when an event is tapped: it opens its details instead', async () => {
+      const { harness } = await open('/calendar?date=2026-10-20', [event({ id: 'swim', title: 'Swim lesson' })]);
+      (main().querySelector('app-calendar-week .daycol button.item') as HTMLElement).click();
+      await settle(harness);
+
+      expect(TestBed.inject(Router).url).not.toContain('/calendar/new');
+      expect(document.querySelector('app-event-details')).not.toBeNull();
+    });
+
+    it('adds on the day tapped in the all-day row', async () => {
+      const { harness } = await open('/calendar?date=2026-10-20', [event()]);
+      // The row's pointer-only layer, under its events (keyboards use the day columns' buttons).
+      const row = main().querySelector<HTMLElement>('app-calendar-week .allday .tap-add__button')!;
+      expect(row.tabIndex).toBe(-1);
+      row.getBoundingClientRect = () => ({ top: 0, height: 40, left: 0, width: 700 }) as DOMRect;
+      row.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 650 })); // Saturday.
+      await settle(harness);
+      expect(TestBed.inject(Router).url).toBe('/calendar/new?date=2026-10-24');
+    });
+
+    it('adds on a Month day’s empty space; its number still opens the week', async () => {
+      const { harness } = await open('/calendar?date=2026-10-20&view=month', [event()]);
+      const day = [...main().querySelectorAll<HTMLElement>('app-calendar-month .day')].find(
+        (d) => d.querySelector('.day__number')?.getAttribute('aria-label')?.includes('October 22'),
+      )!;
+      day.querySelector<HTMLElement>('.day__add')!.click();
+      await settle(harness);
+      expect(TestBed.inject(Router).url).toBe('/calendar/new?date=2026-10-22');
+    });
+  });
+
   it('shows a calm loading state, then an error with Try again that reloads', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', 'error');
 

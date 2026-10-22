@@ -13,12 +13,13 @@ import {
   untracked,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarEvent, FamilyMember } from '../../core/api/api';
 import { toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { CalendarItem, toItems } from '../calendar/calendar-items';
 import { EventDetails } from '../calendar/event-details';
+import { AddAt, addQuery } from '../calendar/slot';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Leaves } from '../../shared/decor/leaves';
 import { EmptyState } from '../../shared/empty-state/empty-state';
@@ -66,6 +67,7 @@ interface UpcomingItem {
 export class DashboardPage {
   private readonly auth = inject(AuthStore);
   private readonly api = inject(Api);
+  private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly liveSource = inject(DashboardDataSource);
   private readonly now = inject(NOW)();
@@ -264,6 +266,11 @@ export class DashboardPage {
         this.reload();
       }
     }
+  }
+
+  /** A tap on empty space on the week (#212): the Add page on that date (and half-hour). Nothing is saved yet. */
+  protected addAt(at: AddAt): void {
+    void this.router.navigate(['/calendar/new'], { queryParams: addQuery(at) });
   }
 
   protected closeDetails(): void {
