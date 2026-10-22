@@ -139,31 +139,34 @@ test.describe('Issue #211: an invited co-parent joins the existing family', { ta
     }
   });
 
-  test('a signed-in invitee without a family is taken to the invitation, not new-family setup', async ({ browser }) => {
-    const momEmail = newEmail('Mom');
-    const { dad, familyId } = await inviterWithFamily(momEmail);
-    const { context, page } = await newPage(browser);
-    try {
-      const invite = await linkFromEmail(momEmail, 'invited you', '/register');
-      await page.goto(invite.pathname + invite.search);
-      await register(page, 'Mom', momEmail);
-      const confirm = await linkFromEmail(momEmail, 'Confirm your email', '/confirm-email');
-      await page.goto(confirm.pathname + confirm.search);
-      await expect(page.getByText('Your email is confirmed.')).toBeVisible();
-      // She signs in from a bookmark or the home page instead of the confirmation page: a generic destination.
-      await page.goto('/sign-in?returnUrl=%2F');
-      await page.getByLabel('Email').fill(momEmail);
-      await page.getByLabel('Password').fill(PASSWORD);
-      await page.getByRole('button', { name: 'Sign in' }).click();
+  for (const destination of ['/', '/welcome']) {
+    test(`a signed-in invitee without a family goes to the invitation, even when heading to ${destination}`, async ({ browser }) => {
+      const momEmail = newEmail('Mom');
+      const { dad, familyId } = await inviterWithFamily(momEmail);
+      const { context, page } = await newPage(browser);
+      try {
+        const invite = await linkFromEmail(momEmail, 'invited you', '/register');
+        await page.goto(invite.pathname + invite.search);
+        await register(page, 'Mom', momEmail);
+        const confirm = await linkFromEmail(momEmail, 'Confirm your email', '/confirm-email');
+        await page.goto(confirm.pathname + confirm.search);
+        await expect(page.getByText('Your email is confirmed.')).toBeVisible();
+        // She signs in from a bookmark instead of the confirmation page: a generic destination, or setup itself.
+        await page.goto(`/sign-in?returnUrl=${encodeURIComponent(destination)}`);
+        await page.getByLabel('Email').fill(momEmail);
+        await page.getByLabel('Password').fill(PASSWORD);
+        await page.getByRole('button', { name: 'Sign in' }).click();
 
-      await expect(page.getByRole('heading', { name: `You've joined ${FAMILY_NAME}` })).toBeVisible();
-      await expect(page).not.toHaveURL(/\/welcome/);
-      expect(await familiesOf(momEmail)).toEqual([expect.objectContaining({ id: familyId })]);
-    } finally {
-      await context.close();
-      await dad.dispose();
-    }
-  });
+        await expect(page.getByRole('heading', { name: `You've joined ${FAMILY_NAME}` })).toBeVisible();
+        await expect(page).not.toHaveURL(/\/welcome/);
+        expect(await familiesOf(momEmail)).toEqual([expect.objectContaining({ id: familyId })]);
+      } finally {
+        await context.close();
+        await dad.dispose();
+      }
+    });
+
+  }
 
   test('an existing account accepts once; opening the link again changes nothing', async ({ browser }) => {
     const mom = await ApiSession.parent('Mom');
@@ -202,7 +205,7 @@ test.describe('Issue #211: an invited co-parent joins the existing family', { ta
 
       await expect(page.getByText('This invitation was sent to a different email address.')).toBeVisible();
       // Not now: back to their own setup, without joining or being sent round in circles.
-      await page.getByRole('link', { name: 'Not now' }).click();
+      await page.getByRole('button', { name: 'Not now' }).click();
       await expect(page).toHaveURL(/\/welcome/);
       expect(await familiesOf(stranger.email)).toEqual([]);
     } finally {

@@ -134,6 +134,8 @@ export class ReminderForm implements OnInit {
     if (!family || this.busy()) {
       return;
     }
+    // Clear the last attempt's messages first, so only this attempt's problem is shown and focused.
+    this.error.set(null);
     const errors = this.validate();
     this.fieldErrors.set(errors);
     if (Object.keys(errors).length > 0) {

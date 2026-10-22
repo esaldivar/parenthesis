@@ -77,7 +77,7 @@ export const pickerAvailable: CanMatchFn = () => {
 /**
  * A signed-in parent without a family sets one up first, unless an invitation is waiting on this device: then they
  * answer it, so an invited co-parent joins the existing family instead of creating a second one (#211). The
- * invitation page never sends them back here in a loop: its "Not now" goes to new-family setup directly.
+ * invitation page never sends them back here in a loop: its "Not now" defers the invitation until a reload.
  */
 export const hasFamily: CanMatchFn = async () => {
   // Inject before awaiting: the injection context ends at the first await.
@@ -93,5 +93,24 @@ export const hasFamily: CanMatchFn = async () => {
   if (families.length > 0) {
     return true;
   }
-  return router.createUrlTree([pending.peek() ? '/invitations/accept' : '/welcome']);
+  return router.createUrlTree([pending.waiting() ? '/invitations/accept' : '/welcome']);
+};
+
+/**
+ * New-family setup is only for a signed-in parent with no family and no waiting invitation, however they get there
+ * (a link, a return URL): a parent with a family goes home, and an invited one to their invitation first (#211).
+ */
+export const needsFamily: CanMatchFn = async () => {
+  const auth = inject(AuthStore);
+  const router = inject(Router);
+  const pending = inject(PendingInvitation);
+
+  if (auth.status() !== 'signed-in') {
+    return true; // `signedIn` handles everyone else.
+  }
+  const families = auth.families() ?? (await auth.loadFamilies().catch(() => []));
+  if (families.length > 0) {
+    return router.createUrlTree(['/']);
+  }
+  return pending.waiting() ? router.createUrlTree(['/invitations/accept']) : true;
 };
