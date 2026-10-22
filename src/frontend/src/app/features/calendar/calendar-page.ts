@@ -10,6 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarEvent, Child, FamilyMember, Reminder, SharedTask } from '../../core/api/api';
@@ -19,6 +20,18 @@ import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Icon } from '../../shared/icon/icon';
 import { PlainDate } from '../dashboard/model';
 import { addDays, startOfWeek, todayIn, weekLabelLong } from '../dashboard/week';
+import { CalendarFilterPanel } from './calendar-filter-panel';
+import {
+  ALL_FILTERS,
+  CalendarFilters,
+  DIMENSIONS,
+  Dimension,
+  activeDimensions,
+  applyFilters,
+  filtersKey,
+  parseFilters,
+  selectionText,
+} from './calendar-filters';
 import { CalendarItem, forChild, reminderItems, taskItems, toItems } from './calendar-items';
 import { CalendarList } from './calendar-list';
 import { CalendarMonth, monthGrid, startOfMonth } from './calendar-month';
@@ -72,6 +85,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
     EventDetails,
     ReminderDetails,
     TaskDetails,
+    CalendarFilterPanel,
   ],
   templateUrl: './calendar-page.html',
   styleUrl: './calendar-page.scss',
@@ -153,7 +167,19 @@ export class CalendarPage {
     const child = this.child();
     return this.children().some((c) => c.id === child) ? child! : null;
   });
-  protected readonly shown = computed(() => forChild(this.items(), this.childFilter()));
+  /** This parent's own filters (#190): remembered in this browser per parent and family, never shared. */
+  protected readonly filters = signal<CalendarFilters>(ALL_FILTERS);
+  protected readonly filtersOpen = signal(false);
+  protected readonly activeFilters = computed(() =>
+    activeDimensions(this.filters()).map((id) => ({
+      id,
+      label: DIMENSIONS.find((d) => d.id === id)!.label,
+      text: selectionText(this.filters(), id),
+    })),
+  );
+  private readonly me = computed(() => this.members().find((m) => m.isYou)?.membershipId);
+  protected readonly childShown = computed(() => forChild(this.items(), this.childFilter()));
+  protected readonly shown = computed(() => applyFilters(this.childShown(), this.filters(), this.me()));
   protected readonly activeChildren = computed(() => this.children().filter((c) => c.status === 'Active'));
 
   protected readonly selected = signal<CalendarItem | null>(null);
@@ -167,6 +193,14 @@ export class CalendarPage {
     return id ? (this.tasks().find((t) => t.id === id) ?? null) : null;
   });
   private opener: HTMLElement | null = null;
+  private readonly storage = inject(DOCUMENT).defaultView;
+  private readonly user = this.auth.user;
+  /** Where this parent's filters are kept for this family, once both are known. */
+  private readonly storageKey = computed(() => {
+    const user = this.user();
+    const family = this.family();
+    return user && family ? filtersKey(user.id, family.id) : null;
+  });
 
   constructor() {
     // A message handed over by the Add Event page.
@@ -183,6 +217,12 @@ export class CalendarPage {
         return;
       }
       untracked(() => void this.load(family.id, from, to));
+    });
+
+    // Restore this parent's filters for this family. Storage can be missing or blocked; then everything shows.
+    effect(() => {
+      const key = this.storageKey();
+      untracked(() => this.filters.set(key ? parseFilters(this.read(key)) : ALL_FILTERS));
     });
 
     effect(() => {
@@ -285,6 +325,53 @@ export class CalendarPage {
   /** A task changed in its details (a tick, Mark done): show the new state and keep the details open. */
   protected taskUpdated(task: SharedTask): void {
     this.tasks.update((tasks) => tasks.map((t) => (t.id === task.id ? task : t)));
+  }
+
+  protected setFilters(filters: CalendarFilters): void {
+    this.filters.set(filters);
+    const key = this.storageKey();
+    if (key) {
+      try {
+        this.storage?.localStorage.setItem(key, JSON.stringify(filters));
+      } catch {
+        // Not remembered this time; the filters still apply now.
+      }
+    }
+  }
+
+  /** Reset filters: everything shows again, Unavailable included, and the saved choice is cleared. */
+  protected resetFilters(): void {
+    this.filters.set(ALL_FILTERS);
+    const key = this.storageKey();
+    if (key) {
+      try {
+        this.storage?.localStorage.removeItem(key);
+      } catch {
+        // Nothing saved to clear.
+      }
+    }
+  }
+
+  /** Remove one dimension's filter (a chip's ×). */
+  protected clearFilter(dimension: Dimension): void {
+    this.setFilters({ ...this.filters(), [dimension]: ALL_FILTERS[dimension] });
+  }
+
+  protected openFilters(): void {
+    this.filtersOpen.set(true);
+  }
+
+  protected closeFilters(): void {
+    this.filtersOpen.set(false);
+    afterNextRender(() => document.querySelector<HTMLElement>('.filters-button')?.focus(), { injector: this.injector });
+  }
+
+  private read(key: string): string | null {
+    try {
+      return this.storage?.localStorage.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
   }
 
   /** After a cancellation (or a cancellation request) from the details panel. */

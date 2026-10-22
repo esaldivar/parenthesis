@@ -30,12 +30,38 @@
     </span>
     <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">Today</button>
   </div>
-  <div class="segmented" role="group" aria-label="Calendar view">
-    @for (v of views; track v.id) {
-      <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label }}</button>
-    }
+  <div class="toolbar__end">
+    <div class="segmented" role="group" aria-label="Calendar view">
+      @for (v of views; track v.id) {
+        <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label }}</button>
+      }
+    </div>
+    <button
+      type="button"
+      class="pill filters-button"
+      aria-haspopup="dialog"
+      [attr.aria-expanded]="filtersOpen()"
+      [attr.aria-label]="activeFilters().length ? 'Filters, ' + activeFilters().length + ' active' : 'Filters'"
+      (click)="openFilters()"
+    >
+      <app-icon name="filter" [size]="18" /> Filters
+      @if (activeFilters().length; as count) {
+        <span class="count" aria-hidden="true">{{ count }}</span>
+      }
+    </button>
   </div>
 </div>
+
+@if (activeFilters().length) {
+  <div class="active-filters" role="group" aria-label="Active filters">
+    @for (f of activeFilters(); track f.id) {
+      <button type="button" class="chip chip--active" [attr.aria-label]="'Remove ' + f.label + ' filter: ' + f.text" (click)="clearFilter(f.id)">
+        {{ f.label }}: {{ f.text }} <app-icon name="close" [size]="16" />
+      </button>
+    }
+    <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+  </div>
+}
 
 @if (activeChildren().length > 0) {
   <div class="filters" role="group" aria-label="Show events for">
@@ -78,10 +104,17 @@
           <a mat-flat-button class="empty-add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">Add to Calendar</a>
         </app-empty-state>
       } @else if (shown().length === 0) {
-        <p class="filtered-out">
-          Nothing for this child here.
-          <button mat-button type="button" (click)="setChild(null)">Show everyone</button>
-        </p>
+        @if (childShown().length === 0) {
+          <p class="filtered-out">
+            Nothing for this child here.
+            <button mat-button type="button" (click)="setChild(null)">Show everyone</button>
+          </p>
+        } @else {
+          <p class="filtered-out">
+            No items match your filters.
+            <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+          </p>
+        }
       } @else {
         @switch (current()) {
           @case ('week') {
@@ -114,6 +147,15 @@
     }
   }
 </div>
+
+@if (filtersOpen()) {
+  <app-calendar-filter-panel
+    [filters]="filters()"
+    (changed)="setFilters($event)"
+    (resetAll)="resetFilters()"
+    (closed)="closeFilters()"
+  />
+}
 
 @if (selected(); as item) {
   @if (selectedReminder(); as reminder) {
