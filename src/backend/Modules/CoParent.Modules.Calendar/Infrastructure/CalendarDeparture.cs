@@ -24,6 +24,13 @@ internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDeparture
 
         db.Events.RemoveRange(events);
 
+        // The departing parent's repeating unavailable time goes with its dates; shared series (activities) stay.
+        db.Series.RemoveRange(departure.FamilyClosing
+            ? await db.Series.ToListAsync(cancellationToken)
+            : await db.Series
+                .Where(s => s.Category == EventCategory.Unavailable && s.OwnerMembershipId == departure.MembershipId)
+                .ToListAsync(cancellationToken));
+
         // Reminders are shared, so they stay (the departing parent shows as "Former parent"). Only their own Seen
         // marks go. A closing family loses everything.
         db.ReminderSeen.RemoveRange(departure.FamilyClosing

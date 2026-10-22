@@ -14,6 +14,8 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
 
     public DbSet<CalendarEvent> Events => Set<CalendarEvent>();
 
+    public DbSet<CalendarSeries> Series => Set<CalendarSeries>();
+
     public DbSet<Reminder> Reminders => Set<Reminder>();
 
     public DbSet<ReminderHistory> ReminderHistory => Set<ReminderHistory>();
@@ -52,7 +54,15 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
                 p.Property(x => x.Location).HasMaxLength(CalendarEvent.LocationMaxLength);
             });
             e.HasIndex(x => new { x.FamilyId, x.StartsAt });
+            e.HasIndex(x => new { x.SeriesId, x.StartsAt });
             e.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<CalendarSeries>(r =>
+        {
+            r.ToTable("series");
+            r.Property(x => x.Category).HasConversion<string>().HasMaxLength(24);
+            r.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<Reminder>(r =>

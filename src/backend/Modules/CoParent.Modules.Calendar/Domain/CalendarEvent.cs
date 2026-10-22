@@ -78,6 +78,9 @@ internal sealed class CalendarEvent : Entity, IFamilyScoped
 
     public DateTimeOffset CreatedAt { get; init; }
 
+    /// <summary>The repeating series this date belongs to (#193), if any. Each date is still its own event.</summary>
+    public Guid? SeriesId { get; init; }
+
     /// <summary>PostgreSQL xmin.</summary>
     public uint Version { get; private set; }
 

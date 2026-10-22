@@ -80,6 +80,10 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("pending_change");
 
+                    b.Property<Guid?>("SeriesId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("series_id");
+
                     b.Property<DateTimeOffset>("StartsAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("starts_at");
@@ -108,7 +112,53 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                     b.HasIndex("FamilyId", "StartsAt")
                         .HasDatabaseName("ix_events_family_id_starts_at");
 
+                    b.HasIndex("SeriesId", "StartsAt")
+                        .HasDatabaseName("ix_events_series_id_starts_at");
+
                     b.ToTable("events", "calendar");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.CalendarSeries", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("category");
+
+                    b.Property<int?>("Count")
+                        .HasColumnType("integer")
+                        .HasColumnName("count");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Days")
+                        .HasColumnType("integer")
+                        .HasColumnName("days");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<Guid>("OwnerMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_membership_id");
+
+                    b.Property<DateOnly?>("Until")
+                        .HasColumnType("date")
+                        .HasColumnName("until");
+
+                    b.HasKey("Id")
+                        .HasName("pk_series");
+
+                    b.ToTable("series", "calendar");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Calendar.Domain.EventChild", b =>
