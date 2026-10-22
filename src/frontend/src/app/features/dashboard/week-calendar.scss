@@ -279,6 +279,18 @@ ul {
   @include proposed-fill;
 }
 
+// All-day and multi-day events in the all-day row: across their dates, below parenting time (#208).
+.act--allday {
+  grid-column: var(--start) / var(--end);
+  grid-row: var(--lane);
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 2px;
+  min-height: 2.75rem;
+}
+
 .pt__note {
   color: var(--color-text);
   font-size: 0.8125rem;
