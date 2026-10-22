@@ -284,7 +284,7 @@ that points back here.
       time zone (October 22, 2026). Edits apply to the whole series.
     - [x] #172 frontend: reminders in Week, Month and List (bell icon, gold edge, "Reminder" label, child filter) and
       their details, with Seen on opening, the edited-by and seen-by notes, and Delete (October 22, 2026).
-    - [x] #173 frontend: add and edit, with the Event / Task / Reminder choice.
+    - [x] #173 frontend: add and edit, with the Event / Task / Reminder choice (October 22, 2026).
     - [x] **Owner decisions (October 22, 2026):** a monthly reminder on the 29th–31st falls on the last day of shorter
       months (Jan 31 → Feb 28 → Mar 31); edits, deletes, Seen and history are per series in v0.3.0.
     - [ ] Later, if missed: change or delete a single occurrence of a repeating reminder (This one / This and following /
