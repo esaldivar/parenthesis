@@ -1,6 +1,6 @@
 import { Type } from '@angular/core';
 import { CanMatchFn, Route, Routes } from '@angular/router';
-import { hasFamily, kidSpace, pickerAvailable, registerPage, signedIn, signedOut } from './core/auth/guards';
+import { hasFamily, kidSpace, needsFamily, pickerAvailable, registerPage, signedIn, signedOut } from './core/auth/guards';
 
 /** A page inside the auth layout, under its own top-level path so nothing competes with the app at "/". */
 function authPage(path: string, title: string, page: () => Promise<Type<unknown>>, canMatch: CanMatchFn[] = []): Route {
@@ -36,7 +36,10 @@ export const routes: Routes = [
   ]),
   // On a child's own tablet: redeem a parent's one-time code (A-11).
   authPage('pair', 'Set up a child’s tablet', () => import('./features/profiles/pair-device-page').then((m) => m.PairDevicePage), [signedOut]),
-  authPage('welcome', 'Set up your family', () => import('./features/onboarding/welcome-page').then((m) => m.WelcomePage), [signedIn]),
+  authPage('welcome', 'Set up your family', () => import('./features/onboarding/welcome-page').then((m) => m.WelcomePage), [
+    signedIn,
+    needsFamily,
+  ]),
   {
     path: 'kid',
     canMatch: [kidSpace],

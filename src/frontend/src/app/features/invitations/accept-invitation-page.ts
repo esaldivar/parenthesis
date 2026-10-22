@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../core/api/api';
@@ -74,7 +74,7 @@ const RETURN_URL = '/invitations/accept';
           </p>
           <div class="actions">
             <button mat-flat-button type="button" (click)="switchAccount()">Sign in with another account</button>
-            <a mat-button [routerLink]="away()">Not now</a>
+            <button mat-button type="button" (click)="notNow()">Not now</button>
           </div>
         }
         @case ('existing-family') {
@@ -94,7 +94,7 @@ const RETURN_URL = '/invitations/accept';
             <button mat-flat-button type="button" [disabled]="busy()" (click)="accept(true)">
               {{ busy() ? 'Joining…' : 'Join as a separate family' }}
             </button>
-            <a mat-button [routerLink]="away()">Not now</a>
+            <button mat-button type="button" (click)="notNow()">Not now</button>
           </div>
         }
         @case ('error') {
@@ -155,11 +155,6 @@ export class AcceptInvitationPage implements OnInit {
   protected readonly error = signal('');
   protected readonly busy = signal(false);
   protected readonly canRetry = signal(true);
-  /**
-   * "Not now" for a parent with a family goes home; without one, straight to setting one up, since home would bring a
-   * parent with a waiting invitation back here (#211).
-   */
-  protected readonly away = computed(() => ((this.auth.families()?.length ?? 0) > 0 ? '/' : '/welcome'));
 
   async ngOnInit(): Promise<void> {
     const fromLink = this.token();
@@ -212,6 +207,15 @@ export class AcceptInvitationPage implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /**
+   * Leave the invitation for now. It stays on this device, but the app stops bringing the parent back to it until a
+   * reload, so home is home for a parent with a family, and new-family setup for one without (#211).
+   */
+  protected async notNow(): Promise<void> {
+    this.pending.defer();
+    await this.router.navigateByUrl('/');
   }
 
   protected async switchAccount(): Promise<void> {

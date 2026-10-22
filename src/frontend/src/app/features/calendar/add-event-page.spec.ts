@@ -88,6 +88,26 @@ describe('Add event', () => {
     await vi.waitFor(() => expect(document.activeElement).toBe(alert));
   });
 
+  it('focuses this attempt’s problem, not an error left from the last one', async () => {
+    const harness = await open();
+    await choose(harness, 'Parenting time');
+    check('Kai');
+    await submit(harness);
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
+      { title: 'Something went wrong' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    await settle(harness);
+    expect(page().querySelector('form .alert')).not.toBeNull();
+
+    check('Kai'); // Now no child: a new problem.
+    await submit(harness);
+
+    expect(page().querySelector('form .alert')).toBeNull();
+    const kids = page().querySelector('fieldset.kids')!;
+    await vi.waitFor(() => expect(kids.contains(document.activeElement)).toBe(true));
+  });
+
   it('says why parenting time has no children to choose yet, instead of failing quietly', async () => {
     const waiting = CHILDREN.map((c) => ({ ...c, status: 'PendingApproval' as const }));
     const harness = await open(waiting);

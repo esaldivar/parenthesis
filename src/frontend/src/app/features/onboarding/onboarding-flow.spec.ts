@@ -181,6 +181,46 @@ describe('sign-up, household setup and invitations (Design Request #1)', () => {
       expect(text(body)).toContain('You have an invitation waiting');
     });
 
+    it('takes a parent who opens new-family setup directly to their waiting invitation first', async () => {
+      saveInvitation('invite-123');
+      const { harness, http } = await open('/welcome', fakeAuth({ families: [] }));
+
+      expect(routerOf(harness).url).toBe('/invitations/accept');
+      http.expectOne('/api/invitations/accept');
+    });
+
+    it('never offers new-family setup to a parent who already has a family', async () => {
+      const { harness } = await open('/welcome');
+      expect(routerOf(harness).url).toBe('/');
+    });
+
+    it('sends a parent whose families aren’t loaded yet home on "Not now", never to new-family setup', async () => {
+      saveInvitation('invite-123');
+      const auth = fakeAuth({ signedIn: true });
+      // Just signed in: the family list is loaded on demand.
+      const store = auth.useValue as unknown as {
+        families: { set(v: FamilySummary[] | null): void };
+        loadFamilies: () => Promise<FamilySummary[]>;
+      };
+      store.families.set(null);
+      store.loadFamilies = async () => {
+        store.families.set([FAMILY]);
+        return [FAMILY];
+      };
+      const { harness, http, body } = await open('/invitations/accept', auth);
+      http.expectOne('/api/invitations/accept').flush(
+        { title: 'You already have a family on Parenthesis.', type: 'https://parenthesis.example/problems/existing-family' },
+        { status: 409, statusText: 'Conflict' },
+      );
+      await settle(harness);
+
+      button(body, 'Not now').click();
+      await vi.waitFor(async () => {
+        await settle(harness);
+        expect(routerOf(harness).url).toBe('/');
+      });
+    });
+
     it('sends a parent with no family and no invitation to set one up, as before', async () => {
       const { harness } = await open('/', fakeAuth({ families: [] }));
       expect(routerOf(harness).url).toBe('/welcome');
@@ -298,10 +338,20 @@ describe('sign-up, household setup and invitations (Design Request #1)', () => {
       expect(text(body)).not.toContain('They’ll approve the children');
     });
 
-    it('points an invited parent to their invitation instead of a new family', async () => {
+    it('still points to the invitation from setup after the parent chose "Not now"', async () => {
       saveInvitation('invite-123');
-      const { harness, body } = await open('/welcome', fakeAuth({ families: [] }));
+      const { harness, http, body } = await open('/welcome', fakeAuth({ families: [] }));
+      // Setup takes them to the invitation first (#211); they put it off.
+      http.expectOne('/api/invitations/accept').flush(
+        { title: 'This invitation was sent to a different email address.' },
+        { status: 403, statusText: 'Forbidden' },
+      );
       await settle(harness);
+      button(body, 'Not now').click();
+      await vi.waitFor(async () => {
+        await settle(harness);
+        expect(routerOf(harness).url).toBe('/welcome');
+      });
 
       expect(text(body)).toContain('You have an invitation waiting');
       expect(body.querySelector('a[href="/invitations/accept"]')).not.toBeNull();

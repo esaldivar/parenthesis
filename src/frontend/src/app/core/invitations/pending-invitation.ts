@@ -11,7 +11,27 @@ const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
  */
 @Injectable({ providedIn: 'root' })
 export class PendingInvitation {
+  private deferredNow = false;
+
+  /**
+   * The invitee chose "Not now" on the invitation page: until this page is reloaded or a new link is opened, the app
+   * stops sending them back to it, so they can reach new-family setup if they really mean to (#211).
+   */
+  get deferred(): boolean {
+    return this.deferredNow;
+  }
+
+  defer(): void {
+    this.deferredNow = true;
+  }
+
+  /** A waiting invitation the app should take a parent with no family to first. */
+  waiting(): boolean {
+    return !this.deferredNow && this.peek() !== null;
+  }
+
   save(token: string): void {
+    this.deferredNow = false;
     try {
       localStorage.setItem(KEY, JSON.stringify({ token, savedAt: Date.now() }));
     } catch {
@@ -37,6 +57,7 @@ export class PendingInvitation {
   }
 
   clear(): void {
+    this.deferredNow = false;
     try {
       localStorage.removeItem(KEY);
     } catch {
