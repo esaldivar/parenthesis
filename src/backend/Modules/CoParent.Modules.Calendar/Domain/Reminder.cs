@@ -36,6 +36,27 @@ internal sealed class Reminder : Entity, IFamilyScoped
     public DateTimeOffset? LastEditedAt { get; set; }
 
     public DateTimeOffset? DeletedAt { get; set; }
+
+    /// <summary>How it repeats (#171). Edits always apply to the whole series.</summary>
+    public RepeatFrequency Repeat { get; set; }
+
+    /// <summary>A repeating reminder ends on this local date (inclusive), or after <see cref="RepeatCount"/> times.</summary>
+    public DateOnly? RepeatUntil { get; set; }
+
+    /// <summary>How many times it happens in all, counting the first.</summary>
+    public int? RepeatCount { get; set; }
+
+    /// <summary>When the last occurrence starts (the start itself for a one-off), so listing can skip ended series.</summary>
+    public DateTimeOffset SeriesEndsAt { get; set; }
+}
+
+/// <summary>Daily, weekly or monthly, always with an end (owner decision, October 21, 2026).</summary>
+internal enum RepeatFrequency
+{
+    None,
+    Daily,
+    Weekly,
+    Monthly,
 }
 
 internal enum ReminderAction

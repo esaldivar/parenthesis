@@ -52,6 +52,7 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
             r.ToTable("reminders");
             r.Property(x => x.Title).HasMaxLength(Reminder.TitleMaxLength);
             r.Property(x => x.Details).HasMaxLength(Reminder.DetailsMaxLength);
+            r.Property(x => x.Repeat).HasConversion<string>().HasMaxLength(16);
             r.HasIndex(x => new { x.FamilyId, x.StartsAt });
             r.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });

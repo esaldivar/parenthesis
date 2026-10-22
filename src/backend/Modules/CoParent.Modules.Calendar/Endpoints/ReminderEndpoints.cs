@@ -14,11 +14,23 @@ using Microsoft.EntityFrameworkCore;
 namespace CoParent.Modules.Calendar.Endpoints;
 
 /// <summary>Create and edit (edits replace the whole reminder, so clearing the child or details is explicit).</summary>
-internal sealed record ReminderRequest(string? Title, DateTimeOffset? StartsAt, bool AllDay, Guid? ChildId, string? Details);
+internal sealed record ReminderRequest(
+    string? Title,
+    DateTimeOffset? StartsAt,
+    bool AllDay,
+    Guid? ChildId,
+    string? Details,
+    RepeatFrequency? Repeat = null,
+    DateOnly? RepeatUntil = null,
+    int? RepeatCount = null);
 
 internal sealed record ReminderSeenView(Guid MembershipId, DateTimeOffset SeenAt);
 
-/// <summary>A reminder as a parent sees it. <c>EditedBy</c>: the other parent who last edited it (null when nobody did, or the viewer did), for the quiet "edited by" note.</summary>
+/// <summary>
+/// A reminder as a parent sees it. <c>EditedBy</c>: the other parent who last edited it (null when nobody did, or the
+/// viewer did), for the quiet "edited by" note. In a list, a repeating reminder appears once per occurrence:
+/// <c>StartsAt</c> is that occurrence and <c>SeriesStartsAt</c> the first one (they're equal for a one-off).
+/// </summary>
 internal sealed record ReminderView(
     Guid Id,
     string Title,
@@ -30,12 +42,16 @@ internal sealed record ReminderView(
     DateTimeOffset CreatedAt,
     Guid? EditedBy,
     DateTimeOffset? LastEditedAt,
-    IReadOnlyList<ReminderSeenView> SeenBy);
+    IReadOnlyList<ReminderSeenView> SeenBy,
+    RepeatFrequency Repeat,
+    DateOnly? RepeatUntil,
+    int? RepeatCount,
+    DateTimeOffset SeriesStartsAt);
 
 internal sealed record ReminderHistoryView(Guid ActorMembershipId, string Action, string? Changes, DateTimeOffset At);
 
 /// <summary>
-/// Shared reminders (#72, part 1: #170). Either parent creates, edits or deletes at once, with no approval request;
+/// Shared reminders (#72; #170, and repeats in #171). Either parent creates, edits or deletes at once, with no approval request;
 /// history records who changed what. Seen is per parent and set only by <c>POST …/seen</c>, which the app calls when
 /// a parent opens the details. Parents only for now: whether children see reminders isn't decided (TODO.md), and child
 /// sessions are refused by the host's gate.
@@ -56,7 +72,12 @@ internal static class ReminderEndpoints
 
     /// <summary>Reminders in [from, to). Never marks anything seen.</summary>
     private static async Task<Results<Ok<List<ReminderView>>, ValidationProblem, ForbidHttpResult>> ListAsync(
-        DateTimeOffset from, DateTimeOffset to, ITenantContext tenant, CalendarDbContext db, CancellationToken cancellationToken)
+        DateTimeOffset from,
+        DateTimeOffset to,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IFamilyRoster roster,
+        CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
         {
@@ -73,12 +94,15 @@ internal static class ReminderEndpoints
 
         (from, to) = (from.ToUniversalTime(), to.ToUniversalTime());
         var reminders = await db.Reminders
-            .Where(r => r.DeletedAt == null && r.StartsAt >= from && r.StartsAt < to)
-            .OrderBy(r => r.StartsAt)
+            .Where(r => r.DeletedAt == null && r.StartsAt < to && r.SeriesEndsAt >= from)
             .ToListAsync(cancellationToken);
         var ids = reminders.Select(r => r.Id).ToList();
         var seen = await db.ReminderSeen.Where(s => ids.Contains(s.ReminderId)).ToListAsync(cancellationToken);
-        return TypedResults.Ok(reminders.Select(r => View(r, tenant, seen)).ToList());
+        var zone = await roster.TimeZoneAsync(cancellationToken);
+        return TypedResults.Ok(reminders
+            .SelectMany(r => ReminderSchedule.Between(r, zone, from, to).Select(at => View(r, tenant, seen, at)))
+            .OrderBy(v => v.StartsAt)
+            .ToList());
     }
 
     private static async Task<Results<Ok<ReminderView>, NotFound, ForbidHttpResult>> GetAsync(
@@ -111,13 +135,15 @@ internal static class ReminderEndpoints
             return TypedResults.Forbid();
         }
 
-        var errors = await ValidateAsync(request, roster, cancellationToken);
+        var zone = await roster.TimeZoneAsync(cancellationToken);
+        var errors = await ValidateAsync(request, roster, zone, cancellationToken);
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
         }
 
         var now = clock.GetUtcNow();
+        var repeat = Repeat(request);
         var reminder = new Reminder
         {
             FamilyId = tenant.FamilyId,
@@ -128,7 +154,11 @@ internal static class ReminderEndpoints
             Details = Clean(request.Details),
             CreatedByMembershipId = tenant.MembershipId,
             CreatedAt = now,
+            Repeat = repeat.Frequency,
+            RepeatUntil = repeat.Until,
+            RepeatCount = repeat.Count,
         };
+        reminder.SeriesEndsAt = SeriesEnd(reminder, zone);
         var userId = http.User.GetUserId();
         await unitOfWork.ExecuteAsync(async ct =>
         {
@@ -166,12 +196,14 @@ internal static class ReminderEndpoints
             return TypedResults.NotFound();
         }
 
-        var errors = await ValidateAsync(request, roster, cancellationToken);
+        var zone = await roster.TimeZoneAsync(cancellationToken);
+        var errors = await ValidateAsync(request, roster, zone, cancellationToken);
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
         }
 
+        var repeat = Repeat(request);
         var title = request.Title!.Trim();
         var startsAt = request.StartsAt!.Value.ToUniversalTime();
         var details = Clean(request.Details);
@@ -196,6 +228,11 @@ internal static class ReminderEndpoints
             changes.Add("details");
         }
 
+        if (repeat != (reminder.Repeat, reminder.RepeatUntil, reminder.RepeatCount))
+        {
+            changes.Add("repeat");
+        }
+
         var seen = await LoadSeenAsync(db, reminderId, cancellationToken);
         if (changes.Count == 0)
         {
@@ -205,6 +242,8 @@ internal static class ReminderEndpoints
         var now = clock.GetUtcNow();
         (reminder.Title, reminder.StartsAt, reminder.AllDay, reminder.ChildProfileId, reminder.Details) =
             (title, startsAt, request.AllDay, request.ChildId, details);
+        (reminder.Repeat, reminder.RepeatUntil, reminder.RepeatCount) = repeat;
+        reminder.SeriesEndsAt = SeriesEnd(reminder, zone);
         (reminder.LastEditedByMembershipId, reminder.LastEditedAt) = (tenant.MembershipId, now);
         var userId = http.User.GetUserId();
         await unitOfWork.ExecuteAsync(async ct =>
@@ -318,7 +357,7 @@ internal static class ReminderEndpoints
         db.ReminderSeen.Where(s => s.ReminderId == reminderId).ToListAsync(cancellationToken);
 
     private static async Task<Dictionary<string, string[]>> ValidateAsync(
-        ReminderRequest request, IFamilyRoster roster, CancellationToken cancellationToken)
+        ReminderRequest request, IFamilyRoster roster, string zone, CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
         var title = request.Title?.Trim() ?? "";
@@ -342,10 +381,39 @@ internal static class ReminderEndpoints
             errors["childId"] = ["Choose a child who's in this family (and approved by both parents)."];
         }
 
+        if (request.Repeat is { } repeat && repeat != RepeatFrequency.None)
+        {
+            if (request.RepeatUntil is null == request.RepeatCount is null)
+            {
+                errors["repeat"] = ["Choose when a repeating reminder ends: an end date or a number of times."];
+            }
+            else if (request.RepeatCount is { } count && count is < 2 or > ReminderSchedule.MaxOccurrences)
+            {
+                errors["repeatCount"] = [$"Repeat it 2 to {ReminderSchedule.MaxOccurrences} times."];
+            }
+            else if (request.RepeatUntil is { } until && request.StartsAt is { } starts)
+            {
+                var first = ReminderSchedule.LocalDate(starts, zone);
+                if (until <= first || until > first.AddYears(ReminderSchedule.MaxYears))
+                {
+                    errors["repeatUntil"] = [$"Choose an end date after the first day and within {ReminderSchedule.MaxYears} years."];
+                }
+            }
+        }
+
         return errors;
     }
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+    /// <summary>The repeat fields to store: none for a one-off, otherwise the frequency and its one end condition.</summary>
+    private static (RepeatFrequency Frequency, DateOnly? Until, int? Count) Repeat(ReminderRequest request) =>
+        request.Repeat is { } repeat && repeat != RepeatFrequency.None
+            ? (repeat, request.RepeatUntil, request.RepeatCount)
+            : (RepeatFrequency.None, null, null);
+
+    private static DateTimeOffset SeriesEnd(Reminder r, string zone) =>
+        ReminderSchedule.Occurrences(r.StartsAt, r.Repeat, r.RepeatUntil, r.RepeatCount, zone).Last();
 
     private static ReminderHistory History(
         Reminder reminder, ITenantContext tenant, ReminderAction action, string? changes, DateTimeOffset at) => new()
@@ -358,10 +426,11 @@ internal static class ReminderEndpoints
             At = at,
         };
 
-    private static ReminderView View(Reminder r, ITenantContext tenant, IEnumerable<ReminderSeen> seen) => new(
+    private static ReminderView View(
+        Reminder r, ITenantContext tenant, IEnumerable<ReminderSeen> seen, DateTimeOffset? occurrence = null) => new(
         r.Id,
         r.Title,
-        r.StartsAt,
+        occurrence ?? r.StartsAt,
         r.AllDay,
         r.ChildProfileId,
         r.Details,
@@ -369,5 +438,9 @@ internal static class ReminderEndpoints
         r.CreatedAt,
         EditedBy: r.LastEditedByMembershipId is { } editor && editor != tenant.MembershipId ? editor : null,
         r.LastEditedAt,
-        seen.Where(s => s.ReminderId == r.Id).OrderBy(s => s.SeenAt).Select(s => new ReminderSeenView(s.MembershipId, s.SeenAt)).ToList());
+        seen.Where(s => s.ReminderId == r.Id).OrderBy(s => s.SeenAt).Select(s => new ReminderSeenView(s.MembershipId, s.SeenAt)).ToList(),
+        r.Repeat,
+        r.RepeatUntil,
+        r.RepeatCount,
+        r.StartsAt);
 }

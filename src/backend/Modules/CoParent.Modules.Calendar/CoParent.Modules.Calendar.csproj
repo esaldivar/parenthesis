@@ -9,6 +9,7 @@
     <ProjectReference Include="..\CoParent.Modules.Families\CoParent.Modules.Families.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="NodaTime" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
