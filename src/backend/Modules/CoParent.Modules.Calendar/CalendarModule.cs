@@ -27,6 +27,7 @@ public static class CalendarModule
     {
         CalendarEndpoints.Map(family);
         ReminderEndpoints.Map(family);
+        TaskEndpoints.Map(family);
         return family;
     }
 }

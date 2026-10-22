@@ -282,6 +282,140 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                     b.ToTable("reminder_seen", "calendar");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.SharedTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid?>("CompletedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_by_membership_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_membership_id");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("details");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<DateTimeOffset?>("LastEditedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_edited_at");
+
+                    b.Property<Guid?>("LastEditedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_edited_by_membership_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tasks");
+
+                    b.HasIndex("FamilyId", "DueDate")
+                        .HasDatabaseName("ix_tasks_family_id_due_date");
+
+                    b.ToTable("tasks", "calendar");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.SharedTaskHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_membership_id");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<string>("Changes")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("changes");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("task_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_task_history");
+
+                    b.HasIndex("TaskId", "At")
+                        .HasDatabaseName("ix_task_history_task_id_at");
+
+                    b.ToTable("task_history", "calendar");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.SharedTaskSeen", b =>
+                {
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("task_id");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<DateTimeOffset>("SeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("seen_at");
+
+                    b.HasKey("TaskId", "MembershipId")
+                        .HasName("pk_task_seen");
+
+                    b.ToTable("task_seen", "calendar");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Calendar.Domain.CalendarEvent", b =>
                 {
                     b.OwnsOne("CoParent.Modules.Calendar.Domain.ProposedTimes", "Proposed", b1 =>
