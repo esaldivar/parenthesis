@@ -115,6 +115,7 @@ describe('tasks on the calendar', () => {
     expect(text(checkbox('Poster board').closest('label'))).toBe('Poster board Required Ticked by Sam · Oct 20, 3:15 PM');
     expect(text(checkbox('Extra markers').closest('label'))).toBe('Extra markers Optional');
     expect(checkbox('Poster board').checked).toBe(true);
+    expect(button('Edit task', dialog()).getAttribute('href')).toBe('/calendar/tasks/t1/edit');
     // The checklist decides: no Mark done, assignee, attachments or scores.
     expect(text(dialog())).not.toMatch(/Mark done|Assign|Attach|points|score/i);
   });

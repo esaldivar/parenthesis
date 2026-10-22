@@ -291,14 +291,15 @@ that points back here.
       All, like recurring unavailable time).
     - [x] **Owner decisions (October 22, 2026):** children don't see reminders (parents only; the child experience in
       v0.5.0 can revisit it); a real edit clears the other parent's Seen (the editor's stays).
-  - [ ] **Tasks (#73)**, split into four parts:
+  - [x] **Tasks (#73)**, split into four parts (all built October 22, 2026; the owner closes #73 after testing):
     - [x] #174 backend: shared tasks, Mark done (and undo), history, the "edited by" note and per-parent Seen
       (October 22, 2026).
     - [x] #175 backend: checklists with required and optional items, automatic completion and reopening, and a
       version check so neither parent's change is silently lost (October 22, 2026).
     - [x] #176 frontend: tasks in Week, Month and List, their details with the checklist, Mark done, Delete, the
       conflict refresh and the "Great teamwork!" celebration (October 22, 2026).
-    - [ ] #177 frontend: add and edit a task, with its checklist.
+    - [x] #177 frontend: add and edit a task, with its checklist (add, remove, reorder with Move up/down, required or
+      optional), and the "load their latest version" path when the other parent changed it first (October 22, 2026).
     - [x] **Owner decisions (October 22, 2026):** children don't see tasks (parents only; child sessions get 403). Mark
       done and undo are recorded in history but aren't edits: they keep both parents' Seen and don't set "edited by".
       A real edit clears the other parent's Seen, as for reminders. A checklist with no required items is done when

@@ -69,7 +69,7 @@ describe('Add and edit a reminder', () => {
     await settle();
   }
 
-  it('asks Event, Task or Reminder with whole cards and no selection marks, and says plainly that tasks aren’t ready', async () => {
+  it('asks Event, Task or Reminder with whole cards and no selection marks', async () => {
     await openAdd();
 
     expect(text(page().querySelector('h1'))).toBe('Add to calendar');
@@ -80,8 +80,7 @@ describe('Add and edit a reminder', () => {
     kindCard('Task').click();
     await settle();
     expect(kindCard('Task').getAttribute('aria-pressed')).toBe('true');
-    expect(text(page())).toContain('Shared tasks with checklists aren’t available yet.');
-    expect(page().querySelector('form')).toBeNull();
+    expect(page().querySelector('app-task-form')).not.toBeNull();
   });
 
   it('adds a one-off reminder at once, in the family’s time zone, with no location', async () => {
