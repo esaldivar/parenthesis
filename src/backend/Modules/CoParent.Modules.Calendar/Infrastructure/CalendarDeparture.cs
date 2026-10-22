@@ -6,8 +6,8 @@ namespace CoParent.Modules.Calendar.Infrastructure;
 
 /// <summary>
 /// When a parent deletes their account (A-12): their own "Unavailable" time (whose notes only they could see) is
-/// deleted. Shared events stay for the co-parent's history; the departing parent shows as "Former parent". If the
-/// family is closing, all its events go.
+/// deleted, along with their reminder Seen marks. Shared events and reminders stay for the co-parent's history; the
+/// departing parent shows as "Former parent". If the family is closing, all its events and reminders go.
 /// </summary>
 internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDepartureHandler
 {
@@ -23,6 +23,18 @@ internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDeparture
                 .ToListAsync(cancellationToken);
 
         db.Events.RemoveRange(events);
+
+        // Reminders are shared, so they stay (the departing parent shows as "Former parent"). Only their own Seen
+        // marks go. A closing family loses everything.
+        db.ReminderSeen.RemoveRange(departure.FamilyClosing
+            ? await db.ReminderSeen.ToListAsync(cancellationToken)
+            : await db.ReminderSeen.Where(s => s.MembershipId == departure.MembershipId).ToListAsync(cancellationToken));
+        if (departure.FamilyClosing)
+        {
+            db.ReminderHistory.RemoveRange(await db.ReminderHistory.ToListAsync(cancellationToken));
+            db.Reminders.RemoveRange(await db.Reminders.ToListAsync(cancellationToken));
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 }

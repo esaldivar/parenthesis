@@ -79,6 +79,9 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.GetAsync("/api/me/families")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.GetAsync($"/api/families/{family.FamilyId}/approvals")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.PostAsync("/api/families", new { name = "Kai's family", timeZone = "UTC" })).StatusCode);
+        // Reminders are parents-only until it's decided whether children see them (#170).
+        var week = "from=2026-10-12T00:00:00Z&to=2026-10-19T00:00:00Z";
+        Assert.Equal(HttpStatusCode.Forbidden, (await family.Dad.GetAsync($"/api/families/{family.FamilyId}/calendar/reminders?{week}")).StatusCode);
 
         // Back to a parent profile only with the parent's full password. Antiforgery tokens are tied to who is signed
         // in, so the app fetches a fresh one whenever the profile changes.
