@@ -332,6 +332,9 @@ that points back here.
       they don't reappear.
   - [ ] Changing an event's children after it's created (the API doesn't support it yet).
   - [x] Frontend: the dashboard's live data source (#196).
+    - [ ] **Home calendar shows every event (#208, critical):** on desktop the week grid left out all-day events (an
+      all-day activity, a holiday, a day of unavailable time), and a multi-day event showed on its first day only. They
+      now sit in the all-day row across their dates. **Owner:** retest on the development site, then close #208.
   - [ ] **A parent can't have the children and be unavailable at once (#210).** Built on
     `feat/210-block-own-overlaps`: the API refuses parenting time over its caregiver's unavailable time (whoever adds
     it) and unavailable time over the owner's pending or confirmed parenting time, for new items, repeating ones and

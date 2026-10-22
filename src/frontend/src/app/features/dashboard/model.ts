@@ -54,6 +54,11 @@ export interface FamilyEvent {
   readonly time?: string;
   /** Defaults to 60 minutes when unknown. */
   readonly durationMinutes?: number;
+  /**
+   * The last date it covers, when that's after `date` (a multi-day event). All-day and multi-day events sit in the
+   * week's all-day row across their dates; single-day timed events sit in the hour grid (#208).
+   */
+  readonly endDate?: PlainDate;
   readonly category: EventCategory;
   readonly children: readonly ChildRef[];
   /** Parents attending, shown before the children (both parents for a family event). */
