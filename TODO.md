@@ -268,7 +268,8 @@ that points back here.
   - [x] Backend: overlap detection (C-06). Non-blocking warnings for double-booked parenting time, an unavailable
     caregiver, and unavailable time over your own parenting time (October 17, 2026).
   - [x] Backend: approvals history and decision comments (AP-04/05); request expiry after 14 days (AP-06) (October 17, 2026).
-  - [ ] Backend: reminders' notifications (C-04), the .ics feed (C-07).
+  - [x] Reminders' notifications (C-04) and the .ics feed (C-07): moved to M6 — Performance, Accessibility & Final
+    Polish, as a stretch goal (owner decision, October 22, 2026); tracked in #198.
   - [x] **Repeating events (#193, C-05).** Built; the owner closes #193 after testing.
     - [x] Backend: weekly on chosen days for unavailable time and activities, ending on a date or after a number of
       times within a year, each date its own event; edit and cancel with This event / This and following / All
@@ -319,7 +320,16 @@ that points back here.
   - [x] Frontend: edit an event (#188, October 22, 2026): title, when, place, notes and the caregiver, from the event's
     details. Parenting time, holidays and family events send a change for approval ("Change pending"); notes and
     other events change at once; the form says which before saving.
-  - [ ] Frontend: declined requests on the calendar.
+  - [x] **Declined requests on the calendar (#199, October 22, 2026).** A declined new event shows to both parents
+    as **Declined** (struck through, labelled, never like a confirmed or pending item), with who declined it, when and
+    their comment, and **Remove from my calendar**, which changes only that parent's calendar. It also drops off once
+    its dates pass. Children never see it; it never counts in conflict checks; the home page leaves it out. A
+    **Declined** approval filter is on by default (saved filters from before start with it ticked).
+    - [x] **Owner decisions (October 22, 2026):** declined new events only (a declined change or swap leaves the event
+      as it was, and its outcome stays in the approvals history); both parents see it; it stays until removed or
+      past; the filter option is on by default.
+    - Withdrawn and expired requests still just disappear. Requests declined before this change aren't marked, so
+      they don't reappear.
   - [ ] Changing an event's children after it's created (the API doesn't support it yet).
   - [x] Frontend: the dashboard's live data source (#196).
   - [x] **Calendar filters (#190, design #162).** Built; the owner closes #190 after testing.

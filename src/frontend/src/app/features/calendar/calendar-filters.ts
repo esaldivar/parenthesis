@@ -9,7 +9,7 @@ import { CalendarItem, ItemKind } from './calendar-items';
  */
 export type TypeOption = ItemKind;
 export type ParentOption = 'created-by-me' | 'created-by-co-parent' | 'involves-me' | 'involves-co-parent';
-export type ApprovalOption = 'confirmed' | 'pending' | 'change-pending';
+export type ApprovalOption = 'confirmed' | 'pending' | 'change-pending' | 'declined';
 
 export interface CalendarFilters {
   readonly types: readonly TypeOption[];
@@ -39,6 +39,8 @@ export const APPROVAL_OPTIONS: readonly { id: ApprovalOption; label: string }[] 
   { id: 'confirmed', label: 'Confirmed' },
   { id: 'pending', label: 'Pending approval' },
   { id: 'change-pending', label: 'Change pending' },
+  // Declined requests (#199): shown by default, like everything else (owner decision, October 22, 2026).
+  { id: 'declined', label: 'Declined' },
 ];
 
 export const DIMENSIONS: readonly { id: Dimension; label: string; options: readonly { id: string; label: string }[] }[] = [
@@ -102,15 +104,28 @@ export function applyFilters(items: readonly CalendarItem[], filters: CalendarFi
   });
 }
 
-/** Read saved filters, keeping only known values. Anything unreadable falls back to showing everything. */
+/** Every option there is, saved with a parent's choices so options added later start ticked. */
+const ALL_OPTIONS: readonly string[] = DIMENSIONS.flatMap((d) => d.options.map((o) => o.id));
+
+/** The options before "Declined" (#199): what a choice saved without a list of options had seen. */
+const OPTIONS_BEFORE_DECLINED = ALL_OPTIONS.filter((o) => o !== 'declined');
+
+/** What's kept in the browser: the choices, and every option there was when they were made. */
+export const filtersToSave = (filters: CalendarFilters) => JSON.stringify({ ...filters, options: ALL_OPTIONS });
+
+/**
+ * Read saved filters, keeping only known values. An option added since they were saved (like Declined) starts ticked,
+ * so a new kind of item never hides silently. Anything unreadable falls back to showing everything.
+ */
 export function parseFilters(raw: string | null): CalendarFilters {
   if (!raw) {
     return ALL_FILTERS;
   }
   try {
-    const value = JSON.parse(raw) as Partial<Record<Dimension, unknown>>;
+    const value = JSON.parse(raw) as Partial<Record<Dimension | 'options', unknown>>;
+    const seen = Array.isArray(value.options) ? (value.options as unknown[]) : OPTIONS_BEFORE_DECLINED;
     const pick = <T extends string>(saved: unknown, allowed: readonly T[]): readonly T[] =>
-      Array.isArray(saved) ? allowed.filter((a) => saved.includes(a)) : allowed;
+      Array.isArray(saved) ? allowed.filter((a) => saved.includes(a) || !seen.includes(a)) : allowed;
     return {
       types: pick(value.types, ALL_FILTERS.types),
       parents: pick(value.parents, ALL_FILTERS.parents),

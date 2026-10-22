@@ -1,5 +1,14 @@
 import { CHILDREN, MEMBERS, event, reminder, task } from '../../../testing/calendar-fixtures';
-import { ALL_FILTERS, CalendarFilters, activeDimensions, applyFilters, filtersKey, parseFilters, selectionText } from './calendar-filters';
+import {
+  ALL_FILTERS,
+  CalendarFilters,
+  activeDimensions,
+  applyFilters,
+  filtersKey,
+  filtersToSave,
+  parseFilters,
+  selectionText,
+} from './calendar-filters';
 import { reminderItems, taskItems, toItems } from './calendar-items';
 
 const ZONE = 'America/Chicago';
@@ -69,5 +78,13 @@ describe('calendar filters', () => {
       types: ['task'],
     });
     expect(filtersKey('user-1', 'family-1')).toBe('parenthesis.calendar-filters.user-1.family-1');
+  });
+
+  it('ticks an option added since the filters were saved, like Declined, but keeps one the parent unticked', () => {
+    // Saved before Declined existed: it starts ticked, so declined requests never hide silently.
+    expect(parseFilters(JSON.stringify({ ...ALL_FILTERS, approval: ['pending'] })).approval).toEqual(['pending', 'declined']);
+    // Saved since, with Declined unticked on purpose: it stays unticked.
+    const chosen: CalendarFilters = { ...ALL_FILTERS, approval: ['pending'] };
+    expect(parseFilters(filtersToSave(chosen))).toEqual(chosen);
   });
 });

@@ -142,7 +142,7 @@ describe('calendar filters on the page', () => {
     await settle();
     expect(shownTitles()).toEqual(['School play']);
 
-    button('Remove Approval filter: Pending approval', main()).click();
+    button('Remove Approval filter: Pending approval, Declined', main()).click();
     await settle();
     // Still filtered by parents: created by me, or involving either of us (Sam's time and Sam's unavailable time).
     expect(shownTitles()).toEqual(['School play', 'Soccer', 'Time with Sam', 'Unavailable']);

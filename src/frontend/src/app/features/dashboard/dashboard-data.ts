@@ -39,7 +39,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
     const zone = this.auth.currentFamily()?.timeZone ?? 'UTC';
     const weekEnd = addDays(weekStart, 7);
     const [from, to] = [fromFamilyLocal(`${weekStart}T00:00`, zone), fromFamilyLocal(`${weekEnd}T00:00`, zone)];
-    const [family, children, events, approvals, reminders, tasks] = await Promise.all([
+    const [family, children, listed, approvals, reminders, tasks] = await Promise.all([
       this.api.family(familyId),
       this.api.children(familyId),
       this.api.calendarEvents(familyId, from, to),
@@ -47,6 +47,8 @@ export class LiveDashboardDataSource extends DashboardDataSource {
       this.api.reminders(familyId, from, to),
       this.api.tasks(familyId, weekStart, weekEnd),
     ]);
+    // Declined requests (#199) stay on the Calendar page, labelled; the home page shows only what's planned or asked.
+    const events = listed.filter((e) => e.status === 'Confirmed' || e.status === 'PendingApproval');
     const members = family.members;
     const parent = (membershipId: string | null): Caregiver => ({
       membershipId: membershipId ?? '',

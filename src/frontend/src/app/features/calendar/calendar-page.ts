@@ -30,6 +30,7 @@ import {
   applyFilters,
   concealedUnavailable,
   filtersKey,
+  filtersToSave,
   parseFilters,
   selectionText,
 } from './calendar-filters';
@@ -359,7 +360,7 @@ export class CalendarPage {
     const key = this.storageKey();
     if (key) {
       try {
-        this.storage?.localStorage.setItem(key, JSON.stringify(filters));
+        this.storage?.localStorage.setItem(key, filtersToSave(filters));
       } catch {
         // Not remembered this time; the filters still apply now.
       }

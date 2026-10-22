@@ -32,8 +32,12 @@ public sealed record ChangeRequestProposal(
     public const int ReasonMaxLength = 500;
 }
 
-/// <summary>What a decided request is about, passed to the module that owns the target.</summary>
-public sealed record ApprovalTarget(Guid ChangeRequestId, Guid FamilyId, string TargetType, Guid TargetId);
+/// <summary>
+/// What a decided request is about, passed to the module that owns the target. <paramref name="DeclinedByParent"/> is
+/// true only when a parent answered Decline, not when the request was withdrawn or expired, so the calendar can show a
+/// declined request as declined (#199).
+/// </summary>
+public sealed record ApprovalTarget(Guid ChangeRequestId, Guid FamilyId, string TargetType, Guid TargetId, bool DeclinedByParent = false);
 
 /// <summary>Raises change requests. Called inside the caller's unit of work, so the request commits with the change.</summary>
 public interface IChangeRequests

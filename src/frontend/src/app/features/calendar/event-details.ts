@@ -6,7 +6,7 @@ import { Api, CalendarEvent, ChangeRequest, EditScope, FamilyMember } from '../.
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
-import { CalendarItem } from './calendar-items';
+import { CalendarItem, FORMER_PARENT } from './calendar-items';
 import { statusText, whenText } from './item-text';
 import { repeatText } from './series';
 import { lastDate, toFamilyLocal } from './time';
@@ -45,6 +45,8 @@ export class EventDetails {
   readonly changed = output<string>();
 
   protected readonly confirming = signal(false);
+  /** The parent's decision on a declined request (#199), from the approvals history. */
+  protected readonly decline = signal<{ by: string; on: string; comment: string | null } | null>(null);
   protected readonly withdrawing = signal(false);
   /** The waiting request about this event, if any (from the approvals inbox). */
   protected readonly request = signal<ChangeRequest | null>(null);
@@ -86,8 +88,11 @@ export class EventDetails {
       const familyId = this.familyId();
       untracked(() => {
         this.request.set(null);
+        this.decline.set(null);
         this.withdrawing.set(false);
-        if (item.status !== 'confirmed') {
+        if (item.status === 'declined') {
+          void this.loadDecline(familyId, item.id);
+        } else if (item.status !== 'confirmed') {
           void this.loadRequest(familyId, item.id);
         }
       });
@@ -102,6 +107,41 @@ export class EventDetails {
       }
     } catch {
       // The details still show the status in words; the approvals inbox has the rest.
+    }
+  }
+
+  /** Who declined it, when, and their comment, from the decided requests. */
+  private async loadDecline(familyId: string, eventId: string): Promise<void> {
+    try {
+      const decided = await this.api.approvals(familyId, 'history');
+      const request = decided.find((r) => r.targetId === eventId && r.status === 'Rejected');
+      const answer = request?.decisions.find((d) => d.decision === 'Reject');
+      if (this.item().id === eventId && answer) {
+        const member = this.members().find((m) => m.membershipId === answer.deciderMembershipId);
+        this.decline.set({
+          by: member?.isYou ? 'You' : (member?.displayName ?? FORMER_PARENT),
+          on: dateTimeLabel(toFamilyLocal(answer.decidedAt, this.timeZone())),
+          comment: answer.comment,
+        });
+      }
+    } catch {
+      // The details still say it was declined; the approvals history has the rest.
+    }
+  }
+
+  /** Removes a declined request from this parent's calendar only (#199). */
+  protected async dismiss(): Promise<void> {
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.api.dismissEvent(this.familyId(), this.item().id);
+      this.changed.emit(
+        `“${this.item().title}” was removed from your calendar. It’s still in the approvals history.`,
+      );
+    } catch (error) {
+      this.error.set(generalMessage(toProblem(error)));
+    } finally {
+      this.busy.set(false);
     }
   }
 

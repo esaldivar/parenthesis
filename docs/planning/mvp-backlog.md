@@ -12,10 +12,11 @@ the earlier milestone map below as the release structure; no item was dropped or
 |---|---|---|
 | **v0.1.0** | 1. Foundation | E0 (F-01 to F-10) |
 | **v0.2.0** | 2. Accounts and profiles | E1 (A-01 to A-11); E2 (FM-01 to FM-09) |
-| **v0.3.0** | 3. Calendar and approvals | A-12 account deletion (first); E3 (C-01 to C-07); E4 (AP-01 to AP-07); calendar notifications (N-03 for calendar events) |
+| **v0.3.0** | 3. Calendar and approvals | A-12 account deletion (first); E3 (C-01 to C-06; C-04's notifications and C-07 moved to M6, #198); E4 (AP-01 to AP-07); calendar notifications (N-03 for calendar events) |
 | **v0.4.0** | 4. Communication (proposed) | Messaging (post-MVP epic, brought forward); N-01, N-02, N-03; shared family information (to be specified) |
 | **v0.5.0** | 5. Child experience (proposed) | E5 (M-01 to M-10), including the kid dashboard (M-07), diary (M-08) and Restrict/deletion (M-04 to M-06) |
 | **v1.0.0** | Private beta | E7 (S-01 to S-08); D-01 parent dashboard with live data; end-to-end tests; invitation-only access |
+| M6 (stretch) | Performance, Accessibility & Final Polish | Lighthouse and WCAG 2.2 AA work (#109, #112); reminder notifications (C-04) and the .ics feed (C-07), #198 (owner decision, October 22, 2026) |
 | after 1.0 | | Google Calendar sync; billing |
 
 Notes:

@@ -36,6 +36,9 @@ describe('the live dashboard source (#196)', () => {
       event({ id: 'away', title: 'Unavailable', category: 'Unavailable', childIds: [], ownerMembershipId: 'm-sam', notes: 'Private reason' }),
       event({ id: 'mine', title: 'Unavailable', category: 'Unavailable', childIds: [], ownerMembershipId: 'm-alex' }),
       event({ id: 'soccer', title: 'Soccer practice', category: 'Activity', pendingChange: 'Modify' }),
+      // Declined requests (#199) stay on the Calendar page only.
+      event({ id: 'no', title: 'Declined weekend', category: 'ParentingTime', caregiverMembershipId: 'm-alex', status: 'Rejected' }),
+      event({ id: 'no-play', title: 'Declined play', category: 'Joint', status: 'Rejected' }),
     ]);
     http.expectOne(`${F}/approvals`).flush([
       { id: 'r1', summary: 'Add: Time with Alex, Oct 20', status: 'Pending', canDecide: false, proposerMembershipId: 'm-alex' },

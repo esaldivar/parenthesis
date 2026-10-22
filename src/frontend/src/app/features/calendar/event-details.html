@@ -31,6 +31,22 @@
         }
       </p>
     }
+    @case ('declined') {
+      <p class="explain">
+        @if (decline(); as decline) {
+          {{ decline.by }} declined this request on {{ decline.on }}.
+        } @else {
+          This request was declined.
+        }
+        It isn’t on the schedule.
+      </p>
+      @if (decline()?.comment; as comment) {
+        <dl class="change">
+          <dt>Comment</dt>
+          <dd>{{ comment }}</dd>
+        </dl>
+      }
+    }
     @case ('change-pending') {
       <p class="explain">
         @if (item().pendingChange === 'Cancel') {
@@ -57,7 +73,7 @@
     </dl>
   }
 
-  @if (item().status !== 'confirmed') {
+  @if (item().status === 'pending' || item().status === 'change-pending') {
     @if (request(); as request) {
       <section class="timeline" aria-labelledby="timeline-heading">
         <h3 id="timeline-heading">Status</h3>
@@ -148,6 +164,21 @@
       <a mat-stroked-button [routerLink]="['/calendar', swapTarget()!.id, 'swap']">
         <app-icon name="swap" [size]="18" /> Request parenting time swap
       </a>
+    </div>
+  }
+
+  @if (item().status === 'declined') {
+    <div class="actions">
+      <p class="explain">Removing it changes only your calendar. The decision stays in the approvals history.</p>
+      @if (error(); as error) {
+        <p class="error" role="alert">{{ error }}</p>
+      }
+      <div class="actions__row">
+        <button mat-stroked-button type="button" [disabled]="busy()" (click)="dismiss()">
+          {{ busy() ? 'Removing…' : 'Remove from my calendar' }}
+        </button>
+        <a mat-button routerLink="/approvals">See it in Approvals</a>
+      </div>
     </div>
   }
 
