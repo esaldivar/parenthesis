@@ -216,6 +216,19 @@ export interface Reminder {
   readonly seriesStartsAt: string;
 }
 
+/** Create and edit (an edit replaces the whole reminder; repeats change for the whole series). */
+export interface ReminderInput {
+  readonly title: string;
+  readonly startsAt: string;
+  readonly allDay: boolean;
+  readonly childId?: string | null;
+  readonly details?: string;
+  readonly repeat: RepeatFrequency;
+  /** `YYYY-MM-DD`, inclusive. Exactly one of repeatUntil or repeatCount when it repeats. */
+  readonly repeatUntil?: string;
+  readonly repeatCount?: number;
+}
+
 export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'childIds'>> & {
   /** An optional note to the other parent, kept with the approval request (a swap's reason). Up to 500 characters. */
   readonly reason?: string;
@@ -326,6 +339,13 @@ export class Api {
   // Shared reminders (parents only). Listing never marks anything seen; opening the details calls reminderSeen.
   reminders = (familyId: string, from: string, to: string) =>
     this.call(this.http.get<Reminder[]>(`/api/families/${familyId}/calendar/reminders`, { params: { from, to } }));
+  reminder = (familyId: string, reminderId: string) =>
+    this.call(this.http.get<Reminder>(`/api/families/${familyId}/calendar/reminders/${reminderId}`));
+  /** On the calendar at once, for both parents: no approval. */
+  createReminder = (familyId: string, input: ReminderInput) =>
+    this.call(this.http.post<Reminder>(`/api/families/${familyId}/calendar/reminders`, input));
+  updateReminder = (familyId: string, reminderId: string, input: ReminderInput) =>
+    this.call(this.http.put<Reminder>(`/api/families/${familyId}/calendar/reminders/${reminderId}`, input));
   reminderSeen = (familyId: string, reminderId: string) =>
     this.call(this.http.post<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}/seen`, {}));
   /** Deletes the reminder (every repeat of it) for both parents, at once. */

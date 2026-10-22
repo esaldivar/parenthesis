@@ -1,18 +1,18 @@
 <p class="back"><a routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">← Calendar</a></p>
-<h1>Add event</h1>
+<h1>Add to calendar</h1>
 
 @if (loadError(); as message) {
   <div class="alert" role="alert">{{ message }}</div>
 }
 
-<section aria-labelledby="type-heading">
-  <h2 id="type-heading" class="step">What kind of event?</h2>
-  <div class="types" role="group" aria-labelledby="type-heading">
-    @for (option of types; track option.id) {
-      <button type="button" class="type" [attr.aria-pressed]="type() === option.id" (click)="choose(option.id)">
+<section aria-labelledby="kind-heading">
+  <h2 id="kind-heading" class="step">What are you creating?</h2>
+  <div class="types kinds" role="group" aria-labelledby="kind-heading">
+    @for (option of kinds; track option.id) {
+      <button type="button" class="type kind" [attr.aria-pressed]="creating() === option.id" (click)="creating.set(option.id)">
         <span class="type__icon"><app-icon [name]="option.icon" [size]="24" /></span>
         <span class="type__text">
-          <span class="type__label">{{ option.label }}</span>
+          <span class="kind__label">{{ option.label }}</span>
           <span class="type__desc">{{ option.description }}</span>
         </span>
       </button>
@@ -20,149 +20,170 @@
   </div>
 </section>
 
-@if (type(); as current) {
-  <form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="details-heading">
-    <h2 id="details-heading" class="step">Details</h2>
-
-    @if (approvalNote(); as note) {
-      <p class="note">{{ note }}</p>
-    }
-    @if (error(); as message) {
-      <div class="alert" role="alert">{{ message }}</div>
-    }
-
-    @if (current !== 'unavailable') {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Title{{ current === 'parenting' ? ' (optional)' : '' }}</mat-label>
-        <input matInput formControlName="title" maxlength="120" [required]="current !== 'parenting'" />
-        @if (current === 'parenting') {
-          <mat-hint>Leave blank for “Time with …”.</mat-hint>
-        }
-        @if (fieldError('title'); as e) {
-          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-        }
-      </mat-form-field>
-    }
-
-    @if (current === 'activity') {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Category</mat-label>
-        <mat-select formControlName="category">
-          @for (c of categories; track c.id) {
-            <mat-option [value]="c.id">{{ c.label }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    }
-
-    @if (current === 'parenting') {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Who has the children?</mat-label>
-        <mat-select formControlName="caregiver" required>
-          @for (p of parents(); track p.membershipId) {
-            <mat-option [value]="p.membershipId">{{ p.isYou ? p.displayName + ' (you)' : p.displayName }}</mat-option>
-          }
-        </mat-select>
-        @if (fieldError('caregiverMembershipId'); as e) {
-          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-        }
-      </mat-form-field>
-    }
-
-    <fieldset class="when">
-      <legend>When</legend>
-      <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
-      <div class="when__row">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Start date</mat-label>
-          <input matInput type="date" formControlName="startDate" required />
-        </mat-form-field>
-        @if (!allDay()) {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Start time</mat-label>
-            <input matInput type="time" formControlName="startTime" required />
-          </mat-form-field>
-        }
-      </div>
-      <div class="when__row">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>End date</mat-label>
-          <input matInput type="date" formControlName="endDate" required />
-        </mat-form-field>
-        @if (!allDay()) {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>End time</mat-label>
-            <input matInput type="time" formControlName="endTime" required />
-          </mat-form-field>
-        }
-      </div>
-      @if (fieldError('endsAt') ?? fieldError('startsAt'); as e) {
-        <p class="field-error" role="alert">{{ e }}</p>
+@if (creating() === 'reminder') {
+  <app-reminder-form [date]="form.controls.startDate.value" />
+} @else if (creating() === 'task') {
+  <p class="note" role="status">Shared tasks with checklists aren’t available yet. They’re coming in a later update.</p>
+} @else {
+  <section aria-labelledby="type-heading">
+    <h2 id="type-heading" class="step">What kind of event?</h2>
+    <div class="types" role="group" aria-labelledby="type-heading">
+      @for (option of types; track option.id) {
+        <button type="button" class="type" [attr.aria-pressed]="type() === option.id" (click)="choose(option.id)">
+          <span class="type__icon"><app-icon [name]="option.icon" [size]="24" /></span>
+          <span class="type__text">
+            <span class="type__label">{{ option.label }}</span>
+            <span class="type__desc">{{ option.description }}</span>
+          </span>
+        </button>
       }
-    </fieldset>
+    </div>
+  </section>
 
-    @if (current !== 'unavailable' && activeChildren().length > 0) {
-      <fieldset class="kids">
-        <legend>
-          Children
-          @if (current === 'family') {
-            <span class="legend-hint">(optional: both parents always attend)</span>
-          } @else if (current === 'activity') {
-            <span class="legend-hint">(optional)</span>
+  @if (type(); as current) {
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="details-heading">
+      <h2 id="details-heading" class="step">Details</h2>
+
+      @if (approvalNote(); as note) {
+        <p class="note">{{ note }}</p>
+      }
+      @if (error(); as message) {
+        <div class="alert" role="alert">{{ message }}</div>
+      }
+
+      @if (current !== 'unavailable') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Title{{ current === 'parenting' ? ' (optional)' : '' }}</mat-label>
+          <input matInput formControlName="title" maxlength="120" [required]="current !== 'parenting'" />
+          @if (current === 'parenting') {
+            <mat-hint>Leave blank for “Time with …”.</mat-hint>
           }
-        </legend>
-        <label class="kid">
-          <input type="checkbox" [checked]="allChildren()" (change)="toggleAll($any($event.target).checked)" />
-          All children
-        </label>
-        @for (child of activeChildren(); track child.id) {
-          <label class="kid">
-            <input
-              type="checkbox"
-              [checked]="selectedChildren().includes(child.id)"
-              (change)="toggleChild(child.id, $any($event.target).checked)"
-            />
-            {{ child.firstName }}
-          </label>
-        }
-        @if (fieldError('childIds'); as e) {
+          @if (fieldError('title'); as e) {
+            <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+          }
+        </mat-form-field>
+      }
+
+      @if (current === 'activity') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category">
+            @for (c of categories; track c.id) {
+              <mat-option [value]="c.id">{{ c.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (current === 'parenting') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Who has the children?</mat-label>
+          <mat-select formControlName="caregiver" required>
+            @for (p of parents(); track p.membershipId) {
+              <mat-option [value]="p.membershipId">{{ p.isYou ? p.displayName + ' (you)' : p.displayName }}</mat-option>
+            }
+          </mat-select>
+          @if (fieldError('caregiverMembershipId'); as e) {
+            <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+          }
+        </mat-form-field>
+      }
+
+      <fieldset class="when">
+        <legend>When</legend>
+        <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+        <div class="when__row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Start date</mat-label>
+            <input matInput type="date" formControlName="startDate" required />
+          </mat-form-field>
+          @if (!allDay()) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Start time</mat-label>
+              <input matInput type="time" formControlName="startTime" required />
+            </mat-form-field>
+          }
+        </div>
+        <div class="when__row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>End date</mat-label>
+            <input matInput type="date" formControlName="endDate" required />
+          </mat-form-field>
+          @if (!allDay()) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>End time</mat-label>
+              <input matInput type="time" formControlName="endTime" required />
+            </mat-form-field>
+          }
+        </div>
+        @if (fieldError('endsAt') ?? fieldError('startsAt'); as e) {
           <p class="field-error" role="alert">{{ e }}</p>
         }
       </fieldset>
-    }
 
-    @if (current !== 'unavailable') {
+      @if (current !== 'unavailable' && activeChildren().length > 0) {
+        <fieldset class="kids">
+          <legend>
+            Children
+            @if (current === 'family') {
+              <span class="legend-hint">(optional: both parents always attend)</span>
+            } @else if (current === 'activity') {
+              <span class="legend-hint">(optional)</span>
+            }
+          </legend>
+          <label class="kid">
+            <input type="checkbox" [checked]="allChildren()" (change)="toggleAll($any($event.target).checked)" />
+            All children
+          </label>
+          @for (child of activeChildren(); track child.id) {
+            <label class="kid">
+              <input
+                type="checkbox"
+                [checked]="selectedChildren().includes(child.id)"
+                (change)="toggleChild(child.id, $any($event.target).checked)"
+              />
+              {{ child.firstName }}
+            </label>
+          }
+          @if (fieldError('childIds'); as e) {
+            <p class="field-error" role="alert">{{ e }}</p>
+          }
+        </fieldset>
+      }
+
+      @if (current !== 'unavailable') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Location (optional)</mat-label>
+          <input matInput formControlName="location" maxlength="200" />
+          @if (fieldError('location'); as e) {
+            <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+          }
+        </mat-form-field>
+      }
+
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Location (optional)</mat-label>
-        <input matInput formControlName="location" maxlength="200" />
-        @if (fieldError('location'); as e) {
+        <mat-label>{{ current === 'unavailable' ? 'Private note (optional)' : 'Notes (optional)' }}</mat-label>
+        <textarea matInput formControlName="notes" rows="3" maxlength="1000"></textarea>
+        @if (current === 'unavailable') {
+          <mat-hint>Only you can see this. Your co-parent sees “Unavailable”.</mat-hint>
+        }
+        @if (fieldError('notes'); as e) {
           <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
         }
       </mat-form-field>
-    }
 
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>{{ current === 'unavailable' ? 'Private note (optional)' : 'Notes (optional)' }}</mat-label>
-      <textarea matInput formControlName="notes" rows="3" maxlength="1000"></textarea>
-      @if (current === 'unavailable') {
-        <mat-hint>Only you can see this. Your co-parent sees “Unavailable”.</mat-hint>
-      }
-      @if (fieldError('notes'); as e) {
-        <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-      }
-    </mat-form-field>
-
-    <div class="actions">
-      <button mat-flat-button type="submit" [disabled]="busy()">
-        @if (busy()) {
-          Saving…
-        } @else if (current === 'family' || (current === 'parenting' && coParent())) {
-          Send for approval
-        } @else {
-          Add to calendar
-        }
-      </button>
-      <a mat-button routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">Cancel</a>
-    </div>
-  </form>
+      <div class="actions">
+        <button mat-flat-button type="submit" [disabled]="busy()">
+          @if (busy()) {
+            Saving…
+          } @else if (current === 'family' || (current === 'parenting' && coParent())) {
+            Send for approval
+          } @else {
+            Add to calendar
+          }
+        </button>
+        <a mat-button routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">Cancel</a>
+      </div>
+    </form>
+  }
 }

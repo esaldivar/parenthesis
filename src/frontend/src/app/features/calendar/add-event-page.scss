@@ -64,7 +64,8 @@ h1,
 .type__text {
   display: grid;
 }
-.type__label {
+.type__label,
+.kind__label {
   font-weight: 600;
 }
 .type__desc {

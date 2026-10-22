@@ -12,8 +12,13 @@ export const PARENT_ROUTES: Routes = [
   { path: '', title: 'Home', loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage) },
   {
     path: 'calendar/new',
-    title: 'Add event',
+    title: 'Add to calendar',
     loadComponent: () => import('./calendar/add-event-page').then((m) => m.AddEventPage),
+  },
+  {
+    path: 'calendar/reminders/:reminderId/edit',
+    title: 'Edit reminder',
+    loadComponent: () => import('./calendar/reminder-edit-page').then((m) => m.ReminderEditPage),
   },
   {
     path: 'calendar/:eventId/swap',

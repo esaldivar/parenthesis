@@ -48,6 +48,7 @@
 
   <div class="actions">
     @if (!confirming()) {
+      <a mat-flat-button [routerLink]="['/calendar/reminders', reminder().id, 'edit']">Edit reminder</a>
       <button mat-stroked-button type="button" (click)="confirming.set(true)">Delete reminder…</button>
     } @else {
       <p class="explain">

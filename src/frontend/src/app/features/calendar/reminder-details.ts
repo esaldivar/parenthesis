@@ -1,6 +1,7 @@
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { RouterLink } from '@angular/router';
 import { Api, FamilyMember, Reminder } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
@@ -23,12 +24,12 @@ export function repeatText(reminder: Reminder): string | null {
 /**
  * A shared reminder's details, over the calendar (#72, part 3: #172). Opening it is what marks it Seen for this
  * parent; nothing else does. Either parent can delete it at once, with no approval. A reminder has no location,
- * completion, assignee or attachments, so none are offered.
+ * completion, assignee or attachments, so none are offered. Edit opens the reminder form for the whole series.
  */
 @Component({
   selector: 'app-reminder-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [A11yModule, MatButtonModule, Icon],
+  imports: [A11yModule, MatButtonModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './reminder-details.html',
   styleUrl: './event-details.scss',

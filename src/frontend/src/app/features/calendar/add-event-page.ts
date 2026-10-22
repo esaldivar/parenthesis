@@ -14,9 +14,19 @@ import { Icon, IconName } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
 import { PlainDate } from '../dashboard/model';
 import { addDays, todayIn } from '../dashboard/week';
+import { ReminderForm } from './reminder-form';
 import { fromFamilyLocal } from './time';
 
 export type EventType = 'activity' | 'parenting' | 'family' | 'unavailable';
+
+/** What's being created (handoff: "What are you creating?"). */
+export type CreateKind = 'event' | 'task' | 'reminder';
+
+const KINDS: readonly { id: CreateKind; label: string; description: string; icon: IconName }[] = [
+  { id: 'event', label: 'Event', description: 'Something that happens at a time', icon: 'calendar' },
+  { id: 'task', label: 'Task', description: 'Something to get done together', icon: 'note' },
+  { id: 'reminder', label: 'Reminder', description: 'A note for a day, for both of you', icon: 'bell' },
+];
 
 interface TypeOption {
   readonly id: EventType;
@@ -59,7 +69,8 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
 }
 
 /**
- * Add Event (handoff 2026-10-20). Choose the type first: whole cards that highlight when chosen, with no radio
+ * Add to Calendar (handoff 2026-10-20). First Event, Task or Reminder (#173): reminders get their own form, tasks
+ * aren't available yet and say so. For an event, choose the type next: whole cards that highlight when chosen, with no radio
  * buttons, checkmarks or other selection marks (owner rule). The form then asks only what that type needs. Approval
  * follows the product rules, never a switch: parenting time and family events go to the co-parent; activities and
  * unavailable time are on the calendar at once. A family event always includes both parents; children are optional.
@@ -76,6 +87,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
     MatSelectModule,
     MatSlideToggleModule,
     Icon,
+    ReminderForm,
   ],
   templateUrl: './add-event-page.html',
   styleUrls: ['./add-event-page.scss'],
@@ -88,7 +100,12 @@ export class AddEventPage implements OnInit {
 
   /** `?date=YYYY-MM-DD`: the day to start on (from the calendar). */
   readonly date = input<string>();
+  /** `?kind=reminder`: start on that choice. Event otherwise. */
+  readonly kind = input<string>();
 
+  protected readonly kinds = KINDS;
+  /** Event, Task or Reminder. Event is chosen at first, so adding an event is as quick as before. */
+  protected readonly creating = signal<CreateKind>('event');
   protected readonly types = TYPES;
   protected readonly categories = ACTIVITY_CATEGORIES;
   protected readonly family = this.auth.currentFamily;
@@ -145,6 +162,10 @@ export class AddEventPage implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    const wanted = KINDS.find((k) => k.id === this.kind());
+    if (wanted) {
+      this.creating.set(wanted.id);
+    }
     const start = isDate(this.date()) ? this.date()! : todayIn(this.timeZone(), new Date());
     this.form.patchValue({ startDate: start, endDate: start });
     const family = this.family();
