@@ -253,6 +253,19 @@ export interface SharedTask {
   readonly justCompleted: boolean;
 }
 
+/**
+ * Create and edit a task (an edit replaces the whole task, checklist included). An item with an `id` keeps its tick;
+ * one without is new. Edits send the `version` they were made from.
+ */
+export interface TaskInput {
+  readonly title: string;
+  readonly dueDate: string;
+  readonly childId?: string | null;
+  readonly details?: string;
+  readonly items: readonly { id?: string; text: string; required: boolean }[];
+  readonly version?: number;
+}
+
 /** Create and edit (an edit replaces the whole reminder; repeats change for the whole series). */
 export interface ReminderInput {
   readonly title: string;
@@ -390,6 +403,11 @@ export class Api {
     this.call(this.http.get<SharedTask[]>(`/api/families/${familyId}/calendar/tasks`, { params: { from, to } }));
   task = (familyId: string, taskId: string) =>
     this.call(this.http.get<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}`));
+  createTask = (familyId: string, input: TaskInput) =>
+    this.call(this.http.post<SharedTask>(`/api/families/${familyId}/calendar/tasks`, input));
+  /** 409 when the other parent changed it since `input.version`. */
+  updateTask = (familyId: string, taskId: string, input: TaskInput) =>
+    this.call(this.http.put<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}`, input));
   taskSeen = (familyId: string, taskId: string) =>
     this.call(this.http.post<void>(`/api/families/${familyId}/calendar/tasks/${taskId}/seen`, {}));
   /** Mark done (true) or undo it (false). Only for a task without a checklist. */

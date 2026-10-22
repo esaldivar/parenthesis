@@ -13,6 +13,7 @@ import {
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { RouterLink } from '@angular/router';
 import { Api, ChecklistItem, FamilyMember, SharedTask } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
@@ -34,7 +35,7 @@ const CONFETTI_PIECES = 14;
 @Component({
   selector: 'app-task-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [A11yModule, MatButtonModule, Icon],
+  imports: [A11yModule, MatButtonModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './task-details.html',
   styleUrls: ['./event-details.scss', './task-details.scss'],

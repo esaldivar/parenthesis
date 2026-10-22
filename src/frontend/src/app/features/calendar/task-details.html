@@ -111,6 +111,7 @@
           </button>
         }
       }
+      <a mat-stroked-button [routerLink]="['/calendar/tasks', current().id, 'edit']">Edit task</a>
       <button mat-stroked-button type="button" (click)="confirming.set(true)">Delete task…</button>
     } @else {
       <p class="explain">This deletes the task, and its checklist, for both of you.</p>

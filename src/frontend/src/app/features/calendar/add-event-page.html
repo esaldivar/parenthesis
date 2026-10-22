@@ -23,7 +23,7 @@
 @if (creating() === 'reminder') {
   <app-reminder-form [date]="form.controls.startDate.value" />
 } @else if (creating() === 'task') {
-  <p class="note" role="status">Shared tasks with checklists aren’t available yet. They’re coming in a later update.</p>
+  <app-task-form [date]="form.controls.startDate.value" />
 } @else {
   <section aria-labelledby="type-heading">
     <h2 id="type-heading" class="step">What kind of event?</h2>

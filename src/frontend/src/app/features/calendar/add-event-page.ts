@@ -15,6 +15,7 @@ import { FORM_STYLES } from '../auth/form-styles';
 import { PlainDate } from '../dashboard/model';
 import { addDays, todayIn } from '../dashboard/week';
 import { ReminderForm } from './reminder-form';
+import { TaskForm } from './task-form';
 import { fromFamilyLocal } from './time';
 
 export type EventType = 'activity' | 'parenting' | 'family' | 'unavailable';
@@ -69,8 +70,8 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
 }
 
 /**
- * Add to Calendar (handoff 2026-10-20). First Event, Task or Reminder (#173): reminders get their own form, tasks
- * aren't available yet and say so. For an event, choose the type next: whole cards that highlight when chosen, with no radio
+ * Add to Calendar (handoff 2026-10-20). First Event, Task or Reminder (#173): reminders and tasks (#177) get their own
+ * forms. For an event, choose the type next: whole cards that highlight when chosen, with no radio
  * buttons, checkmarks or other selection marks (owner rule). The form then asks only what that type needs. Approval
  * follows the product rules, never a switch: parenting time and family events go to the co-parent; activities and
  * unavailable time are on the calendar at once. A family event always includes both parents; children are optional.
@@ -88,6 +89,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
     MatSlideToggleModule,
     Icon,
     ReminderForm,
+    TaskForm,
   ],
   templateUrl: './add-event-page.html',
   styleUrls: ['./add-event-page.scss'],
