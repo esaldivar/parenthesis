@@ -17,6 +17,7 @@ import { addDays, monthDay, todayIn, weekdayShort } from '../dashboard/week';
 import { ReminderForm } from './reminder-form';
 import { MAX_DATES, WEEKDAYS, lastAllowed, seriesDates, weekdayOf } from './series';
 import { TaskForm } from './task-form';
+import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
 import { fromFamilyLocal } from './time';
 
@@ -108,6 +109,12 @@ export class AddEventPage implements OnInit {
   readonly date = input<string>();
   /** `?kind=reminder`: start on that choice. Event otherwise. */
   readonly kind = input<string>();
+  /** `?time=HH:mm`: the half-hour tapped on a week's time grid (#212). The event starts then, for an hour. */
+  readonly time = input<string>();
+  protected readonly slotTime = computed(() => {
+    const time = this.time();
+    return time && /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : null;
+  });
 
   protected readonly kinds = KINDS;
   /** Event, Task or Reminder. Event is chosen at first, so adding an event is as quick as before. */
@@ -206,6 +213,14 @@ export class AddEventPage implements OnInit {
     }
     const start = isDate(this.date()) ? this.date()! : todayIn(this.timeZone(), new Date());
     this.form.patchValue({ startDate: start, endDate: start });
+    const slot = this.slotTime();
+    if (slot) {
+      // An hour from the tapped half-hour, the same length as the form's own default; past midnight ends the next day.
+      const [hours, minutes] = slot.split(':').map(Number);
+      const end = hours * 60 + minutes + 60;
+      const endTime = `${String(Math.floor(end / 60) % 24).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+      this.form.patchValue({ startTime: slot, endTime, endDate: end >= 24 * 60 ? addDays(start, 1) : start });
+    }
     const family = this.family();
     if (!family) {
       return;
@@ -225,7 +240,8 @@ export class AddEventPage implements OnInit {
     this.fieldErrors.set({});
     this.error.set(null);
     // Parenting time and unavailable time are usually whole days (All day is the default for unavailable time).
-    this.form.patchValue({ allDay: type === 'parenting' || type === 'unavailable' });
+    // A tapped time slot (#212) keeps its time for every type.
+    this.form.patchValue({ allDay: (type === 'parenting' || type === 'unavailable') && !this.slotTime() });
     if (type === 'unavailable') {
       this.form.patchValue({ childIds: [] });
     }
@@ -297,7 +313,8 @@ export class AddEventPage implements OnInit {
       const problem = toProblem(error);
       const serverErrors = Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v.join(' ')]));
       if (problem.status === 400 && Object.keys(serverErrors).length > 0) {
-        this.fieldErrors.set(serverErrors);
+        const caregiver = this.parents().find((p) => p.membershipId === this.form.getRawValue().caregiver);
+        this.fieldErrors.set(withOwnOverlap(serverErrors, caregiver));
       } else {
         this.error.set(generalMessage(problem));
       }

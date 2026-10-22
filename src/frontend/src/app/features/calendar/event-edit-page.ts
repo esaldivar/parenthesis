@@ -14,6 +14,7 @@ import { FORM_STYLES } from '../auth/form-styles';
 import { addDays, dayLong } from '../dashboard/week';
 import { warningText } from './add-event-page';
 import { repeatText } from './series';
+import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from './time';
 
@@ -194,7 +195,8 @@ export class EventEditPage implements OnInit {
       const problem = toProblem(error);
       const serverErrors = Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v.join(' ')]));
       if (problem.status === 400 && Object.keys(serverErrors).length > 0) {
-        this.fieldErrors.set(serverErrors);
+        const caregiver = this.parents().find((p) => p.membershipId === this.form.getRawValue().caregiver);
+        this.fieldErrors.set(withOwnOverlap(serverErrors, caregiver));
       } else {
         this.error.set(problem.detail ? `${problem.title ?? ''} ${problem.detail}`.trim() : generalMessage(problem));
       }

@@ -34,11 +34,12 @@ import {
   parseFilters,
   selectionText,
 } from './calendar-filters';
-import { CalendarItem, forChild, reminderItems, taskItems, toItems } from './calendar-items';
+import { CalendarItem, forChild, reminderItems, swapTargetFor, taskItems, toItems } from './calendar-items';
 import { CalendarList } from './calendar-list';
 import { CalendarMonth, monthGrid, startOfMonth } from './calendar-month';
 import { CalendarWeek } from './calendar-week';
 import { EventDetails } from './event-details';
+import { AddAt, addQuery } from './slot';
 import { ReminderDetails } from './reminder-details';
 import { TaskDetails } from './task-details';
 import { fromFamilyLocal } from './time';
@@ -203,23 +204,7 @@ export class CalendarPage {
    * For unavailable time: the same parent's confirmed parenting time it overlaps, so the details can offer a swap only
    * when one applies (#190). Uses every loaded item, whatever the filters hide.
    */
-  protected readonly swapTarget = computed(() => {
-    const item = this.selected();
-    const owner = item?.kind === 'unavailable' ? item.parents[0]?.id : undefined;
-    if (!item || !owner) {
-      return null;
-    }
-    return (
-      this.items().find(
-        (i) =>
-          i.category === 'ParentingTime' &&
-          i.status === 'confirmed' &&
-          i.parents[0]?.id === owner &&
-          i.start < item.end &&
-          item.start < i.end,
-      ) ?? null
-    );
-  });
+  protected readonly swapTarget = computed(() => swapTargetFor(this.selected(), this.items()));
   private opener: HTMLElement | null = null;
   private readonly storage = inject(DOCUMENT).defaultView;
   private readonly user = this.auth.user;
@@ -337,6 +322,11 @@ export class CalendarPage {
   /** From Month: open the week of that day. */
   protected openWeekOf(date: PlainDate): void {
     this.navigate({ view: 'week', date });
+  }
+
+  /** A tap on empty calendar space (#212): the Add page, starting on that date (and half-hour). Nothing is saved yet. */
+  protected addAt(at: AddAt): void {
+    void this.router.navigate(['/calendar/new'], { queryParams: addQuery(at) });
   }
 
   protected open(item: CalendarItem): void {

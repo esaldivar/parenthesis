@@ -118,3 +118,24 @@ ul {
     min-height: var(--target-min);
   }
 }
+
+// A tap on a day's empty space adds on that date (#212): a pointer-only layer behind the day's own buttons.
+.day {
+  position: relative;
+}
+.day__add {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.day > :not(.day__add) {
+  position: relative;
+  pointer-events: none;
+}
+.day > :not(.day__add) button,
+.day > button:not(.day__add) {
+  pointer-events: auto;
+}

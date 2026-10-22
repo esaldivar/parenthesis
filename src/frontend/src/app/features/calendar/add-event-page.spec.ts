@@ -21,11 +21,11 @@ describe('Add event', () => {
     }
   }
 
-  async function open(children = CHILDREN) {
+  async function open(children = CHILDREN, url = '/calendar/new?date=2026-10-20') {
     TestBed.configureTestingModule({
       providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
     });
-    const harness = await RouterTestingHarness.create('/calendar/new?date=2026-10-20');
+    const harness = await RouterTestingHarness.create(url);
     http = TestBed.inject(HttpTestingController);
     await vi.waitFor(() => http.expectOne(F)).then((r) => r.flush(FAMILY));
     await vi.waitFor(() => http.expectOne(`${F}/children`)).then((r) => r.flush(children));
@@ -108,6 +108,36 @@ describe('Add event', () => {
     await vi.waitFor(() => expect(kids.contains(document.activeElement)).toBe(true));
   });
 
+  it('says the parent with the children is unavailable then, at the time, when the server refuses it (#210)', async () => {
+    const harness = await open();
+    await choose(harness, 'Parenting time');
+    check('Kai');
+    await submit(harness);
+
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
+      { status: 400, errors: { caregiverUnavailable: ['The parent with the children is unavailable then.'] } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle(harness);
+
+    expect(text(page())).toContain('You marked yourself unavailable then. Choose another time, or change your unavailable time first.');
+    expect(text(page())).not.toContain('The parent with the children is unavailable then.');
+  });
+
+  it('says you have parenting time then when your unavailable time is refused (#210)', async () => {
+    const harness = await open();
+    await choose(harness, 'I’m unavailable');
+    await submit(harness);
+
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
+      { status: 400, errors: { overlapsYourParentingTime: ['You have parenting time then.'] } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle(harness);
+
+    expect(text(page())).toContain('You have parenting time then. Choose another time, or change that parenting time first.');
+  });
+
   it('says why parenting time has no children to choose yet, instead of failing quietly', async () => {
     const waiting = CHILDREN.map((c) => ({ ...c, status: 'PendingApproval' as const }));
     const harness = await open(waiting);
@@ -117,6 +147,44 @@ describe('Add event', () => {
     await submit(harness);
     expect(text(page().querySelector('fieldset.kids'))).toContain('Choose which children this parenting time is for.');
     expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+  });
+
+  describe('starting from a tapped time slot (#212)', () => {
+    const field = (name: string) => page().querySelector<HTMLInputElement>(`input[formcontrolname="${name}"]`)!.value;
+
+    it('starts at the half-hour tapped, for an hour, and keeps that time for every type', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-21&time=17:00');
+      await choose(harness, 'Activity');
+      expect([field('startDate'), field('startTime'), field('endDate'), field('endTime')]).toEqual(['2026-10-21', '17:00', '2026-10-21', '18:00']);
+
+      // Unavailable time is usually all day, but a tapped slot keeps its time; it all stays editable.
+      await choose(harness, 'I’m unavailable');
+      expect(field('startTime')).toBe('17:00');
+      expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    });
+
+    it('ends the next day when the half-hour tapped is late in the evening', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-21&time=23:30');
+      await choose(harness, 'Activity');
+      expect([field('endDate'), field('endTime')]).toEqual(['2026-10-22', '00:30']);
+    });
+
+    it('gives a reminder the date and time, and a task its due date', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-21&time=08:30');
+      [...page().querySelectorAll<HTMLButtonElement>('.kind')].find((b) => text(b).startsWith('Reminder'))!.click();
+      await settle(harness);
+      expect([field('date'), field('time')]).toEqual(['2026-10-21', '08:30']);
+
+      [...page().querySelectorAll<HTMLButtonElement>('.kind')].find((b) => text(b).startsWith('Task'))!.click();
+      await settle(harness);
+      expect(page().querySelector<HTMLInputElement>('app-task-form input[formcontrolname="dueDate"]')!.value).toBe('2026-10-21');
+    });
+
+    it('ignores a time that isn’t one', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-21&time=25:99');
+      await choose(harness, 'Activity');
+      expect(field('startTime')).toBe('09:00');
+    });
   });
 
   it('offers the four types as whole cards, highlighted when chosen, with no radio buttons or checkmarks', async () => {
