@@ -26,6 +26,11 @@ export const PARENT_ROUTES: Routes = [
     loadComponent: () => import('./calendar/task-edit-page').then((m) => m.TaskEditPage),
   },
   {
+    path: 'calendar/:eventId/edit',
+    title: 'Edit event',
+    loadComponent: () => import('./calendar/event-edit-page').then((m) => m.EventEditPage),
+  },
+  {
     path: 'calendar/:eventId/swap',
     title: 'Request swap',
     loadComponent: () => import('./calendar/swap-request-page').then((m) => m.SwapRequestPage),

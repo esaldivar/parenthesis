@@ -137,6 +137,9 @@
 
   @if (canCancel()) {
     <div class="actions">
+      @if (!confirming()) {
+        <a mat-stroked-button [routerLink]="['/calendar', item().id, 'edit']">Edit event</a>
+      }
       @if (canSwap() && !confirming()) {
         <a mat-flat-button [routerLink]="['/calendar', item().id, 'swap']">
           <app-icon name="swap" [size]="18" /> Request swap

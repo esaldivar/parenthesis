@@ -12,7 +12,8 @@ import { lastDate, toFamilyLocal } from './time';
 
 /**
  * One event's details, over the calendar (a dialog with its focus kept inside; Escape or Close returns focus to the
- * item). It says plainly what's confirmed and what's waiting, and offers what the rules allow: cancelling, which
+ * item). It says plainly what's confirmed and what's waiting, and offers what the rules allow: editing (#188) and
+ * cancelling, which
  * asks the co-parent first for parenting time and family events; requesting a swap of parenting time; and, while a
  * request waits, its details (original → proposed, the reason, where it stands) with Withdraw for the parent who
  * sent it.

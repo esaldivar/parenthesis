@@ -173,7 +173,7 @@ describe('the calendar page', () => {
     expect(text(main())).toContain('Cancellation sent to Sam for approval.');
   });
 
-  it('offers Request swap on confirmed parenting time', async () => {
+  it('offers Edit and Request swap on confirmed parenting time', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [
       event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex' }),
     ]);
@@ -183,6 +183,8 @@ describe('the calendar page', () => {
     const swap = [...document.querySelectorAll('[role="dialog"] a')].find((a) => text(a) === 'Request swap')!;
 
     expect(swap.getAttribute('href')).toBe('/calendar/pt/swap');
+    const edit = [...document.querySelectorAll('[role="dialog"] a')].find((a) => text(a) === 'Edit event')!;
+    expect(edit.getAttribute('href')).toBe('/calendar/pt/edit');
   });
 
   it('opens a waiting swap from a link, with its reason and status, and lets its sender withdraw it', async () => {
@@ -254,6 +256,7 @@ describe('the calendar page', () => {
 
     expect(text(dialog)).toContain('Private details aren’t shared.');
     expect([...dialog.querySelectorAll('button')].some((b) => text(b) === 'Cancel event…')).toBe(false);
+    expect([...dialog.querySelectorAll('a')].some((a) => text(a) === 'Edit event')).toBe(false);
   });
 
   it('shows reminders with their own label, filtered by child, and in Month and List too', async () => {
