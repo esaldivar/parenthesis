@@ -278,8 +278,16 @@ that points back here.
     server check before sending, with **Send anyway** / **Choose different dates** when the other parent is
     unavailable; review (current → proposed); "Swap request sent"; request details with status and Withdraw. Owner
     decisions: the reason shows in the app only (never in email), and a swap changes dates and times only.
+  - [ ] **Reminders (#72)**, split into four queue-sized parts (owner decision, October 21, 2026):
+    - [x] #170 backend: one-off reminders, history, the "edited by" note and per-parent Seen (October 22, 2026).
+    - [ ] #171 backend: repeating reminders. #172 frontend: reminders on the calendar and their details. #173 frontend:
+      add and edit, with the Event / Task / Reminder choice.
+    - [ ] **Owner decision:** do children see reminders? Parents only until decided (child sessions get 403).
+    - [ ] **Owner decision:** should an edit reset the other parent's Seen? Today Seen stays after an edit.
+  - [ ] **Tasks (#73)**, split into four parts: #174 and #175 backend, #176 and #177 frontend. Same open question on
+    whether children see tasks.
   - [ ] Frontend: edit an event (and its approval), recurring unavailable time with This event / This and following /
-    All events, tasks and reminders, and declined requests on the calendar.
+    All events, declined requests on the calendar.
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
   - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
     (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).
