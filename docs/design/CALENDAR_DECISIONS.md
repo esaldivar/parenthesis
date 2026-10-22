@@ -14,6 +14,12 @@ Status: approved design decisions for future implementation. Do not interrupt th
 - Blackouts appear immediately on both parents' shared calendar, subtly styled (muted gray, small 'Unavailable' label; mobile may use a light dotted outline). Visible availability status, not private details.
 - A request that overlaps the recipient's blackout shows a gentle, non-blocking warning: the other parent marked those dates unavailable; request may be difficult to accommodate. Actions: **Send Anyway** and **Choose Different Dates**. Requests can still be submitted and accepted/declined.
 - Blackouts do not change existing parenting responsibilities. If a blackout overlaps the owner's confirmed parenting time, gently flag the conflict and suggest arranging coverage, but never automatically reassign.
+- **A parent can't have the children and be unavailable at the same time** (owner decisions, October 22, 2026; #210). This is the one overlap that is refused, not warned about, and it has no Send Anyway:
+  - Parenting time can't overlap its caregiver's own unavailable time, whichever parent adds it or proposes the swap. The message names the parent ("Dad is unavailable then"), never the private note.
+  - Unavailable time can't overlap that parent's own pending or confirmed parenting time, including a change waiting for approval. Declined, withdrawn and cancelled parenting time doesn't count.
+  - New items, repeating ones (every date is checked; nothing is added unless all dates can be) and edits that change the dates, times or caregiver are checked. Title and notes edits always work.
+  - Overlaps made before this rule are left as they are; nothing is reassigned or removed.
+  - The other parent's unavailable time keeps the gentle warning above.
 - Upcoming blackout reminders are optional and **off by default**. New schedule/conflict request notifications are **on by default**. Keep notifications calm; maintain an activity center. Avoid noisy notifications for routine availability edits.
 
 ## Adding from the calendar (#212, October 22, 2026)

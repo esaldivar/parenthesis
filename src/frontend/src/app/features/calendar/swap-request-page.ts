@@ -29,6 +29,7 @@ import { addDays, dayLong } from '../dashboard/week';
 import { warningText } from './add-event-page';
 import { CalendarItem, toItems } from './calendar-items';
 import { whenText } from './item-text';
+import { CAREGIVER_UNAVAILABLE, caregiverUnavailableText } from './own-overlap';
 import { fromFamilyLocal, lastDate } from './time';
 
 type Step = 'choose' | 'review' | 'sent';
@@ -38,7 +39,7 @@ export const REASON_MAX = 500;
 const MAX_DAYS = 31;
 
 /** Warnings that ask "Send anyway or choose different dates?". Overlapping parenting time is expected in a swap. */
-const ASK_FIRST: readonly CalendarWarning[] = ['OverlapsCoParentUnavailable', 'CaregiverUnavailable'];
+const ASK_FIRST: readonly CalendarWarning[] = ['OverlapsCoParentUnavailable'];
 
 /**
  * Request Swap (handoff 2026-10-20, board of October 21): propose new dates and times for confirmed parenting time,
@@ -101,6 +102,9 @@ export class SwapRequestPage {
     const event = this.event();
     return event ? toItems([event], this.members(), this.children(), this.timeZone())[0] : null;
   });
+  /** The parent who has the children in this parenting time; a swap keeps them. */
+  private readonly caregiver = computed(() => this.members().find((m) => m.membershipId === this.event()?.caregiverMembershipId));
+
   protected readonly coParent = computed(
     () => this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null,
   );
@@ -231,6 +235,12 @@ export class SwapRequestPage {
     try {
       const { startsAt, endsAt } = this.instants();
       const { warnings } = await this.api.eventConflicts(family.id, event.id, startsAt, endsAt);
+      if (warnings.includes('CaregiverUnavailable')) {
+        // The parent with the children can't be unavailable then (#210): no Send anyway, the dates must change.
+        this.datesError.set(caregiverUnavailableText(this.caregiver(), true));
+        this.focus('#swap-start-date');
+        return;
+      }
       this.notes.set(warnings.filter((w) => !ASK_FIRST.includes(w)));
       const clash = warnings.filter((w) => ASK_FIRST.includes(w));
       if (clash.length > 0) {
@@ -288,7 +298,9 @@ export class SwapRequestPage {
       }
     } catch (error) {
       const problem = toProblem(error);
-      const fields = Object.values(problem.errors).flat();
+      const fields = Object.entries(problem.errors).flatMap(([key, messages]) =>
+        key === CAREGIVER_UNAVAILABLE ? [caregiverUnavailableText(this.caregiver(), true)] : messages,
+      );
       this.error.set(
         fields.length > 0
           ? fields.join(' ')
