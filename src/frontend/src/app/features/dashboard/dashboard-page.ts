@@ -17,7 +17,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarEvent, FamilyMember } from '../../core/api/api';
 import { toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
-import { CalendarItem, toItems } from '../calendar/calendar-items';
+import { CalendarItem, swapTargetFor, toItems } from '../calendar/calendar-items';
 import { EventDetails } from '../calendar/event-details';
 import { AddAt, addQuery } from '../calendar/slot';
 import { Avatar } from '../../shared/avatar/avatar';
@@ -175,6 +175,8 @@ export class DashboardPage {
     readonly event: CalendarEvent;
     readonly members: readonly FamilyMember[];
     readonly familyId: string;
+    /** For unavailable time: that parent's confirmed parenting time it overlaps, so a swap can be offered (#190). */
+    readonly swapTarget: CalendarItem | null;
   } | null>(null);
   /** What just happened (after a change from the details), or why they couldn't open. */
   protected readonly notice = signal<string | null>(null);
@@ -255,7 +257,13 @@ export class DashboardPage {
       if (!item) {
         throw new Error('Not shown on the calendar');
       }
-      this.details.set({ item, event, members: family.members, familyId });
+      // As on the Calendar page: unavailable time over that parent's parenting time offers a swap.
+      const overlapping = item.kind === 'unavailable' ? await this.api.calendarEvents(familyId, event.startsAt, event.endsAt) : [];
+      if (attempt !== this.opening) {
+        return;
+      }
+      const swapTarget = swapTargetFor(item, toItems(overlapping, family.members, children, this.timeZone()));
+      this.details.set({ item, event, members: family.members, familyId, swapTarget });
     } catch (error) {
       if (attempt === this.opening) {
         this.notice.set(

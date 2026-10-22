@@ -576,6 +576,35 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Requests_at_the_same_moment_cant_both_create_the_overlap()
+    {
+        // Copilot release review, #224: the check and the save run under a lock on the parent, so of two requests sent
+        // together (Dad marks himself unavailable; Mom proposes his parenting time then), at most one succeeds.
+        var f = await FamilyAsync();
+        using var _ = f;
+        for (var week = 1; week <= 5; week++)
+        {
+            var day = _monday.AddDays(7 * week + 1);
+            var unavailable = f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = day, endsAt = day.AddDays(1), allDay = true });
+            var parenting = f.Mom.PostAsync(Events(f), new
+            {
+                category = "ParentingTime",
+                title = "Time with Dad",
+                startsAt = day,
+                endsAt = day.AddDays(1),
+                allDay = true,
+                childIds = new[] { f.KaiId },
+                caregiverMembershipId = f.DadMembershipId,
+            });
+
+            var results = await Task.WhenAll(unavailable, parenting);
+
+            Assert.Equal(1, results.Count(r => r.StatusCode == HttpStatusCode.Created));
+            Assert.Equal(1, results.Count(r => r.StatusCode == HttpStatusCode.BadRequest));
+        }
+    }
+
+    [Fact]
     public async Task Declined_and_withdrawn_parenting_time_dont_block_unavailable_time()
     {
         var f = await FamilyAsync();
