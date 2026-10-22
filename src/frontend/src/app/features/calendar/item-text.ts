@@ -10,7 +10,13 @@ export function whenText(item: CalendarItem): string {
     const range = `${monthDay(item.firstDate)} – ${monthDay(item.lastDate)}`;
     return item.allDay ? range : `${monthDay(item.firstDate)}, ${timeLabel(item.start.slice(11))} – ${monthDay(item.lastDate)}, ${timeLabel(item.end.slice(11))}`;
   }
-  return item.allDay ? 'All day' : `${timeLabel(item.start.slice(11))} – ${timeLabel(item.end.slice(11))}`;
+  if (item.allDay) {
+    return 'All day';
+  }
+  // A reminder is for a moment, not a span.
+  return item.kind === 'reminder'
+    ? timeLabel(item.start.slice(11))
+    : `${timeLabel(item.start.slice(11))} – ${timeLabel(item.end.slice(11))}`;
 }
 
 /** The status in words. Pending items are not on the schedule; a pending change leaves the event as it is for now. */

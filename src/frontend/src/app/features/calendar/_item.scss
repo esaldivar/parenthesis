@@ -26,6 +26,11 @@
   &[data-category='Birthday'] {
     background: var(--color-cat-art-bg);
   }
+  // Reminders: a plain surface with a gold edge, plus the bell icon and the "Reminder" label (never colour alone).
+  &[data-kind='reminder'] {
+    background: var(--color-surface);
+    border-inline-start: 4px solid var(--color-leaf-gold);
+  }
   &[data-kind='unavailable'] {
     background: var(--color-cat-unavailable-bg);
     border-style: dotted;

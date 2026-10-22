@@ -1,9 +1,10 @@
 import { CalendarEvent } from '../../core/api/api';
-import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
-import { FORMER_PARENT, forChild, onDate, toItems } from './calendar-items';
+import { CHILDREN, MEMBERS, event, reminder } from '../../../testing/calendar-fixtures';
+import { FORMER_PARENT, forChild, onDate, reminderItems, toItems } from './calendar-items';
 import { itemSummary, statusText, whenText } from './item-text';
 
-const items = (...events: CalendarEvent[]) => toItems(events, MEMBERS, CHILDREN, 'America/Chicago');
+const ZONE = 'America/Chicago';
+const items = (...events: CalendarEvent[]) => toItems(events, MEMBERS, CHILDREN, ZONE);
 
 describe('calendar items', () => {
   it('reads an activity in the family’s time zone', () => {
@@ -69,5 +70,49 @@ describe('calendar items', () => {
 
     expect(forChild(all, 'aurora').map((i) => i.id)).toEqual(['aurora', 'away']);
     expect(forChild(all, null)).toHaveLength(3);
+  });
+
+  it('reads a reminder as a moment with its own kind and label, one item per occurrence', () => {
+    const [first, second] = reminderItems(
+      [reminder(), reminder({ startsAt: '2026-10-27T13:00:00Z', repeat: 'Weekly', repeatCount: 2 })],
+      MEMBERS,
+      CHILDREN,
+      ZONE,
+    );
+
+    expect(first).toEqual(
+      expect.objectContaining({
+        kind: 'reminder',
+        categoryLabel: 'Reminder',
+        icon: 'bell',
+        start: '2026-10-20T08:00',
+        firstDate: '2026-10-20',
+        spansDays: false,
+        status: 'confirmed',
+        reminderId: 'r1',
+        ownerName: 'Sam',
+        location: null,
+      }),
+    );
+    expect(first.children).toEqual([{ id: 'kai', name: 'Kai' }]);
+    expect(whenText(first)).toBe('8:00 AM');
+    expect(statusText(first)).toBeNull();
+    expect(itemSummary(first)).toContain('Spirit Day, Reminder, 8:00 AM');
+    expect(second.id).not.toBe(first.id);
+    expect(second.reminderId).toBe(first.reminderId);
+  });
+
+  it('puts an all-day reminder in the all-day row and drops a child who isn’t active', () => {
+    const [item] = reminderItems(
+      [reminder({ allDay: true, startsAt: '2026-10-20T05:00:00Z', childId: 'gone', createdByMembershipId: 'm-left' })],
+      MEMBERS,
+      CHILDREN,
+      ZONE,
+    );
+
+    expect(item.spansDays).toBe(true);
+    expect(whenText(item)).toBe('All day');
+    expect(item.children).toEqual([]);
+    expect(item.ownerName).toBe(FORMER_PARENT);
   });
 });

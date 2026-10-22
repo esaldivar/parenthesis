@@ -4,9 +4,9 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
-import { CalendarEvent } from '../../core/api/api';
+import { CalendarEvent, Reminder } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
-import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
+import { CHILDREN, MEMBERS, event, reminder } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
 
 const F = '/api/families/family-1';
@@ -22,20 +22,24 @@ describe('the calendar page', () => {
     }
   }
 
-  const eventsRequest = () =>
+  /** The latest events request. The reminders request made with it is answered with `reminders`. */
+  const eventsRequest = (reminders: Reminder[] = []) =>
     vi.waitFor(() => {
       const found = http.match((r) => r.url === `${F}/calendar/events`);
       expect(found.length).toBeGreaterThan(0);
+      for (const r of http.match((r) => r.url === `${F}/calendar/reminders`)) {
+        r.flush(reminders);
+      }
       return found[found.length - 1];
     });
 
-  async function open(url: string, events: CalendarEvent[] | 'error' = []) {
+  async function open(url: string, events: CalendarEvent[] | 'error' = [], reminders: Reminder[] = []) {
     TestBed.configureTestingModule({
       providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
     });
     const harness = await RouterTestingHarness.create(url);
     http = TestBed.inject(HttpTestingController);
-    const request = await eventsRequest();
+    const request = await eventsRequest(reminders);
     for (const r of http.match(F)) r.flush(FAMILY);
     for (const r of http.match(`${F}/children`)) r.flush(CHILDREN);
     if (events === 'error') {
@@ -247,6 +251,89 @@ describe('the calendar page', () => {
 
     expect(text(dialog)).toContain('Private details aren’t shared.');
     expect([...dialog.querySelectorAll('button')].some((b) => text(b) === 'Cancel event…')).toBe(false);
+  });
+
+  it('shows reminders with their own label, filtered by child, and in Month and List too', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [], [
+      reminder(),
+      reminder({ id: 'r2', title: 'Pack lunches', childId: null, allDay: true, startsAt: '2026-10-21T05:00:00Z' }),
+    ]);
+
+    const agenda = () => [...main().querySelectorAll('app-calendar-week .agenda .title')].map((t) => text(t));
+    expect(agenda()).toEqual(['Spirit Day', 'Pack lunches']);
+    const item = main().querySelector('app-calendar-week .agenda button.item')!;
+    expect(item.getAttribute('data-kind')).toBe('reminder');
+    expect(text(item)).toContain('Spirit Day, Reminder, 8:00 AM');
+    expect(text(main().querySelector('.key'))).toContain('Reminder');
+
+    click('Aurora', main().querySelector('.filters')!);
+    await settle(harness);
+    (await eventsRequest().catch(() => null))?.flush([]);
+    await settle(harness);
+    expect(agenda()).toEqual(['Pack lunches']); // A reminder about no child stays for everyone.
+
+    click('List', main().querySelector('.segmented')!);
+    await settle(harness);
+    (await eventsRequest([reminder()])).flush([]);
+    await settle(harness);
+    click('All', main().querySelector('.filters')!);
+    await settle(harness);
+    (await eventsRequest([reminder()]).catch(() => null))?.flush([]);
+    await settle(harness);
+    expect(text(main().querySelector('app-calendar-list'))).toContain('Spirit Day');
+  });
+
+  it('marks a reminder seen only when its details are opened, and shows who changed it', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [], [
+      reminder({ repeat: 'Weekly', repeatCount: 3, editedBy: 'm-sam', seenBy: [{ membershipId: 'm-sam', seenAt: '2026-10-19T00:00:00Z' }] }),
+    ]);
+    expect(http.match((r) => r.url.endsWith('/seen'))).toHaveLength(0);
+
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    const dialog = document.querySelector('[role="dialog"]')!;
+    const seen = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/reminders/r1/seen`));
+    seen.flush(null);
+
+    expect(text(dialog.querySelector('h2'))).toBe('Spirit Day');
+    expect(text(dialog)).toContain('Reminder');
+    expect(text(dialog)).toContain('Tuesday, October 20 · 8:00 AM');
+    expect(text(dialog)).toContain('RepeatsEvery week, 3 times');
+    expect(text(dialog)).toContain('AboutKai');
+    expect(text(dialog)).toContain('DetailsWear a blue shirt');
+    expect(text(dialog)).toContain('Added by Sam Edited by Sam Seen by Sam');
+    // No location, completion, assignee or attachment controls on a reminder.
+    expect(text(dialog)).not.toMatch(/Where|Mark done|Assign|Attach/);
+  });
+
+  it('deletes a reminder for both parents after confirming, with no approval', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [], [reminder({ repeat: 'Daily', repeatCount: 2 })]);
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    const dialog = document.querySelector('[role="dialog"]')!;
+    http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
+
+    click('Delete reminder…', dialog);
+    await settle(harness);
+    expect(text(dialog)).toContain('This deletes the reminder and every repeat of it, for both of you.');
+    click('Yes, delete', dialog);
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'DELETE' && r.url === `${F}/calendar/reminders/r1`))).flush(null);
+    (await eventsRequest()).flush([]);
+    await settle(harness);
+
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(text(main())).toContain('“Spirit Day” was deleted.');
+    expect(http.match((r) => r.url.includes('/approvals'))).toHaveLength(0);
+  });
+
+  it('has no axe violations with a reminder and its details open', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [], [reminder()]);
+    expect(await axeViolations(document.body)).toEqual([]);
+
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
+    expect(await axeViolations(document.body)).toEqual([]);
   });
 
   it('has no axe violations with events and with details open', async () => {

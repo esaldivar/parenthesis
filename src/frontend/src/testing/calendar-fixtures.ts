@@ -1,4 +1,4 @@
-import { CalendarEvent, Child, FamilyMember } from '../app/core/api/api';
+import { CalendarEvent, Child, FamilyMember, Reminder } from '../app/core/api/api';
 
 // Synthetic family only.
 export const MEMBERS: FamilyMember[] = [
@@ -37,3 +37,25 @@ export function event(over: Partial<CalendarEvent> = {}): CalendarEvent {
   };
 }
 
+
+/** A shared reminder: Tuesday, October 20, 2026, 8:00 AM in Chicago, added by Sam. */
+export function reminder(over: Partial<Reminder> = {}): Reminder {
+  return {
+    id: 'r1',
+    title: 'Spirit Day',
+    startsAt: '2026-10-20T13:00:00Z',
+    allDay: false,
+    childId: 'kai',
+    details: 'Wear a blue shirt',
+    createdByMembershipId: 'm-sam',
+    createdAt: '2026-10-18T12:00:00Z',
+    editedBy: null,
+    lastEditedAt: null,
+    seenBy: [],
+    repeat: 'None',
+    repeatUntil: null,
+    repeatCount: null,
+    seriesStartsAt: '2026-10-20T13:00:00Z',
+    ...over,
+  };
+}

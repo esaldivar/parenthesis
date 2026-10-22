@@ -282,8 +282,9 @@ that points back here.
     - [x] #170 backend: one-off reminders, history, the "edited by" note and per-parent Seen (October 22, 2026).
     - [x] #171 backend: daily, weekly and monthly repeats with an end date or a number of times, in the family's
       time zone (October 22, 2026). Edits apply to the whole series.
-    - [ ] #172 frontend: reminders on the calendar and their details. #173 frontend: add and edit, with the Event / Task /
-      Reminder choice.
+    - [x] #172 frontend: reminders in Week, Month and List (bell icon, gold edge, "Reminder" label, child filter) and
+      their details, with Seen on opening, the edited-by and seen-by notes, and Delete (October 22, 2026).
+    - [ ] #173 frontend: add and edit, with the Event / Task / Reminder choice.
     - [x] **Owner decisions (October 22, 2026):** a monthly reminder on the 29th–31st falls on the last day of shorter
       months (Jan 31 → Feb 28 → Mar 31); edits, deletes, Seen and history are per series in v0.3.0.
     - [ ] Later, if missed: change or delete a single occurrence of a repeating reminder (This one / This and following /
