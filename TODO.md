@@ -332,6 +332,9 @@ that points back here.
       they don't reappear.
   - [ ] Changing an event's children after it's created (the API doesn't support it yet).
   - [x] Frontend: the dashboard's live data source (#196).
+    - [ ] **Home calendar shows every event (#208, critical):** on desktop the week grid left out all-day events (an
+      all-day activity, a holiday, a day of unavailable time), and a multi-day event showed on its first day only. They
+      now sit in the all-day row across their dates. **Owner:** retest on the development site, then close #208.
   - [ ] **Invited co-parent joins the existing family (#211, critical).** Fixed on `fix/211-invited-co-parent-joins-family`:
     a "Sign up to join" link opened while someone else is signed in on that browser keeps its invitation and goes to
     it (it was dropped, so the new account landed in new-family setup), and a signed-in parent with no family goes to

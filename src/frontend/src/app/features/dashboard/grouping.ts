@@ -78,7 +78,10 @@ export interface WeekPlacement {
 }
 
 /** Where each block sits in the seven days from weekStart, clipped to the week, with lanes for overlaps. */
-export function placeInWeek(blocks: readonly ScheduleBlock[], weekStart: PlainDate): Map<string, WeekPlacement> {
+export function placeInWeek(
+  blocks: readonly Pick<ScheduleBlock, 'key' | 'start' | 'end'>[],
+  weekStart: PlainDate,
+): Map<string, WeekPlacement> {
   const laneEnds: number[] = [];
   const placements = new Map<string, WeekPlacement>();
   for (const block of blocks) {
