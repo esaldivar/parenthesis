@@ -291,8 +291,14 @@ that points back here.
       All, like recurring unavailable time).
     - [x] **Owner decisions (October 22, 2026):** children don't see reminders (parents only; the child experience in
       v0.5.0 can revisit it); a real edit clears the other parent's Seen (the editor's stays).
-  - [ ] **Tasks (#73)**, split into four parts: #174 and #175 backend, #176 and #177 frontend. Same open question on
-    whether children see tasks.
+  - [ ] **Tasks (#73)**, split into four parts:
+    - [x] #174 backend: shared tasks, Mark done (and undo), history, the "edited by" note and per-parent Seen
+      (October 22, 2026).
+    - [ ] #175 backend: checklist items.
+    - [ ] #176 and #177 frontend.
+    - [x] **Owner decisions (October 22, 2026):** children don't see tasks (parents only; child sessions get 403). Mark
+      done and undo are recorded in history but aren't edits: they keep both parents' Seen and don't set "edited by".
+      A real edit clears the other parent's Seen, as for reminders.
   - [ ] Frontend: edit an event (and its approval), recurring unavailable time with This event / This and following /
     All events, declined requests on the calendar.
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).

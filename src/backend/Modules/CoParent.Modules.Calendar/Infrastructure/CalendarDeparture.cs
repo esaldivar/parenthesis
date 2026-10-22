@@ -6,8 +6,8 @@ namespace CoParent.Modules.Calendar.Infrastructure;
 
 /// <summary>
 /// When a parent deletes their account (A-12): their own "Unavailable" time (whose notes only they could see) is
-/// deleted, along with their reminder Seen marks. Shared events and reminders stay for the co-parent's history; the
-/// departing parent shows as "Former parent". If the family is closing, all its events and reminders go.
+/// deleted, along with their reminder and task Seen marks. Shared events, reminders and tasks stay for the co-parent's
+/// history; the departing parent shows as "Former parent". If the family is closing, all of them go.
 /// </summary>
 internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDepartureHandler
 {
@@ -29,8 +29,13 @@ internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDeparture
         db.ReminderSeen.RemoveRange(departure.FamilyClosing
             ? await db.ReminderSeen.ToListAsync(cancellationToken)
             : await db.ReminderSeen.Where(s => s.MembershipId == departure.MembershipId).ToListAsync(cancellationToken));
+        db.TaskSeen.RemoveRange(departure.FamilyClosing
+            ? await db.TaskSeen.ToListAsync(cancellationToken)
+            : await db.TaskSeen.Where(s => s.MembershipId == departure.MembershipId).ToListAsync(cancellationToken));
         if (departure.FamilyClosing)
         {
+            db.TaskHistory.RemoveRange(await db.TaskHistory.ToListAsync(cancellationToken));
+            db.Tasks.RemoveRange(await db.Tasks.ToListAsync(cancellationToken));
             db.ReminderHistory.RemoveRange(await db.ReminderHistory.ToListAsync(cancellationToken));
             db.Reminders.RemoveRange(await db.Reminders.ToListAsync(cancellationToken));
         }

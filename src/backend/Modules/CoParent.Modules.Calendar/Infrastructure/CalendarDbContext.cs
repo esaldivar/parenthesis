@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Calendar.Infrastructure;
 
-/// <summary>Calendar events and reminders in the <c>calendar</c> schema, filtered to the request's tenant.</summary>
+/// <summary>Calendar events, reminders and tasks in the <c>calendar</c> schema, filtered to the request's tenant.</summary>
 internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> options, ITenantContext tenant)
     : DbContext(options), IModuleSchema
 {
@@ -19,6 +19,12 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
     public DbSet<ReminderHistory> ReminderHistory => Set<ReminderHistory>();
 
     public DbSet<ReminderSeen> ReminderSeen => Set<ReminderSeen>();
+
+    public DbSet<SharedTask> Tasks => Set<SharedTask>();
+
+    public DbSet<SharedTaskHistory> TaskHistory => Set<SharedTaskHistory>();
+
+    public DbSet<SharedTaskSeen> TaskSeen => Set<SharedTaskSeen>();
 
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -70,6 +76,31 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
         {
             s.ToTable("reminder_seen");
             s.HasKey(x => new { x.ReminderId, x.MembershipId });
+            s.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<SharedTask>(t =>
+        {
+            t.ToTable("tasks");
+            t.Property(x => x.Title).HasMaxLength(SharedTask.TitleMaxLength);
+            t.Property(x => x.Details).HasMaxLength(SharedTask.DetailsMaxLength);
+            t.HasIndex(x => new { x.FamilyId, x.DueDate });
+            t.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<SharedTaskHistory>(h =>
+        {
+            h.ToTable("task_history");
+            h.Property(x => x.Action).HasConversion<string>().HasMaxLength(16);
+            h.Property(x => x.Changes).HasMaxLength(SharedTaskHistory.ChangesMaxLength);
+            h.HasIndex(x => new { x.TaskId, x.At });
+            h.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<SharedTaskSeen>(s =>
+        {
+            s.ToTable("task_seen");
+            s.HasKey(x => new { x.TaskId, x.MembershipId });
             s.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });
 
