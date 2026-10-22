@@ -1,4 +1,4 @@
-import { CalendarEvent, Child, FamilyMember, Reminder } from '../app/core/api/api';
+import { CalendarEvent, ChecklistItem, Child, FamilyMember, Reminder, SharedTask } from '../app/core/api/api';
 
 // Synthetic family only.
 export const MEMBERS: FamilyMember[] = [
@@ -58,4 +58,32 @@ export function reminder(over: Partial<Reminder> = {}): Reminder {
     seriesStartsAt: '2026-10-20T13:00:00Z',
     ...over,
   };
+}
+
+/** A shared task due Thursday, October 22, 2026, about Kai, added by Sam, with no checklist. */
+export function task(over: Partial<SharedTask> = {}): SharedTask {
+  return {
+    id: 't1',
+    title: 'Science fair poster',
+    dueDate: '2026-10-22',
+    childId: 'kai',
+    details: 'Glue and markers',
+    createdByMembershipId: 'm-sam',
+    createdAt: '2026-10-18T12:00:00Z',
+    editedBy: null,
+    lastEditedAt: null,
+    completedBy: null,
+    completedAt: null,
+    seenBy: [],
+    items: [],
+    progressDone: 0,
+    progressTotal: 0,
+    version: 7,
+    justCompleted: false,
+    ...over,
+  };
+}
+
+export function checklistItem(over: Partial<ChecklistItem> = {}): ChecklistItem {
+  return { id: 'i1', text: 'Poster board', required: true, completedBy: null, completedAt: null, ...over };
 }

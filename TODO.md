@@ -296,7 +296,9 @@ that points back here.
       (October 22, 2026).
     - [x] #175 backend: checklists with required and optional items, automatic completion and reopening, and a
       version check so neither parent's change is silently lost (October 22, 2026).
-    - [ ] #176 and #177 frontend.
+    - [x] #176 frontend: tasks in Week, Month and List, their details with the checklist, Mark done, Delete, the
+      conflict refresh and the "Great teamwork!" celebration (October 22, 2026).
+    - [ ] #177 frontend: add and edit a task, with its checklist.
     - [x] **Owner decisions (October 22, 2026):** children don't see tasks (parents only; child sessions get 403). Mark
       done and undo are recorded in history but aren't edits: they keep both parents' Seen and don't set "edited by".
       A real edit clears the other parent's Seen, as for reminders. A checklist with no required items is done when

@@ -1,4 +1,4 @@
-import { CalendarCategory, CalendarEvent, CalendarWarning, Child, FamilyMember, Reminder } from '../../core/api/api';
+import { CalendarCategory, CalendarEvent, CalendarWarning, Child, FamilyMember, Reminder, SharedTask } from '../../core/api/api';
 import { IconName } from '../../shared/icon/icon';
 import { LocalDateTime, PlainDate } from '../dashboard/model';
 import { addDays, daysBetween } from '../dashboard/week';
@@ -6,9 +6,10 @@ import { lastDate, toFamilyLocal } from './time';
 
 /**
  * How an item reads on the calendar. Activities cover school, medical, dental, birthdays and the rest. Reminders
- * (#72) are shared notes for a day, not events: no location, approval or completion.
+ * (#72) are shared notes for a day, not events: no location, approval or completion. Tasks (#73) are shared to-dos due
+ * on a day.
  */
-export type ItemKind = 'parenting' | 'family' | 'activity' | 'unavailable' | 'reminder';
+export type ItemKind = 'parenting' | 'family' | 'activity' | 'unavailable' | 'reminder' | 'task';
 
 /**
  * Text first, never colour alone. `pending` waits for the other parent and is not on the schedule yet;
@@ -26,7 +27,7 @@ export interface CalendarItem {
   readonly id: string;
   readonly title: string;
   readonly kind: ItemKind;
-  readonly category: CalendarCategory | 'Reminder';
+  readonly category: CalendarCategory | 'Reminder' | 'Task';
   readonly categoryLabel: string;
   readonly icon: IconName;
   readonly start: LocalDateTime;
@@ -52,6 +53,9 @@ export interface CalendarItem {
   readonly warnings: readonly CalendarWarning[];
   /** Reminders only: the reminder's id (`id` is per occurrence, so repeats stay distinct). */
   readonly reminderId?: string;
+  /** Tasks only: the task's id, and whether it's done (said in words, never by colour alone). */
+  readonly taskId?: string;
+  readonly done?: boolean;
 }
 
 const CATEGORY_LABELS: Record<CalendarCategory, string> = {
@@ -195,6 +199,46 @@ export function reminderItems(
       isMine: reminder.createdByMembershipId === me,
       location: null,
       notes: reminder.details,
+      warnings: [],
+    } satisfies CalendarItem;
+  });
+}
+
+/** Builds the calendar's items from tasks: each sits on its due date, all day. A child who isn't active is left out. */
+export function taskItems(
+  tasks: readonly SharedTask[],
+  members: readonly FamilyMember[],
+  children: readonly Child[],
+): CalendarItem[] {
+  const name = (membershipId: string) => members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
+  const me = members.find((m) => m.isYou)?.membershipId;
+  return tasks.map((task) => {
+    const child = children.find((c) => c.id === task.childId);
+    const done = task.completedAt !== null;
+    return {
+      id: `task:${task.id}`,
+      taskId: task.id,
+      done,
+      title: task.title,
+      kind: 'task',
+      category: 'Task',
+      categoryLabel: 'Task',
+      icon: 'note',
+      start: `${task.dueDate}T00:00`,
+      end: `${addDays(task.dueDate, 1)}T00:00`,
+      firstDate: task.dueDate,
+      lastDate: task.dueDate,
+      allDay: true,
+      spansDays: true,
+      status: 'confirmed',
+      pendingChange: 'None',
+      beforeCoParentJoined: false,
+      children: child ? [{ id: child.id, name: child.firstName }] : [],
+      parents: [],
+      ownerName: name(task.createdByMembershipId),
+      isMine: task.createdByMembershipId === me,
+      location: null,
+      notes: task.details,
       warnings: [],
     } satisfies CalendarItem;
   });
