@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +13,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { FORM_STYLES } from '../auth/form-styles';
 import { PlainDate } from '../dashboard/model';
 import { todayIn } from '../dashboard/week';
+import { revealFirstProblem } from './reveal-problem';
 import { fromFamilyLocal, toFamilyLocal } from './time';
 
 export const TITLE_MAX = 80;
@@ -49,6 +50,8 @@ const REPEATS: readonly { id: RepeatFrequency; label: string }[] = [
 })
 export class ReminderForm implements OnInit {
   private readonly api = inject(Api);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
 
@@ -121,6 +124,11 @@ export class ReminderForm implements OnInit {
     return this.fieldErrors()[name] ?? null;
   }
 
+  /** Shows the first problem after a refused save (see revealFirstProblem). */
+  private revealProblem(): void {
+    afterNextRender(() => revealFirstProblem(this.host.nativeElement), { injector: this.injector });
+  }
+
   protected async submit(): Promise<void> {
     const family = this.family();
     if (!family || this.busy()) {
@@ -130,6 +138,7 @@ export class ReminderForm implements OnInit {
     this.fieldErrors.set(errors);
     if (Object.keys(errors).length > 0) {
       this.form.markAllAsTouched();
+      this.revealProblem();
       return;
     }
 
@@ -153,6 +162,7 @@ export class ReminderForm implements OnInit {
       } else {
         this.error.set(generalMessage(problem));
       }
+      this.revealProblem();
     } finally {
       this.busy.set(false);
     }

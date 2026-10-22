@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,6 +14,7 @@ import { FORM_STYLES } from '../auth/form-styles';
 import { addDays, dayLong } from '../dashboard/week';
 import { warningText } from './add-event-page';
 import { repeatText } from './series';
+import { revealFirstProblem } from './reveal-problem';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from './time';
 
 /** The categories that change only with both parents' agreement (the server decides; this only explains it). */
@@ -35,6 +36,8 @@ const NEEDS_BOTH: readonly CalendarCategory[] = ['ParentingTime', 'Holiday', 'Jo
 })
 export class EventEditPage implements OnInit {
   private readonly api = inject(Api);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly router = inject(Router);
   protected readonly family = inject(AuthStore).currentFamily;
   private readonly timeZone = computed(() => this.family()?.timeZone ?? 'UTC');
@@ -147,6 +150,11 @@ export class EventEditPage implements OnInit {
     return this.fieldErrors()[name] ?? null;
   }
 
+  /** Shows the first problem after a refused save (see revealFirstProblem). */
+  private revealProblem(): void {
+    afterNextRender(() => revealFirstProblem(this.host.nativeElement), { injector: this.injector });
+  }
+
   protected async submit(): Promise<void> {
     const family = this.family();
     const event = this.event();
@@ -157,6 +165,7 @@ export class EventEditPage implements OnInit {
     this.fieldErrors.set(errors);
     if (Object.keys(errors).length > 0) {
       this.form.markAllAsTouched();
+      this.revealProblem();
       return;
     }
 
@@ -187,6 +196,7 @@ export class EventEditPage implements OnInit {
       } else {
         this.error.set(problem.detail ? `${problem.title ?? ''} ${problem.detail}`.trim() : generalMessage(problem));
       }
+      this.revealProblem();
     } finally {
       this.busy.set(false);
     }
