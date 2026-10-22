@@ -302,6 +302,7 @@ describe('the calendar page', () => {
     expect(text(dialog)).toContain('AboutKai');
     expect(text(dialog)).toContain('DetailsWear a blue shirt');
     expect(text(dialog)).toContain('Added by Sam Edited by Sam Seen by Sam');
+    expect([...dialog.querySelectorAll('a')].find((a) => text(a) === 'Edit reminder')!.getAttribute('href')).toBe('/calendar/reminders/r1/edit');
     // No location, completion, assignee or attachment controls on a reminder.
     expect(text(dialog)).not.toMatch(/Where|Mark done|Assign|Attach/);
   });
