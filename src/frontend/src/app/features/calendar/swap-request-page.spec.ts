@@ -142,6 +142,19 @@ describe('Request swap', () => {
     expect(text(page().querySelector('h1'))).toBe('Review and send request');
   });
 
+  it('won’t send a swap when the parent with the children is unavailable then: no Send anyway (#210)', async () => {
+    await open();
+    await newDates();
+    (await conflicts()).flush({ warnings: ['CaregiverUnavailable', 'OverlapsCoParentUnavailable'] });
+    await settle();
+
+    expect(text(page())).toContain('You marked yourself unavailable then. Choose different dates, or change your unavailable time first.');
+    expect(page().querySelector('.clash')).toBeNull();
+    expect(button('Send anyway')).toBeUndefined();
+    expect(text(page().querySelector('h1'))).not.toBe('Review and send request');
+    await vi.waitFor(() => expect(document.activeElement?.id).toBe('swap-start-date'));
+  });
+
   it('needs dates that differ from the current ones', async () => {
     await open();
     await click('Continue');

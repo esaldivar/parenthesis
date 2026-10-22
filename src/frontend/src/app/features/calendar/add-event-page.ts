@@ -17,6 +17,7 @@ import { addDays, monthDay, todayIn, weekdayShort } from '../dashboard/week';
 import { ReminderForm } from './reminder-form';
 import { MAX_DATES, WEEKDAYS, lastAllowed, seriesDates, weekdayOf } from './series';
 import { TaskForm } from './task-form';
+import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
 import { fromFamilyLocal } from './time';
 
@@ -297,7 +298,8 @@ export class AddEventPage implements OnInit {
       const problem = toProblem(error);
       const serverErrors = Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v.join(' ')]));
       if (problem.status === 400 && Object.keys(serverErrors).length > 0) {
-        this.fieldErrors.set(serverErrors);
+        const caregiver = this.parents().find((p) => p.membershipId === this.form.getRawValue().caregiver);
+        this.fieldErrors.set(withOwnOverlap(serverErrors, caregiver));
       } else {
         this.error.set(generalMessage(problem));
       }

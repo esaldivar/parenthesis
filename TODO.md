@@ -335,6 +335,14 @@ that points back here.
     - [ ] **Home calendar shows every event (#208, critical):** on desktop the week grid left out all-day events (an
       all-day activity, a holiday, a day of unavailable time), and a multi-day event showed on its first day only. They
       now sit in the all-day row across their dates. **Owner:** retest on the development site, then close #208.
+  - [ ] **A parent can't have the children and be unavailable at once (#210).** Built on
+    `feat/210-block-own-overlaps`: the API refuses parenting time over its caregiver's unavailable time (whoever adds
+    it) and unavailable time over the owner's pending or confirmed parenting time, for new items, repeating ones and
+    edits that change times or the caregiver; a series is checked whole. A swap into the caregiver's unavailable time
+    has no Send anyway. Existing overlaps stay; title and notes edits still work.
+    - [x] **Owner decisions (October 22, 2026):** pending parenting time counts (declined and withdrawn don't); it
+      applies whoever adds it; existing overlaps are left alone.
+    - [ ] **Owner:** test it on the development site, then close #210.
   - [ ] **Invited co-parent joins the existing family (#211, critical).** Fixed on `fix/211-invited-co-parent-joins-family`:
     a "Sign up to join" link opened while someone else is signed in on that browser keeps its invitation and goes to
     it (it was dropped, so the new account landed in new-family setup), and a signed-in parent with no family goes to
