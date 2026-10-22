@@ -278,7 +278,7 @@ that points back here.
     server check before sending, with **Send anyway** / **Choose different dates** when the other parent is
     unavailable; review (current → proposed); "Swap request sent"; request details with status and Withdraw. Owner
     decisions: the reason shows in the app only (never in email), and a swap changes dates and times only.
-  - [ ] **Reminders (#72)**, split into four queue-sized parts (owner decision, October 21, 2026):
+  - [x] **Reminders (#72)**, split into four queue-sized parts (all built October 22, 2026; the owner closes #72 after testing):
     - [x] #170 backend: one-off reminders, history, the "edited by" note and per-parent Seen (October 22, 2026).
     - [x] #171 backend: daily, weekly and monthly repeats with an end date or a number of times, in the family's
       time zone (October 22, 2026). Edits apply to the whole series.
@@ -305,8 +305,12 @@ that points back here.
       A real edit clears the other parent's Seen, as for reminders. A checklist with no required items is done when
       every item is ticked. Adding, renaming, reordering or removing items is an ordinary edit by either parent, and
       completion is recalculated (removing the last unticked required item completes the task; adding one reopens it).
-  - [ ] Frontend: edit an event (and its approval), recurring unavailable time with This event / This and following /
-    All events, declined requests on the calendar.
+  - [x] Frontend: edit an event (#188, October 22, 2026): title, when, place, notes and the caregiver, from the event's
+    details. Parenting time, holidays and family events send a change for approval ("Change pending"); notes and
+    other events change at once; the form says which before saving.
+  - [ ] Frontend: recurring unavailable time with This event / This and following / All events (needs backend
+    recurrence, C-05), and declined requests on the calendar.
+  - [ ] Changing an event's children after it's created (the API doesn't support it yet).
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
   - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
     (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).
