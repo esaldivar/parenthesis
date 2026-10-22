@@ -8,7 +8,7 @@
   [cdkTrapFocusAutoCapture]="true"
   data-kind="reminder"
 >
-  <header class="panel__head">
+  <div class="panel__head">
     <span class="panel__icon"><app-icon name="bell" [size]="24" /></span>
     <div class="panel__titles">
       <h2 id="reminder-details-title" tabindex="-1" cdkFocusInitial>{{ reminder().title }}</h2>
@@ -17,7 +17,7 @@
     <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close details">
       <app-icon name="close" />
     </button>
-  </header>
+  </div>
 
   <dl class="facts">
     <dt>When</dt>

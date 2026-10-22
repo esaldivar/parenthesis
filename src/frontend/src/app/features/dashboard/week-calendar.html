@@ -101,6 +101,11 @@
                       }
                     </span>
                   }
+                  @if (canOpen() && eventOf(block); as id) {
+                    <button type="button" class="open" (click)="openEvent.emit(id)">
+                      <span class="visually-hidden">Open details: {{ block.title }}</span>
+                    </button>
+                  }
                 </li>
               }
             }
@@ -137,6 +142,11 @@
                   }
                   @if (block.event.status !== 'confirmed') {
                     <app-status-label [status]="block.event.status" />
+                  }
+                  @if (canOpen()) {
+                    <button type="button" class="open" (click)="openEvent.emit(block.event.id)">
+                      <span class="visually-hidden">Open details: {{ block.event.title }}</span>
+                    </button>
                   }
                 </li>
               }
@@ -188,6 +198,11 @@
                     </span>
                     @if (event.status !== 'confirmed') {
                       <app-status-label [status]="event.status" />
+                    }
+                    @if (canOpen()) {
+                      <button type="button" class="open" (click)="openEvent.emit(event.id)">
+                        <span class="visually-hidden">Open details: {{ event.title }}</span>
+                      </button>
                     }
                   </li>
                 }
@@ -245,6 +260,11 @@
                   </ul>
                 }
               </span>
+              @if (canOpen() && eventOf(block); as id) {
+                <button type="button" class="open" (click)="openEvent.emit(id)">
+                  <span class="visually-hidden">Open details: {{ block.title }}</span>
+                </button>
+              }
             </li>
           }
         </ol>
@@ -280,6 +300,11 @@
                     </span>
                     @if (event.status !== 'confirmed') {
                       <app-status-label [status]="event.status" />
+                    }
+                    @if (canOpen()) {
+                      <button type="button" class="open" (click)="openEvent.emit(event.id)">
+                        <span class="visually-hidden">Open details: {{ event.title }}</span>
+                      </button>
                     }
                   </li>
                 }

@@ -2,6 +2,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   InjectionToken,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -12,7 +14,11 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
+import { Api, CalendarEvent, FamilyMember } from '../../core/api/api';
+import { toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
+import { CalendarItem, toItems } from '../calendar/calendar-items';
+import { EventDetails } from '../calendar/event-details';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Leaves } from '../../shared/decor/leaves';
 import { EmptyState } from '../../shared/empty-state/empty-state';
@@ -52,13 +58,15 @@ interface UpcomingItem {
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar],
+  imports: [RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails],
   providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.scss',
 })
 export class DashboardPage {
   private readonly auth = inject(AuthStore);
+  private readonly api = inject(Api);
+  private readonly injector = inject(Injector);
   private readonly liveSource = inject(DashboardDataSource);
   private readonly now = inject(NOW)();
 
@@ -159,6 +167,19 @@ export class DashboardPage {
     return [...reviews, ...parenting, ...dated].slice(0, 5);
   });
 
+  /** The event whose details are open over the page (#213), with what the details need. */
+  protected readonly details = signal<{
+    readonly item: CalendarItem;
+    readonly event: CalendarEvent;
+    readonly members: readonly FamilyMember[];
+    readonly familyId: string;
+  } | null>(null);
+  /** What just happened (after a change from the details), or why they couldn't open. */
+  protected readonly notice = signal<string | null>(null);
+  protected readonly familyTimeZone = this.timeZone;
+  private opener: HTMLElement | null = null;
+  private opening = 0;
+
   protected readonly memoryIndex = signal(0);
   protected readonly memories = computed(() => this.data()?.recentMemories ?? []);
   protected readonly currentMemory = computed(() => this.memories()[this.memoryIndex()] ?? null);
@@ -205,6 +226,57 @@ export class DashboardPage {
   protected showMemory(offset: number): void {
     const count = this.memories().length;
     this.memoryIndex.set((this.memoryIndex() + offset + count) % count);
+  }
+
+  /**
+   * Opens an event's details over the home page (#213), as the Calendar page does: the same sheet, permissions and
+   * actions, loaded fresh so it's never stale. Opening it changes nothing. Closing it returns focus to the block.
+   */
+  protected async openEvent(eventId: string): Promise<void> {
+    const familyId = this.auth.currentFamily()?.id;
+    if (!familyId) {
+      return;
+    }
+    const attempt = ++this.opening;
+    this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.notice.set(null);
+    try {
+      const [event, family, children] = await Promise.all([
+        this.api.calendarEvent(familyId, eventId),
+        this.api.family(familyId),
+        this.api.children(familyId),
+      ]);
+      if (attempt !== this.opening) {
+        return;
+      }
+      const item = toItems([event], family.members, children, this.timeZone()).find((i) => i.id === eventId);
+      if (!item) {
+        throw new Error('Not shown on the calendar');
+      }
+      this.details.set({ item, event, members: family.members, familyId });
+    } catch (error) {
+      if (attempt === this.opening) {
+        this.notice.set(
+          toProblem(error).status === 404
+            ? 'That event isn’t on the calendar any more. The week has been refreshed.'
+            : 'We couldn’t open that event. Try again, or find it on the Calendar page.',
+        );
+        this.reload();
+      }
+    }
+  }
+
+  protected closeDetails(): void {
+    this.details.set(null);
+    const opener = this.opener;
+    afterNextRender(() => opener?.isConnected && opener.focus(), { injector: this.injector });
+  }
+
+  /** Something changed from the details (a cancellation, an answer): say so and refresh the week. */
+  protected detailsChanged(message: string): void {
+    this.details.set(null);
+    this.notice.set(message);
+    this.reload();
   }
 
   protected reload(): void {

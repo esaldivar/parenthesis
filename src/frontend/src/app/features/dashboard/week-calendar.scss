@@ -642,3 +642,36 @@ ul {
     white-space: nowrap;
   }
 }
+
+// Opening an event's details (#213): the whole block is the target, as on the Calendar page. The button lies over the
+// block, so its text and avatars stay as they are; the focus ring is drawn inside the block's edge.
+.pt,
+.act {
+  position: relative;
+}
+
+.open {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, currentColor 6%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+  }
+}
+
+// The Details toggle on a parenting-time card stays its own button, above the block's.
+.pt__toggle {
+  position: relative;
+  z-index: 1;
+}

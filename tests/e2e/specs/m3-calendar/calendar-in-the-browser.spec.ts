@@ -235,4 +235,27 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await family.dispose();
     }
   });
+
+  test('an event’s block on the home page opens its details, and Escape returns to it (#213)', async ({ page }) => {
+    const family = await familyWithKai();
+    const { dad, familyId, kaiId } = family;
+    try {
+      await dad.json(dad.post(events(familyId), { category: 'Activity', title: 'Swim lesson', childIds: [kaiId], startsAt: at(20), endsAt: at(21) }));
+
+      await signIn(page, dad.email);
+      await page.goto(`/?week=${tuesday}`);
+      const block = page.getByRole('button', { name: 'Open details: Swim lesson' }).first();
+      await block.click();
+
+      await expect(details(page).getByRole('heading', { name: 'Swim lesson' })).toBeVisible();
+      await expect(details(page)).toContainText('Confirmed');
+      await page.keyboard.press('Escape');
+      await expect(details(page)).toHaveCount(0);
+      await expect(block).toBeFocused();
+      // Still on the home page: nothing was changed or saved by opening it.
+      await expect(page).toHaveURL(/\/\?week=/);
+    } finally {
+      await family.dispose();
+    }
+  });
 });

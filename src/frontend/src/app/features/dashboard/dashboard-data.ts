@@ -106,6 +106,7 @@ function parentingTime(
     status: e.status === 'PendingApproval' ? 'proposed' : 'confirmed',
     changePending: e.pendingChange !== 'None' || undefined,
     title: e.title,
+    eventId: e.id,
   }));
 }
 

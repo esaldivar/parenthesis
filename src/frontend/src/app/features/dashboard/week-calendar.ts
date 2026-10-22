@@ -82,6 +82,16 @@ export class WeekCalendar {
   readonly viewChange = output<InlineView>();
   readonly splitChange = output<boolean>();
   readonly retry = output();
+  /** Opens an event's details over the page (#213), with the calendar event's id. */
+  readonly openEvent = output<string>();
+
+  /** Only live data has real events to open; the development sample doesn't. */
+  protected readonly canOpen = computed(() => this.week()?.source === 'live');
+
+  /** The calendar event behind a parenting-time block (a grouped block opens its first child's event). */
+  protected eventOf(block: ScheduleBlock): string | null {
+    return block.items.find((i) => i.eventId)?.eventId ?? null;
+  }
 
   private readonly expanded = signal<ReadonlySet<string>>(new Set());
 

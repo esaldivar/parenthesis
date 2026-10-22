@@ -85,6 +85,31 @@ describe('the calendar page', () => {
     expect(text(item)).not.toContain('Confirmed');
   });
 
+  for (const view of ['week', 'month'] as const) {
+    it(`opens the clicked event’s details from the ${view} view and returns focus to it (#213)`, async () => {
+      const { harness } = await open(`/calendar?date=2026-10-20&view=${view}`, [
+        event({ id: 'swim', title: 'Swim lesson' }),
+        event({ id: 'piano', title: 'Piano lesson', startsAt: '2026-10-21T21:00:00Z', endsAt: '2026-10-21T22:00:00Z' }),
+      ]);
+
+      // Week: its day list, which narrow screens (and this test's page) show; the grid's buttons do the same.
+      const where = view === 'week' ? 'app-calendar-week .agenda' : 'app-calendar-month';
+      const piano = [...main().querySelectorAll<HTMLElement>(`${where} button.item`)].find((b) => text(b).includes('Piano lesson'))!;
+      piano.focus();
+      piano.click();
+      await settle(harness);
+
+      const dialog = document.querySelector('app-event-details [role="dialog"]')!;
+      expect(text(dialog.querySelector('h2'))).toBe('Piano lesson');
+      // Opening details changes nothing.
+      expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+
+      (dialog.querySelector('button[aria-label="Close details"]') as HTMLElement).click();
+      await settle(harness);
+      await vi.waitFor(() => expect(document.activeElement).toBe(piano));
+    });
+  }
+
   it('shows a calm loading state, then an error with Try again that reloads', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', 'error');
 
