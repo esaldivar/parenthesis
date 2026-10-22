@@ -14,9 +14,10 @@
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
     <mat-label>Title</mat-label>
     <input matInput formControlName="title" [maxlength]="titleMax" required />
-    <mat-hint>Short enough for the calendar, e.g. “Spirit Day: wear blue”.</mat-hint>
     @if (fieldError('title'); as e) {
       <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+    } @else {
+      <mat-hint>Short enough for the calendar, e.g. “Spirit Day: wear blue”.</mat-hint>
     }
   </mat-form-field>
 
