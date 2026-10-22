@@ -39,6 +39,41 @@ internal sealed class SharedTask : Entity, IFamilyScoped
     public DateTimeOffset? CompletedAt { get; set; }
 
     public DateTimeOffset? DeletedAt { get; set; }
+
+    /// <summary>When anything about it last changed, ticks included, so every change moves <see cref="Version"/>.</summary>
+    public DateTimeOffset UpdatedAt { get; set; }
+
+    /// <summary>
+    /// The row version (#175). An edit carries the version the parent saw; a different one means the other parent
+    /// changed it first, and the edit is refused with a conflict instead of silently overwriting that change.
+    /// </summary>
+    public uint Version { get; private set; }
+}
+
+/// <summary>
+/// One line of a task's checklist (#175). Required items decide when the task is done; when none are required, every
+/// item does (owner decision, October 22, 2026). Ticking records who did it and when, quietly.
+/// </summary>
+internal sealed class TaskChecklistItem : Entity, IFamilyScoped
+{
+    public const int TextMaxLength = 120;
+    public const int MaxPerTask = 50;
+
+    public Guid FamilyId { get; init; }
+
+    public Guid TaskId { get; init; }
+
+    public required string Text { get; set; }
+
+    public bool Required { get; set; }
+
+    /// <summary>Its place in the list, from 0.</summary>
+    public int Position { get; set; }
+
+    /// <summary>Who ticked it. Always the signed-in parent; cleared by unticking.</summary>
+    public Guid? CompletedByMembershipId { get; set; }
+
+    public DateTimeOffset? CompletedAt { get; set; }
 }
 
 internal enum SharedTaskAction
@@ -48,6 +83,8 @@ internal enum SharedTaskAction
     Done,
     Undone,
     Deleted,
+    ItemDone,
+    ItemUndone,
 }
 
 /// <summary>Who changed what, and when. Records the names of the fields that changed, not their old values.</summary>
@@ -63,7 +100,7 @@ internal sealed class SharedTaskHistory : Entity, IFamilyScoped
 
     public SharedTaskAction Action { get; init; }
 
-    /// <summary>For edits: the fields that changed, e.g. "title, dueDate".</summary>
+    /// <summary>For edits: the fields that changed, e.g. "title, dueDate, checklist". For ticks: the item's id.</summary>
     public string? Changes { get; init; }
 
     public DateTimeOffset At { get; init; }

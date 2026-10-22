@@ -25,7 +25,7 @@ public sealed class TaskTests(ApiFactory api) : IAsyncLifetime
         var id = (await JsonAsync(created)).GetProperty("id").GetGuid();
         var momSees = Assert.Single(await WeekAsync(f.Mom, f));
         var edited = await f.Mom.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}",
-            new { title = "Science fair poster", dueDate = "2026-10-15", childId = f.KaiId, details = "Glue, markers and tape" });
+            new { title = "Science fair poster", dueDate = "2026-10-15", childId = f.KaiId, details = "Glue, markers and tape", version = await VersionAsync(f.Mom, f, id) });
         var dadView = await JsonAsync(await f.Dad.GetAsync($"{Tasks(f)}/{id}"));
         var momView = await JsonAsync(await f.Mom.GetAsync($"{Tasks(f)}/{id}"));
         var approvals = await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"));
@@ -80,8 +80,8 @@ public sealed class TaskTests(ApiFactory api) : IAsyncLifetime
         using var _ = f;
         var id = await CreateAsync(f.Dad, f, "Sign permission slip");
 
-        await f.Mom.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}", new { title = "Sign field trip slip", dueDate = Friday, details = "Blue folder" });
-        var unchanged = await f.Dad.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}", new { title = "Sign field trip slip", dueDate = Friday, details = "Blue folder" });
+        await f.Mom.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}", new { title = "Sign field trip slip", dueDate = Friday, details = "Blue folder", version = await VersionAsync(f.Mom, f, id) });
+        var unchanged = await f.Dad.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}", new { title = "Sign field trip slip", dueDate = Friday, details = "Blue folder", version = await VersionAsync(f.Dad, f, id) });
         var history = (await JsonAsync(await f.Dad.GetAsync($"{Tasks(f)}/{id}/history"))).EnumerateArray().ToList();
 
         Assert.Equal(HttpStatusCode.OK, unchanged.StatusCode);
@@ -121,7 +121,7 @@ public sealed class TaskTests(ApiFactory api) : IAsyncLifetime
         await f.Mom.PostAsync($"{Tasks(f)}/{id}/done");
         await f.Mom.SendAsync(HttpMethod.Delete, $"{Tasks(f)}/{id}/done");
         var afterDone = await JsonAsync(await f.Dad.GetAsync($"{Tasks(f)}/{id}"));
-        await f.Mom.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}", new { title = "Pack gym clothes and shoes", dueDate = Friday });
+        await f.Mom.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}", new { title = "Pack gym clothes and shoes", dueDate = Friday, version = await VersionAsync(f.Mom, f, id) });
         var afterEdit = (await JsonAsync(await f.Dad.GetAsync($"{Tasks(f)}/{id}"))).GetProperty("seenBy").EnumerateArray().ToList();
 
         // Owner decision (October 22, 2026): Mark done isn't an edit, so Seen and "edited by" stay.
@@ -177,7 +177,7 @@ public sealed class TaskTests(ApiFactory api) : IAsyncLifetime
         using var outsider = await ApiSession.SignedInAsync(api);
 
         Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync($"{Tasks(f)}/{id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await outsider.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}", new { title = "Mine now", dueDate = Friday })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await outsider.SendAsync(HttpMethod.Put, $"{Tasks(f)}/{id}", new { title = "Mine now", dueDate = Friday, version = 1 })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await outsider.SendAsync(HttpMethod.Delete, $"{Tasks(f)}/{id}")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await outsider.PostAsync($"{Tasks(f)}/{id}/done")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await outsider.PostAsync($"{Tasks(f)}/{id}/seen")).StatusCode);
@@ -194,6 +194,9 @@ public sealed class TaskTests(ApiFactory api) : IAsyncLifetime
 
     private static async Task<Guid> CreateAsync(ApiSession parent, Family f, string title) =>
         (await JsonAsync(await parent.PostAsync(Tasks(f), new { title, dueDate = Friday }))).GetProperty("id").GetGuid();
+
+    private static async Task<uint> VersionAsync(ApiSession session, Family f, Guid id) =>
+        (await JsonAsync(await session.GetAsync($"{Tasks(f)}/{id}"))).GetProperty("version").GetUInt32();
 
     private static string Tasks(Family f) => $"/api/families/{f.FamilyId}/calendar/tasks";
 

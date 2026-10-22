@@ -294,11 +294,14 @@ that points back here.
   - [ ] **Tasks (#73)**, split into four parts:
     - [x] #174 backend: shared tasks, Mark done (and undo), history, the "edited by" note and per-parent Seen
       (October 22, 2026).
-    - [ ] #175 backend: checklist items.
+    - [x] #175 backend: checklists with required and optional items, automatic completion and reopening, and a
+      version check so neither parent's change is silently lost (October 22, 2026).
     - [ ] #176 and #177 frontend.
     - [x] **Owner decisions (October 22, 2026):** children don't see tasks (parents only; child sessions get 403). Mark
       done and undo are recorded in history but aren't edits: they keep both parents' Seen and don't set "edited by".
-      A real edit clears the other parent's Seen, as for reminders.
+      A real edit clears the other parent's Seen, as for reminders. A checklist with no required items is done when
+      every item is ticked. Adding, renaming, reordering or removing items is an ordinary edit by either parent, and
+      completion is recalculated (removing the last unticked required item completes the task; adding one reopens it).
   - [ ] Frontend: edit an event (and its approval), recurring unavailable time with This event / This and following /
     All events, declined requests on the calendar.
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).

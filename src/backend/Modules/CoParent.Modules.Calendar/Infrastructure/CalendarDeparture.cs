@@ -35,6 +35,7 @@ internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDeparture
         if (departure.FamilyClosing)
         {
             db.TaskHistory.RemoveRange(await db.TaskHistory.ToListAsync(cancellationToken));
+            db.TaskItems.RemoveRange(await db.TaskItems.ToListAsync(cancellationToken));
             db.Tasks.RemoveRange(await db.Tasks.ToListAsync(cancellationToken));
             db.ReminderHistory.RemoveRange(await db.ReminderHistory.ToListAsync(cancellationToken));
             db.Reminders.RemoveRange(await db.Reminders.ToListAsync(cancellationToken));
