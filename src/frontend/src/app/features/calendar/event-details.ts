@@ -2,12 +2,13 @@ import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
-import { Api, CalendarEvent, ChangeRequest, FamilyMember } from '../../core/api/api';
+import { Api, CalendarEvent, ChangeRequest, EditScope, FamilyMember } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
 import { CalendarItem } from './calendar-items';
 import { statusText, whenText } from './item-text';
+import { repeatText } from './series';
 import { lastDate, toFamilyLocal } from './time';
 
 /**
@@ -104,6 +105,12 @@ export class EventDetails {
     }
   }
 
+  /** "Every Wed and Fri until Nov 13, 2026" for a repeating event (#193). */
+  protected readonly repeats = computed(() => {
+    const repeat = this.event()?.repeat;
+    return repeat ? repeatText(repeat) : null;
+  });
+
   /** Cancelling is offered on confirmed items; unavailable time only to its owner. */
   protected readonly canCancel = computed(
     () => this.item().status === 'confirmed' && (this.item().kind !== 'unavailable' || this.item().isMine),
@@ -158,15 +165,20 @@ export class EventDetails {
     }
   }
 
-  protected async cancel(): Promise<void> {
+  protected async cancel(scope: EditScope = 'this'): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
     try {
-      const result = await this.api.cancelEvent(this.familyId(), this.item().id);
+      const result = await this.api.cancelEvent(this.familyId(), this.item().id, scope);
+      const title = this.item().title;
       this.changed.emit(
         result && result.pendingChange === 'Cancel'
-          ? `Cancellation sent to ${this.coParent() ?? 'your co-parent'} for approval. “${this.item().title}” stays on the calendar until then.`
-          : `“${this.item().title}” was cancelled.`,
+          ? `Cancellation sent to ${this.coParent() ?? 'your co-parent'} for approval. “${title}” stays on the calendar until then.`
+          : scope === 'all'
+            ? `Every date of “${title}” was cancelled.`
+            : scope === 'following'
+              ? `“${title}” was cancelled from ${this.date()} on.`
+              : `“${title}” was cancelled.`,
       );
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));

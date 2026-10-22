@@ -7,14 +7,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Router, RouterLink } from '@angular/router';
-import { Api, CalendarCategory, CalendarWarning, Child, FamilyMember, NewCalendarEvent } from '../../core/api/api';
+import { Api, CalendarCategory, CalendarWarning, Child, FamilyMember, NewCalendarEvent, Weekday } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon, IconName } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
 import { PlainDate } from '../dashboard/model';
-import { addDays, todayIn } from '../dashboard/week';
+import { addDays, monthDay, todayIn, weekdayShort } from '../dashboard/week';
 import { ReminderForm } from './reminder-form';
+import { MAX_DATES, WEEKDAYS, lastAllowed, seriesDates, weekdayOf } from './series';
 import { TaskForm } from './task-form';
 import { fromFamilyLocal } from './time';
 
@@ -133,6 +134,12 @@ export class AddEventPage implements OnInit {
     childIds: [[] as string[]],
     location: ['', Validators.maxLength(200)],
     notes: ['', Validators.maxLength(1000)],
+    // Repeating unavailable time and activities (#193): weekly on chosen days, always ending within a year.
+    repeats: [false],
+    repeatDays: [[] as Weekday[]],
+    ends: ['date' as 'date' | 'count'],
+    repeatUntil: [''],
+    repeatCount: [4],
   });
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
 
@@ -140,6 +147,30 @@ export class AddEventPage implements OnInit {
   protected readonly parents = computed(() => this.members().filter((m) => m.role === 'Parent'));
   protected readonly coParent = computed(() => this.parents().find((m) => !m.isYou)?.displayName ?? null);
   protected readonly allDay = computed(() => this.value().allDay ?? false);
+  protected readonly weekdays = WEEKDAYS;
+  /** Only unavailable time and activities can repeat; parenting time and family events need approval each time. */
+  protected readonly canRepeat = computed(() => this.type() === 'activity' || this.type() === 'unavailable');
+  protected readonly repeats = computed(() => this.canRepeat() && (this.value().repeats ?? false));
+  protected readonly repeatDays = computed(() => this.value().repeatDays ?? []);
+  protected readonly endsOnDate = computed(() => this.value().ends === 'date');
+  /** The dates the series will have, as the server will make them. */
+  protected readonly dates = computed(() => {
+    const v = this.value();
+    if (!this.repeats() || !v.startDate) {
+      return [];
+    }
+    return seriesDates(
+      v.startDate,
+      v.repeatDays ?? [],
+      v.ends === 'date' ? v.repeatUntil || null : null,
+      v.ends === 'count' ? (v.repeatCount ?? null) : null,
+    );
+  });
+  /** "Wed, Oct 28 · Fri, Oct 30 · Wed, Nov 4" and "+3 more". */
+  protected readonly preview = computed(() => {
+    const dates = this.dates();
+    return { shown: dates.slice(0, 3).map((d) => `${weekdayShort(d)}, ${monthDay(d)}`), more: Math.max(0, dates.length - 3), total: dates.length };
+  });
   protected readonly selectedChildren = computed(() => this.value().childIds ?? []);
   protected readonly allChildren = computed(
     () => this.activeChildren().length > 0 && this.activeChildren().every((c) => this.selectedChildren().includes(c.id)),
@@ -195,6 +226,21 @@ export class AddEventPage implements OnInit {
     }
   }
 
+  /** Turning Repeat on starts with the first date's weekday. */
+  protected toggleRepeat(on: boolean): void {
+    const v = this.form.getRawValue();
+    if (on && v.repeatDays.length === 0 && v.startDate) {
+      this.form.patchValue({ repeatDays: [weekdayOf(v.startDate)] });
+    }
+  }
+
+  protected toggleDay(day: Weekday, checked: boolean): void {
+    const current = this.repeatDays();
+    this.form.patchValue({
+      repeatDays: WEEKDAYS.map((d) => d.id).filter((d) => (d === day ? checked : current.includes(d))),
+    });
+  }
+
   protected toggleChild(id: string, checked: boolean): void {
     const current = this.selectedChildren();
     this.form.patchValue({ childIds: checked ? [...current, id] : current.filter((c) => c !== id) });
@@ -222,10 +268,13 @@ export class AddEventPage implements OnInit {
     try {
       const created = await this.api.createEvent(family.id, this.request(type));
       const coParent = this.coParent() ?? 'your co-parent';
+      const count = this.repeats() ? this.dates().length : 1;
       const head =
         created.status === 'PendingApproval'
           ? `Sent to ${coParent} for approval. “${created.title}” shows as pending until they accept.`
-          : `“${created.title}” is on the calendar.`;
+          : count > 1
+            ? `“${created.title}” is on the calendar on ${count} dates.`
+            : `“${created.title}” is on the calendar.`;
       const notes = created.warnings.map((w) => warningText(w, this.coParent()));
       await this.router.navigate(['/calendar'], {
         queryParams: { date: this.form.getRawValue().startDate },
@@ -263,6 +312,19 @@ export class AddEventPage implements OnInit {
         errors['endsAt'] = 'Choose an end that’s after the start.';
       }
     }
+    if (this.repeats()) {
+      if (v.repeatDays.length === 0) {
+        errors['repeat'] = 'Choose the days it repeats on.';
+      } else if (v.ends === 'date' && (!v.repeatUntil || v.repeatUntil < v.startDate || v.repeatUntil > lastAllowed(v.startDate))) {
+        errors['repeatUntil'] = 'Choose an end date from the first day to a year later.';
+      } else if (v.ends === 'count' && !(Number.isInteger(v.repeatCount) && v.repeatCount >= 2 && v.repeatCount <= MAX_DATES)) {
+        errors['repeatCount'] = `Repeat it 2 to ${MAX_DATES} times.`;
+      } else if (this.dates().length === 0) {
+        errors['repeat'] = 'None of the chosen days fall before the end date.';
+      } else if (v.ends === 'count' && this.dates().length < v.repeatCount) {
+        errors['repeatCount'] = 'That many times goes past a year. Choose fewer, or an end date.';
+      }
+    }
     if (type === 'parenting') {
       if (!v.caregiver) {
         errors['caregiverMembershipId'] = 'Choose which parent has the children.';
@@ -292,6 +354,12 @@ export class AddEventPage implements OnInit {
       notes: v.notes.trim() || undefined,
       childIds: type === 'unavailable' ? [] : v.childIds,
       caregiverMembershipId: type === 'parenting' ? v.caregiver : undefined,
+      repeat: this.repeats()
+        ? {
+            days: v.repeatDays,
+            ...(v.ends === 'date' ? { until: v.repeatUntil } : { count: v.repeatCount }),
+          }
+        : undefined,
     };
   }
 }

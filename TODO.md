@@ -269,14 +269,15 @@ that points back here.
     caregiver, and unavailable time over your own parenting time (October 17, 2026).
   - [x] Backend: approvals history and decision comments (AP-04/05); request expiry after 14 days (AP-06) (October 17, 2026).
   - [ ] Backend: reminders' notifications (C-04), the .ics feed (C-07).
-  - [ ] **Repeating events (#193, C-05).**
+  - [x] **Repeating events (#193, C-05).** Built; the owner closes #193 after testing.
     - [x] Backend: weekly on chosen days for unavailable time and activities, ending on a date or after a number of
       times within a year, each date its own event; edit and cancel with This event / This and following / All
       events; series warnings (October 22, 2026).
     - [x] **Owner decisions (October 22, 2026):** unavailable time and activities can repeat (parenting time,
       holidays and family events stay one-off); a repeat always ends within a year; one form with a date preview.
-    - [ ] Frontend: Repeat in the Add form with a preview, the scope choice when editing or cancelling, and
-      "Repeats …" in the details.
+    - [x] Frontend: Repeat in the Add form (activities and unavailable time) with a preview of the dates, the This
+      event / This and following / All events choice when editing or cancelling, and "Repeats …" in the details
+      (October 22, 2026).
     - [ ] Later: moving a series to other weekdays (cancel and add again for now), longer or open-ended repeats, and
       repeating parenting-time schedules (with approval).
   - [x] Frontend: the calendar page (October 21, 2026, from the 2026-10-20 handoff): Week (default), Month and List with

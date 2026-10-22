@@ -109,6 +109,10 @@
   <dl class="facts">
     <dt>When</dt>
     <dd>{{ date() }} · {{ when() }}</dd>
+    @if (repeats(); as repeats) {
+      <dt>Repeats</dt>
+      <dd>{{ repeats }}</dd>
+    }
     @if (people()) {
       <dt>Who</dt>
       <dd>{{ people() }}</dd>
@@ -160,16 +164,30 @@
       @if (!confirming()) {
         <button mat-stroked-button type="button" (click)="confirming.set(true)">Cancel event…</button>
       } @else {
-        <p class="explain">{{ cancelExplanation() }}</p>
         @if (error(); as error) {
           <p class="error" role="alert">{{ error }}</p>
         }
-        <div class="actions__row">
-          <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel()">
-            {{ busy() ? 'Cancelling…' : 'Yes, cancel event' }}
-          </button>
-          <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep it</button>
-        </div>
+        @if (repeats()) {
+          <p class="explain">This repeats. Which dates do you want to cancel? It’s removed for both of you.</p>
+          <div class="actions__row">
+            <button mat-stroked-button type="button" class="danger-outline" [disabled]="busy()" (click)="cancel('this')">
+              This event
+            </button>
+            <button mat-stroked-button type="button" class="danger-outline" [disabled]="busy()" (click)="cancel('following')">
+              This and following
+            </button>
+            <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel('all')">All events</button>
+            <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep them</button>
+          </div>
+        } @else {
+          <p class="explain">{{ cancelExplanation() }}</p>
+          <div class="actions__row">
+            <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel()">
+              {{ busy() ? 'Cancelling…' : 'Yes, cancel event' }}
+            </button>
+            <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep it</button>
+          </div>
+        }
       }
     </div>
   }
