@@ -153,7 +153,8 @@ describe('calendar filters on the page', () => {
     localStorage.setItem(filtersKey('user-2', 'family-1'), JSON.stringify({ ...ALL_FILTERS, types: [] }));
     await open();
 
-    expect(shownTitles()).toEqual(['Science fair poster']);
+    // Unavailable time hidden by the type filter stays findable as a marker.
+    expect(shownTitles()).toEqual(['Hidden: unavailable', 'Science fair poster']);
     expect(filtersButton().getAttribute('aria-label')).toBe('Filters, 1 active');
   });
 

@@ -135,6 +135,18 @@
     <dd>{{ item().isMine ? 'You' : item().ownerName }}</dd>
   </dl>
 
+  @if (item().kind === 'unavailable' && swapTarget() && coParent()) {
+    <div class="actions">
+      <p class="explain">
+        {{ swapTarget()!.parents[0]?.name }} has parenting time then ({{ swapTargetWhen() }}). You can ask to swap it; nothing
+        changes unless you send a request and it’s approved.
+      </p>
+      <a mat-stroked-button [routerLink]="['/calendar', swapTarget()!.id, 'swap']">
+        <app-icon name="swap" [size]="18" /> Request parenting time swap
+      </a>
+    </div>
+  }
+
   @if (canCancel()) {
     <div class="actions">
       @if (!confirming()) {

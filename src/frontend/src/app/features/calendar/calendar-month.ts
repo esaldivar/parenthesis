@@ -52,6 +52,7 @@ const SHOWN = 3;
                         [attr.data-kind]="item.kind"
                         [attr.data-category]="item.category"
                         [attr.data-status]="item.status"
+                        [attr.data-concealed]="item.concealed ? 'true' : null"
                         (click)="selected.emit(item)"
                       >
                         <app-item-text [item]="item" [compact]="true" />
@@ -64,7 +65,13 @@ const SHOWN = 3;
                 }
                 <span class="day__dots" aria-hidden="true">
                   @for (item of day.items.slice(0, 4); track item.id) {
-                    <span class="dot" [attr.data-kind]="item.kind" [attr.data-category]="item.category" [attr.data-status]="item.status"></span>
+                    <span
+                      class="dot"
+                      [attr.data-kind]="item.kind"
+                      [attr.data-category]="item.category"
+                      [attr.data-status]="item.status"
+                      [attr.data-concealed]="item.concealed ? 'true' : null"
+                    ></span>
                   }
                 </span>
               }

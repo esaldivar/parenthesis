@@ -56,6 +56,11 @@ export interface CalendarItem {
   /** Tasks only: the task's id, and whether it's done (said in words, never by colour alone). */
   readonly taskId?: string;
   readonly done?: boolean;
+  /**
+   * Unavailable time this parent chose to hide with the filters (#190): shown only as a subtle marker that opens its
+   * details. Hiding never changes availability or conflict checks, which stay on the server.
+   */
+  readonly concealed?: boolean;
 }
 
 const CATEGORY_LABELS: Record<CalendarCategory, string> = {

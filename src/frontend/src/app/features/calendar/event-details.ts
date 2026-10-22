@@ -34,6 +34,11 @@ export class EventDetails {
   readonly members = input.required<readonly FamilyMember[]>();
   readonly familyId = input.required<string>();
   readonly timeZone = input.required<string>();
+  /**
+   * For unavailable time: the confirmed parenting time of the same parent that it overlaps, if any (#190). Only then
+   * is a swap offered, and opening the details never starts one.
+   */
+  readonly swapTarget = input<CalendarItem | null>(null);
   readonly closed = output();
   /** Something changed; the message says what. */
   readonly changed = output<string>();
@@ -56,6 +61,11 @@ export class EventDetails {
   );
   /** Parenting time, holidays and family events change only with both parents' agreement. */
   private readonly needsBoth = computed(() => this.item().kind === 'parenting' || this.item().kind === 'family');
+
+  protected readonly swapTargetWhen = computed(() => {
+    const target = this.swapTarget();
+    return target ? `${dayLong(target.firstDate)} · ${whenText(target)}` : null;
+  });
 
   /** A swap changes confirmed parenting time's dates, with the co-parent's approval. */
   protected readonly canSwap = computed(

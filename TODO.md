@@ -312,13 +312,14 @@ that points back here.
     recurrence, C-05), and declined requests on the calendar.
   - [ ] Changing an event's children after it's created (the API doesn't support it yet).
   - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
-  - [ ] **Calendar filters (#190, design #162).**
+  - [x] **Calendar filters (#190, design #162).** Built; the owner closes #190 after testing.
     - [x] Type, parent (created by / involving) and approval filters with Reset filters, removable chips, a
       filtered-empty state, and choices remembered in this browser per parent and family (October 22, 2026).
     - [x] **Owner decisions (October 22, 2026):** items about no child still show under one child; nothing ticked in a
       dimension matches nothing (with Reset); filters are remembered in the browser, not the account.
-    - [ ] Follow-up: the subtle marker that finds hidden Unavailable blocks and opens their details (the swap action
-      only where it applies).
+    - [x] Hidden Unavailable markers: a thin strip in Week (widening on hover or focus), a dashed "Hidden: unavailable"
+      row on phones, in Month and List; they open the details, which offer a swap only when the time overlaps that
+      parent's confirmed parenting time (October 22, 2026).
     - [ ] Later, separate issue: named saved filter presets (out of scope for #162).
   - [x] Design handoff and boards: `docs/design/handoffs/2026-10-20-calendar.md` and `docs/design/assets/calendar/`
     (#148), moved from `release/0.4.0` to `release/0.3.0` by owner decision (October 21, 2026).

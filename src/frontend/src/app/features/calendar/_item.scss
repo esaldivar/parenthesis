@@ -40,6 +40,12 @@
     background: var(--color-cat-unavailable-bg);
     border-style: dotted;
   }
+  // Hidden by this parent's filters (#190): faint, dashed and labelled "Hidden", never with private details.
+  &[data-concealed='true'] {
+    background: transparent;
+    border: 1px dashed var(--color-outline);
+    color: var(--color-text-secondary);
+  }
   &[data-status='pending'] {
     @include proposed-fill;
   }

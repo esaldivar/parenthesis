@@ -23,6 +23,7 @@ import { ItemText } from './item-text';
                   [attr.data-kind]="item.kind"
                   [attr.data-category]="item.category"
                   [attr.data-status]="item.status"
+                  [attr.data-concealed]="item.concealed ? 'true' : null"
                   (click)="selected.emit(item)"
                 >
                   <app-item-text [item]="item" />
