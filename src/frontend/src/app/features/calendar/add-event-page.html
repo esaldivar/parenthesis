@@ -210,6 +210,22 @@
             <p class="field-error" role="alert">{{ e }}</p>
           }
         </fieldset>
+      } @else if (current === 'parenting') {
+        <!-- Parenting time needs a child, so say why there's none to choose instead of failing quietly on save. -->
+        <fieldset class="kids">
+          <legend>Children</legend>
+          <p class="note">
+            @if (pendingChildren()) {
+              Your children are waiting for {{ coParent() ?? 'your co-parent' }}’s approval. Parenting time can include them
+              once they’re approved.
+            } @else {
+              Parenting time is for your children. Add them first in <a routerLink="/settings">Settings</a>.
+            }
+          </p>
+          @if (fieldError('childIds'); as e) {
+            <p class="field-error" role="alert">{{ e }}</p>
+          }
+        </fieldset>
       }
 
       @if (current !== 'unavailable') {
