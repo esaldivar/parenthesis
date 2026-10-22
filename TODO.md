@@ -332,6 +332,13 @@ that points back here.
       they don't reappear.
   - [ ] Changing an event's children after it's created (the API doesn't support it yet).
   - [x] Frontend: the dashboard's live data source (#196).
+  - [ ] **Invited co-parent joins the existing family (#211, critical).** Fixed on `fix/211-invited-co-parent-joins-family`:
+    a "Sign up to join" link opened while someone else is signed in on that browser keeps its invitation and goes to
+    it (it was dropped, so the new account landed in new-family setup), and a signed-in parent with no family goes to
+    a waiting invitation before new-family setup. Browser regression tests in
+    `specs/regression/issue-211-invited-co-parent-joins-existing-family.spec.ts`; backend ones in `InvitationTests`.
+    - [ ] **Owner:** retest on the development site with two separate browser profiles, and confirm both parents see
+      the same family and children, before closing #211.
   - [x] **Calendar filters (#190, design #162).** Built; the owner closes #190 after testing.
     - [x] Type, parent (created by / involving) and approval filters with Reset filters, removable chips, a
       filtered-empty state, and choices remembered in this browser per parent and family (October 22, 2026).
@@ -386,7 +393,8 @@ that points back here.
       reset, and the home page's real week with reminders and tasks in Upcoming. The two older calendar tests were
       updated for the shipped calendar and for declined requests (#199), which would otherwise have failed the
       release gate.
-    - [ ] Invitations in the browser.
+    - [ ] Invitations in the browser: the same-browser invitation journeys are covered by the #211 regression tests;
+      resending, cancelling and expired links still aren't.
   - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
     the sign-in limit, for the test instance only.
 
