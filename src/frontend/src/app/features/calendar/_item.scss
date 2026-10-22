@@ -31,6 +31,11 @@
     background: var(--color-surface);
     border-inline-start: 4px solid var(--color-leaf-gold);
   }
+  // Tasks: a plain surface with a green edge, plus the note icon and the "Task" label (never colour alone).
+  &[data-kind='task'] {
+    background: var(--color-surface);
+    border-inline-start: 4px solid var(--color-leaf-strong);
+  }
   &[data-kind='unavailable'] {
     background: var(--color-cat-unavailable-bg);
     border-style: dotted;

@@ -216,6 +216,43 @@ export interface Reminder {
   readonly seriesStartsAt: string;
 }
 
+/** A checklist line on a task, with who ticked it and when (#175). */
+export interface ChecklistItem {
+  readonly id: string;
+  readonly text: string;
+  readonly required: boolean;
+  readonly completedBy: string | null;
+  readonly completedAt: string | null;
+}
+
+/**
+ * A shared task (#73), due on a local date, with no assignee. Either parent changes it at once, with no approval. With
+ * a checklist, it's done when its deciding items are (the required ones, or all when none are); without one, Mark
+ * done decides. `justCompleted` is true only in the response to the change that completed it.
+ */
+export interface SharedTask {
+  readonly id: string;
+  readonly title: string;
+  /** `YYYY-MM-DD` in the family's time zone. */
+  readonly dueDate: string;
+  readonly childId: string | null;
+  readonly details: string | null;
+  readonly createdByMembershipId: string;
+  readonly createdAt: string;
+  /** The other parent who last edited it (null when nobody did, or you did). */
+  readonly editedBy: string | null;
+  readonly lastEditedAt: string | null;
+  readonly completedBy: string | null;
+  readonly completedAt: string | null;
+  readonly seenBy: readonly { membershipId: string; seenAt: string }[];
+  readonly items: readonly ChecklistItem[];
+  readonly progressDone: number;
+  readonly progressTotal: number;
+  /** Send it back with an edit; a stale one gets 409 instead of overwriting the other parent's change. */
+  readonly version: number;
+  readonly justCompleted: boolean;
+}
+
 /** Create and edit (an edit replaces the whole reminder; repeats change for the whole series). */
 export interface ReminderInput {
   readonly title: string;
@@ -348,6 +385,29 @@ export class Api {
     this.call(this.http.put<Reminder>(`/api/families/${familyId}/calendar/reminders/${reminderId}`, input));
   reminderSeen = (familyId: string, reminderId: string) =>
     this.call(this.http.post<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}/seen`, {}));
+  // Shared tasks (parents only). Listing never marks anything seen; opening the details calls taskSeen.
+  tasks = (familyId: string, from: string, to: string) =>
+    this.call(this.http.get<SharedTask[]>(`/api/families/${familyId}/calendar/tasks`, { params: { from, to } }));
+  task = (familyId: string, taskId: string) =>
+    this.call(this.http.get<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}`));
+  taskSeen = (familyId: string, taskId: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/calendar/tasks/${taskId}/seen`, {}));
+  /** Mark done (true) or undo it (false). Only for a task without a checklist. */
+  setTaskDone = (familyId: string, taskId: string, done: boolean) =>
+    this.call(
+      done
+        ? this.http.post<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}/done`, {})
+        : this.http.delete<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}/done`),
+    );
+  /** Tick (true) or untick (false) a checklist item, as yourself. */
+  setTaskItem = (familyId: string, taskId: string, itemId: string, ticked: boolean) =>
+    this.call(
+      ticked
+        ? this.http.post<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}/items/${itemId}/done`, {})
+        : this.http.delete<SharedTask>(`/api/families/${familyId}/calendar/tasks/${taskId}/items/${itemId}/done`),
+    );
+  deleteTask = (familyId: string, taskId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/calendar/tasks/${taskId}`));
   /** Deletes the reminder (every repeat of it) for both parents, at once. */
   deleteReminder = (familyId: string, reminderId: string) =>
     this.call(this.http.delete<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}`));

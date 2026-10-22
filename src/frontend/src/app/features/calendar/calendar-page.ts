@@ -12,19 +12,20 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
-import { Api, CalendarEvent, Child, FamilyMember, Reminder } from '../../core/api/api';
+import { Api, CalendarEvent, Child, FamilyMember, Reminder, SharedTask } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Icon } from '../../shared/icon/icon';
 import { PlainDate } from '../dashboard/model';
 import { addDays, startOfWeek, todayIn, weekLabelLong } from '../dashboard/week';
-import { CalendarItem, forChild, reminderItems, toItems } from './calendar-items';
+import { CalendarItem, forChild, reminderItems, taskItems, toItems } from './calendar-items';
 import { CalendarList } from './calendar-list';
 import { CalendarMonth, monthGrid, startOfMonth } from './calendar-month';
 import { CalendarWeek } from './calendar-week';
 import { EventDetails } from './event-details';
 import { ReminderDetails } from './reminder-details';
+import { TaskDetails } from './task-details';
 import { fromFamilyLocal } from './time';
 
 export type CalendarView = 'week' | 'month' | 'list';
@@ -60,7 +61,18 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
 @Component({
   selector: 'app-calendar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, EmptyState, Icon, CalendarWeek, CalendarMonth, CalendarList, EventDetails, ReminderDetails],
+  imports: [
+    MatButtonModule,
+    RouterLink,
+    EmptyState,
+    Icon,
+    CalendarWeek,
+    CalendarMonth,
+    CalendarList,
+    EventDetails,
+    ReminderDetails,
+    TaskDetails,
+  ],
   templateUrl: './calendar-page.html',
   styleUrl: './calendar-page.scss',
 })
@@ -125,6 +137,7 @@ export class CalendarPage {
   protected readonly loadError = signal<string | null>(null);
   private readonly events = signal<readonly CalendarEvent[]>([]);
   private readonly reminders = signal<readonly Reminder[]>([]);
+  private readonly tasks = signal<readonly SharedTask[]>([]);
   protected readonly members = signal<readonly FamilyMember[]>([]);
   protected readonly children = signal<readonly Child[]>([]);
   private readonly reloads = signal(0);
@@ -134,6 +147,7 @@ export class CalendarPage {
   protected readonly items = computed(() => [
     ...toItems(this.events(), this.members(), this.children(), this.timeZone()),
     ...reminderItems(this.reminders(), this.members(), this.children(), this.timeZone()),
+    ...taskItems(this.tasks(), this.members(), this.children()),
   ]);
   protected readonly childFilter = computed(() => {
     const child = this.child();
@@ -147,6 +161,10 @@ export class CalendarPage {
   protected readonly selectedReminder = computed(() => {
     const item = this.selected();
     return item?.reminderId ? (this.reminders().find((r) => `reminder:${r.id}:${r.startsAt}` === item.id) ?? null) : null;
+  });
+  protected readonly selectedTask = computed(() => {
+    const id = this.selected()?.taskId;
+    return id ? (this.tasks().find((t) => t.id === id) ?? null) : null;
   });
   private opener: HTMLElement | null = null;
 
@@ -189,9 +207,10 @@ export class CalendarPage {
       const zone = this.timeZone();
       const needsFamily = this.members().length === 0;
       const [fromInstant, toInstant] = [fromFamilyLocal(`${from}T00:00`, zone), fromFamilyLocal(`${to}T00:00`, zone)];
-      const [events, reminders, details, children] = await Promise.all([
+      const [events, reminders, tasks, details, children] = await Promise.all([
         this.api.calendarEvents(familyId, fromInstant, toInstant),
         this.api.reminders(familyId, fromInstant, toInstant),
+        this.api.tasks(familyId, from, to),
         needsFamily ? this.api.family(familyId) : Promise.resolve(null),
         needsFamily ? this.api.children(familyId) : Promise.resolve(null),
       ]);
@@ -206,6 +225,7 @@ export class CalendarPage {
       }
       this.events.set(events);
       this.reminders.set(reminders);
+      this.tasks.set(tasks);
       this.state.set('ready');
       const open = this.selected();
       if (open && !this.items().some((i) => i.id === open.id)) {
@@ -260,6 +280,11 @@ export class CalendarPage {
     this.selected.set(null);
     const opener = this.opener;
     afterNextRender(() => opener?.focus(), { injector: this.injector });
+  }
+
+  /** A task changed in its details (a tick, Mark done): show the new state and keep the details open. */
+  protected taskUpdated(task: SharedTask): void {
+    this.tasks.update((tasks) => tasks.map((t) => (t.id === task.id ? task : t)));
   }
 
   /** After a cancellation (or a cancellation request) from the details panel. */

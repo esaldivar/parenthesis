@@ -10,6 +10,9 @@ export function whenText(item: CalendarItem): string {
     const range = `${monthDay(item.firstDate)} – ${monthDay(item.lastDate)}`;
     return item.allDay ? range : `${monthDay(item.firstDate)}, ${timeLabel(item.start.slice(11))} – ${monthDay(item.lastDate)}, ${timeLabel(item.end.slice(11))}`;
   }
+  if (item.kind === 'task') {
+    return 'Due';
+  }
   if (item.allDay) {
     return 'All day';
   }
@@ -21,6 +24,9 @@ export function whenText(item: CalendarItem): string {
 
 /** The status in words. Pending items are not on the schedule; a pending change leaves the event as it is for now. */
 export function statusText(item: CalendarItem): string | null {
+  if (item.kind === 'task') {
+    return item.done ? 'Done' : null;
+  }
   switch (item.status) {
     case 'pending':
       return 'Pending approval';
@@ -39,7 +45,7 @@ export function itemSummary(item: CalendarItem): string {
     item.kind === 'unavailable' ? null : item.categoryLabel,
     whenText(item),
     people || null,
-    statusText(item) ?? 'Confirmed',
+    statusText(item) ?? (item.kind === 'task' ? null : 'Confirmed'),
     item.beforeCoParentJoined ? 'Confirmed before your co-parent joined' : null,
   ]
     .filter(Boolean)
@@ -71,7 +77,7 @@ export function itemSummary(item: CalendarItem): string {
       }
     }
     @if (status(); as status) {
-      <span class="status" aria-hidden="true">{{ status }}</span>
+      <span class="status" aria-hidden="true" [attr.data-done]="item().done ? 'true' : null">{{ status }}</span>
     }
   `,
   styles: `
@@ -116,6 +122,11 @@ export function itemSummary(item: CalendarItem): string {
       border: 1px dashed var(--color-outline);
       background: var(--color-surface);
       white-space: nowrap;
+    }
+    /* A done task: solid, never the dashed look of something pending. */
+    .status[data-done='true'] {
+      border-style: solid;
+      background: var(--color-status-confirmed-bg);
     }
   `,
 })

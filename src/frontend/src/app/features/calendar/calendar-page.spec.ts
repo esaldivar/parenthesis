@@ -22,13 +22,16 @@ describe('the calendar page', () => {
     }
   }
 
-  /** The latest events request. The reminders request made with it is answered with `reminders`. */
+  /** The latest events request. The reminders and tasks requests made with it are answered (tasks: none). */
   const eventsRequest = (reminders: Reminder[] = []) =>
     vi.waitFor(() => {
       const found = http.match((r) => r.url === `${F}/calendar/events`);
       expect(found.length).toBeGreaterThan(0);
       for (const r of http.match((r) => r.url === `${F}/calendar/reminders`)) {
         r.flush(reminders);
+      }
+      for (const r of http.match((r) => r.url === `${F}/calendar/tasks`)) {
+        r.flush([]);
       }
       return found[found.length - 1];
     });
