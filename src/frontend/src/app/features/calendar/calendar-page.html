@@ -124,7 +124,13 @@
         }
         @switch (current()) {
           @case ('week') {
-            <app-calendar-week [weekStart]="range().from" [today]="today()" [items]="shown()" (selected)="open($event)" />
+            <app-calendar-week
+              [weekStart]="range().from"
+              [today]="today()"
+              [items]="shown()"
+              (selected)="open($event)"
+              (add)="addAt($event)"
+            />
           }
           @case ('month') {
             <app-calendar-month
@@ -134,6 +140,7 @@
               [label]="heading()"
               (selected)="open($event)"
               (openDay)="openWeekOf($event)"
+              (add)="addAt($event)"
             />
           }
           @case ('list') {

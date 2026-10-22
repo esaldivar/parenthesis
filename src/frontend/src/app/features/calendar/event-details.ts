@@ -1,6 +1,22 @@
 import { A11yModule } from '@angular/cdk/a11y';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { Api, CalendarEvent, ChangeRequest, EditScope, FamilyMember } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
@@ -17,18 +33,24 @@ import { lastDate, toFamilyLocal } from './time';
  * cancelling, which
  * asks the co-parent first for parenting time and family events; requesting a swap of parenting time; and, while a
  * request waits, its details (original → proposed, the reason, where it stands) with Withdraw for the parent who
- * sent it.
+ * sent it, and Approve or Decline (with an optional comment) for the parent who can decide (#218). Those use the same
+ * approvals API and rules as the inbox.
  */
+/** As in the approvals inbox. */
+export const COMMENT_MAX = 500;
+
 @Component({
   selector: 'app-event-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [A11yModule, MatButtonModule, RouterLink, Icon],
+  imports: [A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './event-details.html',
   styleUrl: './event-details.scss',
 })
 export class EventDetails {
   private readonly api = inject(Api);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   readonly item = input.required<CalendarItem>();
   readonly event = input<CalendarEvent | null>(null);
@@ -46,10 +68,18 @@ export class EventDetails {
 
   protected readonly confirming = signal(false);
   /** The parent's decision on a declined request (#199), from the approvals history. */
-  protected readonly decline = signal<{ by: string; on: string; comment: string | null } | null>(null);
+  protected readonly declineInfo = signal<{ by: string; on: string; comment: string | null } | null>(null);
   protected readonly withdrawing = signal(false);
   /** The waiting request about this event, if any (from the approvals inbox). */
   protected readonly request = signal<ChangeRequest | null>(null);
+  /**
+   * Whether the waiting request was found: `gone` when the item still shows as waiting but nothing waits any more
+   * (answered on another device, withdrawn or expired), so no stale buttons are offered.
+   */
+  protected readonly requestState = signal<'loading' | 'found' | 'gone' | 'unknown'>('loading');
+  protected readonly declining = signal(false);
+  protected readonly commentMax = COMMENT_MAX;
+  protected readonly comment = new FormControl('', { nonNullable: true, validators: Validators.maxLength(COMMENT_MAX) });
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -88,8 +118,11 @@ export class EventDetails {
       const familyId = this.familyId();
       untracked(() => {
         this.request.set(null);
-        this.decline.set(null);
+        this.requestState.set('loading');
+        this.declineInfo.set(null);
         this.withdrawing.set(false);
+        this.declining.set(false);
+        this.comment.reset();
         if (item.status === 'declined') {
           void this.loadDecline(familyId, item.id);
         } else if (item.status !== 'confirmed') {
@@ -103,10 +136,13 @@ export class EventDetails {
     try {
       const requests = await this.api.approvals(familyId);
       if (this.item().id === eventId) {
-        this.request.set(requests.find((r) => r.targetId === eventId) ?? null);
+        const request = requests.find((r) => r.targetId === eventId) ?? null;
+        this.request.set(request);
+        this.requestState.set(request ? 'found' : 'gone');
       }
     } catch {
       // The details still show the status in words; the approvals inbox has the rest.
+      this.requestState.set('unknown');
     }
   }
 
@@ -118,7 +154,7 @@ export class EventDetails {
       const answer = request?.decisions.find((d) => d.decision === 'Reject');
       if (this.item().id === eventId && answer) {
         const member = this.members().find((m) => m.membershipId === answer.deciderMembershipId);
-        this.decline.set({
+        this.declineInfo.set({
           by: member?.isYou ? 'You' : (member?.displayName ?? FORMER_PARENT),
           on: dateTimeLabel(toFamilyLocal(answer.decidedAt, this.timeZone())),
           comment: answer.comment,
@@ -203,6 +239,86 @@ export class EventDetails {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  protected startDecline(): void {
+    this.comment.reset();
+    this.error.set(null);
+    this.declining.set(true);
+    this.focus('#event-decline-comment');
+  }
+
+  protected keepWaiting(): void {
+    this.declining.set(false);
+    this.focus('#event-decline');
+  }
+
+  private focus(selector: string): void {
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), { injector: this.injector });
+  }
+
+  /** Approves the waiting request, as in the inbox; the calendar then refreshes and says what happened. */
+  protected approve(): Promise<void> {
+    const title = this.item().title;
+    const change = this.item().pendingChange;
+    return this.decide(
+      (familyId, id) => this.api.approve(familyId, id),
+      (result) =>
+        result.status !== 'Approved'
+          ? `You approved “${title}”. It still needs the other approval.`
+          : change === 'Cancel'
+            ? `You approved cancelling “${title}”. It’s off the calendar.`
+            : change === 'Modify'
+              ? `You approved the change. “${title}” was updated on the calendar.`
+              : `You approved “${title}”. It’s on the calendar.`,
+    );
+  }
+
+  /** Declines it with the optional comment, as in the inbox. */
+  protected decline(): Promise<void> {
+    if (this.comment.invalid) {
+      return Promise.resolve();
+    }
+    const title = this.item().title;
+    const change = this.item().pendingChange;
+    const comment = this.comment.value.trim() || undefined;
+    return this.decide(
+      (familyId, id) => this.api.reject(familyId, id, comment),
+      () =>
+        change === 'Cancel'
+          ? `You declined cancelling “${title}”. It stays on the calendar.`
+          : change === 'Modify'
+            ? `You declined the change. “${title}” stays as it was.`
+            : `You declined “${title}”. It isn’t on the schedule.`,
+    );
+  }
+
+  private async decide(
+    action: (familyId: string, requestId: string) => Promise<ChangeRequest>,
+    done: (result: ChangeRequest) => string,
+  ): Promise<void> {
+    const request = this.request();
+    if (!request || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      const result = await action(this.familyId(), request.id);
+      this.changed.emit(done(result));
+    } catch (error) {
+      // Answered elsewhere meanwhile, for example: say so, and check where it stands now.
+      this.error.set(generalMessage(toProblem(error)));
+      this.declining.set(false);
+      await this.loadRequest(this.familyId(), this.item().id);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Reloads the calendar when the request was answered elsewhere. */
+  protected refresh(): void {
+    this.changed.emit('The calendar is up to date.');
   }
 
   protected async cancel(scope: EditScope = 'this'): Promise<void> {

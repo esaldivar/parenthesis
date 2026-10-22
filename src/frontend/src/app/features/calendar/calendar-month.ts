@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { AddAt } from './slot';
 import { PlainDate } from '../dashboard/model';
 import { addDays, dayLong, dayOfMonth, startOfWeek, weekdayShort } from '../dashboard/week';
 import { CalendarItem, byStart, onDate } from './calendar-items';
@@ -39,6 +40,8 @@ const SHOWN = 3;
               [class.is-today]="day.isToday"
               [attr.aria-current]="day.isToday ? 'date' : null"
             >
+              <!-- A tap on the day's empty space adds on that date (#212). Pointer only: keyboards open the day's week. -->
+              <button type="button" class="day__add" tabindex="-1" aria-hidden="true" (click)="add.emit({ date: day.date })"></button>
               <button type="button" class="day__number" (click)="openDay.emit(day.date)" [attr.aria-label]="day.label">
                 {{ day.number }}
               </button>
@@ -91,6 +94,10 @@ export class CalendarMonth {
   readonly selected = output<CalendarItem>();
   /** A day was chosen: the page opens its week. */
   readonly openDay = output<PlainDate>();
+  /** A tap on a day's empty space adds on that date (#212). The day number still opens its week. */
+  readonly add = output<AddAt>();
+
+
 
   protected readonly weekdays = computed(() => monthGrid(this.date()).slice(0, 7).map(weekdayShort));
 

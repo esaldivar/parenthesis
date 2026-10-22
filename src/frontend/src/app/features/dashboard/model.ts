@@ -37,6 +37,8 @@ export interface ParentingTime {
   readonly changePending?: boolean;
   /** Optional descriptive title a parent gave it (e.g. "Dad's SeaWorld Adventure"); otherwise "Time with …". */
   readonly title?: string;
+  /** The calendar event it comes from, so its details can open from the week (#213). Absent in sample data. */
+  readonly eventId?: string;
 }
 
 /** Activity categories for icons and colour accents (always alongside text). */
@@ -47,6 +49,7 @@ export interface ParentingTime {
 export type EventCategory = 'school' | 'medical' | 'music' | 'sport' | 'art' | 'family' | 'unavailable' | 'other';
 
 export interface FamilyEvent {
+  /** The calendar event's id (live data); its details open from the week (#213). */
   readonly id: string;
   readonly title: string;
   readonly date: PlainDate;
@@ -54,6 +57,11 @@ export interface FamilyEvent {
   readonly time?: string;
   /** Defaults to 60 minutes when unknown. */
   readonly durationMinutes?: number;
+  /**
+   * The last date it covers, when that's after `date` (a multi-day event). All-day and multi-day events sit in the
+   * week's all-day row across their dates; single-day timed events sit in the hour grid (#208).
+   */
+  readonly endDate?: PlainDate;
   readonly category: EventCategory;
   readonly children: readonly ChildRef[];
   /** Parents attending, shown before the children (both parents for a family event). */

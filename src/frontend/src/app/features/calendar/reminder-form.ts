@@ -57,6 +57,8 @@ export class ReminderForm implements OnInit {
 
   /** The day to start on when adding. */
   readonly date = input<PlainDate | null>(null);
+  /** The half-hour tapped on a week's time grid (#212), for a new reminder. */
+  readonly time = input<string | null>(null);
   /** Editing: the reminder (its series start, as `GET` returns it). */
   readonly reminder = input<Reminder | null>(null);
 
@@ -108,7 +110,8 @@ export class ReminderForm implements OnInit {
         repeatUntil: reminder.repeatUntil ?? '',
       });
     } else {
-      this.form.patchValue({ date: this.date() ?? todayIn(zone, new Date()) });
+      const time = this.time();
+      this.form.patchValue({ date: this.date() ?? todayIn(zone, new Date()), ...(time ? { time, allDay: false } : {}) });
     }
     const family = this.family();
     if (family) {

@@ -1,5 +1,8 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
+import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { LiveDashboardDataSource } from './dashboard-data';
@@ -25,7 +28,13 @@ describe('DashboardPage (approved design)', () => {
 
   async function render(options: { sample?: boolean; failingSource?: boolean; week?: string; live?: DashboardWeek } = {}) {
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), fakeAuth(), { provide: NOW, useValue: () => WEDNESDAY_MORNING }],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        fakeAuth(),
+        { provide: NOW, useValue: () => WEDNESDAY_MORNING },
+      ],
     });
     let calls = 0;
     TestBed.overrideProvider(LiveDashboardDataSource, {
@@ -133,6 +142,40 @@ describe('DashboardPage (approved design)', () => {
       expect(text(el.querySelector('app-week-calendar'))).not.toContain('Spirit Day');
     });
 
+    // Issue #208: the desktop week grid left out every event without a time.
+    it('shows all-day and multi-day events across their dates in the all-day row, and on each day of the list', async () => {
+      const { el } = await render({
+        live: {
+          ...EMPTY_WEEK,
+          events: [
+            { id: 'trip', title: 'Field trip', date: '2026-10-15', category: 'school', children: [], status: 'confirmed' },
+            { id: 'off', title: 'Teacher workday', date: '2026-10-16', endDate: '2026-10-17', category: 'other', children: [], status: 'confirmed' },
+            { id: 'camp', title: 'Soccer camp', date: '2026-10-13', endDate: '2026-10-14', time: '08:00', category: 'sport', children: [], status: 'proposed' },
+            { id: 'away', title: 'You’re unavailable', date: '2026-10-12', category: 'unavailable', children: [], status: 'confirmed' },
+            { id: 'swim', title: 'Swim lesson', date: '2026-10-14', time: '17:00', durationMinutes: 60, category: 'sport', children: [], status: 'confirmed' },
+          ],
+        },
+      });
+
+      const row = [...el.querySelectorAll<HTMLElement>('.allday li.act--allday')];
+      expect(row.map((li) => [text(li.querySelector('.act__title')), li.style.getPropertyValue('--start'), li.style.getPropertyValue('--end')])).toEqual([
+        ['Field trip', '5', '6'], // Thursday.
+        ['Teacher workday', '6', '8'], // Friday and Saturday.
+        ['Soccer camp', '3', '5'], // Tuesday and Wednesday.
+        ['You’re unavailable', '2', '3'], // Monday.
+      ]);
+      // A proposal in the all-day row still says so, in words.
+      expect(text(row[2])).toContain('Proposed');
+      // Single-day timed events stay in the hour grid, and only there.
+      expect(text(el.querySelector('.grid__body'))).toContain('Swim lesson');
+      expect(text(el.querySelector('.grid__body'))).not.toContain('Field trip');
+      // The day list shows a multi-day event on each of its days.
+      const days = [...el.querySelectorAll('.agenda__day')].map((d) => text(d));
+      expect(days[5]).toContain('Teacher workday');
+      expect(days[6]).toContain('Teacher workday');
+      expect(days[6]).toContain('Oct 16 – Oct 17 · All day');
+    });
+
     it('moves between weeks and returns with Today', async () => {
       const { fixture, el } = await render();
 
@@ -179,6 +222,165 @@ describe('DashboardPage (approved design)', () => {
       const { el } = await render();
 
       expect(await axeViolations(el)).toEqual([]);
+    });
+  });
+
+  describe('opening an event’s details from the week (#213)', () => {
+    const F = '/api/families/family-1';
+    const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
+    // Wednesday, October 14, 5:00–6:00 PM in Chicago.
+    const SWIM = event({ id: 'swim', title: 'Swim lesson', startsAt: '2026-10-14T22:00:00Z', endsAt: '2026-10-14T23:00:00Z' });
+    const WEEKEND = event({
+      id: 'weekend',
+      title: 'Time with Alex',
+      category: 'ParentingTime',
+      status: 'PendingApproval',
+      allDay: true,
+      startsAt: '2026-10-16T05:00:00Z',
+      endsAt: '2026-10-18T05:00:00Z',
+      caregiverMembershipId: 'm-alex',
+    });
+    const LIVE: DashboardWeek = {
+      ...EMPTY_WEEK,
+      parentingTime: [
+        {
+          id: 'weekend-kai',
+          eventId: 'weekend',
+          child: { id: 'kai', name: 'Kai' },
+          caregiver: { membershipId: 'm-alex', displayName: 'Alex' },
+          start: '2026-10-16T00:00',
+          end: '2026-10-18T00:00',
+          status: 'proposed',
+          title: 'Time with Alex',
+        },
+      ],
+      events: [{ id: 'swim', title: 'Swim lesson', date: '2026-10-14', time: '17:00', durationMinutes: 60, category: 'sport', children: [], status: 'confirmed' }],
+    };
+
+    const openButton = (el: HTMLElement, title: string, within = '.grid') =>
+      [...el.querySelectorAll<HTMLButtonElement>(`${within} button.open`)].find((b) => text(b) === `Open details: ${title}`)!;
+    const dialog = () => document.querySelector('app-event-details [role="dialog"]') as HTMLElement | null;
+
+    async function answer(fixture: Parameters<typeof settle>[0], shown: unknown) {
+      const http = TestBed.inject(HttpTestingController);
+      const found = await vi.waitFor(() => http.expectOne((r) => r.url.startsWith(`${F}/calendar/events/`)));
+      for (const r of http.match(F)) r.flush(FAMILY);
+      for (const r of http.match(`${F}/children`)) r.flush(CHILDREN);
+      if (shown) {
+        found.flush(shown);
+      } else {
+        found.flush({ title: 'Not found', status: 404 }, { status: 404, statusText: 'Not Found' });
+      }
+      await settle(fixture);
+      await settle(fixture);
+      return http;
+    }
+
+    it('opens the clicked event’s details over the page, and closing returns focus to it, with nothing saved', async () => {
+      const { fixture, el } = await render({ live: LIVE });
+      // The day list is what narrow screens (and this test's page) show; the grid's blocks work the same way.
+      const swim = openButton(el, 'Swim lesson', '.agenda');
+      swim.focus();
+      swim.click();
+      const http = await answer(fixture, SWIM);
+
+      expect(http.match(() => true).filter((r) => r.request.method !== 'GET')).toEqual([]);
+      expect(text(dialog()!.querySelector('h2'))).toBe('Swim lesson');
+      expect(text(dialog())).toContain('Confirmed');
+
+      (dialog()!.querySelector('button[aria-label="Close details"]') as HTMLElement).click();
+      await settle(fixture);
+      expect(dialog()).toBeNull();
+      await vi.waitFor(() => expect(document.activeElement).toBe(swim));
+    });
+
+    it('opens parenting time from its block in the all-day row, showing it’s still waiting for approval', async () => {
+      const { fixture, el } = await render({ live: LIVE });
+      openButton(el, 'Time with Alex', '.allday').click();
+      await answer(fixture, WEEKEND);
+
+      expect(text(dialog()!.querySelector('h2'))).toBe('Time with Alex');
+      expect(text(dialog())).toContain('Pending approval');
+    });
+
+    it('offers each block as a real button, in the list too, so keyboards and screen readers can open it', async () => {
+      const { el } = await render({ live: LIVE });
+
+      expect(openButton(el, 'Swim lesson').tagName).toBe('BUTTON');
+      expect(openButton(el, 'Swim lesson', '.agenda')).toBeTruthy();
+      expect(openButton(el, 'Time with Alex', '.agenda')).toBeTruthy();
+    });
+
+    it('says so plainly when the event is gone, and refreshes the week', async () => {
+      const { fixture, el, calls } = await render({ live: LIVE });
+      const before = calls();
+      openButton(el, 'Swim lesson').click();
+      await answer(fixture, null);
+
+      expect(dialog()).toBeNull();
+      expect(text(el.querySelector('.notice'))).toBe('That event isn’t on the calendar any more. The week has been refreshed.');
+      expect(calls()).toBe(before + 1);
+    });
+
+    it('has no automatically detectable accessibility issues, with the week’s blocks and with details open', async () => {
+      const { fixture, el } = await render({ live: LIVE });
+      expect(await axeViolations(el)).toEqual([]);
+      openButton(el, 'Swim lesson', '.agenda').click();
+      await answer(fixture, SWIM);
+      expect(dialog()).not.toBeNull();
+      expect(await axeViolations(el)).toEqual([]);
+    });
+
+    it('offers nothing to open on the sample week', async () => {
+      const { el } = await render({ sample: true });
+      expect(el.querySelectorAll('button.open')).toHaveLength(0);
+    });
+  });
+
+  describe('adding from a tap on the week’s empty space (#212)', () => {
+    const LIVE: DashboardWeek = {
+      ...EMPTY_WEEK,
+      events: [{ id: 'swim', title: 'Swim lesson', date: '2026-10-14', time: '17:00', durationMinutes: 60, category: 'sport', children: [], status: 'confirmed' }],
+    };
+    const column = (el: HTMLElement, label: string) =>
+      [...el.querySelectorAll<HTMLButtonElement>('.slot-add__button')].find((b) => text(b) === `Add on ${label}`)!;
+
+    async function renderWithRouter(live: DashboardWeek | undefined, sample = false) {
+      const rendered = await render(sample ? { sample: true } : { live });
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      return { ...rendered, navigate };
+    }
+
+    it('opens Add on the day and half-hour tapped in the time grid', async () => {
+      const { el, navigate } = await renderWithRouter(LIVE);
+      const thursday = column(el, 'Thursday, October 15');
+      thursday.getBoundingClientRect = () => ({ top: 0, height: 480, left: 0, width: 100 }) as DOMRect;
+      thursday.dispatchEvent(new MouseEvent('click', { bubbles: true, clientY: 165, detail: 1 })); // 8:00 AM.
+
+      expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15', time: '08:00' } });
+    });
+
+    it('from the keyboard, adds on that day', async () => {
+      const { el, navigate } = await renderWithRouter(LIVE);
+      column(el, 'Thursday, October 15').click();
+      expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15' } });
+    });
+
+    it('adds on a day of the list tapped on its empty space, but never when an activity is tapped', async () => {
+      const { fixture, el, navigate } = await renderWithRouter(LIVE);
+      const days = [...el.querySelectorAll<HTMLElement>('.agenda__day')];
+      days[4].querySelector<HTMLElement>('.tap-add__button')!.click(); // Thursday's empty space.
+      expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15' } });
+
+      navigate.mockClear();
+      days[3].querySelector<HTMLElement>('button.open')!.click(); // Wednesday's swim lesson.
+      await settle(fixture);
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('offers nothing to add on the sample week', async () => {
+      const { el } = await renderWithRouter(undefined, true);
+      expect(el.querySelectorAll('.slot-add__button')).toHaveLength(0);
     });
   });
 

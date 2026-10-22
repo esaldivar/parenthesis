@@ -332,6 +332,32 @@ that points back here.
       they don't reappear.
   - [ ] Changing an event's children after it's created (the API doesn't support it yet).
   - [x] Frontend: the dashboard's live data source (#196).
+    - [ ] **Home calendar shows every event (#208, critical):** on desktop the week grid left out all-day events (an
+      all-day activity, a holiday, a day of unavailable time), and a multi-day event showed on its first day only. They
+      now sit in the all-day row across their dates. **Owner:** retest on the development site, then close #208.
+  - [ ] **A parent can't have the children and be unavailable at once (#210).** Built on
+    `feat/210-block-own-overlaps`: the API refuses parenting time over its caregiver's unavailable time (whoever adds
+    it) and unavailable time over the owner's pending or confirmed parenting time, for new items, repeating ones and
+    edits that change times or the caregiver; a series is checked whole. A swap into the caregiver's unavailable time
+    has no Send anyway. Existing overlaps stay; title and notes edits still work.
+    - [x] **Owner decisions (October 22, 2026):** pending parenting time counts (declined and withdrawn don't); it
+      applies whoever adds it; existing overlaps are left alone.
+    - [ ] **Owner:** test it on the development site, then close #210.
+  - [ ] **Approve or decline from an event's details (#218).** Built on `feat/218-decide-from-details`: the parent who
+    can decide sees Approve and Decline… (with an optional comment) on a pending event, change, swap or cancellation,
+    using the same approvals API as the inbox; the proposer still sees only Withdraw. A request answered elsewhere
+    shows calmly with no stale buttons. Unit tests and a browser journey (Mom approves from the details).
+    - [ ] **Owner:** test it on the development site, then close #218.
+  - [ ] **Open an event's details from its block (#213, critical).** On `feat/213-open-event-details`: every event and
+    parenting-time block on the home page (week grid, all-day row and day list) opens the same details sheet as the
+    Calendar page, loaded fresh, with focus back on the block when it closes; an event that's gone says so and the
+    week refreshes. The Calendar page's Week, Month and List items already opened details (audited, now tested).
+    - [ ] **Owner:** retest on the development site after #208, then close #213.
+  - [ ] **Tap empty calendar space to add (#212, critical).** On `feat/213-open-event-details`: on the Calendar page
+    (Week, Month, all-day row, day lists) and the home week, tapping empty space opens Add with the date, and on a
+    week's time grid the half-hour tapped (an hour long). Keyboards use each day column's "Add on …" button. Defaults
+    are in `docs/design/CALENDAR_DECISIONS.md`.
+    - [ ] **Owner:** retest on Home and the Calendar page (phone and desktop), then close #212.
   - [ ] **Invited co-parent joins the existing family (#211, critical).** Fixed on `fix/211-invited-co-parent-joins-family`:
     a "Sign up to join" link opened while someone else is signed in on that browser keeps its invitation and goes to
     it (it was dropped, so the new account landed in new-family setup), and a signed-in parent with no family goes to
