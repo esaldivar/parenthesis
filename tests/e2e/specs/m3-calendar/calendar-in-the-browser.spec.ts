@@ -127,6 +127,38 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     }
   });
 
+  test('the co-parent approves parenting time from its details on the calendar (#218)', async ({ page, browser }) => {
+    const family = await familyWithKai();
+    const { dad, familyId, kaiId } = family;
+    const momContext = await browser.newContext({ ignoreHTTPSErrors: true });
+    try {
+      await proposeParentingTime(dad, familyId, kaiId, await membershipOf(dad, familyId, 'Dad'));
+
+      await test.step('Mom opens it on her calendar and approves it there', async () => {
+        const mom = await momContext.newPage();
+        await signIn(mom, family.mom.email);
+        await openList(mom);
+        // It spans two days, so it's listed on each: open the first.
+        await item(mom, 'Long weekend with Dad').first().click();
+        await expect(details(mom)).toContainText('Waiting for your approval.');
+        await details(mom).getByRole('button', { name: 'Approve' }).click();
+        await expect(mom.getByText('You approved “Long weekend with Dad”. It’s on the calendar.')).toBeVisible();
+        await expect(mom.locator('app-calendar-list button.item[data-status="pending"]')).toHaveCount(0);
+        await expect(item(mom, 'Long weekend with Dad').first()).toHaveAttribute('data-status', 'confirmed');
+      });
+
+      await test.step('Dad sees it confirmed', async () => {
+        await signIn(page, dad.email);
+        await openList(page);
+        await expect(item(page, 'Long weekend with Dad').first()).toHaveAttribute('data-status', 'confirmed');
+        await expect(page.locator('app-calendar-list button.item[data-status="pending"]')).toHaveCount(0);
+      });
+    } finally {
+      await momContext.close();
+      await family.dispose();
+    }
+  });
+
   test('a declined request shows as declined, with the decision, until the parent removes it', async ({ page }) => {
     const family = await familyWithKai();
     const { dad, mom, familyId, kaiId } = family;

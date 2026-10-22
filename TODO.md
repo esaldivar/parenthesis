@@ -343,6 +343,11 @@ that points back here.
     - [x] **Owner decisions (October 22, 2026):** pending parenting time counts (declined and withdrawn don't); it
       applies whoever adds it; existing overlaps are left alone.
     - [ ] **Owner:** test it on the development site, then close #210.
+  - [ ] **Approve or decline from an event's details (#218).** Built on `feat/218-decide-from-details`: the parent who
+    can decide sees Approve and Decline… (with an optional comment) on a pending event, change, swap or cancellation,
+    using the same approvals API as the inbox; the proposer still sees only Withdraw. A request answered elsewhere
+    shows calmly with no stale buttons. Unit tests and a browser journey (Mom approves from the details).
+    - [ ] **Owner:** test it on the development site, then close #218.
   - [ ] **Open an event's details from its block (#213, critical).** On `feat/213-open-event-details`: every event and
     parenting-time block on the home page (week grid, all-day row and day list) opens the same details sheet as the
     Calendar page, loaded fresh, with focus back on the block when it closes; an event that's gone says so and the
