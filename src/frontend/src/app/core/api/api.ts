@@ -176,6 +176,9 @@ export interface CalendarEvent {
   readonly pendingChange: 'None' | 'Modify' | 'Cancel';
   readonly proposed: ProposedTimes | null;
   readonly warnings: readonly CalendarWarning[];
+  /** A repeating event's series (#193): each date is its own event; `repeat` says how it repeats. */
+  readonly seriesId?: string | null;
+  readonly repeat?: EventRepeat | null;
 }
 
 export interface NewCalendarEvent {
@@ -188,7 +191,23 @@ export interface NewCalendarEvent {
   readonly notes?: string;
   readonly childIds?: readonly string[];
   readonly caregiverMembershipId?: string;
+  /** Unavailable time and activities only (#193): weekly on these days, ending on `until` or after `count` times. */
+  readonly repeat?: { readonly days: readonly Weekday[]; readonly until?: string; readonly count?: number };
 }
+
+/** Weekdays as the API names them (#193). */
+export type Weekday = 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
+
+/** How a repeating event repeats. */
+export interface EventRepeat {
+  readonly days: readonly Weekday[];
+  /** `YYYY-MM-DD`, inclusive. */
+  readonly until: string | null;
+  readonly count: number | null;
+}
+
+/** Which dates of a repeating event an edit or cancel applies to. */
+export type EditScope = 'this' | 'following' | 'all';
 
 export type RepeatFrequency = 'None' | 'Daily' | 'Weekly' | 'Monthly';
 
@@ -380,11 +399,19 @@ export class Api {
   createEvent = (familyId: string, event: NewCalendarEvent) =>
     this.call(this.http.post<CalendarEvent>(`/api/families/${familyId}/calendar/events`, event));
   /** 200 when applied at once; 202 when it waits for the other parent (a swap is such a change). */
-  updateEvent = (familyId: string, eventId: string, change: CalendarEventChange) =>
-    this.call(this.http.patch<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`, change));
+  updateEvent = (familyId: string, eventId: string, change: CalendarEventChange, scope: EditScope = 'this') =>
+    this.call(
+      this.http.patch<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`, change, {
+        params: scope === 'this' ? {} : { scope },
+      }),
+    );
   /** 204 when cancelled at once; 202 with the event when it waits for the other parent. */
-  cancelEvent = (familyId: string, eventId: string) =>
-    this.call(this.http.delete<CalendarEvent | null>(`/api/families/${familyId}/calendar/events/${eventId}`));
+  cancelEvent = (familyId: string, eventId: string, scope: EditScope = 'this') =>
+    this.call(
+      this.http.delete<CalendarEvent | null>(`/api/families/${familyId}/calendar/events/${eventId}`, {
+        params: scope === 'this' ? {} : { scope },
+      }),
+    );
 
   // Shared reminders (parents only). Listing never marks anything seen; opening the details calls reminderSeen.
   reminders = (familyId: string, from: string, to: string) =>

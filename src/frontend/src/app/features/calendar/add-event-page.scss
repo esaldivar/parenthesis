@@ -121,3 +121,48 @@ legend {
 .actions > * {
   min-height: var(--target-min);
 }
+
+// Repeat (#193): weekday boxes stay 44px targets; the preview reads as plain text.
+.weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.weekday {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--target-min);
+  min-width: var(--target-min);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--color-action);
+  }
+}
+.preview {
+  margin: 0;
+}
+.preview__count {
+  font-weight: 600;
+}
+
+// The scope choice when editing a repeating event (#193).
+.scope__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  cursor: pointer;
+  input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--color-action);
+  }
+}

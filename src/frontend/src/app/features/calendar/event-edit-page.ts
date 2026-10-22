@@ -7,12 +7,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Router, RouterLink } from '@angular/router';
-import { Api, CalendarCategory, CalendarEvent, CalendarEventChange, FamilyMember } from '../../core/api/api';
+import { Api, CalendarCategory, CalendarEvent, CalendarEventChange, EditScope, FamilyMember } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FORM_STYLES } from '../auth/form-styles';
-import { addDays } from '../dashboard/week';
+import { addDays, dayLong } from '../dashboard/week';
 import { warningText } from './add-event-page';
+import { repeatText } from './series';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from './time';
 
 /** The categories that change only with both parents' agreement (the server decides; this only explains it). */
@@ -91,6 +92,33 @@ export class EventEditPage implements OnInit {
     const now: Readonly<Record<string, unknown>> = this.value();
     return !!loaded && Object.keys(loaded).some((k) => k !== 'notes' && now[k] !== loaded[k]);
   });
+  /** A repeating event (#193): which dates the change applies to. */
+  protected readonly scope = signal<EditScope>('this');
+  protected readonly scopes: readonly { id: EditScope; label: string }[] = [
+    { id: 'this', label: 'This event' },
+    { id: 'following', label: 'This and following' },
+    { id: 'all', label: 'All events' },
+  ];
+  protected readonly repeats = computed(() => {
+    const repeat = this.event()?.repeat;
+    return repeat ? repeatText(repeat) : null;
+  });
+
+  /** Several dates keep their own days: only times, title, place and notes change, so the dates are fixed. */
+  protected setScope(scope: EditScope): void {
+    this.scope.set(scope);
+    const loaded = this.loaded();
+    const dates = [this.form.controls.startDate, this.form.controls.endDate];
+    if (scope === 'this') {
+      dates.forEach((c) => c.enable());
+    } else {
+      if (loaded) {
+        this.form.patchValue({ startDate: loaded['startDate'] as string, endDate: loaded['endDate'] as string });
+      }
+      dates.forEach((c) => c.disable());
+    }
+  }
+
   protected readonly note = computed(() =>
     this.needsApproval()
       ? `Changes to the title, date, time, place${this.parenting() ? ' or who has the children' : ''} go to ${this.coParent()} for approval. Until they answer, the event stays as it is and shows “Change pending”. Notes change at once.`
@@ -135,12 +163,17 @@ export class EventEditPage implements OnInit {
     this.busy.set(true);
     this.error.set(null);
     try {
-      const saved = await this.api.updateEvent(family.id, event.id, this.change());
+      const scope = this.scope();
+      const saved = await this.api.updateEvent(family.id, event.id, this.change(), scope);
       const coParent = this.coParent() ?? 'your co-parent';
       const head =
         saved.pendingChange === 'Modify'
           ? `Sent to ${coParent} for approval. “${event.title}” stays as it is until they answer.`
-          : `“${saved.title}” was updated.`;
+          : scope === 'all'
+            ? `Every date of “${saved.title}” was updated.`
+            : scope === 'following'
+              ? `“${saved.title}” was updated from ${dayLong(this.form.getRawValue().startDate)} on.`
+              : `“${saved.title}” was updated.`;
       const notes = saved.warnings.map((w) => warningText(w, this.coParent()));
       await this.router.navigate(['/calendar'], {
         queryParams: { date: this.form.getRawValue().startDate },
@@ -202,10 +235,29 @@ export class EventEditPage implements OnInit {
     return errors;
   }
 
-  /** The whole event as edited; the server works out what changed and whether it needs approval. */
+  /**
+   * The whole event as edited; the server works out what changed and whether it needs approval. For several dates of
+   * a repeating event, only what changed, so each date keeps anything it has of its own.
+   */
   private change(): CalendarEventChange {
     const v = this.form.getRawValue();
     const zone = this.timeZone();
+    const loaded = this.loaded();
+    if (this.scope() !== 'this' && loaded) {
+      const changed = (...keys: string[]) => keys.some((k) => (v as Record<string, unknown>)[k] !== loaded[k]);
+      return {
+        ...(changed('title') && !this.unavailable() ? { title: v.title.trim() || undefined } : {}),
+        ...(changed('allDay', 'startTime', 'endTime')
+          ? {
+              allDay: v.allDay,
+              startsAt: fromFamilyLocal(v.allDay ? `${v.startDate}T00:00` : `${v.startDate}T${v.startTime}`, zone),
+              endsAt: fromFamilyLocal(v.allDay ? `${addDays(v.endDate, 1)}T00:00` : `${v.endDate}T${v.endTime}`, zone),
+            }
+          : {}),
+        ...(changed('location') && !this.unavailable() ? { location: v.location.trim() } : {}),
+        ...(changed('notes') ? { notes: v.notes.trim() } : {}),
+      };
+    }
     return {
       // A blank title keeps the current one (parenting time and unavailable time have a default).
       title: this.unavailable() ? undefined : v.title.trim() || undefined,

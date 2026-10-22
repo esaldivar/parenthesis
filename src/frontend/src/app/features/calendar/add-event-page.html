@@ -121,6 +121,67 @@
         }
       </fieldset>
 
+      @if (canRepeat()) {
+        <fieldset class="when repeat">
+          <legend>Repeat</legend>
+          <mat-slide-toggle formControlName="repeats" (change)="toggleRepeat($event.checked)">Repeats every week</mat-slide-toggle>
+          @if (repeats()) {
+            <div class="weekdays" role="group" aria-label="Repeat on">
+              @for (day of weekdays; track day.id) {
+                <label class="weekday">
+                  <input
+                    type="checkbox"
+                    [checked]="repeatDays().includes(day.id)"
+                    [attr.aria-label]="day.id"
+                    (change)="toggleDay(day.id, $any($event.target).checked)"
+                  />
+                  <span aria-hidden="true">{{ day.short }}</span>
+                </label>
+              }
+            </div>
+            <div class="when__row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Ends</mat-label>
+                <mat-select formControlName="ends">
+                  <mat-option value="date">On a date</mat-option>
+                  <mat-option value="count">After a number of times</mat-option>
+                </mat-select>
+              </mat-form-field>
+              @if (endsOnDate()) {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Last day</mat-label>
+                  <input matInput type="date" formControlName="repeatUntil" required />
+                  @if (fieldError('repeatUntil'); as e) {
+                    <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+                  }
+                </mat-form-field>
+              } @else {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Times in all</mat-label>
+                  <input matInput type="number" min="2" max="366" formControlName="repeatCount" required />
+                  @if (fieldError('repeatCount'); as e) {
+                    <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+                  }
+                </mat-form-field>
+              }
+            </div>
+            @if (fieldError('repeat'); as e) {
+              <p class="field-error" role="alert">{{ e }}</p>
+            }
+            @if (preview().total > 0) {
+              <p class="preview" aria-live="polite">
+                <span class="preview__count">{{ preview().total }} {{ preview().total === 1 ? 'date' : 'dates' }}:</span>
+                {{ preview().shown.join(' · ') }}
+                @if (preview().more > 0) {
+                  <span> · +{{ preview().more }} more</span>
+                }
+              </p>
+            }
+            <p class="legend-hint">A repeat ends within a year. Each date is its own event, so you can change or cancel one later.</p>
+          }
+        </fieldset>
+      }
+
       @if (current !== 'unavailable' && activeChildren().length > 0) {
         <fieldset class="kids">
           <legend>
