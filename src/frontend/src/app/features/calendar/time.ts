@@ -20,16 +20,25 @@ function offsetMinutes(utcMs: number, timeZone: string): number {
 
 /**
  * Wall-clock time in the family's zone as an ISO instant with its offset, for the API. Around a daylight-saving
- * change the offset is taken at the requested time (a 2:30 AM that doesn't exist moves forward by the gap).
+ * change: a time that happens twice (clocks going back) is the first one, and a time that doesn't exist (clocks going
+ * forward, like 2:30 AM) moves forward by the gap, to 3:30 AM.
  */
 export function fromFamilyLocal(local: LocalDateTime, timeZone: string): string {
   const [date, time] = local.split('T');
   const [y, m, d] = date.split('-').map(Number);
   const [h, min] = time.split(':').map(Number);
   const wall = Date.UTC(y, m - 1, d, h, min);
-  let offset = offsetMinutes(wall, timeZone);
-  offset = offsetMinutes(wall - offset * 60_000, timeZone);
-  return new Date(wall - offset * 60_000).toISOString();
+  // The zone's offset just before and just after this wall time: they differ only near a change.
+  const first = offsetMinutes(wall, timeZone);
+  const second = offsetMinutes(wall - first * 60_000, timeZone);
+  const candidates = [...new Set([first, second])]
+    .map((offset) => wall - offset * 60_000)
+    .filter((instant) => toFamilyLocal(new Date(instant).toISOString(), timeZone) === local.slice(0, 16))
+    .sort((a, b) => a - b);
+  // No match: the time falls in the gap. Clocks only jump forward there, so the earlier (smaller) offset moves it
+  // forward by the gap.
+  const instant = candidates[0] ?? wall - Math.min(first, second) * 60_000;
+  return new Date(instant).toISOString();
 }
 
 /** The last calendar date an item covers, when `end` is exclusive (an all-day event ending at midnight). */

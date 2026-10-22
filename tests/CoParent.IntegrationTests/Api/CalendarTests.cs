@@ -11,6 +11,8 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 {
     private static readonly DateTimeOffset _monday = new(2026, 10, 12, 0, 0, 0, TimeSpan.FromHours(-5));
 
+    private static readonly string[] _mondays = ["Monday"];
+
     public async ValueTask InitializeAsync() => await api.ResetDatabaseAsync();
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
@@ -111,6 +113,46 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal("Unavailable", moms.GetProperty("title").GetString());
         Assert.Equal("Work trip to Denver", dads.GetProperty("notes").GetString());
         Assert.Equal(JsonValueKind.Null, moms.GetProperty("notes").ValueKind);
+    }
+
+    [Fact]
+    public async Task Unavailable_time_never_shares_a_title_or_place_even_when_a_request_sends_them()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+
+        // A client that sends a private reason as the title or a place: neither is kept, one-off or repeating.
+        var oneOff = await JsonAsync(await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Unavailable",
+            title = "Doctor appointment",
+            location = "North Clinic",
+            startsAt = _monday.AddHours(8),
+            endsAt = _monday.AddHours(10),
+        }));
+        await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Unavailable",
+            title = "Therapy",
+            location = "Downtown",
+            startsAt = _monday.AddHours(12),
+            endsAt = _monday.AddHours(13),
+            repeat = new { days = _mondays, count = 2 },
+        });
+        var edited = await f.Dad.SendAsync(
+            HttpMethod.Patch, $"{Events(f)}/{oneOff.GetProperty("id").GetGuid()}", new { title = "Court date", location = "Courthouse" });
+
+        Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        foreach (var session in new[] { f.Dad, f.Mom })
+        {
+            var week = await WeekAsync(session, f);
+            Assert.Equal(2, week.Count);
+            Assert.All(week, e =>
+            {
+                Assert.Equal("Unavailable", e.GetProperty("title").GetString());
+                Assert.Equal(JsonValueKind.Null, e.GetProperty("location").ValueKind);
+            });
+        }
     }
 
     [Fact]

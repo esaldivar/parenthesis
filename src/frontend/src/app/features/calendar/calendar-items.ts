@@ -135,6 +135,8 @@ export function toItems(
     const end = toFamilyLocal(event.endsAt, timeZone);
     const firstDate = start.slice(0, 10);
     const last = lastDate(start, end);
+    // Someone else's unavailable time is only ever "Unavailable" (the server already sends it that way).
+    const hidden = kind === 'unavailable' && event.ownerMembershipId !== me;
     const shownParents: Person[] =
       kind === 'family'
         ? parents.map((p) => ({ id: p.membershipId, name: p.displayName }))
@@ -145,7 +147,7 @@ export function toItems(
             : [];
     return {
       id: event.id,
-      title: event.title,
+      title: hidden ? 'Unavailable' : event.title,
       kind,
       category: event.category,
       categoryLabel: CATEGORY_LABELS[event.category],
@@ -167,8 +169,8 @@ export function toItems(
       parents: shownParents,
       ownerName: name(event.ownerMembershipId),
       isMine: event.ownerMembershipId === me,
-      location: event.location,
-      notes: event.notes,
+      location: hidden ? null : event.location,
+      notes: hidden ? null : event.notes,
       warnings: event.warnings,
     } satisfies CalendarItem;
   });

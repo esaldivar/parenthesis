@@ -44,6 +44,16 @@ describe('calendar items', () => {
     expect(away.isMine).toBe(false);
   });
 
+  it('shows someone else’s unavailable time only as “Unavailable”, whatever the API sends', () => {
+    const [theirs, mine] = items(
+      event({ id: 'u', category: 'Unavailable', title: 'Doctor appointment', location: 'North Clinic', notes: 'Private', childIds: [], ownerMembershipId: 'm-sam' }),
+      event({ id: 'v', category: 'Unavailable', title: 'Unavailable', notes: 'My note', childIds: [], ownerMembershipId: 'm-alex' }),
+    );
+
+    expect([theirs.title, theirs.location, theirs.notes]).toEqual(['Unavailable', null, null]);
+    expect(mine.notes).toBe('My note');
+  });
+
   it('calls a parent who left “Former parent”', () => {
     const [item] = items(event({ ownerMembershipId: 'm-gone' }));
     expect(item.ownerName).toBe(FORMER_PARENT);
