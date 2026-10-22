@@ -1,6 +1,6 @@
 import { Type } from '@angular/core';
 import { CanMatchFn, Route, Routes } from '@angular/router';
-import { hasFamily, kidSpace, pickerAvailable, signedIn, signedOut } from './core/auth/guards';
+import { hasFamily, kidSpace, pickerAvailable, registerPage, signedIn, signedOut } from './core/auth/guards';
 
 /** A page inside the auth layout, under its own top-level path so nothing competes with the app at "/". */
 function authPage(path: string, title: string, page: () => Promise<Type<unknown>>, canMatch: CanMatchFn[] = []): Route {
@@ -15,7 +15,7 @@ function authPage(path: string, title: string, page: () => Promise<Type<unknown>
 // Guards decide what to show; the API independently enforces authentication, membership and tenancy.
 export const routes: Routes = [
   authPage('sign-in', 'Sign in', () => import('./features/auth/sign-in-page').then((m) => m.SignInPage), [signedOut]),
-  authPage('register', 'Create your account', () => import('./features/auth/register-page').then((m) => m.RegisterPage), [signedOut]),
+  authPage('register', 'Create your account', () => import('./features/auth/register-page').then((m) => m.RegisterPage), [registerPage]),
   authPage('check-email', 'Check your email', () => import('./features/auth/check-email-page').then((m) => m.CheckEmailPage)),
   authPage('confirm-email', 'Confirm your email', () => import('./features/auth/confirm-email-page').then((m) => m.ConfirmEmailPage)),
   authPage('forgot-password', 'Reset your password', () => import('./features/auth/forgot-password-page').then((m) => m.ForgotPasswordPage)),

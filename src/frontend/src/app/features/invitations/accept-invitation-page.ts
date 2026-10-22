@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../core/api/api';
@@ -68,10 +68,13 @@ const RETURN_URL = '/invitations/accept';
         @case ('wrong-email') {
           <h1>Join your co-parent's family</h1>
           <div class="alert" role="alert">This invitation was sent to a different email address.</div>
-          <p>Sign in with the email address the invitation was sent to, then open the link again.</p>
+          <p>
+            Sign in with the email address the invitation was sent to, or create an account with it. This device keeps
+            the invitation until then.
+          </p>
           <div class="actions">
             <button mat-flat-button type="button" (click)="switchAccount()">Sign in with another account</button>
-            <a mat-button routerLink="/">Not now</a>
+            <a mat-button [routerLink]="away()">Not now</a>
           </div>
         }
         @case ('existing-family') {
@@ -91,7 +94,7 @@ const RETURN_URL = '/invitations/accept';
             <button mat-flat-button type="button" [disabled]="busy()" (click)="accept(true)">
               {{ busy() ? 'Joining…' : 'Join as a separate family' }}
             </button>
-            <a mat-button routerLink="/">Not now</a>
+            <a mat-button [routerLink]="away()">Not now</a>
           </div>
         }
         @case ('error') {
@@ -152,6 +155,11 @@ export class AcceptInvitationPage implements OnInit {
   protected readonly error = signal('');
   protected readonly busy = signal(false);
   protected readonly canRetry = signal(true);
+  /**
+   * "Not now" for a parent with a family goes home; without one, straight to setting one up, since home would bring a
+   * parent with a waiting invitation back here (#211).
+   */
+  protected readonly away = computed(() => ((this.auth.families()?.length ?? 0) > 0 ? '/' : '/welcome'));
 
   async ngOnInit(): Promise<void> {
     const fromLink = this.token();

@@ -134,6 +134,57 @@ describe('sign-up, household setup and invitations (Design Request #1)', () => {
       expect(text(body)).toContain('This invitation was sent to a different email address.');
       expect(localStorage.getItem(PENDING_KEY)).toContain('invite-123');
     });
+
+    // Issue #211: the inviter is still signed in on the browser where the co-parent opens "Sign up to join".
+    it('keeps a sign-up invitation opened while someone else is signed in, and goes to it instead of dropping it', async () => {
+      const { harness, http, body } = await open('/register?token=invite-123');
+
+      expect(localStorage.getItem(PENDING_KEY)).toContain('invite-123');
+      expect(routerOf(harness).url).toBe('/invitations/accept');
+      http.expectOne('/api/invitations/accept').flush(
+        { title: 'This invitation was sent to a different email address.' },
+        { status: 403, statusText: 'Forbidden' },
+      );
+      await settle(harness);
+      expect(text(body)).toContain('Sign in with another account');
+    });
+
+    it('still keeps a signed-in parent off registration when there is no invitation', async () => {
+      const { harness } = await open('/register');
+      expect(routerOf(harness).url).toBe('/');
+    });
+
+    it('takes a signed-in parent with no family to their waiting invitation, not new-family setup', async () => {
+      saveInvitation('invite-123');
+      const { harness, http, body } = await open('/', fakeAuth({ families: [] }));
+
+      expect(routerOf(harness).url).toBe('/invitations/accept');
+      http.expectOne('/api/invitations/accept').flush(FAMILY);
+      await vi.waitFor(async () => {
+        await settle(harness);
+        expect(text(body)).toContain("You've joined Rivera Family");
+      });
+    });
+
+    it('lets a parent with no family decline for now without looping back to the invitation', async () => {
+      saveInvitation('invite-123');
+      const { harness, http, body } = await open('/', fakeAuth({ families: [] }));
+      http.expectOne('/api/invitations/accept').flush(
+        { title: 'This invitation was sent to a different email address.' },
+        { status: 403, statusText: 'Forbidden' },
+      );
+      await settle(harness);
+
+      button(body, 'Not now').click();
+      await settle(harness);
+      expect(routerOf(harness).url).toBe('/welcome');
+      expect(text(body)).toContain('You have an invitation waiting');
+    });
+
+    it('sends a parent with no family and no invitation to set one up, as before', async () => {
+      const { harness } = await open('/', fakeAuth({ families: [] }));
+      expect(routerOf(harness).url).toBe('/welcome');
+    });
   });
 
   describe('setting up the family', () => {
