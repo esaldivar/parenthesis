@@ -245,15 +245,19 @@ internal static class ReminderEndpoints
         (reminder.Repeat, reminder.RepeatUntil, reminder.RepeatCount) = repeat;
         reminder.SeriesEndsAt = SeriesEnd(reminder, zone);
         (reminder.LastEditedByMembershipId, reminder.LastEditedAt) = (tenant.MembershipId, now);
+        // Owner decision (October 22, 2026): a real change clears the other parent's Seen, so the quiet "edited by"
+        // note invites a second look. The editor's own Seen stays.
+        var othersSeen = seen.Where(s => s.MembershipId != tenant.MembershipId).ToList();
         var userId = http.User.GetUserId();
         await unitOfWork.ExecuteAsync(async ct =>
         {
+            db.ReminderSeen.RemoveRange(othersSeen);
             db.ReminderHistory.Add(History(reminder, tenant, ReminderAction.Edited, string.Join(", ", changes), now));
             await db.SaveChangesAsync(ct);
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "reminder.edited", "reminder", reminder.Id), ct);
         }, cancellationToken);
 
-        return TypedResults.Ok(View(reminder, tenant, seen));
+        return TypedResults.Ok(View(reminder, tenant, seen.Except(othersSeen)));
     }
 
     /// <summary>Either parent, at once, no approval. The row is kept (marked deleted) so its history stays.</summary>

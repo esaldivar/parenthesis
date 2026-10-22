@@ -84,6 +84,25 @@ public sealed class ReminderTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(f.MomMembershipId, Assert.Single(afterOpening).GetProperty("membershipId").GetGuid());
     }
 
+    [Fact]
+    public async Task A_real_edit_clears_the_other_parents_Seen_but_not_the_editors()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var id = await CreateAsync(f.Dad, f, "Book fair");
+        await f.Dad.PostAsync($"{Reminders(f)}/{id}/seen");
+        await f.Mom.PostAsync($"{Reminders(f)}/{id}/seen");
+
+        // Saving without changes keeps both.
+        await f.Mom.SendAsync(HttpMethod.Put, $"{Reminders(f)}/{id}", new { title = "Book fair", startsAt = _friday.AddHours(9) });
+        var unchanged = (await JsonAsync(await f.Dad.GetAsync($"{Reminders(f)}/{id}"))).GetProperty("seenBy").GetArrayLength();
+        await f.Mom.SendAsync(HttpMethod.Put, $"{Reminders(f)}/{id}", new { title = "Book fair: bring $10", startsAt = _friday.AddHours(9) });
+        var afterEdit = (await JsonAsync(await f.Dad.GetAsync($"{Reminders(f)}/{id}"))).GetProperty("seenBy").EnumerateArray().ToList();
+
+        Assert.Equal(2, unchanged);
+        Assert.Equal(f.MomMembershipId, Assert.Single(afterEdit).GetProperty("membershipId").GetGuid());
+    }
+
     [Theory]
     [InlineData("title")]
     [InlineData("long-title")]

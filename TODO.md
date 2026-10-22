@@ -284,11 +284,12 @@ that points back here.
       time zone (October 22, 2026). Edits apply to the whole series.
     - [ ] #172 frontend: reminders on the calendar and their details. #173 frontend: add and edit, with the Event / Task /
       Reminder choice.
-    - [ ] **Owner review (choices made in #171):** a monthly reminder on the 29th–31st falls on the last day of shorter
-      months (Jan 31 → Feb 28 → Mar 31); Seen and history are per series, not per occurrence. Editing or deleting one
-      occurrence only isn't supported yet.
-    - [ ] **Owner decision:** do children see reminders? Parents only until decided (child sessions get 403).
-    - [ ] **Owner decision:** should an edit reset the other parent's Seen? Today Seen stays after an edit.
+    - [x] **Owner decisions (October 22, 2026):** a monthly reminder on the 29th–31st falls on the last day of shorter
+      months (Jan 31 → Feb 28 → Mar 31); edits, deletes, Seen and history are per series in v0.3.0.
+    - [ ] Later, if missed: change or delete a single occurrence of a repeating reminder (This one / This and following /
+      All, like recurring unavailable time).
+    - [x] **Owner decisions (October 22, 2026):** children don't see reminders (parents only; the child experience in
+      v0.5.0 can revisit it); a real edit clears the other parent's Seen (the editor's stays).
   - [ ] **Tasks (#73)**, split into four parts: #174 and #175 backend, #176 and #177 frontend. Same open question on
     whether children see tasks.
   - [ ] Frontend: edit an event (and its approval), recurring unavailable time with This event / This and following /
