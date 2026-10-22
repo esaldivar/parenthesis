@@ -332,6 +332,9 @@ that points back here.
       they don't reappear.
   - [ ] Changing an event's children after it's created (the API doesn't support it yet).
   - [x] Frontend: the dashboard's live data source (#196).
+    - [ ] **Home calendar shows every event (#208, critical):** on desktop the week grid left out all-day events (an
+      all-day activity, a holiday, a day of unavailable time), and a multi-day event showed on its first day only. They
+      now sit in the all-day row across their dates. **Owner:** retest on the development site, then close #208.
   - [ ] **Approve or decline from an event's details (#218).** Built on `feat/218-decide-from-details`: the parent who
     can decide sees Approve and Decline… (with an optional comment) on a pending event, change, swap or cancellation,
     using the same approvals API as the inbox; the proposer still sees only Withdraw. A request answered elsewhere

@@ -133,6 +133,40 @@ describe('DashboardPage (approved design)', () => {
       expect(text(el.querySelector('app-week-calendar'))).not.toContain('Spirit Day');
     });
 
+    // Issue #208: the desktop week grid left out every event without a time.
+    it('shows all-day and multi-day events across their dates in the all-day row, and on each day of the list', async () => {
+      const { el } = await render({
+        live: {
+          ...EMPTY_WEEK,
+          events: [
+            { id: 'trip', title: 'Field trip', date: '2026-10-15', category: 'school', children: [], status: 'confirmed' },
+            { id: 'off', title: 'Teacher workday', date: '2026-10-16', endDate: '2026-10-17', category: 'other', children: [], status: 'confirmed' },
+            { id: 'camp', title: 'Soccer camp', date: '2026-10-13', endDate: '2026-10-14', time: '08:00', category: 'sport', children: [], status: 'proposed' },
+            { id: 'away', title: 'You’re unavailable', date: '2026-10-12', category: 'unavailable', children: [], status: 'confirmed' },
+            { id: 'swim', title: 'Swim lesson', date: '2026-10-14', time: '17:00', durationMinutes: 60, category: 'sport', children: [], status: 'confirmed' },
+          ],
+        },
+      });
+
+      const row = [...el.querySelectorAll<HTMLElement>('.allday li.act--allday')];
+      expect(row.map((li) => [text(li.querySelector('.act__title')), li.style.getPropertyValue('--start'), li.style.getPropertyValue('--end')])).toEqual([
+        ['Field trip', '5', '6'], // Thursday.
+        ['Teacher workday', '6', '8'], // Friday and Saturday.
+        ['Soccer camp', '3', '5'], // Tuesday and Wednesday.
+        ['You’re unavailable', '2', '3'], // Monday.
+      ]);
+      // A proposal in the all-day row still says so, in words.
+      expect(text(row[2])).toContain('Proposed');
+      // Single-day timed events stay in the hour grid, and only there.
+      expect(text(el.querySelector('.grid__body'))).toContain('Swim lesson');
+      expect(text(el.querySelector('.grid__body'))).not.toContain('Field trip');
+      // The day list shows a multi-day event on each of its days.
+      const days = [...el.querySelectorAll('.agenda__day')].map((d) => text(d));
+      expect(days[5]).toContain('Teacher workday');
+      expect(days[6]).toContain('Teacher workday');
+      expect(days[6]).toContain('Oct 16 – Oct 17 · All day');
+    });
+
     it('moves between weeks and returns with Today', async () => {
       const { fixture, el } = await render();
 

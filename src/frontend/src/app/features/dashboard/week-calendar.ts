@@ -19,6 +19,7 @@ import { DashboardWeek, FamilyEvent, PlainDate } from './model';
 import { StatusLabel } from './status-label';
 import { CATEGORY_ICONS, TimedPlacement, placeDay, visibleHours } from './timeline';
 import {
+  addDays,
   dayLong,
   hourLabel,
   monthDay,
@@ -41,6 +42,17 @@ interface DayView {
   readonly placements: Map<string, TimedPlacement>;
   readonly lanes: number;
 }
+
+/** An all-day or multi-day event, placed like parenting time across its dates. */
+interface AllDayEvent {
+  readonly key: string;
+  readonly start: string;
+  readonly end: string;
+  readonly event: FamilyEvent;
+}
+
+/** All-day events and events over several dates go in the all-day row; single-day timed ones in the hour grid. */
+const inAllDayRow = (event: FamilyEvent) => !event.time || !!event.endDate;
 
 /**
  * The dashboard's weekly calendar, laid out as the approved dashboard (docs/design/APPROVED_DASHBOARD_2026-10-16.md):
@@ -105,10 +117,15 @@ export class WeekCalendar {
 
   protected readonly days = computed<DayView[]>(() =>
     weekDays(this.weekStart()).map((date) => {
+      // Every event covering this date (a multi-day one on each of its dates), for the day's list.
       const events = this.events()
-        .filter((e) => e.date === date)
+        .filter((e) => e.date <= date && (e.endDate ?? e.date) >= date)
         .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
-      const { placements, lanes } = placeDay(events, this.hours().startHour);
+      // Only single-day timed events take a place in the hour grid; the rest are in the all-day row (#208).
+      const { placements, lanes } = placeDay(
+        events.filter((e) => !inAllDayRow(e)),
+        this.hours().startHour,
+      );
       return {
         date,
         weekday: weekdayShort(date),
@@ -132,7 +149,21 @@ export class WeekCalendar {
     ...this.blocks().filter((b) => b.status !== 'proposed'),
     ...this.blocks().filter((b) => b.status === 'proposed'),
   ]);
-  protected readonly placements = computed(() => placeInWeek(this.allDay(), this.weekStart()));
+  /**
+   * All-day and multi-day events (an all-day activity, a holiday, a trip, a day of unavailable time) as blocks across
+   * their dates in the all-day row, after parenting time. Before, the desktop grid left them out entirely (#208).
+   */
+  protected readonly allDayEvents = computed<readonly AllDayEvent[]>(() =>
+    this.events()
+      .filter(inAllDayRow)
+      .map((event) => ({
+        key: `event:${event.id}`,
+        start: `${event.date}T00:00`,
+        end: `${addDays(event.endDate ?? event.date, 1)}T00:00`,
+        event,
+      })),
+  );
+  protected readonly placements = computed(() => placeInWeek([...this.allDay(), ...this.allDayEvents()], this.weekStart()));
   protected readonly allDayLanes = computed(() => Math.max(1, ...[...this.placements().values()].map((p) => p.lane + 1)));
 
   /** The split toggle only matters when some block groups several children, or when split is on. */
@@ -143,10 +174,20 @@ export class WeekCalendar {
   protected readonly childNames = childNames;
   protected readonly parentNames = (event: FamilyEvent) => (event.parents ?? []).map((p) => p.displayName).join(' and ');
   protected readonly timeLabel = timeLabel;
-  /** "5:00 PM · Kai · with Alex and Sam", leaving out whatever an event doesn't have (no stray separators). */
+  /** "All day", "Oct 23 – Oct 24 · All day", or "Oct 23, 8:00 AM – Oct 24" for a timed multi-day event. */
+  protected readonly allDayWhen = (event: FamilyEvent) => {
+    const last = event.endDate ?? event.date;
+    const days = last > event.date ? `${monthDay(event.date)} – ${monthDay(last)}` : '';
+    if (event.time) {
+      return `${monthDay(event.date)}, ${timeLabel(event.time)} – ${monthDay(last)}`;
+    }
+    return days ? `${days} · All day` : 'All day';
+  };
+
+  /** "5:00 PM · Kai · with Alex and Sam" (or when an all-day event is), leaving out whatever an event doesn't have (no stray separators). */
   protected readonly actMeta = (event: FamilyEvent) =>
     [
-      event.time ? timeLabel(event.time) : null,
+      inAllDayRow(event) ? this.allDayWhen(event) : timeLabel(event.time!),
       event.children.length ? childNames(event.children) : null,
       event.parents?.length ? `with ${this.parentNames(event)}` : null,
     ]
@@ -154,7 +195,7 @@ export class WeekCalendar {
       .join(' · ');
   protected readonly icons = CATEGORY_ICONS;
 
-  protected placement(block: ScheduleBlock): WeekPlacement | undefined {
+  protected placement(block: Pick<ScheduleBlock, 'key'>): WeekPlacement | undefined {
     return this.placements().get(block.key);
   }
 

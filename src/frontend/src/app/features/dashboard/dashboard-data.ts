@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FORMER_PARENT } from '../calendar/calendar-items';
-import { fromFamilyLocal, toFamilyLocal } from '../calendar/time';
+import { fromFamilyLocal, lastDate, toFamilyLocal } from '../calendar/time';
 import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from './model';
 import { addDays } from './week';
 
@@ -116,6 +116,7 @@ function familyEvent(
   members: readonly FamilyMember[],
 ): FamilyEvent {
   const start = toFamilyLocal(e.startsAt, zone);
+  const last = lastDate(start, toFamilyLocal(e.endsAt, zone));
   const unavailable = e.category === 'Unavailable';
   const owner = members.find((m) => m.membershipId === e.ownerMembershipId);
   return {
@@ -123,6 +124,7 @@ function familyEvent(
     // Only "Unavailable" and whose it is: a private note never comes this way.
     title: unavailable ? `${owner?.isYou ? 'You’re' : `${owner?.displayName ?? FORMER_PARENT} is`} unavailable` : e.title,
     date: start.slice(0, 10),
+    endDate: last > start.slice(0, 10) ? last : undefined,
     time: e.allDay ? undefined : start.slice(11),
     durationMinutes: e.allDay ? undefined : Math.round((Date.parse(e.endsAt) - Date.parse(e.startsAt)) / 60_000),
     category: CATEGORIES[e.category],
