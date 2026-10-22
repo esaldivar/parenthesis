@@ -343,6 +343,11 @@ that points back here.
     - [x] **Owner decisions (October 22, 2026):** pending parenting time counts (declined and withdrawn don't); it
       applies whoever adds it; existing overlaps are left alone.
     - [ ] **Owner:** test it on the development site, then close #210.
+  - [ ] **Approve or decline from an event's details (#218).** Built on `feat/218-decide-from-details`: the parent who
+    can decide sees Approve and Decline… (with an optional comment) on a pending event, change, swap or cancellation,
+    using the same approvals API as the inbox; the proposer still sees only Withdraw. A request answered elsewhere
+    shows calmly with no stale buttons. Unit tests and a browser journey (Mom approves from the details).
+    - [ ] **Owner:** test it on the development site, then close #218.
   - [ ] **Invited co-parent joins the existing family (#211, critical).** Fixed on `fix/211-invited-co-parent-joins-family`:
     a "Sign up to join" link opened while someone else is signed in on that browser keeps its invitation and goes to
     it (it was dropped, so the new account landed in new-family setup), and a signed-in parent with no family goes to
