@@ -143,6 +143,15 @@ export class WeekCalendar {
   protected readonly childNames = childNames;
   protected readonly parentNames = (event: FamilyEvent) => (event.parents ?? []).map((p) => p.displayName).join(' and ');
   protected readonly timeLabel = timeLabel;
+  /** "5:00 PM · Kai · with Alex and Sam", leaving out whatever an event doesn't have (no stray separators). */
+  protected readonly actMeta = (event: FamilyEvent) =>
+    [
+      event.time ? timeLabel(event.time) : null,
+      event.children.length ? childNames(event.children) : null,
+      event.parents?.length ? `with ${this.parentNames(event)}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
   protected readonly icons = CATEGORY_ICONS;
 
   protected placement(block: ScheduleBlock): WeekPlacement | undefined {

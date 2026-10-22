@@ -321,7 +321,7 @@ that points back here.
     other events change at once; the form says which before saving.
   - [ ] Frontend: declined requests on the calendar.
   - [ ] Changing an event's children after it's created (the API doesn't support it yet).
-  - [ ] Frontend: the dashboard's live data source (it still shows sample data in development).
+  - [x] Frontend: the dashboard's live data source (#196).
   - [x] **Calendar filters (#190, design #162).** Built; the owner closes #190 after testing.
     - [x] Type, parent (created by / involving) and approval filters with Reset filters, removable chips, a
       filtered-empty state, and choices remembered in this browser per parent and family (October 22, 2026).

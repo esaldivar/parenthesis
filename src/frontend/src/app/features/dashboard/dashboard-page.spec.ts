@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { LiveDashboardDataSource } from './dashboard-data';
+import { DashboardWeek } from './model';
 import { DashboardPage, NOW } from './dashboard-page';
 import { MIN_SLOTS } from './timeline';
 
@@ -10,16 +11,28 @@ import { MIN_SLOTS } from './timeline';
 const WEDNESDAY_MORNING = new Date('2026-10-14T14:00:00Z');
 
 describe('DashboardPage (approved design)', () => {
-  async function render(options: { sample?: boolean; failingSource?: boolean; week?: string } = {}) {
+  /** A live week with nothing in it: what a new family sees. */
+  const EMPTY_WEEK: DashboardWeek = {
+    source: 'live',
+    parentingTime: [],
+    events: [],
+    pendingReviews: [],
+    kidShares: [],
+    recentMessages: [],
+    recentMemories: [],
+    notes: [],
+  };
+
+  async function render(options: { sample?: boolean; failingSource?: boolean; week?: string; live?: DashboardWeek } = {}) {
     TestBed.configureTestingModule({
       providers: [provideRouter([]), fakeAuth(), { provide: NOW, useValue: () => WEDNESDAY_MORNING }],
     });
     let calls = 0;
-    if (options.failingSource) {
-      TestBed.overrideProvider(LiveDashboardDataSource, {
-        useValue: { load: () => (++calls, Promise.reject(new Error('offline'))) },
-      });
-    }
+    TestBed.overrideProvider(LiveDashboardDataSource, {
+      useValue: {
+        load: () => (++calls, options.failingSource ? Promise.reject(new Error('offline')) : Promise.resolve(options.live ?? EMPTY_WEEK)),
+      },
+    });
     const fixture = TestBed.createComponent(DashboardPage);
     if (options.sample) {
       fixture.componentRef.setInput('sample', '1');
@@ -44,7 +57,7 @@ describe('DashboardPage (approved design)', () => {
     )!;
   const link = (el: HTMLElement, label: string) => [...el.querySelectorAll('a')].find((a) => text(a).startsWith(label))!;
 
-  describe('layout and live (no calendar API yet)', () => {
+  describe('layout and live data', () => {
     it('greets the parent like the approved design', async () => {
       const { el } = await render();
 
@@ -73,21 +86,51 @@ describe('DashboardPage (approved design)', () => {
       expect(text(el.querySelector('[aria-current="date"]'))).toContain('Wednesday, October 14, today');
     });
 
-    it('is honest that there is no schedule yet, with no sample content', async () => {
+    it('shows an empty live week plainly, with no sample content, and is honest about what isn’t built yet', async () => {
       const { el } = await render();
 
-      expect(text(el)).toContain('The shared calendar isn’t available yet');
-      expect(el.querySelector('.allday, .daycol, .proposals, .sample-banner')).toBeNull();
+      expect(el.querySelector('.sample-banner')).toBeNull();
+      expect(text(el.querySelector('.area-upcoming'))).toContain('Nothing else this week');
       expect(text(el.querySelector('.area-messages'))).toContain('Messaging between parents isn’t available yet');
     });
 
-    it('offers Quick Add actions honestly, as unavailable', async () => {
+    it('opens Add to calendar from Event and Note, and keeps Message and Memory marked unavailable', async () => {
       const { el } = await render();
-      const actions = [...el.querySelectorAll('.quick__btn')];
+      const actions = [...el.querySelectorAll<HTMLElement>('.quick__btn')];
 
       expect(actions.map(text)).toEqual(['Event', 'Message', 'Memory', 'Note']);
-      expect(actions.every((b) => b.getAttribute('aria-disabled') === 'true')).toBe(true);
-      expect(text(el.querySelector('#quick-note'))).toContain('opens with the calendar, messages and memories');
+      expect(actions[0].getAttribute('href')).toBe('/calendar/new?date=2026-10-14');
+      expect(actions[3].getAttribute('href')).toBe('/calendar/new?date=2026-10-14&kind=reminder');
+      expect([actions[1], actions[2]].every((b) => b.getAttribute('aria-disabled') === 'true')).toBe(true);
+      expect(text(el.querySelector('#quick-note'))).toBe('Messages and memories open here when they’re ready.');
+    });
+
+    it('lists approvals first, then the week’s events, reminders and tasks in time order', async () => {
+      const kai = { id: 'kai', name: 'Kai' };
+      const { el } = await render({
+        live: {
+          ...EMPTY_WEEK,
+          pendingReviews: [{ id: 'r1', summary: 'Change Time with Sam', proposedBy: 'Sam' }],
+          events: [{ id: 'e1', title: 'Soccer practice', date: '2026-10-15', time: '17:00', category: 'sport', children: [kai], status: 'confirmed' }],
+          notes: [
+            { id: 'n1', kind: 'reminder', title: 'Spirit Day', date: '2026-10-14', time: '08:00', children: [kai] },
+            { id: 'n2', kind: 'task', title: 'Science fair poster', date: '2026-10-16', children: [] },
+            { id: 'n3', kind: 'task', title: 'Last week’s task', date: '2026-10-12', children: [] },
+          ],
+        },
+      });
+
+      const items = [...el.querySelectorAll('.upcoming__item')];
+      expect(items.map((i) => text(i.querySelector('.upcoming__title')))).toEqual([
+        'Change Time with Sam',
+        'Spirit Day',
+        'Soccer practice',
+        'Science fair poster',
+      ]);
+      expect(text(items[1].querySelector('.upcoming__when'))).toBe('Reminder · Wed, Oct 14 · 8:00 AM');
+      expect(text(items[3].querySelector('.upcoming__when'))).toBe('Task · due Friday, October 16');
+      // Reminders and tasks stay off the week calendar (owner decision).
+      expect(text(el.querySelector('app-week-calendar'))).not.toContain('Spirit Day');
     });
 
     it('moves between weeks and returns with Today', async () => {

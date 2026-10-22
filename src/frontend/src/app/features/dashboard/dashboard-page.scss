@@ -187,6 +187,12 @@ ul {
   }
 }
 
+// Reminders: a gold accent, as on the calendar. Tasks keep the calm default with their note icon.
+.upcoming__item[data-category='reminder'] .upcoming__icon {
+  background: var(--color-surface);
+  outline: 2px solid var(--color-leaf-gold);
+}
+
 .upcoming__item[data-status='proposed'] .upcoming__icon {
   background: var(--color-status-pending-bg);
   color: var(--color-text);
@@ -252,9 +258,21 @@ a.upcoming__title {
   font: inherit;
   font-size: 1rem;
   cursor: not-allowed;
+  text-decoration: none;
 
   app-icon {
     color: var(--color-action);
+  }
+}
+// Event and Note work (#196); the rest stay marked unavailable.
+a.quick__btn {
+  cursor: pointer;
+  &:hover {
+    border-color: var(--color-action);
+  }
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
   }
 }
 

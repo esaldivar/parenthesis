@@ -82,7 +82,7 @@
       <app-empty-state
         icon="calendar"
         title="Nothing to show yet"
-        body="Parenting time and activities will appear here once the shared calendar is available."
+        body="Parenting time and activities will appear here once your family is set up."
       />
     }
   </section>
@@ -91,13 +91,24 @@
     <h2 id="quick-heading">Quick Add</h2>
     <div class="quick">
       @for (action of quickActions; track action.label) {
-        <button type="button" class="quick__btn" aria-disabled="true" aria-describedby="quick-note">
-          <app-icon [name]="action.icon" [size]="26" />
-          <span>{{ action.label }}</span>
-        </button>
+        @if (action.kind; as kind) {
+          <a
+            class="quick__btn"
+            routerLink="/calendar/new"
+            [queryParams]="{ date: isCurrentWeek() ? today() : shownWeek(), kind: kind === 'reminder' ? 'reminder' : null }"
+          >
+            <app-icon [name]="action.icon" [size]="26" />
+            <span>{{ action.label }}</span>
+          </a>
+        } @else {
+          <button type="button" class="quick__btn" aria-disabled="true" aria-describedby="quick-note">
+            <app-icon [name]="action.icon" [size]="26" />
+            <span>{{ action.label }}</span>
+          </button>
+        }
       }
     </div>
-    <p id="quick-note" class="muted">Adding from here opens with the calendar, messages and memories.</p>
+    <p id="quick-note" class="muted">Messages and memories open here when they’re ready.</p>
   </section>
 
   <section class="card area-kids" aria-labelledby="kids-heading">
