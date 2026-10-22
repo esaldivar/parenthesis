@@ -303,6 +303,44 @@ describe('DashboardPage (approved design)', () => {
       expect(text(dialog())).toContain('Pending approval');
     });
 
+    it('offers a swap from your unavailable time over your own parenting time, as the Calendar page does', async () => {
+      // Alex is unavailable Wednesday afternoon, during Alex's confirmed time with Kai.
+      const away = event({
+        id: 'away',
+        title: 'Unavailable',
+        category: 'Unavailable',
+        startsAt: '2026-10-14T19:00:00Z',
+        endsAt: '2026-10-14T21:00:00Z',
+        ownerMembershipId: 'm-alex',
+        childIds: [],
+      });
+      const time = event({
+        id: 'time',
+        title: 'Time with Alex',
+        category: 'ParentingTime',
+        allDay: true,
+        startsAt: '2026-10-14T05:00:00Z',
+        endsAt: '2026-10-16T05:00:00Z',
+        caregiverMembershipId: 'm-alex',
+      });
+      const live: DashboardWeek = {
+        ...EMPTY_WEEK,
+        events: [{ id: 'away', title: 'You’re unavailable', date: '2026-10-14', time: '14:00', durationMinutes: 120, category: 'unavailable', children: [], status: 'confirmed' }],
+      };
+      const { fixture, el } = await render({ live });
+      openButton(el, 'You’re unavailable', '.agenda').click();
+      const http = await answer(fixture, away);
+      const overlapping = await vi.waitFor(() =>
+        http.expectOne((r) => r.url === `${F}/calendar/events` && r.params.get('from') === away.startsAt && r.params.get('to') === away.endsAt),
+      );
+      overlapping.flush([time, away]);
+      await settle(fixture);
+      await settle(fixture);
+
+      expect(text(dialog())).toContain('You can ask to swap it');
+      expect([...dialog()!.querySelectorAll('a')].some((a) => text(a).includes('Request parenting time swap'))).toBe(true);
+    });
+
     it('offers each block as a real button, in the list too, so keyboards and screen readers can open it', async () => {
       const { el } = await render({ live: LIVE });
 

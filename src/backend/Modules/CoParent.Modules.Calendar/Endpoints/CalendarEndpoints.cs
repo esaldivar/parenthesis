@@ -166,9 +166,8 @@ internal static class CalendarEndpoints
         }
 
         var (starts, ends) = (request.StartsAt!.Value.ToUniversalTime(), request.EndsAt!.Value.ToUniversalTime());
-        var clash = await OwnOverlapErrorsAsync(
-            db, category, category == EventCategory.ParentingTime ? request.CaregiverMembershipId : tenant.MembershipId, [(starts, ends)],
-            cancellationToken);
+        var person = category == EventCategory.ParentingTime ? request.CaregiverMembershipId : tenant.MembershipId;
+        var clash = await OwnOverlapErrorsAsync(db, category, person, [(starts, ends)], cancellationToken);
         if (clash.Count > 0)
         {
             return TypedResults.ValidationProblem(clash);
@@ -207,8 +206,14 @@ internal static class CalendarEndpoints
             cancellationToken);
         var userId = http.User.GetUserId()!.Value;
         Guid? changeRequestId = null;
+        Dictionary<string, string[]>? refused = null;
         await unitOfWork.ExecuteAsync(async ct =>
         {
+            if ((refused = await RefusedUnderLockAsync(db, category, person, [(starts, ends)], ct)) is not null)
+            {
+                return;
+            }
+
             db.Events.Add(calendarEvent);
             await db.SaveChangesAsync(ct);
             if (calendarEvent.Status == EventStatus.PendingApproval)
@@ -226,6 +231,11 @@ internal static class CalendarEndpoints
 
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_event.created", "calendar_event", calendarEvent.Id), ct);
         }, cancellationToken);
+
+        if (refused is not null)
+        {
+            return TypedResults.ValidationProblem(refused);
+        }
 
         return TypedResults.Created(
             $"/api/families/{tenant.FamilyId}/calendar/events/{calendarEvent.Id}",
@@ -398,12 +408,12 @@ internal static class CalendarEndpoints
 
         // Existing overlaps stay (owner decision, #210): only a change of time or caregiver is checked, so a title or
         // notes edit always works.
-        if (errors.Count == 0 && (change.StartsAt, change.EndsAt, change.CaregiverMembershipId)
-            != (current.StartsAt, current.EndsAt, current.CaregiverMembershipId))
+        var moved = (change.StartsAt, change.EndsAt, change.CaregiverMembershipId)
+            != (current.StartsAt, current.EndsAt, current.CaregiverMembershipId);
+        var person = e.Category == EventCategory.ParentingTime ? change.CaregiverMembershipId : e.OwnerMembershipId;
+        if (errors.Count == 0 && moved)
         {
-            errors = await OwnOverlapErrorsAsync(
-                db, e.Category, e.Category == EventCategory.ParentingTime ? change.CaregiverMembershipId : e.OwnerMembershipId,
-                [(change.StartsAt, change.EndsAt)], cancellationToken);
+            errors = await OwnOverlapErrorsAsync(db, e.Category, person, [(change.StartsAt, change.EndsAt)], cancellationToken);
         }
 
         if (errors.Count > 0)
@@ -419,8 +429,14 @@ internal static class CalendarEndpoints
         var userId = http.User.GetUserId()!.Value;
         var needsApproval = CalendarEvent.NeedsApproval(e.Category) && parents.Count >= 2 && change != current;
         Guid? changeRequestId = null;
+        Dictionary<string, string[]>? refused = null;
         await unitOfWork.ExecuteAsync(async ct =>
         {
+            if (moved && (refused = await RefusedUnderLockAsync(db, e.Category, person, [(change.StartsAt, change.EndsAt)], ct)) is not null)
+            {
+                return;
+            }
+
             if (request.Notes is not null)
             {
                 e.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
@@ -448,6 +464,11 @@ internal static class CalendarEndpoints
             var action = needsApproval ? "calendar_event.change_proposed" : "calendar_event.updated";
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, action, "calendar_event", e.Id), ct);
         }, cancellationToken);
+
+        if (refused is not null)
+        {
+            return TypedResults.ValidationProblem(refused);
+        }
 
         var view = View(e, tenant, changeRequestId, warnings);
         return needsApproval ? TypedResults.Accepted((string?)null, view) : TypedResults.Ok(view);
@@ -646,13 +667,24 @@ internal static class CalendarEndpoints
         // Reads first: once the unit of work commits, its transaction is finished.
         var warnings = await SeriesWarningsAsync(db, category, tenant.MembershipId, dates, cancellationToken);
         var userId = http.User.GetUserId()!.Value;
+        Dictionary<string, string[]>? refused = null;
         await unitOfWork.ExecuteAsync(async ct =>
         {
+            if ((refused = await RefusedUnderLockAsync(db, category, tenant.MembershipId, dates, ct)) is not null)
+            {
+                return;
+            }
+
             db.Series.Add(series);
             db.Events.AddRange(events);
             await db.SaveChangesAsync(ct);
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_series.created", "calendar_series", series.Id), ct);
         }, cancellationToken);
+
+        if (refused is not null)
+        {
+            return TypedResults.ValidationProblem(refused);
+        }
 
         return TypedResults.Created(
             $"/api/families/{tenant.FamilyId}/calendar/events/{events[0].Id}",
@@ -744,11 +776,22 @@ internal static class CalendarEndpoints
         var warnings = await SeriesWarningsAsync(db, e.Category, e.OwnerMembershipId, dates, cancellationToken);
         var series = await SeriesForAsync(db, tenant, [e], cancellationToken);
         var userId = http.User.GetUserId()!.Value;
+        Dictionary<string, string[]>? refused = null;
         await unitOfWork.ExecuteAsync(async ct =>
         {
+            if (retime && (refused = await RefusedUnderLockAsync(db, e.Category, e.OwnerMembershipId, dates, ct)) is not null)
+            {
+                return;
+            }
+
             await db.SaveChangesAsync(ct);
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_series.updated", "calendar_series", seriesId), ct);
         }, cancellationToken);
+
+        if (refused is not null)
+        {
+            return TypedResults.ValidationProblem(refused);
+        }
 
         return TypedResults.Ok(View(e, tenant, changeRequestId: null, warnings, series));
     }
@@ -867,6 +910,43 @@ internal static class CalendarEndpoints
         }
 
         return errors;
+    }
+
+    /// <summary>
+    /// The same check again, inside the save's transaction and under a lock on that parent, so two requests at the same
+    /// moment (Dad's unavailable time and Mom's proposal of his parenting time, say) can't both pass and create the
+    /// overlap (#210). Every write that this rule checks takes the parent's lock first, so they run one after the other
+    /// and the second sees the first. The lock ends with the transaction. Null when the change may be saved.
+    /// </summary>
+    private static async Task<Dictionary<string, string[]>?> RefusedUnderLockAsync(
+        CalendarDbContext db,
+        EventCategory category,
+        Guid? person,
+        IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> dates,
+        CancellationToken cancellationToken)
+    {
+        if (person is not { } who || category is not (EventCategory.ParentingTime or EventCategory.Unavailable))
+        {
+            return null;
+        }
+
+        var key = OverlapLockKey(who);
+        await db.Database.SqlQuery<int>($"SELECT 1 AS \"Value\" FROM pg_advisory_xact_lock({OverlapLockClass}, {key})")
+            .ToListAsync(cancellationToken);
+        var errors = await OwnOverlapErrorsAsync(db, category, who, dates, cancellationToken);
+        return errors.Count > 0 ? errors : null;
+    }
+
+    /// <summary>The advisory-lock namespace for a parent's own-overlap check ("CAL1").</summary>
+    private const int OverlapLockClass = 0x43414C31;
+
+    /// <summary>A stable 32-bit key for a parent's membership; two parents sharing one only wait for each other.</summary>
+    private static int OverlapLockKey(Guid membershipId)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        membershipId.TryWriteBytes(bytes);
+        return BitConverter.ToInt32(bytes[..4]) ^ BitConverter.ToInt32(bytes[4..8])
+            ^ BitConverter.ToInt32(bytes[8..12]) ^ BitConverter.ToInt32(bytes[12..]);
     }
 
     private static EditScope? ParseScope(string? scope) =>

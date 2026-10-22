@@ -279,3 +279,24 @@ export const dateSpan = (item: CalendarItem) => daysBetween(item.firstDate, item
 export function byStart(a: CalendarItem, b: CalendarItem): number {
   return a.start.localeCompare(b.start) || Number(b.spansDays) - Number(a.spansDays) || a.title.localeCompare(b.title);
 }
+
+/**
+ * For unavailable time (#190): that parent's confirmed parenting time it overlaps, if any, so its details can offer a
+ * swap. The Calendar page and the home page (#213) use the same rule.
+ */
+export function swapTargetFor(item: CalendarItem | null, items: readonly CalendarItem[]): CalendarItem | null {
+  const owner = item?.kind === 'unavailable' ? item.parents[0]?.id : undefined;
+  if (!item || !owner) {
+    return null;
+  }
+  return (
+    items.find(
+      (i) =>
+        i.category === 'ParentingTime' &&
+        i.status === 'confirmed' &&
+        i.parents[0]?.id === owner &&
+        i.start < item.end &&
+        item.start < i.end,
+    ) ?? null
+  );
+}
