@@ -380,7 +380,13 @@ that points back here.
     its honest empty state.
     - [x] v0.2.0: the profile picker, PIN entry (tries left), switching profile, approving a PIN change in the inbox,
       and pairing a tablet, in `specs/m2-accounts/profiles-in-the-browser.spec.ts` (October 18, 2026).
-    - [ ] Invitations in the browser, and the v0.3.0 calendar screens.
+    - [x] v0.3.0 calendar screens, in `specs/m3-calendar/calendar-in-the-browser.spec.ts` (October 22, 2026): adding
+      and editing an activity, parenting time approved in the co-parent's inbox, a declined request with its decision
+      and Remove from my calendar, repeating unavailable time with its preview, filters remembered after a reload and
+      reset, and the home page's real week with reminders and tasks in Upcoming. The two older calendar tests were
+      updated for the shipped calendar and for declined requests (#199), which would otherwise have failed the
+      release gate.
+    - [ ] Invitations in the browser.
   - [ ] If the suite outgrows the fixed child-PIN rate limit (30 a minute per address), make it configurable like
     the sign-in limit, for the test instance only.
 
