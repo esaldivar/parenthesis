@@ -340,6 +340,16 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasColumnType("character varying(80)")
                         .HasColumnName("title");
 
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
                         .HasName("pk_tasks");
 
@@ -414,6 +424,52 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasName("pk_task_seen");
 
                     b.ToTable("task_seen", "calendar");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.TaskChecklistItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid?>("CompletedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_by_membership_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean")
+                        .HasColumnName("required");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("task_id");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_task_checklist_items");
+
+                    b.HasIndex("TaskId", "Position")
+                        .HasDatabaseName("ix_task_checklist_items_task_id_position");
+
+                    b.ToTable("task_checklist_items", "calendar");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Calendar.Domain.CalendarEvent", b =>

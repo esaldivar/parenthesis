@@ -26,6 +26,8 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
 
     public DbSet<SharedTaskSeen> TaskSeen => Set<SharedTaskSeen>();
 
+    public DbSet<TaskChecklistItem> TaskItems => Set<TaskChecklistItem>();
+
     private Guid CurrentFamilyId => tenant.FamilyId;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -84,8 +86,17 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
             t.ToTable("tasks");
             t.Property(x => x.Title).HasMaxLength(SharedTask.TitleMaxLength);
             t.Property(x => x.Details).HasMaxLength(SharedTask.DetailsMaxLength);
+            t.Property(x => x.Version).IsRowVersion();
             t.HasIndex(x => new { x.FamilyId, x.DueDate });
             t.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<TaskChecklistItem>(i =>
+        {
+            i.ToTable("task_checklist_items");
+            i.Property(x => x.Text).HasMaxLength(TaskChecklistItem.TextMaxLength);
+            i.HasIndex(x => new { x.TaskId, x.Position });
+            i.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<SharedTaskHistory>(h =>
