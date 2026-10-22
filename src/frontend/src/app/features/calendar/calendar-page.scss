@@ -90,6 +90,43 @@
   border-color: var(--color-action);
   font-weight: 600;
 }
+.toolbar__end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.filters-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.chip--active {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  background: var(--color-surface-soft);
+  text-align: start;
+}
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -123,6 +160,7 @@
 }
 .pill:focus-visible,
 .chip:focus-visible,
+.filters-button:focus-visible,
 .segmented button:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
