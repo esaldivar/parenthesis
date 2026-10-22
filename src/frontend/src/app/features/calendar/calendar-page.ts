@@ -28,6 +28,7 @@ import {
   Dimension,
   activeDimensions,
   applyFilters,
+  concealedUnavailable,
   filtersKey,
   parseFilters,
   selectionText,
@@ -179,7 +180,12 @@ export class CalendarPage {
   );
   private readonly me = computed(() => this.members().find((m) => m.isYou)?.membershipId);
   protected readonly childShown = computed(() => forChild(this.items(), this.childFilter()));
-  protected readonly shown = computed(() => applyFilters(this.childShown(), this.filters(), this.me()));
+  /** Items shown in full (not counting hidden-unavailable markers). */
+  protected readonly visibleCount = computed(() => this.shown().filter((i) => !i.concealed).length);
+  protected readonly shown = computed(() => [
+    ...applyFilters(this.childShown(), this.filters(), this.me()),
+    ...concealedUnavailable(this.childShown(), this.filters(), this.me()),
+  ]);
   protected readonly activeChildren = computed(() => this.children().filter((c) => c.status === 'Active'));
 
   protected readonly selected = signal<CalendarItem | null>(null);
@@ -191,6 +197,27 @@ export class CalendarPage {
   protected readonly selectedTask = computed(() => {
     const id = this.selected()?.taskId;
     return id ? (this.tasks().find((t) => t.id === id) ?? null) : null;
+  });
+  /**
+   * For unavailable time: the same parent's confirmed parenting time it overlaps, so the details can offer a swap only
+   * when one applies (#190). Uses every loaded item, whatever the filters hide.
+   */
+  protected readonly swapTarget = computed(() => {
+    const item = this.selected();
+    const owner = item?.kind === 'unavailable' ? item.parents[0]?.id : undefined;
+    if (!item || !owner) {
+      return null;
+    }
+    return (
+      this.items().find(
+        (i) =>
+          i.category === 'ParentingTime' &&
+          i.status === 'confirmed' &&
+          i.parents[0]?.id === owner &&
+          i.start < item.end &&
+          item.start < i.end,
+      ) ?? null
+    );
   });
   private opener: HTMLElement | null = null;
   private readonly storage = inject(DOCUMENT).defaultView;

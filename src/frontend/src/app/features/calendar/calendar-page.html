@@ -116,6 +116,12 @@
           </p>
         }
       } @else {
+        @if (visibleCount() === 0) {
+          <p class="filtered-out">
+            No items match your filters. Hidden unavailable time is marked.
+            <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+          </p>
+        }
         @switch (current()) {
           @case ('week') {
             <app-calendar-week [weekStart]="range().from" [today]="today()" [items]="shown()" (selected)="open($event)" />
@@ -185,6 +191,7 @@
       [members]="members()"
       [familyId]="family()!.id"
       [timeZone]="family()!.timeZone"
+      [swapTarget]="swapTarget()"
       (closed)="close()"
       (changed)="changed($event)"
     />

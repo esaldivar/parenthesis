@@ -39,6 +39,10 @@ export function statusText(item: CalendarItem): string | null {
 
 /** Everything a screen reader needs from one item, in one sentence. */
 export function itemSummary(item: CalendarItem): string {
+  if (item.concealed) {
+    // Who and when only: a private note never appears here.
+    return `Hidden unavailable time, ${item.parents[0]?.name ?? item.ownerName}, ${whenText(item)}. Opens its details.`;
+  }
   const people = [...item.parents.map((p) => p.name), ...item.children.map((c) => c.name)].join(', ');
   return [
     item.title,
@@ -61,7 +65,7 @@ export function itemSummary(item: CalendarItem): string {
     <span class="visually-hidden">{{ summary() }}</span>
     <span class="row" aria-hidden="true">
       <app-icon class="icon" [name]="item().icon" [size]="18" />
-      <span class="title">{{ item().title }}</span>
+      <span class="title">{{ item().concealed ? 'Hidden: unavailable' : item().title }}</span>
     </span>
     @if (!compact()) {
       <span class="when" aria-hidden="true">{{ when() }}</span>

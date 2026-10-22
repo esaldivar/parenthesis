@@ -138,3 +138,14 @@ export function selectionText(filters: CalendarFilters, dimension: Dimension): s
   }
   return hidden.length < chosen.length ? `hiding ${hidden.join(', ')}` : chosen.join(', ');
 }
+
+/**
+ * Unavailable time hidden only by the Type filter: it still matches every other filter. The calendar shows it as a
+ * subtle marker so a parent can still find it and open its details (owner decision, October 21, 2026).
+ */
+export function concealedUnavailable(items: readonly CalendarItem[], filters: CalendarFilters, me: string | undefined): CalendarItem[] {
+  if (filters.types.includes('unavailable')) {
+    return [];
+  }
+  return applyFilters(items, { ...filters, types: ['unavailable'] }, me).map((item) => ({ ...item, concealed: true }));
+}

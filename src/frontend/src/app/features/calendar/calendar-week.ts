@@ -11,7 +11,7 @@ import {
 import { PlainDate } from '../dashboard/model';
 import { dayLong, hourLabel, monthDay, weekDays, weekdayShort } from '../dashboard/week';
 import { CalendarItem, byStart, onDate } from './calendar-items';
-import { ItemText } from './item-text';
+import { ItemText, itemSummary } from './item-text';
 import { minutesOfDay } from './time';
 
 const SLOT = 30;
@@ -100,10 +100,14 @@ export class CalendarWeek {
           const span = Math.max(MIN_SLOTS, Math.ceil((minutesOfDay(item.end) - minutesOfDay(item.start) || 60) / SLOT));
           return { item, start: row, end: row + span, row, span };
         });
-      const placed = lanes(entries) as Timed[];
-      return { date: day.date, label: day.longLabel, placed, lanes: Math.max(1, ...placed.map((p) => p.lane)) };
+      // Hidden unavailable time takes no lane: it's a thin marker at the day's edge that widens on hover or focus.
+      const placed = lanes(entries.filter((e) => !e.item.concealed)) as Timed[];
+      const markers = entries.filter((e) => e.item.concealed);
+      return { date: day.date, label: day.longLabel, placed, markers, lanes: Math.max(1, ...placed.map((p) => p.lane)) };
     }),
   );
+
+  protected readonly markerLabel = itemSummary;
 
   protected readonly hourMarks = Array.from({ length: 12 }, (_, i) => ({ label: hourLabel(i * 2), row: i * 4 + 1 }));
 

@@ -19,6 +19,7 @@
           [attr.data-kind]="span.item.kind"
           [attr.data-category]="span.item.category"
           [attr.data-status]="span.item.status"
+          [attr.data-concealed]="span.item.concealed ? 'true' : null"
           (click)="selected.emit(span.item)"
         >
           <app-item-text [item]="span.item" [avatars]="false" />
@@ -43,9 +44,24 @@
               [attr.data-kind]="slot.item.kind"
               [attr.data-category]="slot.item.category"
               [attr.data-status]="slot.item.status"
+              [attr.data-concealed]="slot.item.concealed ? 'true' : null"
               (click)="selected.emit(slot.item)"
             >
               <app-item-text [item]="slot.item" />
+            </button>
+          </li>
+        }
+        @for (marker of day.markers; track marker.item.id) {
+          <li class="marker" [style.grid-row]="marker.row + ' / span ' + marker.span">
+            <button
+              type="button"
+              class="item item--marker"
+              data-kind="unavailable"
+              data-concealed="true"
+              [attr.aria-label]="markerLabel(marker.item)"
+              (click)="selected.emit(marker.item)"
+            >
+              <span aria-hidden="true">Hidden</span>
             </button>
           </li>
         }
@@ -76,6 +92,7 @@
                 [attr.data-kind]="item.kind"
                 [attr.data-category]="item.category"
                 [attr.data-status]="item.status"
+                [attr.data-concealed]="item.concealed ? 'true' : null"
                 (click)="selected.emit(item)"
               >
                 <app-item-text [item]="item" />
