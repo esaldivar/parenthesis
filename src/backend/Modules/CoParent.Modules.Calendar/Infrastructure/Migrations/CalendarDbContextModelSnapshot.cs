@@ -178,6 +178,24 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("last_edited_by_membership_id");
 
+                    b.Property<string>("Repeat")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("repeat");
+
+                    b.Property<int?>("RepeatCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("repeat_count");
+
+                    b.Property<DateOnly?>("RepeatUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("repeat_until");
+
+                    b.Property<DateTimeOffset>("SeriesEndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("series_ends_at");
+
                     b.Property<DateTimeOffset>("StartsAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("starts_at");
