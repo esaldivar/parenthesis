@@ -209,10 +209,13 @@ export class ReminderForm implements OnInit {
     }
     if (v.date && !isPlainDate(v.date)) {
       errors['startsAt'] = UNREADABLE_DATE;
-    } else if (!v.date || (!v.allDay && !v.time)) {
-      errors['startsAt'] = 'Choose when the reminder is for.';
+    } else if (!v.date) {
+      errors['startsAt'] = 'Choose a date for the reminder.';
     } else if (v.date < this.today() && v.date !== this.ownDate()) {
       errors['startsAt'] = PAST_DATE;
+    }
+    if (!v.allDay && !v.time) {
+      errors['time'] = 'Choose a time for the reminder.';
     }
     if (v.repeat !== 'None') {
       if (v.ends === 'count' && !(Number.isInteger(v.repeatCount) && v.repeatCount >= 2 && v.repeatCount <= COUNT_MAX)) {
