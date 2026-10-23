@@ -121,17 +121,17 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
 
             // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
             // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
-            services.RemoveAll<CalendarToday>();
-            services.AddSingleton<CalendarToday>(new FixedCalendarToday(FixedToday));
+            services.RemoveAllKeyed<TimeProvider>(CalendarModule.TodayClock);
+            services.AddKeyedSingleton<TimeProvider>(CalendarModule.TodayClock, new FixedClock(FixedToday));
         });
     }
 
     /// <summary>The day the calendar's "from today on" rule checks against in tests (noon UTC, October 1, 2026).</summary>
     public static readonly DateTimeOffset FixedToday = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
 
-    private sealed class FixedCalendarToday(DateTimeOffset now) : CalendarToday(TimeProvider.System)
+    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
     {
-        public override DateTimeOffset UtcNow => now;
+        public override DateTimeOffset GetUtcNow() => now;
     }
 
     public override async ValueTask DisposeAsync()

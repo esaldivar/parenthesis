@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoParent.Modules.Calendar.Endpoints;
 
@@ -144,7 +145,7 @@ internal static class CalendarEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
-        CalendarToday today,
+        [FromKeyedServices(CalendarModule.TodayClock)] TimeProvider today,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -371,7 +372,7 @@ internal static class CalendarEndpoints
         IChangeRequests changeRequests,
         IUnitOfWork unitOfWork,
         IAuditLog audit,
-        CalendarToday today,
+        [FromKeyedServices(CalendarModule.TodayClock)] TimeProvider today,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
