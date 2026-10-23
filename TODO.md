@@ -546,6 +546,12 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
+  29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
+  range splitting, four-occurrence count and local time across the spring daylight-saving boundary.
+  - [ ] Run the new cases in backend CI (this workspace has no dotnet/Docker), and retain the remaining manual
+    two-parent/accessibility acceptance checks. The live October 31 to November 30 reminder was verified separately.
+
 - [x] **Task action keyboard focus (#73, #176).** Checklist saves preserve the checkbox's focus using aria-disabled
   with a duplicate-action guard. Checklist-free completion retains the same Material button across Mark done/Undo,
   including its pending state. Delete confirmation focuses Keep it and restores Delete on cancellation; a pending
