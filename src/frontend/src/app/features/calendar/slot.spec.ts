@@ -1,4 +1,4 @@
-import { addFromColumn, addQuery, dayInRow, slotAt } from './slot';
+import { SlotPick, addFromColumn, addQuery, clearsPick, dayInRow, pickLabel, pickRows, slotAt } from './slot';
 
 describe('adding from a tap on the calendar (#212)', () => {
   it('maps a height in a day column to the start of its half-hour', () => {
@@ -64,5 +64,31 @@ describe('adding from a tap on the calendar (#212)', () => {
       time: '17:00',
     });
     expect(addQuery({ date: '2026-10-20' })).toEqual({ date: '2026-10-20' });
+  });
+
+  it('highlights first and adds on a second tap in the same place; a keyboard press adds at once (#237)', () => {
+    const added: unknown[] = [];
+    const pick = new SlotPick((at) => added.push(at));
+    pick.tap({ date: '2026-10-20', time: '17:00' }, true);
+    expect(added).toEqual([]);
+    pick.tap({ date: '2026-10-20', time: '17:30' }, true); // Another half-hour moves it.
+    expect(pick.at()).toEqual({ date: '2026-10-20', time: '17:30' });
+    pick.tap({ date: '2026-10-20', time: '17:30' }, true);
+    expect(added).toEqual([{ date: '2026-10-20', time: '17:30' }]);
+    expect(pick.at()).toBeNull();
+    pick.tap({ date: '2026-10-21' }, false);
+    expect(added).toHaveLength(2);
+  });
+
+  it('places and names the highlight, and keeps it on taps on empty space or itself (#237)', () => {
+    expect(pickRows('00:00')).toBe('1 / span 2');
+    expect(pickRows('17:00')).toBe('35 / span 2');
+    expect(pickRows('23:30')).toBe('47 / span 2'); // Stays inside the day.
+    expect(pickLabel({ date: '2026-10-20', time: '18:00' })).toBe('Add on Tuesday, October 20 at 6:00 PM');
+    expect(pickLabel({ date: '2026-10-20' })).toBe('Add on Tuesday, October 20');
+    const layer = document.createElement('button');
+    layer.className = 'tap-add__button';
+    expect(clearsPick(layer)).toBe(false);
+    expect(clearsPick(document.createElement('button'))).toBe(true);
   });
 });

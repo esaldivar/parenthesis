@@ -120,13 +120,42 @@ describe('the calendar page', () => {
     const column = (label: string) =>
       [...main().querySelectorAll<HTMLButtonElement>('app-calendar-week .slot-add__button')].find((b) => text(b) === `Add on ${label}`)!;
 
-    it('opens Add on the day and half-hour tapped in the week’s time grid, saving nothing', async () => {
+    const pick = () => main().querySelector<HTMLButtonElement>('app-calendar-week .slot-pick__button');
+
+    it('highlights the hour tapped in the week’s time grid, then opens Add there from the highlight, saving nothing (#237)', async () => {
       const { harness } = await open('/calendar?date=2026-10-20', [event()]);
       tapAt(column('Wednesday, October 21'), 345); // 5:00 PM.
       await settle(harness);
 
+      expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20');
+      expect(pick()!.getAttribute('aria-label')).toBe('Add on Wednesday, October 21 at 5:00 PM');
+      expect(text(pick())).toBe('5:00 PM');
+      expect(pick()!.closest('li')!.style.gridRow).toBe('35 / span 2');
+
+      pick()!.click();
+      await settle(harness);
       expect(TestBed.inject(Router).url).toBe('/calendar/new?date=2026-10-21&time=17:00');
       expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+    });
+
+    it('moves the highlight to another tap, adds on a second tap in the same place, and clears on Escape (#237)', async () => {
+      const { harness } = await open('/calendar?date=2026-10-20', [event()]);
+      tapAt(column('Wednesday, October 21'), 345); // 5:00 PM.
+      await settle(harness);
+      tapAt(column('Thursday, October 22'), 205); // 10:00 AM.
+      await settle(harness);
+      expect(main().querySelectorAll('.slot-pick')).toHaveLength(1);
+      expect(pick()!.getAttribute('aria-label')).toBe('Add on Thursday, October 22 at 10:00 AM');
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await settle(harness);
+      expect(pick()).toBeNull();
+
+      tapAt(column('Thursday, October 22'), 205);
+      await settle(harness);
+      tapAt(column('Thursday, October 22'), 205);
+      await settle(harness);
+      expect(TestBed.inject(Router).url).toBe('/calendar/new?date=2026-10-22&time=10:00');
     });
 
     it('from the keyboard, each day column is a labelled button that adds on that day', async () => {
@@ -156,6 +185,9 @@ describe('the calendar page', () => {
       row.getBoundingClientRect = () => ({ top: 0, height: 40, left: 0, width: 700 }) as DOMRect;
       row.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 650 })); // Saturday.
       await settle(harness);
+      expect(pick()!.getAttribute('aria-label')).toBe('Add on Saturday, October 24');
+      pick()!.click();
+      await settle(harness);
       expect(TestBed.inject(Router).url).toBe('/calendar/new?date=2026-10-24');
     });
 
@@ -165,6 +197,11 @@ describe('the calendar page', () => {
         (d) => d.querySelector('.day__number')?.getAttribute('aria-label')?.includes('October 22'),
       )!;
       day.querySelector<HTMLElement>('.day__add')!.click();
+      await settle(harness);
+      expect(day.classList).toContain('is-picked');
+      const add = day.querySelector<HTMLButtonElement>('.slot-pick__button')!;
+      expect(add.getAttribute('aria-label')).toBe('Add on Thursday, October 22');
+      add.click();
       await settle(harness);
       expect(TestBed.inject(Router).url).toBe('/calendar/new?date=2026-10-22');
     });

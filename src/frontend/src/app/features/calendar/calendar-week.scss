@@ -259,3 +259,22 @@ ol {
 .agenda__day > :not(.tap-add__button) button {
   pointer-events: auto;
 }
+
+// The tapped time or day (#237): above the events, so a second tap adds there.
+.daycol li.slot-pick,
+.allday > li.slot-pick {
+  grid-column: 1 / -1;
+  z-index: 3;
+  pointer-events: auto;
+}
+.allday > li.slot-pick {
+  grid-column: auto;
+}
+.agenda__day.is-picked {
+  border-radius: var(--radius-control);
+  outline: 2px solid var(--color-action);
+  outline-offset: 2px;
+}
+.slot-pick--day {
+  grid-column: 2;
+}

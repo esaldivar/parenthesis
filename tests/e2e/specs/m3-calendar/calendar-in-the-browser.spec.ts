@@ -348,6 +348,10 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
         await test.step(where, async () => {
           await page.goto(url);
           await tapFivePm(page.getByRole('button', { name: /^Add on Tuesday/ }));
+          // The first tap highlights the hour (#237); tapping the highlight opens Add there.
+          const highlight = page.getByRole('button', { name: /^Add on Tuesday, .* at 5:00 PM$/ });
+          await expect(highlight).toBeVisible();
+          await highlight.click();
           await expect(page).toHaveURL(new RegExp(`/calendar/new\\?date=${tuesday}&time=17:00$`));
           await page.getByRole('button', { name: /Activity/ }).click();
           await expect(page.locator('input[formcontrolname="startTime"]')).toHaveValue('17:00');
