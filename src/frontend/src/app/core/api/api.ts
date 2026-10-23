@@ -192,8 +192,9 @@ export interface NewCalendarEvent {
   readonly childIds?: readonly string[];
   readonly caregiverMembershipId?: string;
   /**
-   * Unavailable time and activities only (#193): every `interval` days, weeks (on `days`) or months (#238), ending on
-   * `until` or after `count` times.
+   * Unavailable time, activities and parenting time (#193, #239): every `interval` days, weeks (on `days`) or months
+   * (#238), ending on `until` or after `count` times. Repeating parenting time goes to the co-parent as one request
+   * for every date; holidays and family events don't repeat.
    */
   readonly repeat?: {
     readonly frequency: SeriesFrequency;
