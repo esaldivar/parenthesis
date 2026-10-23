@@ -453,6 +453,37 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     }
   });
 
+  test('Month view shows labelled bars across the days on a phone, and each segment opens the details (#250)', async ({ page }) => {
+    const family = await familyWithKai();
+    const { dad, familyId, kaiId } = family;
+    try {
+      // Synthetic: an all-day activity from Friday to the next Tuesday, across two week rows.
+      await dad.json(dad.post(events(familyId), {
+        category: 'Activity',
+        title: 'Robotics camp',
+        childIds: [kaiId],
+        allDay: true,
+        startsAt: addHours(monday, 24 * 4 + 5).toISOString(),
+        endsAt: addHours(monday, 24 * 9 + 5).toISOString(),
+      }));
+      await signIn(page, dad.email);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`/calendar?date=${addHours(monday, 24 * 4).toISOString().slice(0, 10)}&view=month`);
+
+      // One bar on Friday's row, continued on the next row (when the month grid shows it: whichever month the
+      // dates fall in, the first segment always says it continues).
+      const bars = page.locator('app-calendar-month .bar', { hasText: 'Robotics camp' });
+      await expect(bars.first()).toHaveAttribute('aria-label', /Continues into next week/);
+      expect(await bars.count()).toBeLessThanOrEqual(2);
+      await expect(page.locator('app-calendar-month .dot')).toHaveCount(0);
+      await bars.last().click();
+      await expect(details(page)).toContainText('Robotics camp');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    } finally {
+      await family.dispose();
+    }
+  });
+
   test('dates are picked as a range from today on, on desktop and phone (#232)', async ({ page }) => {
     const family = await familyWithKai();
     // The calendar's labels and the field's text for a date.

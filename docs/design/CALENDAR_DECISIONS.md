@@ -36,6 +36,12 @@ Status: approved design decisions for future implementation. Do not interrupt th
 - The end is never before the start: moving the start past the end moves the end too, keeping the length (and a one-day event's end time moves with its start time). An event lasts up to 31 days.
 - Typed dates are read as 10/27/2026 (or 2026-10-27); anything else gets a clear message by the field.
 
+## Month view (#250, October 23, 2026)
+- On phones and desktops alike, each item is a labelled bar across its own days (no dots): one continuous bar per week row, continued on the next row with a ‹ / › mark at the cut and the title repeated. Up to three lanes; longer items keep the upper lanes, and a pending item comes before a confirmed one starting the same day.
+- A busy day shows "+N more", outlined like a proposal when a hidden item is pending; its accessible name gives the count and how many are pending, and it opens that week, where every item shows.
+- Titles truncate with an ellipsis, never letter by letter. The full title, dates and status are in each bar's accessible name and in its details. Every segment of an item opens the same details. On phones the status words give way to the patterns (hatched for proposed, struck through for declined); the accessible names keep them.
+- The broader Month/Week redesign stays with #217.
+
 ## Joint events
 - Support a **Joint Event** for occasions involving both parents (school events, holidays, birthdays, etc.), including occasions with no children present.
 - Event fields: title, date, time, location; children multi-select with **None**, any selected children, or **All children**; optional category dropdown (**School**, **Holiday**, **Birthday**, **Other**) and free-text details.
