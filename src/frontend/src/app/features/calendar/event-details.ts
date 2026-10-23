@@ -24,7 +24,7 @@ import { Icon } from '../../shared/icon/icon';
 import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
 import { CalendarItem, FORMER_PARENT } from './calendar-items';
 import { statusText, whenText } from './item-text';
-import { repeatText } from './series';
+import { datesText, repeatText } from './series';
 import { lastDate, toFamilyLocal } from './time';
 
 /**
@@ -195,6 +195,13 @@ export class EventDetails {
     const event = this.event();
     // A monthly repeat names its day of the month, which every date shares.
     return event?.repeat ? repeatText(event.repeat, toFamilyLocal(event.startsAt, this.timeZone()).slice(0, 10)) : null;
+  });
+
+  /** "12 dates: Oct 28, Nov 4, Nov 11 and 9 more" for a repeating event (#239). */
+  protected readonly seriesDates = computed(() => {
+    const repeat = this.event()?.repeat;
+    const zone = this.timeZone();
+    return repeat ? datesText(repeat.dateCount, (repeat.firstStarts ?? []).map((s) => toFamilyLocal(s, zone).slice(0, 10))) : null;
   });
 
   /** Cancelling is offered on confirmed items; unavailable time only to its owner. */

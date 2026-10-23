@@ -316,7 +316,7 @@ export class AddEventPage implements OnInit {
     }
   }
 
-  /** A new unit keeps "every" within what it allows (every 30 days, but at most every 12 months). */
+  /** A new unit keeps "every" within what it allows (1 to 99 for every unit, #238). */
   protected chooseUnit(): void {
     const v = this.form.getRawValue();
     if (v.every > MAX_INTERVAL[v.unit]) {

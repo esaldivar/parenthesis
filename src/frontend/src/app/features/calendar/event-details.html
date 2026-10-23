@@ -163,6 +163,10 @@
     @if (repeats(); as repeats) {
       <dt>Repeats</dt>
       <dd>{{ repeats }}</dd>
+      @if (seriesDates(); as dates) {
+        <dt>Dates</dt>
+        <dd>{{ dates }}</dd>
+      }
     }
     @if (people()) {
       <dt>Who</dt>

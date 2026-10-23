@@ -50,6 +50,12 @@ Status: approved design decisions for future implementation. Do not interrupt th
 - Joint event acceptance must not implicitly change custody/parenting time.
 - **One-off joint events only for the first version**; recurrence can be considered later.
 
+## Repeats (#238, #239, October 23, 2026)
+- Repeat options: does not repeat, every day, every week on the start's weekday, every month on the start's date, and Custom (every 1 to 99 days, weeks on chosen weekdays, or months). No yearly repeat. A repeat ends on a date or after a number of times, within a year of the first date.
+- Monthly repeats use the same date each month and skip months without it (the 31st skips 30-day months).
+- Parenting time is always the signed-in parent's own. Repeating it sends the co-parent one request for the whole series; approving or declining answers every date, and until then every date shows as pending. Holidays and family events don't repeat.
+- The approvals inbox and the event details describe the series: how it repeats, how many dates it has and the first few ("12 dates: Oct 28, Nov 4, Nov 11 and 9 more").
+
 ## Event memories / photo albums (later phase)
 - Associate uploaded photos with a named calendar event, automatically organizing them into that event's album, with a shared Memories gallery later.
 - Photos **shared by default**, with a clear **Keep Private** control on individual photos. Enforce access server-side; private photos must not be visible to the other parent.
