@@ -27,11 +27,16 @@ internal sealed record CreateEventRequest(
     Guid? CaregiverMembershipId,
     EventRepeatRequest? Repeat = null);
 
-/// <summary>Repeat weekly on <paramref name="Days"/>, ending on <paramref name="Until"/> or after <paramref name="Count"/> times (#193).</summary>
-internal sealed record EventRepeatRequest(IReadOnlyList<DayOfWeek>? Days, DateOnly? Until, int? Count);
+/// <summary>
+/// Repeat every <paramref name="Interval"/> days, weeks (on <paramref name="Days"/>) or months (#193, #238), ending on
+/// <paramref name="Until"/> or after <paramref name="Count"/> times. Without a frequency it's weekly, every week.
+/// </summary>
+internal sealed record EventRepeatRequest(
+    IReadOnlyList<DayOfWeek>? Days, DateOnly? Until, int? Count, SeriesFrequency? Frequency = null, int? Interval = null);
 
-/// <summary>How a repeating event repeats, for its details ("Every Wed and Fri until Dec 30").</summary>
-internal sealed record SeriesView(IReadOnlyList<DayOfWeek> Days, DateOnly? Until, int? Count);
+/// <summary>How a repeating event repeats, for its details ("Every 2 weeks on Wed and Fri until Dec 30").</summary>
+internal sealed record SeriesView(
+    IReadOnlyList<DayOfWeek> Days, DateOnly? Until, int? Count, SeriesFrequency Frequency = SeriesFrequency.Weekly, int Interval = 1);
 
 /// <summary>Which dates of a repeating event an edit or cancel applies to (#193). One-off events ignore it.</summary>
 internal enum EditScope
@@ -613,14 +618,25 @@ internal static class CalendarEndpoints
         var category = request.Category!.Value;
         var zone = await roster.TimeZoneAsync(cancellationToken);
         var (starts, ends) = (request.StartsAt!.Value.ToUniversalTime(), request.EndsAt!.Value.ToUniversalTime());
-        var days = EventSchedule.ToFlags(repeat.Days ?? []);
+        var frequency = repeat.Frequency ?? SeriesFrequency.Weekly;
+        var interval = repeat.Interval ?? 1;
+        // Only a weekly repeat has chosen days; daily and monthly go by the first date.
+        var days = frequency == SeriesFrequency.Weekly ? EventSchedule.ToFlags(repeat.Days ?? []) : WeekDays.None;
         var errors = new Dictionary<string, string[]>();
         IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> dates = [];
         if (!CalendarSeries.CanRepeat(category))
         {
             errors["repeat"] = ["Parenting time, holidays and family events can't repeat yet. Add each date on its own."];
         }
-        else if (days == WeekDays.None)
+        else if (!Enum.IsDefined(frequency))
+        {
+            errors["repeat"] = ["Choose how often it repeats."];
+        }
+        else if (interval < 1 || interval > EventSchedule.MaxInterval(frequency))
+        {
+            errors["repeatInterval"] = [$"Choose every 1 to {EventSchedule.MaxInterval(frequency)} {Unit(frequency)}s."];
+        }
+        else if (frequency == SeriesFrequency.Weekly && days == WeekDays.None)
         {
             errors["repeat"] = ["Choose the days it repeats on."];
         }
@@ -641,10 +657,15 @@ internal static class CalendarEndpoints
             }
             else
             {
-                dates = EventSchedule.Occurrences(starts, ends, days, repeat.Until, repeat.Count, zone);
+                dates = EventSchedule.Occurrences(starts, ends, days, repeat.Until, repeat.Count, zone, frequency, interval);
                 if (dates.Count == 0)
                 {
                     errors["repeat"] = ["None of the chosen days fall before the end date."];
+                }
+                else if (dates.Zip(dates.Skip(1)).Any(pair => pair.Second.Start < pair.First.End))
+                {
+                    // A long event repeated often would overlap itself (a 3-day event every day).
+                    errors["repeat"] = ["Each date would run into the next. Repeat it less often, or make it shorter."];
                 }
                 else if (repeat.Count is { } wanted && dates.Count < wanted)
                 {
@@ -670,6 +691,8 @@ internal static class CalendarEndpoints
             FamilyId = tenant.FamilyId,
             Category = category,
             OwnerMembershipId = tenant.MembershipId,
+            Frequency = frequency,
+            Interval = interval,
             Days = days,
             Until = repeat.Until,
             Count = repeat.Count,
@@ -838,6 +861,13 @@ internal static class CalendarEndpoints
             .Where(x => x.SeriesId == seriesId && x.Status == EventStatus.Confirmed && (scope == EditScope.All || x.StartsAt >= from.StartsAt))
             .OrderBy(x => x.StartsAt)
             .ToListAsync(cancellationToken);
+
+    private static string Unit(SeriesFrequency frequency) => frequency switch
+    {
+        SeriesFrequency.Daily => "day",
+        SeriesFrequency.Monthly => "month",
+        _ => "week",
+    };
 
     /// <summary>The series behind these events, for "Repeats …" in their details. Children never see it.</summary>
     private static async Task<IReadOnlyDictionary<Guid, CalendarSeries>> SeriesForAsync(
@@ -1213,6 +1243,6 @@ internal static class CalendarEndpoints
         warnings,
         tenant.Role == FamilyRole.Child ? null : e.SeriesId,
         tenant.Role != FamilyRole.Child && e.SeriesId is { } id && series?.GetValueOrDefault(id) is { } r
-            ? new SeriesView(EventSchedule.FromFlags(r.Days), r.Until, r.Count)
+            ? new SeriesView(EventSchedule.FromFlags(r.Days), r.Until, r.Count, r.Frequency, r.Interval)
             : null);
 }

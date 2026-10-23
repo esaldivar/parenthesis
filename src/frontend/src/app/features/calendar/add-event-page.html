@@ -124,21 +124,57 @@
       @if (canRepeat()) {
         <fieldset class="when repeat">
           <legend>Repeat</legend>
-          <mat-slide-toggle formControlName="repeats" (change)="toggleRepeat($event.checked)">Repeats every week</mat-slide-toggle>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>How often</mat-label>
+            <mat-select formControlName="repeat" (selectionChange)="chooseRepeat()">
+              <mat-option value="none">Does not repeat</mat-option>
+              <mat-option value="daily">Every day</mat-option>
+              <mat-option value="weekly">{{ weeklyLabel() }}</mat-option>
+              <mat-option value="monthly">{{ monthlyLabel() }}</mat-option>
+              <mat-option value="custom">Custom…</mat-option>
+            </mat-select>
+          </mat-form-field>
           @if (repeats()) {
-            <div class="weekdays" role="group" aria-label="Repeat on">
-              @for (day of weekdays; track day.id) {
-                <label class="weekday">
-                  <input
-                    type="checkbox"
-                    [checked]="repeatDays().includes(day.id)"
-                    [attr.aria-label]="day.id"
-                    (change)="toggleDay(day.id, $any($event.target).checked)"
-                  />
-                  <span aria-hidden="true">{{ day.short }}</span>
-                </label>
+            @if (custom()) {
+              <!-- Custom (#238), as in Google Calendar: every [number] [day/week/month]. Native lists, so phones show
+                   their own scrolling picker. -->
+              <div class="when__row custom" role="group" aria-label="Custom repeat">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Every</mat-label>
+                  <select matNativeControl formControlName="every">
+                    @for (n of intervals(); track n) {
+                      <option [ngValue]="n">{{ n }}</option>
+                    }
+                  </select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Unit</mat-label>
+                  <select matNativeControl formControlName="unit" (change)="chooseUnit()">
+                    <option value="Daily">{{ value().every === 1 ? 'day' : 'days' }}</option>
+                    <option value="Weekly">{{ value().every === 1 ? 'week' : 'weeks' }}</option>
+                    <option value="Monthly">{{ value().every === 1 ? 'month' : 'months' }}</option>
+                  </select>
+                </mat-form-field>
+              </div>
+              @if (fieldError('repeatInterval'); as e) {
+                <p class="field-error" role="alert">{{ e }}</p>
               }
-            </div>
+              @if (unit() === 'Weekly') {
+                <div class="weekdays" role="group" aria-label="Repeat on">
+                  @for (day of weekdays; track day.id) {
+                    <label class="weekday">
+                      <input
+                        type="checkbox"
+                        [checked]="repeatDays().includes(day.id)"
+                        [attr.aria-label]="day.id"
+                        (change)="toggleDay(day.id, $any($event.target).checked)"
+                      />
+                      <span aria-hidden="true">{{ day.short }}</span>
+                    </label>
+                  }
+                </div>
+              }
+            }
             <div class="when__row">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Ends</mat-label>

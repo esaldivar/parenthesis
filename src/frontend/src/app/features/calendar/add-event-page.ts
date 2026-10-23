@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Router, RouterLink } from '@angular/router';
-import { Api, CalendarCategory, CalendarWarning, Child, FamilyMember, NewCalendarEvent, Weekday } from '../../core/api/api';
+import { Api, CalendarCategory, CalendarWarning, Child, FamilyMember, NewCalendarEvent, SeriesFrequency, Weekday } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon, IconName } from '../../shared/icon/icon';
@@ -16,13 +16,16 @@ import { FORM_STYLES } from '../auth/form-styles';
 import { PlainDate } from '../dashboard/model';
 import { addDays, monthDay, todayIn, weekdayShort } from '../dashboard/week';
 import { ReminderForm } from './reminder-form';
-import { MAX_DATES, WEEKDAYS, lastAllowed, seriesDates, weekdayOf } from './series';
+import { MAX_DATES, MAX_INTERVAL, RepeatRule, WEEKDAYS, lastAllowed, ordinal, seriesDates, weekdayOf } from './series';
 import { TaskForm } from './task-form';
 import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
 import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems, UNREADABLE_DATE } from './date-rules';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal } from './time';
+
+/** The Repeat menu (#238, owner decision October 23, 2026): no yearly for now. */
+type RepeatChoice = 'none' | 'daily' | 'weekly' | 'monthly' | 'custom';
 
 export type EventType = 'activity' | 'parenting' | 'family' | 'unavailable';
 
@@ -149,8 +152,11 @@ export class AddEventPage implements OnInit {
     childIds: [[] as string[]],
     location: ['', Validators.maxLength(200)],
     notes: ['', Validators.maxLength(1000)],
-    // Repeating unavailable time and activities (#193): weekly on chosen days, always ending within a year.
-    repeats: [false],
+    // Repeating unavailable time and activities (#193, #238): every day, week or month, or every N of them (Custom),
+    // always ending within a year.
+    repeat: ['none' as RepeatChoice],
+    every: [1],
+    unit: ['Weekly' as SeriesFrequency],
     repeatDays: [[] as Weekday[]],
     ends: ['date' as 'date' | 'count'],
     repeatUntil: [''],
@@ -182,8 +188,37 @@ export class AddEventPage implements OnInit {
   protected readonly weekdays = WEEKDAYS;
   /** Only unavailable time and activities can repeat; parenting time and family events need approval each time. */
   protected readonly canRepeat = computed(() => this.type() === 'activity' || this.type() === 'unavailable');
-  protected readonly repeats = computed(() => this.canRepeat() && (this.value().repeats ?? false));
+  protected readonly repeats = computed(() => this.canRepeat() && (this.value().repeat ?? 'none') !== 'none');
+  protected readonly custom = computed(() => this.value().repeat === 'custom');
+  protected readonly unit = computed(() => this.value().unit ?? 'Weekly');
   protected readonly repeatDays = computed(() => this.value().repeatDays ?? []);
+  /** Custom's "every" list: 1 up to the most the unit allows (#238). */
+  protected readonly intervals = computed(() => Array.from({ length: MAX_INTERVAL[this.unit()] }, (_, i) => i + 1));
+  /** The menu names the start's weekday and day of the month, as Google Calendar does. */
+  protected readonly weeklyLabel = computed(() => {
+    const start = this.value().startDate;
+    return isPlainDate(start) ? `Every week on ${weekdayOf(start)}` : 'Every week';
+  });
+  protected readonly monthlyLabel = computed(() => {
+    const start = this.value().startDate;
+    return isPlainDate(start) ? `Every month on the ${ordinal(Number(start.slice(8)))}` : 'Every month';
+  });
+  /** How the series repeats, from the menu (or Custom's every/unit/days). */
+  protected readonly rule = computed<RepeatRule>(() => {
+    const v = this.value();
+    switch (v.repeat) {
+      case 'daily':
+        return { frequency: 'Daily', interval: 1, days: [] };
+      case 'weekly':
+        return { frequency: 'Weekly', interval: 1, days: isPlainDate(v.startDate) ? [weekdayOf(v.startDate)] : [] };
+      case 'monthly':
+        return { frequency: 'Monthly', interval: 1, days: [] };
+      default: {
+        const unit = v.unit ?? 'Weekly';
+        return { frequency: unit, interval: Number(v.every ?? 1), days: unit === 'Weekly' ? (v.repeatDays ?? []) : [] };
+      }
+    }
+  });
   protected readonly endsOnDate = computed(() => this.value().ends === 'date');
   /** The dates the series will have, as the server will make them. */
   protected readonly dates = computed(() => {
@@ -193,7 +228,7 @@ export class AddEventPage implements OnInit {
     }
     return seriesDates(
       v.startDate,
-      v.repeatDays ?? [],
+      this.rule(),
       v.ends === 'date' ? v.repeatUntil || null : null,
       v.ends === 'count' ? (v.repeatCount ?? null) : null,
     );
@@ -269,12 +304,21 @@ export class AddEventPage implements OnInit {
     }
   }
 
-  /** Turning Repeat on starts with the first date's weekday. */
-  protected toggleRepeat(on: boolean): void {
+  /** Custom by the week starts with the first date's weekday chosen. */
+  protected chooseRepeat(): void {
     const v = this.form.getRawValue();
-    if (on && v.repeatDays.length === 0 && v.startDate) {
+    if (v.repeat === 'custom' && v.unit === 'Weekly' && v.repeatDays.length === 0 && isPlainDate(v.startDate)) {
       this.form.patchValue({ repeatDays: [weekdayOf(v.startDate)] });
     }
+  }
+
+  /** A new unit keeps "every" within what it allows (every 30 days, but at most every 12 months). */
+  protected chooseUnit(): void {
+    const v = this.form.getRawValue();
+    if (v.every > MAX_INTERVAL[v.unit]) {
+      this.form.patchValue({ every: MAX_INTERVAL[v.unit] });
+    }
+    this.chooseRepeat();
   }
 
   protected toggleDay(day: Weekday, checked: boolean): void {
@@ -358,7 +402,10 @@ export class AddEventPage implements OnInit {
     }
     Object.assign(errors, rangeProblems(v, this.today()));
     if (this.repeats()) {
-      if (v.repeatDays.length === 0) {
+      const rule = this.rule();
+      if (!(Number.isInteger(rule.interval) && rule.interval >= 1 && rule.interval <= MAX_INTERVAL[rule.frequency])) {
+        errors['repeatInterval'] = `Choose every 1 to ${MAX_INTERVAL[rule.frequency]}.`;
+      } else if (rule.frequency === 'Weekly' && rule.days.length === 0) {
         errors['repeat'] = 'Choose the days it repeats on.';
       } else if (v.ends === 'date' && v.repeatUntil && !isPlainDate(v.repeatUntil)) {
         errors['repeatUntil'] = UNREADABLE_DATE;
@@ -403,7 +450,7 @@ export class AddEventPage implements OnInit {
       caregiverMembershipId: type === 'parenting' ? v.caregiver : undefined,
       repeat: this.repeats()
         ? {
-            days: v.repeatDays,
+            ...this.rule(),
             ...(v.ends === 'date' ? { until: v.repeatUntil } : { count: v.repeatCount }),
           }
         : undefined,

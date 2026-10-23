@@ -196,7 +196,9 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await signIn(page, family.dad.email);
       await page.goto(`/calendar/new?date=${tuesday}`);
       await page.getByRole('button', { name: /I’m unavailable/ }).click();
-      await page.getByRole('switch', { name: /Repeat/ }).click();
+      // Custom (#238): every 1 week, on Tuesday (the start) and Thursday.
+      await page.getByLabel('How often').click();
+      await page.getByRole('option', { name: 'Custom…' }).click();
       await page.getByRole('checkbox', { name: 'Thursday' }).check();
       await page.getByLabel('Ends').click();
       await page.getByRole('option', { name: /times/i }).click();
@@ -209,6 +211,37 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await openList(page);
       // Tuesday and Thursday of that week.
       await expect(page.locator('app-calendar-list button.item[data-kind="unavailable"]')).toHaveCount(2);
+    } finally {
+      await family.dispose();
+    }
+  });
+
+  test('an activity repeats every 2 days from the Repeat menu’s Custom lists (#238)', async ({ page }) => {
+    const family = await familyWithKai();
+    try {
+      await signIn(page, family.dad.email);
+      for (const size of [
+        { name: 'desktop', width: 1280, height: 800 },
+        { name: 'phone', width: 390, height: 844 },
+      ] as const) {
+        await test.step(size.name, async () => {
+          await page.setViewportSize({ width: size.width, height: size.height });
+          await page.goto(`/calendar/new?date=${tuesday}`);
+          await page.getByRole('button', { name: /Activity/ }).click();
+          await page.getByLabel('Title').fill(`Reading club (${size.name})`);
+          await page.getByLabel('How often').click();
+          await expect(page.getByRole('option')).toHaveText(['Does not repeat', 'Every day', /^Every week on /, /^Every month on the /, 'Custom…']);
+          await page.getByRole('option', { name: 'Custom…' }).click();
+          await page.getByLabel('Every', { exact: true }).selectOption('2');
+          await page.getByLabel('Unit').selectOption('Daily');
+          await page.getByLabel('Ends').click();
+          await page.getByRole('option', { name: /times/i }).click();
+          await page.getByLabel('Times in all').fill('3');
+          await expect(page.locator('.preview')).toContainText('3 dates');
+          await page.getByRole('button', { name: 'Add to calendar' }).click();
+          await expect(page.getByText(/is on the calendar on 3 dates/)).toBeVisible();
+        });
+      }
     } finally {
       await family.dispose();
     }

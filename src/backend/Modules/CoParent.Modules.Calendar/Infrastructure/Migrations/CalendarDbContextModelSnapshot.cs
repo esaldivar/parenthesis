@@ -151,6 +151,16 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("family_id");
 
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("frequency");
+
+                    b.Property<int>("Interval")
+                        .HasColumnType("integer")
+                        .HasColumnName("interval");
+
                     b.Property<Guid>("OwnerMembershipId")
                         .HasColumnType("uuid")
                         .HasColumnName("owner_membership_id");

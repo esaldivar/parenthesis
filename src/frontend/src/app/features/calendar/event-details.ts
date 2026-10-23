@@ -183,8 +183,9 @@ export class EventDetails {
 
   /** "Every Wed and Fri until Nov 13, 2026" for a repeating event (#193). */
   protected readonly repeats = computed(() => {
-    const repeat = this.event()?.repeat;
-    return repeat ? repeatText(repeat) : null;
+    const event = this.event();
+    // A monthly repeat names its day of the month, which every date shares.
+    return event?.repeat ? repeatText(event.repeat, toFamilyLocal(event.startsAt, this.timeZone()).slice(0, 10)) : null;
   });
 
   /** Cancelling is offered on confirmed items; unavailable time only to its owner. */
