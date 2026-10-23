@@ -57,6 +57,13 @@
               <li class="tap-add" aria-hidden="true">
                 <button type="button" class="tap-add__button" tabindex="-1" (click)="addInAllDayRow($event)"></button>
               </li>
+              @if (pickColumn(); as column) {
+                <li class="slot-pick" [style.grid-column]="column" [style.grid-row]="1">
+                  <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
+                    {{ pickText(pick.at()!) }}
+                  </button>
+                </li>
+              }
             }
             @for (block of allDay(); track block.key) {
               @let place = placement(block);
@@ -183,6 +190,15 @@
                     <span class="slot-add__label">Add on {{ day.longLabel }}</span>
                   </button>
                 </li>
+                @if (pick.at(); as at) {
+                  @if (at.date === day.date && at.time) {
+                    <li class="slot-pick" [style.grid-row]="pickRows(at.time)">
+                      <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(at)" (click)="pick.confirm()">
+                        {{ pickText(at) }}
+                      </button>
+                    </li>
+                  }
+                }
               }
               @for (event of day.events; track event.id) {
                 @let slot = day.placements.get(event.id);
@@ -287,7 +303,12 @@
 
       <ol class="agenda__days" aria-label="Activities by day">
         @for (day of days(); track day.date) {
-          <li class="agenda__day" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+          <li
+            class="agenda__day"
+            [class.is-today]="day.isToday"
+            [class.is-picked]="pick.onDay(day.date) && !pick.at()!.time"
+            [attr.aria-current]="day.isToday ? 'date' : null"
+          >
             @if (live()) {
               <!-- A tap on the day's empty space adds on that day (#212); pointer only, beside Quick Add's Event. -->
               <button type="button" class="tap-add__button" tabindex="-1" aria-hidden="true" (click)="addOnDay(day.date)"></button>
@@ -328,6 +349,13 @@
                   </li>
                 }
               </ul>
+            }
+            @if (pick.onDay(day.date) && !pick.at()!.time) {
+              <div class="slot-pick slot-pick--day">
+                <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
+                  {{ pickText(pick.at()!) }}
+                </button>
+              </div>
             }
           </li>
         }

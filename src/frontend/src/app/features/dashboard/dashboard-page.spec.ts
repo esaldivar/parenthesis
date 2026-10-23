@@ -390,12 +390,18 @@ describe('DashboardPage (approved design)', () => {
       return { ...rendered, navigate };
     }
 
-    it('opens Add on the day and half-hour tapped in the time grid', async () => {
-      const { el, navigate } = await renderWithRouter(LIVE);
+    it('highlights the hour tapped in the time grid, then opens Add there when the highlight is tapped (#237)', async () => {
+      const { fixture, el, navigate } = await renderWithRouter(LIVE);
       const thursday = column(el, 'Thursday, October 15');
       thursday.getBoundingClientRect = () => ({ top: 0, height: 480, left: 0, width: 100 }) as DOMRect;
       thursday.dispatchEvent(new MouseEvent('click', { bubbles: true, clientY: 165, detail: 1 })); // 8:00 AM.
+      await settle(fixture);
 
+      expect(navigate).not.toHaveBeenCalled();
+      const pick = el.querySelector<HTMLButtonElement>('.daycol .slot-pick__button')!;
+      expect(pick.getAttribute('aria-label')).toBe('Add on Thursday, October 15 at 8:00 AM');
+      expect(text(pick)).toBe('8:00 AM');
+      pick.click();
       expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15', time: '08:00' } });
     });
 
@@ -405,16 +411,25 @@ describe('DashboardPage (approved design)', () => {
       expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15' } });
     });
 
-    it('adds on a day of the list tapped on its empty space, but never when an activity is tapped', async () => {
+    it('highlights a day of the list tapped on its empty space and adds there on a second tap, never for an activity', async () => {
       const { fixture, el, navigate } = await renderWithRouter(LIVE);
-      const days = [...el.querySelectorAll<HTMLElement>('.agenda__day')];
-      days[4].querySelector<HTMLElement>('.tap-add__button')!.click(); // Thursday's empty space.
-      expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15' } });
-
-      navigate.mockClear();
-      days[3].querySelector<HTMLElement>('button.open')!.click(); // Wednesday's swim lesson.
+      const days = () => [...el.querySelectorAll<HTMLElement>('.agenda__day')];
+      days()[4].querySelector<HTMLElement>('.tap-add__button')!.click(); // Thursday's empty space.
       await settle(fixture);
       expect(navigate).not.toHaveBeenCalled();
+      expect(days()[4].classList).toContain('is-picked');
+
+      // Tapping an activity clears the highlight and opens it, never Add.
+      days()[3].querySelector<HTMLElement>('button.open')!.click(); // Wednesday's swim lesson.
+      await settle(fixture);
+      expect(el.querySelector('.slot-pick')).toBeNull();
+      expect(navigate).not.toHaveBeenCalled();
+
+      // The same empty space twice adds there.
+      days()[4].querySelector<HTMLElement>('.tap-add__button')!.click();
+      await settle(fixture);
+      days()[4].querySelector<HTMLElement>('.tap-add__button')!.click();
+      expect(navigate).toHaveBeenCalledWith(['/calendar/new'], { queryParams: { date: '2026-10-15' } });
     });
 
     it('offers nothing to add on the sample week', async () => {

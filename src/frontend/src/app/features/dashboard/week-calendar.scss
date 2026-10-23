@@ -752,3 +752,20 @@ ul {
 .agenda__day > :not(.tap-add__button) button {
   pointer-events: auto;
 }
+
+// The tapped time or day (#237): above the activities, so a second tap adds there.
+.daycol li.slot-pick {
+  position: relative;
+  grid-column: 1 / -1;
+  z-index: 3;
+}
+.allday > li.slot-pick {
+  z-index: 3;
+}
+.agenda__day.is-picked {
+  outline: 2px solid var(--color-action);
+  outline-offset: 2px;
+}
+.slot-pick--day {
+  margin-top: var(--space-2);
+}

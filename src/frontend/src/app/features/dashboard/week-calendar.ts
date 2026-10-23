@@ -2,18 +2,21 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  HostListener,
   afterRenderEffect,
   computed,
+  effect,
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
-import { AddAt, addFromColumn, dayInRow } from '../calendar/slot';
+import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRows, pickText } from '../calendar/slot';
 import { CalendarKey } from './calendar-key';
 import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from './grouping';
 import { DashboardWeek, FamilyEvent, PlainDate } from './model';
@@ -88,19 +91,43 @@ export class WeekCalendar {
   /** A tap on empty space (#212): add on that day, at the half-hour tapped in the time grid. */
   readonly add = output<AddAt>();
 
+  /** The highlighted time or day (#237): a first tap highlights it, a tap on the highlight adds there. */
+  protected readonly pick = new SlotPick((at) => this.add.emit(at));
+  protected readonly pickLabel = pickLabel;
+  protected readonly pickRows = pickRows;
+  protected readonly pickText = pickText;
+  /** The highlighted day's column in the all-day row (1–7), for a whole-day highlight. */
+  protected readonly pickColumn = computed(() => {
+    const at = this.pick.at();
+    const index = at && !at.time ? this.days().findIndex((d) => d.date === at.date) : -1;
+    return index === -1 ? null : index + 1;
+  });
+
   protected addInColumn(event: MouseEvent, date: PlainDate): void {
-    this.add.emit(addFromColumn(event, date, this.hours().startHour, this.hours().endHour));
+    this.pick.tap(addFromColumn(event, date, this.hours().startHour, this.hours().endHour), event.detail !== 0);
   }
 
   protected addInAllDayRow(event: MouseEvent): void {
     const date = dayInRow(event, this.days().map((d) => d.date));
     if (date) {
-      this.add.emit({ date });
+      this.pick.tap({ date }, true);
     }
   }
 
   protected addOnDay(date: PlainDate): void {
-    this.add.emit({ date });
+    this.pick.tap({ date }, true);
+  }
+
+  @HostListener('document:click', ['$event.target'])
+  protected clickAnywhere(target: EventTarget | null): void {
+    if (clearsPick(target)) {
+      this.pick.clear();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  protected escape(): void {
+    this.pick.clear();
   }
 
   /** Only live data has real events to open or a real calendar to add to; the development sample doesn't. */
@@ -123,6 +150,11 @@ export class WeekCalendar {
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
   constructor() {
+    // Another week clears the highlight.
+    effect(() => {
+      this.weekStart();
+      untracked(() => this.pick.clear());
+    });
     // Open each week (and the grid itself) scrolled to the morning. It reruns only when the week, its activities or
     // the grid change, never fighting the parent's own scrolling.
     afterRenderEffect(() => {
