@@ -522,6 +522,12 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
+- [x] **Upcoming load states (#208).** Show loading and failed-load messages separately from an empty week;
+  offer retry and hide the previous week's Upcoming items while changing weeks. Regression coverage includes
+  delayed responses, failures, successful retries and unavailable family data.
+  - [ ] After promotion, retest on development at phone and desktop sizes in both themes, with keyboard and a
+    screen reader. Reproduce the owner's original missing-events report and record deployed commit, week,
+    time zone, household setup and owner retest before acceptance; this fixes only the confirmed load-state gap.
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
 - [ ] Commit the exact approved dashboard image as `docs/design/assets/approved-dashboard-2026-10-16.png`, or confirm
