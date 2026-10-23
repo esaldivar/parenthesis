@@ -1,3 +1,4 @@
+import { expectDateFormat } from '../../../testing/date-format';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -63,6 +64,16 @@ describe('Add event', () => {
     page().querySelector('form')!.dispatchEvent(new Event('submit'));
     await settle(harness);
   }
+
+  it('describes a repeat last day without a visible format hint (#236)', async () => {
+    const harness = await open();
+    await choose(harness, 'Activity');
+    page().querySelector<HTMLElement>('mat-select[formcontrolname="repeat"] .mat-mdc-select-trigger')!.click();
+    await settle(harness);
+    [...document.querySelectorAll<HTMLElement>('mat-option')].find((o) => text(o) === 'Every day')!.click();
+    await settle(harness);
+    expectDateFormat(page().querySelector('input[formcontrolname="repeatUntil"]')!);
+  });
 
   it('never seems to do nothing: a refused save brings the problem into view and focuses its field', async () => {
     const harness = await open();

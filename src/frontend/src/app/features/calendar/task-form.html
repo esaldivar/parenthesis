@@ -31,6 +31,8 @@
     <mat-datepicker #duePicker />
     @if (fieldError('dueDate'); as e) {
       <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+    } @else {
+      <mat-hint class="visually-hidden">Date format: MM/DD/YYYY or YYYY-MM-DD.</mat-hint>
     }
   </mat-form-field>
 

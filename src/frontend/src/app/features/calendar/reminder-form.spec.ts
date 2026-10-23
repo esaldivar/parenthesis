@@ -1,3 +1,4 @@
+import { expectDateFormat } from '../../../testing/date-format';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -73,6 +74,14 @@ describe('Add and edit a reminder', () => {
     form().querySelector('form')!.dispatchEvent(new Event('submit'));
     await settle();
   }
+
+  it('describes typed dates without a visible format hint (#236)', async () => {
+    await openAdd('reminder');
+    expectDateFormat(form().querySelector('input[formcontrolname="date"]')!);
+    await pick('repeat', 'Every week');
+    await pick('ends', 'On a date');
+    expectDateFormat(form().querySelector('input[formcontrolname="repeatUntil"]')!);
+  });
 
   it('asks Event, Task or Reminder with whole cards and no selection marks', async () => {
     await openAdd();
