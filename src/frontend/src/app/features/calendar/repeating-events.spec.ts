@@ -33,6 +33,35 @@ const swim = (over: Partial<CalendarEvent> = {}) =>
     ...over,
   });
 
+/** A later Sunday occurrence; its series starts on Friday in Chicago, Saturday in UTC. */
+const weekend = (firstStarts: readonly string[] | undefined) =>
+  swim({
+    startsAt: '2026-10-26T01:00:00Z',
+    endsAt: '2026-10-26T02:00:00Z',
+    repeat: {
+      frequency: 'Weekly',
+      interval: 2,
+      days: ['Sunday', 'Friday', 'Saturday'],
+      until: null,
+      count: 6,
+      firstStarts,
+    },
+  });
+
+const anchors = [
+  {
+    name: 'the series anchor in the family time zone',
+    firstStarts: ['2026-10-24T00:00:00Z'],
+    days: 'Fri, Sat and Sun',
+  },
+  {
+    name: 'the occurrence when first dates are omitted',
+    firstStarts: undefined,
+    days: 'Sun, Fri and Sat',
+  },
+  { name: 'the occurrence when first dates are empty', firstStarts: [], days: 'Sun, Fri and Sat' },
+];
+
 const weekly = (days: RepeatRule['days']): RepeatRule => ({ frequency: 'Weekly', interval: 1, days });
 
 describe('repeating events', () => {
@@ -368,6 +397,14 @@ describe('repeating events', () => {
       await settle();
     }
 
+    it.each(anchors)('uses $name in later-occurrence details', async ({ firstStarts, days }) => {
+      await openCalendar([weekend(firstStarts)]);
+      (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      await settle();
+      const dialog = document.querySelector('app-event-details [role="dialog"]')!;
+      expect(text(dialog)).toContain(`RepeatsEvery 2 weeks on ${days}, 6 times`);
+    });
+
     it('says how it repeats and asks which dates to cancel', async () => {
       await openCalendar([swim()]);
       (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
@@ -435,6 +472,13 @@ describe('repeating events', () => {
     const field = (name: string) => page().querySelector<HTMLInputElement>(`[formcontrolname="${name}"], input[name="${name}"]`)!;
     const scope = (label: string) =>
       [...page().querySelectorAll('.scope__option')].find((l) => text(l) === label)!.querySelector('input') as HTMLInputElement;
+
+    it.each(anchors)('uses $name in later-occurrence editing', async ({ firstStarts, days }) => {
+      await openEdit(weekend(firstStarts));
+      expect(text(page().querySelector('.scope legend'))).toBe(
+        `This repeats: Every 2 weeks on ${days}, 6 times. Change which dates?`,
+      );
+    });
 
     it('asks which dates to change, keeps each date’s day, and sends only what changed', async () => {
       await openEdit(swim());
