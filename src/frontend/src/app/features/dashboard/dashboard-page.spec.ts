@@ -27,7 +27,7 @@ describe('DashboardPage (approved design)', () => {
     notes: [],
   };
 
-  async function render(options: { sample?: boolean; failingSource?: boolean; week?: string; live?: DashboardWeek } = {}) {
+  async function render(options: { sample?: boolean; failingSource?: boolean; week?: string; live?: DashboardWeek; load?: () => Promise<DashboardWeek | null> } = {}) {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -40,7 +40,7 @@ describe('DashboardPage (approved design)', () => {
     let calls = 0;
     TestBed.overrideProvider(LiveDashboardDataSource, {
       useValue: {
-        load: () => (++calls, options.failingSource ? Promise.reject(new Error('offline')) : Promise.resolve(options.live ?? EMPTY_WEEK)),
+        load: () => (++calls, options.load ? options.load() : options.failingSource ? Promise.reject(new Error('offline')) : Promise.resolve(options.live ?? EMPTY_WEEK)),
       },
     });
     const fixture = TestBed.createComponent(DashboardPage);
@@ -217,6 +217,57 @@ describe('DashboardPage (approved design)', () => {
       button(el, 'Try again').click();
       await settle(fixture);
       expect(calls()).toBe(2);
+    });
+
+    it('distinguishes Upcoming loading, failure and an empty successful retry (#208)', async () => {
+      let reject!: (reason: Error) => void;
+      const pending = new Promise<DashboardWeek>((_, no) => { reject = no; });
+      let response: Promise<DashboardWeek> = pending;
+      const { fixture, el, calls } = await render({ load: () => response });
+      const upcoming = () => el.querySelector<HTMLElement>('.area-upcoming')!;
+
+      expect(upcoming().getAttribute('aria-busy')).toBe('true');
+      expect(text(upcoming().querySelector('[role="status"]'))).toBe('Loading upcoming events…');
+      expect(upcoming().querySelector('app-empty-state')).toBeNull();
+
+      reject(new Error('offline'));
+      await settle(fixture);
+      expect(upcoming().getAttribute('aria-busy')).toBe('false');
+      expect(text(upcoming().querySelector('[role="alert"]'))).toContain('We couldn’t load upcoming events.');
+      expect(upcoming().querySelector('app-empty-state')).toBeNull();
+
+      response = Promise.resolve(EMPTY_WEEK);
+      button(upcoming(), 'Try again').click();
+      await settle(fixture);
+      expect(calls()).toBe(2);
+      expect(text(upcoming())).toContain('Nothing else this week');
+      expect(upcoming().querySelector('[role="alert"]')).toBeNull();
+    });
+
+    it('hides the previous week’s Upcoming while the next week loads, then shows its results (#208)', async () => {
+      let resolve!: (week: DashboardWeek) => void;
+      const pending = new Promise<DashboardWeek>((yes) => { resolve = yes; });
+      const first = { ...EMPTY_WEEK, notes: [{ id: 'old', kind: 'task' as const, title: 'Old week task', date: '2026-10-16', children: [] }] };
+      let response: Promise<DashboardWeek> = Promise.resolve(first);
+      const { fixture, el } = await render({ load: () => response });
+      expect(text(el.querySelector('.area-upcoming'))).toContain('Old week task');
+
+      response = pending;
+      button(el, 'Next week').click();
+      await settle(fixture);
+      expect(text(el.querySelector('.area-upcoming'))).toContain('Loading upcoming events…');
+      expect(el.querySelector('.upcoming__item')).toBeNull();
+
+      resolve({ ...EMPTY_WEEK, notes: [{ id: 'new', kind: 'task', title: 'Next week task', date: '2026-10-20', children: [] }] });
+      await settle(fixture);
+      expect(text(el.querySelector('.area-upcoming'))).toContain('Next week task');
+      expect(text(el.querySelector('.area-upcoming'))).not.toContain('Old week task');
+    });
+
+    it('keeps unavailable family data distinct from a successfully loaded empty week (#208)', async () => {
+      const { el } = await render({ load: () => Promise.resolve(null) });
+      expect(text(el.querySelector('.area-upcoming'))).toContain('Nothing to show yet');
+      expect(text(el.querySelector('.area-upcoming'))).not.toContain('Nothing else this week');
     });
 
     it('has no automatically detectable accessibility issues', async () => {

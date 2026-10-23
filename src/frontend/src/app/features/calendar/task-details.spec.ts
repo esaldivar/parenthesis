@@ -164,6 +164,72 @@ describe('tasks on the calendar', () => {
     expect(text(dialog().querySelector('.status'))).toBe('Done');
   });
 
+  it('keeps the operated checkbox focusable while saving and blocks duplicate ticks (#73)', async () => {
+    await open([withChecklist()]);
+    await openDetails();
+    const box = checkbox('Glue sticks');
+    box.focus();
+    box.click();
+    const tick = await vi.waitFor(() => http.expectOne((r) => r.url.endsWith('/items/glue/done')));
+    await settle();
+    expect(box.disabled).toBe(false); // Native disabled makes Chrome drop focus to BODY.
+    expect(box.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(box);
+    box.click();
+    expect(http.match((r) => r.url.endsWith('/items/glue/done'))).toHaveLength(0);
+    expect(box.checked).toBe(true);
+
+    tick.flush(withChecklist({ items: [
+      checklistItem({ id: 'board', text: 'Poster board', completedBy: 'm-sam', completedAt: '2026-10-20T20:15:00Z' }),
+      checklistItem({ id: 'glue', text: 'Glue sticks', completedBy: 'm-alex', completedAt: '2026-10-21T14:00:00Z' }),
+      checklistItem({ id: 'markers', text: 'Extra markers', required: false }),
+    ], progressDone: 2, completedBy: 'm-alex', completedAt: '2026-10-21T14:00:00Z', justCompleted: true }));
+    await settle();
+    expect(checkbox('Glue sticks')).toBe(box);
+    expect(document.activeElement).toBe(box);
+    expect(box.checked).toBe(true);
+    expect(box.getAttribute('aria-disabled')).toBe('false');
+  });
+
+  it('keeps checklist focus and restores the saved checkbox value after an error (#73)', async () => {
+    await open([withChecklist()]);
+    await openDetails();
+    const box = checkbox('Glue sticks');
+    box.focus();
+    box.click();
+    (await vi.waitFor(() => http.expectOne((r) => r.url.endsWith('/items/glue/done')))).flush(
+      { title: 'Please try again.' }, { status: 500, statusText: 'Server Error' },
+    );
+    await settle();
+    expect(document.activeElement).toBe(box);
+    expect(box.checked).toBe(false);
+    expect(box.getAttribute('aria-disabled')).toBe('false');
+    expect(dialog().querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it('retains one focused completion button through saving, Done and Undo (#73)', async () => {
+    await open([task()]);
+    await openDetails();
+    const action = button('Mark done', dialog()) as HTMLButtonElement;
+    action.focus();
+    action.click();
+    const done = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url.endsWith('/t1/done')));
+    await settle();
+    expect(action.disabled).toBe(false);
+    expect(action.getAttribute('aria-disabled')).toBe('true');
+    action.click();
+    expect(http.match((r) => r.url.endsWith('/t1/done'))).toHaveLength(0);
+    done.flush(task({ completedBy: 'm-alex', completedAt: '2026-10-21T14:00:00Z' }));
+    await settle();
+    expect(button('Undo done', dialog())).toBe(action);
+    expect(document.activeElement).toBe(action);
+    action.click();
+    (await vi.waitFor(() => http.expectOne((r) => r.method === 'DELETE' && r.url.endsWith('/t1/done')))).flush(task());
+    await settle();
+    expect(button('Mark done', dialog())).toBe(action);
+    expect(document.activeElement).toBe(action);
+  });
+
   it('with reduced motion, says the message without any animation', async () => {
     const noop = () => undefined;
     vi.stubGlobal('matchMedia', (query: string) => ({
@@ -240,6 +306,41 @@ describe('tasks on the calendar', () => {
 
     expect(document.querySelector('app-task-details')).toBeNull();
     expect(toastText()).toContain('“Science fair poster” was deleted.');
+  });
+
+  it('focuses safe task confirmation and restores its initiating action on cancel (#176)', async () => {
+    await open([task()]);
+    await openDetails();
+    button('Delete task…', dialog()).focus();
+    button('Delete task…', dialog()).click();
+    await settle();
+    expect(document.activeElement).toBe(button('Keep it', dialog()));
+    expect(button('Keep it', dialog()).getAttribute('aria-describedby')).toBe('task-delete-explanation');
+    button('Keep it', dialog()).click();
+    await settle();
+    expect(document.activeElement).toBe(button('Delete task…', dialog()));
+    expect(http.match((r) => r.method === 'DELETE')).toHaveLength(0);
+  });
+
+  it('retains task delete focus on failure and prevents duplicate deletions (#176)', async () => {
+    await open([task()]);
+    await openDetails();
+    button('Delete task…', dialog()).click();
+    await settle();
+    const yes = button('Yes, delete', dialog()) as HTMLButtonElement;
+    yes.focus();
+    yes.click();
+    const request = await vi.waitFor(() => http.expectOne((r) => r.method === 'DELETE' && r.url.endsWith('/tasks/t1')));
+    await settle();
+    expect(yes.disabled).toBe(false);
+    expect(yes.getAttribute('aria-disabled')).toBe('true');
+    yes.click();
+    expect(http.match((r) => r.method === 'DELETE')).toHaveLength(0);
+    request.flush({ title: 'Try again.' }, { status: 500, statusText: 'Server Error' });
+    await settle();
+    expect(document.activeElement).toBe(yes);
+    expect(dialog().querySelector('[role="alert"]')).not.toBeNull();
+    expect(await axeViolations(document.body)).toEqual([]);
   });
 
   it('has no axe violations with a task and its checklist open', async () => {

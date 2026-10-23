@@ -483,6 +483,48 @@ describe('the calendar page', () => {
     expect(http.match((r) => r.url.includes('/approvals'))).toHaveLength(0);
   });
 
+  it('moves reminder confirmation focus to Keep it and restores Delete after cancelling (#172)', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [], [reminder()]);
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
+    const dialog = document.querySelector('[role="dialog"]')!;
+    const action = (name: string) => [...dialog.querySelectorAll('button')].find((b) => text(b) === name)!;
+    action('Delete reminder…').focus();
+    action('Delete reminder…').click();
+    await settle(harness);
+    expect(document.activeElement).toBe(action('Keep it'));
+    expect(action('Keep it').getAttribute('aria-describedby')).toBe('reminder-delete-explanation');
+    action('Keep it').click();
+    await settle(harness);
+    expect(document.activeElement).toBe(action('Delete reminder…'));
+    expect(http.match((r) => r.method === 'DELETE')).toHaveLength(0);
+  });
+
+  it('keeps confirmation focus through a failed reminder deletion and blocks duplicate requests (#172)', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [], [reminder()]);
+    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    await settle(harness);
+    http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
+    const dialog = document.querySelector('[role="dialog"]')!;
+    click('Delete reminder…', dialog);
+    await settle(harness);
+    const yes = [...dialog.querySelectorAll('button')].find((b) => text(b) === 'Yes, delete')!;
+    yes.focus();
+    yes.click();
+    const request = await vi.waitFor(() => http.expectOne((r) => r.method === 'DELETE' && r.url.endsWith('/reminders/r1')));
+    await settle(harness);
+    expect(yes.disabled).toBe(false);
+    expect(yes.getAttribute('aria-disabled')).toBe('true');
+    yes.click();
+    expect(http.match((r) => r.method === 'DELETE')).toHaveLength(0);
+    request.flush({ title: 'Try again.' }, { status: 500, statusText: 'Server Error' });
+    await settle(harness);
+    expect(document.activeElement).toBe(yes);
+    expect(dialog.querySelector('[role="alert"]')).not.toBeNull();
+    expect(await axeViolations(document.body)).toEqual([]);
+  });
+
   it('has no axe violations with a reminder and its details open', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [], [reminder()]);
     expect(await axeViolations(document.body)).toEqual([]);

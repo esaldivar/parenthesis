@@ -1,5 +1,5 @@
 import { A11yModule } from '@angular/cdk/a11y';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Api, FamilyMember, Reminder } from '../../core/api/api';
@@ -36,6 +36,9 @@ export function repeatText(reminder: Reminder): string | null {
 })
 export class ReminderDetails implements OnInit {
   private readonly api = inject(Api);
+  private readonly injector = inject(Injector);
+  private readonly deleteButton = viewChild('deleteButton', { read: ElementRef<HTMLButtonElement> });
+  private readonly keepButton = viewChild('keepButton', { read: ElementRef<HTMLButtonElement> });
 
   readonly item = input.required<CalendarItem>();
   readonly reminder = input.required<Reminder>();
@@ -72,7 +75,26 @@ export class ReminderDetails implements OnInit {
     this.api.reminderSeen(this.familyId(), this.reminder().id).catch(() => undefined);
   }
 
+  /** Replacing the action row must hand focus to its safe action, or back to the initiating Delete button. */
+  protected confirmDelete(confirming: boolean): void {
+    if (this.busy()) {
+      return;
+    }
+    this.confirming.set(confirming);
+    afterNextRender(() => {
+      if (this.confirming() === confirming) {
+        const target = (confirming ? this.keepButton() : this.deleteButton())?.nativeElement;
+        if (target?.isConnected) {
+          target.focus();
+        }
+      }
+    }, { injector: this.injector });
+  }
+
   protected async remove(): Promise<void> {
+    if (this.busy()) {
+      return;
+    }
     this.busy.set(true);
     this.error.set(null);
     try {

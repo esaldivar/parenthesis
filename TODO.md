@@ -522,6 +522,12 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
+- [x] **Upcoming load states (#208).** Show loading and failed-load messages separately from an empty week;
+  offer retry and hide the previous week's Upcoming items while changing weeks. Regression coverage includes
+  delayed responses, failures, successful retries and unavailable family data.
+  - [ ] After promotion, retest on development at phone and desktop sizes in both themes, with keyboard and a
+    screen reader. Reproduce the owner's original missing-events report and record deployed commit, week,
+    time zone, household setup and owner retest before acceptance; this fixes only the confirmed load-state gap.
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
 - [ ] Commit the exact approved dashboard image as `docs/design/assets/approved-dashboard-2026-10-16.png`, or confirm
@@ -539,6 +545,40 @@ that points back here.
   320px.
 
 ## Calendar follow-ups
+
+- [x] **Reminder delete confirmation focus (#172).** Opening confirmation focuses Keep it with the deletion
+  explanation; cancelling restores Delete reminder. The pending delete action keeps focus and blocks duplicate
+  requests, including error/retry. Regression tests cover the observed BODY-focus failure and error-state axe.
+  - [ ] After promotion, manually retest the confirmation, cancellation, failed and successful deletion by keyboard
+    and screen reader on development, phone/desktop and both themes. Independent-parent checks remain open.
+
+- [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
+  29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
+  range splitting, four-occurrence count and local time across the spring daylight-saving boundary.
+  - [ ] Run the new cases in backend CI (this workspace has no dotnet/Docker), and retain the remaining manual
+    two-parent/accessibility acceptance checks. The live October 31 to November 30 reminder was verified separately.
+
+- [x] **Task action keyboard focus (#73, #176).** Checklist saves preserve the checkbox's focus using aria-disabled
+  with a duplicate-action guard. Checklist-free completion retains the same Material button across Mark done/Undo,
+  including its pending state. Delete confirmation focuses Keep it and restores Delete on cancellation; a pending
+  deletion retains focus and guards duplicates. Tests cover pending, successful and failed saves and duplicate actions.
+  - [ ] After promotion, repeat the observed development-site Space/Enter test with keyboard and screen reader,
+    both themes and phone/desktop. The original build drops focus to BODY after a task mutation; independent
+    parent/household acceptance checks remain open.
+
+- [x] **Reminder validation descriptions (#206, #173).** Associate date/time and repeat refusal messages with
+  their own Material controls; give a missing time its own message and retain hidden date-format guidance when
+  valid. Regression tests cover local and server refusals, focus, retry correction and all-day reminders.
+  - [ ] After promotion, manually retest Add/Edit reminders on development with keyboard and a screen reader,
+    in both themes and at phone/desktop sizes. This implementation does not close either issue's full acceptance.
+
+- [x] **Silent lazy-page navigation failures (#177).** A shared accessible recovery dialog explains a failed
+  page load and offers an explicit reload with an unsaved-changes warning, or Keep working. No automatic reload,
+  retry loop, failed URL or technical exception is exposed. Regression tests include an existing focus trap.
+  - [ ] After promotion, reproduce a missing lazy chunk in a stale development tab, verify the recovery and
+    successful Edit after reload, and check phone/themes/screen-reader behavior. Asset-retention/deployment causes
+    remain unconfirmed; the recovery does not establish that old chunks remain available.
+
 - [ ] **Change several dates of repeating parenting time at once, through approval (#239 follow-up, October 23,
   2026).** Repeating parenting time is approved as one request for the whole series. Changing or cancelling it is
   one date at a time for now: each change goes to the co-parent as usual. "This and following" and "All events" are
@@ -564,3 +604,7 @@ that points back here.
   managed identity). Today the keys rely on database access control only, and ASP.NET Core logs a warning about it.
 - [x] S-03 forwarded headers behind the proxy: `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` on each container app
   (runbook step 2), found when sign-up failed on the development site (October 20, 2026).
+
+- [x] **Date-format accessibility (#236).** Typed reminder/task dates and repeat last-day fields retain a
+  screen-reader-only format hint; regression tests verify its actual accessible-description association.
+  - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
