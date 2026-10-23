@@ -156,7 +156,13 @@ describe('Edit an event', () => {
     type('endTime', '09:00');
     await submit();
 
-    expect(text(page())).toContain('Choose an end that’s after the start.');
+    // The end time and date turn red, with the reason for screen readers only (#248).
+    const endTime = page().querySelector<HTMLInputElement>('input[formcontrolname="endTime"]')!;
+    const endDate = page().querySelector<HTMLInputElement>('input[formcontrolname="endDate"]')!;
+    expect(endTime.classList).toContain('date-invalid');
+    expect(endDate.getAttribute('aria-invalid')).toBe('true');
+    expect(endDate.getAttribute('aria-label')).toBe('End date, Choose an end that’s after the start.');
+    expect(text(page())).not.toContain('Choose an end that’s after the start.');
     expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
   });
 
@@ -194,7 +200,9 @@ describe('Edit an event', () => {
       type('endDate', '10/21/2026');
       await submit();
 
-      expect(text(page())).toContain('Choose a start date from today on.');
+      const start = page().querySelector<HTMLInputElement>('input[formcontrolname="startDate"]')!;
+      expect(start.classList).toContain('date-invalid');
+      expect(start.getAttribute('aria-label')).toBe('Start date, Choose a start date from today on.');
       expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
     });
   });

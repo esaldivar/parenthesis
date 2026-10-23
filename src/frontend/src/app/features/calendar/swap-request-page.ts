@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -28,7 +27,8 @@ import { Icon } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
 import { LocalDateTime } from '../dashboard/model';
 import { addDays, dayLong, todayIn } from '../dashboard/week';
-import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems } from './date-rules';
+import { dayFilter, END_BEFORE_START } from './date-rules';
+import { DateCheck } from './date-check';
 import { providePlainDates, typedValues } from './plain-dates';
 import { warningText } from './add-event-page';
 import { CalendarItem, toItems } from './calendar-items';
@@ -40,7 +40,6 @@ type Step = 'choose' | 'review' | 'sent';
 type LoadState = 'loading' | 'error' | 'ready';
 
 export const REASON_MAX = 500;
-const MAX_DAYS = 31;
 
 /** Warnings that ask "Send anyway or choose different dates?". Overlapping parenting time is expected in a swap. */
 const ASK_FIRST: readonly CalendarWarning[] = ['OverlapsCoParentUnavailable'];
@@ -118,13 +117,16 @@ export class SwapRequestPage {
     const item = this.item();
     return item ? [item.firstDate, item.lastDate] : [];
   });
-  /** The range calendar's open days. */
-  // One function for the page's life, reading the dates when called: a new one per keystroke would make the picker
-  // re-check the dates, which changes them again, without end.
-  protected readonly dayFilter = (day: string | null): boolean => {
-    const v = this.form.getRawValue();
-    return rangeFilter(this.today(), this.ownDates(), v.startDate || null, v.endDate || null, MAX_RANGE_DAYS)(day);
-  };
+  /** The calendar's open days: from today, or the event's own days (#232). The dates are checked instead (#248). */
+  // One function for the page's life: a new one per change would make the picker re-check its dates without end.
+  protected readonly dayFilter = (day: string | null): boolean => dayFilter(this.today(), this.ownDates())(day);
+  protected readonly endBeforeStart = END_BEFORE_START;
+  /** Which date shows red, and why (#248). */
+  protected readonly dateCheck = new DateCheck(
+    () => (this.value(), typedValues(this.form)),
+    () => this.today(),
+    () => this.ownDates(),
+  );
   protected readonly reasonLength = computed(() => (this.value().reason ?? '').length);
 
   protected readonly item = computed<CalendarItem | null>(() => {
@@ -193,7 +195,6 @@ export class SwapRequestPage {
   }
 
   constructor() {
-    keepRangeInOrder(this.form, inject(DestroyRef));
     effect(() => {
       const family = this.family();
       const id = this.eventId();
@@ -250,6 +251,13 @@ export class SwapRequestPage {
     const family = this.family();
     const event = this.event();
     if (!family || !event || this.busy()) {
+      return;
+    }
+    // An invalid date is only red, with its reason for screen readers (#248): Continue stops on it.
+    this.dateCheck.tried();
+    if (Object.keys(this.dateCheck.problems()).length > 0) {
+      this.datesError.set(null);
+      this.focus('input[aria-invalid="true"]');
       return;
     }
     const problem = this.validate(event);
@@ -352,18 +360,11 @@ export class SwapRequestPage {
   private validate(event: CalendarEvent): { dates: string | null; reason: string | null } {
     const v = typedValues(this.form);
     const reason = v.reason.trim().length > REASON_MAX ? `Keep the reason under ${REASON_MAX} characters.` : null;
-    if (!v.startDate || !v.endDate || (!v.allDay && (!v.startTime || !v.endTime))) {
+    // The dates themselves were checked before this (#248).
+    if (!v.allDay && (!v.startTime || !v.endTime)) {
       return { dates: 'Choose when the new time starts and ends.', reason };
     }
-    // Readable dates, from today on (or its own), with the end after the start (#232).
-    const problems = rangeProblems(v, this.today(), this.ownDates());
-    if (problems['startsAt'] ?? problems['endsAt']) {
-      return { dates: problems['startsAt'] ?? problems['endsAt'], reason };
-    }
     const { startsAt, endsAt } = this.instants();
-    if (new Date(endsAt).getTime() - new Date(startsAt).getTime() > MAX_DAYS * 24 * 60 * 60 * 1000) {
-      return { dates: `Parenting time can last up to ${MAX_DAYS} days.`, reason };
-    }
     if (
       new Date(startsAt).getTime() === new Date(event.startsAt).getTime() &&
       new Date(endsAt).getTime() === new Date(event.endsAt).getTime() &&

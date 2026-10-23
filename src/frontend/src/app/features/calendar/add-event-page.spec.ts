@@ -287,15 +287,27 @@ describe('Add event', () => {
       expect([value('startDate'), value('endDate'), value('startTime')]).toEqual(['10/15/2026', '10/15/2026', '09:00']);
     });
 
-    it('refuses a typed start before today, saying why, and sends nothing', async () => {
+    /** A date field's input: red, invalid and its reason in its name, or none of these (#248). */
+    const dateField = (name: 'startDate' | 'endDate') => page().querySelector<HTMLInputElement>(`input[formcontrolname="${name}"]`)!;
+    const invalid = (name: 'startDate' | 'endDate') => {
+      const input = dateField(name);
+      return input.classList.contains('date-invalid') && input.getAttribute('aria-invalid') === 'true';
+    };
+
+    it('refuses a typed start before today: red, with the reason for screen readers only, and sends nothing (#248)', async () => {
       const harness = await open(CHILDREN, '/calendar/new?date=2026-10-20');
       await choose(harness, 'Activity');
       type(harness, 'input[formcontrolname="title"]', 'Soccer practice');
       type(harness, 'input[formcontrolname="startDate"]', '10/14/2026');
       type(harness, 'input[formcontrolname="endDate"]', '10/14/2026');
+      await settle(harness);
+      expect(invalid('startDate')).toBe(true);
+      expect(dateField('startDate').getAttribute('aria-label')).toBe('Start date, Choose a start date from today on.');
       await submit(harness);
 
-      expect(text(page())).toContain('Choose a start date from today on.');
+      // No warning text on screen: the date itself is red.
+      expect(text(page())).not.toContain('Choose a start date from today on.');
+      expect(document.activeElement).toBe(dateField('startDate'));
       expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
     });
 
@@ -306,18 +318,62 @@ describe('Add event', () => {
       type(harness, 'input[formcontrolname="startDate"]', 'next week');
       await submit(harness);
 
-      expect(text(page())).toContain('Enter a date like 10/27/2026.');
+      expect(invalid('startDate')).toBe(true);
+      expect(dateField('startDate').getAttribute('aria-label')).toBe('Start date, Enter a date like 10/27/2026.');
       expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
     });
 
-    it('moves the end with the start, keeping the length, so the range is never backwards', async () => {
+    it('never moves the other date: a start after the end is red and blocks sending until corrected (#248)', async () => {
       const harness = await open(CHILDREN, '/calendar/new?date=2026-10-20');
       await choose(harness, 'Parenting time');
+      check('Kai');
       type(harness, 'input[formcontrolname="endDate"]', '10/22/2026');
       type(harness, 'input[formcontrolname="startDate"]', '10/25/2026');
       await settle(harness);
 
-      expect([value('startDate'), value('endDate')]).toEqual(['10/25/2026', '10/27/2026']);
+      expect([value('startDate'), value('endDate')]).toEqual(['10/25/2026', '10/22/2026']);
+      expect(invalid('endDate')).toBe(true);
+      expect(invalid('startDate')).toBe(false);
+      await submit(harness);
+      expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+      expect(document.activeElement).toBe(dateField('endDate'));
+
+      // Correcting it clears the red, keeps the children chosen, and lets it send.
+      type(harness, 'input[formcontrolname="endDate"]', '10/27/2026');
+      await settle(harness);
+      expect(invalid('endDate')).toBe(false);
+      await submit(harness);
+      const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'));
+      expect(create.request.body.childIds).toEqual(['kai']);
+    });
+
+    it('keeps an unfinished range correctable: a start with no end, then an earlier start (#248)', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-20');
+      await choose(harness, 'Parenting time');
+      type(harness, 'input[formcontrolname="title"]', 'Long weekend');
+      type(harness, 'input[formcontrolname="startDate"]', '12/20/2026');
+      type(harness, 'input[formcontrolname="endDate"]', '');
+      await settle(harness);
+      // Half done isn't marked yet; sending marks the missing end.
+      expect(invalid('endDate')).toBe(false);
+      await submit(harness);
+      expect(invalid('endDate')).toBe(true);
+      expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+
+      // The calendar still offers days before December 20.
+      page().querySelector<HTMLButtonElement>('mat-datepicker-toggle button')!.click();
+      await settle(harness);
+      const cell = (label: string) =>
+        [...document.querySelectorAll<HTMLElement>('.mat-calendar-body-cell')].find((c) => c.getAttribute('aria-label')?.includes(label));
+      expect(cell('December 14, 2026')?.getAttribute('aria-disabled')).not.toBe('true');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await settle(harness);
+
+      type(harness, 'input[formcontrolname="startDate"]', '12/14/2026');
+      type(harness, 'input[formcontrolname="endDate"]', '12/20/2026');
+      await settle(harness);
+      expect(invalid('startDate') || invalid('endDate')).toBe(false);
+      expect(value('title')).toBe('Long weekend');
     });
 
     it('keeps the date format for screen readers only, not on screen (#236)', async () => {

@@ -478,18 +478,25 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
           await expect(page.getByLabel('Start date')).toHaveValue(shown(tuesday));
           await expect(page.getByLabel('End date')).toHaveValue(shown(thursday));
 
-          // Moving the start past the end moves the end, keeping the length.
+          // A start after the end stays as chosen (nothing moves the end), turns the end red and blocks sending (#248).
           const saturday = addHours(monday, 24 * 5).toISOString().slice(0, 10);
-          await page.getByLabel('Start date').fill(shown(saturday));
-          await page.getByLabel('Start date').blur();
-          await expect(page.getByLabel('End date')).toHaveValue(shown(addHours(monday, 24 * 7).toISOString().slice(0, 10)));
-
-          // A typed date before today is refused, saying why.
-          await page.getByLabel('Start date').fill('1/5/2026');
-          await page.getByLabel('End date').fill('1/6/2026');
+          await page.getByLabel('Start date', { exact: true }).fill(shown(saturday));
+          await page.getByLabel('Start date', { exact: true }).blur();
+          const end = page.locator('input[formcontrolname="endDate"]');
+          await expect(end).toHaveValue(shown(thursday));
+          await expect(end).toHaveAttribute('aria-invalid', 'true');
+          await expect(end).toHaveCSS('color', /rgb\((161, 51, 51|255, 180, 171)\)/);
           await page.getByLabel('Kai').check();
           await page.getByRole('button', { name: 'Send for approval' }).click();
-          await expect(page.getByText('Choose a start date from today on.')).toBeVisible();
+          await expect(page).toHaveURL(/\/calendar\/new/);
+          await expect(end).toBeFocused();
+
+          // A typed date before today is refused: red, with no warning text on screen.
+          await page.getByLabel('Start date', { exact: true }).fill('1/5/2026');
+          await page.getByLabel(/^End date/).fill('1/6/2026');
+          await page.getByRole('button', { name: 'Send for approval' }).click();
+          await expect(page.locator('input[formcontrolname="startDate"]')).toHaveAttribute('aria-invalid', 'true');
+          await expect(page.getByText('Choose a start date from today on.')).toHaveCount(0);
         });
       }
     } finally {

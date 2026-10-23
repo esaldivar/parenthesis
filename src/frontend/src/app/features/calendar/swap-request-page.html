@@ -39,12 +39,28 @@
               <fieldset class="when">
                 <legend>New date and time</legend>
                 <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
-                <!-- One range calendar (#232): it shows start → end, and days that can't be chosen are greyed out. -->
+                <!-- One range calendar (#232). Only days before today (other than its own) are greyed out; an invalid
+                     date turns red, with its reason for screen readers, and Continue stops on it (#248). -->
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="dates">
                   <mat-label>New dates</mat-label>
                   <mat-date-range-input [rangePicker]="datesPicker" [dateFilter]="dayFilter">
-                    <input id="swap-start-date" matStartDate formControlName="startDate" placeholder="Start date" aria-label="Start date" />
-                    <input matEndDate formControlName="endDate" placeholder="End date" aria-label="End date" />
+                    <input
+                      id="swap-start-date"
+                      matStartDate
+                      formControlName="startDate"
+                      placeholder="Start date"
+                      [attr.aria-label]="dateCheck.issues().start ? 'Start date, ' + dateCheck.issues().start : 'Start date'"
+                      [attr.aria-invalid]="!!dateCheck.issues().start"
+                      [class.date-invalid]="!!dateCheck.issues().start"
+                    />
+                    <input
+                      matEndDate
+                      formControlName="endDate"
+                      placeholder="End date"
+                      [attr.aria-label]="dateCheck.issues().end ? 'End date, ' + dateCheck.issues().end : 'End date'"
+                      [attr.aria-invalid]="!!dateCheck.issues().end"
+                      [class.date-invalid]="!!dateCheck.issues().end"
+                    />
                   </mat-date-range-input>
                   <!-- The format is for screen readers only (#236): visible, it cluttered the field. -->
                   <mat-hint class="visually-hidden">Dates as MM/DD/YYYY</mat-hint>
@@ -59,7 +75,14 @@
                     </mat-form-field>
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
                       <mat-label>End time</mat-label>
-                      <input matInput type="time" formControlName="endTime" required />
+                      <input
+                        matInput
+                        type="time"
+                        formControlName="endTime"
+                        required
+                        [attr.aria-invalid]="dateCheck.issues().end === endBeforeStart"
+                        [class.date-invalid]="dateCheck.issues().end === endBeforeStart"
+                      />
                     </mat-form-field>
                   </div>
                 }

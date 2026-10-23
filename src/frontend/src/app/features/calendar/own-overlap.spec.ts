@@ -6,10 +6,10 @@ describe('own overlaps (#210)', () => {
 
   it('names the caregiver who is unavailable, and shows it with the time', () => {
     expect(withOwnOverlap({ caregiverUnavailable: 'server text' }, sam)).toEqual({
-      startsAt: 'Sam is unavailable then. Choose another time, or another parent.',
+      when: 'Sam is unavailable then. Choose another time, or another parent.',
     });
     expect(withOwnOverlap({ caregiverUnavailable: 'server text' }, you)).toEqual({
-      startsAt:
+      when:
         'You marked yourself unavailable then. Choose another time, or change your unavailable time first.',
     });
   });
@@ -19,7 +19,7 @@ describe('own overlaps (#210)', () => {
       withOwnOverlap({ overlapsYourParentingTime: 'server text', notes: 'Too long' }, undefined),
     ).toEqual({
       notes: 'Too long',
-      startsAt:
+      when:
         'You have parenting time then. Choose another time, or change that parenting time first.',
     });
   });
