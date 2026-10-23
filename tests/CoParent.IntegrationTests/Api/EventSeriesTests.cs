@@ -336,12 +336,40 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal("calendar_series", request.GetProperty("targetType").GetString());
         Assert.Equal(first.GetProperty("seriesId").GetGuid(), request.GetProperty("targetId").GetGuid());
         Assert.Equal(first.GetProperty("changeRequestId").GetGuid(), request.GetProperty("id").GetGuid());
-        Assert.Equal("Add: Time with Dad, every week, 3 dates from Oct 28 to Nov 11", request.GetProperty("summary").GetString());
+        Assert.Equal("Add: Time with Dad, every week on Wed, 3 dates: Oct 28, Nov 4, Nov 11", request.GetProperty("summary").GetString());
 
         var approved = await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{request.GetProperty("id").GetGuid()}/approve");
 
         Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
         Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("Confirmed", e.GetProperty("status").GetString()));
+    }
+
+    [Fact]
+    public async Task Approval_is_refused_and_nothing_confirmed_when_the_caregiver_became_unavailable_meanwhile()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var first = await JsonAsync(await f.Dad.PostAsync(Events(f), DadsWednesdays(f, count: 5)));
+        // Dad's unavailable time on a Tuesday, moved straight in the database onto Wednesday, November 4, as if it had
+        // got past the checks while the request waited.
+        var away = await JsonAsync(await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Unavailable",
+            startsAt = _wednesday.AddDays(6),
+            endsAt = _wednesday.AddDays(6).AddHours(2),
+        }));
+        await api.QueryScalarAsync<int>(
+            "UPDATE calendar.events SET starts_at = @starts, ends_at = @ends WHERE id = @id RETURNING 1",
+            ("starts", _wednesday.AddDays(7).UtcDateTime), ("ends", _wednesday.AddDays(7).AddHours(2).UtcDateTime),
+            ("id", away.GetProperty("id").GetGuid()));
+
+        var approved = await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{first.GetProperty("changeRequestId").GetGuid()}/approve");
+
+        Assert.Equal(HttpStatusCode.Conflict, approved.StatusCode);
+        Assert.Contains("unavailable", (await JsonAsync(approved)).GetProperty("detail").GetString());
+        Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("PendingApproval", e.GetProperty("status").GetString()));
+        // The request still waits for Mom's answer.
+        Assert.Single((await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
     }
 
     [Fact]

@@ -158,7 +158,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
         const mom = await momContext.newPage();
         await signIn(mom, family.mom.email);
         await mom.goto('/approvals');
-        await expect(mom.getByText(/3 dates from/)).toHaveCount(1);
+        await expect(mom.getByText(/every day, 3 dates: /)).toHaveCount(1);
         await expect(mom.getByText('Approving or declining answers them all.', { exact: false })).toBeVisible();
         await mom.getByRole('button', { name: 'Approve' }).first().click();
         await expect(mom.getByRole('heading', { name: 'Decided' })).toBeVisible();

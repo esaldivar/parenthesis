@@ -1,3 +1,4 @@
+using System.Globalization;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Calendar.Domain;
 using CoParent.Modules.Calendar.Infrastructure;
@@ -803,19 +804,41 @@ internal static class CalendarEndpoints
     /// <summary>An approval request about a whole series (#239): its target id is the series' id.</summary>
     internal const string SeriesTarget = "calendar_series";
 
-    /// <summary>"Add: Time with Dad, 12 dates from Oct 30 to Jun 1": what the approvals inbox and its email say.</summary>
-    private static string SeriesSummary(List<CalendarEvent> events, CalendarSeries series, string zone)
+    /// <summary>
+    /// What the approvals inbox and its email say about a repeating request (#239): how it repeats, on which days, how
+    /// many dates, and the first ones. "Add: Time with Dad, every 2 weeks on Tue and Thu, 6 dates: Oct 27, Oct 29,
+    /// Nov 10 … Dec 10". Kept within the request summary's 200 characters.
+    /// </summary>
+    internal static string SeriesSummary(List<CalendarEvent> events, CalendarSeries series, string zone)
     {
-        var first = EventSchedule.LocalDate(events[0].StartsAt, zone);
-        var last = EventSchedule.LocalDate(events[^1].StartsAt, zone);
+        const int shown = 3;
+        var dates = events.Select(e => EventSchedule.LocalDate(e.StartsAt, zone)).ToList();
+        var n = series.Interval;
         var every = series.Frequency switch
         {
-            SeriesFrequency.Daily => series.Interval == 1 ? "every day" : $"every {series.Interval} days",
-            SeriesFrequency.Monthly => series.Interval == 1 ? "every month" : $"every {series.Interval} months",
-            _ => series.Interval == 1 ? "every week" : $"every {series.Interval} weeks",
+            SeriesFrequency.Daily => n == 1 ? "every day" : $"every {n} days",
+            SeriesFrequency.Monthly => $"{(n == 1 ? "every month" : $"every {n} months")} on the {Ordinal(dates[0].Day)}",
+            _ => $"{(n == 1 ? "every week" : $"every {n} weeks")} on {DayList(EventSchedule.FromFlags(series.Days))}",
         };
-        return $"Add: {events[0].Title}, {every}, {events.Count} dates from {first:MMM d} to {last:MMM d}";
+        var first = string.Join(", ", dates.Take(shown).Select(d => d.ToString("MMM d", CultureInfo.InvariantCulture)));
+        var rest = dates.Count > shown ? $" … {dates[^1].ToString("MMM d", CultureInfo.InvariantCulture)}" : "";
+        var summary = $"Add: {events[0].Title}, {every}, {dates.Count} dates: {first}{rest}";
+        return summary.Length <= SummaryMaxLength ? summary : $"{summary[..(SummaryMaxLength - 1)]}…";
     }
+
+    /// <summary>The approvals module's limit on a request summary.</summary>
+    private const int SummaryMaxLength = 200;
+
+    /// <summary>"Tue", "Tue and Thu", "Mon, Wed and Fri".</summary>
+    private static string DayList(IReadOnlyList<DayOfWeek> days)
+    {
+        var names = days.Select(d => CultureInfo.InvariantCulture.DateTimeFormat.GetAbbreviatedDayName(d)).ToList();
+        return names.Count > 1 ? $"{string.Join(", ", names[..^1])} and {names[^1]}" : names.FirstOrDefault() ?? "";
+    }
+
+    /// <summary>"1st", "2nd", "23rd", "31st".</summary>
+    private static string Ordinal(int day) =>
+        day + (day % 100 is 11 or 12 or 13 ? "th" : (day % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" });
 
     /// <summary>
     /// Changing or cancelling several dates of repeating parenting time at once would skip the co-parent's approval, so
@@ -1061,7 +1084,7 @@ internal static class CalendarEndpoints
     /// overlap (#210). Every write that this rule checks takes the parent's lock first, so they run one after the other
     /// and the second sees the first. The lock ends with the transaction. Null when the change may be saved.
     /// </summary>
-    private static async Task<Dictionary<string, string[]>?> RefusedUnderLockAsync(
+    internal static async Task<Dictionary<string, string[]>?> RefusedUnderLockAsync(
         CalendarDbContext db,
         EventCategory category,
         Guid? person,
