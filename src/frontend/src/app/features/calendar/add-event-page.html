@@ -75,18 +75,9 @@
         </mat-form-field>
       }
 
-      @if (current === 'parenting') {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Who has the children?</mat-label>
-          <mat-select formControlName="caregiver" required>
-            @for (p of parents(); track p.membershipId) {
-              <mat-option [value]="p.membershipId">{{ p.isYou ? p.displayName + ' (you)' : p.displayName }}</mat-option>
-            }
-          </mat-select>
-          @if (fieldError('caregiverMembershipId'); as e) {
-            <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-          }
-        </mat-form-field>
+      <!-- Parenting time is always yours (owner decision, October 23, 2026; #246): no choice of parent. -->
+      @if (current === 'parenting' && fieldError('caregiverMembershipId'); as e) {
+        <p class="field-error" role="alert">{{ e }}</p>
       }
 
       <fieldset class="when">

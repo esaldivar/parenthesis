@@ -251,7 +251,7 @@ export class AddEventPage implements OnInit {
     switch (this.type()) {
       case 'parenting':
         return coParent
-          ? `${coParent} needs to approve parenting time. Until they accept, it shows as pending and isn’t on the schedule.`
+          ? `This is your parenting time. ${coParent} needs to approve it. Until they accept, it shows as pending and isn’t on the schedule.`
           : 'You’re the only parent so far, so it’s confirmed now and marked for your co-parent to review when they join.';
       case 'family':
         return `Both parents attend. ${coParent ?? 'Your co-parent'} needs to accept before it’s confirmed; your request counts as your approval.`;
@@ -425,9 +425,6 @@ export class AddEventPage implements OnInit {
       }
     }
     if (type === 'parenting') {
-      if (!v.caregiver) {
-        errors['caregiverMembershipId'] = 'Choose which parent has the children.';
-      }
       if (v.childIds.length === 0) {
         errors['childIds'] = 'Choose which children this parenting time is for.';
       }

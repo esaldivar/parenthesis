@@ -101,6 +101,11 @@ export class EventEditPage implements OnInit {
   protected readonly category = computed(() => this.event()?.category ?? null);
   protected readonly unavailable = computed(() => this.category() === 'Unavailable');
   protected readonly parenting = computed(() => this.category() === 'ParentingTime');
+  /** "Your parenting time" or "Test mom's parenting time": whose time it is, which never changes (#246). */
+  protected readonly caregiverLabel = computed(() => {
+    const caregiver = this.parents().find((p) => p.membershipId === this.event()?.caregiverMembershipId);
+    return caregiver?.isYou ? 'Your parenting time.' : `${caregiver?.displayName ?? 'The other parent'}’s parenting time.`;
+  });
   protected readonly parents = computed(() => this.members().filter((m) => m.role === 'Parent'));
   protected readonly coParent = computed(() => this.parents().find((m) => !m.isYou)?.displayName ?? null);
   /** Whether a change (other than the notes) waits for the other parent. */
@@ -157,7 +162,7 @@ export class EventEditPage implements OnInit {
 
   protected readonly note = computed(() =>
     this.needsApproval()
-      ? `Changes to the title, date, time, place${this.parenting() ? ' or who has the children' : ''} go to ${this.coParent()} for approval. Until they answer, the event stays as it is and shows “Change pending”. Notes change at once.`
+      ? `Changes to the title, date, time or place go to ${this.coParent()} for approval. Until they answer, the event stays as it is and shows “Change pending”. Notes change at once.`
       : this.unavailable()
         ? `Changes apply at once. ${this.coParent() ?? 'Your co-parent'} sees only “Unavailable”; your note stays private to you.`
         : 'Changes apply at once, for both of you.',
@@ -267,9 +272,6 @@ export class EventEditPage implements OnInit {
       errors['title'] = 'Enter a title.';
     }
     Object.assign(errors, rangeProblems(v, this.today(), this.ownDates()));
-    if (this.parenting() && !v.caregiver) {
-      errors['caregiverMembershipId'] = 'Choose which parent has the children.';
-    }
     return errors;
   }
 
@@ -305,7 +307,7 @@ export class EventEditPage implements OnInit {
       // An empty location or note clears it.
       location: this.unavailable() ? undefined : v.location.trim(),
       notes: v.notes.trim(),
-      caregiverMembershipId: this.parenting() ? v.caregiver : undefined,
+      // Whose time it is never changes (#246), so it isn't sent.
     };
   }
 }

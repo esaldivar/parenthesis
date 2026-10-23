@@ -197,7 +197,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     [Theory]
     [InlineData("end-before-start")]
     [InlineData("unknown-child")]
-    [InlineData("no-caregiver")]
+    [InlineData("someone-elses-time")]
     [InlineData("unavailable-with-children")]
     public async Task Invalid_events_are_rejected(string problem)
     {
@@ -207,7 +207,16 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         {
             "end-before-start" => new { category = "Activity", title = "Oops", startsAt = _monday.AddHours(10), endsAt = _monday.AddHours(9) },
             "unknown-child" => Activity("Mystery", Guid.CreateVersion7()),
-            "no-caregiver" => new { category = "ParentingTime", title = "Time", startsAt = _monday, endsAt = _monday.AddDays(2), childIds = new[] { f.KaiId } },
+            // Each parent adds only their own parenting time (#246).
+            "someone-elses-time" => new
+            {
+                category = "ParentingTime",
+                title = "Time",
+                startsAt = _monday,
+                endsAt = _monday.AddDays(2),
+                childIds = new[] { f.KaiId },
+                caregiverMembershipId = f.MomMembershipId,
+            },
             _ => new { category = "Unavailable", startsAt = _monday, endsAt = _monday.AddHours(2), childIds = new[] { f.KaiId } },
         };
 
@@ -356,7 +365,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         using var _ = f;
         var id = await ConfirmedParentingTimeAsync(f);
 
-        var swap = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { startsAt = _monday.AddDays(1), caregiverMembershipId = f.MomMembershipId });
+        var swap = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { startsAt = _monday.AddDays(1) });
         var proposal = await JsonAsync(swap);
         var whileWaiting = Assert.Single(await WeekAsync(f.Mom, f));
         var approved = await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{proposal.GetProperty("changeRequestId").GetGuid()}/approve");
@@ -364,10 +373,11 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Accepted, swap.StatusCode);
         Assert.Equal("Modify", whileWaiting.GetProperty("pendingChange").GetString());
-        Assert.Equal(f.DadMembershipId, whileWaiting.GetProperty("caregiverMembershipId").GetGuid()); // Before.
-        Assert.Equal(f.MomMembershipId, whileWaiting.GetProperty("proposed").GetProperty("caregiverMembershipId").GetGuid()); // After.
+        Assert.Equal(_monday, whileWaiting.GetProperty("startsAt").GetDateTimeOffset()); // Before.
+        Assert.Equal(_monday.AddDays(1), whileWaiting.GetProperty("proposed").GetProperty("startsAt").GetDateTimeOffset()); // After.
         Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
-        Assert.Equal(f.MomMembershipId, after.GetProperty("caregiverMembershipId").GetGuid());
+        Assert.Equal(_monday.AddDays(1), after.GetProperty("startsAt").GetDateTimeOffset());
+        Assert.Equal(f.DadMembershipId, after.GetProperty("caregiverMembershipId").GetGuid());
         Assert.Equal("None", after.GetProperty("pendingChange").GetString());
     }
 
@@ -377,12 +387,12 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         var f = await FamilyAsync();
         using var _ = f;
         var id = await ConfirmedParentingTimeAsync(f);
-        var proposal = await JsonAsync(await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { caregiverMembershipId = f.MomMembershipId }));
+        var proposal = await JsonAsync(await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { startsAt = _monday.AddDays(1) }));
 
         await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{proposal.GetProperty("changeRequestId").GetGuid()}/reject");
         var after = Assert.Single(await WeekAsync(f.Dad, f));
 
-        Assert.Equal(f.DadMembershipId, after.GetProperty("caregiverMembershipId").GetGuid());
+        Assert.Equal(_monday, after.GetProperty("startsAt").GetDateTimeOffset());
         Assert.Equal("None", after.GetProperty("pendingChange").GetString());
     }
 
@@ -523,7 +533,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     // A parent can't have the children and be unavailable at the same time (owner decisions, October 22, 2026; #210).
 
     [Fact]
-    public async Task Parenting_time_cant_overlap_its_caregivers_unavailable_time_whoever_adds_it()
+    public async Task Parenting_time_cant_overlap_its_caregivers_unavailable_time_and_nobody_adds_it_for_them()
     {
         var f = await FamilyAsync();
         using var _ = f;
@@ -539,14 +549,13 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         var byDad = await f.Dad.PostAsync(Events(f), ParentingTime("Time with Mom", f.MomMembershipId, f.KaiId));
         var byMom = await f.Mom.PostAsync(Events(f), ParentingTime("Time with Mom", f.MomMembershipId, f.KaiId));
 
-        foreach (var refused in new[] { byDad, byMom })
-        {
-            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
-            var body = await refused.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-            Assert.True((await JsonAsync(refused)).GetProperty("errors").TryGetProperty("caregiverUnavailable", out var _));
-            // Never the unavailable time's private details.
-            Assert.DoesNotContain("Surgery", body, StringComparison.OrdinalIgnoreCase);
-        }
+        // Dad can't add Mom's parenting time at all (#246); Mom can't add hers while she's unavailable (#210).
+        Assert.Equal(HttpStatusCode.BadRequest, byDad.StatusCode);
+        Assert.True((await JsonAsync(byDad)).GetProperty("errors").TryGetProperty("caregiverMembershipId", out var _));
+        Assert.Equal(HttpStatusCode.BadRequest, byMom.StatusCode);
+        Assert.True((await JsonAsync(byMom)).GetProperty("errors").TryGetProperty("caregiverUnavailable", out var _));
+        // Never the unavailable time's private details.
+        Assert.DoesNotContain("Surgery", await byMom.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.OrdinalIgnoreCase);
 
         // Nothing was added or sent for approval.
         Assert.DoesNotContain(await WeekAsync(f.Dad, f), e => e.GetProperty("category").GetString() == "ParentingTime");
@@ -579,14 +588,15 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     public async Task Requests_at_the_same_moment_cant_both_create_the_overlap()
     {
         // Copilot release review, #224: the check and the save run under a lock on the parent, so of two requests sent
-        // together (Dad marks himself unavailable; Mom proposes his parenting time then), at most one succeeds.
+        // together (Dad marks himself unavailable, and proposes his own parenting time then, from two tabs), at most
+        // one succeeds. Only Dad adds his own parenting time (#246).
         var f = await FamilyAsync();
         using var _ = f;
         for (var week = 1; week <= 5; week++)
         {
             var day = _monday.AddDays(7 * week + 1);
             var unavailable = f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = day, endsAt = day.AddDays(1), allDay = true });
-            var parenting = f.Mom.PostAsync(Events(f), new
+            var parenting = f.Dad.PostAsync(Events(f), new
             {
                 category = "ParentingTime",
                 title = "Time with Dad",
@@ -620,21 +630,26 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_change_waiting_for_approval_counts_for_its_proposed_caregiver()
+    public async Task Whose_parenting_time_it_is_never_changes_and_a_waiting_change_counts_for_its_new_dates()
     {
         var f = await FamilyAsync();
         using var _ = f;
-        var id = await ConfirmedParentingTimeAsync(f);
-        // Dad asks Mom to take Kai that week instead.
-        var swap = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { caregiverMembershipId = f.MomMembershipId });
+        var id = await ConfirmedParentingTimeAsync(f); // Dad has Kai Monday to Sunday.
 
-        var moms = await f.Mom.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddDays(1), endsAt = _monday.AddDays(2), allDay = true });
-        var dads = await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddDays(1), endsAt = _monday.AddDays(2), allDay = true });
+        // Neither parent can hand it to the other (#246).
+        var byDad = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { caregiverMembershipId = f.MomMembershipId });
+        var byMom = await f.Mom.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { caregiverMembershipId = f.MomMembershipId });
+        Assert.Equal(HttpStatusCode.BadRequest, byDad.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, byMom.StatusCode);
+        Assert.True((await JsonAsync(byDad)).GetProperty("errors").TryGetProperty("caregiverMembershipId", out var _));
 
-        Assert.Equal(HttpStatusCode.Accepted, swap.StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, moms.StatusCode);
-        // Until Mom answers, Dad still has the children too.
+        // Dad asks to extend it by a week: until Mom answers, those days count as his too (#210).
+        var longer = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { endsAt = _monday.AddDays(14) });
+        var dads = await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddDays(9), endsAt = _monday.AddDays(10), allDay = true });
+
+        Assert.Equal(HttpStatusCode.Accepted, longer.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, dads.StatusCode);
+        Assert.Equal(f.DadMembershipId, Assert.Single(await WeekAsync(f.Dad, f)).GetProperty("caregiverMembershipId").GetGuid());
     }
 
     [Fact]
@@ -661,7 +676,6 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         {
             startsAt = _monday.AddDays(7),
             endsAt = _monday.AddDays(13),
-            caregiverMembershipId = f.MomMembershipId,
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, movedIn.StatusCode);

@@ -47,17 +47,11 @@
     }
 
     @if (parenting()) {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Who has the children?</mat-label>
-        <mat-select formControlName="caregiver" required>
-          @for (p of parents(); track p.membershipId) {
-            <mat-option [value]="p.membershipId">{{ p.isYou ? p.displayName + ' (you)' : p.displayName }}</mat-option>
-          }
-        </mat-select>
-        @if (fieldError('caregiverMembershipId'); as e) {
-          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-        }
-      </mat-form-field>
+      <!-- Whose parenting time it is never changes (#246). -->
+      <p class="legend-hint">{{ caregiverLabel() }}</p>
+      @if (fieldError('caregiverMembershipId'); as e) {
+        <p class="field-error" role="alert">{{ e }}</p>
+      }
     }
 
     <fieldset class="when">

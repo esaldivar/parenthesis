@@ -100,6 +100,9 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await test.step('Dad proposes it', async () => {
         await page.goto(`/calendar/new?date=${tuesday}`);
         await page.getByRole('button', { name: /Parenting time/ }).click();
+        // Always his own parenting time (#246): no choice of parent.
+        await expect(page.getByText('This is your parenting time.')).toBeVisible();
+        await expect(page.getByLabel('Who has the children?')).toHaveCount(0);
         await page.getByLabel('Kai').check();
         await page.getByRole('button', { name: 'Send for approval' }).click();
         await expect(page.getByText(/Sent to Mom for approval/)).toBeVisible();
