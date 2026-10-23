@@ -343,7 +343,7 @@ describe('repeating events', () => {
     }
 
     const page = () => document.querySelector('app-event-edit-page') as HTMLElement;
-    const field = (name: string) => page().querySelector<HTMLInputElement>(`[formcontrolname="${name}"]`)!;
+    const field = (name: string) => page().querySelector<HTMLInputElement>(`[formcontrolname="${name}"], input[name="${name}"]`)!;
     const scope = (label: string) =>
       [...page().querySelectorAll('.scope__option')].find((l) => text(l) === label)!.querySelector('input') as HTMLInputElement;
 

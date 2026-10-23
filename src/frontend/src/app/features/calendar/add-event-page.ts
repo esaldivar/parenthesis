@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,7 +20,9 @@ import { MAX_DATES, MAX_INTERVAL, RepeatRule, WEEKDAYS, lastAllowed, ordinal, se
 import { TaskForm } from './task-form';
 import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
-import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems, UNREADABLE_DATE } from './date-rules';
+import { dayFilter, END_BEFORE_START, rangeProblems, UNREADABLE_DATE } from './date-rules';
+import { DateCheck } from './date-check';
+import { DateField } from './date-field';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal } from './time';
 
@@ -89,6 +91,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
   selector: 'app-add-event-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DateField,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
@@ -165,19 +168,17 @@ export class AddEventPage implements OnInit {
   protected readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   /** Today in the family's time zone: new dates start from here (#232). */
   protected readonly today = computed(() => todayIn(this.timeZone(), new Date()));
-  /** The range calendar's open days: from today, and up to the longest an event lasts while the end is chosen. */
-  // One function for the page's life, reading the dates when called: a new one per keystroke would make the picker
-  // re-check the dates, which changes them again, without end.
-  protected readonly dayFilter = (day: string | null): boolean => {
-    const v = this.form.getRawValue();
-    return rangeFilter(this.today(), [], v.startDate || null, v.endDate || null, MAX_RANGE_DAYS)(day);
-  };
+  /** The calendar's open days: from today on (#232). Nothing else is disabled: the dates are checked instead (#248). */
+  // One function for the page's life: a new one per change would make the picker re-check its dates without end.
+  protected readonly dayFilter = (day: string | null): boolean => dayFilter(this.today())(day);
+  protected readonly endBeforeStart = END_BEFORE_START;
+  /** Which date shows red, and why (#248). */
+  protected readonly dateCheck = new DateCheck(
+    () => (this.value(), typedValues(this.form)),
+    () => this.today(),
+  );
   /** A repeat's last day: from the first date to a year later. */
   protected readonly repeatUntilMax = computed(() => (this.value().startDate ? lastAllowed(this.value().startDate!) : null));
-
-  constructor() {
-    keepRangeInOrder(this.form, inject(DestroyRef));
-  }
 
   protected readonly activeChildren = computed(() => this.children().filter((c) => c.status === 'Active'));
   /** Children added but still waiting for the other parent's approval (ADR-0006). */
@@ -355,6 +356,7 @@ export class AddEventPage implements OnInit {
     this.error.set(null);
     const errors = this.validate(type);
     this.fieldErrors.set(errors);
+    this.dateCheck.tried();
     if (Object.keys(errors).length > 0) {
       this.form.markAllAsTouched();
       this.revealProblem();
@@ -386,6 +388,7 @@ export class AddEventPage implements OnInit {
       if (problem.status === 400 && Object.keys(serverErrors).length > 0) {
         const caregiver = this.parents().find((p) => p.membershipId === this.form.getRawValue().caregiver);
         this.fieldErrors.set(withOwnOverlap(serverErrors, caregiver));
+        this.dateCheck.fromServer(serverErrors);
       } else {
         this.error.set(generalMessage(problem));
       }
