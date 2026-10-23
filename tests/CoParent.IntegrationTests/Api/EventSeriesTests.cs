@@ -117,8 +117,8 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("every-27-weeks")]
-    [InlineData("every-13-months")]
+    [InlineData("every-100-weeks")]
+    [InlineData("every-100-months")]
     [InlineData("every-0-days")]
     [InlineData("runs-into-the-next")]
     [InlineData("family-event")]
@@ -136,8 +136,8 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
         var weekly = _wednesdays;
         object body = problem switch
         {
-            "every-27-weeks" => Unavailable(new { frequency = "Weekly", interval = 27, days = weekly, count = 2 }),
-            "every-13-months" => Unavailable(new { frequency = "Monthly", interval = 13, count = 2 }),
+            "every-100-weeks" => Unavailable(new { frequency = "Weekly", interval = 100, days = weekly, count = 2 }),
+            "every-100-months" => Unavailable(new { frequency = "Monthly", interval = 100, count = 2 }),
             "every-0-days" => Unavailable(new { frequency = "Daily", interval = 0, count = 2 }),
             "runs-into-the-next" => new
             {
@@ -337,11 +337,38 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(first.GetProperty("seriesId").GetGuid(), request.GetProperty("targetId").GetGuid());
         Assert.Equal(first.GetProperty("changeRequestId").GetGuid(), request.GetProperty("id").GetGuid());
         Assert.Equal("Add: Time with Dad, every week on Wed, 3 dates: Oct 28, Nov 4, Nov 11", request.GetProperty("summary").GetString());
+        // The details say how many dates there are and when the first ones start, from any date of the series.
+        var repeat = pending[^1].GetProperty("repeat");
+        Assert.Equal(3, repeat.GetProperty("dateCount").GetInt32());
+        Assert.Equal(
+            [Utc(10, 28, 14), Utc(11, 4, 15), Utc(11, 11, 15)],
+            repeat.GetProperty("firstStarts").EnumerateArray().Select(d => d.GetDateTimeOffset()).ToList());
 
         var approved = await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{request.GetProperty("id").GetGuid()}/approve");
 
         Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
         Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("Confirmed", e.GetProperty("status").GetString()));
+    }
+
+    [Fact]
+    public async Task Another_family_cant_see_or_answer_a_repeating_parenting_time_request()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var other = await FamilyAsync();
+        using var __ = other;
+        var first = await JsonAsync(await f.Dad.PostAsync(Events(f), DadsWednesdays(f, count: 3)));
+        var requestId = first.GetProperty("changeRequestId").GetGuid();
+
+        Assert.Equal(HttpStatusCode.NotFound, (await other.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await other.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{requestId}/approve")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await other.Mom.PostAsync($"/api/families/{other.FamilyId}/approvals/{requestId}/approve")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await other.Mom.PostAsync($"/api/families/{other.FamilyId}/approvals/{requestId}/reject", new { })).StatusCode);
+        Assert.DoesNotContain(
+            (await JsonAsync(await other.Mom.GetAsync($"/api/families/{other.FamilyId}/approvals"))).EnumerateArray(),
+            r => r.GetProperty("id").GetGuid() == requestId);
+        Assert.Empty(await RangeAsync(other.Mom, other, _wednesday.AddDays(-1), _wednesday.AddDays(30)));
+        Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("PendingApproval", e.GetProperty("status").GetString()));
     }
 
     [Fact]

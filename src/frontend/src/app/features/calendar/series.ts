@@ -1,6 +1,6 @@
 import { EventRepeat, SeriesFrequency, Weekday } from '../../core/api/api';
 import { PlainDate } from '../dashboard/model';
-import { addDays, dateMedium } from '../dashboard/week';
+import { addDays, dateMedium, monthDay } from '../dashboard/week';
 
 export const WEEKDAYS: readonly { id: Weekday; short: string }[] = [
   { id: 'Sunday', short: 'Sun' },
@@ -30,7 +30,7 @@ export function lastAllowed(first: PlainDate): PlainDate {
 }
 
 /** The largest "every N" for each frequency, as on the server: a month of days, half a year of weeks, a year of months. */
-export const MAX_INTERVAL: Record<SeriesFrequency, number> = { Daily: 30, Weekly: 26, Monthly: 12 };
+export const MAX_INTERVAL: Record<SeriesFrequency, number> = { Daily: 99, Weekly: 99, Monthly: 99 };
 
 /** How a series repeats: every `interval` days, weeks (on `days`) or months (#238). */
 export interface RepeatRule {
@@ -107,6 +107,19 @@ export function everyText(rule: RepeatRule, first: PlainDate | null): string {
       }
       return `Every ${n} weeks on ${dayList(rule.days)}`;
   }
+}
+
+/**
+ * The series' dates for its details (#239): "3 dates: Oct 28, Nov 4, Nov 11", "12 dates: Oct 28, Nov 4, Nov 11 and
+ * 9 more". `firstDates` are the first dates' family-local days. Null when the server didn't say.
+ */
+export function datesText(count: number | undefined, firstDates: readonly PlainDate[]): string | null {
+  if (!count || firstDates.length === 0) {
+    return null;
+  }
+  const shown = firstDates.map(monthDay).join(', ');
+  const more = count - firstDates.length;
+  return `${count} ${count === 1 ? 'date' : 'dates'}: ${shown}${more > 0 ? ` and ${more} more` : ''}`;
 }
 
 /** "Every Wed and Fri until Nov 13, 2026", "Every 2 months on the 20th, 4 times". `first` is the series' first date. */

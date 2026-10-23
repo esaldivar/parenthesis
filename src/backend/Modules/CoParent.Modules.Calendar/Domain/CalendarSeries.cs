@@ -78,13 +78,8 @@ internal static class EventSchedule
     public static IReadOnlyList<DayOfWeek> FromFlags(WeekDays days) =>
         Enum.GetValues<DayOfWeek>().Where(d => days.HasFlag((WeekDays)(1 << (int)d))).ToList();
 
-    /// <summary>The largest "every N" for each frequency: a month of days, half a year of weeks, a year of months.</summary>
-    public static int MaxInterval(SeriesFrequency frequency) => frequency switch
-    {
-        SeriesFrequency.Daily => 30,
-        SeriesFrequency.Weekly => 26,
-        _ => 12,
-    };
+    /// <summary>The largest "every N" for any frequency (#238): 1 to 99 days, weeks or months.</summary>
+    public const int MaxInterval = 99;
 
     /// <summary>The last local date a series starting on <paramref name="first"/> may reach.</summary>
     public static DateOnly LastAllowed(DateOnly first) => first.AddYears(1);
