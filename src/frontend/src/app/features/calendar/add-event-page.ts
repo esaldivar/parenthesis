@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -19,6 +20,8 @@ import { MAX_DATES, WEEKDAYS, lastAllowed, seriesDates, weekdayOf } from './seri
 import { TaskForm } from './task-form';
 import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
+import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems, UNREADABLE_DATE } from './date-rules';
+import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal } from './time';
 
 export type EventType = 'activity' | 'parenting' | 'family' | 'unavailable';
@@ -90,10 +93,12 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
     MatInputModule,
     MatSelectModule,
     MatSlideToggleModule,
+    MatDatepickerModule,
     Icon,
     ReminderForm,
     TaskForm,
   ],
+  providers: [providePlainDates()],
   templateUrl: './add-event-page.html',
   styleUrls: ['./add-event-page.scss'],
   styles: [FORM_STYLES],
@@ -151,7 +156,22 @@ export class AddEventPage implements OnInit {
     repeatUntil: [''],
     repeatCount: [4],
   });
-  private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+  protected readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+  /** Today in the family's time zone: new dates start from here (#232). */
+  protected readonly today = computed(() => todayIn(this.timeZone(), new Date()));
+  /** The range calendar's open days: from today, and up to the longest an event lasts while the end is chosen. */
+  // One function for the page's life, reading the dates when called: a new one per keystroke would make the picker
+  // re-check the dates, which changes them again, without end.
+  protected readonly dayFilter = (day: string | null): boolean => {
+    const v = this.form.getRawValue();
+    return rangeFilter(this.today(), [], v.startDate || null, v.endDate || null, MAX_RANGE_DAYS)(day);
+  };
+  /** A repeat's last day: from the first date to a year later. */
+  protected readonly repeatUntilMax = computed(() => (this.value().startDate ? lastAllowed(this.value().startDate!) : null));
+
+  constructor() {
+    keepRangeInOrder(this.form, inject(DestroyRef));
+  }
 
   protected readonly activeChildren = computed(() => this.children().filter((c) => c.status === 'Active'));
   /** Children added but still waiting for the other parent's approval (ADR-0006). */
@@ -211,9 +231,11 @@ export class AddEventPage implements OnInit {
     if (wanted) {
       this.creating.set(wanted.id);
     }
-    const start = isDate(this.date()) ? this.date()! : todayIn(this.timeZone(), new Date());
+    // No days before today (#232): a tap on an earlier day starts on today instead, at no particular time.
+    const asked = isDate(this.date()) ? this.date()! : null;
+    const start = asked && asked >= this.today() ? asked : this.today();
     this.form.patchValue({ startDate: start, endDate: start });
-    const slot = this.slotTime();
+    const slot = asked === start ? this.slotTime() : null;
     if (slot) {
       // An hour from the tapped half-hour, the same length as the form's own default; past midnight ends the next day.
       const [hours, minutes] = slot.split(':').map(Number);
@@ -329,23 +351,17 @@ export class AddEventPage implements OnInit {
   }
 
   private validate(type: EventType): Record<string, string> {
-    const v = this.form.getRawValue();
+    const v = typedValues(this.form);
     const errors: Record<string, string> = {};
     if (type !== 'unavailable' && type !== 'parenting' && !v.title.trim()) {
       errors['title'] = 'Enter a title.';
     }
-    if (!v.startDate || !v.endDate) {
-      errors['endsAt'] = 'Choose when it starts and ends.';
-    } else {
-      const start = v.allDay ? v.startDate : `${v.startDate}T${v.startTime}`;
-      const end = v.allDay ? v.endDate : `${v.endDate}T${v.endTime}`;
-      if (v.allDay ? end < start : end <= start) {
-        errors['endsAt'] = 'Choose an end that’s after the start.';
-      }
-    }
+    Object.assign(errors, rangeProblems(v, this.today()));
     if (this.repeats()) {
       if (v.repeatDays.length === 0) {
         errors['repeat'] = 'Choose the days it repeats on.';
+      } else if (v.ends === 'date' && v.repeatUntil && !isPlainDate(v.repeatUntil)) {
+        errors['repeatUntil'] = UNREADABLE_DATE;
       } else if (v.ends === 'date' && (!v.repeatUntil || v.repeatUntil < v.startDate || v.repeatUntil > lastAllowed(v.startDate))) {
         errors['repeatUntil'] = 'Choose an end date from the first day to a year later.';
       } else if (v.ends === 'count' && !(Number.isInteger(v.repeatCount) && v.repeatCount >= 2 && v.repeatCount <= MAX_DATES)) {

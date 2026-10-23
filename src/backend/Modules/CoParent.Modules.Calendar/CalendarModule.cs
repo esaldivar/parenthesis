@@ -11,9 +11,15 @@ namespace CoParent.Modules.Calendar;
 /// <summary>The shared family calendar (E3; docs/design/CALENDAR_DECISIONS.md).</summary>
 public static class CalendarModule
 {
+    /// <summary>
+    /// The service key of the clock the "from today on" date rule reads (#232). Tests register a fixed one under it.
+    /// </summary>
+    public const string TodayClock = "calendar-today";
+
     public static IServiceCollection AddCalendarModule(this IServiceCollection services)
     {
         services.AddModuleDbContext<CalendarDbContext>();
+        services.AddKeyedSingleton(TodayClock, TimeProvider.System);
         services.AddScoped<IApprovalTargetHandler, CalendarCreateHandler>();
         services.AddScoped<IApprovalTargetHandler, JointEventCreateHandler>();
         services.AddScoped<IApprovalTargetHandler, CalendarModifyHandler>();

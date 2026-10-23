@@ -367,4 +367,48 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await family.dispose();
     }
   });
+
+  test('dates are picked as a range from today on, on desktop and phone (#232)', async ({ page }) => {
+    const family = await familyWithKai();
+    // The calendar's labels and the field's text for a date.
+    const label = (date: string) =>
+      new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    const shown = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC' });
+    const thursday = addHours(monday, 24 * 3).toISOString().slice(0, 10);
+    try {
+      await signIn(page, family.dad.email);
+      for (const size of [
+        { name: 'desktop', width: 1280, height: 800 },
+        { name: 'phone', width: 390, height: 844 },
+      ] as const) {
+        await test.step(size.name, async () => {
+          await page.setViewportSize({ width: size.width, height: size.height });
+          await page.goto(`/calendar/new?date=${tuesday}`);
+          await page.getByRole('button', { name: /Parenting time/ }).click();
+
+          // One calendar for the range: Tuesday, then Thursday.
+          await page.getByRole('button', { name: 'Choose dates' }).click();
+          await page.locator(`.mat-calendar-body-cell[aria-label="${label(tuesday)}"]`).click();
+          await page.locator(`.mat-calendar-body-cell[aria-label="${label(thursday)}"]`).click();
+          await expect(page.getByLabel('Start date')).toHaveValue(shown(tuesday));
+          await expect(page.getByLabel('End date')).toHaveValue(shown(thursday));
+
+          // Moving the start past the end moves the end, keeping the length.
+          const saturday = addHours(monday, 24 * 5).toISOString().slice(0, 10);
+          await page.getByLabel('Start date').fill(shown(saturday));
+          await page.getByLabel('Start date').blur();
+          await expect(page.getByLabel('End date')).toHaveValue(shown(addHours(monday, 24 * 7).toISOString().slice(0, 10)));
+
+          // A typed date before today is refused, saying why.
+          await page.getByLabel('Start date').fill('1/5/2026');
+          await page.getByLabel('End date').fill('1/6/2026');
+          await page.getByLabel('Kai').check();
+          await page.getByRole('button', { name: 'Send for approval' }).click();
+          await expect(page.getByText('Choose a start date from today on.')).toBeVisible();
+        });
+      }
+    } finally {
+      await family.dispose();
+    }
+  });
 });

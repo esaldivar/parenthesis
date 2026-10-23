@@ -94,6 +94,9 @@ legend {
   font-weight: 400;
   color: var(--color-text-secondary);
 }
+.dates {
+  width: 100%;
+}
 .when__row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

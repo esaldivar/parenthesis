@@ -12,6 +12,10 @@ const F = '/api/families/family-1';
 const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
 
 describe('Add and edit a task', () => {
+  // These tests use October 2026 dates; new dates can't be before today (#232), so "today" is October 1, 2026 here.
+  beforeEach(() => vi.setSystemTime(new Date('2026-10-01T15:00:00Z')));
+  afterEach(() => vi.useRealTimers());
+
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
 
@@ -89,7 +93,7 @@ describe('Add and edit a task', () => {
     // Shared, with no assignee, attachments or a "complete" control.
     expect(text(form())).toContain('A shared to-do for both of you, with no assignee.');
     expect(text(form())).not.toMatch(/Assign|Attach|Mark as complete/);
-    expect(field('dueDate').value).toBe('2026-10-20');
+    expect(field('dueDate').value).toBe('10/20/2026');
 
     type(field('title'), 'Prepare for soccer tournament');
     await addItem('Pack uniforms');
@@ -149,7 +153,7 @@ describe('Add and edit a task', () => {
 
     expect(text(document.querySelector('h1'))).toBe('Edit task');
     expect(field('title').value).toBe('Science fair poster');
-    expect(field('dueDate').value).toBe('2026-10-22');
+    expect(field('dueDate').value).toBe('10/22/2026');
     expect(itemTexts()).toEqual(['Poster board', 'Glue sticks']);
     type(itemInputs()[1], 'Glue sticks and tape');
     await addItem('Markers');
@@ -206,5 +210,15 @@ describe('Add and edit a task', () => {
     await addItem('Pack uniforms');
     await addItem('Snacks');
     expect(await axeViolations(document.body, { ignoreOverlay: true })).toEqual([]);
+  });
+
+  it('refuses a typed due date before today (#232)', async () => {
+    vi.setSystemTime(new Date('2026-10-23T15:00:00Z')); // Friday, October 23 in Chicago.
+    await openAdd();
+    type(field('title'), 'Sign the field trip form');
+    type(field('dueDate'), '10/21/2026');
+    await submit();
+    expect(text(form())).toContain('Choose a date from today on.');
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
   });
 });

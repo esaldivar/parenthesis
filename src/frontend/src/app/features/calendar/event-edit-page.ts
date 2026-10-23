@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -11,11 +12,13 @@ import { Api, CalendarCategory, CalendarEvent, CalendarEventChange, EditScope, F
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FORM_STYLES } from '../auth/form-styles';
-import { addDays, dayLong } from '../dashboard/week';
+import { addDays, dayLong, todayIn } from '../dashboard/week';
 import { warningText } from './add-event-page';
 import { repeatText } from './series';
 import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
+import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems } from './date-rules';
+import { providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from './time';
 
 /** The categories that change only with both parents' agreement (the server decides; this only explains it). */
@@ -30,7 +33,17 @@ const NEEDS_BOTH: readonly CalendarCategory[] = ['ParentingTime', 'Holiday', 'Jo
 @Component({
   selector: 'app-event-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatSlideToggleModule],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    MatDatepickerModule,
+  ],
+  providers: [providePlainDates()],
   templateUrl: './event-edit-page.html',
   styleUrl: './add-event-page.scss',
   styles: [FORM_STYLES],
@@ -66,6 +79,24 @@ export class EventEditPage implements OnInit {
   });
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   protected readonly allDay = computed(() => this.value().allDay ?? false);
+  /** Today in the family's time zone (#232). */
+  protected readonly today = computed(() => todayIn(this.timeZone(), new Date()));
+  /** The event's own dates: an event already in the past or under way can keep them (owner decision, #232). */
+  private readonly ownDates = computed(() => {
+    const loaded = this.loaded();
+    return loaded ? [loaded['startDate'] as string, loaded['endDate'] as string] : [];
+  });
+  /** The range calendar's open days: from today (or the event's own dates), up to the longest an event lasts. */
+  // One function for the page's life, reading the dates when called: a new one per keystroke would make the picker
+  // re-check the dates, which changes them again, without end.
+  protected readonly dayFilter = (day: string | null): boolean => {
+    const v = this.form.getRawValue();
+    return rangeFilter(this.today(), this.ownDates(), v.startDate || null, v.endDate || null, MAX_RANGE_DAYS)(day);
+  };
+
+  constructor() {
+    keepRangeInOrder(this.form, inject(DestroyRef));
+  }
 
   protected readonly category = computed(() => this.event()?.category ?? null);
   protected readonly unavailable = computed(() => this.category() === 'Unavailable');
@@ -229,20 +260,12 @@ export class EventEditPage implements OnInit {
   }
 
   private validate(): Record<string, string> {
-    const v = this.form.getRawValue();
+    const v = typedValues(this.form);
     const errors: Record<string, string> = {};
     if (!this.unavailable() && !this.parenting() && !v.title.trim()) {
       errors['title'] = 'Enter a title.';
     }
-    if (!v.startDate || !v.endDate) {
-      errors['endsAt'] = 'Choose when it starts and ends.';
-    } else {
-      const start = v.allDay ? v.startDate : `${v.startDate}T${v.startTime}`;
-      const end = v.allDay ? v.endDate : `${v.endDate}T${v.endTime}`;
-      if (v.allDay ? end < start : end <= start) {
-        errors['endsAt'] = 'Choose an end that’s after the start.';
-      }
-    }
+    Object.assign(errors, rangeProblems(v, this.today(), this.ownDates()));
     if (this.parenting() && !v.caregiver) {
       errors['caregiverMembershipId'] = 'Choose which parent has the children.';
     }

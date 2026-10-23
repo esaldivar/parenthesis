@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoParent.Modules.Calendar.Endpoints;
 
@@ -128,6 +129,7 @@ internal static class ReminderEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
+        [FromKeyedServices(CalendarModule.TodayClock)] TimeProvider today,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -137,6 +139,12 @@ internal static class ReminderEndpoints
 
         var zone = await roster.TimeZoneAsync(cancellationToken);
         var errors = await ValidateAsync(request, roster, zone, cancellationToken);
+        if (errors.Count == 0 && ReminderSchedule.LocalDate(request.StartsAt!.Value, zone) < today.In(zone))
+        {
+            // A new reminder is for today on (#232).
+            errors["startsAt"] = [CalendarToday.PastDate];
+        }
+
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -183,6 +191,7 @@ internal static class ReminderEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
+        [FromKeyedServices(CalendarModule.TodayClock)] TimeProvider today,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -198,6 +207,16 @@ internal static class ReminderEndpoints
 
         var zone = await roster.TimeZoneAsync(cancellationToken);
         var errors = await ValidateAsync(request, roster, zone, cancellationToken);
+        if (errors.Count == 0)
+        {
+            // Moving it is to today on; a reminder already past keeps its own day (#232).
+            var day = ReminderSchedule.LocalDate(request.StartsAt!.Value, zone);
+            if (day < today.In(zone) && day != ReminderSchedule.LocalDate(reminder.StartsAt, zone))
+            {
+                errors["startsAt"] = [CalendarToday.PastDate];
+            }
+        }
+
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);

@@ -7,11 +7,16 @@ import { routes } from '../../app.routes';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, reminder } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
+import { lastReminderDay } from './reminder-form';
 
 const F = '/api/families/family-1';
 const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
 
 describe('Add and edit a reminder', () => {
+  // These tests use October 2026 dates; new dates can't be before today (#232), so "today" is October 1, 2026 here.
+  beforeEach(() => vi.setSystemTime(new Date('2026-10-01T15:00:00Z')));
+  afterEach(() => vi.useRealTimers());
+
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
 
@@ -126,6 +131,11 @@ describe('Add and edit a reminder', () => {
     expect(create.request.body).toEqual(expect.objectContaining({ repeat: 'Weekly', repeatCount: 3, repeatUntil: undefined, childId: 'kai' }));
   });
 
+  it('lets a reminder repeat up to 2 years, counting February 29 as the server does', () => {
+    expect(lastReminderDay('2026-10-20')).toBe('2028-10-20');
+    expect(lastReminderDay('2028-02-29')).toBe('2030-02-28');
+  });
+
   it('ends a repeat on a date when chosen', async () => {
     await openAdd('reminder');
     type('input[formcontrolname="title"]', 'Practice spelling');
@@ -133,7 +143,17 @@ describe('Add and edit a reminder', () => {
     await pick('ends', 'On a date');
     type('input[formcontrolname="repeatUntil"]', '2026-10-20');
     await submit();
-    expect(text(form())).toContain('Choose an end date after the first day.');
+    expect(text(form())).toContain('Choose an end date after the first day and within 2 years.');
+
+    // The server's limit is 2 years from the first day (October 20, 2026).
+    type('input[formcontrolname="repeatUntil"]', '2028-10-21');
+    await submit();
+    expect(text(form())).toContain('Choose an end date after the first day and within 2 years.');
+
+    type('input[formcontrolname="repeatUntil"]', 'next fall');
+    await submit();
+    expect(text(form())).toContain('Enter a date like 10/27/2026.');
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
 
     type('input[formcontrolname="repeatUntil"]', '2026-10-23');
     await submit();

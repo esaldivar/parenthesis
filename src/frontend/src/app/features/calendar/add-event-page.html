@@ -92,30 +92,29 @@
       <fieldset class="when">
         <legend>When</legend>
         <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
-        <div class="when__row">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Start date</mat-label>
-            <input matInput type="date" formControlName="startDate" required />
-          </mat-form-field>
-          @if (!allDay()) {
+        <!-- One range calendar (#232): it shows start → end, and days that can't be chosen are greyed out. -->
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="dates">
+          <mat-label>Dates</mat-label>
+          <mat-date-range-input [rangePicker]="datesPicker" [dateFilter]="dayFilter">
+            <input matStartDate formControlName="startDate" placeholder="Start date" aria-label="Start date" />
+            <input matEndDate formControlName="endDate" placeholder="End date" aria-label="End date" />
+          </mat-date-range-input>
+          <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+          <mat-datepicker-toggle matIconSuffix [for]="datesPicker" aria-label="Choose dates" />
+          <mat-date-range-picker #datesPicker />
+        </mat-form-field>
+        @if (!allDay()) {
+          <div class="when__row">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Start time</mat-label>
               <input matInput type="time" formControlName="startTime" required />
             </mat-form-field>
-          }
-        </div>
-        <div class="when__row">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>End date</mat-label>
-            <input matInput type="date" formControlName="endDate" required />
-          </mat-form-field>
-          @if (!allDay()) {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>End time</mat-label>
               <input matInput type="time" formControlName="endTime" required />
             </mat-form-field>
-          }
-        </div>
+          </div>
+        }
         @if (fieldError('endsAt') ?? fieldError('startsAt'); as e) {
           <p class="field-error" role="alert">{{ e }}</p>
         }
@@ -150,7 +149,16 @@
               @if (endsOnDate()) {
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
                   <mat-label>Last day</mat-label>
-                  <input matInput type="date" formControlName="repeatUntil" required />
+                  <input
+                    matInput
+                    [matDatepicker]="untilPicker"
+                    [min]="value().startDate || today()"
+                    [max]="repeatUntilMax()"
+                    formControlName="repeatUntil"
+                    required
+                  />
+                  <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="Choose the last day" />
+                  <mat-datepicker #untilPicker />
                   @if (fieldError('repeatUntil'); as e) {
                     <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
                   }

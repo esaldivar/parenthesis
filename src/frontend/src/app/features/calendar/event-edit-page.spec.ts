@@ -26,6 +26,10 @@ const weekend = (over: Partial<CalendarEvent> = {}) =>
   });
 
 describe('Edit an event', () => {
+  // These tests use October 2026 dates; new dates can't be before today (#232), so "today" is October 1, 2026 here.
+  beforeEach(() => vi.setSystemTime(new Date('2026-10-01T15:00:00Z')));
+  afterEach(() => vi.useRealTimers());
+
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
 
@@ -75,7 +79,7 @@ describe('Edit an event', () => {
 
     expect(text(page().querySelector('h1'))).toBe('Edit event');
     expect(field('title')!.value).toBe('Soccer practice');
-    expect(field('startDate')!.value).toBe('2026-10-20');
+    expect(field('startDate')!.value).toBe('10/20/2026');
     expect(field('startTime')!.value).toBe('10:00');
     expect(field('endTime')!.value).toBe('11:30');
     expect(field('location')!.value).toBe('North Field');
@@ -107,7 +111,7 @@ describe('Edit an event', () => {
       'Changes to the title, date, time, place or who has the children go to Sam for approval. Until they answer, the event stays as it is and shows “Change pending”. Notes change at once.',
     );
     // The last day shows as the last day, not the midnight after it.
-    expect(field('endDate')!.value).toBe('2026-10-25');
+    expect(field('endDate')!.value).toBe('10/25/2026');
     type('notes', 'Pick up at school');
     expect(text(submitButton())).toBe('Save changes'); // Notes alone don't need approval.
     type('endDate', '2026-10-26');
@@ -165,5 +169,30 @@ describe('Edit an event', () => {
   it('has no axe violations', async () => {
     await open(weekend());
     expect(await axeViolations(document.body, { ignoreOverlay: true })).toEqual([]);
+  });
+
+  describe('date ranges (#232)', () => {
+    // Today is Friday, October 23, 2026: the event (Tuesday, October 20) is already past.
+    beforeEach(() => vi.setSystemTime(new Date('2026-10-23T15:00:00Z')));
+
+    it('keeps a past event’s dates, so its title can still change', async () => {
+      await open(event());
+      type('title', 'Soccer game');
+      await submit();
+
+      const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH'));
+      expect(patch.request.body.title).toBe('Soccer game');
+      expect(patch.request.body.startsAt).toBe('2026-10-20T15:00:00.000Z');
+    });
+
+    it('moves a past event only to today or later', async () => {
+      await open(event());
+      type('startDate', '10/21/2026');
+      type('endDate', '10/21/2026');
+      await submit();
+
+      expect(text(page())).toContain('Choose a start date from today on.');
+      expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
+    });
   });
 });

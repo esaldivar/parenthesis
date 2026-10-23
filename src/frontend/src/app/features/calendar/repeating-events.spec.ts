@@ -26,6 +26,10 @@ const swim = (over: Partial<CalendarEvent> = {}) =>
   });
 
 describe('repeating events', () => {
+  // These tests use October 2026 dates; new dates can't be before today (#232), so "today" is October 1, 2026 here.
+  beforeEach(() => vi.setSystemTime(new Date('2026-10-01T15:00:00Z')));
+  afterEach(() => vi.useRealTimers());
+
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
 
@@ -137,6 +141,12 @@ describe('repeating events', () => {
       page().querySelector('form')!.dispatchEvent(new Event('submit'));
       await settle();
       expect(text(page())).toContain('Choose an end date from the first day to a year later.');
+
+      // A typed end date that isn't one says how to write it, rather than being treated as missing.
+      type('input[formcontrolname="repeatUntil"]', 'next fall');
+      page().querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle();
+      expect(text(page())).toContain('Enter a date like 10/27/2026.');
       expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
     });
 
