@@ -177,20 +177,27 @@ public sealed class ReminderTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(Utc(2026, 11, 2, 14), Assert.Single(middle).GetProperty("startsAt").GetDateTimeOffset());
     }
 
-    [Fact]
-    public async Task Monthly_on_the_31st_falls_on_the_last_day_of_shorter_months()
+    [Theory]
+    [InlineData(2027, 29, 28)]
+    [InlineData(2027, 30, 28)]
+    [InlineData(2027, 31, 28)]
+    [InlineData(2028, 29, 29)]
+    [InlineData(2028, 30, 29)]
+    [InlineData(2028, 31, 29)]
+    public async Task Monthly_on_late_month_days_uses_short_months_without_drifting(int year, int day, int februaryDay)
     {
         var f = await FamilyAsync();
         using var _ = f;
         var cst = TimeSpan.FromHours(-6);
-        await f.Dad.PostAsync(Reminders(f), new { title = "Pay school lunch", startsAt = new DateTimeOffset(2027, 1, 31, 9, 0, 0, cst), repeat = "Monthly", repeatCount = 4 });
+        await f.Dad.PostAsync(Reminders(f), new { title = "Pay school lunch", startsAt = new DateTimeOffset(year, 1, day, 9, 0, 0, cst), repeat = "Monthly", repeatCount = 4 });
 
-        var winter = await RangeAsync(f.Dad, f, new(2027, 1, 15, 0, 0, 0, cst), new(2027, 3, 15, 0, 0, 0, cst));
-        var spring = await RangeAsync(f.Dad, f, new(2027, 3, 15, 0, 0, 0, cst), new(2027, 5, 10, 0, 0, 0, cst));
+        var winter = await RangeAsync(f.Dad, f, new(year, 1, 15, 0, 0, 0, cst), new(year, 3, 15, 0, 0, 0, cst));
+        var spring = await RangeAsync(f.Dad, f, new(year, 3, 15, 0, 0, 0, cst), new(year, 5, 10, 0, 0, 0, cst));
 
-        Assert.Equal([Utc(2027, 1, 31, 15), Utc(2027, 2, 28, 15)], winter.Select(r => r.GetProperty("startsAt").GetDateTimeOffset()));
-        // Daylight saving started March 14, 2027: still 9:00 AM in Chicago.
-        Assert.Equal([Utc(2027, 3, 31, 14), Utc(2027, 4, 30, 14)], spring.Select(r => r.GetProperty("startsAt").GetDateTimeOffset()));
+        Assert.Equal([Utc(year, 1, day, 15), Utc(year, 2, februaryDay, 15)], winter.Select(r => r.GetProperty("startsAt").GetDateTimeOffset()));
+        // Daylight saving has started by mid-March in both years: still 9:00 AM in Chicago. A short February
+        // must not change the series' original day for March and April.
+        Assert.Equal([Utc(year, 3, day, 14), Utc(year, 4, Math.Min(day, 30), 14)], spring.Select(r => r.GetProperty("startsAt").GetDateTimeOffset()));
     }
 
     [Fact]

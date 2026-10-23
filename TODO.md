@@ -540,6 +540,12 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
+  29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
+  range splitting, four-occurrence count and local time across the spring daylight-saving boundary.
+  - [ ] Run the new cases in backend CI (this workspace has no dotnet/Docker), and retain the remaining manual
+    two-parent/accessibility acceptance checks. The live October 31 to November 30 reminder was verified separately.
+
 - [x] **Silent lazy-page navigation failures (#177).** A shared accessible recovery dialog explains a failed
   page load and offers an explicit reload with an unsaved-changes warning, or Keep working. No automatic reload,
   retry loop, failed URL or technical exception is exposed. Regression tests include an existing focus trap.
