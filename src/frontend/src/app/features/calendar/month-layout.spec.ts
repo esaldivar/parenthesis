@@ -63,6 +63,16 @@ describe('Month view bars (#250)', () => {
     expect([lane('long'), lane('short'), lane('later')]).toEqual([0, 1, 0]);
   });
 
+  it('keeps a pending proposal ahead of a longer confirmed item starting the same day', () => {
+    const items = [
+      ...Array.from({ length: MONTH_LANES }, (_, i) => item(`long${i}`, '2026-10-20', '2026-10-23')),
+      item('proposal', '2026-10-20', '2026-10-20', { status: 'pending' }),
+    ];
+    const { bars, more } = layOutWeek(week, items);
+    expect(bars.find((b) => b.item.id === 'proposal')?.lane).toBe(0);
+    expect(more.every((m) => m.pending === 0)).toBe(true);
+  });
+
   it('puts what doesn’t fit behind "+N more" on each day it covers, saying how many are pending', () => {
     const busy = Array.from({ length: MONTH_LANES + 2 }, (_, i) =>
       item(`b${i}`, '2026-10-21', '2026-10-21', i === 0 ? { status: 'pending' } : {}),

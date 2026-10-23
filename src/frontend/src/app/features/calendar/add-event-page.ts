@@ -176,6 +176,8 @@ export class AddEventPage implements OnInit {
   protected readonly dateCheck = new DateCheck(
     () => (this.value(), typedValues(this.form)),
     () => this.today(),
+    () => [],
+    () => this.timeZone(),
   );
   /** A repeat's last day: from the first date to a year later. */
   protected readonly repeatUntilMax = computed(() => (this.value().startDate ? lastAllowed(this.value().startDate!) : null));
@@ -408,7 +410,7 @@ export class AddEventPage implements OnInit {
     if (type !== 'unavailable' && type !== 'parenting' && !v.title.trim()) {
       errors['title'] = 'Enter a title.';
     }
-    Object.assign(errors, rangeProblems(v, this.today()));
+    Object.assign(errors, rangeProblems(v, this.today(), [], this.timeZone()));
     if (this.repeats()) {
       const rule = this.rule();
       if (!(Number.isInteger(rule.interval) && rule.interval >= 1 && rule.interval <= MAX_INTERVAL[rule.frequency])) {

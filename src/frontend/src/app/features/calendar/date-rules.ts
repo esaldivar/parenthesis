@@ -1,6 +1,7 @@
 import { PlainDate } from '../dashboard/model';
 import { addDays } from '../dashboard/week';
 import { isPlainDate } from './plain-dates';
+import { fromFamilyLocal } from './time';
 
 /**
  * Date rules for the calendar's forms (#232, #248; owner decisions October 23, 2026). New dates are from today on in
@@ -51,19 +52,25 @@ export const MISSING_END = 'Choose an end date.';
 export const END_BEFORE_START = 'Choose an end that’s after the start.';
 export const TOO_LONG = `Choose an end within ${MAX_EVENT_DAYS} days of the start.`;
 
-/** Minutes from the start of the first day, for a local date and optional time ("HH:mm"). */
-const localMinutes = (date: PlainDate, time = '00:00') => Date.parse(`${date}T${time}:00Z`) / 60_000;
+/**
+ * The instant, in minutes, of a local date and optional time ("HH:mm") in the family's zone, so the length is
+ * measured as the server measures it, across a daylight-saving change too. NaN for an unreadable time.
+ */
+function instantMinutes(date: PlainDate, time: string, timeZone: string): number {
+  return /^\d{2}:\d{2}$/.test(time) ? Date.parse(fromFamilyLocal(`${date}T${time}`, timeZone)) / 60_000 : NaN;
+}
 
 /**
  * What's wrong with an event's dates, by the API's field names: `startsAt` (missing, unreadable, or before today) and
  * `endsAt` (missing, unreadable, before today, not after the start, or more than 31 days on). `own` are the event's
- * current days, which an edit may keep. The messages are for screen readers: on screen an invalid date is only red
+ * current days, which an edit may keep; `timeZone` is the family's, in which the times are read. The messages are for screen readers: on screen an invalid date is only red
  * (#248).
  */
 export function rangeProblems(
   v: RangeValue,
   today: PlainDate,
   own: readonly PlainDate[] = [],
+  timeZone = 'UTC',
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   const startOk = isPlainDate(v.startDate);
@@ -84,8 +91,10 @@ export function rangeProblems(
   }
   if (startOk && endOk && !errors['endsAt']) {
     // An all-day event's end is the midnight after its last day.
-    const start = localMinutes(v.startDate!, v.allDay ? undefined : v.startTime);
-    const end = v.allDay ? localMinutes(addDays(v.endDate!, 1)) : localMinutes(v.endDate!, v.endTime);
+    const start = instantMinutes(v.startDate!, v.allDay ? '00:00' : v.startTime, timeZone);
+    const end = v.allDay
+      ? instantMinutes(addDays(v.endDate!, 1), '00:00', timeZone)
+      : instantMinutes(v.endDate!, v.endTime, timeZone);
     if (end <= start) {
       errors['endsAt'] = END_BEFORE_START;
     } else if (end - start > MAX_EVENT_DAYS * 24 * 60) {

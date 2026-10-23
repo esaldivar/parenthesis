@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, input, viewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -29,7 +29,7 @@ import { Icon } from '../../shared/icon/icon';
         [formControl]="control()"
         [matDatepicker]="picker"
         [matDatepickerFilter]="dateFilter()"
-        [attr.aria-invalid]="!!issue()"
+        #dateInput
         [class.date-invalid]="!!issue()"
         (keydown)="openOnKey($event, picker)"
       />
@@ -77,6 +77,16 @@ export class DateField {
   readonly startAt = input<string | null>(null);
   /** Why the date is invalid, for screen readers; null when it's fine. */
   readonly issue = input<string | null>(null);
+
+  private readonly dateInput = viewChild.required<ElementRef<HTMLInputElement>>('dateInput');
+
+  constructor() {
+    // aria-invalid is set after rendering: Material's input sets its own value ("false") when it's created, which
+    // would otherwise hide a date that's already invalid when the field appears (Swap going back to its dates).
+    afterRenderEffect(() => {
+      this.dateInput().nativeElement.setAttribute('aria-invalid', String(!!this.issue()));
+    });
+  }
 
   /** Enter, Space or Alt+Down opens the calendar, as a tap does. */
   protected openOnKey(event: KeyboardEvent, picker: MatDatepicker<string>): void {
