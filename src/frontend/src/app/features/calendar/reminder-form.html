@@ -30,6 +30,7 @@
         <input matInput [matDatepicker]="datePicker" [matDatepickerFilter]="dayFilter()" formControlName="date" required />
         <mat-datepicker-toggle matIconSuffix [for]="datePicker" aria-label="Choose the date" />
         <mat-datepicker #datePicker />
+        <mat-hint class="visually-hidden">Date format: MM/DD/YYYY or YYYY-MM-DD.</mat-hint>
       </mat-form-field>
       @if (!allDay()) {
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -70,6 +71,8 @@
             <mat-datepicker #untilPicker />
             @if (fieldError('repeatUntil'); as e) {
               <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+            } @else {
+              <mat-hint class="visually-hidden">Date format: MM/DD/YYYY or YYYY-MM-DD.</mat-hint>
             }
           </mat-form-field>
         } @else {

@@ -572,3 +572,7 @@ that points back here.
   managed identity). Today the keys rely on database access control only, and ASP.NET Core logs a warning about it.
 - [x] S-03 forwarded headers behind the proxy: `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` on each container app
   (runbook step 2), found when sign-up failed on the development site (October 20, 2026).
+
+- [x] **Date-format accessibility (#236).** Typed reminder/task dates and repeat last-day fields retain a
+  screen-reader-only format hint; regression tests verify its actual accessible-description association.
+  - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.

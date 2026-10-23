@@ -1,3 +1,4 @@
+import { expectDateFormat } from '../../../testing/date-format';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -87,6 +88,11 @@ describe('Add and edit a task', () => {
     form().querySelector('form')!.dispatchEvent(new Event('submit'));
     await settle();
   }
+
+  it('describes the typed due date without a visible format hint (#236)', async () => {
+    await openAdd();
+    expectDateFormat(field('dueDate'));
+  });
 
   it('adds a task with a checklist that can be reordered, with required and optional items, at once', async () => {
     await openAdd();
