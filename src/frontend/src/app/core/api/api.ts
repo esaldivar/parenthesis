@@ -221,6 +221,10 @@ export interface EventRepeat {
   /** `YYYY-MM-DD`, inclusive. */
   readonly until: string | null;
   readonly count: number | null;
+  /** How many dates the series has, cancelled ones aside (#239). */
+  readonly dateCount?: number;
+  /** When its first few dates start, in order (#239). */
+  readonly firstStarts?: readonly string[];
 }
 
 /** Which dates of a repeating event an edit or cancel applies to. */

@@ -59,7 +59,15 @@ describe('Edit an event', () => {
 
   const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
   const page = () => document.querySelector('app-event-edit-page') as HTMLElement;
-  const field = (name: string) => page().querySelector<HTMLInputElement>(`[formcontrolname="${name}"]`);
+  /** What a screen reader hears besides a field's name: its reason when it's invalid, never shown on screen (#248). */
+  const describedBy = (input: HTMLElement) =>
+    (input.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id))
+      .filter((e) => e?.classList.contains('visually-hidden'))
+      .map((e) => (e!.textContent ?? '').trim())
+      .join(' ');
+  const field = (name: string) => page().querySelector<HTMLInputElement>(`[formcontrolname="${name}"], input[name="${name}"]`);
   const submitButton = () => page().querySelector<HTMLButtonElement>('button[type="submit"]')!;
 
   function type(name: string, value: string) {
@@ -156,7 +164,12 @@ describe('Edit an event', () => {
     type('endTime', '09:00');
     await submit();
 
-    expect(text(page())).toContain('Choose an end that’s after the start.');
+    // The end time and date turn red, with the reason for screen readers only (#248).
+    const endTime = page().querySelector<HTMLInputElement>('input[formcontrolname="endTime"]')!;
+    const endDate = page().querySelector<HTMLInputElement>('input[name="endDate"]')!;
+    expect(endTime.classList).toContain('date-invalid');
+    expect(endDate.getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy(endDate)).toBe('Choose an end that’s after the start.');
     expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
   });
 
@@ -194,7 +207,9 @@ describe('Edit an event', () => {
       type('endDate', '10/21/2026');
       await submit();
 
-      expect(text(page())).toContain('Choose a start date from today on.');
+      const start = page().querySelector<HTMLInputElement>('input[name="startDate"]')!;
+      expect(start.classList).toContain('date-invalid');
+      expect(describedBy(start)).toBe('Choose a start date from today on.');
       expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
     });
   });

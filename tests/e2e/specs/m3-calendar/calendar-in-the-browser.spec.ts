@@ -453,6 +453,37 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     }
   });
 
+  test('Month view shows labelled bars across the days on a phone, and each segment opens the details (#250)', async ({ page }) => {
+    const family = await familyWithKai();
+    const { dad, familyId, kaiId } = family;
+    try {
+      // Synthetic: an all-day activity from Friday to the next Tuesday, across two week rows.
+      await dad.json(dad.post(events(familyId), {
+        category: 'Activity',
+        title: 'Robotics camp',
+        childIds: [kaiId],
+        allDay: true,
+        startsAt: addHours(monday, 24 * 4 + 5).toISOString(),
+        endsAt: addHours(monday, 24 * 9 + 5).toISOString(),
+      }));
+      await signIn(page, dad.email);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`/calendar?date=${addHours(monday, 24 * 4).toISOString().slice(0, 10)}&view=month`);
+
+      // One bar on Friday's row, continued on the next row (when the month grid shows it: whichever month the
+      // dates fall in, the first segment always says it continues).
+      const bars = page.locator('app-calendar-month .bar', { hasText: 'Robotics camp' });
+      await expect(bars.first()).toHaveAttribute('aria-label', /Continues into next week/);
+      expect(await bars.count()).toBeLessThanOrEqual(2);
+      await expect(page.locator('app-calendar-month .dot')).toHaveCount(0);
+      await bars.last().click();
+      await expect(details(page)).toContainText('Robotics camp');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    } finally {
+      await family.dispose();
+    }
+  });
+
   test('dates are picked as a range from today on, on desktop and phone (#232)', async ({ page }) => {
     const family = await familyWithKai();
     // The calendar's labels and the field's text for a date.
@@ -471,25 +502,44 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
           await page.goto(`/calendar/new?date=${tuesday}`);
           await page.getByRole('button', { name: /Parenting time/ }).click();
 
-          // One calendar for the range: Tuesday, then Thursday.
-          await page.getByRole('button', { name: 'Choose dates' }).click();
-          await page.locator(`.mat-calendar-body-cell[aria-label="${label(tuesday)}"]`).click();
-          await page.locator(`.mat-calendar-body-cell[aria-label="${label(thursday)}"]`).click();
-          await expect(page.getByLabel('Start date')).toHaveValue(shown(tuesday));
-          await expect(page.getByLabel('End date')).toHaveValue(shown(thursday));
+          // Separate Start and End fields (#249): tapping anywhere in one opens only its calendar, and choosing a
+          // day sets that date alone and closes it.
+          const start = page.locator('input[name="startDate"]');
+          const end = page.locator('input[name="endDate"]');
+          const day = (date: string) => page.locator(`.mat-calendar-body-cell[aria-label="${label(date)}"]`);
+          await page.locator('app-date-field').filter({ hasText: 'End date' }).locator('mat-form-field').click();
+          await expect(page.locator('mat-calendar')).toHaveCount(1);
+          await day(thursday).click();
+          await expect(page.locator('mat-calendar')).toHaveCount(0);
+          await expect(start).toHaveValue(shown(tuesday));
+          await expect(end).toHaveValue(shown(thursday));
+          await expect(end).toBeFocused();
 
-          // Moving the start past the end moves the end, keeping the length.
+          // Display-only: typing changes nothing (and opens no phone keyboard).
+          await expect(start).not.toBeEditable();
+          await start.press('1');
+          await expect(start).toHaveValue(shown(tuesday));
+
+          // A start after the end stays as chosen (nothing moves the end), turns the end red and blocks sending (#248).
           const saturday = addHours(monday, 24 * 5).toISOString().slice(0, 10);
-          await page.getByLabel('Start date').fill(shown(saturday));
-          await page.getByLabel('Start date').blur();
-          await expect(page.getByLabel('End date')).toHaveValue(shown(addHours(monday, 24 * 7).toISOString().slice(0, 10)));
-
-          // A typed date before today is refused, saying why.
-          await page.getByLabel('Start date').fill('1/5/2026');
-          await page.getByLabel('End date').fill('1/6/2026');
+          await start.click();
+          await day(saturday).click();
+          await expect(start).toHaveValue(shown(saturday));
+          await expect(end).toHaveValue(shown(thursday));
+          await expect(end).toHaveAttribute('aria-invalid', 'true');
+          await expect(end).toHaveCSS('color', /rgb\((161, 51, 51|255, 180, 171)\)/);
           await page.getByLabel('Kai').check();
           await page.getByRole('button', { name: 'Send for approval' }).click();
-          await expect(page.getByText('Choose a start date from today on.')).toBeVisible();
+          await expect(page).toHaveURL(/\/calendar\/new/);
+          await expect(end).toBeFocused();
+          // Its reason is for screen readers only, never shown.
+          await expect(page.getByText('Choose an end that’s after the start.')).toHaveClass(/visually-hidden/);
+
+          // Correcting the end (the same Saturday, in the calendar already shown) clears the red.
+          await end.click();
+          await day(saturday).click();
+          await expect(end).toHaveValue(shown(saturday));
+          await expect(end).toHaveAttribute('aria-invalid', 'false');
         });
       }
     } finally {

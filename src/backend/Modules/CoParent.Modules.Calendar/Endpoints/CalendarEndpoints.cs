@@ -35,9 +35,21 @@ internal sealed record CreateEventRequest(
 internal sealed record EventRepeatRequest(
     IReadOnlyList<DayOfWeek>? Days, DateOnly? Until, int? Count, SeriesFrequency? Frequency = null, int? Interval = null);
 
-/// <summary>How a repeating event repeats, for its details ("Every 2 weeks on Wed and Fri until Dec 30").</summary>
+/// <summary>
+/// How a repeating event repeats, for its details ("Every 2 weeks on Wed and Fri until Dec 30"), with how many dates the
+/// series has and when the first ones start (#239). Cancelled dates aren't counted.
+/// </summary>
 internal sealed record SeriesView(
-    IReadOnlyList<DayOfWeek> Days, DateOnly? Until, int? Count, SeriesFrequency Frequency = SeriesFrequency.Weekly, int Interval = 1);
+    IReadOnlyList<DayOfWeek> Days,
+    DateOnly? Until,
+    int? Count,
+    SeriesFrequency Frequency = SeriesFrequency.Weekly,
+    int Interval = 1,
+    int DateCount = 0,
+    IReadOnlyList<DateTimeOffset>? FirstStarts = null);
+
+/// <summary>A series and its dates' starts, in order, for <see cref="SeriesView"/>.</summary>
+internal sealed record SeriesDates(CalendarSeries Series, IReadOnlyList<DateTimeOffset> Starts);
 
 /// <summary>Which dates of a repeating event an edit or cancel applies to (#193). One-off events ignore it.</summary>
 internal enum EditScope
@@ -666,9 +678,9 @@ internal static class CalendarEndpoints
         {
             errors["repeat"] = ["Choose how often it repeats."];
         }
-        else if (interval < 1 || interval > EventSchedule.MaxInterval(frequency))
+        else if (interval < 1 || interval > EventSchedule.MaxInterval)
         {
-            errors["repeatInterval"] = [$"Choose every 1 to {EventSchedule.MaxInterval(frequency)} {Unit(frequency)}s."];
+            errors["repeatInterval"] = [$"Choose every 1 to {EventSchedule.MaxInterval} {Unit(frequency)}s."];
         }
         else if (frequency == SeriesFrequency.Weekly && days == WeekDays.None)
         {
@@ -798,11 +810,14 @@ internal static class CalendarEndpoints
 
         return TypedResults.Created(
             $"/api/families/{tenant.FamilyId}/calendar/events/{events[0].Id}",
-            View(events[0], tenant, changeRequestId, warnings, new Dictionary<Guid, CalendarSeries> { [series.Id] = series }));
+            View(events[0], tenant, changeRequestId, warnings, new Dictionary<Guid, SeriesDates> { [series.Id] = new(series, events.Select(x => x.StartsAt).Order().ToList()) }));
     }
 
     /// <summary>An approval request about a whole series (#239): its target id is the series' id.</summary>
     internal const string SeriesTarget = "calendar_series";
+
+    /// <summary>How many of a series' first dates its details list.</summary>
+    private const int SeriesFirstShown = 3;
 
     /// <summary>
     /// What the approvals inbox and its email say about a repeating request (#239): how it repeats, on which days, how
@@ -971,13 +986,22 @@ internal static class CalendarEndpoints
     };
 
     /// <summary>The series behind these events, for "Repeats …" in their details. Children never see it.</summary>
-    private static async Task<IReadOnlyDictionary<Guid, CalendarSeries>> SeriesForAsync(
+    private static async Task<IReadOnlyDictionary<Guid, SeriesDates>> SeriesForAsync(
         CalendarDbContext db, ITenantContext tenant, IEnumerable<CalendarEvent> events, CancellationToken cancellationToken)
     {
         var ids = events.Select(e => e.SeriesId).OfType<Guid>().Distinct().ToList();
-        return ids.Count == 0 || tenant.Role == FamilyRole.Child
-            ? new Dictionary<Guid, CalendarSeries>()
-            : await db.Series.Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, cancellationToken);
+        if (ids.Count == 0 || tenant.Role == FamilyRole.Child)
+        {
+            return new Dictionary<Guid, SeriesDates>();
+        }
+
+        var series = await db.Series.Where(s => ids.Contains(s.Id)).ToListAsync(cancellationToken);
+        var starts = (await db.Events
+                .Where(x => x.SeriesId != null && ids.Contains(x.SeriesId.Value) && x.Status != EventStatus.Cancelled)
+                .Select(x => new { SeriesId = x.SeriesId!.Value, x.StartsAt })
+                .ToListAsync(cancellationToken))
+            .ToLookup(x => x.SeriesId, x => x.StartsAt);
+        return series.ToDictionary(s => s.Id, s => new SeriesDates(s, starts[s.Id].Order().ToList()));
     }
 
     /// <summary>
@@ -1325,7 +1349,7 @@ internal static class CalendarEndpoints
         ITenantContext tenant,
         Guid? changeRequestId,
         IReadOnlyList<string> warnings,
-        IReadOnlyDictionary<Guid, CalendarSeries>? series = null) => new(
+        IReadOnlyDictionary<Guid, SeriesDates>? series = null) => new(
         e.Id,
         HiddenFrom(e, tenant) ? UnavailableTitle : e.Title,
         e.Category,
@@ -1348,6 +1372,8 @@ internal static class CalendarEndpoints
         warnings,
         tenant.Role == FamilyRole.Child ? null : e.SeriesId,
         tenant.Role != FamilyRole.Child && e.SeriesId is { } id && series?.GetValueOrDefault(id) is { } r
-            ? new SeriesView(EventSchedule.FromFlags(r.Days), r.Until, r.Count, r.Frequency, r.Interval)
+            ? new SeriesView(
+                EventSchedule.FromFlags(r.Series.Days), r.Series.Until, r.Series.Count, r.Series.Frequency, r.Series.Interval,
+                r.Starts.Count, r.Starts.Take(SeriesFirstShown).ToList())
             : null);
 }

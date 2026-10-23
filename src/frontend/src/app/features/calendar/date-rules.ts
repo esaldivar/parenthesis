@@ -1,14 +1,14 @@
-import { DestroyRef } from '@angular/core';
-import { FormControl } from '@angular/forms';
-import { Observable } from 'rxjs';
 import { PlainDate } from '../dashboard/model';
 import { addDays } from '../dashboard/week';
 import { isPlainDate } from './plain-dates';
+import { fromFamilyLocal } from './time';
 
 /**
- * Date rules for the calendar's forms (#232, owner decisions October 23, 2026). New dates are from today on in the
- * family's time zone (earlier times today are fine); an event already in the past keeps its own start when edited;
- * the end is never before the start; and moving the start past the end moves the end too, keeping the length.
+ * Date rules for the calendar's forms (#232, #248; owner decisions October 23, 2026). New dates are from today on in
+ * the family's time zone (earlier times today are fine), and an event already in the past keeps its own days when
+ * edited: those are the only days a calendar disables. Whether the end comes after the start, and the 31-day limit,
+ * are checked rather than enforced by disabled days: either date can always be picked or corrected, an invalid one
+ * shows red and the form can't be sent, and nothing moves the other date for the parent (#248).
  */
 
 /** An event lasts up to 31 days (the server's limit). */
@@ -33,67 +33,9 @@ export function choosable(
   return !!day && (day >= today || own.includes(day));
 }
 
-/**
- * The days the range calendar offers. While the end is being chosen (a start but no end yet), only days from the start
- * up to the longest an event can last stay open, so an end before the start can't be picked.
- */
-export function rangeFilter(
-  today: PlainDate,
-  own: readonly PlainDate[],
-  start: PlainDate | null,
-  end: PlainDate | null,
-  maxDays: number,
-): (day: PlainDate | null) => boolean {
-  const choosingEnd = isPlainDate(start) && !end;
-  return (day) =>
-    choosable(day, today, own) &&
-    !(choosingEnd && (day! < start! || daysBetween(start!, day!) > maxDays));
-}
-
-/** The end after the start moves: it moves with it, keeping the length, when it would otherwise be before the start. */
-export function endAfterMove(
-  oldStart: PlainDate,
-  oldEnd: PlainDate,
-  newStart: PlainDate,
-): PlainDate {
-  if (
-    !isPlainDate(oldStart) ||
-    !isPlainDate(oldEnd) ||
-    !isPlainDate(newStart) ||
-    newStart <= oldEnd
-  ) {
-    return oldEnd;
-  }
-  return addDays(newStart, Math.max(0, daysBetween(oldStart, oldEnd)));
-}
-
-const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
-const clock = (total: number) =>
-  `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-
-/**
- * The end time after the start time moves on a one-day event: when it would be at or before the new start, it moves
- * with it, keeping the length (into the next day if needed).
- */
-export function endTimeAfterMove(
-  date: PlainDate,
-  oldStartTime: string,
-  oldEndTime: string,
-  newStartTime: string,
-): { endDate: PlainDate; endTime: string } | null {
-  if (
-    !/^\d{2}:\d{2}$/.test(oldStartTime) ||
-    !/^\d{2}:\d{2}$/.test(oldEndTime) ||
-    !/^\d{2}:\d{2}$/.test(newStartTime)
-  ) {
-    return null;
-  }
-  if (minutes(oldEndTime) > minutes(newStartTime)) {
-    return null;
-  }
-  const length = Math.max(30, minutes(oldEndTime) - minutes(oldStartTime));
-  const end = minutes(newStartTime) + length;
-  return { endDate: end >= 24 * 60 ? addDays(date, 1) : date, endTime: clock(end) };
+/** The days a date calendar offers: from today on, and the item's own days when editing (#248). */
+export function dayFilter(today: PlainDate, own: readonly PlainDate[] = []): (day: PlainDate | null) => boolean {
+  return (day) => choosable(day, today, own);
 }
 
 /** The parts of an event form these rules look at. */
@@ -105,99 +47,76 @@ export interface RangeValue {
   readonly endTime: string;
 }
 
-/**
- * The most calendar days the range picker allows from the first to the last date. The server allows 31 days of
- * elapsed time, measured in UTC; keeping two days spare covers an all-day event's whole last day and a daylight
- * saving change, so a range the picker offers is never refused.
- */
-export const MAX_RANGE_DAYS = MAX_EVENT_DAYS - 2;
+export const MISSING_START = 'Choose a start date.';
+export const MISSING_END = 'Choose an end date.';
+export const END_BEFORE_START = 'Choose an end that’s after the start.';
+export const TOO_LONG = `Choose an end within ${MAX_EVENT_DAYS} days of the start.`;
 
 /**
- * What's wrong with an event's dates, by the API's field names: `startsAt` (unreadable, or before today) and `endsAt`
- * (missing, unreadable, or not after the start). `own` are the event's current dates, which an edit may keep.
+ * The instant, in minutes, of a local date and optional time ("HH:mm") in the family's zone, so the length is
+ * measured as the server measures it, across a daylight-saving change too. NaN for an unreadable time.
+ */
+function instantMinutes(date: PlainDate, time: string, timeZone: string): number {
+  return /^\d{2}:\d{2}$/.test(time) ? Date.parse(fromFamilyLocal(`${date}T${time}`, timeZone)) / 60_000 : NaN;
+}
+
+/**
+ * What's wrong with an event's dates, by the API's field names: `startsAt` (missing, unreadable, or before today) and
+ * `endsAt` (missing, unreadable, before today, not after the start, or more than 31 days on). `own` are the event's
+ * current days, which an edit may keep; `timeZone` is the family's, in which the times are read. The messages are for screen readers: on screen an invalid date is only red
+ * (#248).
  */
 export function rangeProblems(
   v: RangeValue,
   today: PlainDate,
   own: readonly PlainDate[] = [],
+  timeZone = 'UTC',
 ): Record<string, string> {
   const errors: Record<string, string> = {};
-  const typed = (value: PlainDate | null) => !!value && !isPlainDate(value);
-  if (typed(v.startDate) || typed(v.endDate)) {
+  const startOk = isPlainDate(v.startDate);
+  const endOk = isPlainDate(v.endDate);
+  if (!v.startDate) {
+    errors['startsAt'] = MISSING_START;
+  } else if (!startOk) {
     errors['startsAt'] = UNREADABLE_DATE;
-    return errors;
-  }
-  if (!v.startDate || !v.endDate) {
-    errors['endsAt'] = 'Choose when it starts and ends.';
-    return errors;
-  }
-  if (v.startDate < today && !own.includes(v.startDate)) {
+  } else if (v.startDate < today && !own.includes(v.startDate)) {
     errors['startsAt'] = PAST_START;
-    return errors;
   }
-  if (v.endDate < today && !own.includes(v.endDate)) {
+  if (!v.endDate) {
+    errors['endsAt'] = MISSING_END;
+  } else if (!endOk) {
+    errors['endsAt'] = UNREADABLE_DATE;
+  } else if (v.endDate < today && !own.includes(v.endDate)) {
     errors['endsAt'] = PAST_END;
-    return errors;
   }
-  const start = v.allDay ? v.startDate : `${v.startDate}T${v.startTime}`;
-  const end = v.allDay ? v.endDate : `${v.endDate}T${v.endTime}`;
-  if (v.allDay ? end < start : end <= start) {
-    errors['endsAt'] = 'Choose an end that’s after the start.';
+  if (startOk && endOk && !errors['endsAt']) {
+    // An all-day event's end is the midnight after its last day.
+    const start = instantMinutes(v.startDate!, v.allDay ? '00:00' : v.startTime, timeZone);
+    const end = v.allDay
+      ? instantMinutes(addDays(v.endDate!, 1), '00:00', timeZone)
+      : instantMinutes(v.endDate!, v.endTime, timeZone);
+    if (end <= start) {
+      errors['endsAt'] = END_BEFORE_START;
+    } else if (end - start > MAX_EVENT_DAYS * 24 * 60) {
+      errors['endsAt'] = TOO_LONG;
+    }
   }
   return errors;
 }
 
-/** Any event form with these four fields (Add, Edit, Request Swap). */
-interface RangeForm {
-  readonly controls: { readonly endDate: FormControl<string> };
-  readonly valueChanges: Observable<unknown>;
-  getRawValue(): { startDate: string; startTime: string; endDate: string; endTime: string };
-  patchValue(value: { endDate?: string; endTime?: string }): void;
-}
-
 /**
- * Keeps an event form's range in order as the parent edits it (owner decision, October 23, 2026): moving the start
- * date past the end moves the end date with it, and moving a one-day event's start time to or past its end moves the
- * end time with it, each keeping the length. The range is never left invalid.
+ * Which date fields show red, and why (for screen readers): the live problems with the dates as they are, plus
+ * the server's answer to the last send until the dates change. A missing date only shows after a send was tried,
+ * so a range being picked isn't marked while it's half done.
  */
-export function keepRangeInOrder(form: RangeForm, destroyRef: DestroyRef): void {
-  let last = form.getRawValue();
-  let adjusting = false;
-  const subscription = form.valueChanges.subscribe(() => {
-    if (adjusting) {
-      return;
-    }
-    const v = form.getRawValue();
-    adjusting = true;
-    try {
-      // Only when the parent moved the start alone: a form filled in all at once is left as it is.
-      const endUntouched = v.endDate === last.endDate && v.endTime === last.endTime;
-      if (
-        endUntouched &&
-        v.startDate !== last.startDate &&
-        last.startDate &&
-        last.endDate &&
-        v.endDate
-      ) {
-        const end = endAfterMove(last.startDate, last.endDate, v.startDate);
-        if (end !== v.endDate) {
-          form.controls.endDate.setValue(end);
-        }
-      } else if (
-        endUntouched &&
-        v.startTime !== last.startTime &&
-        v.startDate &&
-        v.startDate === v.endDate
-      ) {
-        const moved = endTimeAfterMove(v.startDate, last.startTime, last.endTime, v.startTime);
-        if (moved) {
-          form.patchValue(moved);
-        }
-      }
-    } finally {
-      adjusting = false;
-    }
-    last = form.getRawValue();
-  });
-  destroyRef.onDestroy(() => subscription.unsubscribe());
+export function dateIssues(
+  live: Record<string, string>,
+  server: Record<string, string>,
+  attempted: boolean,
+): { start: string | null; end: string | null } {
+  const shown = (key: string, missing: string) => {
+    const problem = live[key] ?? server[key] ?? null;
+    return problem === missing && !attempted ? null : problem;
+  };
+  return { start: shown('startsAt', MISSING_START), end: shown('endsAt', MISSING_END) };
 }

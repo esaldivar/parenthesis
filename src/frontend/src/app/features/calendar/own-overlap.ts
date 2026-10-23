@@ -26,7 +26,10 @@ export function caregiverUnavailableText(
 export const OVERLAPS_YOUR_PARENTING_TIME_TEXT =
   'You have parenting time then. Choose another time, or change that parenting time first.';
 
-/** The server's field errors, with an own-overlap refusal moved to the time field in words that name the caregiver. */
+/**
+ * The server's field errors, with an own-overlap refusal as `when`: a sentence under the dates naming the caregiver.
+ * It stays visible text, unlike an invalid date, which is only red (#248).
+ */
 export function withOwnOverlap(
   errors: Record<string, string>,
   caregiver: FamilyMember | undefined,
@@ -37,10 +40,10 @@ export function withOwnOverlap(
     ...rest
   } = errors;
   if (unavailable) {
-    return { ...rest, startsAt: caregiverUnavailableText(caregiver) };
+    return { ...rest, when: caregiverUnavailableText(caregiver) };
   }
   if (parenting) {
-    return { ...rest, startsAt: OVERLAPS_YOUR_PARENTING_TIME_TEXT };
+    return { ...rest, when: OVERLAPS_YOUR_PARENTING_TIME_TEXT };
   }
   return errors;
 }

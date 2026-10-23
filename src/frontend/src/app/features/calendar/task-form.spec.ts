@@ -73,7 +73,7 @@ describe('Add and edit a task', () => {
     input.dispatchEvent(new Event('input'));
     harness.fixture.detectChanges();
   }
-  const field = (name: string) => form().querySelector<HTMLInputElement>(`[formcontrolname="${name}"]`)!;
+  const field = (name: string) => form().querySelector<HTMLInputElement>(`[formcontrolname="${name}"], input[name="${name}"]`)!;
 
   async function addItem(value: string) {
     button('Add item').click();

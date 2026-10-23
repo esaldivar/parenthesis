@@ -66,8 +66,8 @@ describe('Request swap', () => {
   }
 
   async function newDates() {
-    type('input[formcontrolname="startDate"]', '2026-10-24');
-    type('input[formcontrolname="endDate"]', '2026-10-24');
+    type('input[name="startDate"]', '2026-10-24');
+    type('input[name="endDate"]', '2026-10-24');
     await click('Continue');
   }
 
@@ -133,8 +133,8 @@ describe('Request swap', () => {
     expect(page().querySelector('.clash')).toBeNull();
     await vi.waitFor(() => expect(document.activeElement?.id).toBe('swap-start-date'));
 
-    type('input[formcontrolname="startDate"]', '2026-10-25');
-    type('input[formcontrolname="endDate"]', '2026-10-25');
+    type('input[name="startDate"]', '2026-10-25');
+    type('input[name="endDate"]', '2026-10-25');
     await click('Continue');
     (await conflicts()).flush({ warnings: ['OverlapsCoParentUnavailable'] });
     await settle();
@@ -153,6 +153,55 @@ describe('Request swap', () => {
     expect(button('Send anyway')).toBeUndefined();
     expect(text(page().querySelector('h1'))).not.toBe('Review and send request');
     await vi.waitFor(() => expect(document.activeElement?.id).toBe('swap-start-date'));
+  });
+
+  it('marks an end before the start red, without moving either date, and goes no further until it’s fixed (#248)', async () => {
+    await open();
+    type('input[name="startDate"]', '2026-10-26');
+    type('input[name="endDate"]', '2026-10-24');
+    await click('Continue');
+
+    const end = page().querySelector<HTMLInputElement>('input[name="endDate"]')!;
+    expect(end.value).toBe('2026-10-24'); // As typed: nothing moved it.
+    expect(end.classList).toContain('date-invalid');
+    expect(end.getAttribute('aria-invalid')).toBe('true');
+    expect(page().querySelector('.field-error')).toBeNull();
+    expect(http.match((r) => r.url.endsWith('/conflicts'))).toHaveLength(0);
+
+    type('input[name="endDate"]', '2026-10-26');
+    await click('Continue');
+    expect(end.classList).not.toContain('date-invalid');
+    expect((await conflicts()).request.params.get('startsAt')).toBe('2026-10-26T13:00:00.000Z');
+  });
+
+  it('marks the dates red when the server refuses them, on the dates step, and focuses the first (#248)', async () => {
+    await open();
+    await newDates();
+    (await conflicts()).flush(
+      { status: 400, errors: { endsAt: ['An event can last up to 31 days.'] } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+
+    const end = page().querySelector<HTMLInputElement>('input[name="endDate"]')!;
+    expect(end.getAttribute('aria-invalid')).toBe('true');
+    expect(end.classList).toContain('date-invalid');
+    await vi.waitFor(() => expect(document.activeElement).toBe(end));
+    expect(text(page().querySelector('h1'))).toBe('Request parenting time swap');
+
+    // Sending can be refused the same way: back on the dates step, with the date already red as it appears.
+    type('input[name="endDate"]', '2026-10-25');
+    await click('Continue');
+    (await conflicts()).flush({ warnings: [] });
+    await settle();
+    await click('Send request');
+    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH'));
+    patch.flush({ status: 400, errors: { startsAt: ['Choose a start date from today on.'] } }, { status: 400, statusText: 'Bad Request' });
+    await settle();
+    const start = page().querySelector<HTMLInputElement>('input[name="startDate"]')!;
+    expect(start.getAttribute('aria-invalid')).toBe('true');
+    expect(start.classList).toContain('date-invalid');
+    await vi.waitFor(() => expect(document.activeElement).toBe(start));
   });
 
   it('needs dates that differ from the current ones', async () => {

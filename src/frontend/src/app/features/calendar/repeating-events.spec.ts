@@ -8,7 +8,7 @@ import { CalendarEvent } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
-import { RepeatRule, everyText, ordinal, repeatText, seriesDates } from './series';
+import { RepeatRule, datesText, everyText, ordinal, repeatText, seriesDates } from './series';
 import { toastText } from '../../../testing/toasts';
 
 const F = '/api/families/family-1';
@@ -21,7 +21,15 @@ const swim = (over: Partial<CalendarEvent> = {}) =>
     title: 'Swim lessons',
     location: 'North Pool',
     seriesId: 's1',
-    repeat: { frequency: 'Weekly', interval: 1, days: ['Tuesday', 'Thursday'], until: '2026-11-05', count: null },
+    repeat: {
+      frequency: 'Weekly',
+      interval: 1,
+      days: ['Tuesday', 'Thursday'],
+      until: '2026-11-05',
+      count: null,
+      dateCount: 6,
+      firstStarts: ['2026-10-20T22:00:00Z', '2026-10-22T22:00:00Z', '2026-10-27T22:00:00Z'],
+    },
     ...over,
   });
 
@@ -87,6 +95,9 @@ describe('repeating events', () => {
       expect(everyText(rule('Weekly', 2, ['Tuesday', 'Thursday']), null)).toBe('Every 2 weeks on Tue and Thu');
       expect(everyText(rule('Monthly', 1), '2026-10-20')).toBe('Every month on the 20th');
       expect(repeatText({ ...rule('Monthly', 2), until: null, count: 4 }, '2026-10-01')).toBe('Every 2 months on the 1st, 4 times');
+      expect(datesText(3, ['2026-10-28', '2026-11-04', '2026-11-11'])).toBe('3 dates: Oct 28, Nov 4, Nov 11');
+      expect(datesText(12, ['2026-10-28', '2026-11-04', '2026-11-11'])).toBe('12 dates: Oct 28, Nov 4, Nov 11 and 9 more');
+      expect(datesText(undefined, [])).toBeNull();
       expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 31].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '31st']);
     });
   });
@@ -249,11 +260,11 @@ describe('repeating events', () => {
       await settle();
       expect(text(page().querySelector('.preview'))).toBe('3 dates: Tue, Oct 20 · Fri, Oct 23 · Mon, Oct 26');
 
-      // Months allow at most every 12: a larger number comes down to 12.
+      // Every 1 to 99 days, weeks or months (#238): switching the unit keeps the number.
       await pickNative('every', 19); // 20
       await pickNative('unit', 2); // months
-      expect(Number(page().querySelector<HTMLSelectElement>('select[formcontrolname="every"]')!.selectedIndex) + 1).toBe(12);
-      expect(page().querySelectorAll('select[formcontrolname="every"] option')).toHaveLength(12);
+      expect(Number(page().querySelector<HTMLSelectElement>('select[formcontrolname="every"]')!.selectedIndex) + 1).toBe(20);
+      expect(page().querySelectorAll('select[formcontrolname="every"] option')).toHaveLength(99);
     });
 
     it('has no axe violations with Repeat on', async () => {
@@ -288,6 +299,8 @@ describe('repeating events', () => {
       const dialog = document.querySelector('app-event-details [role="dialog"]')!;
 
       expect(text(dialog)).toContain('RepeatsEvery Tue and Thu until Nov 5, 2026');
+      // The series' date count and first dates (#239).
+      expect(text(dialog)).toContain('Dates6 dates: Oct 20, Oct 22, Oct 27 and 3 more');
       button('Cancel event…', dialog).click();
       await settle();
       expect(text(dialog)).toContain('This repeats. Which dates do you want to cancel?');
@@ -343,7 +356,7 @@ describe('repeating events', () => {
     }
 
     const page = () => document.querySelector('app-event-edit-page') as HTMLElement;
-    const field = (name: string) => page().querySelector<HTMLInputElement>(`[formcontrolname="${name}"]`)!;
+    const field = (name: string) => page().querySelector<HTMLInputElement>(`[formcontrolname="${name}"], input[name="${name}"]`)!;
     const scope = (label: string) =>
       [...page().querySelectorAll('.scope__option')].find((l) => text(l) === label)!.querySelector('input') as HTMLInputElement;
 

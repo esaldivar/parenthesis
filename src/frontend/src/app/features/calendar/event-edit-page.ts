@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,7 +17,9 @@ import { warningText } from './add-event-page';
 import { repeatText } from './series';
 import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
-import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems } from './date-rules';
+import { dayFilter, END_BEFORE_START, rangeProblems } from './date-rules';
+import { DateCheck } from './date-check';
+import { DateField } from './date-field';
 import { providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from './time';
 
@@ -34,6 +36,7 @@ const NEEDS_BOTH: readonly CalendarCategory[] = ['ParentingTime', 'Holiday', 'Jo
   selector: 'app-event-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DateField,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
@@ -86,17 +89,17 @@ export class EventEditPage implements OnInit {
     const loaded = this.loaded();
     return loaded ? [loaded['startDate'] as string, loaded['endDate'] as string] : [];
   });
-  /** The range calendar's open days: from today (or the event's own dates), up to the longest an event lasts. */
-  // One function for the page's life, reading the dates when called: a new one per keystroke would make the picker
-  // re-check the dates, which changes them again, without end.
-  protected readonly dayFilter = (day: string | null): boolean => {
-    const v = this.form.getRawValue();
-    return rangeFilter(this.today(), this.ownDates(), v.startDate || null, v.endDate || null, MAX_RANGE_DAYS)(day);
-  };
-
-  constructor() {
-    keepRangeInOrder(this.form, inject(DestroyRef));
-  }
+  /** The calendar's open days: from today, or the event's own days (#232). The dates are checked instead (#248). */
+  // One function for the page's life: a new one per change would make the picker re-check its dates without end.
+  protected readonly dayFilter = (day: string | null): boolean => dayFilter(this.today(), this.ownDates())(day);
+  protected readonly endBeforeStart = END_BEFORE_START;
+  /** Which date shows red, and why (#248). */
+  protected readonly dateCheck = new DateCheck(
+    () => (this.value(), typedValues(this.form)),
+    () => this.today(),
+    () => this.ownDates(),
+    () => this.timeZone(),
+  );
 
   protected readonly category = computed(() => this.event()?.category ?? null);
   protected readonly unavailable = computed(() => this.category() === 'Unavailable');
@@ -203,6 +206,7 @@ export class EventEditPage implements OnInit {
     this.error.set(null);
     const errors = this.validate();
     this.fieldErrors.set(errors);
+    this.dateCheck.tried();
     if (Object.keys(errors).length > 0) {
       this.form.markAllAsTouched();
       this.revealProblem();
@@ -234,6 +238,7 @@ export class EventEditPage implements OnInit {
       if (problem.status === 400 && Object.keys(serverErrors).length > 0) {
         const caregiver = this.parents().find((p) => p.membershipId === this.form.getRawValue().caregiver);
         this.fieldErrors.set(withOwnOverlap(serverErrors, caregiver));
+        this.dateCheck.fromServer(serverErrors);
       } else {
         this.error.set(problem.detail ? `${problem.title ?? ''} ${problem.detail}`.trim() : generalMessage(problem));
       }
@@ -271,7 +276,7 @@ export class EventEditPage implements OnInit {
     if (!this.unavailable() && !this.parenting() && !v.title.trim()) {
       errors['title'] = 'Enter a title.';
     }
-    Object.assign(errors, rangeProblems(v, this.today(), this.ownDates()));
+    Object.assign(errors, rangeProblems(v, this.today(), this.ownDates(), this.timeZone()));
     return errors;
   }
 
