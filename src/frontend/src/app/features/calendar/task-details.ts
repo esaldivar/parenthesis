@@ -104,6 +104,13 @@ export class TaskDetails implements OnInit {
     return item.completedBy && item.completedAt ? `Ticked by ${this.who(item.completedBy)} · ${this.at(item.completedAt)}` : null;
   }
 
+  /** aria-disabled preserves keyboard focus; prevent the native checkbox toggle while a save is in flight. */
+  protected holdWhileBusy(event: MouseEvent): void {
+    if (this.busy()) {
+      event.preventDefault();
+    }
+  }
+
   protected async toggle(item: ChecklistItem, box: HTMLInputElement): Promise<void> {
     await this.change(() => this.api.setTaskItem(this.familyId(), this.current().id, item.id, box.checked));
     // The box always ends up showing what the server has, even after a conflict or an error.

@@ -72,7 +72,8 @@
               <input
                 type="checkbox"
                 [checked]="entry.completedAt !== null"
-                [disabled]="busy()"
+                [attr.aria-disabled]="busy()"
+                (click)="holdWhileBusy($event)"
                 #box
                 (change)="toggle(entry, box)"
               />
@@ -104,12 +105,13 @@
       @if (!hasChecklist()) {
         @if (done()) {
           <p class="done-by">{{ completedText() }}</p>
-          <button mat-stroked-button type="button" [disabled]="busy()" (click)="setDone(false)">Undo done</button>
-        } @else {
-          <button mat-flat-button type="button" [disabled]="busy()" (click)="setDone(true)">
-            <app-icon name="check" [size]="20" /> Mark done
-          </button>
         }
+        <button [matButton]="done() ? 'outlined' : 'filled'" type="button" [disabled]="busy()" disabledInteractive (click)="setDone(!done())">
+          @if (!done()) {
+            <app-icon name="check" [size]="20" />
+          }
+          {{ done() ? 'Undo done' : 'Mark done' }}
+        </button>
       }
       <a mat-stroked-button [routerLink]="['/calendar/tasks', current().id, 'edit']">Edit task</a>
       <button mat-stroked-button type="button" (click)="confirming.set(true)">Delete task…</button>

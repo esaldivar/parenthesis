@@ -540,6 +540,13 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [x] **Task action keyboard focus (#73).** Checklist saves preserve the checkbox's focus using aria-disabled
+  with a duplicate-action guard. Checklist-free completion retains the same Material button across Mark done/Undo,
+  including its pending state. Tests cover pending, successful and failed saves and duplicate actions.
+  - [ ] After promotion, repeat the observed development-site Space/Enter test with keyboard and screen reader,
+    both themes and phone/desktop. The original build drops focus to BODY after a task mutation; independent
+    parent/household acceptance checks remain open.
+
 - [x] **Silent lazy-page navigation failures (#177).** A shared accessible recovery dialog explains a failed
   page load and offers an explicit reload with an unsaved-changes warning, or Keep working. No automatic reload,
   retry loop, failed URL or technical exception is exposed. Regression tests include an existing focus trap.
