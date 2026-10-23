@@ -14,6 +14,8 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
 
     private static readonly string[] _wednesdays = ["Wednesday"];
     private static readonly string[] _wednesdayAndFriday = ["Wednesday", "Friday"];
+    private static readonly string[] _weekend = ["Friday", "Saturday", "Sunday"];
+    private static readonly string[] _weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
     public async ValueTask InitializeAsync() => await api.ResetDatabaseAsync();
 
@@ -349,6 +351,118 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
         Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("Confirmed", e.GetProperty("status").GetString()));
     }
+
+    [Fact]
+    public async Task Every_other_weekend_keeps_each_weekend_together_and_one_approval_confirms_every_day()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        // All day, every 2 weeks on Friday, Saturday and Sunday, from Friday October 30 (#259). Weeks count from the first
+        // date, so Sunday November 1 belongs to the first weekend; clocks go back that night.
+        var friday = new DateTimeOffset(2026, 10, 30, 0, 0, 0, TimeSpan.FromHours(-5));
+        var created = await f.Dad.PostAsync(Events(f), new
+        {
+            category = "ParentingTime",
+            title = "Weekend with Dad",
+            startsAt = friday,
+            endsAt = friday.AddDays(1),
+            allDay = true,
+            childIds = new[] { f.KaiId },
+            caregiverMembershipId = f.DadMembershipId,
+            repeat = new { frequency = "Weekly", interval = 2, days = _weekend, count = 6 },
+        });
+        var first = await JsonAsync(created);
+        var request = Assert.Single((await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal(
+            [Utc(10, 30, 5), Utc(10, 31, 5), Utc(11, 1, 5), Utc(11, 13, 6), Utc(11, 14, 6), Utc(11, 15, 6)],
+            await SeriesStartsAsync(f, first));
+        Assert.Equal(
+            "Add: Weekend with Dad, every 2 weeks on Fri, Sat and Sun, 6 dates: Oct 30, Oct 31, Nov 1 … Nov 15",
+            request.GetProperty("summary").GetString());
+
+        await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{request.GetProperty("id").GetGuid()}/approve");
+        var dates = await SeriesEventsAsync(f, first);
+        Assert.Equal(6, dates.Count);
+        Assert.All(dates, e => Assert.Equal("Confirmed", e.GetProperty("status").GetString()));
+    }
+
+    [Theory]
+    [InlineData("activity-timed-weekly-until")]
+    [InlineData("activity-all-day-weekly-until")]
+    [InlineData("activity-timed-daily-across-dst")]
+    [InlineData("unavailable-timed-weekdays")]
+    [InlineData("unavailable-all-day-daily-back-to-back")]
+    [InlineData("parenting-timed-weekly")]
+    [InlineData("parenting-all-day-daily-across-dst")]
+    public async Task Repeats_that_dont_overlap_are_added_for_every_category(string example)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        // Each date lasts the first date's own length, never until the repeat's end (#259). Gaps between dates are free,
+        // and back-to-back all-day dates (one ends at midnight as the next starts) don't overlap.
+        var morning = _wednesday; // 9:00 AM Wednesday, October 28, in Chicago.
+        var midnight = new DateTimeOffset(2026, 10, 28, 0, 0, 0, TimeSpan.FromHours(-5));
+        object body = example switch
+        {
+            "activity-timed-weekly-until" => Activity(morning, morning.AddHours(1), false, new { days = _wednesdays, until = "2026-12-30" }),
+            "activity-all-day-weekly-until" => Activity(midnight, midnight.AddDays(1), true, new { days = _wednesdays, until = "2026-12-30" }),
+            "activity-timed-daily-across-dst" => Activity(morning, morning.AddHours(1), false, new { frequency = "Daily", interval = 1, count = 10 }),
+            "unavailable-timed-weekdays" => new
+            {
+                category = "Unavailable",
+                startsAt = morning,
+                endsAt = morning.AddHours(8),
+                repeat = new { days = _weekdays, until = "2026-11-27" },
+            },
+            "unavailable-all-day-daily-back-to-back" => new
+            {
+                category = "Unavailable",
+                startsAt = midnight,
+                endsAt = midnight.AddDays(1),
+                allDay = true,
+                repeat = new { frequency = "Daily", interval = 1, count = 7 },
+            },
+            "parenting-timed-weekly" => new
+            {
+                category = "ParentingTime",
+                title = "Time with Dad",
+                startsAt = morning.AddHours(9),
+                endsAt = morning.AddHours(11),
+                childIds = new[] { f.KaiId },
+                caregiverMembershipId = f.DadMembershipId,
+                repeat = new { days = _wednesdays, until = "2026-12-30" },
+            },
+            _ => new
+            {
+                category = "ParentingTime",
+                title = "Time with Dad",
+                startsAt = midnight,
+                endsAt = midnight.AddDays(1),
+                allDay = true,
+                childIds = new[] { f.KaiId },
+                caregiverMembershipId = f.DadMembershipId,
+                repeat = new { frequency = "Daily", interval = 1, count = 7 },
+            },
+        };
+
+        var created = await f.Dad.PostAsync(Events(f), body);
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var first = await JsonAsync(created);
+        var starts = await SeriesStartsAsync(f, first);
+        var lengths = (await SeriesEventsAsync(f, first))
+            .Select(e => e.GetProperty("endsAt").GetDateTimeOffset() - e.GetProperty("startsAt").GetDateTimeOffset())
+            .Distinct()
+            .ToList();
+        Assert.True(starts.Count > 1);
+        // Every date is one day long at most (23 or 25 hours across a clock change for all-day dates).
+        Assert.All(lengths, length => Assert.True(length <= TimeSpan.FromHours(25)));
+    }
+
+    private static object Activity(DateTimeOffset starts, DateTimeOffset ends, bool allDay, object repeat) =>
+        new { category = "Activity", title = "Swim lessons", startsAt = starts, endsAt = ends, allDay, childIds = Array.Empty<Guid>(), repeat };
 
     [Fact]
     public async Task Another_family_cant_see_or_answer_a_repeating_parenting_time_request()

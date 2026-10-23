@@ -833,7 +833,7 @@ internal static class CalendarEndpoints
         {
             SeriesFrequency.Daily => n == 1 ? "every day" : $"every {n} days",
             SeriesFrequency.Monthly => $"{(n == 1 ? "every month" : $"every {n} months")} on the {Ordinal(dates[0].Day)}",
-            _ => $"{(n == 1 ? "every week" : $"every {n} weeks")} on {DayList(EventSchedule.FromFlags(series.Days))}",
+            _ => $"{(n == 1 ? "every week" : $"every {n} weeks")} on {DayList(EventSchedule.FromFlags(series.Days), dates[0].DayOfWeek)}",
         };
         var first = string.Join(", ", dates.Take(shown).Select(d => d.ToString("MMM d", CultureInfo.InvariantCulture)));
         var rest = dates.Count > shown ? $" … {dates[^1].ToString("MMM d", CultureInfo.InvariantCulture)}" : "";
@@ -845,9 +845,10 @@ internal static class CalendarEndpoints
     private const int SummaryMaxLength = 200;
 
     /// <summary>"Tue", "Tue and Thu", "Mon, Wed and Fri".</summary>
-    private static string DayList(IReadOnlyList<DayOfWeek> days)
+    private static string DayList(IReadOnlyList<DayOfWeek> days, DayOfWeek from = DayOfWeek.Sunday)
     {
-        var names = days.Select(d => CultureInfo.InvariantCulture.DateTimeFormat.GetAbbreviatedDayName(d)).ToList();
+        // In order from the first date's weekday, as the dates come: "Fri, Sat and Sun" (#259).
+        var names = days.OrderBy(d => ((int)d - (int)from + 7) % 7).Select(d => CultureInfo.InvariantCulture.DateTimeFormat.GetAbbreviatedDayName(d)).ToList();
         return names.Count > 1 ? $"{string.Join(", ", names[..^1])} and {names[^1]}" : names.FirstOrDefault() ?? "";
     }
 

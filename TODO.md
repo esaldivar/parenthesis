@@ -544,6 +544,11 @@ that points back here.
   one date at a time for now: each change goes to the co-parent as usual. "This and following" and "All events" are
   hidden for it, and the server refuses them (`OneDateAtATime` in `CalendarEndpoints`), because applying them at
   once would skip the co-parent. Build one approval request covering every date it changes, as for creating.
+- [ ] **Name the clashing date in own-overlap refusals (#259 follow-up, October 23, 2026).** A repeating series that
+  can't be added because the parent is unavailable (or has parenting time) on one of its dates is refused whole, with
+  a general sentence. Say which date clashes first ("Wed, Nov 4"), from authorized information only, never the
+  unavailable time's private details. The server's caregiver message also still says "or another parent", which
+  #246 made impossible; the form shows its own wording, so only API clients see it.
 
 ## Backend features the dashboard is waiting on
 - [ ] Calendar and parenting-time endpoints, including change requests and approvals.
