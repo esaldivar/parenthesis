@@ -66,8 +66,8 @@ describe('Request swap', () => {
   }
 
   async function newDates() {
-    type('input[formcontrolname="startDate"]', '2026-10-24');
-    type('input[formcontrolname="endDate"]', '2026-10-24');
+    type('input[name="startDate"]', '2026-10-24');
+    type('input[name="endDate"]', '2026-10-24');
     await click('Continue');
   }
 
@@ -133,8 +133,8 @@ describe('Request swap', () => {
     expect(page().querySelector('.clash')).toBeNull();
     await vi.waitFor(() => expect(document.activeElement?.id).toBe('swap-start-date'));
 
-    type('input[formcontrolname="startDate"]', '2026-10-25');
-    type('input[formcontrolname="endDate"]', '2026-10-25');
+    type('input[name="startDate"]', '2026-10-25');
+    type('input[name="endDate"]', '2026-10-25');
     await click('Continue');
     (await conflicts()).flush({ warnings: ['OverlapsCoParentUnavailable'] });
     await settle();
@@ -157,18 +157,18 @@ describe('Request swap', () => {
 
   it('marks an end before the start red, without moving either date, and goes no further until it’s fixed (#248)', async () => {
     await open();
-    type('input[formcontrolname="startDate"]', '2026-10-26');
-    type('input[formcontrolname="endDate"]', '2026-10-24');
+    type('input[name="startDate"]', '2026-10-26');
+    type('input[name="endDate"]', '2026-10-24');
     await click('Continue');
 
-    const end = page().querySelector<HTMLInputElement>('input[formcontrolname="endDate"]')!;
+    const end = page().querySelector<HTMLInputElement>('input[name="endDate"]')!;
     expect(end.value).toBe('2026-10-24'); // As typed: nothing moved it.
     expect(end.classList).toContain('date-invalid');
     expect(end.getAttribute('aria-invalid')).toBe('true');
     expect(page().querySelector('.field-error')).toBeNull();
     expect(http.match((r) => r.url.endsWith('/conflicts'))).toHaveLength(0);
 
-    type('input[formcontrolname="endDate"]', '2026-10-26');
+    type('input[name="endDate"]', '2026-10-26');
     await click('Continue');
     expect(end.classList).not.toContain('date-invalid');
     expect((await conflicts()).request.params.get('startsAt')).toBe('2026-10-26T13:00:00.000Z');

@@ -22,6 +22,7 @@ import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
 import { dayFilter, END_BEFORE_START, rangeProblems, UNREADABLE_DATE } from './date-rules';
 import { DateCheck } from './date-check';
+import { DateField } from './date-field';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal } from './time';
 
@@ -90,6 +91,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
   selector: 'app-add-event-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DateField,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,

@@ -19,6 +19,7 @@ import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
 import { dayFilter, END_BEFORE_START, rangeProblems } from './date-rules';
 import { DateCheck } from './date-check';
+import { DateField } from './date-field';
 import { providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from './time';
 
@@ -35,6 +36,7 @@ const NEEDS_BOTH: readonly CalendarCategory[] = ['ParentingTime', 'Holiday', 'Jo
   selector: 'app-event-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DateField,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,

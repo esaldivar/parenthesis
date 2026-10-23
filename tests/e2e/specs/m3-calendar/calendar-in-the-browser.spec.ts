@@ -482,7 +482,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
           const saturday = addHours(monday, 24 * 5).toISOString().slice(0, 10);
           await page.getByLabel('Start date', { exact: true }).fill(shown(saturday));
           await page.getByLabel('Start date', { exact: true }).blur();
-          const end = page.locator('input[formcontrolname="endDate"]');
+          const end = page.locator('input[name="endDate"]');
           await expect(end).toHaveValue(shown(thursday));
           await expect(end).toHaveAttribute('aria-invalid', 'true');
           await expect(end).toHaveCSS('color', /rgb\((161, 51, 51|255, 180, 171)\)/);
@@ -495,7 +495,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
           await page.getByLabel('Start date', { exact: true }).fill('1/5/2026');
           await page.getByLabel(/^End date/).fill('1/6/2026');
           await page.getByRole('button', { name: 'Send for approval' }).click();
-          await expect(page.locator('input[formcontrolname="startDate"]')).toHaveAttribute('aria-invalid', 'true');
+          await expect(page.locator('input[name="startDate"]')).toHaveAttribute('aria-invalid', 'true');
           await expect(page.getByText('Choose a start date from today on.')).toHaveCount(0);
         });
       }
