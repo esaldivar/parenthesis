@@ -65,7 +65,8 @@
           <input matStartDate formControlName="startDate" placeholder="Start date" aria-label="Start date" />
           <input matEndDate formControlName="endDate" placeholder="End date" aria-label="End date" />
         </mat-date-range-input>
-        <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+        <!-- The format is for screen readers only (#236): visible, it cluttered the field. -->
+        <mat-hint class="visually-hidden">Dates as MM/DD/YYYY</mat-hint>
         <mat-datepicker-toggle matIconSuffix [for]="datesPicker" aria-label="Choose dates" />
         <mat-date-range-picker #datesPicker />
       </mat-form-field>
