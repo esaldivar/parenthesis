@@ -72,7 +72,8 @@
               <input
                 type="checkbox"
                 [checked]="entry.completedAt !== null"
-                [disabled]="busy()"
+                [attr.aria-disabled]="busy()"
+                (click)="holdWhileBusy($event)"
                 #box
                 (change)="toggle(entry, box)"
               />
@@ -104,22 +105,23 @@
       @if (!hasChecklist()) {
         @if (done()) {
           <p class="done-by">{{ completedText() }}</p>
-          <button mat-stroked-button type="button" [disabled]="busy()" (click)="setDone(false)">Undo done</button>
-        } @else {
-          <button mat-flat-button type="button" [disabled]="busy()" (click)="setDone(true)">
-            <app-icon name="check" [size]="20" /> Mark done
-          </button>
         }
+        <button [matButton]="done() ? 'outlined' : 'filled'" type="button" [disabled]="busy()" disabledInteractive (click)="setDone(!done())">
+          @if (!done()) {
+            <app-icon name="check" [size]="20" />
+          }
+          {{ done() ? 'Undo done' : 'Mark done' }}
+        </button>
       }
       <a mat-stroked-button [routerLink]="['/calendar/tasks', current().id, 'edit']">Edit task</a>
-      <button mat-stroked-button type="button" (click)="confirming.set(true)">Delete task…</button>
+      <button #deleteButton mat-stroked-button type="button" (click)="confirmDelete(true)">Delete task…</button>
     } @else {
-      <p class="explain">This deletes the task, and its checklist, for both of you.</p>
+      <p class="explain" id="task-delete-explanation">This deletes the task, and its checklist, for both of you.</p>
       <div class="actions__row">
-        <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="remove()">
+        <button mat-flat-button type="button" class="danger" [disabled]="busy()" disabledInteractive aria-describedby="task-delete-explanation" (click)="remove()">
           {{ busy() ? 'Deleting…' : 'Yes, delete' }}
         </button>
-        <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep it</button>
+        <button #keepButton mat-button type="button" [disabled]="busy()" aria-describedby="task-delete-explanation" (click)="confirmDelete(false)">Keep it</button>
       </div>
     }
   </div>

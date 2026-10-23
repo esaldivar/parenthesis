@@ -546,6 +546,14 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [x] **Task action keyboard focus (#73, #176).** Checklist saves preserve the checkbox's focus using aria-disabled
+  with a duplicate-action guard. Checklist-free completion retains the same Material button across Mark done/Undo,
+  including its pending state. Delete confirmation focuses Keep it and restores Delete on cancellation; a pending
+  deletion retains focus and guards duplicates. Tests cover pending, successful and failed saves and duplicate actions.
+  - [ ] After promotion, repeat the observed development-site Space/Enter test with keyboard and screen reader,
+    both themes and phone/desktop. The original build drops focus to BODY after a task mutation; independent
+    parent/household acceptance checks remain open.
+
 - [x] **Reminder validation descriptions (#206, #173).** Associate date/time and repeat refusal messages with
   their own Material controls; give a missing time its own message and retain hidden date-format guidance when
   valid. Regression tests cover local and server refusals, focus, retry correction and all-day reminders.
