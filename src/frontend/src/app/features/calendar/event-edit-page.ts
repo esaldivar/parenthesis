@@ -135,8 +135,9 @@ export class EventEditPage implements OnInit {
     { id: 'all', label: 'All events' },
   ];
   protected readonly repeats = computed(() => {
-    const repeat = this.event()?.repeat;
-    return repeat ? repeatText(repeat) : null;
+    const event = this.event();
+    // A monthly repeat names its day of the month, which every date shares.
+    return event?.repeat ? repeatText(event.repeat, toFamilyLocal(event.startsAt, this.timeZone()).slice(0, 10)) : null;
   });
 
   /** Several dates keep their own days: only times, title, place and notes change, so the dates are fixed. */

@@ -8,7 +8,7 @@ import { CalendarEvent } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
-import { repeatText, seriesDates } from './series';
+import { RepeatRule, everyText, ordinal, repeatText, seriesDates } from './series';
 import { toastText } from '../../../testing/toasts';
 
 const F = '/api/families/family-1';
@@ -21,9 +21,11 @@ const swim = (over: Partial<CalendarEvent> = {}) =>
     title: 'Swim lessons',
     location: 'North Pool',
     seriesId: 's1',
-    repeat: { days: ['Tuesday', 'Thursday'], until: '2026-11-05', count: null },
+    repeat: { frequency: 'Weekly', interval: 1, days: ['Tuesday', 'Thursday'], until: '2026-11-05', count: null },
     ...over,
   });
+
+const weekly = (days: RepeatRule['days']): RepeatRule => ({ frequency: 'Weekly', interval: 1, days });
 
 describe('repeating events', () => {
   // These tests use October 2026 dates; new dates can't be before today (#232), so "today" is October 1, 2026 here.
@@ -52,7 +54,7 @@ describe('repeating events', () => {
 
   describe('the dates', () => {
     it('match the server: chosen weekdays from the first date, up to a year, a count that doesn’t fit comes back short', () => {
-      expect(seriesDates('2026-10-20', ['Tuesday', 'Thursday'], '2026-11-05', null)).toEqual([
+      expect(seriesDates('2026-10-20', weekly(['Tuesday', 'Thursday']), '2026-11-05', null)).toEqual([
         '2026-10-20',
         '2026-10-22',
         '2026-10-27',
@@ -60,10 +62,32 @@ describe('repeating events', () => {
         '2026-11-03',
         '2026-11-05',
       ]);
-      expect(seriesDates('2026-10-20', ['Monday'], null, 2)).toEqual(['2026-10-26', '2026-11-02']);
-      expect(seriesDates('2026-10-20', ['Tuesday'], null, 60)).toHaveLength(53);
-      expect(repeatText({ days: ['Tuesday', 'Thursday'], until: '2026-11-05', count: null })).toBe('Every Tue and Thu until Nov 5, 2026');
-      expect(repeatText({ days: ['Monday'], until: null, count: 4 })).toBe('Every Mon, 4 times');
+      expect(seriesDates('2026-10-20', weekly(['Monday']), null, 2)).toEqual(['2026-10-26', '2026-11-02']);
+      expect(seriesDates('2026-10-20', weekly(['Tuesday']), null, 60)).toHaveLength(53);
+      expect(repeatText({ ...weekly(['Tuesday', 'Thursday']), until: '2026-11-05', count: null })).toBe('Every Tue and Thu until Nov 5, 2026');
+      expect(repeatText({ ...weekly(['Monday']), until: null, count: 4 })).toBe('Every Mon, 4 times');
+    });
+
+    it('makes every-N-days, -weeks and -months dates as the server does, and says how (#238)', () => {
+      const rule = (frequency: RepeatRule['frequency'], interval: number, days: RepeatRule['days'] = []): RepeatRule => ({ frequency, interval, days });
+      expect(seriesDates('2026-10-28', rule('Daily', 2), null, 4)).toEqual(['2026-10-28', '2026-10-30', '2026-11-01', '2026-11-03']);
+      // Every 2 weeks on Wed and Fri: this week, then the week after next.
+      expect(seriesDates('2026-10-28', rule('Weekly', 2, ['Wednesday', 'Friday']), null, 4)).toEqual([
+        '2026-10-28',
+        '2026-10-30',
+        '2026-11-11',
+        '2026-11-13',
+      ]);
+      // Monthly on the 31st skips months without one.
+      expect(seriesDates('2026-10-31', rule('Monthly', 1), '2027-03-31', null)).toEqual(['2026-10-31', '2026-12-31', '2027-01-31', '2027-03-31']);
+      expect(seriesDates('2026-10-20', rule('Monthly', 3), null, 3)).toEqual(['2026-10-20', '2027-01-20', '2027-04-20']);
+
+      expect(everyText(rule('Daily', 1), null)).toBe('Every day');
+      expect(everyText(rule('Daily', 3), null)).toBe('Every 3 days');
+      expect(everyText(rule('Weekly', 2, ['Tuesday', 'Thursday']), null)).toBe('Every 2 weeks on Tue and Thu');
+      expect(everyText(rule('Monthly', 1), '2026-10-20')).toBe('Every month on the 20th');
+      expect(repeatText({ ...rule('Monthly', 2), until: null, count: 4 }, '2026-10-01')).toBe('Every 2 months on the 1st, 4 times');
+      expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 31].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '31st']);
     });
   });
 
@@ -82,7 +106,20 @@ describe('repeating events', () => {
       [...page().querySelectorAll<HTMLButtonElement>('.type')].find((b) => text(b.querySelector('.type__label')) === label)!.click();
       await settle();
     };
-    const repeatSwitch = () => page().querySelector<HTMLButtonElement>('.repeat button[role="switch"]')!;
+    /** Chooses from the Repeat menu ("How often"). */
+    const howOften = async (label: string) => {
+      page().querySelector<HTMLElement>('mat-select[formcontrolname="repeat"] .mat-mdc-select-trigger')!.click();
+      await settle();
+      [...document.querySelectorAll<HTMLElement>('mat-option')].find((o) => text(o) === label)!.click();
+      await settle();
+    };
+    /** Chooses from one of Custom's native lists by position. */
+    const pickNative = async (name: string, index: number) => {
+      const select = page().querySelector<HTMLSelectElement>(`select[formcontrolname="${name}"]`)!;
+      select.selectedIndex = index;
+      select.dispatchEvent(new Event('change'));
+      await settle();
+    };
     const day = (name: string) => page().querySelector<HTMLInputElement>(`.weekday input[aria-label="${name}"]`)!;
     const type = (selector: string, value: string) => {
       const input = page().querySelector<HTMLInputElement>(selector)!;
@@ -94,10 +131,9 @@ describe('repeating events', () => {
     it('repeats unavailable time on chosen days with a preview of the dates, and sends it once', async () => {
       await openAdd();
       await choose('I’m unavailable');
-      repeatSwitch().click();
-      await settle();
+      await howOften('Custom…');
 
-      // It starts with the first date's weekday (Tuesday).
+      // Custom starts every 1 week, on the first date's weekday (Tuesday).
       expect(day('Tuesday').checked).toBe(true);
       day('Thursday').click();
       await settle();
@@ -108,7 +144,7 @@ describe('repeating events', () => {
       await settle();
 
       const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events`));
-      expect(create.request.body.repeat).toEqual({ days: ['Tuesday', 'Thursday'], until: '2026-11-05' });
+      expect(create.request.body.repeat).toEqual({ frequency: 'Weekly', interval: 1, days: ['Tuesday', 'Thursday'], until: '2026-11-05' });
       expect(create.request.body.category).toBe('Unavailable');
       create.flush(event({ category: 'Unavailable', title: 'Unavailable', seriesId: 's1' }));
       await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20'));
@@ -128,8 +164,7 @@ describe('repeating events', () => {
       await openAdd();
       await choose('Activity');
       type('input[formcontrolname="title"]', 'Swim lessons');
-      repeatSwitch().click();
-      await settle();
+      await howOften('Custom…');
       day('Tuesday').click(); // Now no days.
       await settle();
       page().querySelector('form')!.dispatchEvent(new Event('submit'));
@@ -150,11 +185,59 @@ describe('repeating events', () => {
       expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
     });
 
+    it('offers every day, week and month, named for the start, and Custom; no yearly (#238)', async () => {
+      await openAdd();
+      await choose('Activity');
+      page().querySelector<HTMLElement>('mat-select[formcontrolname="repeat"] .mat-mdc-select-trigger')!.click();
+      await settle();
+      expect([...document.querySelectorAll('mat-option')].map(text)).toEqual([
+        'Does not repeat',
+        'Every day',
+        'Every week on Tuesday',
+        'Every month on the 20th',
+        'Custom…',
+      ]);
+      [...document.querySelectorAll<HTMLElement>('mat-option')][3].click();
+      await settle();
+      type('input[formcontrolname="title"]', 'Library day');
+      type('input[formcontrolname="repeatUntil"]', '2027-01-20');
+      await settle();
+      expect(text(page().querySelector('.preview'))).toBe('4 dates: Tue, Oct 20 · Fri, Nov 20 · Sun, Dec 20 · +1 more');
+      // Only Custom by the week shows the weekdays.
+      expect(page().querySelector('.weekdays')).toBeNull();
+      page().querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle();
+      const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events`));
+      expect(create.request.body.repeat).toEqual({ frequency: 'Monthly', interval: 1, days: [], until: '2027-01-20' });
+    });
+
+    it('repeats every few days, weeks or months with Custom’s two lists (#238)', async () => {
+      await openAdd();
+      await choose('I’m unavailable');
+      await howOften('Custom…');
+      await pickNative('every', 2); // 3
+      await pickNative('unit', 0); // days
+      expect(page().querySelector('.weekdays')).toBeNull();
+      expect([...page().querySelectorAll('select[formcontrolname="unit"] option')].map(text)).toEqual(['days', 'weeks', 'months']);
+      page().querySelector<HTMLElement>('mat-select[formcontrolname="ends"] .mat-mdc-select-trigger')!.click();
+      await settle();
+      [...document.querySelectorAll<HTMLElement>('mat-option')].find((o) => text(o) === 'After a number of times')!.click();
+      await settle();
+      type('input[formcontrolname="repeatCount"]', '3');
+      await settle();
+      expect(text(page().querySelector('.preview'))).toBe('3 dates: Tue, Oct 20 · Fri, Oct 23 · Mon, Oct 26');
+
+      // Months allow at most every 12: a larger number comes down to 12.
+      await pickNative('every', 19); // 20
+      await pickNative('unit', 2); // months
+      expect(Number(page().querySelector<HTMLSelectElement>('select[formcontrolname="every"]')!.selectedIndex) + 1).toBe(12);
+      expect(page().querySelectorAll('select[formcontrolname="every"] option')).toHaveLength(12);
+    });
+
     it('has no axe violations with Repeat on', async () => {
       await openAdd();
       await choose('I’m unavailable');
-      repeatSwitch().click();
-      await settle();
+      await howOften('Custom…');
       expect(await axeViolations(document.body, { ignoreOverlay: true })).toEqual([]);
     });
   });

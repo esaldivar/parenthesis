@@ -191,15 +191,31 @@ export interface NewCalendarEvent {
   readonly notes?: string;
   readonly childIds?: readonly string[];
   readonly caregiverMembershipId?: string;
-  /** Unavailable time and activities only (#193): weekly on these days, ending on `until` or after `count` times. */
-  readonly repeat?: { readonly days: readonly Weekday[]; readonly until?: string; readonly count?: number };
+  /**
+   * Unavailable time and activities only (#193): every `interval` days, weeks (on `days`) or months (#238), ending on
+   * `until` or after `count` times.
+   */
+  readonly repeat?: {
+    readonly frequency: SeriesFrequency;
+    readonly interval: number;
+    readonly days: readonly Weekday[];
+    readonly until?: string;
+    readonly count?: number;
+  };
 }
+
+/** How often a series repeats (#238). */
+export type SeriesFrequency = 'Daily' | 'Weekly' | 'Monthly';
 
 /** Weekdays as the API names them (#193). */
 export type Weekday = 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
 
 /** How a repeating event repeats. */
 export interface EventRepeat {
+  readonly frequency: SeriesFrequency;
+  /** Every this many days, weeks or months. */
+  readonly interval: number;
+  /** A weekly repeat's days; empty for daily and monthly. */
   readonly days: readonly Weekday[];
   /** `YYYY-MM-DD`, inclusive. */
   readonly until: string | null;
