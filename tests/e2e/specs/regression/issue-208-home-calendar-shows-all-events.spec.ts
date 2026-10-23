@@ -44,7 +44,9 @@ test.describe('Issue #208: the home calendar shows the week’s events', { tag: 
         const grid = page.locator('app-week-calendar .grid');
         await expect(grid.getByText('Dentist', { exact: true })).toBeVisible();
         for (const title of ['Field trip', 'Teacher workday', 'Two-day camp', 'You’re unavailable']) {
-          await expect(grid.locator('.allday').getByText(title, { exact: true }), `${title} (${scheme})`).toBeVisible();
+          // The title, not its exact text: when tomorrow is a Saturday the camp runs into next week, and its title
+          // carries the "continues" arrow (→).
+          await expect(grid.locator('.allday .act__title', { hasText: title }), `${title} (${scheme})`).toBeVisible();
         }
       }
     } finally {
