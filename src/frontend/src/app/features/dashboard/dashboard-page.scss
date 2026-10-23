@@ -39,16 +39,6 @@ ul {
 }
 
 // Small label under the greeting; still dashed and explicit so sample data can't be mistaken for a real schedule.
-// What changed from an event's details (#213), calm and in words.
-.notice {
-  margin: var(--space-2) 0 0;
-  font-weight: 600;
-
-  &:empty {
-    margin: 0;
-  }
-}
-
 .sample-banner {
   display: inline-block;
   margin-top: var(--space-2);

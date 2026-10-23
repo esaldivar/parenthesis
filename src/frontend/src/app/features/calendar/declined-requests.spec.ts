@@ -8,6 +8,7 @@ import { CalendarEvent, ChangeRequest } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
+import { toastText } from '../../../testing/toasts';
 
 const F = '/api/families/family-1';
 const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
@@ -112,7 +113,7 @@ describe('declined requests on the calendar', () => {
     const dismiss = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events/weekend/dismiss`));
     dismiss.flush(null);
     await settle();
-    expect(text(main())).toContain('“Long weekend with Alex” was removed from your calendar. It’s still in the approvals history.');
+    expect(toastText()).toContain('“Long weekend with Alex” was removed from your calendar. It’s still in the approvals history.');
   });
 
   it('can be hidden with the Declined approval filter', async () => {

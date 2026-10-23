@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Api, ChangeRequest, ChangeRequestType, Child, FamilyMember } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
+import { Toasts } from '../../shared/toast/toasts';
 
 /** The request types the inbox shows: children, PINs and the calendar (the handoff keeps approvals in this inbox). */
 const SHOWN: readonly string[] = [
@@ -36,9 +37,6 @@ const COMMENT_MAX = 500;
 
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
-    }
-    @if (notice(); as notice) {
-      <p class="notice" role="status">{{ notice }}</p>
     }
 
     <section aria-labelledby="waiting-heading">
@@ -212,12 +210,6 @@ const COMMENT_MAX = 500;
       border-radius: var(--radius-control);
       background: var(--color-status-rejected-bg);
     }
-    .notice {
-      padding: var(--space-3) var(--space-4);
-      border: 1px solid var(--color-outline);
-      border-radius: var(--radius-control);
-      background: var(--color-status-confirmed-bg);
-    }
   `,
 })
 export class ApprovalsPage implements OnInit {
@@ -233,7 +225,7 @@ export class ApprovalsPage implements OnInit {
   protected readonly declining = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly notice = signal<string | null>(null);
+  private readonly toasts = inject(Toasts);
   private readonly familyId = computed(() => this.auth.currentFamily()?.id ?? null);
 
   async ngOnInit(): Promise<void> {
@@ -307,11 +299,10 @@ export class ApprovalsPage implements OnInit {
     }
     this.busy.set(true);
     this.error.set(null);
-    this.notice.set(null);
     try {
       await action(familyId);
       this.declining.set(null);
-      this.notice.set(done);
+      this.toasts.show(done);
       await this.reload();
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));

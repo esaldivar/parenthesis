@@ -9,6 +9,7 @@ import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Avatar } from '../../shared/avatar/avatar';
 import { PIN_PATTERN } from '../profiles/child-pin-page';
+import { Toasts } from '../../shared/toast/toasts';
 
 /** Mirrors the API's rule (ChildCredential.IsAcceptable): not all the same digit, and not a straight run like 1234. */
 export function isGuessablePin(pin: string): boolean {
@@ -38,9 +39,6 @@ interface Panel {
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
-    }
-    @if (notice(); as notice) {
-      <p class="notice" role="status">{{ notice }}</p>
     }
 
     @if (children(); as children) {
@@ -227,12 +225,6 @@ interface Panel {
       border-radius: var(--radius-control);
       background: var(--color-status-rejected-bg);
     }
-    .notice {
-      padding: var(--space-3) var(--space-4);
-      border: 1px solid var(--color-outline);
-      border-radius: var(--radius-control);
-      background: var(--color-status-confirmed-bg);
-    }
     .preview a {
       display: inline-flex;
       align-items: center;
@@ -253,7 +245,7 @@ export class ChildrenAccess implements OnInit {
   protected readonly pairing = signal<{ code: string; expiresAt: string } | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly notice = signal<string | null>(null);
+  private readonly toasts = inject(Toasts);
   protected readonly hasActive = computed(() => (this.children() ?? []).some((c) => c.status === 'Active'));
 
   private readonly now = signal(Date.now());
@@ -309,7 +301,6 @@ export class ChildrenAccess implements OnInit {
   protected open(child: Child, kind: Panel['kind']): void {
     this.pinForm.reset();
     this.pairing.set(null);
-    this.notice.set(null);
     this.error.set(null);
     this.panel.set({ childId: child.id, kind });
   }
@@ -327,7 +318,7 @@ export class ChildrenAccess implements OnInit {
     await this.run(async () => {
       const proposed = await this.api.setChildPin(this.familyId(), child.id, this.pinForm.getRawValue().pin);
       this.close();
-      this.notice.set(
+      this.toasts.show(
         proposed
           ? `We’ve asked your co-parent to approve ${child.firstName}’s new PIN. The current PIN works until then.`
           : `${child.firstName} can now sign in with their PIN.`,
@@ -338,7 +329,7 @@ export class ChildrenAccess implements OnInit {
   protected async unlock(child: Child): Promise<void> {
     await this.run(async () => {
       await this.api.unlockChild(this.familyId(), child.id);
-      this.notice.set(`${child.firstName}’s profile is unlocked.`);
+      this.toasts.show(`${child.firstName}’s profile is unlocked.`);
     });
   }
 
@@ -346,7 +337,7 @@ export class ChildrenAccess implements OnInit {
     await this.run(async () => {
       await this.api.disableChildSignIn(this.familyId(), child.id);
       this.close();
-      this.notice.set(`${child.firstName}’s sign-in is turned off.`);
+      this.toasts.show(`${child.firstName}’s sign-in is turned off.`);
     });
   }
 

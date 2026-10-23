@@ -8,6 +8,7 @@ import { ChangeRequest, Child, Device, DeviceProfiles } from '../../core/api/api
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { isGuessablePin } from './children-access';
+import { toastText } from '../../../testing/toasts';
 
 // Synthetic family only.
 const F = '/api/families/family-1';
@@ -156,7 +157,7 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       put.flush(null, { status: 204, statusText: 'No Content' });
       await answer(harness, { [`${F}/children`]: [KAI, { ...AURORA, signIn: { ...AURORA.signIn, enabled: true } }, MILO] });
 
-      expect(text(body, 'app-children-access [role="status"]')).toBe('Aurora can now sign in with their PIN.');
+      expect(toastText()).toContain('Aurora can now sign in with their PIN.');
     });
 
     it('asks the co-parent to approve a changed PIN, saying the old one still works', async () => {
@@ -171,7 +172,7 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       (await vi.waitFor(() => http.expectOne(`${F}/children/kai/pin`))).flush({ changeRequestId: 'r9' }, { status: 202, statusText: 'Accepted' });
       await answer(harness, { [`${F}/children`]: [{ ...KAI, signIn: { ...KAI.signIn, pinChangePending: true } }, AURORA, MILO] });
 
-      expect(text(body, 'app-children-access [role="status"]')).toContain('The current PIN works until then.');
+      expect(toastText()).toContain('The current PIN works until then.');
       expect(text(childItem(body, 'Kai'), '.child__state')).toBe('New PIN waiting for your co-parent’s approval');
       expect(text(childItem(body, 'Kai'), '.child__actions')).not.toContain('Change PIN');
     });
@@ -201,7 +202,7 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       unlock.flush(null, { status: 204, statusText: 'No Content' });
       await answer(harness, { [`${F}/children`]: [KAI] });
 
-      expect(text(body, 'app-children-access [role="status"]')).toBe('Kai’s profile is unlocked.');
+      expect(toastText()).toContain('Kai’s profile is unlocked.');
     });
 
     it('turns sign-in off only after explaining what happens', async () => {
@@ -253,7 +254,7 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       remove.flush(null, { status: 204, statusText: 'No Content' });
       await answer(harness, { [`${F}/devices`]: [DEVICES[1]], [`${F}/children`]: [KAI] });
 
-      expect(list()).toContain('Kitchen iPad was removed.');
+      expect(toastText()).toContain('Kitchen iPad was removed.');
     });
 
     it('offers to use this browser for the picker when it isn’t registered yet', async () => {
@@ -266,7 +267,7 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       register.flush({ ...DEVICES[0], id: 'd3', name: 'Hall tablet' });
       await answer(harness, { [`${F}/devices`]: DEVICES, [`${F}/children`]: [KAI] });
 
-      expect(text(body, 'app-device-list')).toContain('Hall tablet now shows “Who’s using Parenthesis?”');
+      expect(toastText()).toContain('Hall tablet now shows “Who’s using Parenthesis?”');
     });
 
     it('doesn’t offer it again on a registered device', async () => {
@@ -322,7 +323,7 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       for (const list of http.match((r) => r.url === `${F}/approvals`)) list.flush([]);
       await answer(harness, { [F]: FAMILY, [`${F}/children`]: [KAI] });
 
-      expect(text(body, 'main [role="status"]')).toBe('You approved “Add Milo to the family”.');
+      expect(toastText()).toContain('You approved “Add Milo to the family”.');
     });
 
     it('declines with an optional note for the co-parent', async () => {

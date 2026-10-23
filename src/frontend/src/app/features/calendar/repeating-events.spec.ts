@@ -9,6 +9,7 @@ import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { repeatText, seriesDates } from './series';
+import { toastText } from '../../../testing/toasts';
 
 const F = '/api/families/family-1';
 const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
@@ -181,7 +182,7 @@ describe('repeating events', () => {
       expect(cancel.request.params.get('scope')).toBe('following');
       cancel.flush(null);
       await settle();
-      expect(text(document.querySelector('app-calendar-page'))).toContain('“Swim lessons” was cancelled from Tuesday, October 20 on.');
+      expect(toastText()).toContain('“Swim lessons” was cancelled from Tuesday, October 20 on.');
     });
 
     it('keeps the single-event cancel for events that don’t repeat', async () => {

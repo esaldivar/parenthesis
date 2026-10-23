@@ -8,6 +8,7 @@ import { SharedTask } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, checklistItem, task } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
+import { toastText } from '../../../testing/toasts';
 
 const F = '/api/families/family-1';
 const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
@@ -238,7 +239,7 @@ describe('tasks on the calendar', () => {
     await answerLoad([]);
 
     expect(document.querySelector('app-task-details')).toBeNull();
-    expect(text(main())).toContain('“Science fair poster” was deleted.');
+    expect(toastText()).toContain('“Science fair poster” was deleted.');
   });
 
   it('has no axe violations with a task and its checklist open', async () => {

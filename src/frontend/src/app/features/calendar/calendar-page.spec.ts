@@ -8,6 +8,7 @@ import { CalendarEvent, Reminder } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, event, reminder } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
+import { toastText } from '../../../testing/toasts';
 
 const F = '/api/families/family-1';
 const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
@@ -254,7 +255,7 @@ describe('the calendar page', () => {
     await settle(harness);
 
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(text(main())).toContain('Cancellation sent to Sam for approval.');
+    expect(toastText()).toContain('Cancellation sent to Sam for approval.');
   });
 
   it('offers Edit and Request swap on confirmed parenting time', async () => {
@@ -326,7 +327,7 @@ describe('the calendar page', () => {
     await settle(harness);
 
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(text(main())).toContain('You withdrew your request. “Time with Alex” stays as it was.');
+    expect(toastText()).toContain('You withdrew your request. “Time with Alex” stays as it was.');
   });
 
   it('keeps the other parent’s unavailable notes private and offers them no cancel', async () => {
@@ -413,7 +414,7 @@ describe('the calendar page', () => {
     await settle(harness);
 
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(text(main())).toContain('“Spirit Day” was deleted.');
+    expect(toastText()).toContain('“Spirit Day” was deleted.');
     expect(http.match((r) => r.url.includes('/approvals'))).toHaveLength(0);
   });
 

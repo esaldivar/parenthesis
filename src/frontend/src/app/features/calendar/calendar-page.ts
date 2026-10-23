@@ -43,6 +43,7 @@ import { AddAt, addQuery } from './slot';
 import { ReminderDetails } from './reminder-details';
 import { TaskDetails } from './task-details';
 import { fromFamilyLocal } from './time';
+import { Toasts } from '../../shared/toast/toasts';
 
 export type CalendarView = 'week' | 'month' | 'list';
 type LoadState = 'loading' | 'error' | 'ready';
@@ -97,6 +98,7 @@ export class CalendarPage {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly toasts = inject(Toasts);
   private readonly injector = inject(Injector);
 
   /** `?view=week|month|list` */
@@ -159,7 +161,6 @@ export class CalendarPage {
   protected readonly children = signal<readonly Child[]>([]);
   private readonly reloads = signal(0);
   /** A message after adding or cancelling, read out politely. */
-  protected readonly notice = signal<string | null>(null);
 
   protected readonly items = computed(() => [
     ...toItems(this.events(), this.members(), this.children(), this.timeZone()),
@@ -216,10 +217,10 @@ export class CalendarPage {
   });
 
   constructor() {
-    // A message handed over by the Add Event page.
+    // A message handed over by the Add, Edit, Swap, Reminder and Task pages: shown as a toast (#226).
     const handed = this.router.currentNavigation()?.extras.state?.['calendarNotice'];
     if (typeof handed === 'string') {
-      this.notice.set(handed);
+      this.toasts.show(handed);
     }
 
     effect(() => {
@@ -394,7 +395,7 @@ export class CalendarPage {
 
   /** After a cancellation (or a cancellation request) from the details panel. */
   protected changed(message: string): void {
-    this.notice.set(message);
+    this.toasts.show(message);
     this.selected.set(null);
     this.retry();
   }
