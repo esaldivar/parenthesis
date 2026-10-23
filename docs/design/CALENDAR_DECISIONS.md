@@ -33,8 +33,8 @@ Status: approved design decisions for future implementation. Do not interrupt th
 - Dates are picked in one range calendar (start → end) on Add, Edit and Request Swap, and single calendars for a repeat's last day, reminders and task due dates. Days that can't be chosen are greyed out.
 - New dates start from today in the family's time zone; earlier times today are allowed. The server refuses a new start (or reminder date, or due date) before today, and moving one to a day before today.
 - An event, reminder or task already in the past or under way keeps its own day when edited, so its title or notes can still change.
-- The end is never before the start: moving the start past the end moves the end too, keeping the length (and a one-day event's end time moves with its start time). An event lasts up to 31 days.
-- Typed dates are read as 10/27/2026 (or 2026-10-27); anything else gets a clear message by the field.
+- Only days before today (in the family's time zone) are disabled in a calendar, other than an edited event's own days (#248, October 23, 2026). Nothing is disabled because of the other date, and nothing moves the other date: a start after the end, an end before the start, or a range over 31 days can be picked, turns that date's text red (no warning text on screen; the reason is in the field's accessible name), and the form can't be sent until it's corrected. This replaces the earlier rule that moving the start moved the end. An event lasts up to 31 days.
+- Typed dates are read as 10/27/2026 (or 2026-10-27); anything else turns red the same way.
 
 ## Joint events
 - Support a **Joint Event** for occasions involving both parents (school events, holidays, birthdays, etc.), including occasions with no children present.
