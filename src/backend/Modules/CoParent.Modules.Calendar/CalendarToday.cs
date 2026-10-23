@@ -12,6 +12,9 @@ internal static class CalendarToday
     /// <summary>The refusal for a start date before today.</summary>
     public const string PastStart = "Choose a start date from today on.";
 
+    /// <summary>The refusal for an end date moved to a day before today.</summary>
+    public const string PastEnd = "Choose an end date from today on.";
+
     /// <summary>The refusal for a reminder date or due date before today.</summary>
     public const string PastDate = "Choose a date from today on.";
 

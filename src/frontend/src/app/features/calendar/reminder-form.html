@@ -65,7 +65,7 @@
         @if (endsOnDate()) {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Last day</mat-label>
-            <input matInput [matDatepicker]="untilPicker" [min]="value().date || today()" formControlName="repeatUntil" required />
+            <input matInput [matDatepicker]="untilPicker" [min]="value().date || today()" [max]="untilMax()" formControlName="repeatUntil" required />
             <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="Choose the last day" />
             <mat-datepicker #untilPicker />
             @if (fieldError('repeatUntil'); as e) {

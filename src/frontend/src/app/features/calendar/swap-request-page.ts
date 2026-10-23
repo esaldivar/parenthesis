@@ -28,8 +28,8 @@ import { Icon } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
 import { LocalDateTime } from '../dashboard/model';
 import { addDays, dayLong, todayIn } from '../dashboard/week';
-import { keepRangeInOrder, maxDaysFor, rangeFilter, rangeProblems } from './date-rules';
-import { providePlainDates } from './plain-dates';
+import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems } from './date-rules';
+import { providePlainDates, typedValues } from './plain-dates';
 import { warningText } from './add-event-page';
 import { CalendarItem, toItems } from './calendar-items';
 import { whenText } from './item-text';
@@ -123,7 +123,7 @@ export class SwapRequestPage {
   // re-check the dates, which changes them again, without end.
   protected readonly dayFilter = (day: string | null): boolean => {
     const v = this.form.getRawValue();
-    return rangeFilter(this.today(), this.ownDates(), v.startDate || null, v.endDate || null, maxDaysFor(v.allDay))(day);
+    return rangeFilter(this.today(), this.ownDates(), v.startDate || null, v.endDate || null, MAX_RANGE_DAYS)(day);
   };
   protected readonly reasonLength = computed(() => (this.value().reason ?? '').length);
 
@@ -350,7 +350,7 @@ export class SwapRequestPage {
   }
 
   private validate(event: CalendarEvent): { dates: string | null; reason: string | null } {
-    const v = this.form.getRawValue();
+    const v = typedValues(this.form);
     const reason = v.reason.trim().length > REASON_MAX ? `Keep the reason under ${REASON_MAX} characters.` : null;
     if (!v.startDate || !v.endDate || (!v.allDay && (!v.startTime || !v.endTime))) {
       return { dates: 'Choose when the new time starts and ends.', reason };

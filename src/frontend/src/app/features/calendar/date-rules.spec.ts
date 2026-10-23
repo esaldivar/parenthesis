@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { DateAdapter } from '@angular/material/core';
 import { fakeAuth } from '../../../testing/fake-auth';
 import {
+  MAX_RANGE_DAYS,
+  PAST_END,
   PAST_START,
   UNREADABLE_DATE,
   choosable,
@@ -22,14 +24,16 @@ describe('date rules (#232)', () => {
     expect(choosable(null, today)).toBe(false);
   });
 
-  it('while the end is chosen, offers up to the longest an event lasts after the start', () => {
-    const choosingEnd = rangeFilter(today, [], '2026-10-25', null, 31);
-    expect(choosingEnd('2026-11-25')).toBe(true); // 31 days.
-    expect(choosingEnd('2026-11-26')).toBe(false);
-    expect(choosingEnd('2026-10-24')).toBe(true); // Before the start: starts the range again.
+  it('while the end is chosen, offers days from the start up to the longest an event lasts', () => {
+    expect(MAX_RANGE_DAYS).toBe(29); // Two days under the server's 31, for all-day ends and daylight saving.
+    const choosingEnd = rangeFilter(today, [], '2026-10-25', null, MAX_RANGE_DAYS);
+    expect(choosingEnd('2026-10-25')).toBe(true);
+    expect(choosingEnd('2026-11-23')).toBe(true); // 29 days.
+    expect(choosingEnd('2026-11-24')).toBe(false);
+    expect(choosingEnd('2026-10-24')).toBe(false); // Before the start.
     expect(choosingEnd('2026-10-20')).toBe(false); // Past.
     // With both chosen, any day from today can start a new range.
-    expect(rangeFilter(today, [], '2026-10-25', '2026-10-26', 31)('2026-12-31')).toBe(true);
+    expect(rangeFilter(today, [], '2026-10-25', '2026-10-26', MAX_RANGE_DAYS)('2026-12-31')).toBe(true);
   });
 
   it('moves the end with the start, keeping the length, only when it would be before the start', () => {
@@ -67,6 +71,12 @@ describe('date rules (#232)', () => {
         '2026-10-20',
       ]),
     ).toEqual({});
+    // An event under way keeps its own end, but a new end is from today on.
+    const underWay = { ...range, startDate: '2026-10-20', endDate: '2026-10-27' };
+    expect(rangeProblems(underWay, today, ['2026-10-20', '2026-10-27'])).toEqual({});
+    expect(
+      rangeProblems({ ...underWay, endDate: '2026-10-21' }, today, ['2026-10-20', '2026-10-27']),
+    ).toEqual({ endsAt: PAST_END });
     expect(rangeProblems({ ...range, startDate: 'invalid-date' }, today)).toEqual({
       startsAt: UNREADABLE_DATE,
     });

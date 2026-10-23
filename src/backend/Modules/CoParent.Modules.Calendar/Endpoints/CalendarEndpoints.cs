@@ -432,6 +432,17 @@ internal static class CalendarEndpoints
             }
         }
 
+        if (errors.Count == 0 && change.EndsAt != current.EndsAt)
+        {
+            // Moving the end works the same way: from today on, unless it stays on the event's own end day (#232).
+            var zone = await roster.TimeZoneAsync(cancellationToken);
+            var day = EventSchedule.LocalDate(change.EndsAt, zone);
+            if (day < today.In(zone) && day != EventSchedule.LocalDate(current.EndsAt, zone))
+            {
+                errors["endsAt"] = [CalendarToday.PastEnd];
+            }
+        }
+
         var moved = (change.StartsAt, change.EndsAt, change.CaregiverMembershipId)
             != (current.StartsAt, current.EndsAt, current.CaregiverMembershipId);
         var person = e.Category == EventCategory.ParentingTime ? change.CaregiverMembershipId : e.OwnerMembershipId;

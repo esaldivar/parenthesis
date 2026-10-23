@@ -17,8 +17,8 @@ import { warningText } from './add-event-page';
 import { repeatText } from './series';
 import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
-import { keepRangeInOrder, maxDaysFor, rangeFilter, rangeProblems } from './date-rules';
-import { providePlainDates } from './plain-dates';
+import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems } from './date-rules';
+import { providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from './time';
 
 /** The categories that change only with both parents' agreement (the server decides; this only explains it). */
@@ -91,7 +91,7 @@ export class EventEditPage implements OnInit {
   // re-check the dates, which changes them again, without end.
   protected readonly dayFilter = (day: string | null): boolean => {
     const v = this.form.getRawValue();
-    return rangeFilter(this.today(), this.ownDates(), v.startDate || null, v.endDate || null, maxDaysFor(v.allDay))(day);
+    return rangeFilter(this.today(), this.ownDates(), v.startDate || null, v.endDate || null, MAX_RANGE_DAYS)(day);
   };
 
   constructor() {
@@ -260,7 +260,7 @@ export class EventEditPage implements OnInit {
   }
 
   private validate(): Record<string, string> {
-    const v = this.form.getRawValue();
+    const v = typedValues(this.form);
     const errors: Record<string, string> = {};
     if (!this.unavailable() && !this.parenting() && !v.title.trim()) {
       errors['title'] = 'Enter a title.';

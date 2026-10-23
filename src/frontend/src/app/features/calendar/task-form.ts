@@ -17,7 +17,7 @@ import { PlainDate } from '../dashboard/model';
 import { todayIn } from '../dashboard/week';
 import { revealFirstProblem } from './reveal-problem';
 import { PAST_DATE, UNREADABLE_DATE, choosable } from './date-rules';
-import { isPlainDate, providePlainDates } from './plain-dates';
+import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 
 export const TASK_TITLE_MAX = 80;
 export const TASK_DETAILS_MAX = 1000;
@@ -238,7 +238,7 @@ export class TaskForm implements OnInit {
   }
 
   private validate(): Record<string, string> {
-    const v = this.form.getRawValue();
+    const v = typedValues(this.form);
     const errors: Record<string, string> = {};
     if (!v.title.trim()) {
       errors['title'] = 'Enter a title.';

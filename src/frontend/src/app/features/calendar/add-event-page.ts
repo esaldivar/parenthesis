@@ -20,8 +20,8 @@ import { MAX_DATES, WEEKDAYS, lastAllowed, seriesDates, weekdayOf } from './seri
 import { TaskForm } from './task-form';
 import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
-import { keepRangeInOrder, maxDaysFor, rangeFilter, rangeProblems } from './date-rules';
-import { providePlainDates } from './plain-dates';
+import { keepRangeInOrder, MAX_RANGE_DAYS, rangeFilter, rangeProblems, UNREADABLE_DATE } from './date-rules';
+import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal } from './time';
 
 export type EventType = 'activity' | 'parenting' | 'family' | 'unavailable';
@@ -164,7 +164,7 @@ export class AddEventPage implements OnInit {
   // re-check the dates, which changes them again, without end.
   protected readonly dayFilter = (day: string | null): boolean => {
     const v = this.form.getRawValue();
-    return rangeFilter(this.today(), [], v.startDate || null, v.endDate || null, maxDaysFor(v.allDay))(day);
+    return rangeFilter(this.today(), [], v.startDate || null, v.endDate || null, MAX_RANGE_DAYS)(day);
   };
   /** A repeat's last day: from the first date to a year later. */
   protected readonly repeatUntilMax = computed(() => (this.value().startDate ? lastAllowed(this.value().startDate!) : null));
@@ -351,7 +351,7 @@ export class AddEventPage implements OnInit {
   }
 
   private validate(type: EventType): Record<string, string> {
-    const v = this.form.getRawValue();
+    const v = typedValues(this.form);
     const errors: Record<string, string> = {};
     if (type !== 'unavailable' && type !== 'parenting' && !v.title.trim()) {
       errors['title'] = 'Enter a title.';
@@ -360,6 +360,8 @@ export class AddEventPage implements OnInit {
     if (this.repeats()) {
       if (v.repeatDays.length === 0) {
         errors['repeat'] = 'Choose the days it repeats on.';
+      } else if (v.ends === 'date' && v.repeatUntil && !isPlainDate(v.repeatUntil)) {
+        errors['repeatUntil'] = UNREADABLE_DATE;
       } else if (v.ends === 'date' && (!v.repeatUntil || v.repeatUntil < v.startDate || v.repeatUntil > lastAllowed(v.startDate))) {
         errors['repeatUntil'] = 'Choose an end date from the first day to a year later.';
       } else if (v.ends === 'count' && !(Number.isInteger(v.repeatCount) && v.repeatCount >= 2 && v.repeatCount <= MAX_DATES)) {
