@@ -179,7 +179,8 @@ internal static class CalendarEndpoints
         var category = request.Category!.Value;
         if (request.Repeat is { } repeat)
         {
-            return await CreateSeriesAsync(request, repeat, http, tenant, db, roster, unitOfWork, audit, clock, cancellationToken);
+            return await CreateSeriesAsync(
+                request, repeat, parents, http, tenant, db, roster, changeRequests, unitOfWork, audit, clock, cancellationToken);
         }
 
         var (starts, ends) = (request.StartsAt!.Value.ToUniversalTime(), request.EndsAt!.Value.ToUniversalTime());
@@ -404,6 +405,11 @@ internal static class CalendarEndpoints
 
         if (editScope != EditScope.This && e.SeriesId is not null)
         {
+            if (CalendarEvent.NeedsApproval(e.Category))
+            {
+                return OneDateAtATime();
+            }
+
             return await UpdateSeriesAsync(e, editScope, request, http, tenant, db, roster, unitOfWork, audit, cancellationToken);
         }
 
@@ -554,7 +560,11 @@ internal static class CalendarEndpoints
 
         if (cancelScope != EditScope.This && e.SeriesId is { } seriesId)
         {
-            // Series only ever hold categories that cancel at once (no approvals).
+            if (CalendarEvent.NeedsApproval(e.Category))
+            {
+                return OneDateAtATime();
+            }
+
             var targets = await SeriesTargetsAsync(db, seriesId, e, cancelScope, cancellationToken);
             var actor = http.User.GetUserId()!.Value;
             await unitOfWork.ExecuteAsync(async ct =>
@@ -600,16 +610,20 @@ internal static class CalendarEndpoints
     }
 
     /// <summary>
-    /// Creates a repeating event (#193): every date at once, each its own confirmed event in one series. Only categories
-    /// confirmed at once can repeat, so no date ever waits for approval. A repeat always ends within a year.
+    /// Creates a repeating event (#193): every date at once, each its own event in one series. A repeat always ends
+    /// within a year. Unavailable time and activities are confirmed at once. Repeating parenting time (#239, owner
+    /// decision October 23, 2026) waits for one approval of the whole series: every date is pending until the co-parent
+    /// approves, and approving or declining applies to all of them.
     /// </summary>
     private static async Task<Results<Created<EventView>, ValidationProblem, ForbidHttpResult>> CreateSeriesAsync(
         CreateEventRequest request,
         EventRepeatRequest repeat,
+        IReadOnlyCollection<Guid> parents,
         HttpContext http,
         ITenantContext tenant,
         CalendarDbContext db,
         IFamilyRoster roster,
+        IChangeRequests changeRequests,
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
@@ -626,7 +640,7 @@ internal static class CalendarEndpoints
         IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> dates = [];
         if (!CalendarSeries.CanRepeat(category))
         {
-            errors["repeat"] = ["Parenting time, holidays and family events can't repeat yet. Add each date on its own."];
+            errors["repeat"] = ["Holidays and family events can't repeat yet. Add each date on its own."];
         }
         else if (!Enum.IsDefined(frequency))
         {
@@ -674,10 +688,12 @@ internal static class CalendarEndpoints
             }
         }
 
+        // Parenting time is the caregiver's; unavailable time and activities are the owner's (#210).
+        var person = category == EventCategory.ParentingTime ? request.CaregiverMembershipId : tenant.MembershipId;
         if (errors.Count == 0)
         {
             // Every date is checked before any is written: a series is added whole or not at all.
-            errors = await OwnOverlapErrorsAsync(db, category, tenant.MembershipId, dates, cancellationToken);
+            errors = await OwnOverlapErrorsAsync(db, category, person, dates, cancellationToken);
         }
 
         if (errors.Count > 0)
@@ -701,6 +717,10 @@ internal static class CalendarEndpoints
         var (title, location) = Shareable(category, request.Title, request.Location);
         var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
         var childIds = (request.ChildIds ?? []).Distinct().ToList();
+        // As for one date (Decision 7): while a family has one parent, parenting time is confirmed and labelled.
+        var needsApproval = CalendarEvent.NeedsApproval(category);
+        var soloConfirm = needsApproval && parents.Count < 2;
+        var pending = needsApproval && !soloConfirm;
         var events = dates.Select(date =>
         {
             var e = new CalendarEvent
@@ -713,8 +733,10 @@ internal static class CalendarEndpoints
                 AllDay = request.AllDay,
                 Location = location,
                 Notes = notes,
-                Status = EventStatus.Confirmed,
+                Status = pending ? EventStatus.PendingApproval : EventStatus.Confirmed,
+                CaregiverMembershipId = category == EventCategory.ParentingTime ? request.CaregiverMembershipId : null,
                 OwnerMembershipId = tenant.MembershipId,
+                ConfirmedBeforeCoParentJoined = soloConfirm,
                 CreatedAt = now,
                 SeriesId = series.Id,
             };
@@ -726,9 +748,10 @@ internal static class CalendarEndpoints
         var warnings = await SeriesWarningsAsync(db, category, tenant.MembershipId, dates, cancellationToken);
         var userId = http.User.GetUserId()!.Value;
         Dictionary<string, string[]>? refused = null;
+        Guid? changeRequestId = null;
         await unitOfWork.ExecuteAsync(async ct =>
         {
-            if ((refused = await RefusedUnderLockAsync(db, category, tenant.MembershipId, dates, ct)) is not null)
+            if ((refused = await RefusedUnderLockAsync(db, category, person, dates, ct)) is not null)
             {
                 return;
             }
@@ -736,6 +759,15 @@ internal static class CalendarEndpoints
             db.Series.Add(series);
             db.Events.AddRange(events);
             await db.SaveChangesAsync(ct);
+            if (pending)
+            {
+                // One request for every date (#239): the co-parent approves or declines the series as a whole.
+                changeRequestId = await changeRequests.ProposeAsync(
+                    new ChangeRequestProposal(
+                        ChangeRequestTypes.CalendarCreate, SeriesTarget, series.Id, SeriesSummary(events, series, zone), tenant.MembershipId, userId),
+                    ct);
+            }
+
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_series.created", "calendar_series", series.Id), ct);
         }, cancellationToken);
 
@@ -746,8 +778,34 @@ internal static class CalendarEndpoints
 
         return TypedResults.Created(
             $"/api/families/{tenant.FamilyId}/calendar/events/{events[0].Id}",
-            View(events[0], tenant, changeRequestId: null, warnings, new Dictionary<Guid, CalendarSeries> { [series.Id] = series }));
+            View(events[0], tenant, changeRequestId, warnings, new Dictionary<Guid, CalendarSeries> { [series.Id] = series }));
     }
+
+    /// <summary>An approval request about a whole series (#239): its target id is the series' id.</summary>
+    internal const string SeriesTarget = "calendar_series";
+
+    /// <summary>"Add: Time with Dad, 12 dates from Oct 30 to Jun 1": what the approvals inbox and its email say.</summary>
+    private static string SeriesSummary(List<CalendarEvent> events, CalendarSeries series, string zone)
+    {
+        var first = EventSchedule.LocalDate(events[0].StartsAt, zone);
+        var last = EventSchedule.LocalDate(events[^1].StartsAt, zone);
+        var every = series.Frequency switch
+        {
+            SeriesFrequency.Daily => series.Interval == 1 ? "every day" : $"every {series.Interval} days",
+            SeriesFrequency.Monthly => series.Interval == 1 ? "every month" : $"every {series.Interval} months",
+            _ => series.Interval == 1 ? "every week" : $"every {series.Interval} weeks",
+        };
+        return $"Add: {events[0].Title}, {every}, {events.Count} dates from {first:MMM d} to {last:MMM d}";
+    }
+
+    /// <summary>
+    /// Changing or cancelling several dates of repeating parenting time at once would skip the co-parent's approval, so
+    /// for now each date is changed on its own, through approval as usual (#239 follow-up in TODO.md).
+    /// </summary>
+    private static ValidationProblem OneDateAtATime() => TypedResults.ValidationProblem(new Dictionary<string, string[]>
+    {
+        ["scope"] = ["Change repeating parenting time one date at a time for now. Each change goes to your co-parent."],
+    });
 
     /// <summary>
     /// Edits this and the following dates, or every date, of a repeating event (#193), at once: series never need

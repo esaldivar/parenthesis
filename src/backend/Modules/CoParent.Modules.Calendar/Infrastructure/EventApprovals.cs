@@ -1,5 +1,6 @@
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Calendar.Domain;
+using CoParent.Modules.Calendar.Endpoints;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Calendar.Infrastructure;
@@ -19,10 +20,17 @@ internal abstract class EventCreateHandler(CalendarDbContext db) : IApprovalTarg
 
     private async Task SetStatusAsync(ApprovalTarget target, EventStatus status, CancellationToken cancellationToken)
     {
-        var calendarEvent = await db.Events.SingleAsync(e => e.Id == target.TargetId, cancellationToken);
-        calendarEvent.Status = status;
-        // Only a parent's Decline shows on the calendar as declined (#199); a withdrawn or expired request just goes.
-        calendarEvent.DeclinedByParent = status == EventStatus.Rejected && target.DeclinedByParent;
+        // A repeating parenting-time request covers every date of its series at once (#239).
+        var events = target.TargetType == CalendarEndpoints.SeriesTarget
+            ? await db.Events.Where(e => e.SeriesId == target.TargetId && e.Status == EventStatus.PendingApproval).ToListAsync(cancellationToken)
+            : [await db.Events.SingleAsync(e => e.Id == target.TargetId, cancellationToken)];
+        foreach (var calendarEvent in events)
+        {
+            calendarEvent.Status = status;
+            // Only a parent's Decline shows on the calendar as declined (#199); a withdrawn or expired request just goes.
+            calendarEvent.DeclinedByParent = status == EventStatus.Rejected && target.DeclinedByParent;
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 }
