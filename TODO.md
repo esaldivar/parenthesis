@@ -539,6 +539,14 @@ that points back here.
   320px.
 
 ## Calendar follow-ups
+
+- [x] **Silent lazy-page navigation failures (#177).** A shared accessible recovery dialog explains a failed
+  page load and offers an explicit reload with an unsaved-changes warning, or Keep working. No automatic reload,
+  retry loop, failed URL or technical exception is exposed. Regression tests include an existing focus trap.
+  - [ ] After promotion, reproduce a missing lazy chunk in a stale development tab, verify the recovery and
+    successful Edit after reload, and check phone/themes/screen-reader behavior. Asset-retention/deployment causes
+    remain unconfirmed; the recovery does not establish that old chunks remain available.
+
 - [ ] **Change several dates of repeating parenting time at once, through approval (#239 follow-up, October 23,
   2026).** Repeating parenting time is approved as one request for the whole series. Changing or cancelling it is
   one date at a time for now: each change goes to the co-parent as usual. "This and following" and "All events" are
