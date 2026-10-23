@@ -144,6 +144,7 @@ internal static class CalendarEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
+        CalendarToday today,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -154,6 +155,16 @@ internal static class CalendarEndpoints
         var children = await roster.ActiveChildIdsAsync(cancellationToken);
         var parents = await roster.ActiveParentMembershipIdsAsync(cancellationToken);
         var errors = Validate(request, children, parents);
+        if (errors.Count == 0)
+        {
+            // New dates start from today in the family's time zone (#232); earlier times today are fine.
+            var zone = await roster.TimeZoneAsync(cancellationToken);
+            if (EventSchedule.LocalDate(request.StartsAt!.Value, zone) < today.In(zone))
+            {
+                errors["startsAt"] = [CalendarToday.PastStart];
+            }
+        }
+
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -360,6 +371,7 @@ internal static class CalendarEndpoints
         IChangeRequests changeRequests,
         IUnitOfWork unitOfWork,
         IAuditLog audit,
+        CalendarToday today,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -408,6 +420,17 @@ internal static class CalendarEndpoints
 
         // Existing overlaps stay (owner decision, #210): only a change of time or caregiver is checked, so a title or
         // notes edit always works.
+        if (errors.Count == 0 && change.StartsAt != current.StartsAt)
+        {
+            // Moving it starts from today on; an event already past or under way keeps its own start day (#232).
+            var zone = await roster.TimeZoneAsync(cancellationToken);
+            var day = EventSchedule.LocalDate(change.StartsAt, zone);
+            if (day < today.In(zone) && day != EventSchedule.LocalDate(current.StartsAt, zone))
+            {
+                errors["startsAt"] = [CalendarToday.PastStart];
+            }
+        }
+
         var moved = (change.StartsAt, change.EndsAt, change.CaregiverMembershipId)
             != (current.StartsAt, current.EndsAt, current.CaregiverMembershipId);
         var person = e.Category == EventCategory.ParentingTime ? change.CaregiverMembershipId : e.OwnerMembershipId;

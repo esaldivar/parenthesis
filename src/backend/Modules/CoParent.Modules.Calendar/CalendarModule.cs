@@ -14,6 +14,7 @@ public static class CalendarModule
     public static IServiceCollection AddCalendarModule(this IServiceCollection services)
     {
         services.AddModuleDbContext<CalendarDbContext>();
+        services.AddSingleton<CalendarToday>();
         services.AddScoped<IApprovalTargetHandler, CalendarCreateHandler>();
         services.AddScoped<IApprovalTargetHandler, JointEventCreateHandler>();
         services.AddScoped<IApprovalTargetHandler, CalendarModifyHandler>();

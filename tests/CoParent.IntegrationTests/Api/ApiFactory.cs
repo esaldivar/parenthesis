@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
 using CoParent.IntegrationTests.Infrastructure;
+using CoParent.Modules.Calendar;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -117,7 +118,20 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<FakeEmailSender>();
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+
+            // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
+            // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
+            services.RemoveAll<CalendarToday>();
+            services.AddSingleton<CalendarToday>(new FixedCalendarToday(FixedToday));
         });
+    }
+
+    /// <summary>The day the calendar's "from today on" rule checks against in tests (noon UTC, October 1, 2026).</summary>
+    public static readonly DateTimeOffset FixedToday = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
+
+    private sealed class FixedCalendarToday(DateTimeOffset now) : CalendarToday(TimeProvider.System)
+    {
+        public override DateTimeOffset UtcNow => now;
     }
 
     public override async ValueTask DisposeAsync()

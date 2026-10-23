@@ -29,6 +29,13 @@ Status: approved design decisions for future implementation. Do not interrupt th
 - Tapping an event always opens its details, never Add.
 - Keyboard: each week day column is a labelled button ("Add on Wednesday, October 28") that adds on that day; Month and the lists rely on it and the page's Add button rather than adding more tab stops.
 
+## Dates (#232, October 23, 2026)
+- Dates are picked in one range calendar (start → end) on Add, Edit and Request Swap, and single calendars for a repeat's last day, reminders and task due dates. Days that can't be chosen are greyed out.
+- New dates start from today in the family's time zone; earlier times today are allowed. The server refuses a new start (or reminder date, or due date) before today, and moving one to a day before today.
+- An event, reminder or task already in the past or under way keeps its own day when edited, so its title or notes can still change.
+- The end is never before the start: moving the start past the end moves the end too, keeping the length (and a one-day event's end time moves with its start time). An event lasts up to 31 days.
+- Typed dates are read as 10/27/2026 (or 2026-10-27); anything else gets a clear message by the field.
+
 ## Joint events
 - Support a **Joint Event** for occasions involving both parents (school events, holidays, birthdays, etc.), including occasions with no children present.
 - Event fields: title, date, time, location; children multi-select with **None**, any selected children, or **All children**; optional category dropdown (**School**, **Holiday**, **Birthday**, **Other**) and free-text details.

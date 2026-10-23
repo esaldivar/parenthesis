@@ -2,6 +2,7 @@ import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { FormArray, FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -15,6 +16,8 @@ import { FORM_STYLES } from '../auth/form-styles';
 import { PlainDate } from '../dashboard/model';
 import { todayIn } from '../dashboard/week';
 import { revealFirstProblem } from './reveal-problem';
+import { PAST_DATE, UNREADABLE_DATE, choosable } from './date-rules';
+import { isPlainDate, providePlainDates } from './plain-dates';
 
 export const TASK_TITLE_MAX = 80;
 export const TASK_DETAILS_MAX = 1000;
@@ -33,7 +36,18 @@ type ItemGroup = FormGroup<{ id: FormControl<string>; text: FormControl<string>;
 @Component({
   selector: 'app-task-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatInputModule, MatSelectModule, Icon],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatDatepickerModule,
+    Icon,
+  ],
+  providers: [providePlainDates()],
   templateUrl: './task-form.html',
   styleUrls: ['./add-event-page.scss', './task-form.scss'],
   styles: [FORM_STYLES],
@@ -68,6 +82,12 @@ export class TaskForm implements OnInit {
   /** The version this edit is based on; replaced when the parent loads the other parent's latest. */
   private readonly version = signal<number | null>(null);
   protected readonly editing = computed(() => this.task() !== null);
+  /** Today in the family's time zone (#232): a new due date is from today on; a task keeps its own when edited. */
+  protected readonly today = computed(() => todayIn(this.timeZone(), new Date()));
+  protected readonly dayFilter = computed(() => {
+    const [today, own] = [this.today(), this.task()?.dueDate];
+    return (day: PlainDate | null) => choosable(day, today, own ? [own] : []);
+  });
 
   protected readonly form = this.fb.group({
     title: ['', [Validators.required, Validators.maxLength(TASK_TITLE_MAX)]],
@@ -85,7 +105,8 @@ export class TaskForm implements OnInit {
     if (task) {
       this.fill(task);
     } else {
-      this.form.patchValue({ dueDate: this.date() ?? todayIn(this.timeZone(), new Date()) });
+      const asked = this.date();
+      this.form.patchValue({ dueDate: asked && asked >= this.today() ? asked : this.today() });
     }
     const family = this.family();
     if (family) {
@@ -224,8 +245,12 @@ export class TaskForm implements OnInit {
     } else if (v.title.trim().length > TASK_TITLE_MAX) {
       errors['title'] = `Keep the title to ${TASK_TITLE_MAX} characters.`;
     }
-    if (!v.dueDate) {
+    if (v.dueDate && !isPlainDate(v.dueDate)) {
+      errors['dueDate'] = UNREADABLE_DATE;
+    } else if (!v.dueDate) {
       errors['dueDate'] = 'Choose the day it’s due.';
+    } else if (v.dueDate < this.today() && v.dueDate !== this.task()?.dueDate) {
+      errors['dueDate'] = PAST_DATE;
     }
     if (v.items.some((i) => !i.text.trim() || i.text.trim().length > ITEM_TEXT_MAX)) {
       errors['items'] = `Give each checklist item 1 to ${ITEM_TEXT_MAX} characters, or remove it.`;

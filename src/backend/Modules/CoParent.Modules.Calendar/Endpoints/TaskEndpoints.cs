@@ -138,6 +138,7 @@ internal static class TaskEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
+        CalendarToday today,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -146,6 +147,12 @@ internal static class TaskEndpoints
         }
 
         var errors = await ValidateAsync(request, [], roster, cancellationToken);
+        if (errors.Count == 0 && request.DueDate!.Value < today.In(await roster.TimeZoneAsync(cancellationToken)))
+        {
+            // A new task is due today or later (#232).
+            errors["dueDate"] = [CalendarToday.PastDate];
+        }
+
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -193,6 +200,7 @@ internal static class TaskEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
+        CalendarToday today,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -222,6 +230,13 @@ internal static class TaskEndpoints
 
         var items = await LoadItemsAsync(db, taskId, cancellationToken);
         var errors = await ValidateAsync(request, items, roster, cancellationToken);
+        if (errors.Count == 0 && request.DueDate!.Value != task.DueDate
+            && request.DueDate.Value < today.In(await roster.TimeZoneAsync(cancellationToken)))
+        {
+            // Moving it is to today or later; an overdue task keeps its own due date (#232).
+            errors["dueDate"] = [CalendarToday.PastDate];
+        }
+
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
