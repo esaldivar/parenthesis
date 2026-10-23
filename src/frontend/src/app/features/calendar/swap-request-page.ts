@@ -29,6 +29,7 @@ import { LocalDateTime } from '../dashboard/model';
 import { addDays, dayLong, todayIn } from '../dashboard/week';
 import { dayFilter, END_BEFORE_START } from './date-rules';
 import { DateCheck } from './date-check';
+import { DateField } from './date-field';
 import { providePlainDates, typedValues } from './plain-dates';
 import { warningText } from './add-event-page';
 import { CalendarItem, toItems } from './calendar-items';
@@ -54,6 +55,7 @@ const ASK_FIRST: readonly CalendarWarning[] = ['OverlapsCoParentUnavailable'];
   selector: 'app-swap-request-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DateField,
     NgTemplateOutlet,
     ReactiveFormsModule,
     RouterLink,

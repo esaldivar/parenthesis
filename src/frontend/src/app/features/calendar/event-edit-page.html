@@ -57,33 +57,27 @@
     <fieldset class="when">
       <legend>When</legend>
       <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
-      <!-- One range calendar (#232). Only days before today (other than the event's own) are greyed out; an invalid
-           date turns red, with its reason for screen readers, and the change can't be sent until it's fixed (#248). -->
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="dates">
-        <mat-label>Dates</mat-label>
-        <mat-date-range-input [rangePicker]="datesPicker" [dateFilter]="dayFilter">
-          <input
-            matStartDate
-            formControlName="startDate"
-            placeholder="Start date"
-            [attr.aria-label]="dateCheck.issues().start ? 'Start date, ' + dateCheck.issues().start : 'Start date'"
-            [attr.aria-invalid]="!!dateCheck.issues().start"
-            [class.date-invalid]="!!dateCheck.issues().start"
-          />
-          <input
-            matEndDate
-            formControlName="endDate"
-            placeholder="End date"
-            [attr.aria-label]="dateCheck.issues().end ? 'End date, ' + dateCheck.issues().end : 'End date'"
-            [attr.aria-invalid]="!!dateCheck.issues().end"
-            [class.date-invalid]="!!dateCheck.issues().end"
-          />
-        </mat-date-range-input>
-        <!-- The format is for screen readers only (#236): visible, it cluttered the field. -->
-        <mat-hint class="visually-hidden">Dates as MM/DD/YYYY</mat-hint>
-        <mat-datepicker-toggle matIconSuffix [for]="datesPicker" aria-label="Choose dates" />
-        <mat-date-range-picker #datesPicker />
-      </mat-form-field>
+      <!-- Start and End as separate fields, each opening its own calendar (#249). Only past days are greyed
+           out; an invalid date turns red, with its reason for screen readers, and blocks sending (#248). -->
+      <div class="when__row dates">
+        <app-date-field
+          label="Start date"
+          name="startDate"
+          inputId="edit-start-date"
+          [control]="form.controls.startDate"
+          [dateFilter]="dayFilter"
+          [issue]="dateCheck.issues().start"
+        />
+        <app-date-field
+          label="End date"
+          name="endDate"
+          inputId="edit-end-date"
+          [control]="form.controls.endDate"
+          [startAt]="form.controls.endDate.value || form.controls.startDate.value || null"
+          [dateFilter]="dayFilter"
+          [issue]="dateCheck.issues().end"
+        />
+      </div>
       @if (!allDay()) {
         <div class="when__row">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">

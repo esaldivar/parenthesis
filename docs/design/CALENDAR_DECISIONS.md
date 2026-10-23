@@ -30,11 +30,11 @@ Status: approved design decisions for future implementation. Do not interrupt th
 - Keyboard: each week day column is a labelled button ("Add on Wednesday, October 28") that adds on that day; Month and the lists rely on it and the page's Add button rather than adding more tab stops.
 
 ## Dates (#232, October 23, 2026)
-- Dates are picked in one range calendar (start → end) on Add, Edit and Request Swap, and single calendars for a repeat's last day, reminders and task due dates. Days that can't be chosen are greyed out.
+- Start and End are separate, side-by-side fields on Add, Edit and Request Swap (#249, October 23, 2026, replacing the one range calendar). Tapping anywhere in a field opens that date's own calendar; choosing a day sets that date alone and closes it, and nothing opens the other one. The date text is display-only (no typing, no phone keyboard), and the calendar icon is decoration, not a separate button. An empty End opens at the start's month. A repeat's last day, reminders and task due dates keep their single calendars.
 - New dates start from today in the family's time zone; earlier times today are allowed. The server refuses a new start (or reminder date, or due date) before today, and moving one to a day before today.
 - An event, reminder or task already in the past or under way keeps its own day when edited, so its title or notes can still change.
 - Only days before today (in the family's time zone) are disabled in a calendar, other than an edited event's own days (#248, October 23, 2026). Nothing is disabled because of the other date, and nothing moves the other date: a start after the end, an end before the start, or a range over 31 days can be picked, turns that date's text red (no warning text on screen; the reason is in the field's accessible name), and the form can't be sent until it's corrected. This replaces the earlier rule that moving the start moved the end. An event lasts up to 31 days.
-- Typed dates are read as 10/27/2026 (or 2026-10-27); anything else turns red the same way.
+- Typed dates, where a field still allows typing (a repeat's last day, reminders, task due dates), are read as 10/27/2026 (or 2026-10-27); anything else gets a clear message.
 
 ## Joint events
 - Support a **Joint Event** for occasions involving both parents (school events, holidays, birthdays, etc.), including occasions with no children present.
