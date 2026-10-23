@@ -8,6 +8,7 @@ import { CalendarEvent, ChangeRequest } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
+import { toastText } from '../../../testing/toasts';
 
 const F = '/api/families/family-1';
 const FAMILY = {
@@ -125,7 +126,7 @@ describe('approve or decline from an event’s details (#218)', () => {
     approve.flush(request({ status: 'Approved', canDecide: false }));
     await settle();
 
-    expect(text(main())).toContain('You approved “Long weekend with Sam”. It’s on the calendar.');
+    expect(toastText()).toContain('You approved “Long weekend with Sam”. It’s on the calendar.');
     expect(document.querySelector('app-event-details')).toBeNull();
   });
 
@@ -149,7 +150,7 @@ describe('approve or decline from an event’s details (#218)', () => {
     reject.flush(request({ status: 'Rejected', canDecide: false }));
     await settle();
 
-    expect(text(main())).toContain(
+    expect(toastText()).toContain(
       'You declined “Long weekend with Sam”. It isn’t on the schedule.',
     );
   });
@@ -179,7 +180,7 @@ describe('approve or decline from an event’s details (#218)', () => {
     );
     await settle();
 
-    expect(text(main())).toContain(
+    expect(toastText()).toContain(
       'You approved the change. “Long weekend with Sam” was updated on the calendar.',
     );
   });

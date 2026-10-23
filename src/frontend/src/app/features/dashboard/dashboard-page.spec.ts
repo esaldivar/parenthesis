@@ -9,6 +9,7 @@ import { LiveDashboardDataSource } from './dashboard-data';
 import { DashboardWeek } from './model';
 import { DashboardPage, NOW } from './dashboard-page';
 import { MIN_SLOTS } from './timeline';
+import { toastText } from '../../../testing/toasts';
 
 // Wednesday, October 14, 2026, 9:00 AM in the fake family's time zone (America/Chicago).
 const WEDNESDAY_MORNING = new Date('2026-10-14T14:00:00Z');
@@ -356,7 +357,7 @@ describe('DashboardPage (approved design)', () => {
       await answer(fixture, null);
 
       expect(dialog()).toBeNull();
-      expect(text(el.querySelector('.notice'))).toBe('That event isn’t on the calendar any more. The week has been refreshed.');
+      expect(toastText()).toContain('That event isn’t on the calendar any more. The week has been refreshed.');
       expect(calls()).toBe(before + 1);
     });
 
