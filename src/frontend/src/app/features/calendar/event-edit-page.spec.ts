@@ -107,8 +107,10 @@ describe('Edit an event', () => {
   it('sends a change to parenting time for approval, and says the event stays as it is until then', async () => {
     await open(weekend());
 
+    expect(page().querySelector('[formcontrolname="caregiver"]')).toBeNull();
+    expect(text(page())).toContain('Your parenting time.');
     expect(text(page().querySelector('.note'))).toBe(
-      'Changes to the title, date, time, place or who has the children go to Sam for approval. Until they answer, the event stays as it is and shows “Change pending”. Notes change at once.',
+      'Changes to the title, date, time or place go to Sam for approval. Until they answer, the event stays as it is and shows “Change pending”. Notes change at once.',
     );
     // The last day shows as the last day, not the midnight after it.
     expect(field('endDate')!.value).toBe('10/25/2026');
@@ -124,11 +126,12 @@ describe('Edit an event', () => {
         allDay: true,
         startsAt: '2026-10-23T05:00:00.000Z',
         endsAt: '2026-10-27T05:00:00.000Z',
-        caregiverMembershipId: 'm-alex',
         notes: 'Pick up at school',
       }),
     );
     expect(patch.request.body.title).toBe('Time with Alex');
+    // Whose parenting time it is never changes (#246): it's shown, not offered, and not sent.
+    expect(patch.request.body.caregiverMembershipId).toBeUndefined();
     patch.flush(weekend({ pendingChange: 'Modify' }), { status: 202, statusText: 'Accepted' });
     await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-23'));
   });

@@ -139,3 +139,15 @@ ul {
 .day > button:not(.day__add) {
   pointer-events: auto;
 }
+
+// The tapped day (#237): outlined, with an Add button along its foot that adds there.
+.day.is-picked {
+  outline: 2px solid var(--color-action);
+  outline-offset: -2px;
+}
+.day > .slot-pick {
+  position: absolute;
+  inset: auto 2px 2px;
+  z-index: 2;
+  pointer-events: auto;
+}

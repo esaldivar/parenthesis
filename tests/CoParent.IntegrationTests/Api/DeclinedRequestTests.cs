@@ -55,7 +55,7 @@ public sealed class DeclinedRequestTests(ApiFactory api) : IAsyncLifetime
         var confirmed = await JsonAsync(await f.Dad.PostAsync(Events(f), ParentingTime(f, _start.AddDays(7))));
         await Decide(f.Mom, f, confirmed, "approve");
         var swap = await JsonAsync(await f.Dad.SendAsync(
-            HttpMethod.Patch, $"{Events(f)}/{confirmed.GetProperty("id").GetGuid()}", new { caregiverMembershipId = f.MomMembershipId }));
+            HttpMethod.Patch, $"{Events(f)}/{confirmed.GetProperty("id").GetGuid()}", new { startsAt = _start.AddDays(8) }));
         await Decide(f.Mom, f, swap, "reject");
 
         var week = await RangeAsync(f.Mom, f);

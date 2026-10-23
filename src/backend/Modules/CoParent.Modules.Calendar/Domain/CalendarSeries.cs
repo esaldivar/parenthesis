@@ -4,11 +4,10 @@ using NodaTime;
 namespace CoParent.Modules.Calendar.Domain;
 
 /// <summary>
-/// A repeating event (#193, C-05): weekly on chosen days, always ending on a date or after a number of times, at most a
-/// year after the first. Each date is its own <see cref="CalendarEvent"/> (with <see cref="CalendarEvent.SeriesId"/>),
-/// so conflict checks, privacy and the child filter treat it like any other event. Only categories that are confirmed
-/// at once can repeat (owner decision, October 22, 2026): unavailable time and activities, never parenting time,
-/// holidays or family events.
+/// A repeating event (#193, C-05): every N days, every N weeks on chosen days, or every N months on the same date (#238),
+/// always ending on a date or after a number of times, at most a year after the first. Each date is its own <see cref="CalendarEvent"/> (with <see cref="CalendarEvent.SeriesId"/>),
+/// so conflict checks, privacy and the child filter treat it like any other event. See <see cref="CanRepeat"/> for
+/// which categories repeat.
 /// </summary>
 internal sealed class CalendarSeries : Entity, IFamilyScoped
 {
@@ -18,7 +17,13 @@ internal sealed class CalendarSeries : Entity, IFamilyScoped
 
     public Guid OwnerMembershipId { get; init; }
 
-    /// <summary>The weekdays it happens on.</summary>
+    /// <summary>How often it repeats (#238). Series made before that are weekly.</summary>
+    public SeriesFrequency Frequency { get; init; } = SeriesFrequency.Weekly;
+
+    /// <summary>Every this many days, weeks or months (1 is every one).</summary>
+    public int Interval { get; init; } = 1;
+
+    /// <summary>The weekdays a weekly series happens on; none for daily or monthly.</summary>
     public WeekDays Days { get; init; }
 
     /// <summary>Ends on this local date (inclusive), or after <see cref="Count"/> times.</summary>
@@ -28,7 +33,20 @@ internal sealed class CalendarSeries : Entity, IFamilyScoped
 
     public DateTimeOffset CreatedAt { get; init; }
 
-    public static bool CanRepeat(EventCategory category) => !CalendarEvent.NeedsApproval(category);
+    /// <summary>
+    /// Unavailable time and activities, confirmed at once, and parenting time, which waits for one approval of the whole
+    /// series (#239, owner decision October 23, 2026). Holidays and family events don't repeat yet.
+    /// </summary>
+    public static bool CanRepeat(EventCategory category) =>
+        !CalendarEvent.NeedsApproval(category) || category == EventCategory.ParentingTime;
+}
+
+/// <summary>How often a series repeats (#238, owner decision October 23, 2026; no yearly for now).</summary>
+internal enum SeriesFrequency
+{
+    Weekly,
+    Daily,
+    Monthly,
 }
 
 /// <summary>Weekdays as flags, so a series stores "Wed and Fri" in one column.</summary>
@@ -60,16 +78,36 @@ internal static class EventSchedule
     public static IReadOnlyList<DayOfWeek> FromFlags(WeekDays days) =>
         Enum.GetValues<DayOfWeek>().Where(d => days.HasFlag((WeekDays)(1 << (int)d))).ToList();
 
+    /// <summary>The largest "every N" for each frequency: a month of days, half a year of weeks, a year of months.</summary>
+    public static int MaxInterval(SeriesFrequency frequency) => frequency switch
+    {
+        SeriesFrequency.Daily => 30,
+        SeriesFrequency.Weekly => 26,
+        _ => 12,
+    };
+
     /// <summary>The last local date a series starting on <paramref name="first"/> may reach.</summary>
     public static DateOnly LastAllowed(DateOnly first) => first.AddYears(1);
 
     /// <summary>
-    /// Every (start, end) in order: each chosen weekday from the first event's local date, with the first event's
-    /// local times, until the end date or count. Stops a year after the first date whatever the end condition, so the
-    /// caller can tell when a count doesn't fit.
+    /// Every (start, end) in order, with the first event's local times, until the end date or count:
+    /// <list type="bullet">
+    /// <item>Daily: every <paramref name="interval"/> days from the first date.</item>
+    /// <item>Weekly: each chosen weekday, in every <paramref name="interval"/>th week (Sunday to Saturday) from the first.</item>
+    /// <item>Monthly: the first date's day of the month, every <paramref name="interval"/> months; a month without that
+    /// day (the 31st in April) is skipped, as Google Calendar does.</item>
+    /// </list>
+    /// Stops a year after the first date whatever the end condition, so the caller can tell when a count doesn't fit.
     /// </summary>
     public static IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> Occurrences(
-        DateTimeOffset startsAt, DateTimeOffset endsAt, WeekDays days, DateOnly? until, int? count, string timeZone)
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt,
+        WeekDays days,
+        DateOnly? until,
+        int? count,
+        string timeZone,
+        SeriesFrequency frequency = SeriesFrequency.Weekly,
+        int interval = 1)
     {
         var zone = DateTimeZoneProviders.Tzdb[timeZone];
         var localStart = Instant.FromDateTimeOffset(startsAt).InZone(zone).LocalDateTime;
@@ -80,9 +118,18 @@ internal static class EventSchedule
         var limit = Math.Min(count ?? MaxOccurrences, MaxOccurrences);
 
         var result = new List<(DateTimeOffset, DateTimeOffset)>();
+        var firstWeek = WeekStart(localStart.Date);
         for (var date = localStart.Date; ToDateOnly(date) <= last && result.Count < limit; date = date.PlusDays(1))
         {
-            if (!days.HasFlag((WeekDays)(1 << (int)ToDayOfWeek(date.DayOfWeek))))
+            var happens = frequency switch
+            {
+                SeriesFrequency.Daily => Period.Between(localStart.Date, date, PeriodUnits.Days).Days % interval == 0,
+                SeriesFrequency.Monthly => date.Day == localStart.Date.Day
+                    && Period.Between(localStart.Date, date, PeriodUnits.Months).Months % interval == 0,
+                _ => days.HasFlag((WeekDays)(1 << (int)ToDayOfWeek(date.DayOfWeek)))
+                    && Period.Between(firstWeek, WeekStart(date), PeriodUnits.Days).Days / 7 % interval == 0,
+            };
+            if (!happens)
             {
                 continue;
             }
@@ -113,6 +160,9 @@ internal static class EventSchedule
         ToDateOnly(Instant.FromDateTimeOffset(moment).InZone(DateTimeZoneProviders.Tzdb[timeZone]).Date);
 
     private static DateOnly ToDateOnly(LocalDate date) => new(date.Year, date.Month, date.Day);
+
+    /// <summary>The Sunday that starts the week containing <paramref name="date"/>.</summary>
+    private static LocalDate WeekStart(LocalDate date) => date.PlusDays(-((int)ToDayOfWeek(date.DayOfWeek)));
 
     private static DayOfWeek ToDayOfWeek(IsoDayOfWeek day) => day == IsoDayOfWeek.Sunday ? DayOfWeek.Sunday : (DayOfWeek)(int)day;
 }

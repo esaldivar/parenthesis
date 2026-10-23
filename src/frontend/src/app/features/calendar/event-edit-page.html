@@ -12,6 +12,10 @@
     <h2 id="details-heading" class="step">{{ event()!.title }}</h2>
     <p class="note">{{ note() }}</p>
     @if (repeats(); as repeats) {
+      @if (parenting()) {
+        <!-- Repeating parenting time changes one date at a time for now, each through approval (#239). -->
+        <p class="legend-hint">This repeats: {{ repeats }}. A change applies to this date only.</p>
+      } @else {
       <fieldset class="when scope">
         <legend>This repeats: {{ repeats }}. Change which dates?</legend>
         @for (option of scopes; track option.id) {
@@ -24,6 +28,7 @@
           <p class="legend-hint">Each date keeps its own day. You can change the times, title, place and notes.</p>
         }
       </fieldset>
+      }
     }
     @if (error(); as message) {
       <div class="alert" role="alert">{{ message }}</div>
@@ -42,17 +47,11 @@
     }
 
     @if (parenting()) {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Who has the children?</mat-label>
-        <mat-select formControlName="caregiver" required>
-          @for (p of parents(); track p.membershipId) {
-            <mat-option [value]="p.membershipId">{{ p.isYou ? p.displayName + ' (you)' : p.displayName }}</mat-option>
-          }
-        </mat-select>
-        @if (fieldError('caregiverMembershipId'); as e) {
-          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-        }
-      </mat-form-field>
+      <!-- Whose parenting time it is never changes (#246). -->
+      <p class="legend-hint">{{ caregiverLabel() }}</p>
+      @if (fieldError('caregiverMembershipId'); as e) {
+        <p class="field-error" role="alert">{{ e }}</p>
+      }
     }
 
     <fieldset class="when">
@@ -65,7 +64,8 @@
           <input matStartDate formControlName="startDate" placeholder="Start date" aria-label="Start date" />
           <input matEndDate formControlName="endDate" placeholder="End date" aria-label="End date" />
         </mat-date-range-input>
-        <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+        <!-- The format is for screen readers only (#236): visible, it cluttered the field. -->
+        <mat-hint class="visually-hidden">Dates as MM/DD/YYYY</mat-hint>
         <mat-datepicker-toggle matIconSuffix [for]="datesPicker" aria-label="Choose dates" />
         <mat-date-range-picker #datesPicker />
       </mat-form-field>

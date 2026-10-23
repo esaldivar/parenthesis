@@ -228,6 +228,10 @@ describe('Add event', () => {
   it('needs the children for parenting time, and fills in the title', async () => {
     const harness = await open();
     await choose(harness, 'Parenting time');
+    // Always your own parenting time (#246): no choice of parent.
+    expect(page().querySelector('[formcontrolname="caregiver"]')).toBeNull();
+    expect(text(page())).not.toContain('Who has the children?');
+    expect(text(page())).toContain('This is your parenting time.');
 
     await submit(harness);
     expect(text(page())).toContain('Choose which children this parenting time is for.');
@@ -314,6 +318,15 @@ describe('Add event', () => {
       await settle(harness);
 
       expect([value('startDate'), value('endDate')]).toEqual(['10/25/2026', '10/27/2026']);
+    });
+
+    it('keeps the date format for screen readers only, not on screen (#236)', async () => {
+      await open(CHILDREN, '/calendar/new?date=2026-10-20').then((harness) => choose(harness, 'Activity'));
+      const hint = page().querySelector<HTMLElement>('.dates mat-hint')!;
+      expect(hint.classList).toContain('visually-hidden');
+      expect(text(hint)).toBe('Dates as MM/DD/YYYY');
+      const described = [...page().querySelectorAll('.dates [aria-describedby]')].map((e) => e.getAttribute('aria-describedby'));
+      expect(described.some((ids) => ids?.split(' ').includes(hint.id))).toBe(true);
     });
 
     it('greys out days before today in the range calendar', async () => {

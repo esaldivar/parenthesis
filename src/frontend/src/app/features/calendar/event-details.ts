@@ -136,7 +136,9 @@ export class EventDetails {
     try {
       const requests = await this.api.approvals(familyId);
       if (this.item().id === eventId) {
-        const request = requests.find((r) => r.targetId === eventId) ?? null;
+        // A repeating parenting-time request is about the whole series (#239).
+        const seriesId = this.event()?.seriesId;
+        const request = requests.find((r) => r.targetId === eventId || (!!seriesId && r.targetId === seriesId)) ?? null;
         this.request.set(request);
         this.requestState.set(request ? 'found' : 'gone');
       }
@@ -150,7 +152,8 @@ export class EventDetails {
   private async loadDecline(familyId: string, eventId: string): Promise<void> {
     try {
       const decided = await this.api.approvals(familyId, 'history');
-      const request = decided.find((r) => r.targetId === eventId && r.status === 'Rejected');
+      const seriesId = this.event()?.seriesId;
+      const request = decided.find((r) => (r.targetId === eventId || (!!seriesId && r.targetId === seriesId)) && r.status === 'Rejected');
       const answer = request?.decisions.find((d) => d.decision === 'Reject');
       if (this.item().id === eventId && answer) {
         const member = this.members().find((m) => m.membershipId === answer.deciderMembershipId);
@@ -181,10 +184,17 @@ export class EventDetails {
     }
   }
 
+  /**
+   * Whether several dates can be cancelled together. Not for repeating parenting time yet (#239): each date's
+   * cancellation goes to the co-parent on its own.
+   */
+  protected readonly cancelsTogether = computed(() => !!this.repeats() && this.item().category !== 'ParentingTime');
+
   /** "Every Wed and Fri until Nov 13, 2026" for a repeating event (#193). */
   protected readonly repeats = computed(() => {
-    const repeat = this.event()?.repeat;
-    return repeat ? repeatText(repeat) : null;
+    const event = this.event();
+    // A monthly repeat names its day of the month, which every date shares.
+    return event?.repeat ? repeatText(event.repeat, toFamilyLocal(event.startsAt, this.timeZone()).slice(0, 10)) : null;
   });
 
   /** Cancelling is offered on confirmed items; unavailable time only to its owner. */

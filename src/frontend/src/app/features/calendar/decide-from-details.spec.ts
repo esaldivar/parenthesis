@@ -130,6 +130,26 @@ describe('approve or decline from an event’s details (#218)', () => {
     expect(document.querySelector('app-event-details')).toBeNull();
   });
 
+  it('finds the one request for a repeating parenting time’s whole series, and approves every date with it (#239)', async () => {
+    const weekly = event({
+      ...PROPOSED,
+      id: 'weekend-2',
+      seriesId: 's-weekends',
+      repeat: { frequency: 'Weekly', interval: 2, days: ['Wednesday'], until: null, count: 6 },
+    });
+    await open([weekly]);
+    await openDetails([request({ targetType: 'calendar_series', targetId: 's-weekends' })]);
+
+    expect(text(dialog())).toContain('Every 2 weeks on Wed, 6 times');
+    expect(buttons()).toContain('Approve');
+    button('Approve').click();
+    const approve = await vi.waitFor(() =>
+      http.expectOne((r) => r.method === 'POST' && r.url === `${F}/approvals/cr-1/approve`),
+    );
+    approve.flush(request({ status: 'Approved', canDecide: false }));
+    await settle();
+  });
+
   it('declines with an optional comment, as in the inbox', async () => {
     await open([PROPOSED]);
     await openDetails([request()]);

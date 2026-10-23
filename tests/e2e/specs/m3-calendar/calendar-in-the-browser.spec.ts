@@ -100,6 +100,9 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await test.step('Dad proposes it', async () => {
         await page.goto(`/calendar/new?date=${tuesday}`);
         await page.getByRole('button', { name: /Parenting time/ }).click();
+        // Always his own parenting time (#246): no choice of parent.
+        await expect(page.getByText('This is your parenting time.')).toBeVisible();
+        await expect(page.getByLabel('Who has the children?')).toHaveCount(0);
         await page.getByLabel('Kai').check();
         await page.getByRole('button', { name: 'Send for approval' }).click();
         await expect(page.getByText(/Sent to Mom for approval/)).toBeVisible();
@@ -119,6 +122,51 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await test.step('Dad sees it confirmed', async () => {
         await openList(page);
         await expect(page.locator('app-calendar-list button.item[data-status="confirmed"]')).toHaveCount(1);
+        await expect(page.locator('app-calendar-list button.item[data-status="pending"]')).toHaveCount(0);
+      });
+    } finally {
+      await momContext.close();
+      await family.dispose();
+    }
+  });
+
+  test('repeating parenting time is one request: every date waits, then one approval confirms them all (#239)', async ({ page, browser }) => {
+    const family = await familyWithKai();
+    const momContext = await browser.newContext({ ignoreHTTPSErrors: true });
+    try {
+      await signIn(page, family.dad.email);
+
+      await test.step('Dad proposes every day for 3 days', async () => {
+        await page.goto(`/calendar/new?date=${tuesday}`);
+        await page.getByRole('button', { name: /Parenting time/ }).click();
+        await page.getByLabel('Kai').check();
+        await page.getByLabel('How often').click();
+        await page.getByRole('option', { name: 'Every day' }).click();
+        await page.getByLabel('Ends').click();
+        await page.getByRole('option', { name: /times/i }).click();
+        await page.getByLabel('Times in all').fill('3');
+        await expect(page.locator('.repeat')).toContainText('Mom approves or declines every date at once.');
+        await page.getByRole('button', { name: 'Send for approval' }).click();
+        await expect(page.getByText(/Sent to Mom for approval: .* on 3 dates/)).toBeVisible();
+        await openList(page);
+        // Pending dates never look confirmed.
+        await expect(page.locator('app-calendar-list button.item[data-status="pending"]')).toHaveCount(3);
+        await expect(page.locator('app-calendar-list button.item[data-status="confirmed"]')).toHaveCount(0);
+      });
+
+      await test.step('Mom sees one request and approves it', async () => {
+        const mom = await momContext.newPage();
+        await signIn(mom, family.mom.email);
+        await mom.goto('/approvals');
+        await expect(mom.getByText(/every day, 3 dates: /)).toHaveCount(1);
+        await expect(mom.getByText('Approving or declining answers them all.', { exact: false })).toBeVisible();
+        await mom.getByRole('button', { name: 'Approve' }).first().click();
+        await expect(mom.getByRole('heading', { name: 'Decided' })).toBeVisible();
+      });
+
+      await test.step('Dad sees every date confirmed', async () => {
+        await openList(page);
+        await expect(page.locator('app-calendar-list button.item[data-status="confirmed"]')).toHaveCount(3);
         await expect(page.locator('app-calendar-list button.item[data-status="pending"]')).toHaveCount(0);
       });
     } finally {
@@ -196,7 +244,9 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await signIn(page, family.dad.email);
       await page.goto(`/calendar/new?date=${tuesday}`);
       await page.getByRole('button', { name: /I’m unavailable/ }).click();
-      await page.getByRole('switch', { name: /Repeat/ }).click();
+      // Custom (#238): every 1 week, on Tuesday (the start) and Thursday.
+      await page.getByLabel('How often').click();
+      await page.getByRole('option', { name: 'Custom…' }).click();
       await page.getByRole('checkbox', { name: 'Thursday' }).check();
       await page.getByLabel('Ends').click();
       await page.getByRole('option', { name: /times/i }).click();
@@ -209,6 +259,37 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await openList(page);
       // Tuesday and Thursday of that week.
       await expect(page.locator('app-calendar-list button.item[data-kind="unavailable"]')).toHaveCount(2);
+    } finally {
+      await family.dispose();
+    }
+  });
+
+  test('an activity repeats every 2 days from the Repeat menu’s Custom lists (#238)', async ({ page }) => {
+    const family = await familyWithKai();
+    try {
+      await signIn(page, family.dad.email);
+      for (const size of [
+        { name: 'desktop', width: 1280, height: 800 },
+        { name: 'phone', width: 390, height: 844 },
+      ] as const) {
+        await test.step(size.name, async () => {
+          await page.setViewportSize({ width: size.width, height: size.height });
+          await page.goto(`/calendar/new?date=${tuesday}`);
+          await page.getByRole('button', { name: /Activity/ }).click();
+          await page.getByLabel('Title').fill(`Reading club (${size.name})`);
+          await page.getByLabel('How often').click();
+          await expect(page.getByRole('option')).toHaveText(['Does not repeat', 'Every day', /^Every week on /, /^Every month on the /, 'Custom…']);
+          await page.getByRole('option', { name: 'Custom…' }).click();
+          await page.getByLabel('Every', { exact: true }).selectOption('2');
+          await page.getByLabel('Unit').selectOption('Daily');
+          await page.getByLabel('Ends').click();
+          await page.getByRole('option', { name: /times/i }).click();
+          await page.getByLabel('Times in all').fill('3');
+          await expect(page.locator('.preview')).toContainText('3 dates');
+          await page.getByRole('button', { name: 'Add to calendar' }).click();
+          await expect(page.getByText(/is on the calendar on 3 dates/)).toBeVisible();
+        });
+      }
     } finally {
       await family.dispose();
     }
@@ -315,6 +396,10 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
         await test.step(where, async () => {
           await page.goto(url);
           await tapFivePm(page.getByRole('button', { name: /^Add on Tuesday/ }));
+          // The first tap highlights the hour (#237); tapping the highlight opens Add there.
+          const highlight = page.getByRole('button', { name: /^Add on Tuesday, .* at 5:00 PM$/ });
+          await expect(highlight).toBeVisible();
+          await highlight.click();
           await expect(page).toHaveURL(new RegExp(`/calendar/new\\?date=${tuesday}&time=17:00$`));
           await page.getByRole('button', { name: /Activity/ }).click();
           await expect(page.locator('input[formcontrolname="startTime"]')).toHaveValue('17:00');
