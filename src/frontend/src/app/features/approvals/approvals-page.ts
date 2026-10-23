@@ -244,7 +244,10 @@ export class ApprovalsPage implements OnInit {
   protected explain(request: ChangeRequest): string {
     switch (request.type) {
       case 'CalendarCreate':
-        return 'It goes on the shared calendar once you both approve. Until then it shows as pending.';
+        // A repeating parenting-time request covers every date at once (#239).
+        return request.targetType === 'calendar_series'
+          ? 'Every date goes on the shared calendar once you both approve. Approving or declining answers them all. Until then they show as pending.'
+          : 'It goes on the shared calendar once you both approve. Until then it shows as pending.';
       case 'JointEventCreate':
         return 'A family event both parents attend. It’s confirmed once you both approve.';
       case 'CalendarModify':

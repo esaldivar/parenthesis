@@ -150,14 +150,36 @@ describe('repeating events', () => {
       await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20'));
     });
 
-    it('offers Repeat only for activities and unavailable time', async () => {
+    it('offers Repeat for activities, unavailable time and parenting time, not family events (#239)', async () => {
       await openAdd();
       await choose('Activity');
       expect(page().querySelector('.repeat')).not.toBeNull();
       await choose('Parenting time');
-      expect(page().querySelector('.repeat')).toBeNull();
+      expect(page().querySelector('.repeat')).not.toBeNull();
       await choose('Family event');
       expect(page().querySelector('.repeat')).toBeNull();
+    });
+
+    it('sends repeating parenting time to the co-parent as one request for every date (#239)', async () => {
+      await openAdd();
+      await choose('Parenting time');
+      [...page().querySelectorAll<HTMLLabelElement>('.kids label')].find((l) => text(l) === 'Kai')!.querySelector('input')!.click();
+      await howOften('Every week on Tuesday');
+      expect(text(page().querySelector('.repeat'))).toContain('approves or declines every date at once.');
+      page().querySelector<HTMLElement>('mat-select[formcontrolname="ends"] .mat-mdc-select-trigger')!.click();
+      await settle();
+      [...document.querySelectorAll<HTMLElement>('mat-option')].find((o) => text(o) === 'After a number of times')!.click();
+      await settle();
+      type('input[formcontrolname="repeatCount"]', '4');
+      page().querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle();
+
+      const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events`));
+      expect(create.request.body.category).toBe('ParentingTime');
+      expect(create.request.body.repeat).toEqual({ frequency: 'Weekly', interval: 1, days: ['Tuesday'], count: 4 });
+      expect(http.match((r) => r.method === 'POST')).toHaveLength(0); // One request, not one per date.
+      create.flush(event({ category: 'ParentingTime', title: 'Time with Alex', status: 'PendingApproval', seriesId: 's1' }));
+      await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20'));
     });
 
     it('checks the days and the end before sending', async () => {
@@ -276,6 +298,20 @@ describe('repeating events', () => {
       cancel.flush(null);
       await settle();
       expect(toastText()).toContain('“Swim lessons” was cancelled from Tuesday, October 20 on.');
+    });
+
+    it('cancels repeating parenting time one date at a time, through approval (#239)', async () => {
+      await openCalendar([
+        swim({ id: 'pt-1', category: 'ParentingTime', title: 'Time with Alex', caregiverMembershipId: 'm-alex', location: null }),
+      ]);
+      (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      await settle();
+      const dialog = document.querySelector('app-event-details [role="dialog"]')!;
+      expect(text(dialog)).toContain('Every Tue and Thu until Nov 5, 2026');
+      button('Cancel event…', dialog).click();
+      await settle();
+      expect(text(dialog)).not.toContain('This and following');
+      expect(text(dialog)).not.toContain('All events');
     });
 
     it('keeps the single-event cancel for events that don’t repeat', async () => {

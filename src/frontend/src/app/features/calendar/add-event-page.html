@@ -221,7 +221,12 @@
                 }
               </p>
             }
-            <p class="legend-hint">A repeat ends within a year. Each date is its own event, so you can change or cancel one later.</p>
+            <p class="legend-hint">
+              A repeat ends within a year. Each date is its own event, so you can change or cancel one later.
+              @if (current === 'parenting') {
+                {{ coParent() ?? 'Your co-parent' }} approves or declines every date at once.
+              }
+            </p>
           }
         </fieldset>
       }

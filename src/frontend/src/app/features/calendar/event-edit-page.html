@@ -12,6 +12,10 @@
     <h2 id="details-heading" class="step">{{ event()!.title }}</h2>
     <p class="note">{{ note() }}</p>
     @if (repeats(); as repeats) {
+      @if (parenting()) {
+        <!-- Repeating parenting time changes one date at a time for now, each through approval (#239). -->
+        <p class="legend-hint">This repeats: {{ repeats }}. A change applies to this date only.</p>
+      } @else {
       <fieldset class="when scope">
         <legend>This repeats: {{ repeats }}. Change which dates?</legend>
         @for (option of scopes; track option.id) {
@@ -24,6 +28,7 @@
           <p class="legend-hint">Each date keeps its own day. You can change the times, title, place and notes.</p>
         }
       </fieldset>
+      }
     }
     @if (error(); as message) {
       <div class="alert" role="alert">{{ message }}</div>

@@ -802,6 +802,7 @@ internal static class CalendarEndpoints
     /// Changing or cancelling several dates of repeating parenting time at once would skip the co-parent's approval, so
     /// for now each date is changed on its own, through approval as usual (#239 follow-up in TODO.md).
     /// </summary>
+    // TODO(calendar): one approval request for changing several dates of repeating parenting time (TODO.md, #239).
     private static ValidationProblem OneDateAtATime() => TypedResults.ValidationProblem(new Dictionary<string, string[]>
     {
         ["scope"] = ["Change repeating parenting time one date at a time for now. Each change goes to your co-parent."],

@@ -538,6 +538,13 @@ that points back here.
   form, and the password goes back to hidden after submitting. Use the shared form components; check both themes and
   320px.
 
+## Calendar follow-ups
+- [ ] **Change several dates of repeating parenting time at once, through approval (#239 follow-up, October 23,
+  2026).** Repeating parenting time is approved as one request for the whole series. Changing or cancelling it is
+  one date at a time for now: each change goes to the co-parent as usual. "This and following" and "All events" are
+  hidden for it, and the server refuses them (`OneDateAtATime` in `CalendarEndpoints`), because applying them at
+  once would skip the co-parent. Build one approval request covering every date it changes, as for creating.
+
 ## Backend features the dashboard is waiting on
 - [ ] Calendar and parenting-time endpoints, including change requests and approvals.
 - [ ] Family events (both parents attend) and parent unavailability. These are UI-only mock categories today.
