@@ -75,7 +75,52 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
         Assert.Empty((await JsonAsync(await f.Dad.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
     }
 
+    [Fact]
+    public async Task It_repeats_every_few_days_weeks_or_months_and_says_how()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+
+        // Every 2 days, 4 times: across the end of daylight saving on November 1, still at 9:00 AM.
+        var everyOtherDay = await JsonAsync(await f.Dad.PostAsync(Events(f), Unavailable(new { frequency = "Daily", interval = 2, count = 4 })));
+        // Every 2 weeks on Wednesday and Friday, 4 times.
+        var fortnightly = await JsonAsync(await f.Mom.PostAsync(Events(f), new
+        {
+            category = "Activity",
+            title = "Swim lessons",
+            startsAt = _wednesday.AddHours(8),
+            endsAt = _wednesday.AddHours(9),
+            repeat = new { frequency = "Weekly", interval = 2, days = _wednesdayAndFriday, count = 4 },
+        }));
+        // Monthly on the 31st from Saturday, October 31: months without a 31st are skipped.
+        var halloween = _wednesday.AddDays(3).AddHours(9);
+        var monthly = await JsonAsync(await f.Mom.PostAsync(Events(f), new
+        {
+            category = "Activity",
+            title = "Library day",
+            startsAt = halloween,
+            endsAt = halloween.AddHours(1),
+            repeat = new { frequency = "Monthly", interval = 1, until = "2027-03-31" },
+        }));
+
+        Assert.Equal("Daily", everyOtherDay.GetProperty("repeat").GetProperty("frequency").GetString());
+        Assert.Equal(2, everyOtherDay.GetProperty("repeat").GetProperty("interval").GetInt32());
+        Assert.Empty(everyOtherDay.GetProperty("repeat").GetProperty("days").EnumerateArray());
+        Assert.Equal([Utc(10, 28, 14), Utc(10, 30, 14), Utc(11, 1, 15), Utc(11, 3, 15)], await SeriesStartsAsync(f, everyOtherDay));
+        Assert.Equal(2, fortnightly.GetProperty("repeat").GetProperty("interval").GetInt32());
+        Assert.Equal([Utc(10, 28, 22), Utc(10, 30, 22), Utc(11, 11, 23), Utc(11, 13, 23)], await SeriesStartsAsync(f, fortnightly));
+        Assert.Equal("Monthly", monthly.GetProperty("repeat").GetProperty("frequency").GetString());
+        // 6:00 PM on Oct 31, Dec 31, Jan 31 and Mar 31 (CDT, CST, CST, CDT).
+        Assert.Equal(
+            [Utc(10, 31, 23), new DateTimeOffset(2027, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2027, 2, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2027, 3, 31, 23, 0, 0, TimeSpan.Zero)],
+            await SeriesStartsAsync(f, monthly));
+    }
+
     [Theory]
+    [InlineData("every-27-weeks")]
+    [InlineData("every-13-months")]
+    [InlineData("every-0-days")]
+    [InlineData("runs-into-the-next")]
     [InlineData("parenting-time")]
     [InlineData("family-event")]
     [InlineData("no-days")]
@@ -101,6 +146,16 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
                 childIds = new[] { f.KaiId },
                 caregiverMembershipId = f.DadMembershipId,
                 repeat = new { days = weekly, count = 4 },
+            },
+            "every-27-weeks" => Unavailable(new { frequency = "Weekly", interval = 27, days = weekly, count = 2 }),
+            "every-13-months" => Unavailable(new { frequency = "Monthly", interval = 13, count = 2 }),
+            "every-0-days" => Unavailable(new { frequency = "Daily", interval = 0, count = 2 }),
+            "runs-into-the-next" => new
+            {
+                category = "Unavailable",
+                startsAt = _wednesday,
+                endsAt = _wednesday.AddDays(2),
+                repeat = new { frequency = "Daily", interval = 1, count = 3 },
             },
             "family-event" => new { category = "Joint", title = "Dinner", startsAt = _wednesday, endsAt = _wednesday.AddHours(2), repeat = new { days = weekly, count = 4 } },
             "no-days" => Unavailable(new { days = Array.Empty<string>(), count = 4 }),
@@ -269,6 +324,20 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
             caregiverMembershipId = f.DadMembershipId,
         }));
         await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{proposed.GetProperty("changeRequestId").GetGuid()}/approve");
+    }
+
+    /// <summary>The start of every date in the series <paramref name="first"/> belongs to, in order.</summary>
+    private static async Task<List<DateTimeOffset>> SeriesStartsAsync(Family f, JsonElement first)
+    {
+        var series = first.GetProperty("seriesId").GetGuid();
+        var all = await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(60));
+        all.AddRange(await RangeAsync(f.Dad, f, _wednesday.AddDays(60), _wednesday.AddDays(120)));
+        all.AddRange(await RangeAsync(f.Dad, f, _wednesday.AddDays(120), _wednesday.AddDays(180)));
+        return all.Where(e => e.TryGetProperty("seriesId", out var id) && id.ValueKind == JsonValueKind.String && id.GetGuid() == series)
+            .Select(e => e.GetProperty("startsAt").GetDateTimeOffset())
+            .Distinct()
+            .OrderBy(d => d)
+            .ToList();
     }
 
     private static object Unavailable(object repeat) =>

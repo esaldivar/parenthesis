@@ -64,6 +64,7 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
         {
             r.ToTable("series");
             r.Property(x => x.Category).HasConversion<string>().HasMaxLength(24);
+            r.Property(x => x.Frequency).HasConversion<string>().HasMaxLength(16);
             r.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });
 
