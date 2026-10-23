@@ -2,14 +2,16 @@ import { TestBed } from '@angular/core/testing';
 import { DateAdapter } from '@angular/material/core';
 import { fakeAuth } from '../../../testing/fake-auth';
 import {
-  MAX_RANGE_DAYS,
+  END_BEFORE_START,
+  MISSING_END,
+  MISSING_START,
   PAST_END,
   PAST_START,
+  TOO_LONG,
   UNREADABLE_DATE,
   choosable,
-  endAfterMove,
-  endTimeAfterMove,
-  rangeFilter,
+  dateIssues,
+  dayFilter,
   rangeProblems,
 } from './date-rules';
 import { PlainDateAdapter, providePlainDates } from './plain-dates';
@@ -24,34 +26,13 @@ describe('date rules (#232)', () => {
     expect(choosable(null, today)).toBe(false);
   });
 
-  it('while the end is chosen, offers days from the start up to the longest an event lasts', () => {
-    expect(MAX_RANGE_DAYS).toBe(29); // Two days under the server's 31, for all-day ends and daylight saving.
-    const choosingEnd = rangeFilter(today, [], '2026-10-25', null, MAX_RANGE_DAYS);
-    expect(choosingEnd('2026-10-25')).toBe(true);
-    expect(choosingEnd('2026-11-23')).toBe(true); // 29 days.
-    expect(choosingEnd('2026-11-24')).toBe(false);
-    expect(choosingEnd('2026-10-24')).toBe(false); // Before the start.
-    expect(choosingEnd('2026-10-20')).toBe(false); // Past.
-    // With both chosen, any day from today can start a new range.
-    expect(rangeFilter(today, [], '2026-10-25', '2026-10-26', MAX_RANGE_DAYS)('2026-12-31')).toBe(true);
-  });
-
-  it('moves the end with the start, keeping the length, only when it would be before the start', () => {
-    expect(endAfterMove('2026-10-24', '2026-10-26', '2026-10-30')).toBe('2026-11-01');
-    expect(endAfterMove('2026-10-24', '2026-10-26', '2026-10-25')).toBe('2026-10-26');
-    expect(endAfterMove('2026-10-24', '2026-10-24', '2026-10-28')).toBe('2026-10-28');
-  });
-
-  it('moves a one-day event’s end time with its start time, into the next day if needed', () => {
-    expect(endTimeAfterMove('2026-10-24', '09:00', '10:30', '11:00')).toEqual({
-      endDate: '2026-10-24',
-      endTime: '12:30',
-    });
-    expect(endTimeAfterMove('2026-10-24', '09:00', '10:00', '09:30')).toBeNull(); // Still after the start.
-    expect(endTimeAfterMove('2026-10-24', '09:00', '10:00', '23:30')).toEqual({
-      endDate: '2026-10-25',
-      endTime: '00:30',
-    });
+  it('disables only days before today, never days before or after the other date (#248)', () => {
+    const days = dayFilter(today);
+    expect(days('2026-10-22')).toBe(false);
+    expect(days('2026-10-23')).toBe(true);
+    // Far ahead, or before a chosen start: the calendar never decides the order of the dates.
+    expect(days('2027-06-30')).toBe(true);
+    expect(dayFilter(today, ['2026-10-20'])('2026-10-20')).toBe(true); // An edit keeps its own past day.
   });
 
   it('names what’s wrong with a range, by the API’s field names', () => {
@@ -80,12 +61,26 @@ describe('date rules (#232)', () => {
     expect(rangeProblems({ ...range, startDate: 'invalid-date' }, today)).toEqual({
       startsAt: UNREADABLE_DATE,
     });
-    expect(rangeProblems({ ...range, endTime: '08:00' }, today)).toEqual({
-      endsAt: 'Choose an end that’s after the start.',
+    expect(rangeProblems({ ...range, endTime: '08:00' }, today)).toEqual({ endsAt: END_BEFORE_START });
+    // A start after the end, or an end before the start, is invalid (never moved for the parent, #248).
+    expect(rangeProblems({ ...range, startDate: '2026-12-20', endDate: '2026-12-14' }, today)).toEqual({
+      endsAt: END_BEFORE_START,
     });
-    expect(rangeProblems({ ...range, endDate: null }, today)).toEqual({
-      endsAt: 'Choose when it starts and ends.',
+    expect(
+      rangeProblems({ ...range, allDay: true, startDate: '2026-12-20', endDate: '2026-12-20' }, today),
+    ).toEqual({});
+    expect(rangeProblems({ ...range, endDate: null }, today)).toEqual({ endsAt: MISSING_END });
+    expect(rangeProblems({ ...range, startDate: null, endDate: null }, today)).toEqual({
+      startsAt: MISSING_START,
+      endsAt: MISSING_END,
     });
+    expect(rangeProblems({ ...range, endDate: 'invalid-date' }, today)).toEqual({ endsAt: UNREADABLE_DATE });
+    // Up to 31 days: an all-day event's last day counts whole.
+    const allDay = { ...range, allDay: true, startDate: '2026-11-01' };
+    expect(rangeProblems({ ...allDay, endDate: '2026-12-01' }, today)).toEqual({});
+    expect(rangeProblems({ ...allDay, endDate: '2026-12-02' }, today)).toEqual({ endsAt: TOO_LONG });
+    expect(rangeProblems({ ...range, endDate: '2026-11-24', endTime: '09:00' }, today)).toEqual({});
+    expect(rangeProblems({ ...range, endDate: '2026-11-24', endTime: '09:30' }, today)).toEqual({ endsAt: TOO_LONG });
     // Earlier today is fine (owner decision): only past days are refused.
     expect(
       rangeProblems(
@@ -93,6 +88,13 @@ describe('date rules (#232)', () => {
         today,
       ),
     ).toEqual({});
+  });
+
+  it('marks a missing date only after a send was tried, and the server’s answer until the dates change (#248)', () => {
+    expect(dateIssues({ endsAt: MISSING_END }, {}, false)).toEqual({ start: null, end: null });
+    expect(dateIssues({ endsAt: MISSING_END }, {}, true)).toEqual({ start: null, end: MISSING_END });
+    expect(dateIssues({ endsAt: END_BEFORE_START }, {}, false)).toEqual({ start: null, end: END_BEFORE_START });
+    expect(dateIssues({}, { startsAt: PAST_START }, false)).toEqual({ start: PAST_START, end: null });
   });
 });
 

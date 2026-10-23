@@ -57,18 +57,27 @@
     <fieldset class="when">
       <legend>When</legend>
       <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
-      <!-- One range calendar (#232): it shows start → end, and days that can't be chosen are greyed out. -->
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="dates">
-        <mat-label>Dates</mat-label>
-        <mat-date-range-input [rangePicker]="datesPicker" [dateFilter]="dayFilter">
-          <input matStartDate formControlName="startDate" placeholder="Start date" aria-label="Start date" />
-          <input matEndDate formControlName="endDate" placeholder="End date" aria-label="End date" />
-        </mat-date-range-input>
-        <!-- The format is for screen readers only (#236): visible, it cluttered the field. -->
-        <mat-hint class="visually-hidden">Dates as MM/DD/YYYY</mat-hint>
-        <mat-datepicker-toggle matIconSuffix [for]="datesPicker" aria-label="Choose dates" />
-        <mat-date-range-picker #datesPicker />
-      </mat-form-field>
+      <!-- Start and End as separate fields, each opening its own calendar (#249). Only past days are greyed
+           out; an invalid date turns red, with its reason for screen readers, and blocks sending (#248). -->
+      <div class="when__row dates">
+        <app-date-field
+          label="Start date"
+          name="startDate"
+          inputId="edit-start-date"
+          [control]="form.controls.startDate"
+          [dateFilter]="dayFilter"
+          [issue]="dateCheck.issues().start"
+        />
+        <app-date-field
+          label="End date"
+          name="endDate"
+          inputId="edit-end-date"
+          [control]="form.controls.endDate"
+          [startAt]="form.controls.endDate.value || form.controls.startDate.value || null"
+          [dateFilter]="dayFilter"
+          [issue]="dateCheck.issues().end"
+        />
+      </div>
       @if (!allDay()) {
         <div class="when__row">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -77,11 +86,18 @@
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>End time</mat-label>
-            <input matInput type="time" formControlName="endTime" required />
+            <input
+              matInput
+              type="time"
+              formControlName="endTime"
+              required
+              [attr.aria-invalid]="dateCheck.issues().end === endBeforeStart"
+              [class.date-invalid]="dateCheck.issues().end === endBeforeStart"
+            />
           </mat-form-field>
         </div>
       }
-      @if (fieldError('endsAt') ?? fieldError('startsAt'); as e) {
+      @if (fieldError('when'); as e) {
         <p class="field-error" role="alert">{{ e }}</p>
       }
     </fieldset>

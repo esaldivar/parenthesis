@@ -169,3 +169,8 @@ legend {
     accent-color: var(--color-action);
   }
 }
+
+// Start and End side by side, at every width (#249).
+.when__row.dates {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
