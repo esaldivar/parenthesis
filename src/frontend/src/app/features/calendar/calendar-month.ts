@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { AddAt } from './slot';
+import { ChangeDetectionStrategy, Component, HostListener, computed, effect, input, output, untracked } from '@angular/core';
+import { AddAt, SlotPick, clearsPick, pickLabel } from './slot';
 import { PlainDate } from '../dashboard/model';
 import { addDays, dayLong, dayOfMonth, startOfWeek, weekdayShort } from '../dashboard/week';
 import { CalendarItem, byStart, onDate } from './calendar-items';
@@ -38,10 +38,18 @@ const SHOWN = 3;
               class="day"
               [class.day--outside]="!day.inMonth"
               [class.is-today]="day.isToday"
+              [class.is-picked]="pick.onDay(day.date)"
               [attr.aria-current]="day.isToday ? 'date' : null"
             >
               <!-- A tap on the day's empty space adds on that date (#212). Pointer only: keyboards open the day's week. -->
-              <button type="button" class="day__add" tabindex="-1" aria-hidden="true" (click)="add.emit({ date: day.date })"></button>
+              <button type="button" class="day__add" tabindex="-1" aria-hidden="true" (click)="pick.tap({ date: day.date }, true)"></button>
+              @if (pick.onDay(day.date)) {
+                <div class="slot-pick">
+                  <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
+                    Add
+                  </button>
+                </div>
+              }
               <button type="button" class="day__number" (click)="openDay.emit(day.date)" [attr.aria-label]="day.label">
                 {{ day.number }}
               </button>
@@ -97,7 +105,29 @@ export class CalendarMonth {
   /** A tap on a day's empty space adds on that date (#212). The day number still opens its week. */
   readonly add = output<AddAt>();
 
+  /** The highlighted day (#237): a first tap highlights it, a tap on the highlight adds there. */
+  protected readonly pick = new SlotPick((at) => this.add.emit(at));
+  protected readonly pickLabel = pickLabel;
 
+  constructor() {
+    // Another month clears the highlight.
+    effect(() => {
+      this.date();
+      untracked(() => this.pick.clear());
+    });
+  }
+
+  @HostListener('document:click', ['$event.target'])
+  protected clickAnywhere(target: EventTarget | null): void {
+    if (clearsPick(target)) {
+      this.pick.clear();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  protected escape(): void {
+    this.pick.clear();
+  }
 
   protected readonly weekdays = computed(() => monthGrid(this.date()).slice(0, 7).map(weekdayShort));
 
