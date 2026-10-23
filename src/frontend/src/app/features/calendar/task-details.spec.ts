@@ -308,6 +308,41 @@ describe('tasks on the calendar', () => {
     expect(toastText()).toContain('“Science fair poster” was deleted.');
   });
 
+  it('focuses safe task confirmation and restores its initiating action on cancel (#176)', async () => {
+    await open([task()]);
+    await openDetails();
+    button('Delete task…', dialog()).focus();
+    button('Delete task…', dialog()).click();
+    await settle();
+    expect(document.activeElement).toBe(button('Keep it', dialog()));
+    expect(button('Keep it', dialog()).getAttribute('aria-describedby')).toBe('task-delete-explanation');
+    button('Keep it', dialog()).click();
+    await settle();
+    expect(document.activeElement).toBe(button('Delete task…', dialog()));
+    expect(http.match((r) => r.method === 'DELETE')).toHaveLength(0);
+  });
+
+  it('retains task delete focus on failure and prevents duplicate deletions (#176)', async () => {
+    await open([task()]);
+    await openDetails();
+    button('Delete task…', dialog()).click();
+    await settle();
+    const yes = button('Yes, delete', dialog()) as HTMLButtonElement;
+    yes.focus();
+    yes.click();
+    const request = await vi.waitFor(() => http.expectOne((r) => r.method === 'DELETE' && r.url.endsWith('/tasks/t1')));
+    await settle();
+    expect(yes.disabled).toBe(false);
+    expect(yes.getAttribute('aria-disabled')).toBe('true');
+    yes.click();
+    expect(http.match((r) => r.method === 'DELETE')).toHaveLength(0);
+    request.flush({ title: 'Try again.' }, { status: 500, statusText: 'Server Error' });
+    await settle();
+    expect(document.activeElement).toBe(yes);
+    expect(dialog().querySelector('[role="alert"]')).not.toBeNull();
+    expect(await axeViolations(document.body)).toEqual([]);
+  });
+
   it('has no axe violations with a task and its checklist open', async () => {
     await open([withChecklist()]);
     expect(await axeViolations(document.body)).toEqual([]);

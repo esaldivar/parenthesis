@@ -546,9 +546,10 @@ that points back here.
 
 ## Calendar follow-ups
 
-- [x] **Task action keyboard focus (#73).** Checklist saves preserve the checkbox's focus using aria-disabled
+- [x] **Task action keyboard focus (#73, #176).** Checklist saves preserve the checkbox's focus using aria-disabled
   with a duplicate-action guard. Checklist-free completion retains the same Material button across Mark done/Undo,
-  including its pending state. Tests cover pending, successful and failed saves and duplicate actions.
+  including its pending state. Delete confirmation focuses Keep it and restores Delete on cancellation; a pending
+  deletion retains focus and guards duplicates. Tests cover pending, successful and failed saves and duplicate actions.
   - [ ] After promotion, repeat the observed development-site Space/Enter test with keyboard and screen reader,
     both themes and phone/desktop. The original build drops focus to BODY after a task mutation; independent
     parent/household acceptance checks remain open.

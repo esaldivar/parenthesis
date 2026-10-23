@@ -4,13 +4,17 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  Injector,
   OnInit,
+  afterNextRender,
   computed,
   inject,
   input,
   linkedSignal,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
@@ -43,6 +47,9 @@ const CONFETTI_PIECES = 14;
 export class TaskDetails implements OnInit {
   private readonly api = inject(Api);
   private readonly window = inject(DOCUMENT).defaultView;
+  private readonly injector = inject(Injector);
+  private readonly deleteButton = viewChild('deleteButton', { read: ElementRef<HTMLButtonElement> });
+  private readonly keepButton = viewChild('keepButton', { read: ElementRef<HTMLButtonElement> });
 
   readonly item = input.required<CalendarItem>();
   readonly task = input.required<SharedTask>();
@@ -121,7 +128,25 @@ export class TaskDetails implements OnInit {
     return this.change(() => this.api.setTaskDone(this.familyId(), this.current().id, done));
   }
 
+  protected confirmDelete(confirming: boolean): void {
+    if (this.busy()) {
+      return;
+    }
+    this.confirming.set(confirming);
+    afterNextRender(() => {
+      if (this.confirming() === confirming) {
+        const target = (confirming ? this.keepButton() : this.deleteButton())?.nativeElement;
+        if (target?.isConnected) {
+          target.focus();
+        }
+      }
+    }, { injector: this.injector });
+  }
+
   protected async remove(): Promise<void> {
+    if (this.busy()) {
+      return;
+    }
     this.busy.set(true);
     this.error.set(null);
     try {
