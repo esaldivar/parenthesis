@@ -12,6 +12,7 @@ import { Icon } from '../../shared/icon/icon';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
 import { SAMPLE_NOTIFICATIONS, SAMPLE_UNREAD } from '../sample-counts';
+import { ToastHost } from '../../shared/toast/toast-host';
 
 const IGNORE_QUERY = { queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' } as const;
 const HOME_ACTIVE: IsActiveMatchOptions = { paths: 'exact', ...IGNORE_QUERY };
@@ -24,7 +25,7 @@ const SECTION_ACTIVE: IsActiveMatchOptions = { paths: 'subset', ...IGNORE_QUERY 
 @Component({
   selector: 'app-parent-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule, Icon, Logo, Leaves, Avatar],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule, Icon, Logo, Leaves, Avatar, ToastHost],
   templateUrl: './parent-shell.html',
   styleUrl: './parent-shell.scss',
 })

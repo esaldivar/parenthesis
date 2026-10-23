@@ -329,4 +329,42 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await family.dispose();
     }
   });
+
+  test('saving shows a toast that leaves by itself: bottom right on desktop, above the navigation on a phone (#226)', async ({ page }) => {
+    const family = await familyWithKai();
+    try {
+      await signIn(page, family.dad.email);
+      for (const size of [
+        { name: 'desktop', width: 1280, height: 800 },
+        { name: 'phone', width: 390, height: 844 },
+      ] as const) {
+        await test.step(size.name, async () => {
+          await page.setViewportSize({ width: size.width, height: size.height });
+          await page.goto(`/calendar/new?date=${tuesday}`);
+          await page.getByRole('button', { name: /Activity/ }).click();
+          await page.getByLabel('Title').fill(`Swim lesson (${size.name})`);
+          await page.getByRole('button', { name: 'Add to calendar' }).click();
+
+          const toast = page.locator('app-toast-host .toast', { hasText: `“Swim lesson (${size.name})” is on the calendar.` });
+          await expect(toast).toBeVisible();
+          // Announced politely, from the one live region, without taking focus.
+          await expect(page.locator('app-toast-host [role="status"][aria-live="polite"] .toast')).toHaveCount(1);
+          const box = (await toast.boundingBox())!;
+          if (size.name === 'desktop') {
+            expect(box.x + box.width).toBeGreaterThan(size.width - 60);
+            expect(box.y + box.height).toBeGreaterThan(size.height - 60);
+          } else {
+            const nav = (await page.locator('nav.bottomnav').boundingBox())!;
+            expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
+            expect(box.x).toBeGreaterThanOrEqual(0);
+            expect(box.x + box.width).toBeLessThanOrEqual(size.width);
+          }
+          // It leaves by itself (6 seconds for a short message).
+          await expect(toast).toHaveCount(0, { timeout: 9000 });
+        });
+      }
+    } finally {
+      await family.dispose();
+    }
+  });
 });

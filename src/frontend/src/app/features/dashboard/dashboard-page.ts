@@ -31,6 +31,7 @@ import { StatusLabel } from './status-label';
 import { CATEGORY_ICONS } from './timeline';
 import { InlineView, WeekCalendar, WeekState } from './week-calendar';
 import { addDays, dateMedium, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
+import { Toasts } from '../../shared/toast/toasts';
 
 /** The current time; replaced in tests. */
 export const NOW = new InjectionToken<() => Date>('NOW', { factory: () => () => new Date() });
@@ -68,6 +69,7 @@ export class DashboardPage {
   private readonly auth = inject(AuthStore);
   private readonly api = inject(Api);
   private readonly router = inject(Router);
+  private readonly toasts = inject(Toasts);
   private readonly injector = inject(Injector);
   private readonly liveSource = inject(DashboardDataSource);
   private readonly now = inject(NOW)();
@@ -178,8 +180,6 @@ export class DashboardPage {
     /** For unavailable time: that parent's confirmed parenting time it overlaps, so a swap can be offered (#190). */
     readonly swapTarget: CalendarItem | null;
   } | null>(null);
-  /** What just happened (after a change from the details), or why they couldn't open. */
-  protected readonly notice = signal<string | null>(null);
   protected readonly familyTimeZone = this.timeZone;
   private opener: HTMLElement | null = null;
   private opening = 0;
@@ -243,7 +243,6 @@ export class DashboardPage {
     }
     const attempt = ++this.opening;
     this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    this.notice.set(null);
     try {
       const [event, family, children] = await Promise.all([
         this.api.calendarEvent(familyId, eventId),
@@ -266,7 +265,7 @@ export class DashboardPage {
       this.details.set({ item, event, members: family.members, familyId, swapTarget });
     } catch (error) {
       if (attempt === this.opening) {
-        this.notice.set(
+        this.toasts.show(
           toProblem(error).status === 404
             ? 'That event isn’t on the calendar any more. The week has been refreshed.'
             : 'We couldn’t open that event. Try again, or find it on the Calendar page.',
@@ -290,7 +289,7 @@ export class DashboardPage {
   /** Something changed from the details (a cancellation, an answer): say so and refresh the week. */
   protected detailsChanged(message: string): void {
     this.details.set(null);
-    this.notice.set(message);
+    this.toasts.show(message);
     this.reload();
   }
 

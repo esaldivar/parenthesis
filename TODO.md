@@ -358,6 +358,11 @@ that points back here.
     week's time grid the half-hour tapped (an hour long). Keyboards use each day column's "Add on …" button. Defaults
     are in `docs/design/CALENDAR_DECISIONS.md`.
     - [ ] **Owner:** retest on Home and the Calendar page (phone and desktop), then close #212.
+  - [ ] **Toasts for successful actions (#226).** On `feat/226-toast-notifications`: confirmations on the Calendar,
+    Home, Approvals and family pages show as a toast, bottom right on desktop and above the bottom navigation on phones.
+    They show 6 seconds for short messages and up to 10 for long ones, pause while hovered, focused or the tab is
+    hidden, and have a Close button. Errors stay inline.
+    - [ ] **Owner:** try it on the development site (phone and desktop), adjust the timing if wanted, then close #226.
   - [ ] **Invited co-parent joins the existing family (#211, critical).** Fixed on `fix/211-invited-co-parent-joins-family`:
     a "Sign up to join" link opened while someone else is signed in on that browser keeps its invitation and goes to
     it (it was dropped, so the new account landed in new-family setup), and a signed-in parent with no family goes to

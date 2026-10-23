@@ -8,14 +8,6 @@
   </div>
 </header>
 
-<div aria-live="polite">
-  @if (notice(); as message) {
-    <p class="notice">
-      {{ message }}
-      <button mat-button type="button" (click)="notice.set(null)">Dismiss</button>
-    </p>
-  }
-</div>
 
 <div class="toolbar">
   <div class="period">
