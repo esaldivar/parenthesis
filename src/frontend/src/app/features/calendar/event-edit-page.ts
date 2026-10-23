@@ -144,8 +144,11 @@ export class EventEditPage implements OnInit {
   ];
   protected readonly repeats = computed(() => {
     const event = this.event();
-    // A monthly repeat names its day of the month, which every date shares.
-    return event?.repeat ? repeatText(event.repeat, toFamilyLocal(event.startsAt, this.timeZone()).slice(0, 10)) : null;
+    // Keep weekday ordering anchored to the series, even when a later occurrence is opened.
+    // Older responses may omit the first dates; fall back to the opened occurrence.
+    return event?.repeat
+      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10))
+      : null;
   });
 
   /** Several dates keep their own days: only times, title, place and notes change, so the dates are fixed. */

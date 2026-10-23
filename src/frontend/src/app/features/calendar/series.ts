@@ -42,8 +42,6 @@ export interface RepeatRule {
 const daysApart = (from: PlainDate, to: PlainDate) => Math.round((utc(to).getTime() - utc(from).getTime()) / 86_400_000);
 const monthsApart = (from: PlainDate, to: PlainDate) =>
   (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5, 7)) - Number(from.slice(5, 7));
-/** The Sunday that starts the week of `date`. */
-const weekStart = (date: PlainDate) => addDays(date, -utc(date).getUTCDay());
 
 /** Whether a series starting on `first` happens on `date`, as the server decides it. */
 function happensOn(rule: RepeatRule, first: PlainDate, date: PlainDate): boolean {
@@ -55,7 +53,8 @@ function happensOn(rule: RepeatRule, first: PlainDate, date: PlainDate): boolean
       // The same day of the month; a month without it (the 31st in April) is skipped.
       return date.slice(8) === first.slice(8) && monthsApart(first, date) % every === 0;
     default:
-      return rule.days.includes(weekdayOf(date)) && (daysApart(weekStart(first), weekStart(date)) / 7) % every === 0;
+      // Weeks are 7-day blocks from the first date, so every other Fri, Sat and Sun keeps each weekend together (#259).
+      return rule.days.includes(weekdayOf(date)) && Math.floor(daysApart(first, date) / 7) % every === 0;
   }
 }
 
@@ -82,9 +81,10 @@ export function ordinal(day: number): string {
   return `${day}${suffix}`;
 }
 
-/** "Wed and Fri", "Mon, Wed and Fri". */
-const dayList = (days: readonly Weekday[]) => {
-  const names = WEEKDAYS.filter((d) => days.includes(d.id)).map((d) => d.short);
+/** "Wed and Fri", "Mon, Wed and Fri"; from the first date's weekday when given: "Fri, Sat and Sun" (#259). */
+const dayList = (days: readonly Weekday[], first: PlainDate | null = null) => {
+  const from = first ? utc(first).getUTCDay() : 0;
+  const names = [...WEEKDAYS.slice(from), ...WEEKDAYS.slice(0, from)].filter((d) => days.includes(d.id)).map((d) => d.short);
   return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : (names[0] ?? '');
 };
 
@@ -103,9 +103,9 @@ export function everyText(rule: RepeatRule, first: PlainDate | null): string {
     }
     default:
       if (n === 1) {
-        return rule.days.length === 7 ? 'Every day' : `Every ${dayList(rule.days)}`;
+        return rule.days.length === 7 ? 'Every day' : `Every ${dayList(rule.days, first)}`;
       }
-      return `Every ${n} weeks on ${dayList(rule.days)}`;
+      return `Every ${n} weeks on ${dayList(rule.days, first)}`;
   }
 }
 

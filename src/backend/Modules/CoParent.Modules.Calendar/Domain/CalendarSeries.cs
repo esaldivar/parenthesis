@@ -88,7 +88,9 @@ internal static class EventSchedule
     /// Every (start, end) in order, with the first event's local times, until the end date or count:
     /// <list type="bullet">
     /// <item>Daily: every <paramref name="interval"/> days from the first date.</item>
-    /// <item>Weekly: each chosen weekday, in every <paramref name="interval"/>th week (Sunday to Saturday) from the first.</item>
+    /// <item>Weekly: each chosen weekday, in every <paramref name="interval"/>th week counted in 7-day blocks from the first
+    /// date (#259), so every other Friday, Saturday and Sunday from a Friday keeps each weekend together. Google
+    /// Calendar counts weeks from Sunday (WKST=SU) instead, which splits such a weekend: a deliberate difference.</item>
     /// <item>Monthly: the first date's day of the month, every <paramref name="interval"/> months; a month without that
     /// day (the 31st in April) is skipped, as Google Calendar does.</item>
     /// </list>
@@ -113,7 +115,6 @@ internal static class EventSchedule
         var limit = Math.Min(count ?? MaxOccurrences, MaxOccurrences);
 
         var result = new List<(DateTimeOffset, DateTimeOffset)>();
-        var firstWeek = WeekStart(localStart.Date);
         for (var date = localStart.Date; ToDateOnly(date) <= last && result.Count < limit; date = date.PlusDays(1))
         {
             var happens = frequency switch
@@ -122,7 +123,7 @@ internal static class EventSchedule
                 SeriesFrequency.Monthly => date.Day == localStart.Date.Day
                     && Period.Between(localStart.Date, date, PeriodUnits.Months).Months % interval == 0,
                 _ => days.HasFlag((WeekDays)(1 << (int)ToDayOfWeek(date.DayOfWeek)))
-                    && Period.Between(firstWeek, WeekStart(date), PeriodUnits.Days).Days / 7 % interval == 0,
+                    && Period.Between(localStart.Date, date, PeriodUnits.Days).Days / 7 % interval == 0,
             };
             if (!happens)
             {
@@ -155,9 +156,6 @@ internal static class EventSchedule
         ToDateOnly(Instant.FromDateTimeOffset(moment).InZone(DateTimeZoneProviders.Tzdb[timeZone]).Date);
 
     private static DateOnly ToDateOnly(LocalDate date) => new(date.Year, date.Month, date.Day);
-
-    /// <summary>The Sunday that starts the week containing <paramref name="date"/>.</summary>
-    private static LocalDate WeekStart(LocalDate date) => date.PlusDays(-((int)ToDayOfWeek(date.DayOfWeek)));
 
     private static DayOfWeek ToDayOfWeek(IsoDayOfWeek day) => day == IsoDayOfWeek.Sunday ? DayOfWeek.Sunday : (DayOfWeek)(int)day;
 }

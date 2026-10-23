@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -226,6 +226,30 @@ export class AddEventPage implements OnInit {
     }
   });
   protected readonly endsOnDate = computed(() => this.value().ends === 'date');
+
+  /**
+   * While it repeats, each date is one day (owner decision, October 23, 2026; #259): the End date follows the start
+   * and can't be changed, so it can't be mistaken for when the repeat ends (which made every date run into the next).
+   * How long each date lasts comes from All day or the times; which days, how often and until when come from Repeat.
+   * Not repeating any more makes the End date free again, starting from the start.
+   */
+  private readonly endFollowsStart = effect(() => {
+    const repeating = this.repeats();
+    const start = this.value().startDate ?? '';
+    untracked(() => {
+      const end = this.form.controls.endDate;
+      if (repeating) {
+        if (end.value !== start) {
+          end.setValue(start);
+        }
+        if (end.enabled) {
+          end.disable();
+        }
+      } else if (end.disabled) {
+        end.enable();
+      }
+    });
+  });
   /** The dates the series will have, as the server will make them. */
   protected readonly dates = computed(() => {
     const v = this.value();

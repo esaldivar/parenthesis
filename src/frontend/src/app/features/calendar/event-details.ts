@@ -193,8 +193,11 @@ export class EventDetails {
   /** "Every Wed and Fri until Nov 13, 2026" for a repeating event (#193). */
   protected readonly repeats = computed(() => {
     const event = this.event();
-    // A monthly repeat names its day of the month, which every date shares.
-    return event?.repeat ? repeatText(event.repeat, toFamilyLocal(event.startsAt, this.timeZone()).slice(0, 10)) : null;
+    // Keep weekday ordering anchored to the series, even when a later occurrence is opened.
+    // Older responses may omit the first dates; fall back to the opened occurrence.
+    return event?.repeat
+      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10))
+      : null;
   });
 
   /** "12 dates: Oct 28, Nov 4, Nov 11 and 9 more" for a repeating event (#239). */
