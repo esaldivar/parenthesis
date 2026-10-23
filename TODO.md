@@ -522,6 +522,12 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
+- [x] **Upcoming load states (#208).** Show loading and failed-load messages separately from an empty week;
+  offer retry and hide the previous week's Upcoming items while changing weeks. Regression coverage includes
+  delayed responses, failures, successful retries and unavailable family data.
+  - [ ] After promotion, retest on development at phone and desktop sizes in both themes, with keyboard and a
+    screen reader. Reproduce the owner's original missing-events report and record deployed commit, week,
+    time zone, household setup and owner retest before acceptance; this fixes only the confirmed load-state gap.
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
   are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
 - [ ] Commit the exact approved dashboard image as `docs/design/assets/approved-dashboard-2026-10-16.png`, or confirm
@@ -545,6 +551,26 @@ that points back here.
   requests, including error/retry. Regression tests cover the observed BODY-focus failure and error-state axe.
   - [ ] After promotion, manually retest the confirmation, cancellation, failed and successful deletion by keyboard
     and screen reader on development, phone/desktop and both themes. Independent-parent checks remain open.
+
+- [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
+  29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
+  range splitting, four-occurrence count and local time across the spring daylight-saving boundary.
+  - [ ] Run the new cases in backend CI (this workspace has no dotnet/Docker), and retain the remaining manual
+    two-parent/accessibility acceptance checks. The live October 31 to November 30 reminder was verified separately.
+
+- [x] **Task action keyboard focus (#73, #176).** Checklist saves preserve the checkbox's focus using aria-disabled
+  with a duplicate-action guard. Checklist-free completion retains the same Material button across Mark done/Undo,
+  including its pending state. Delete confirmation focuses Keep it and restores Delete on cancellation; a pending
+  deletion retains focus and guards duplicates. Tests cover pending, successful and failed saves and duplicate actions.
+  - [ ] After promotion, repeat the observed development-site Space/Enter test with keyboard and screen reader,
+    both themes and phone/desktop. The original build drops focus to BODY after a task mutation; independent
+    parent/household acceptance checks remain open.
+
+- [x] **Reminder validation descriptions (#206, #173).** Associate date/time and repeat refusal messages with
+  their own Material controls; give a missing time its own message and retain hidden date-format guidance when
+  valid. Regression tests cover local and server refusals, focus, retry correction and all-day reminders.
+  - [ ] After promotion, manually retest Add/Edit reminders on development with keyboard and a screen reader,
+    in both themes and at phone/desktop sizes. This implementation does not close either issue's full acceptance.
 
 - [x] **Silent lazy-page navigation failures (#177).** A shared accessible recovery dialog explains a failed
   page load and offers an explicit reload with an unsaved-changes warning, or Keep working. No automatic reload,
