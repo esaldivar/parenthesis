@@ -49,9 +49,9 @@
   <div class="actions">
     @if (!confirming()) {
       <a mat-flat-button [routerLink]="['/calendar/reminders', reminder().id, 'edit']">Edit reminder</a>
-      <button mat-stroked-button type="button" (click)="confirming.set(true)">Delete reminder…</button>
+      <button #deleteButton mat-stroked-button type="button" (click)="confirmDelete(true)">Delete reminder…</button>
     } @else {
-      <p class="explain">
+      <p class="explain" id="reminder-delete-explanation">
         @if (repeats()) {
           This deletes the reminder and every repeat of it, for both of you.
         } @else {
@@ -62,10 +62,10 @@
         <p class="error" role="alert">{{ error }}</p>
       }
       <div class="actions__row">
-        <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="remove()">
+        <button mat-flat-button type="button" class="danger" [disabled]="busy()" disabledInteractive aria-describedby="reminder-delete-explanation" (click)="remove()">
           {{ busy() ? 'Deleting…' : 'Yes, delete' }}
         </button>
-        <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep it</button>
+        <button #keepButton mat-button type="button" [disabled]="busy()" aria-describedby="reminder-delete-explanation" (click)="confirmDelete(false)">Keep it</button>
       </div>
     }
   </div>
