@@ -12,6 +12,10 @@ const F = '/api/families/family-1';
 const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '2026-10-01T00:00:00Z', members: MEMBERS };
 
 describe('Add event', () => {
+  // These tests use October 2026 dates; new dates can't be before today (#232), so "today" is October 1, 2026 here.
+  beforeEach(() => vi.setSystemTime(new Date('2026-10-01T15:00:00Z')));
+  afterEach(() => vi.useRealTimers());
+
   let http: HttpTestingController;
 
   async function settle(harness: RouterTestingHarness) {
@@ -155,7 +159,7 @@ describe('Add event', () => {
     it('starts at the half-hour tapped, for an hour, and keeps that time for every type', async () => {
       const harness = await open(CHILDREN, '/calendar/new?date=2026-10-21&time=17:00');
       await choose(harness, 'Activity');
-      expect([field('startDate'), field('startTime'), field('endDate'), field('endTime')]).toEqual(['2026-10-21', '17:00', '2026-10-21', '18:00']);
+      expect([field('startDate'), field('startTime'), field('endDate'), field('endTime')]).toEqual(['10/21/2026', '17:00', '10/21/2026', '18:00']);
 
       // Unavailable time is usually all day, but a tapped slot keeps its time; it all stays editable.
       await choose(harness, 'I’m unavailable');
@@ -166,18 +170,18 @@ describe('Add event', () => {
     it('ends the next day when the half-hour tapped is late in the evening', async () => {
       const harness = await open(CHILDREN, '/calendar/new?date=2026-10-21&time=23:30');
       await choose(harness, 'Activity');
-      expect([field('endDate'), field('endTime')]).toEqual(['2026-10-22', '00:30']);
+      expect([field('endDate'), field('endTime')]).toEqual(['10/22/2026', '00:30']);
     });
 
     it('gives a reminder the date and time, and a task its due date', async () => {
       const harness = await open(CHILDREN, '/calendar/new?date=2026-10-21&time=08:30');
       [...page().querySelectorAll<HTMLButtonElement>('.kind')].find((b) => text(b).startsWith('Reminder'))!.click();
       await settle(harness);
-      expect([field('date'), field('time')]).toEqual(['2026-10-21', '08:30']);
+      expect([field('date'), field('time')]).toEqual(['10/21/2026', '08:30']);
 
       [...page().querySelectorAll<HTMLButtonElement>('.kind')].find((b) => text(b).startsWith('Task'))!.click();
       await settle(harness);
-      expect(page().querySelector<HTMLInputElement>('app-task-form input[formcontrolname="dueDate"]')!.value).toBe('2026-10-21');
+      expect(page().querySelector<HTMLInputElement>('app-task-form input[formcontrolname="dueDate"]')!.value).toBe('10/21/2026');
     });
 
     it('ignores a time that isn’t one', async () => {
@@ -266,5 +270,52 @@ describe('Add event', () => {
     const harness = await open();
     await choose(harness, 'Activity');
     expect(await axeViolations(document.body)).toEqual([]);
+  });
+
+  describe('date ranges (#232)', () => {
+    // Thursday, October 15, 2026, 10:00 AM in Chicago.
+    beforeEach(() => vi.setSystemTime(new Date('2026-10-15T15:00:00Z')));
+    const value = (name: string) => page().querySelector<HTMLInputElement>(`input[formcontrolname="${name}"]`)!.value;
+
+    it('starts on today when the day asked for has passed', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-12&time=09:00');
+      await choose(harness, 'Activity');
+      expect([value('startDate'), value('endDate'), value('startTime')]).toEqual(['10/15/2026', '10/15/2026', '09:00']);
+    });
+
+    it('refuses a typed start before today, saying why, and sends nothing', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-20');
+      await choose(harness, 'Activity');
+      type(harness, 'input[formcontrolname="title"]', 'Soccer practice');
+      type(harness, 'input[formcontrolname="startDate"]', '10/14/2026');
+      type(harness, 'input[formcontrolname="endDate"]', '10/14/2026');
+      await submit(harness);
+
+      expect(text(page())).toContain('Choose a start date from today on.');
+      expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    });
+
+    it('moves the end with the start, keeping the length, so the range is never backwards', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-20');
+      await choose(harness, 'Parenting time');
+      type(harness, 'input[formcontrolname="endDate"]', '10/22/2026');
+      type(harness, 'input[formcontrolname="startDate"]', '10/25/2026');
+      await settle(harness);
+
+      expect([value('startDate'), value('endDate')]).toEqual(['10/25/2026', '10/27/2026']);
+    });
+
+    it('greys out days before today in the range calendar', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-20');
+      await choose(harness, 'Activity');
+      page().querySelector<HTMLButtonElement>('mat-datepicker-toggle button')!.click();
+      await settle(harness);
+
+      const cell = (label: string) =>
+        [...document.querySelectorAll<HTMLElement>('.mat-calendar-body-cell')].find((c) => c.getAttribute('aria-label')?.includes(label))!;
+      expect(cell('October 14, 2026').getAttribute('aria-disabled')).toBe('true');
+      expect(cell('October 15, 2026').getAttribute('aria-disabled')).not.toBe('true');
+      expect(cell('October 20, 2026').getAttribute('aria-disabled')).not.toBe('true');
+    });
   });
 });

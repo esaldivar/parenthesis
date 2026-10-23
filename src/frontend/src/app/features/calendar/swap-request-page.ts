@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -14,6 +15,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -25,7 +27,9 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { Icon } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
 import { LocalDateTime } from '../dashboard/model';
-import { addDays, dayLong } from '../dashboard/week';
+import { addDays, dayLong, todayIn } from '../dashboard/week';
+import { keepRangeInOrder, maxDaysFor, rangeFilter, rangeProblems } from './date-rules';
+import { providePlainDates } from './plain-dates';
 import { warningText } from './add-event-page';
 import { CalendarItem, toItems } from './calendar-items';
 import { whenText } from './item-text';
@@ -50,7 +54,18 @@ const ASK_FIRST: readonly CalendarWarning[] = ['OverlapsCoParentUnavailable'];
 @Component({
   selector: 'app-swap-request-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, ReactiveFormsModule, RouterLink, MatButtonModule, MatFormFieldModule, MatInputModule, MatSlideToggleModule, Icon],
+  imports: [
+    NgTemplateOutlet,
+    ReactiveFormsModule,
+    RouterLink,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSlideToggleModule,
+    MatDatepickerModule,
+    Icon,
+  ],
+  providers: [providePlainDates()],
   templateUrl: './swap-request-page.html',
   styleUrls: ['./swap-request-page.scss'],
   styles: [FORM_STYLES],
@@ -96,6 +111,20 @@ export class SwapRequestPage {
   });
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   protected readonly allDay = computed(() => this.value().allDay ?? false);
+  /** Today in the family's time zone (#232): new dates start from here. */
+  protected readonly today = computed(() => todayIn(this.timeZone(), new Date()));
+  /** The parenting time's current dates, which it may keep (an arrangement already under way keeps its start). */
+  private readonly ownDates = computed(() => {
+    const item = this.item();
+    return item ? [item.firstDate, item.lastDate] : [];
+  });
+  /** The range calendar's open days. */
+  // One function for the page's life, reading the dates when called: a new one per keystroke would make the picker
+  // re-check the dates, which changes them again, without end.
+  protected readonly dayFilter = (day: string | null): boolean => {
+    const v = this.form.getRawValue();
+    return rangeFilter(this.today(), this.ownDates(), v.startDate || null, v.endDate || null, maxDaysFor(v.allDay))(day);
+  };
   protected readonly reasonLength = computed(() => (this.value().reason ?? '').length);
 
   protected readonly item = computed<CalendarItem | null>(() => {
@@ -164,6 +193,7 @@ export class SwapRequestPage {
   }
 
   constructor() {
+    keepRangeInOrder(this.form, inject(DestroyRef));
     effect(() => {
       const family = this.family();
       const id = this.eventId();
@@ -325,9 +355,10 @@ export class SwapRequestPage {
     if (!v.startDate || !v.endDate || (!v.allDay && (!v.startTime || !v.endTime))) {
       return { dates: 'Choose when the new time starts and ends.', reason };
     }
-    const { start, end } = this.proposedTimes();
-    if (end <= start) {
-      return { dates: 'Choose an end that’s after the start.', reason };
+    // Readable dates, from today on (or its own), with the end after the start (#232).
+    const problems = rangeProblems(v, this.today(), this.ownDates());
+    if (problems['startsAt'] ?? problems['endsAt']) {
+      return { dates: problems['startsAt'] ?? problems['endsAt'], reason };
     }
     const { startsAt, endsAt } = this.instants();
     if (new Date(endsAt).getTime() - new Date(startsAt).getTime() > MAX_DAYS * 24 * 60 * 60 * 1000) {

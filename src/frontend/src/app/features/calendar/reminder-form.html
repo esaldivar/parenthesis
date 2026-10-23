@@ -27,7 +27,9 @@
     <div class="when__row">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Date</mat-label>
-        <input matInput type="date" formControlName="date" required />
+        <input matInput [matDatepicker]="datePicker" [matDatepickerFilter]="dayFilter()" formControlName="date" required />
+        <mat-datepicker-toggle matIconSuffix [for]="datePicker" aria-label="Choose the date" />
+        <mat-datepicker #datePicker />
       </mat-form-field>
       @if (!allDay()) {
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -63,7 +65,9 @@
         @if (endsOnDate()) {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Last day</mat-label>
-            <input matInput type="date" formControlName="repeatUntil" required />
+            <input matInput [matDatepicker]="untilPicker" [min]="value().date || today()" formControlName="repeatUntil" required />
+            <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="Choose the last day" />
+            <mat-datepicker #untilPicker />
             @if (fieldError('repeatUntil'); as e) {
               <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
             }

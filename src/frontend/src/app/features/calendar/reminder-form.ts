@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, si
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -14,6 +15,8 @@ import { FORM_STYLES } from '../auth/form-styles';
 import { PlainDate } from '../dashboard/model';
 import { todayIn } from '../dashboard/week';
 import { revealFirstProblem } from './reveal-problem';
+import { PAST_DATE, UNREADABLE_DATE, choosable } from './date-rules';
+import { isPlainDate, providePlainDates } from './plain-dates';
 import { fromFamilyLocal, toFamilyLocal } from './time';
 
 export const TITLE_MAX = 80;
@@ -43,7 +46,9 @@ const REPEATS: readonly { id: RepeatFrequency; label: string }[] = [
     MatInputModule,
     MatSelectModule,
     MatSlideToggleModule,
+    MatDatepickerModule,
   ],
+  providers: [providePlainDates()],
   templateUrl: './reminder-form.html',
   styleUrl: './add-event-page.scss',
   styles: [FORM_STYLES],
@@ -85,8 +90,16 @@ export class ReminderForm implements OnInit {
     repeatCount: [4],
     repeatUntil: [''],
   });
-  private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+  protected readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   protected readonly allDay = computed(() => this.value().allDay ?? false);
+  /** Today in the family's time zone (#232): a new date is from today on. */
+  protected readonly today = computed(() => todayIn(this.timeZone(), new Date()));
+  /** The reminder's own date when editing, which it may keep even when it's past. */
+  private readonly ownDate = signal<PlainDate | null>(null);
+  protected readonly dayFilter = computed(() => {
+    const [today, own] = [this.today(), this.ownDate()];
+    return (day: PlainDate | null) => choosable(day, today, own ? [own] : []);
+  });
   protected readonly repeating = computed(() => (this.value().repeat ?? 'None') !== 'None');
   protected readonly endsOnDate = computed(() => this.value().ends === 'date');
   protected readonly editing = computed(() => this.reminder() !== null);
@@ -109,9 +122,12 @@ export class ReminderForm implements OnInit {
         repeatCount: reminder.repeatCount ?? 4,
         repeatUntil: reminder.repeatUntil ?? '',
       });
+      this.ownDate.set(start.slice(0, 10));
     } else {
-      const time = this.time();
-      this.form.patchValue({ date: this.date() ?? todayIn(zone, new Date()), ...(time ? { time, allDay: false } : {}) });
+      // No days before today (#232).
+      const [asked, time] = [this.date(), this.time()];
+      const date = asked && asked >= this.today() ? asked : this.today();
+      this.form.patchValue({ date, ...(time && date === asked ? { time, allDay: false } : {}) });
     }
     const family = this.family();
     if (family) {
@@ -179,8 +195,12 @@ export class ReminderForm implements OnInit {
     if (!v.title.trim()) {
       errors['title'] = 'Enter a title.';
     }
-    if (!v.date || (!v.allDay && !v.time)) {
+    if (v.date && !isPlainDate(v.date)) {
+      errors['startsAt'] = UNREADABLE_DATE;
+    } else if (!v.date || (!v.allDay && !v.time)) {
       errors['startsAt'] = 'Choose when the reminder is for.';
+    } else if (v.date < this.today() && v.date !== this.ownDate()) {
+      errors['startsAt'] = PAST_DATE;
     }
     if (v.repeat !== 'None') {
       if (v.ends === 'count' && !(Number.isInteger(v.repeatCount) && v.repeatCount >= 2 && v.repeatCount <= COUNT_MAX)) {
