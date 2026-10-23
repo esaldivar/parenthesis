@@ -90,6 +90,16 @@ describe('repeating events', () => {
       expect(seriesDates('2026-10-31', rule('Monthly', 1), '2027-03-31', null)).toEqual(['2026-10-31', '2026-12-31', '2027-01-31', '2027-03-31']);
       expect(seriesDates('2026-10-20', rule('Monthly', 3), null, 3)).toEqual(['2026-10-20', '2027-01-20', '2027-04-20']);
 
+      // Every other weekend from a Friday keeps each weekend together: weeks count from the first date (#259).
+      expect(seriesDates('2026-10-30', rule('Weekly', 2, ['Friday', 'Saturday', 'Sunday']), null, 6)).toEqual([
+        '2026-10-30',
+        '2026-10-31',
+        '2026-11-01',
+        '2026-11-13',
+        '2026-11-14',
+        '2026-11-15',
+      ]);
+      expect(everyText(rule('Weekly', 2, ['Friday', 'Saturday', 'Sunday']), '2026-10-30')).toBe('Every 2 weeks on Fri, Sat and Sun');
       expect(everyText(rule('Daily', 1), null)).toBe('Every day');
       expect(everyText(rule('Daily', 3), null)).toBe('Every 3 days');
       expect(everyText(rule('Weekly', 2, ['Tuesday', 'Thursday']), null)).toBe('Every 2 weeks on Tue and Thu');
@@ -158,6 +168,72 @@ describe('repeating events', () => {
       expect(create.request.body.repeat).toEqual({ frequency: 'Weekly', interval: 1, days: ['Tuesday', 'Thursday'], until: '2026-11-05' });
       expect(create.request.body.category).toBe('Unavailable');
       create.flush(event({ category: 'Unavailable', title: 'Unavailable', seriesId: 's1' }));
+      await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20'));
+    });
+
+    it('makes each date one day while it repeats: the End date follows the start and can’t be changed (#259)', async () => {
+      await openAdd();
+      await choose('Activity');
+      type('input[formcontrolname="title"]', 'Swim lessons');
+      const end = () => page().querySelector<HTMLInputElement>('input[name="endDate"]')!;
+      // The End date set to when the repeats should stop: this made every date run into the next.
+      type('input[name="endDate"]', '2026-12-15');
+      await settle();
+      expect(end().disabled).toBe(false);
+
+      // Custom by the week, on Monday, Saturday and Sunday, 6 times.
+      await howOften('Custom…');
+      expect(end().disabled).toBe(true);
+      expect(end().value).toBe('10/20/2026');
+      day('Tuesday').click();
+      day('Monday').click();
+      day('Saturday').click();
+      day('Sunday').click();
+      await settle();
+      page().querySelector<HTMLElement>('mat-select[formcontrolname="ends"] .mat-mdc-select-trigger')!.click();
+      await settle();
+      [...document.querySelectorAll<HTMLElement>('mat-option')].find((o) => text(o) === 'After a number of times')!.click();
+      await settle();
+      type('input[formcontrolname="repeatCount"]', '6');
+      await settle();
+      expect(text(page().querySelector('.preview'))).toBe('6 dates: Sat, Oct 24 · Sun, Oct 25 · Mon, Oct 26 · +3 more');
+      expect(text(page().querySelector('.repeat'))).toContain('Each date is one day, so the end date is the start date.');
+
+      // A new start moves the End date with it.
+      type('input[name="startDate"]', '2026-10-21');
+      await settle();
+      expect(end().value).toBe('10/21/2026');
+      type('input[name="startDate"]', '2026-10-20');
+      await settle();
+
+      page().querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle();
+      const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events`));
+      // Each date lasts the first date's own hour, never until the old End date.
+      expect(create.request.body.startsAt).toBe('2026-10-20T14:00:00.000Z');
+      expect(create.request.body.endsAt).toBe('2026-10-20T15:00:00.000Z');
+      expect(create.request.body.repeat).toEqual({ frequency: 'Weekly', interval: 1, days: ['Sunday', 'Monday', 'Saturday'], count: 6 });
+      create.flush(event({ title: 'Swim lessons', seriesId: 's1' }));
+      await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20'));
+    });
+
+    it('frees the End date again when it no longer repeats (#259)', async () => {
+      await openAdd();
+      await choose('I’m unavailable');
+      await howOften('Every day');
+      const end = () => page().querySelector<HTMLInputElement>('input[name="endDate"]')!;
+      expect(end().disabled).toBe(true);
+      await howOften('Does not repeat');
+      expect(end().disabled).toBe(false);
+      type('input[name="endDate"]', '2026-10-23');
+      await settle();
+      page().querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle();
+      const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events`));
+      // All day, October 20 to 23 in Chicago: the end is midnight after the 23rd.
+      expect(create.request.body.endsAt).toBe('2026-10-24T05:00:00.000Z');
+      expect(create.request.body.repeat).toBeUndefined();
+      create.flush(event({ category: 'Unavailable', title: 'Unavailable' }));
       await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20'));
     });
 
