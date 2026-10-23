@@ -33,7 +33,7 @@ import { Icon } from '../../shared/icon/icon';
         [class.date-invalid]="!!issue()"
         (keydown)="openOnKey($event, picker)"
       />
-      <app-icon matSuffix class="date-field__icon" name="calendar" [size]="22" aria-hidden="true" />
+      <app-icon matSuffix class="date-field__icon" name="calendar" [size]="20" aria-hidden="true" />
       @if (issue(); as reason) {
         <mat-hint class="visually-hidden">{{ reason }}</mat-hint>
       }
@@ -54,8 +54,13 @@ import { Icon } from '../../shared/icon/icon';
       caret-color: transparent;
     }
     .date-field__icon {
-      margin-inline-end: 12px;
+      margin-inline-end: 8px;
       color: var(--color-text-secondary);
+    }
+    @media (max-width: 359px) {
+      .date-field__icon {
+        margin-inline-end: 4px;
+      }
     }
   `,
 })

@@ -182,7 +182,19 @@ a {
 
 // An invalid date or time in an event form (#248): only its text turns red, with no message on screen. The reason
 // is in the field's accessible name, and the form can't be sent until it's corrected.
-input.date-invalid {
+// Doubled class: Material's own input colour uses a doubled class too.
+input.date-invalid,
+.mat-mdc-form-field input.date-invalid.date-invalid {
   color: var(--color-danger);
   -webkit-text-fill-color: var(--color-danger);
+}
+
+// A Start or End date field (#249): a little less padding, so the whole date fits beside its icon on a 320px phone.
+app-date-field .mat-mdc-text-field-wrapper {
+  padding-inline-start: 12px;
+}
+@media (max-width: 359px) {
+  app-date-field .mat-mdc-text-field-wrapper {
+    padding-inline-start: 10px;
+  }
 }
