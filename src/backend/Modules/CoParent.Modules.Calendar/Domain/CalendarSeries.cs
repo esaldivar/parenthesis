@@ -6,9 +6,8 @@ namespace CoParent.Modules.Calendar.Domain;
 /// <summary>
 /// A repeating event (#193, C-05): every N days, every N weeks on chosen days, or every N months on the same date (#238),
 /// always ending on a date or after a number of times, at most a year after the first. Each date is its own <see cref="CalendarEvent"/> (with <see cref="CalendarEvent.SeriesId"/>),
-/// so conflict checks, privacy and the child filter treat it like any other event. Only categories that are confirmed
-/// at once can repeat (owner decision, October 22, 2026): unavailable time and activities, never parenting time,
-/// holidays or family events.
+/// so conflict checks, privacy and the child filter treat it like any other event. See <see cref="CanRepeat"/> for
+/// which categories repeat.
 /// </summary>
 internal sealed class CalendarSeries : Entity, IFamilyScoped
 {
@@ -34,7 +33,12 @@ internal sealed class CalendarSeries : Entity, IFamilyScoped
 
     public DateTimeOffset CreatedAt { get; init; }
 
-    public static bool CanRepeat(EventCategory category) => !CalendarEvent.NeedsApproval(category);
+    /// <summary>
+    /// Unavailable time and activities, confirmed at once, and parenting time, which waits for one approval of the whole
+    /// series (#239, owner decision October 23, 2026). Holidays and family events don't repeat yet.
+    /// </summary>
+    public static bool CanRepeat(EventCategory category) =>
+        !CalendarEvent.NeedsApproval(category) || category == EventCategory.ParentingTime;
 }
 
 /// <summary>How often a series repeats (#238, owner decision October 23, 2026; no yearly for now).</summary>

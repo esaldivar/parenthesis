@@ -186,8 +186,11 @@ export class AddEventPage implements OnInit {
   protected readonly coParent = computed(() => this.parents().find((m) => !m.isYou)?.displayName ?? null);
   protected readonly allDay = computed(() => this.value().allDay ?? false);
   protected readonly weekdays = WEEKDAYS;
-  /** Only unavailable time and activities can repeat; parenting time and family events need approval each time. */
-  protected readonly canRepeat = computed(() => this.type() === 'activity' || this.type() === 'unavailable');
+  /**
+   * Unavailable time, activities and parenting time repeat (#193, #239). Repeating parenting time goes to the co-parent
+   * as one request for every date. Family events don't repeat yet.
+   */
+  protected readonly canRepeat = computed(() => this.type() !== 'family' && !!this.type());
   protected readonly repeats = computed(() => this.canRepeat() && (this.value().repeat ?? 'none') !== 'none');
   protected readonly custom = computed(() => this.value().repeat === 'custom');
   protected readonly unit = computed(() => this.value().unit ?? 'Weekly');
@@ -366,7 +369,9 @@ export class AddEventPage implements OnInit {
       const count = this.repeats() ? this.dates().length : 1;
       const head =
         created.status === 'PendingApproval'
-          ? `Sent to ${coParent} for approval. “${created.title}” shows as pending until they accept.`
+          ? count > 1
+            ? `Sent to ${coParent} for approval: “${created.title}” on ${count} dates. They show as pending until they accept.`
+            : `Sent to ${coParent} for approval. “${created.title}” shows as pending until they accept.`
           : count > 1
             ? `“${created.title}” is on the calendar on ${count} dates.`
             : `“${created.title}” is on the calendar.`;

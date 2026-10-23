@@ -373,6 +373,21 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       expect(text(decided)).toContain('Alex Rivera: “Let’s talk first.”');
     });
 
+    it('says a repeating parenting-time request answers every date at once (#239)', async () => {
+      const { body } = await approvals([
+        request({
+          id: 'series',
+          type: 'CalendarCreate',
+          targetType: 'calendar_series',
+          summary: 'Add: Time with Sam, every 2 weeks, 6 dates from Oct 21 to Dec 30',
+        }),
+      ]);
+
+      const waiting = text(body, 'section[aria-labelledby="waiting-heading"]');
+      expect(waiting).toContain('Add: Time with Sam, every 2 weeks, 6 dates from Oct 21 to Dec 30');
+      expect(waiting).toContain('Every date goes on the shared calendar once you both approve. Approving or declining answers them all.');
+    });
+
     it('has no automatically detectable accessibility issues', async () => {
       const { body } = await approvals([request({})]);
 

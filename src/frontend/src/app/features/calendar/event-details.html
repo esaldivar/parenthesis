@@ -233,7 +233,7 @@
         @if (error(); as error) {
           <p class="error" role="alert">{{ error }}</p>
         }
-        @if (repeats()) {
+        @if (cancelsTogether()) {
           <p class="explain">This repeats. Which dates do you want to cancel? It’s removed for both of you.</p>
           <div class="actions__row">
             <button mat-stroked-button type="button" class="danger-outline" [disabled]="busy()" (click)="cancel('this')">

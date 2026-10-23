@@ -121,7 +121,6 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
     [InlineData("every-13-months")]
     [InlineData("every-0-days")]
     [InlineData("runs-into-the-next")]
-    [InlineData("parenting-time")]
     [InlineData("family-event")]
     [InlineData("no-days")]
     [InlineData("both-ends")]
@@ -137,16 +136,6 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
         var weekly = _wednesdays;
         object body = problem switch
         {
-            "parenting-time" => new
-            {
-                category = "ParentingTime",
-                title = "Time with Dad",
-                startsAt = _wednesday,
-                endsAt = _wednesday.AddHours(8),
-                childIds = new[] { f.KaiId },
-                caregiverMembershipId = f.DadMembershipId,
-                repeat = new { days = weekly, count = 4 },
-            },
             "every-27-weeks" => Unavailable(new { frequency = "Weekly", interval = 27, days = weekly, count = 2 }),
             "every-13-months" => Unavailable(new { frequency = "Monthly", interval = 13, count = 2 }),
             "every-0-days" => Unavailable(new { frequency = "Daily", interval = 0, count = 2 }),
@@ -324,6 +313,102 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
             caregiverMembershipId = f.DadMembershipId,
         }));
         await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{proposed.GetProperty("changeRequestId").GetGuid()}/approve");
+    }
+
+    [Fact]
+    public async Task Repeating_parenting_time_waits_for_one_approval_of_every_date_then_confirms_them_all()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+
+        var created = await f.Dad.PostAsync(Events(f), DadsWednesdays(f, count: 3));
+        var first = await JsonAsync(created);
+        var requests = (await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray().ToList();
+        var pending = await SeriesEventsAsync(f, first);
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal(3, pending.Count);
+        Assert.All(pending, e => Assert.Equal("PendingApproval", e.GetProperty("status").GetString()));
+        Assert.All(pending, e => Assert.Equal(f.DadMembershipId, e.GetProperty("caregiverMembershipId").GetGuid()));
+        // One request for the series, never one per date.
+        var request = Assert.Single(requests);
+        Assert.Equal("CalendarCreate", request.GetProperty("type").GetString());
+        Assert.Equal("calendar_series", request.GetProperty("targetType").GetString());
+        Assert.Equal(first.GetProperty("seriesId").GetGuid(), request.GetProperty("targetId").GetGuid());
+        Assert.Equal(first.GetProperty("changeRequestId").GetGuid(), request.GetProperty("id").GetGuid());
+        Assert.Equal("Add: Time with Dad, every week, 3 dates from Oct 28 to Nov 11", request.GetProperty("summary").GetString());
+
+        var approved = await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{request.GetProperty("id").GetGuid()}/approve");
+
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("Confirmed", e.GetProperty("status").GetString()));
+    }
+
+    [Fact]
+    public async Task Declining_repeating_parenting_time_declines_every_date()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var first = await JsonAsync(await f.Dad.PostAsync(Events(f), DadsWednesdays(f, count: 3)));
+
+        var declined = await f.Mom.PostAsync(
+            $"/api/families/{f.FamilyId}/approvals/{first.GetProperty("changeRequestId").GetGuid()}/reject", new { comment = "Wednesdays are mine" });
+        var dates = await SeriesEventsAsync(f, first);
+
+        Assert.Equal(HttpStatusCode.OK, declined.StatusCode);
+        Assert.Equal(3, dates.Count);
+        Assert.All(dates, e => Assert.Equal("Rejected", e.GetProperty("status").GetString()));
+    }
+
+    [Fact]
+    public async Task Repeating_parenting_time_over_its_caregivers_unavailable_time_is_refused_whole_and_series_changes_go_one_date_at_a_time()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        // Dad is unavailable on Wednesday, November 4, 9:00 AM to noon.
+        await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _wednesday.AddDays(7), endsAt = _wednesday.AddDays(7).AddHours(3) });
+
+        // Dad can't have Kai then (#210): no date of the series is added and nothing goes to Mom.
+        var refused = await f.Dad.PostAsync(Events(f), DadsWednesdays(f, count: 3));
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.True((await JsonAsync(refused)).GetProperty("errors").TryGetProperty("caregiverUnavailable", out var _));
+        Assert.Empty((await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
+        Assert.DoesNotContain(
+            await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30)),
+            e => e.GetProperty("category").GetString() == "ParentingTime");
+
+        // A confirmed series' later dates aren't changed or cancelled together, which would skip approval.
+        var first = await JsonAsync(await f.Dad.PostAsync(Events(f), DadsWednesdays(f, count: 2, weeksLater: 3)));
+        await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{first.GetProperty("changeRequestId").GetGuid()}/approve");
+        var id = first.GetProperty("id").GetGuid();
+        var moved = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}?scope=all", new { title = "Dad's Wednesdays" });
+        var cancelled = await f.Dad.SendAsync(HttpMethod.Delete, $"{Events(f)}/{id}?scope=following");
+
+        Assert.Equal(HttpStatusCode.BadRequest, moved.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, cancelled.StatusCode);
+        Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("Time with Dad", e.GetProperty("title").GetString()));
+        Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("Confirmed", e.GetProperty("status").GetString()));
+    }
+
+    /// <summary>Dad's parenting time with Kai, Wednesdays 9:00 AM to 5:00 PM, weekly.</summary>
+    private static object DadsWednesdays(Family f, int count, int weeksLater = 0) => new
+    {
+        category = "ParentingTime",
+        title = "Time with Dad",
+        startsAt = _wednesday.AddDays(7 * weeksLater),
+        endsAt = _wednesday.AddDays(7 * weeksLater).AddHours(8),
+        childIds = new[] { f.KaiId },
+        caregiverMembershipId = f.DadMembershipId,
+        repeat = new { frequency = "Weekly", interval = 1, days = _wednesdays, count },
+    };
+
+    /// <summary>Every date of the series <paramref name="first"/> belongs to, as Dad sees them.</summary>
+    private static async Task<List<JsonElement>> SeriesEventsAsync(Family f, JsonElement first)
+    {
+        var series = first.GetProperty("seriesId").GetGuid();
+        return (await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(60)))
+            .Where(e => e.TryGetProperty("seriesId", out var id) && id.ValueKind == JsonValueKind.String && id.GetGuid() == series)
+            .ToList();
     }
 
     /// <summary>The start of every date in the series <paramref name="first"/> belongs to, in order.</summary>

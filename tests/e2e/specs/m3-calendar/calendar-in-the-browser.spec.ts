@@ -127,6 +127,51 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     }
   });
 
+  test('repeating parenting time is one request: every date waits, then one approval confirms them all (#239)', async ({ page, browser }) => {
+    const family = await familyWithKai();
+    const momContext = await browser.newContext({ ignoreHTTPSErrors: true });
+    try {
+      await signIn(page, family.dad.email);
+
+      await test.step('Dad proposes every day for 3 days', async () => {
+        await page.goto(`/calendar/new?date=${tuesday}`);
+        await page.getByRole('button', { name: /Parenting time/ }).click();
+        await page.getByLabel('Kai').check();
+        await page.getByLabel('How often').click();
+        await page.getByRole('option', { name: 'Every day' }).click();
+        await page.getByLabel('Ends').click();
+        await page.getByRole('option', { name: /times/i }).click();
+        await page.getByLabel('Times in all').fill('3');
+        await expect(page.locator('.repeat')).toContainText('Mom approves or declines every date at once.');
+        await page.getByRole('button', { name: 'Send for approval' }).click();
+        await expect(page.getByText(/Sent to Mom for approval: .* on 3 dates/)).toBeVisible();
+        await openList(page);
+        // Pending dates never look confirmed.
+        await expect(page.locator('app-calendar-list button.item[data-status="pending"]')).toHaveCount(3);
+        await expect(page.locator('app-calendar-list button.item[data-status="confirmed"]')).toHaveCount(0);
+      });
+
+      await test.step('Mom sees one request and approves it', async () => {
+        const mom = await momContext.newPage();
+        await signIn(mom, family.mom.email);
+        await mom.goto('/approvals');
+        await expect(mom.getByText(/3 dates from/)).toHaveCount(1);
+        await expect(mom.getByText('Approving or declining answers them all.', { exact: false })).toBeVisible();
+        await mom.getByRole('button', { name: 'Approve' }).first().click();
+        await expect(mom.getByRole('heading', { name: 'Decided' })).toBeVisible();
+      });
+
+      await test.step('Dad sees every date confirmed', async () => {
+        await openList(page);
+        await expect(page.locator('app-calendar-list button.item[data-status="confirmed"]')).toHaveCount(3);
+        await expect(page.locator('app-calendar-list button.item[data-status="pending"]')).toHaveCount(0);
+      });
+    } finally {
+      await momContext.close();
+      await family.dispose();
+    }
+  });
+
   test('the co-parent approves parenting time from its details on the calendar (#218)', async ({ page, browser }) => {
     const family = await familyWithKai();
     const { dad, familyId, kaiId } = family;
