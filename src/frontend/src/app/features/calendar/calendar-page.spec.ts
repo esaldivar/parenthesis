@@ -270,6 +270,34 @@ describe('the calendar page', () => {
     expect(text(main().querySelector('app-calendar-list'))).toContain('Tuesday, October 20');
   });
 
+  it('shows Month items as labelled bars, one per week row, each opening the same details (#250)', async () => {
+    // Synthetic: a Friday-to-Thursday activity across two week rows.
+    const camp = event({
+      id: 'camp',
+      title: 'Robotics camp',
+      allDay: true,
+      startsAt: '2026-10-23T05:00:00Z',
+      endsAt: '2026-10-30T05:00:00Z',
+    });
+    const { harness } = await open('/calendar?date=2026-10-20&view=month', [camp]);
+    const bars = [...main().querySelectorAll<HTMLButtonElement>('app-calendar-month .bar')];
+
+    expect(bars).toHaveLength(2);
+    expect(main().querySelector('app-calendar-month .dot')).toBeNull();
+    expect(bars.map((b) => [b.style.gridColumn, b.classList.contains('bar--after'), b.classList.contains('bar--before')])).toEqual([
+      ['6 / 8', true, false],
+      ['1 / 6', false, true],
+    ]);
+    expect(bars[0].getAttribute('aria-label')).toContain('Robotics camp');
+    expect(bars[0].getAttribute('aria-label')).toContain('Oct 23 – Oct 29');
+    expect(bars[1].getAttribute('aria-label')).toContain('Continues from last week.');
+    expect(text(bars[1])).toContain('Robotics camp');
+
+    bars[1].click();
+    await settle(harness);
+    expect(text(document.querySelector('app-event-details [role="dialog"]'))).toContain('Robotics camp');
+  });
+
   it('opens details, and cancelling parenting time asks the co-parent first', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [
       event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex', allDay: true, startsAt: '2026-10-20T05:00:00Z', endsAt: '2026-10-21T05:00:00Z' }),
