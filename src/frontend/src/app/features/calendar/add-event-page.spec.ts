@@ -228,6 +228,10 @@ describe('Add event', () => {
   it('needs the children for parenting time, and fills in the title', async () => {
     const harness = await open();
     await choose(harness, 'Parenting time');
+    // Always your own parenting time (#246): no choice of parent.
+    expect(page().querySelector('[formcontrolname="caregiver"]')).toBeNull();
+    expect(text(page())).not.toContain('Who has the children?');
+    expect(text(page())).toContain('This is your parenting time.');
 
     await submit(harness);
     expect(text(page())).toContain('Choose which children this parenting time is for.');

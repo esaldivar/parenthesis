@@ -158,6 +158,18 @@ internal static class CalendarEndpoints
             return TypedResults.Forbid();
         }
 
+        // Parenting time is always the signed-in parent's own (owner decision, October 23, 2026; #246): a parent never
+        // adds the other parent's time. Leaving the caregiver out means "me".
+        if (request.Category == EventCategory.ParentingTime)
+        {
+            if (request.CaregiverMembershipId is { } named && named != tenant.MembershipId)
+            {
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["caregiverMembershipId"] = [OwnTimeOnly] });
+            }
+
+            request = request with { CaregiverMembershipId = tenant.MembershipId };
+        }
+
         var children = await roster.ActiveChildIdsAsync(cancellationToken);
         var parents = await roster.ActiveParentMembershipIdsAsync(cancellationToken);
         var errors = Validate(request, children, parents);
@@ -401,6 +413,13 @@ internal static class CalendarEndpoints
         if (ParseScope(scope) is not { } editScope)
         {
             return InvalidScope();
+        }
+
+        // Whose parenting time it is never changes (#246): each parent adds only their own.
+        if (e.Category == EventCategory.ParentingTime
+            && request.CaregiverMembershipId is { } named && named != e.CaregiverMembershipId)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["caregiverMembershipId"] = [CaregiverFixed] });
         }
 
         if (editScope != EditScope.This && e.SeriesId is not null)
@@ -1124,6 +1143,10 @@ internal static class CalendarEndpoints
 
         return errors;
     }
+
+    private const string OwnTimeOnly = "You can add parenting time only for yourself.";
+
+    private const string CaregiverFixed = "Whose parenting time this is can't be changed. Cancel it and add your own instead.";
 
     /// <summary>Parenting time for a child that overlaps another parenting-time block for the same child (C-06).</summary>
     public const string OverlapsParentingTime = "OverlapsParentingTime";
