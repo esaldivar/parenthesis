@@ -16,12 +16,22 @@ import { PlainDate } from '../dashboard/model';
 import { todayIn } from '../dashboard/week';
 import { revealFirstProblem } from './reveal-problem';
 import { PAST_DATE, UNREADABLE_DATE, choosable } from './date-rules';
-import { isPlainDate, providePlainDates } from './plain-dates';
+import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal, toFamilyLocal } from './time';
 
 export const TITLE_MAX = 80;
 export const DETAILS_MAX = 1000;
 const COUNT_MAX = 366;
+/** A repeating reminder ends within 2 years of its first day (the server's limit, ReminderSchedule.MaxYears). */
+const MAX_YEARS = 2;
+
+/** The last day a reminder may repeat to: its first day 2 years on, or February 28 when that day doesn't exist. */
+export function lastReminderDay(first: PlainDate): PlainDate {
+  const [year, month, day] = first.split('-').map(Number);
+  const daysInMonth = new Date(Date.UTC(year + MAX_YEARS, month, 0)).getUTCDate();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${year + MAX_YEARS}-${pad(month)}-${pad(Math.min(day, daysInMonth))}`;
+}
 
 const REPEATS: readonly { id: RepeatFrequency; label: string }[] = [
   { id: 'None', label: 'Doesn’t repeat' },
@@ -100,6 +110,8 @@ export class ReminderForm implements OnInit {
     const [today, own] = [this.today(), this.ownDate()];
     return (day: PlainDate | null) => choosable(day, today, own ? [own] : []);
   });
+  /** The latest "Last day" the picker offers: 2 years after the first day. */
+  protected readonly untilMax = computed(() => (isPlainDate(this.value().date) ? lastReminderDay(this.value().date!) : null));
   protected readonly repeating = computed(() => (this.value().repeat ?? 'None') !== 'None');
   protected readonly endsOnDate = computed(() => this.value().ends === 'date');
   protected readonly editing = computed(() => this.reminder() !== null);
@@ -190,7 +202,7 @@ export class ReminderForm implements OnInit {
   }
 
   private validate(): Record<string, string> {
-    const v = this.form.getRawValue();
+    const v = typedValues(this.form);
     const errors: Record<string, string> = {};
     if (!v.title.trim()) {
       errors['title'] = 'Enter a title.';
@@ -206,8 +218,13 @@ export class ReminderForm implements OnInit {
       if (v.ends === 'count' && !(Number.isInteger(v.repeatCount) && v.repeatCount >= 2 && v.repeatCount <= COUNT_MAX)) {
         errors['repeatCount'] = `Repeat it 2 to ${COUNT_MAX} times.`;
       }
-      if (v.ends === 'date' && (!v.repeatUntil || (v.date && v.repeatUntil <= v.date))) {
-        errors['repeatUntil'] = 'Choose an end date after the first day.';
+      if (v.ends === 'date' && v.repeatUntil && !isPlainDate(v.repeatUntil)) {
+        errors['repeatUntil'] = UNREADABLE_DATE;
+      } else if (
+        v.ends === 'date' &&
+        (!v.repeatUntil || (isPlainDate(v.date) && (v.repeatUntil <= v.date || v.repeatUntil > lastReminderDay(v.date))))
+      ) {
+        errors['repeatUntil'] = `Choose an end date after the first day and within ${MAX_YEARS} years.`;
       }
     }
     return errors;

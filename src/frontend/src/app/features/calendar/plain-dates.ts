@@ -1,4 +1,5 @@
 import { Injectable, Provider, inject } from '@angular/core';
+import { AbstractControl } from '@angular/forms';
 import { DateAdapter, MAT_DATE_FORMATS, MatDateFormats } from '@angular/material/core';
 import { AuthStore } from '../../core/auth/auth.store';
 import { PlainDate } from '../dashboard/model';
@@ -6,6 +7,20 @@ import { addDays, todayIn } from '../dashboard/week';
 
 /** Something that isn't a date, for a typed value that can't be read. */
 const INVALID = 'invalid-date';
+/**
+ * A form's values, with each date field the parent typed something unreadable in set to 'invalid-date'. The date
+ * picker leaves such a field empty, so without this the form would ask for a date rather than say how to write one.
+ */
+export function typedValues<T extends object>(form: { getRawValue(): T; readonly controls: object }): T {
+  const value = { ...form.getRawValue() } as Record<string, unknown>;
+  for (const [name, control] of Object.entries(form.controls as Record<string, AbstractControl>)) {
+    if (control.hasError('matDatepickerParse')) {
+      value[name] = INVALID;
+    }
+  }
+  return value as T;
+}
+
 const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 const US = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/;
 const pad = (n: number, width = 2) => String(n).padStart(width, '0');

@@ -15,6 +15,7 @@ import { isPlainDate } from './plain-dates';
 export const MAX_EVENT_DAYS = 31;
 
 export const PAST_START = 'Choose a start date from today on.';
+export const PAST_END = 'Choose an end date from today on.';
 export const PAST_DATE = 'Choose a date from today on.';
 export const UNREADABLE_DATE = 'Enter a date like 10/27/2026.';
 
@@ -33,8 +34,8 @@ export function choosable(
 }
 
 /**
- * The days the range calendar offers. While the end is being chosen (a start but no end yet), only days up to the
- * longest an event can last stay open; days before the start stay open too, as choosing one starts the range again.
+ * The days the range calendar offers. While the end is being chosen (a start but no end yet), only days from the start
+ * up to the longest an event can last stay open, so an end before the start can't be picked.
  */
 export function rangeFilter(
   today: PlainDate,
@@ -46,7 +47,7 @@ export function rangeFilter(
   const choosingEnd = isPlainDate(start) && !end;
   return (day) =>
     choosable(day, today, own) &&
-    !(choosingEnd && day! > start! && daysBetween(start!, day!) > maxDays);
+    !(choosingEnd && (day! < start! || daysBetween(start!, day!) > maxDays));
 }
 
 /** The end after the start moves: it moves with it, keeping the length, when it would otherwise be before the start. */
@@ -104,8 +105,12 @@ export interface RangeValue {
   readonly endTime: string;
 }
 
-/** The longest an event can be, in calendar days from its first to its last date. */
-export const maxDaysFor = (allDay: boolean) => (allDay ? MAX_EVENT_DAYS - 1 : MAX_EVENT_DAYS);
+/**
+ * The most calendar days the range picker allows from the first to the last date. The server allows 31 days of
+ * elapsed time, measured in UTC; keeping two days spare covers an all-day event's whole last day and a daylight
+ * saving change, so a range the picker offers is never refused.
+ */
+export const MAX_RANGE_DAYS = MAX_EVENT_DAYS - 2;
 
 /**
  * What's wrong with an event's dates, by the API's field names: `startsAt` (unreadable, or before today) and `endsAt`
@@ -128,6 +133,10 @@ export function rangeProblems(
   }
   if (v.startDate < today && !own.includes(v.startDate)) {
     errors['startsAt'] = PAST_START;
+    return errors;
+  }
+  if (v.endDate < today && !own.includes(v.endDate)) {
+    errors['endsAt'] = PAST_END;
     return errors;
   }
   const start = v.allDay ? v.startDate : `${v.startDate}T${v.startTime}`;

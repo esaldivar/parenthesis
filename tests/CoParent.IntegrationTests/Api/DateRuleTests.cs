@@ -58,11 +58,13 @@ public sealed class DateRuleTests(ApiFactory api) : IAsyncLifetime
         var renamed = await dad.SendAsync(HttpMethod.Patch, $"{Events(familyId)}/{id}", new { title = "Soccer game" });
         var sameDayLater = await dad.SendAsync(HttpMethod.Patch, $"{Events(familyId)}/{id}", new { startsAt = past.AddHours(1), endsAt = past.AddHours(2) });
         var earlierDay = await dad.SendAsync(HttpMethod.Patch, $"{Events(familyId)}/{id}", new { startsAt = past.AddDays(3), endsAt = past.AddDays(3).AddHours(1) });
+        var laterEndOnPastDay = await dad.SendAsync(HttpMethod.Patch, $"{Events(familyId)}/{id}", new { endsAt = past.AddDays(2) });
         var fromToday = await dad.SendAsync(HttpMethod.Patch, $"{Events(familyId)}/{id}", new { startsAt = _today.AddHours(17), endsAt = _today.AddHours(18) });
 
         Assert.Equal(HttpStatusCode.OK, renamed.StatusCode);
         Assert.Equal(HttpStatusCode.OK, sameDayLater.StatusCode);
         await AssertRefusedAsync(earlierDay, "startsAt", "Choose a start date from today on.");
+        await AssertRefusedAsync(laterEndOnPastDay, "endsAt", "Choose an end date from today on.");
         Assert.Equal(HttpStatusCode.OK, fromToday.StatusCode);
     }
 

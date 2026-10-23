@@ -295,6 +295,17 @@ describe('Add event', () => {
       expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
     });
 
+    it('says how to write a date when the typed start can’t be read', async () => {
+      const harness = await open(CHILDREN, '/calendar/new?date=2026-10-20');
+      await choose(harness, 'Activity');
+      type(harness, 'input[formcontrolname="title"]', 'Soccer practice');
+      type(harness, 'input[formcontrolname="startDate"]', 'next week');
+      await submit(harness);
+
+      expect(text(page())).toContain('Enter a date like 10/27/2026.');
+      expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    });
+
     it('moves the end with the start, keeping the length, so the range is never backwards', async () => {
       const harness = await open(CHILDREN, '/calendar/new?date=2026-10-20');
       await choose(harness, 'Parenting time');
