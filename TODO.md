@@ -546,6 +546,12 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [x] **Reminder validation descriptions (#206, #173).** Associate date/time and repeat refusal messages with
+  their own Material controls; give a missing time its own message and retain hidden date-format guidance when
+  valid. Regression tests cover local and server refusals, focus, retry correction and all-day reminders.
+  - [ ] After promotion, manually retest Add/Edit reminders on development with keyboard and a screen reader,
+    in both themes and at phone/desktop sizes. This implementation does not close either issue's full acceptance.
+
 - [x] **Silent lazy-page navigation failures (#177).** A shared accessible recovery dialog explains a failed
   page load and offers an explicit reload with an unsaved-changes warning, or Keep working. No automatic reload,
   retry loop, failed URL or technical exception is exposed. Regression tests include an existing focus trap.

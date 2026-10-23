@@ -97,6 +97,90 @@ describe('Add and edit a reminder', () => {
     expect(page().querySelector('app-task-form')).not.toBeNull();
   });
 
+  function describedText(input: HTMLElement): string {
+    return (input.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean)
+      .map((id) => text(document.getElementById(id))).join(' ');
+  }
+
+  it('focuses Time and describes its error when a timed reminder has no time (#206)', async () => {
+    await openAdd('reminder');
+    type('input[formcontrolname="title"]', 'Pack lunch');
+    type('input[formcontrolname="time"]', '');
+    await submit();
+
+    const time = form().querySelector<HTMLInputElement>('input[formcontrolname="time"]')!;
+    expect(document.activeElement).toBe(time);
+    expect(describedText(time)).toContain('Choose a time for the reminder.');
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+  });
+
+  it('describes an unreadable date on Date and restores format guidance after correction (#206)', async () => {
+    await openAdd('reminder');
+    type('input[formcontrolname="title"]', 'Pack lunch');
+    type('input[formcontrolname="date"]', 'next Tuesday');
+    await submit();
+
+    const date = form().querySelector<HTMLInputElement>('input[formcontrolname="date"]')!;
+    expect(document.activeElement).toBe(date);
+    expect(describedText(date)).toContain('Enter a date like 10/27/2026.');
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+
+    type('input[formcontrolname="date"]', '2026-10-20');
+    await submit();
+    expectDateFormat(date);
+    expect(describedText(date)).not.toContain('Enter a date like');
+    expect((await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).request.body.startsAt).toBe('2026-10-20T13:00:00.000Z');
+  });
+
+  it('associates a server startsAt refusal with Date, retaining the entered reminder (#206)', async () => {
+    await openAdd('reminder');
+    type('input[formcontrolname="title"]', 'Pack lunch');
+    await submit();
+    const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'));
+    create.flush({ status: 400, errors: { startsAt: ['Choose a start date from today on.'] } }, { status: 400, statusText: 'Bad Request' });
+    await settle();
+
+    const date = form().querySelector<HTMLInputElement>('input[formcontrolname="date"]')!;
+    expect(document.activeElement).toBe(date);
+    expect(describedText(date)).toContain('Choose a start date from today on.');
+    expect(form().querySelector<HTMLInputElement>('input[formcontrolname="title"]')!.value).toBe('Pack lunch');
+    expect(await axeViolations(document.body, { ignoreOverlay: true })).toEqual([]);
+  });
+
+  it('shows both missing date and time, focuses Date first, and permits an all-day correction (#206)', async () => {
+    await openAdd('reminder');
+    type('input[formcontrolname="title"]', 'Pack lunch');
+    type('input[formcontrolname="date"]', '');
+    type('input[formcontrolname="time"]', '');
+    await submit();
+    const date = form().querySelector<HTMLInputElement>('input[formcontrolname="date"]')!;
+    const time = form().querySelector<HTMLInputElement>('input[formcontrolname="time"]')!;
+    expect(document.activeElement).toBe(date);
+    expect(describedText(date)).toContain('Choose a date for the reminder.');
+    expect(describedText(time)).toContain('Choose a time for the reminder.');
+
+    type('input[formcontrolname="date"]', '2026-10-20');
+    form().querySelector<HTMLButtonElement>('mat-slide-toggle button')!.click();
+    await settle();
+    await submit();
+    expect(form().querySelector('input[formcontrolname="time"]')).toBeNull();
+    const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'));
+    expect(create.request.body).toEqual(expect.objectContaining({ allDay: true, startsAt: '2026-10-20T05:00:00.000Z' }));
+  });
+
+  it('focuses Repeats and describes a server repeat refusal on its selector (#206)', async () => {
+    await openAdd('reminder');
+    type('input[formcontrolname="title"]', 'Library day');
+    await pick('repeat', 'Every week');
+    await submit();
+    const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'));
+    create.flush({ status: 400, errors: { repeat: ['Choose a supported repeat.'] } }, { status: 400, statusText: 'Bad Request' });
+    await settle();
+    const repeat = form().querySelector<HTMLElement>('mat-select[formcontrolname="repeat"]')!;
+    expect(document.activeElement).toBe(repeat);
+    expect(describedText(repeat)).toContain('Choose a supported repeat.');
+  });
+
   it('adds a one-off reminder at once, in the family’s time zone, with no location', async () => {
     await openAdd();
     kindCard('Reminder').click();
