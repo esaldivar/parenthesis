@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, HostListener, computed, effect, inp
 import { AddAt, SlotPick, clearsPick, pickLabel } from './slot';
 import { PlainDate } from '../dashboard/model';
 import { addDays, dayLong, dayOfMonth, startOfWeek, weekdayShort } from '../dashboard/week';
-import { CalendarItem, byStart, onDate } from './calendar-items';
-import { ItemText } from './item-text';
+import { CalendarItem, onDate } from './calendar-items';
+import { layOutWeek } from './month-layout';
 
 /** The first day of the month containing `date`. */
 export const startOfMonth = (date: PlainDate): PlainDate => `${date.slice(0, 8)}01`;
@@ -14,28 +14,28 @@ export function monthGrid(date: PlainDate): PlainDate[] {
   return Array.from({ length: 42 }, (_, i) => addDays(first, i));
 }
 
-const SHOWN = 3;
-
 /**
- * The Month view. Each day lists up to three items as buttons and says how many more there are; on phones the
- * cells show only dots (no avatars), and tapping a day opens that week.
+ * The Month view (#250, owner decision October 23, 2026). Each item is a labelled bar across its own days, on phones
+ * as on desktops: one continuous bar per week row, continued on the next row with a mark at each cut, in up to three
+ * lanes. A busy day shows "+N more" (saying how many are pending), which opens its week. Day numbers open their
+ * week; a day's empty space adds there (#212, #237).
  */
 @Component({
   selector: 'app-calendar-month',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ItemText],
   template: `
     <section class="month" [attr.aria-label]="label()">
-      <div class="month__row" aria-hidden="true">
+      <div class="month__head" aria-hidden="true">
         @for (name of weekdays(); track name) {
           <div class="month__weekday">{{ name }}</div>
         }
       </div>
-      @for (week of weeks(); track week[0].date) {
-        <div class="month__row">
-          @for (day of week; track day.date) {
+      @for (week of weeks(); track week.days[0].date) {
+        <div class="week">
+          @for (day of week.days; track day.date; let i = $index) {
             <div
               class="day"
+              [style.grid-column]="i + 1"
               [class.day--outside]="!day.inMonth"
               [class.is-today]="day.isToday"
               [class.is-picked]="pick.onDay(day.date)"
@@ -43,6 +43,9 @@ const SHOWN = 3;
             >
               <!-- A tap on the day's empty space adds on that date (#212). Pointer only: keyboards open the day's week. -->
               <button type="button" class="day__add" tabindex="-1" aria-hidden="true" (click)="pick.tap({ date: day.date }, true)"></button>
+              <button type="button" class="day__number" (click)="openDay.emit(day.date)" [attr.aria-label]="day.label">
+                {{ day.number }}
+              </button>
               @if (pick.onDay(day.date)) {
                 <div class="slot-pick">
                   <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
@@ -50,43 +53,48 @@ const SHOWN = 3;
                   </button>
                 </div>
               }
-              <button type="button" class="day__number" (click)="openDay.emit(day.date)" [attr.aria-label]="day.label">
-                {{ day.number }}
-              </button>
-              @if (day.items.length > 0) {
-                <ul class="day__items">
-                  @for (item of day.shown; track item.id) {
-                    <li>
-                      <button
-                        type="button"
-                        class="item"
-                        [attr.data-kind]="item.kind"
-                        [attr.data-category]="item.category"
-                        [attr.data-status]="item.status"
-                        [attr.data-concealed]="item.concealed ? 'true' : null"
-                        (click)="selected.emit(item)"
-                      >
-                        <app-item-text [item]="item" [compact]="true" />
-                      </button>
-                    </li>
-                  }
-                </ul>
-                @if (day.more > 0) {
-                  <button type="button" class="day__more" (click)="openDay.emit(day.date)">+{{ day.more }} more</button>
-                }
-                <span class="day__dots" aria-hidden="true">
-                  @for (item of day.items.slice(0, 4); track item.id) {
-                    <span
-                      class="dot"
-                      [attr.data-kind]="item.kind"
-                      [attr.data-category]="item.category"
-                      [attr.data-status]="item.status"
-                      [attr.data-concealed]="item.concealed ? 'true' : null"
-                    ></span>
-                  }
-                </span>
-              }
             </div>
+          }
+          @for (bar of week.bars; track bar.key) {
+            <button
+              type="button"
+              class="item bar"
+              [style.grid-column]="bar.start + ' / ' + bar.end"
+              [style.grid-row]="bar.lane + 2"
+              [attr.data-kind]="bar.item.kind"
+              [attr.data-category]="bar.item.category"
+              [attr.data-status]="bar.item.status"
+              [attr.data-concealed]="bar.item.concealed ? 'true' : null"
+              [class.bar--before]="bar.continuesBefore"
+              [class.bar--after]="bar.continuesAfter"
+              [attr.aria-label]="bar.label"
+              (click)="selected.emit(bar.item)"
+            >
+              @if (bar.continuesBefore) {
+                <span class="bar__cut" aria-hidden="true">‹</span>
+              }
+              @if (bar.status; as status) {
+                <span class="bar__status" aria-hidden="true">{{ status }}</span>
+              }
+              <span class="bar__title" [class.bar__title--declined]="bar.item.status === 'declined'" aria-hidden="true">{{
+                bar.item.concealed ? 'Hidden: unavailable' : bar.item.title
+              }}</span>
+              @if (bar.continuesAfter) {
+                <span class="bar__cut bar__cut--after" aria-hidden="true">›</span>
+              }
+            </button>
+          }
+          @for (more of week.more; track more.date) {
+            <button
+              type="button"
+              class="more"
+              [class.more--pending]="more.pending > 0"
+              [style.grid-column]="more.column"
+              [attr.aria-label]="more.label"
+              (click)="openDay.emit(more.date)"
+            >
+              +{{ more.count }}<span class="more__word"> more</span>
+            </button>
           }
         </div>
       }
@@ -133,19 +141,20 @@ export class CalendarMonth {
 
   protected readonly weeks = computed(() => {
     const month = this.date().slice(0, 7);
-    const days = monthGrid(this.date()).map((date) => {
-      const items = onDate(this.items(), date).sort(byStart);
-      return {
-        date,
-        number: dayOfMonth(date),
-        label: `${dayLong(date)}${items.length ? `, ${items.length} ${items.length === 1 ? 'event' : 'events'}` : ''}. Open this week.`,
-        inMonth: date.startsWith(month),
-        isToday: date === this.today(),
-        items,
-        shown: items.slice(0, SHOWN),
-        more: Math.max(0, items.length - SHOWN),
-      };
+    const all = monthGrid(this.date());
+    return Array.from({ length: 6 }, (_, w) => {
+      const dates = all.slice(w * 7, w * 7 + 7);
+      const days = dates.map((date) => {
+        const count = onDate(this.items(), date).length;
+        return {
+          date,
+          number: dayOfMonth(date),
+          label: `${dayLong(date)}${count ? `, ${count} ${count === 1 ? 'event' : 'events'}` : ''}. Open this week.`,
+          inMonth: date.startsWith(month),
+          isToday: date === this.today(),
+        };
+      });
+      return { days, ...layOutWeek(dates, this.items()) };
     });
-    return Array.from({ length: 6 }, (_, i) => days.slice(i * 7, i * 7 + 7));
   });
 }
