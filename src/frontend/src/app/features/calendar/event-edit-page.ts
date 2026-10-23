@@ -98,6 +98,7 @@ export class EventEditPage implements OnInit {
     () => (this.value(), typedValues(this.form)),
     () => this.today(),
     () => this.ownDates(),
+    () => this.timeZone(),
   );
 
   protected readonly category = computed(() => this.event()?.category ?? null);
@@ -275,7 +276,7 @@ export class EventEditPage implements OnInit {
     if (!this.unavailable() && !this.parenting() && !v.title.trim()) {
       errors['title'] = 'Enter a title.';
     }
-    Object.assign(errors, rangeProblems(v, this.today(), this.ownDates()));
+    Object.assign(errors, rangeProblems(v, this.today(), this.ownDates(), this.timeZone()));
     return errors;
   }
 

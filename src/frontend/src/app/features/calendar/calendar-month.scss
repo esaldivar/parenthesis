@@ -6,6 +6,9 @@
 :host {
   display: block;
   container-type: inline-size;
+  // Bars stay compact (owner decision, October 23, 2026): 24px tall on every screen, the WCAG 2.2 AA minimum, rather
+  // than 44px lanes that would double the month's height. The 44px day number is the large target: it opens the week,
+  // where every item shows.
   --bar-h: 24px;
 }
 .month {
@@ -144,12 +147,9 @@
   border: 1px dashed var(--color-outline);
 }
 
-/* Phones: the same bars, smaller. Status words give way to the patterns (hatched, struck through), and the
+/* Phones: the same 24px bars (the WCAG 2.2 AA target minimum; owner decision, October 23, 2026), on smaller days. Status words give way to the patterns (hatched, struck through), and the
    accessible names keep every word. */
 @container (max-width: 599px) {
-  :host {
-    --bar-h: 20px;
-  }
   .day {
     min-height: 64px;
   }

@@ -52,8 +52,8 @@ function barStatus(item: CalendarItem): string | null {
 
 /**
  * Lays out one week row of Month view (#250): each item that touches the week is one bar across its own days in that
- * week, in the first lane free for all of them. Longer items go first so they keep their lane, and pending items
- * come before confirmed ones at the same start so a proposal is the last thing hidden. Items past the last lane are
+ * week, in the first lane free for all of them. Among items starting the same day, pending ones go first so a
+ * proposal is the last thing hidden, then longer ones so they keep their lane. Items past the last lane are
  * counted on each day they cover, so nothing disappears silently.
  */
 export function layOutWeek(
@@ -68,8 +68,8 @@ export function layOutWeek(
     .sort(
       (a, b) =>
         from(a).localeCompare(from(b)) ||
-        spanDays(from(b), to(b)) - spanDays(from(a), to(a)) ||
         Number(b.status === 'pending') - Number(a.status === 'pending') ||
+        spanDays(from(b), to(b)) - spanDays(from(a), to(a)) ||
         byStart(a, b),
     );
 

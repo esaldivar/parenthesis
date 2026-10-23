@@ -16,18 +16,19 @@ export class DateCheck {
 
   /**
    * `read` returns the form's dates (with unreadable typed dates as such) and must read a signal, so this follows
-   * them. `own` are the days an edit may keep.
+   * them. `own` are the days an edit may keep; `timeZone` is the family's.
    */
   constructor(
     private readonly read: () => RangeValue,
     private readonly today: () => PlainDate,
     private readonly own: () => readonly PlainDate[] = () => [],
+    private readonly timeZone: () => string = () => 'UTC',
   ) {}
 
   private readonly key = computed(() => keyOf(this.read()));
 
   /** The problems with the dates as they are now, by the API's field names. */
-  readonly problems = computed(() => rangeProblems(this.read(), this.today(), this.own()));
+  readonly problems = computed(() => rangeProblems(this.read(), this.today(), this.own(), this.timeZone()));
 
   /** What to mark: the reason for each date that's invalid, or null. */
   readonly issues = computed(() => {

@@ -21,7 +21,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarEvent, CalendarWarning, Child, FamilyMember } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
+import { Problem, generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
@@ -128,6 +128,7 @@ export class SwapRequestPage {
     () => (this.value(), typedValues(this.form)),
     () => this.today(),
     () => this.ownDates(),
+    () => this.timeZone(),
   );
   protected readonly reasonLength = computed(() => (this.value().reason ?? '').length);
 
@@ -290,7 +291,10 @@ export class SwapRequestPage {
         this.goTo('review');
       }
     } catch (error) {
-      this.error.set(generalMessage(toProblem(error)));
+      const problem = toProblem(error);
+      if (!this.showServerDates(problem)) {
+        this.error.set(generalMessage(problem));
+      }
     } finally {
       this.busy.set(false);
     }
@@ -338,6 +342,9 @@ export class SwapRequestPage {
       }
     } catch (error) {
       const problem = toProblem(error);
+      if (this.showServerDates(problem)) {
+        return;
+      }
       const fields = Object.entries(problem.errors).flatMap(([key, messages]) =>
         key === CAREGIVER_UNAVAILABLE ? [caregiverUnavailableText(this.caregiver(), true)] : messages,
       );
@@ -351,6 +358,28 @@ export class SwapRequestPage {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /**
+   * The server refused the dates (#248): mark them red with its reason for screen readers, as Add and Edit do, back on
+   * the dates step, and focus the first one. False when the answer wasn't about the dates.
+   */
+  private showServerDates(problem: Problem): boolean {
+    const dates = Object.fromEntries(
+      Object.entries(problem.errors)
+        .filter(([key]) => key === 'startsAt' || key === 'endsAt')
+        .map(([key, messages]) => [key, messages.join(' ')]),
+    );
+    if (problem.status !== 400 || Object.keys(dates).length === 0) {
+      return false;
+    }
+    this.dateCheck.fromServer(dates);
+    this.datesError.set(null);
+    if (this.step() !== 'choose') {
+      this.goTo('choose');
+    }
+    this.focus('input[aria-invalid="true"]');
+    return true;
   }
 
   private instants(): { startsAt: string; endsAt: string } {

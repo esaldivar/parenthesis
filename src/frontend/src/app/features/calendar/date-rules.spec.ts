@@ -81,6 +81,15 @@ describe('date rules (#232)', () => {
     expect(rangeProblems({ ...allDay, endDate: '2026-12-02' }, today)).toEqual({ endsAt: TOO_LONG });
     expect(rangeProblems({ ...range, endDate: '2026-11-24', endTime: '09:00' }, today)).toEqual({});
     expect(rangeProblems({ ...range, endDate: '2026-11-24', endTime: '09:30' }, today)).toEqual({ endsAt: TOO_LONG });
+    // The length is measured in the family's zone, as the server measures it: in Chicago, clocks go back on
+    // November 1, so 9:00 AM October 24 to 9:00 AM November 24 is 31 days and an hour.
+    const chicago = 'America/Chicago';
+    expect(rangeProblems({ ...range, endDate: '2026-11-24', endTime: '08:00' }, today, [], chicago)).toEqual({});
+    expect(rangeProblems({ ...range, endDate: '2026-11-24', endTime: '09:00' }, today, [], chicago)).toEqual({
+      endsAt: TOO_LONG,
+    });
+    expect(rangeProblems({ ...allDay, startDate: '2026-11-02', endDate: '2026-12-02' }, today, [], chicago)).toEqual({});
+    expect(rangeProblems({ ...allDay, endDate: '2026-12-01' }, today, [], chicago)).toEqual({ endsAt: TOO_LONG });
     // Earlier today is fine (owner decision): only past days are refused.
     expect(
       rangeProblems(
