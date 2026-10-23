@@ -546,6 +546,12 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [x] **Reminder delete confirmation focus (#172).** Opening confirmation focuses Keep it with the deletion
+  explanation; cancelling restores Delete reminder. The pending delete action keeps focus and blocks duplicate
+  requests, including error/retry. Regression tests cover the observed BODY-focus failure and error-state axe.
+  - [ ] After promotion, manually retest the confirmation, cancellation, failed and successful deletion by keyboard
+    and screen reader on development, phone/desktop and both themes. Independent-parent checks remain open.
+
 - [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
   29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
   range splitting, four-occurrence count and local time across the spring daylight-saving boundary.
