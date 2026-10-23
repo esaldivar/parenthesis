@@ -37,14 +37,21 @@
     (add)="addAt($event)"
   />
 
-  <section class="card area-upcoming" aria-labelledby="upcoming-heading">
+  <section class="card area-upcoming" aria-labelledby="upcoming-heading" [attr.aria-busy]="state() === 'loading'">
     <header class="card__header">
       <h2 id="upcoming-heading">Upcoming</h2>
       <a class="see-all" routerLink="/calendar" [queryParams]="{ view: 'list', week: shownWeek() }">
         See all<span class="visually-hidden"> upcoming events</span>
       </a>
     </header>
-    @if (upcoming().length > 0) {
+    @if (state() === 'loading') {
+      <p role="status">Loading upcoming events…</p>
+    } @else if (state() === 'error') {
+      <div role="alert">
+        <p>We couldn’t load upcoming events.</p>
+        <button mat-button type="button" (click)="reload()">Try again</button>
+      </div>
+    } @else if (state() === 'ready' && upcoming().length > 0) {
       <ul class="upcoming">
         @for (item of upcoming(); track item.key) {
           <li class="upcoming__item" [attr.data-category]="item.category" [attr.data-status]="item.status">
