@@ -24,6 +24,11 @@ internal abstract class EventCreateHandler(CalendarDbContext db) : IApprovalTarg
         var events = target.TargetType == CalendarEndpoints.SeriesTarget
             ? await db.Events.Where(e => e.SeriesId == target.TargetId && e.Status == EventStatus.PendingApproval).ToListAsync(cancellationToken)
             : [await db.Events.SingleAsync(e => e.Id == target.TargetId, cancellationToken)];
+        if (status == EventStatus.Confirmed)
+        {
+            await RefuseIfCaregiverUnavailableAsync(events, cancellationToken);
+        }
+
         foreach (var calendarEvent in events)
         {
             calendarEvent.Status = status;
@@ -32,6 +37,26 @@ internal abstract class EventCreateHandler(CalendarDbContext db) : IApprovalTarg
         }
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Parenting time is checked again as it's confirmed, under the caregiver's lock (#210): a parent can't have the
+    /// children and be unavailable at once, however the time passed while the request waited. Every date of a
+    /// repeating request is checked together (#239); if any clashes, none is confirmed.
+    /// </summary>
+    private async Task RefuseIfCaregiverUnavailableAsync(List<CalendarEvent> events, CancellationToken cancellationToken)
+    {
+        foreach (var dates in events
+            .Where(e => e.Category == EventCategory.ParentingTime && e.CaregiverMembershipId is not null)
+            .GroupBy(e => e.CaregiverMembershipId))
+        {
+            var refused = await CalendarEndpoints.RefusedUnderLockAsync(
+                db, EventCategory.ParentingTime, dates.Key, dates.Select(e => (e.StartsAt, e.EndsAt)).ToList(), cancellationToken);
+            if (refused is not null)
+            {
+                throw new ApprovalRefusedException(refused.Values.First()[0]);
+            }
+        }
     }
 }
 

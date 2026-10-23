@@ -159,6 +159,12 @@ internal static class ApprovalEndpoints
             return TypedResults.Problem(
                 title: "Someone else just answered this request.", detail: "Refresh to see its current state.", statusCode: StatusCodes.Status409Conflict);
         }
+        catch (ApprovalRefusedException refused)
+        {
+            // The whole unit of work rolled back: the request is still pending and this answer wasn't recorded.
+            return TypedResults.Problem(
+                title: "This can't be approved as it is now.", detail: refused.Message, statusCode: StatusCodes.Status409Conflict);
+        }
 
         return TypedResults.Ok(View(request, s.Tenant.MembershipId, Required(request, s.Handlers, parents)));
     }

@@ -64,6 +64,13 @@ public interface IApprovalTargetHandler
     Task RejectAsync(ApprovalTarget target, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Thrown by <see cref="IApprovalTargetHandler.ApplyAsync"/> when the change can no longer be made as approved (for
+/// example, the parent with the children became unavailable while the request waited). Nothing is saved, the request
+/// stays pending, and the approver sees <see cref="Exception.Message"/>.
+/// </summary>
+public sealed class ApprovalRefusedException(string message) : Exception(message);
+
 /// <summary>Who may decide: implemented by Families, so Approvals needn't depend on it.</summary>
 public interface IApprovalParticipants
 {
