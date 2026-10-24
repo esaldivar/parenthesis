@@ -20,22 +20,29 @@ env:
   CI: "true"
 
 jobs:
-  # main is what goes to the site: it only accepts PRs from develop (a release) or a hotfix/* branch. GitHub can't
-  # restrict a PR's source branch itself, so this required check does.
+  # GitHub can't restrict PR source branches themselves, so this required check enforces the branch policy.
   pr-source:
     name: PR source (main accepts develop or hotfix/*)
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Check the source branch
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Test the branch policy
+        run: bash .github/scripts/check-pr-branch-policy.test.sh
+
+      - name: Check the source and target branches
         env:
+          BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
-        run: |
-          case "$HEAD_REF" in
-            develop|hotfix/*) echo "OK: $HEAD_REF -> main" ;;
-            *) echo "::error::PRs into main must come from develop or a hotfix/* branch (this one is from $HEAD_REF)."; exit 1 ;;
-          esac
+          BASE_REPO: ${{ github.repository }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash .github/scripts/check-pr-branch-policy.sh "$BASE_REF" "$HEAD_REF" "$BASE_REPO" "$HEAD_REPO" "$PR_NUMBER"
 
   backend:
     name: Backend (build, format, tests)
