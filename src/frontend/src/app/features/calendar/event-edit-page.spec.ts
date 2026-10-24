@@ -159,6 +159,44 @@ describe('Edit an event', () => {
     );
   });
 
+  it.each([
+    ['Activity', ''],
+    ['Activity', '   '],
+    ['ParentingTime', ''],
+    ['ParentingTime', '   '],
+    ['Holiday', ''],
+    ['Holiday', '   '],
+    ['Joint', ''],
+    ['Joint', '   '],
+  ] as const)('rejects a blank required %s title (%j) without losing input (#273)', async (category, title) => {
+    await open(category === 'ParentingTime' ? weekend() : event({ category }));
+    type('title', title);
+    type('location', 'North Field');
+    type('notes', 'Bring water');
+    await submit();
+
+    const input = field('title')!;
+    expect(input.required).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(input);
+    expect(text(page())).toContain('Enter a title.');
+    expect(text(page())).not.toContain('Leave blank to keep');
+    expect(field('location')!.value).toBe('North Field');
+    expect(field('notes')!.value).toBe('Bring water');
+    expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
+    expect(await axeViolations(document.body, { ignoreOverlay: true })).toEqual([]);
+
+    type('title', 'New title');
+    await submit();
+    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH'));
+    expect(patch.request.body).toEqual(expect.objectContaining({
+      title: 'New title',
+      location: 'North Field',
+      notes: 'Bring water',
+    }));
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+  });
+
   it('checks the times before sending', async () => {
     await open(event());
     type('endTime', '09:00');
