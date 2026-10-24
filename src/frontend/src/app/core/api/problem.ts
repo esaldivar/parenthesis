@@ -4,8 +4,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 export interface Problem {
   readonly status: number;
   readonly title?: string;
+  /** The API's second line, for example "2 tries left." or "Ask Mom or Dad to unlock it." */
+  readonly detail?: string;
+  /** The problem type URI, when the API sets one (for example `…/existing-family`). */
+  readonly type?: string;
   /** Field errors from a validation problem, keyed by the request's field names. */
   readonly errors: Readonly<Record<string, readonly string[]>>;
+  /** A wrong child PIN: how many tries are left before the profile locks. */
+  readonly triesLeft?: number;
 }
 
 export function toProblem(error: unknown): Problem {
@@ -16,7 +22,10 @@ export function toProblem(error: unknown): Problem {
   return {
     status: error.status,
     title: typeof body.title === 'string' ? body.title : undefined,
+    detail: typeof body.detail === 'string' ? body.detail : undefined,
+    type: typeof body.type === 'string' ? body.type : undefined,
     errors: typeof body.errors === 'object' && body.errors !== null ? body.errors : {},
+    triesLeft: typeof body.triesLeft === 'number' ? body.triesLeft : undefined,
   };
 }
 

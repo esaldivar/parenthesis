@@ -19,6 +19,16 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<FamilyMembership> Memberships => Set<FamilyMembership>();
 
+    public DbSet<Invitation> Invitations => Set<Invitation>();
+
+    public DbSet<ChildProfile> Children => Set<ChildProfile>();
+
+    public DbSet<Device> Devices => Set<Device>();
+
+    public DbSet<ChildCredential> ChildCredentials => Set<ChildCredential>();
+
+    public DbSet<DevicePairingCode> PairingCodes => Set<DevicePairingCode>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -43,6 +53,61 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             membership.HasIndex(m => new { m.FamilyId, m.UserId }).IsUnique();
             membership.HasIndex(m => m.UserId);
             membership.HasQueryFilter(TenantContext.QueryFilterName, m => m.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<Invitation>(invitation =>
+        {
+            invitation.ToTable("invitations");
+            invitation.Property(i => i.Email).HasMaxLength(Invitation.EmailMaxLength);
+            invitation.Property(i => i.NormalizedEmail).HasMaxLength(Invitation.EmailMaxLength);
+            invitation.Property(i => i.TokenHash).HasMaxLength(32);
+            invitation.HasOne<Family>().WithMany().HasForeignKey(i => i.FamilyId);
+            invitation.HasIndex(i => i.TokenHash).IsUnique();
+            invitation.HasIndex(i => new { i.FamilyId, i.NormalizedEmail });
+            invitation.HasQueryFilter(TenantContext.QueryFilterName, i => i.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ChildProfile>(child =>
+        {
+            child.ToTable("child_profiles");
+            child.Property(c => c.FirstName).HasMaxLength(ChildProfile.FirstNameMaxLength);
+            child.Property(c => c.Status).HasConversion<string>().HasMaxLength(16);
+            child.HasOne<Family>().WithMany().HasForeignKey(c => c.FamilyId);
+            child.HasIndex(c => new { c.FamilyId, c.Status });
+            child.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<Device>(device =>
+        {
+            device.ToTable("devices");
+            device.Property(d => d.Kind).HasConversion<string>().HasMaxLength(16);
+            device.Property(d => d.Name).HasMaxLength(Device.NameMaxLength);
+            device.Property(d => d.TokenHash).HasMaxLength(32);
+            device.HasOne<Family>().WithMany().HasForeignKey(d => d.FamilyId);
+            device.HasOne<ChildProfile>().WithMany().HasForeignKey(d => d.ChildProfileId);
+            device.HasIndex(d => d.TokenHash).IsUnique();
+            device.HasIndex(d => d.FamilyId);
+            device.HasQueryFilter(TenantContext.QueryFilterName, d => d.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ChildCredential>(credential =>
+        {
+            credential.ToTable("child_credentials");
+            credential.Property(c => c.PinHash).HasMaxLength(256);
+            credential.Property(c => c.PendingPinHash).HasMaxLength(256);
+            credential.HasOne<ChildProfile>().WithMany().HasForeignKey(c => c.ChildProfileId);
+            credential.HasIndex(c => c.ChildProfileId).IsUnique();
+            credential.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<DevicePairingCode>(code =>
+        {
+            code.ToTable("device_pairing_codes");
+            code.Property(c => c.CodeHash).HasMaxLength(32);
+            code.HasOne<ChildProfile>().WithMany().HasForeignKey(c => c.ChildProfileId);
+            code.HasIndex(c => c.CodeHash).IsUnique();
+            code.HasIndex(c => c.ChildProfileId);
+            code.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
         });
     }
 }

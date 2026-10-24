@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # Checks that a pull request's source branch may merge into its target branch.
-# Usage: check-pr-branch-policy.sh <base-ref> <head-ref> [<base-repo> <head-repo> <pr-number>]
+# Usage: check-pr-branch-policy.sh <base-ref> <head-ref> [<base-repo> <head-repo>]
+# The repo arguments are "owner/name"; when given, PRs into main, develop and release/* must come from this
+# repository, not a fork.
+# Policy (see docs/development-workflow.md):
+#   main          <- develop (production promotion) or hotfix/* only
+#   develop       <- release/x.y.z (a tested milestone release), hotfix/* or chore/sync-* (hotfix propagation)
+#   release/x.y.z <- design/*, feat/*, feature/*, fix/*, bugfix/*, chore/*, docs/*, hotfix/*, dependabot/*
+#   any other target: no policy (e.g. a PR stacked on a feature branch)
 set -euo pipefail
 
 base="${1:?base ref required}"

@@ -1,0 +1,141 @@
+<!-- Wide screens: the week grid. -->
+<div class="grid" [style.--span-lanes]="spanLanes()">
+  <div class="grid__corner" aria-hidden="true"></div>
+  @for (day of days(); track day.date) {
+    <div class="grid__head" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+      <span class="visually-hidden">{{ day.longLabel }}{{ day.isToday ? ', today' : '' }}</span>
+      <span aria-hidden="true" class="grid__weekday">{{ day.weekday }}</span>
+      <span aria-hidden="true" class="grid__date">{{ day.monthDay }}</span>
+    </div>
+  }
+
+  <div class="grid__allday-label" aria-hidden="true">All day</div>
+  <ul class="allday" aria-label="All-day and multi-day">
+    <!-- A tap on the row's empty space adds on that day (#212): pointer only, as the day columns below do it for keyboards. -->
+    <li class="tap-add" aria-hidden="true">
+      <button type="button" class="tap-add__button" tabindex="-1" (click)="addInAllDayRow($event)"></button>
+    </li>
+    @if (pickColumn(); as column) {
+      <li class="slot-pick" [style.grid-column]="column" [style.grid-row]="1">
+        <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
+          {{ pickText(pick.at()!) }}
+        </button>
+      </li>
+    }
+    @for (span of spans(); track span.item.id) {
+      <li [style.grid-column]="span.start + ' / ' + span.end" [style.grid-row]="span.lane">
+        <button
+          type="button"
+          class="item item--span"
+          [attr.data-kind]="span.item.kind"
+          [attr.data-category]="span.item.category"
+          [attr.data-status]="span.item.status"
+          [attr.data-concealed]="span.item.concealed ? 'true' : null"
+          (click)="selected.emit(span.item)"
+        >
+          <app-item-text [item]="span.item" [avatars]="false" />
+        </button>
+      </li>
+    }
+  </ul>
+
+  <div #scroller class="grid__body" tabindex="0" role="region" aria-label="Events by time of day, scrollable">
+    <div class="grid__hours" aria-hidden="true">
+      @for (mark of hourMarks; track mark.row) {
+        <span [style.grid-row]="mark.row">{{ mark.label }}</span>
+      }
+    </div>
+    @for (day of timed(); track day.date) {
+      <ul class="daycol" [attr.aria-label]="'Timed events on ' + day.label" [style.--lanes]="day.lanes">
+        <!-- Behind the events: a tap adds at that half-hour; from the keyboard it adds on that day (#212). -->
+        <li class="slot-add">
+          <button type="button" class="slot-add__button" (click)="addInColumn($event, day.date)">
+            <span class="slot-add__label">Add on {{ day.label }}</span>
+          </button>
+        </li>
+        @if (pick.at(); as at) {
+          @if (at.date === day.date && at.time) {
+            <li class="slot-pick" [style.grid-row]="pickRows(at.time)">
+              <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(at)" (click)="pick.confirm()">
+                {{ pickText(at) }}
+              </button>
+            </li>
+          }
+        }
+        @for (slot of day.placed; track slot.item.id) {
+          <li [style.grid-row]="slot.row + ' / span ' + slot.span" [style.grid-column]="slot.lane">
+            <button
+              type="button"
+              class="item item--timed"
+              [attr.data-kind]="slot.item.kind"
+              [attr.data-category]="slot.item.category"
+              [attr.data-status]="slot.item.status"
+              [attr.data-concealed]="slot.item.concealed ? 'true' : null"
+              (click)="selected.emit(slot.item)"
+            >
+              <app-item-text [item]="slot.item" />
+            </button>
+          </li>
+        }
+        @for (marker of day.markers; track marker.item.id) {
+          <li class="marker" [style.grid-row]="marker.row + ' / span ' + marker.span">
+            <button
+              type="button"
+              class="item item--marker"
+              data-kind="unavailable"
+              data-concealed="true"
+              [attr.aria-label]="markerLabel(marker.item)"
+              (click)="selected.emit(marker.item)"
+            >
+              <span aria-hidden="true">Hidden</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>
+
+<!-- Narrow screens: day by day. -->
+<ol class="agenda" aria-label="This week, day by day">
+  @for (day of days(); track day.date) {
+    <li class="agenda__day" [class.is-today]="day.isToday" [class.is-picked]="pick.onDay(day.date) && !pick.at()!.time">
+      <!-- A tap on the day's empty space adds on that day (#212); pointer only, beside the page's Add button. -->
+      <button type="button" class="tap-add__button" tabindex="-1" aria-hidden="true" (click)="addOnDay(day.date)"></button>
+      <h3 class="agenda__date">
+        <span>{{ day.weekday }}</span> <span>{{ day.monthDay }}</span>
+        @if (day.isToday) {
+          <span class="visually-hidden">, today</span>
+        }
+      </h3>
+      @if (day.items.length === 0) {
+        <p class="agenda__none">Nothing scheduled</p>
+      } @else {
+        <ul class="agenda__items">
+          @for (item of day.items; track item.id) {
+            <li>
+              <button
+                type="button"
+                class="item item--row"
+                [attr.data-kind]="item.kind"
+                [attr.data-category]="item.category"
+                [attr.data-status]="item.status"
+                [attr.data-concealed]="item.concealed ? 'true' : null"
+                (click)="selected.emit(item)"
+              >
+                <app-item-text [item]="item" />
+              </button>
+            </li>
+          }
+        </ul>
+      }
+      @if (pick.onDay(day.date) && !pick.at()!.time) {
+        <div class="slot-pick slot-pick--day">
+          <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
+            {{ pickText(pick.at()!) }}
+          </button>
+        </div>
+      }
+    </li>
+  }
+</ol>

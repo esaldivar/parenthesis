@@ -1,11 +1,11 @@
 name: CI
 
-# Every PR is checked. main and develop only change through PRs (protected branches; see CONTRIBUTING.md), and are
-# re-checked after each merge.
+# Every PR is checked. main, develop and release/x.y.z only change through PRs (protected branches; see
+# docs/development-workflow.md), and are re-checked after each merge.
 on:
   pull_request:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "release/**"]
 
 permissions:
   contents: read
@@ -20,29 +20,7 @@ env:
   CI: "true"
 
 jobs:
-  # GitHub can't restrict PR source branches themselves, so this required check enforces the branch policy.
-  pr-source:
-    name: PR source (main accepts develop or hotfix/*)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          sparse-checkout: .github/scripts
-          persist-credentials: false
-
-      - name: Test the branch policy
-        run: bash .github/scripts/check-pr-branch-policy.test.sh
-
-      - name: Check the source and target branches
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          HEAD_REF: ${{ github.head_ref }}
-          BASE_REPO: ${{ github.repository }}
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: bash .github/scripts/check-pr-branch-policy.sh "$BASE_REF" "$HEAD_REF" "$BASE_REPO" "$HEAD_REPO" "$PR_NUMBER"
+  # The PR source check (which branches may merge into main, develop and release/*) is in pr-branch-policy.yml.
 
   backend:
     name: Backend (build, format, tests)
@@ -91,8 +69,9 @@ jobs:
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
 
+      # No dependency install scripts (issue #65); lint, tests and the build don't need them.
       - name: Install
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Lint (TypeScript + template accessibility rules)
         run: npm run lint
@@ -101,7 +80,7 @@ jobs:
         run: npm test
 
       - name: Build (production)
-        run: npx ng build
+        run: npm run build # The Angular CLI pinned in the lockfile, not an on-demand npx install.
 
   docker:
     name: API image
