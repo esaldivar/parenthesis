@@ -546,6 +546,14 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted
+  titles from explicitly empty/whitespace titles. Required titles are rejected without saving other fields;
+  omitted/null titles keep their values and Unavailable time retains its generic label and private notes.
+  The Edit form requires parenting-time titles too. Regression tests cover validation, scope atomicity,
+  omitted-title updates, privacy, accessible feedback and correction without losing input.
+  - [ ] Run backend build/format/integration and frontend lint/test/build in PR CI; this workspace has no .NET SDK
+    or Docker. After promotion, retest mobile/desktop, both themes and screen-reader behavior before acceptance.
+
 - [x] **Reminder delete confirmation focus (#172).** Opening confirmation focuses Keep it with the deletion
   explanation; cancelling restores Delete reminder. The pending delete action keeps focus and blocks duplicate
   requests, including error/retry. Regression tests cover the observed BODY-focus failure and error-state axe.
