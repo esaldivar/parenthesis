@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
 using CoParent.IntegrationTests.Infrastructure;
+using CoParent.Modules.Calendar;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,10 +43,14 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             _respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
             {
                 DbAdapter = DbAdapter.Postgres,
-                TablesToIgnore = [MigrationsHistoryTable],
+                // The data-protection key ring isn't test data: keys issued earlier in the run must stay valid.
+                TablesToIgnore = [MigrationsHistoryTable, new Respawn.Graph.Table("data_protection", "keys")],
             });
         }
     }
+
+    /// <summary>The API's test database, for building a second host that shares it.</summary>
+    public string ConnectionString => _connectionString;
 
     /// <summary>Runs a scalar query against the API's database, for asserting on data no endpoint exposes (e.g. the audit log).</summary>
     public async Task<T?> QueryScalarAsync<T>(string sql, params (string Name, object Value)[] parameters)
@@ -113,7 +118,20 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<FakeEmailSender>();
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+
+            // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
+            // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
+            services.RemoveAllKeyed<TimeProvider>(CalendarModule.TodayClock);
+            services.AddKeyedSingleton<TimeProvider>(CalendarModule.TodayClock, new FixedClock(FixedToday));
         });
+    }
+
+    /// <summary>The day the calendar's "from today on" rule checks against in tests (noon UTC, October 1, 2026).</summary>
+    public static readonly DateTimeOffset FixedToday = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
+
+    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
     }
 
     public override async ValueTask DisposeAsync()

@@ -65,10 +65,11 @@ public sealed class ApiSession : IDisposable
         await PostAsync("/api/auth/register", new { email, password, displayName });
 
     /// <summary>A confirmed, signed-in user ready to make authenticated calls.</summary>
-    public static async Task<ApiSession> SignedInAsync(WebApplicationFactory<Program> api, string displayName = "Alex Rivera")
+    public static async Task<ApiSession> SignedInAsync(
+        WebApplicationFactory<Program> api, string displayName = "Alex Rivera", string? email = null)
     {
         var session = await StartAsync(api);
-        var email = NewEmail();
+        email ??= NewEmail();
         await session.RegisterConfirmedAsync(email, displayName: displayName);
         Assert.Equal(System.Net.HttpStatusCode.NoContent, (await session.LoginAsync(email)).StatusCode);
         return session;

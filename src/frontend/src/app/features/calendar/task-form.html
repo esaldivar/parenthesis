@@ -1,0 +1,121 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="task-heading">
+  <h2 id="task-heading" class="step">{{ editing() ? 'Task' : 'Task details' }}</h2>
+  <p class="note">
+    A shared to-do for both of you, with no assignee. It {{ editing() ? 'is updated' : 'goes on the calendar' }} at once, with no
+    approval.
+  </p>
+  @if (conflict()) {
+    <div class="alert" role="alert">
+      <p>The other parent changed this task while you were editing it, so nothing was saved.</p>
+      <button mat-stroked-button type="button" (click)="loadLatest()">Load their latest version</button>
+    </div>
+  }
+  @if (error(); as message) {
+    <div class="alert" role="alert">{{ message }}</div>
+  }
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Title</mat-label>
+    <input matInput formControlName="title" [maxlength]="titleMax" required />
+    @if (fieldError('title'); as e) {
+      <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+    } @else {
+      <mat-hint>Short enough for the calendar, e.g. “Pack for the soccer tournament”.</mat-hint>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Due date</mat-label>
+    <input matInput [matDatepicker]="duePicker" [matDatepickerFilter]="dayFilter()" formControlName="dueDate" required />
+    <mat-datepicker-toggle matIconSuffix [for]="duePicker" aria-label="Choose the due date" />
+    <mat-datepicker #duePicker />
+    @if (fieldError('dueDate'); as e) {
+      <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+    } @else {
+      <mat-hint class="visually-hidden">Date format: MM/DD/YYYY or YYYY-MM-DD.</mat-hint>
+    }
+  </mat-form-field>
+
+  @if (activeChildren().length > 0) {
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>About (optional)</mat-label>
+      <mat-select formControlName="childId">
+        <mat-option value="">No one in particular</mat-option>
+        @for (child of activeChildren(); track child.id) {
+          <mat-option [value]="child.id">{{ child.firstName }}</mat-option>
+        }
+      </mat-select>
+      @if (fieldError('childId'); as e) {
+        <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+      }
+    </mat-form-field>
+  }
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Details (optional)</mat-label>
+    <textarea matInput formControlName="details" rows="3" [maxlength]="detailsMax"></textarea>
+  </mat-form-field>
+
+  <fieldset class="checklist" formArrayName="items">
+    <legend>Checklist (optional)</legend>
+    <p class="legend-hint">
+      The task is done when its required items are ticked, or every item when none are required. Without a checklist,
+      either of you can mark it done.
+    </p>
+    @if (items.length > 0) {
+      <ol>
+        @for (row of items.controls; track row; let i = $index; let first = $first; let last = $last) {
+          <li class="item" [formGroupName]="i">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item__text">
+              <mat-label>Item {{ i + 1 }}</mat-label>
+              <input matInput type="text" formControlName="text" [maxlength]="itemMax" required />
+            </mat-form-field>
+            <mat-checkbox formControlName="required" class="item__required">Required</mat-checkbox>
+            <span class="item__buttons">
+              <button
+                mat-icon-button
+                type="button"
+                class="move-up"
+                [disabled]="first"
+                [attr.aria-label]="'Move ' + itemLabel(i) + ' up'"
+                (click)="moveItem(i, -1)"
+              >
+                <app-icon name="chevron-up" />
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                class="move-down"
+                [disabled]="last"
+                [attr.aria-label]="'Move ' + itemLabel(i) + ' down'"
+                (click)="moveItem(i, 1)"
+              >
+                <app-icon name="chevron-down" />
+              </button>
+              <button mat-icon-button type="button" [attr.aria-label]="'Remove ' + itemLabel(i)" (click)="removeItem(i)">
+                <app-icon name="close" />
+              </button>
+            </span>
+          </li>
+        }
+      </ol>
+    }
+    @if (fieldError('items'); as e) {
+      <p class="field-error" role="alert">{{ e }}</p>
+    }
+    @if (items.length < itemsMax) {
+      <button mat-stroked-button type="button" class="add-item" (click)="addItem()">
+        <app-icon name="plus" [size]="20" /> Add item
+      </button>
+    } @else {
+      <p class="legend-hint">A checklist can have up to {{ itemsMax }} items.</p>
+    }
+  </fieldset>
+
+  <div class="actions">
+    <button mat-flat-button type="submit" [disabled]="busy()">
+      {{ busy() ? 'Saving…' : editing() ? 'Save changes' : 'Add to calendar' }}
+    </button>
+    <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">Cancel</a>
+  </div>
+</form>

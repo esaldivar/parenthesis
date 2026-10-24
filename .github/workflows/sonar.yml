@@ -2,8 +2,12 @@ name: Sonar
 
 # Code quality, security and vulnerability analysis with SonarQube Cloud (Free plan, public repository). The Free plan
 # analyses the main branch, so this runs on PRs into main (releases and hotfixes) and on main after each merge.
-# Setup steps for the owner: docs/runbooks/sonarqube-cloud.md. Until the SONAR_ORGANIZATION variable is set, the job
-# is skipped rather than failing.
+# Setup steps for the owner: docs/runbooks/sonarqube-cloud.md. Until the SONAR_ORGANIZATION variable is set, the
+# analysis job is skipped, and the release security gate below fails, so nothing can be released unchecked.
+#
+# The "Release security gate" job reads the results of this same analysis (no second scan) and blocks the release on
+# unresolved vulnerabilities, high-severity security issues, unreviewed hotspots and unjustified accepted findings.
+# Policy and troubleshooting: docs/runbooks/sonar-release-gate.md.
 on:
   push:
     branches: [main]
@@ -28,6 +32,8 @@ jobs:
     if: vars.SONAR_ORGANIZATION != ''
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      ce-task-id: ${{ steps.report.outputs.ce-task-id }}
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
@@ -77,7 +83,7 @@ jobs:
           /d:sonar.test.inclusions="**/*.spec.ts"
           /d:sonar.cs.vscoveragexml.reportsPaths="coverage-backend.xml"
           /d:sonar.javascript.lcov.reportPaths="src/frontend/coverage/parenthesis/lcov.info"
-          /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,docker/**,.github/**"
+          /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,tests/e2e/**,docker/**,.github/**"
 
       - name: Build
         run: dotnet build CoParent.slnx -c Release
@@ -88,3 +94,41 @@ jobs:
 
       - name: End analysis (uploads results; the quality gate shows on the PR)
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+
+      # The scanner writes the id of SonarQube Cloud's background task for this analysis; the gate waits for it.
+      - name: Report the analysis task
+        id: report
+        run: |
+          file=.sonarqube/out/.sonar/report-task.txt
+          [ -f "$file" ] || file=$(find .sonarqube -name report-task.txt 2>/dev/null | head -n 1)
+          task=$(sed -n 's/^ceTaskId=//p' "${file:-/dev/null}")
+          if [ -z "$task" ]; then echo "::error::The scanner didn't write a report-task.txt with a ceTaskId."; exit 1; fi
+          echo "ce-task-id=$task" >> "$GITHUB_OUTPUT"
+
+  release-gate:
+    # Keep this name: it is meant to be a required status check on main (docs/runbooks/sonar-release-gate.md).
+    name: Release security gate
+    needs: sonar
+    # Runs even when the analysis was skipped or failed, so a missing analysis fails here instead of being skipped
+    # (a skipped required check counts as passing).
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # main's copy of each file, to tell whether the release changes code a finding on main points at.
+      - name: Fetch main for comparison
+        run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+
+      - name: Check SonarQube Cloud findings for this release
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_CE_TASK_ID: ${{ needs.sonar.outputs.ce-task-id }}
+          SONAR_JOB_RESULT: ${{ needs.sonar.result }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_BRANCH: main
+        run: node .github/scripts/sonar-release-gate.mjs

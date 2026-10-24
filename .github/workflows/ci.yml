@@ -1,11 +1,11 @@
 name: CI
 
-# Every PR is checked. main and develop only change through PRs (protected branches; see CONTRIBUTING.md), and are
-# re-checked after each merge.
+# Every PR is checked. main, develop and release/x.y.z only change through PRs (protected branches; see
+# docs/development-workflow.md), and are re-checked after each merge.
 on:
   pull_request:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "release/**"]
 
 permissions:
   contents: read
@@ -20,22 +20,7 @@ env:
   CI: "true"
 
 jobs:
-  # main is what goes to the site: it only accepts PRs from develop (a release) or a hotfix/* branch. GitHub can't
-  # restrict a PR's source branch itself, so this required check does.
-  pr-source:
-    name: PR source (main accepts develop or hotfix/*)
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Check the source branch
-        env:
-          HEAD_REF: ${{ github.head_ref }}
-        run: |
-          case "$HEAD_REF" in
-            develop|hotfix/*) echo "OK: $HEAD_REF -> main" ;;
-            *) echo "::error::PRs into main must come from develop or a hotfix/* branch (this one is from $HEAD_REF)."; exit 1 ;;
-          esac
+  # The PR source check (which branches may merge into main, develop and release/*) is in pr-branch-policy.yml.
 
   backend:
     name: Backend (build, format, tests)
@@ -84,8 +69,9 @@ jobs:
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
 
+      # No dependency install scripts (issue #65); lint, tests and the build don't need them.
       - name: Install
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Lint (TypeScript + template accessibility rules)
         run: npm run lint
@@ -94,7 +80,7 @@ jobs:
         run: npm test
 
       - name: Build (production)
-        run: npx ng build
+        run: npm run build # The Angular CLI pinned in the lockfile, not an on-demand npx install.
 
   docker:
     name: API image

@@ -10,7 +10,7 @@ on:
       active_milestone:
         description: 'Exact active milestone title'
         required: true
-        default: 'M2 — Onboarding'
+        default: 'M3 — Calendar'
         type: string
 
 permissions:
