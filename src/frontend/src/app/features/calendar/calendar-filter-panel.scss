@@ -1,0 +1,94 @@
+// A bottom sheet on phones; a card at the top right on wider screens (#190).
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(16 37 30 / 45%);
+}
+.sheet {
+  position: relative;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: var(--space-4);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: var(--space-3);
+}
+@media (min-width: 720px) {
+  :host {
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: var(--space-6) var(--space-6) 0;
+  }
+  .sheet {
+    width: min(380px, 100%);
+    border-radius: var(--radius-card);
+  }
+}
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  h2 {
+    margin: 0;
+    font-size: var(--font-size-h3);
+  }
+  h2:focus {
+    outline: none;
+  }
+}
+.sheet__note,
+.hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+legend {
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-weight: 600;
+}
+label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  cursor: pointer;
+}
+input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+.sheet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  button {
+    min-height: var(--target-min);
+  }
+}

@@ -1,0 +1,280 @@
+@use 'item' as *;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+ul,
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  @include item-button;
+  @include item-colors;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-1) var(--space-2);
+  overflow: hidden;
+}
+
+/* The grid shows from 720px; below that, the day-by-day list. */
+.grid {
+  display: none;
+}
+
+
+.grid__head {
+  display: grid;
+  justify-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-surface-soft);
+  font-size: 0.875rem;
+}
+.grid__head.is-today .grid__date {
+  background: var(--color-action);
+  color: var(--color-on-action);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+}
+.grid__weekday {
+  font-weight: 600;
+}
+.grid__allday-label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--color-surface-soft);
+}
+.allday {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: minmax(var(--target-min), auto);
+  gap: 4px;
+  padding: 4px;
+  min-height: calc(var(--target-min) + 8px);
+  border-bottom: 1px solid var(--color-surface-soft);
+}
+
+.grid__body {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 56px repeat(7, minmax(0, 1fr));
+  height: 560px;
+  overflow-y: auto;
+}
+.grid__body:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+.grid__hours,
+.daycol {
+  display: grid;
+  grid-template-rows: repeat(48, 28px);
+}
+.grid__hours span {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding-inline-end: var(--space-1);
+  text-align: end;
+  transform: translateY(-0.5em);
+}
+.daycol {
+  grid-template-columns: repeat(var(--lanes), minmax(0, 1fr));
+  gap: 0 2px;
+  padding: 0 2px;
+  border-inline-start: 1px solid var(--color-surface-soft);
+  background-image: linear-gradient(var(--color-surface-soft) 1px, transparent 1px);
+  background-size: 100% 112px;
+}
+.daycol li {
+  min-width: 0;
+  padding: 1px 0;
+}
+.item--timed {
+  min-height: 0;
+}
+// Hidden unavailable time (#190): a thin strip at the day's edge, over the lanes, widening on hover or focus.
+.daycol li.marker {
+  grid-column: 1 / -1;
+  justify-self: end;
+  width: 12px;
+  z-index: 1;
+  padding: 1px 0;
+  transition: width 120ms ease-out;
+}
+.daycol li.marker:hover,
+.daycol li.marker:focus-within {
+  width: 100%;
+  z-index: 2;
+}
+.item--marker {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  font-size: 0.75rem;
+  span {
+    display: block;
+    padding: 2px 4px;
+    opacity: 0;
+  }
+}
+.daycol li.marker:hover .item--marker,
+.daycol li.marker:focus-within .item--marker {
+  // Opaque once widened, so its label never sits on top of the event below.
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.daycol li.marker:hover .item--marker span,
+.daycol li.marker:focus-within .item--marker span {
+  opacity: 1;
+}
+
+.agenda {
+  display: grid;
+  gap: var(--space-3);
+}
+.agenda__day {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: var(--space-2);
+}
+.agenda__date {
+  margin: 0;
+  font-size: 0.9375rem;
+  display: grid;
+  align-content: start;
+}
+.agenda__day.is-today .agenda__date {
+  color: var(--color-action);
+}
+.agenda__none {
+  margin: 0;
+  color: var(--color-text-secondary);
+  align-self: center;
+}
+.agenda__items {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* Last, so it overrides the day-by-day list's own display. */
+@container (min-width: 720px) {
+  .grid {
+    display: grid;
+    grid-template-columns: 56px repeat(7, minmax(0, 1fr));
+    border: 1px solid var(--color-surface-soft);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    overflow: hidden;
+  }
+  .agenda {
+    display: none;
+  }
+}
+
+// Adding from a tap (#212): each day column's background is a button behind its events. A tap adds at that half-hour;
+// from the keyboard it adds on that day, and says so where it is.
+.daycol {
+  position: relative;
+}
+.daycol li:not(.slot-add) {
+  position: relative;
+}
+.slot-add {
+  position: absolute;
+  inset: 0;
+}
+.slot-add__button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+  }
+}
+.slot-add__label {
+  // Sticks to the top of the visible hours, so a keyboard user sees which day they're on.
+  position: sticky;
+  top: var(--space-1);
+  display: block;
+  margin: var(--space-1);
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  text-align: start;
+}
+.slot-add__button:not(:focus-visible) .slot-add__label {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+// The pointer-only layer behind the all-day row and each day of the list (#212). What's above it lets taps through,
+// except its own buttons.
+.allday,
+.agenda__day {
+  position: relative;
+}
+.tap-add {
+  position: absolute;
+  inset: 0;
+}
+.tap-add__button {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.allday > li:not(.tap-add),
+.agenda__day > :not(.tap-add__button) {
+  position: relative;
+  pointer-events: none;
+}
+.allday > li:not(.tap-add) button,
+.agenda__day > :not(.tap-add__button) button {
+  pointer-events: auto;
+}
+
+// The tapped time or day (#237): above the events, so a second tap adds there.
+.daycol li.slot-pick,
+.allday > li.slot-pick {
+  grid-column: 1 / -1;
+  z-index: 3;
+  pointer-events: auto;
+}
+.allday > li.slot-pick {
+  grid-column: auto;
+}
+.agenda__day.is-picked {
+  border-radius: var(--radius-control);
+  outline: 2px solid var(--color-action);
+  outline-offset: 2px;
+}
+.slot-pick--day {
+  grid-column: 2;
+}
