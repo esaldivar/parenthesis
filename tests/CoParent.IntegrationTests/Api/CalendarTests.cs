@@ -295,6 +295,8 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
     [InlineData("end-before-start", "endsAt")]
     [InlineData("longer-than-31-days", "endsAt")]
     [InlineData("title-121", "title")]
+    [InlineData("empty-title", "title")]
+    [InlineData("whitespace-title", "title")]
     public async Task An_invalid_edit_names_the_field_and_changes_nothing(string problem, string field)
     {
         var f = await FamilyAsync();
@@ -305,6 +307,8 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         {
             "end-before-start" => new { startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(17) },
             "longer-than-31-days" => new { endsAt = _monday.AddDays(32) },
+            "empty-title" => new { title = "", location = "Field 3", notes = "Must not save" },
+            "whitespace-title" => new { title = "   ", location = "Field 3", notes = "Must not save" },
             _ => new { title = new string('a', 121) },
         };
 
@@ -315,18 +319,146 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(before, (await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"))).ToString());
     }
 
-    [Fact]
-    public async Task A_blank_title_in_an_edit_keeps_the_current_title()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task An_omitted_or_null_title_in_an_edit_keeps_the_current_title(bool sendNull)
     {
-        // An edit sends only what changes, so a blank title means "unchanged", never an untitled event (#98).
         var f = await FamilyAsync();
         using var _ = f;
         var id = (await JsonAsync(await f.Dad.PostAsync(Events(f), Activity("Soccer Practice", f.KaiId)))).GetProperty("id").GetGuid();
+        object change = sendNull ? new { title = (string?)null, location = "Field 3" } : new { location = "Field 3" };
 
-        var response = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new { title = "  ", location = "Field 3" });
+        var response = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", change);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("Soccer Practice", (await JsonAsync(response)).GetProperty("title").GetString());
+        var saved = await JsonAsync(response);
+        Assert.Equal("Soccer Practice", saved.GetProperty("title").GetString());
+        Assert.Equal("Field 3", saved.GetProperty("location").GetString());
+    }
+
+    [Theory]
+    [InlineData("ParentingTime")]
+    [InlineData("Holiday")]
+    [InlineData("Joint")]
+    public async Task A_blank_required_title_cannot_create_an_edit_proposal_or_save_notes(string category)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var created = await JsonAsync(await f.Dad.PostAsync(Events(f), new
+        {
+            category,
+            title = "Family time",
+            startsAt = _monday,
+            endsAt = _monday.AddDays(1),
+            allDay = true,
+            childIds = new[] { f.KaiId },
+            caregiverMembershipId = category == "ParentingTime" ? (Guid?)f.DadMembershipId : null,
+        }));
+        var id = created.GetProperty("id").GetGuid();
+        Assert.Equal(HttpStatusCode.OK, (await f.Mom.PostAsync(
+            $"/api/families/{f.FamilyId}/approvals/{created.GetProperty("changeRequestId").GetGuid()}/approve")).StatusCode);
+        var before = (await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"))).ToString();
+
+        foreach (var title in new[] { "", "   " })
+        {
+            var response = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}", new
+            {
+                title,
+                location = "Must not save",
+                notes = "Must not save",
+                endsAt = _monday.AddDays(2),
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.True((await JsonAsync(response)).GetProperty("errors").TryGetProperty("title", out var _));
+            Assert.Equal(before, (await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"))).ToString());
+        }
+    }
+
+    [Theory]
+    [InlineData("this")]
+    [InlineData("following")]
+    [InlineData("all")]
+    public async Task A_blank_title_in_a_repeating_edit_changes_no_occurrence(string scope)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        Assert.Equal(HttpStatusCode.Created, (await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Activity",
+            title = "Soccer practice",
+            startsAt = _monday.AddHours(17),
+            endsAt = _monday.AddHours(18),
+            childIds = new[] { f.KaiId },
+            repeat = new { days = _mondays, count = 3 },
+        })).StatusCode);
+        var range = $"{Events(f)}?from={Q(_monday)}&to={Q(_monday.AddDays(21))}";
+        var before = (await JsonAsync(await f.Dad.GetAsync(range))).ToString();
+        var occurrences = (await JsonAsync(await f.Dad.GetAsync(range))).EnumerateArray().ToList();
+        Assert.Equal(3, occurrences.Count);
+        var id = occurrences[1].GetProperty("id").GetGuid();
+
+        foreach (var title in new[] { "", "   " })
+        {
+            var response = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}?scope={scope}", new
+            {
+                title,
+                location = "Must not save",
+                notes = "Must not save",
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.True((await JsonAsync(response)).GetProperty("errors").TryGetProperty("title", out var _));
+            Assert.Equal(before, (await JsonAsync(await f.Dad.GetAsync(range))).ToString());
+        }
+
+        // Omitting the title still permits the scoped edit and preserves every occurrence's title.
+        var accepted = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}?scope={scope}", new { location = "Field 3" });
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        var after = (await JsonAsync(await f.Dad.GetAsync(range))).EnumerateArray().ToList();
+        Assert.All(after, e => Assert.Equal("Soccer practice", e.GetProperty("title").GetString()));
+        Assert.Equal(scope == "all" ? 3 : scope == "following" ? 2 : 1,
+            after.Count(e => e.GetProperty("location").GetString() == "Field 3"));
+    }
+
+    [Theory]
+    [InlineData("this")]
+    [InlineData("following")]
+    [InlineData("all")]
+    public async Task Unavailable_edits_accept_blank_titles_without_sharing_private_fields(string scope)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        Assert.Equal(HttpStatusCode.Created, (await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Unavailable",
+            startsAt = _monday.AddHours(8),
+            endsAt = _monday.AddHours(9),
+            repeat = new { days = _mondays, count = 2 },
+        })).StatusCode);
+        var id = Assert.Single(await WeekAsync(f.Dad, f)).GetProperty("id").GetGuid();
+        foreach (var title in new[] { "", "   " })
+        {
+            var response = await f.Dad.SendAsync(HttpMethod.Patch, $"{Events(f)}/{id}?scope={scope}", new
+            {
+                title,
+                location = "Private clinic",
+                notes = "Private reason",
+            });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        var range = $"{Events(f)}?from={Q(_monday)}&to={Q(_monday.AddDays(14))}";
+        var visible = (await JsonAsync(await f.Mom.GetAsync(range))).EnumerateArray().ToList();
+        Assert.Equal(2, visible.Count);
+        Assert.All(visible, e =>
+        {
+            Assert.Equal("Unavailable", e.GetProperty("title").GetString());
+            Assert.Equal(JsonValueKind.Null, e.GetProperty("location").ValueKind);
+            Assert.Equal(JsonValueKind.Null, e.GetProperty("notes").ValueKind);
+        });
+        Assert.Equal("Private reason", (await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"))).GetProperty("notes").GetString());
     }
 
     [Fact]
