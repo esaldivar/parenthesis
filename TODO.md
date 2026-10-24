@@ -6,6 +6,11 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [x] **Dependabot release branch policy (#275, #277).** Reconcile the older Copilot branch with the active release:
+  retain the separate edited-event branch-policy workflow, existing issue-link enforcement and full regression suite;
+  allow same-repository dependabot/* only into valid release/x.y.z branches. Main/develop and fork restrictions stay.
+  - [ ] Verify PR CI and the three dependency PRs' source checks after the reviewed policy becomes effective;
+    dependency compatibility decisions and merge/deployment approval remain separate.
 - [ ] **Owner testing and design readiness (#152).** Supervised implementation prepared: one waiting testing slot,
   owner acceptance/deployment evidence, priority rework with comments and fresh branches, explicit design/no-design
   readiness, and a local activation gate. See `docs/runbooks/claude-owner-testing.md`.
