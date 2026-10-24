@@ -447,7 +447,7 @@ internal static class CalendarEndpoints
 
         var current = e.Current();
         var change = new ProposedTimes(
-            string.IsNullOrWhiteSpace(request.Title) ? current.Title : request.Title.Trim(),
+            request.Title is null ? current.Title : request.Title.Trim(),
             request.StartsAt?.ToUniversalTime() ?? current.StartsAt,
             request.EndsAt?.ToUniversalTime() ?? current.EndsAt,
             request.AllDay ?? current.AllDay,
@@ -887,7 +887,7 @@ internal static class CalendarEndpoints
         var zone = await roster.TimeZoneAsync(cancellationToken);
         var current = e.Current();
         var change = new ProposedTimes(
-            string.IsNullOrWhiteSpace(request.Title) ? current.Title : request.Title.Trim(),
+            request.Title is null ? current.Title : request.Title.Trim(),
             request.StartsAt?.ToUniversalTime() ?? current.StartsAt,
             request.EndsAt?.ToUniversalTime() ?? current.EndsAt,
             request.AllDay ?? current.AllDay,
@@ -924,7 +924,7 @@ internal static class CalendarEndpoints
                 : (own.StartsAt, own.EndsAt);
             target.Apply(own with
             {
-                Title = string.IsNullOrWhiteSpace(request.Title) && e.Category != EventCategory.Unavailable ? own.Title : change.Title,
+                Title = request.Title is null && e.Category != EventCategory.Unavailable ? own.Title : change.Title,
                 StartsAt = start,
                 EndsAt = end,
                 AllDay = request.AllDay ?? own.AllDay,

@@ -276,7 +276,7 @@ export class EventEditPage implements OnInit {
   private validate(): Record<string, string> {
     const v = typedValues(this.form);
     const errors: Record<string, string> = {};
-    if (!this.unavailable() && !this.parenting() && !v.title.trim()) {
+    if (!this.unavailable() && !v.title.trim()) {
       errors['title'] = 'Enter a title.';
     }
     Object.assign(errors, rangeProblems(v, this.today(), this.ownDates(), this.timeZone()));
@@ -294,7 +294,7 @@ export class EventEditPage implements OnInit {
     if (this.scope() !== 'this' && loaded) {
       const changed = (...keys: string[]) => keys.some((k) => (v as Record<string, unknown>)[k] !== loaded[k]);
       return {
-        ...(changed('title') && !this.unavailable() ? { title: v.title.trim() || undefined } : {}),
+        ...(changed('title') && !this.unavailable() ? { title: v.title.trim() } : {}),
         ...(changed('allDay', 'startTime', 'endTime')
           ? {
               allDay: v.allDay,
@@ -307,8 +307,8 @@ export class EventEditPage implements OnInit {
       };
     }
     return {
-      // A blank title keeps the current one (parenting time and unavailable time have a default).
-      title: this.unavailable() ? undefined : v.title.trim() || undefined,
+      // Required titles have passed validation; Unavailable keeps its generic public label.
+      title: this.unavailable() ? undefined : v.title.trim(),
       allDay: v.allDay,
       startsAt: fromFamilyLocal(v.allDay ? `${v.startDate}T00:00` : `${v.startDate}T${v.startTime}`, zone),
       endsAt: fromFamilyLocal(v.allDay ? `${addDays(v.endDate, 1)}T00:00` : `${v.endDate}T${v.endTime}`, zone),
