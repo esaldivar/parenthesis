@@ -1,0 +1,176 @@
+:host {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  max-width: 760px;
+}
+h1,
+.step {
+  margin: 0;
+}
+.step {
+  font-size: var(--font-size-h3);
+  margin-bottom: var(--space-2);
+}
+.back {
+  margin: 0;
+}
+.back a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+}
+.types {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-2);
+}
+/* Owner rule: the whole card is the target, and the chosen card is highlighted as a block. No radio buttons,
+   checkmarks or other selection marks. */
+.type {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2);
+  align-items: center;
+  min-height: 72px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-surface-soft);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.type:hover {
+  border-color: var(--color-outline);
+}
+.type[aria-pressed='true'] {
+  background: var(--color-selected);
+  border: 2px solid var(--color-action);
+}
+.type:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.type__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-canvas);
+}
+.type__text {
+  display: grid;
+}
+.type__label,
+.kind__label {
+  font-weight: 600;
+}
+.type__desc {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+.note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-soft);
+}
+fieldset {
+  border: 1px solid var(--color-surface-soft);
+  border-radius: var(--radius-control);
+  padding: var(--space-3);
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+legend {
+  font-weight: 600;
+  padding: 0 var(--space-1);
+}
+.legend-hint {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+.dates {
+  width: 100%;
+}
+.when__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+.kid {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+}
+.kid input {
+  width: 20px;
+  height: 20px;
+}
+.field-error {
+  color: var(--color-danger);
+  margin: 0;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.actions > * {
+  min-height: var(--target-min);
+}
+
+// Repeat (#193): weekday boxes stay 44px targets; the preview reads as plain text.
+.weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.weekday {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--target-min);
+  min-width: var(--target-min);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--color-action);
+  }
+}
+.preview {
+  margin: 0;
+}
+.preview__count {
+  font-weight: 600;
+}
+
+// The scope choice when editing a repeating event (#193).
+.scope__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  cursor: pointer;
+  input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--color-action);
+  }
+}
+
+// Start and End side by side, at every width (#249).
+.when__row.dates {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

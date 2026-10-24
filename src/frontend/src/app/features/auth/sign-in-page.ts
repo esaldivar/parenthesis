@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
+import { PendingInvitation } from '../../core/invitations/pending-invitation';
 import { FORM_STYLES } from './form-styles';
 
 @Component({
@@ -16,6 +17,11 @@ import { FORM_STYLES } from './form-styles';
     <h1>Sign in</h1>
     <p class="lead">Welcome back.</p>
 
+    @if (accountDeleted()) {
+      <div class="status" role="status">
+        Your account has been deleted. We've sent a confirmation to your email. You're welcome back any time.
+      </div>
+    }
     @if (error(); as error) {
       <div class="alert" role="alert">{{ error }}</div>
     }
@@ -54,9 +60,12 @@ import { FORM_STYLES } from './form-styles';
 export class SignInPage {
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly pending = inject(PendingInvitation);
 
   /** Where to go after signing in (from the guard); only in-app paths are honoured. */
   readonly returnUrl = input<string>();
+  /** Set after deleting an account (A-12), to confirm it here. */
+  readonly accountDeleted = input<string>();
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     email: ['', [Validators.required, Validators.email]],
@@ -92,6 +101,10 @@ export class SignInPage {
   private safeReturnUrl(): string {
     const url = this.returnUrl();
     // Only paths within the app, never "//evil.example" or absolute URLs (open redirect).
-    return url && url.startsWith('/') && !url.startsWith('//') ? url : '/';
+    if (url && url.startsWith('/') && !url.startsWith('//')) {
+      return url;
+    }
+    // Back from confirming their email, an invited co-parent goes straight to their invitation.
+    return this.pending.peek() ? '/invitations/accept' : '/';
   }
 }

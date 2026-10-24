@@ -5,9 +5,11 @@
 FROM node:25-alpine AS spa
 WORKDIR /spa
 COPY src/frontend/package.json src/frontend/package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# --ignore-scripts: no dependency install scripts run (issue #65). The build doesn't need them: esbuild and
+# @parcel/watcher use their prebuilt platform packages. The build uses the Angular CLI pinned in the lockfile.
+RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY src/frontend/ ./
-RUN npx ng build
+RUN npm run build
 
 # 2. API
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
@@ -20,6 +22,8 @@ COPY src/backend/CoParent.SharedKernel/CoParent.SharedKernel.csproj src/backend/
 COPY src/backend/CoParent.Infrastructure/CoParent.Infrastructure.csproj src/backend/CoParent.Infrastructure/
 COPY src/backend/Modules/CoParent.Modules.Identity/CoParent.Modules.Identity.csproj src/backend/Modules/CoParent.Modules.Identity/
 COPY src/backend/Modules/CoParent.Modules.Families/CoParent.Modules.Families.csproj src/backend/Modules/CoParent.Modules.Families/
+COPY src/backend/Modules/CoParent.Modules.Approvals/CoParent.Modules.Approvals.csproj src/backend/Modules/CoParent.Modules.Approvals/
+COPY src/backend/Modules/CoParent.Modules.Calendar/CoParent.Modules.Calendar.csproj src/backend/Modules/CoParent.Modules.Calendar/
 RUN dotnet restore src/backend/CoParent.Api/CoParent.Api.csproj
 
 COPY .editorconfig ./

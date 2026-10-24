@@ -4,6 +4,16 @@ import { TestBed } from '@angular/core/testing';
 import { AppearanceService } from '../theme/appearance.service';
 import { AuthStore } from './auth.store';
 
+/** Synthetic family only. */
+const PICKER = {
+  familyName: 'Rivera Family',
+  deviceKind: 'Household',
+  profiles: [
+    { kind: 'parent', id: 'm1', name: 'Dad', canSignIn: true, locked: false },
+    { kind: 'child', id: 'kai', name: 'Kai', canSignIn: true, locked: false },
+  ],
+};
+
 describe('AuthStore', () => {
   let http: HttpTestingController;
   let store: AuthStore;
@@ -35,17 +45,90 @@ describe('AuthStore', () => {
 
   it('starts anonymous when the API says nobody is signed in', async () => {
     const init = store.initialize();
-    await respond(['/api/antiforgery', 204], ['/api/me', 401]);
+    await respond(['/api/antiforgery', 204], ['/api/me', 401], ['/api/device/profiles', 404]);
     await init;
 
     expect(store.status()).toBe('anonymous');
     expect(store.user()).toBeNull();
+    expect(store.device()).toBeNull();
     expect(accounts).toEqual([null]);
+  });
+
+  it('remembers this device’s profile picker when it is a registered device', async () => {
+    const init = store.initialize();
+    await respond(['/api/antiforgery', 204], ['/api/me', 401], ['/api/device/profiles', 200, PICKER]);
+    await init;
+
+    expect(store.device()?.familyName).toBe('Rivera Family');
+  });
+
+  it('still starts when the picker can’t be loaded, treating the device as unregistered', async () => {
+    const init = store.initialize();
+    await respond(['/api/antiforgery', 204], ['/api/me', 401], ['/api/device/profiles', 500]);
+    await init;
+
+    expect(store.status()).toBe('anonymous');
+    expect(store.device()).toBeNull();
+  });
+
+  it('recognises a child session, which /api/me refuses, and gives the child their own appearance', async () => {
+    const init = store.initialize();
+    await respond(
+      ['/api/antiforgery', 204],
+      ['/api/me', 403],
+      ['/api/session/child', 200, { childId: 'kai', firstName: 'Kai', familyId: 'f1' }],
+      ['/api/device/profiles', 200, PICKER],
+    );
+    await init;
+
+    expect(store.status()).toBe('child');
+    expect(store.child()?.firstName).toBe('Kai');
+    expect(store.user()).toBeNull();
+    expect(accounts).toEqual(['child:kai']);
+  });
+
+  it('gets a fresh antiforgery token after a child signs in with their PIN', async () => {
+    const signIn = store.childSignIn('kai', '2580');
+    const request = await vi.waitFor(() => http.expectOne('/api/device/child-session'));
+    expect(request.request.body).toEqual({ childId: 'kai', pin: '2580' });
+    request.flush(null, { status: 204, statusText: '204' });
+    await respond(
+      ['/api/antiforgery', 204],
+      ['/api/me', 403],
+      ['/api/session/child', 200, { childId: 'kai', firstName: 'Kai', familyId: 'f1' }],
+    );
+    await signIn;
+
+    expect(store.status()).toBe('child');
+  });
+
+  it('propagates a wrong PIN so the page can show the tries left', async () => {
+    const signIn = store.childSignIn('kai', '1357');
+    await respond(['/api/device/child-session', 401, { title: 'That PIN didn’t work.', triesLeft: 2 }]);
+
+    await expect(signIn).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('pairs a tablet: signed out, a fresh antiforgery token, and the child’s picker', async () => {
+    const pair = store.pairDevice('ABCD-2345', 'Kai’s tablet');
+    await respond(
+      ['/api/device/pair', 200, { childId: 'kai', childFirstName: 'Kai' }],
+      ['/api/antiforgery', 204],
+      ['/api/device/profiles', 200, { ...PICKER, deviceKind: 'ChildPaired' }],
+    );
+
+    expect((await pair).childFirstName).toBe('Kai');
+    expect(store.status()).toBe('anonymous');
+    expect(store.device()?.deviceKind).toBe('ChildPaired');
   });
 
   it('loads the signed-in user and switches to their own appearance', async () => {
     const init = store.initialize();
-    await respond(['/api/antiforgery', 204], ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Alex' }]);
+    await respond(
+      ['/api/antiforgery', 204],
+      ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Alex' }],
+      ['/api/device/profiles', 404],
+    );
     await init;
 
     expect(store.status()).toBe('signed-in');
@@ -74,7 +157,7 @@ describe('AuthStore', () => {
 
   it('clears the user, families and appearance on sign-out, even if the request fails', async () => {
     const signOut = store.signOut();
-    await respond(['/api/auth/logout', 500], ['/api/antiforgery', 204]);
+    await respond(['/api/auth/logout', 500], ['/api/antiforgery', 204], ['/api/device/profiles', 404]);
     await signOut.catch(() => undefined);
 
     expect(store.status()).toBe('anonymous');
