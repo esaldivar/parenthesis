@@ -18,7 +18,7 @@ import { CalendarHeader } from './calendar-header';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, Icon],
   template: `
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field" (click)="picker.open()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field" (click)="openFromField($event, picker)">
       <mat-label>{{ label() }}</mat-label>
       <input
         matInput
@@ -96,6 +96,14 @@ export class DateField {
       event.preventDefault();
       picker.open();
     }
+  }
+
+  protected openFromField(event: MouseEvent, picker: MatDatepicker<string>): void {
+    // A selection belongs to the calendar. It must not bubble into the field and reopen the closed picker.
+    if (event.composedPath().some(node => node instanceof Element && node.tagName.toLowerCase() === 'mat-calendar')) {
+      return;
+    }
+    picker.open();
   }
 
 }
