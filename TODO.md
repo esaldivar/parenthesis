@@ -642,3 +642,7 @@ that points back here.
 ### #260 — Caregiver authorization
 - Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
 - Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
+
+### #137 — Account review cancellation focus
+- Implemented: Cancel restores Delete account after rendering the closed state. Repeated-review regression retains initial consequence-warning focus, clears the form, stays in Settings and never calls deletion.
+- Still required: owner cancellation keyboard retest after deployment and outstanding disposable-account lifecycle/device acceptance. No live account deletion was submitted for this repair.
