@@ -627,6 +627,10 @@ that points back here.
   screen-reader-only format hint; regression tests verify its actual accessible-description association.
   - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
 
+### #206 — Edit invalid-date focus
+- Implemented: refused-save focus recognizes the rendered invalid date while Material and DateField synchronize aria-invalid. Regression fails without the fix; repeated all-day Edit submissions focus End date and preserve input without PATCH.
+- Still required: owner retest of the picker/keyboard reproduction after deployment, plus phone scrolling and actual screen-reader checks.
+
 ### #213 — Fresh event details
 - Implemented: Calendar Week/Month/List and event links load current event details before opening the shared panel. Unavailable/cancelled events show feedback and refresh; failed loads never fall back to cached actions. Older responses cannot replace a newer selection or reopen a previous week. Home already uses fresh details. Declined request details follow the same per-parent visibility as the list, including dismissal.
 - Still required: owner stale-tab scenario after deployment and outstanding mobile/assistive-technology acceptance.
