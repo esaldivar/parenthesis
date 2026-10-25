@@ -261,6 +261,16 @@ export class EventDetails {
     }
   }
 
+  protected startCancel(): void {
+    this.confirming.set(true);
+    this.focus(this.cancelsTogether() ? '#event-keep-series' : '#event-keep');
+  }
+
+  protected keepEvent(): void {
+    this.confirming.set(false);
+    this.focus('#event-cancel');
+  }
+
   protected startDecline(): void {
     this.comment.reset();
     this.error.set(null);

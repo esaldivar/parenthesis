@@ -626,3 +626,7 @@ that points back here.
 - [x] **Date-format accessibility (#236).** Typed reminder/task dates and repeat last-day fields retain a
   screen-reader-only format hint; regression tests verify its actual accessible-description association.
   - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
+
+### #238 — Cancellation confirmation focus
+- Implemented: single and recurring event cancellation focuses the safe Keep action with its explanation; keeping the event restores Cancel event. Repeated transitions and no-mutation/axe regressions cover both branches.
+- Still required: owner live keyboard retest after deployment and remaining phone/screen-reader recurrence acceptance.

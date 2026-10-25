@@ -405,6 +405,26 @@ describe('repeating events', () => {
       expect(text(dialog)).toContain(`RepeatsEvery 2 weeks on ${days}, 6 times`);
     });
 
+    it.each([true, false])('retains focus when entering/leaving cancellation (repeating: %s)', async (repeating) => {
+      await openCalendar([repeating ? swim() : event()]);
+      (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      await settle();
+      const dialog = document.querySelector('app-event-details [role="dialog"]')!;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        button('Cancel event…', dialog).focus();
+        button('Cancel event…', dialog).click();
+        await settle();
+        const keep = button(repeating ? 'Keep them' : 'Keep it', dialog);
+        await vi.waitFor(() => expect(document.activeElement).toBe(keep));
+        expect(document.getElementById(keep.getAttribute('aria-describedby')!)?.textContent).toContain(repeating ? 'Which dates' : 'removes it');
+        expect(await axeViolations(document.body)).toEqual([]);
+        keep.click();
+        await settle();
+        await vi.waitFor(() => expect(document.activeElement).toBe(button('Cancel event…', dialog)));
+      }
+      expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+    });
+
     it('says how it repeats and asks which dates to cancel', async () => {
       await openCalendar([swim()]);
       (document.querySelector('app-calendar-list button.item') as HTMLElement).click();

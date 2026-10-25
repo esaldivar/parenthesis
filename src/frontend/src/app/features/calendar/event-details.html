@@ -232,13 +232,13 @@
         </a>
       }
       @if (!confirming()) {
-        <button mat-stroked-button type="button" (click)="confirming.set(true)">Cancel event…</button>
+        <button mat-stroked-button type="button" id="event-cancel" (click)="startCancel()">Cancel event…</button>
       } @else {
         @if (error(); as error) {
           <p class="error" role="alert">{{ error }}</p>
         }
         @if (cancelsTogether()) {
-          <p class="explain">This repeats. Which dates do you want to cancel? It’s removed for both of you.</p>
+          <p class="explain" id="event-cancel-explanation">This repeats. Which dates do you want to cancel? It’s removed for both of you.</p>
           <div class="actions__row">
             <button mat-stroked-button type="button" class="danger-outline" [disabled]="busy()" (click)="cancel('this')">
               This event
@@ -247,15 +247,15 @@
               This and following
             </button>
             <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel('all')">All events</button>
-            <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep them</button>
+            <button mat-button type="button" id="event-keep-series" aria-describedby="event-cancel-explanation" [disabled]="busy()" (click)="keepEvent()">Keep them</button>
           </div>
         } @else {
-          <p class="explain">{{ cancelExplanation() }}</p>
+          <p class="explain" id="event-cancel-explanation">{{ cancelExplanation() }}</p>
           <div class="actions__row">
             <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel()">
               {{ busy() ? 'Cancelling…' : 'Yes, cancel event' }}
             </button>
-            <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">Keep it</button>
+            <button mat-button type="button" id="event-keep" aria-describedby="event-cancel-explanation" [disabled]="busy()" (click)="keepEvent()">Keep it</button>
           </div>
         }
       }
