@@ -15,7 +15,7 @@ class Host {
 
 describe('Calendar period label (#279)', () => {
   beforeEach(() => {
-    const noop = () => {};
+    const noop = () => undefined;
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: false, media: query, onchange: null,
       addListener: noop, removeListener: noop, addEventListener: noop, removeEventListener: noop,
