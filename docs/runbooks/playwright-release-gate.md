@@ -229,3 +229,8 @@ in both themes. The controlled scanner scenario passed. All four application jou
 Keyboard focus/date/deletion assertions completed successfully. This is detected product failure evidence,
 not a passing accessibility matrix. Keep the implementation draft until those findings and remaining profile
 evidence are resolved. No scanner rule, element or overlay is excluded.
+
+Follow-up product repairs are in #302. The targeted desktop light-theme journeys and controlled scanner scenario
+pass (3/3) against the repaired image. Tests navigate Material's roving active date with arrow keys before Enter;
+programmatically focusing an otherwise untabbable cell does not establish normal keyboard operation. The full
+repaired profile/theme matrix is still required; do not infer it from this targeted result.

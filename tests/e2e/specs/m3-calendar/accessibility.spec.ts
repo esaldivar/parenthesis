@@ -2,12 +2,29 @@ import { expect } from '@playwright/test';
 import { test, signIn } from '../../support/mobile';
 import { analyze, scan, describedReason } from '../../support/accessibility';
 import { addHours, nextMonday } from '../../support/data';
+import type { Page } from '@playwright/test';
 
 const monday = nextMonday();
 const date = addHours(monday, 24).toISOString().slice(0, 10);
 const label = (offset: number) => addHours(monday, offset * 24).toLocaleDateString('en-US', {
   weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
 });
+
+/** Follow Material's roving active date, rather than programmatically focusing an otherwise untabbable cell. */
+async function chooseWithKeyboard(page: Page, target: string) {
+  const active = page.locator('mat-calendar .mat-calendar-body-active');
+  await expect(active).toBeFocused();
+  for (let step = 0; step < 40; step++) {
+    const current = await active.getAttribute('aria-label');
+    if (current === target) {
+      await page.keyboard.press('Enter');
+      return;
+    }
+    await page.keyboard.press(Date.parse(current!) < Date.parse(target) ? 'ArrowRight' : 'ArrowLeft');
+    await expect(active).not.toHaveAttribute('aria-label', current!);
+  }
+  throw new Error(`Could not navigate the date picker to ${target}`);
+}
 
 test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, () => {
   test.setTimeout(120_000);
@@ -75,7 +92,7 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
         await start.press('Enter');
         await expect(page.locator('mat-calendar')).toBeVisible();
         await scan(page, info, `${theme}-${form}-picker`);
-        await page.locator(`.mat-calendar-body-cell[aria-label="${label(5)}"]`).press('Enter');
+        await chooseWithKeyboard(page, label(5));
         await expect(page.locator('mat-calendar')).toHaveCount(0);
         await expect(start).toBeFocused();
         await describedReason(page, `#${form}-end-date`, /end|start|before|after/i);
@@ -83,7 +100,7 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
         await expect(end).toBeFocused();
         await scan(page, info, `${theme}-${form}-invalid`);
         await end.press('Enter');
-        await page.locator(`.mat-calendar-body-cell[aria-label="${label(5)}"]`).press('Enter');
+        await chooseWithKeyboard(page, label(5));
         await expect(page.locator('mat-calendar')).toHaveCount(0);
         await expect(end).toHaveAttribute('aria-invalid', 'false');
         await scan(page, info, `${theme}-${form}-corrected`);
@@ -103,7 +120,7 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
       await start.press('Enter');
       await expect(page.locator('mat-calendar')).toBeVisible();
       await scan(page, info, `${theme}-picker`);
-      await page.locator(`.mat-calendar-body-cell[aria-label="${label(4)}"]`).press('Enter');
+      await chooseWithKeyboard(page, label(4));
       await expect(page.locator('mat-calendar')).toHaveCount(0);
       await expect(start).toBeFocused();
       await describedReason(page, '#add-end-date', /end|start|before|after/i);
@@ -112,7 +129,7 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
       await expect(end).toBeFocused();
       await scan(page, info, `${theme}-invalid`);
       await end.press('Space');
-      await page.locator(`.mat-calendar-body-cell[aria-label="${label(4)}"]`).press('Enter');
+      await chooseWithKeyboard(page, label(4));
       await expect(page.locator('mat-calendar')).toHaveCount(0);
       await expect(end).toBeFocused();
       await expect(end).toHaveAttribute('aria-invalid', 'false');
