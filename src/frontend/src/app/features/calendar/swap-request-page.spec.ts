@@ -23,8 +23,10 @@ const PARENTING = event({
 });
 
 describe('Request swap', () => {
+  // Keep the proposed October 24 dates in the future; the suite must not expire with the wall clock.
   beforeEach(() => vi.setSystemTime(new Date('2026-10-01T15:00:00Z')));
   afterEach(() => vi.useRealTimers());
+
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
 

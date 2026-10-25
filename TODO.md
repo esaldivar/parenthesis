@@ -527,6 +527,11 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
+- [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
+  query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
+  local selection. Router regressions cover both journeys.
+  - [ ] After promotion, retest the actual Settings/appearance/Back and reload journey on development. This repair
+    does not establish the remaining original missing-events, mobile or screen-reader acceptance criteria.
 - [x] **Upcoming load states (#208).** Show loading and failed-load messages separately from an empty week;
   offer retry and hide the previous week's Upcoming items while changing weeks. Regression coverage includes
   delayed responses, failures, successful retries and unavailable family data.
