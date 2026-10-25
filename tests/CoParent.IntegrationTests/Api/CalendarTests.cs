@@ -32,6 +32,30 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal([f.KaiId], soccer.GetProperty("childIds").EnumerateArray().Select(c => c.GetGuid()));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_family_event_warns_about_the_other_parents_unavailability_but_still_waits_for_approval(bool momProposes)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var sender = momProposes ? f.Mom : f.Dad;
+        var other = momProposes ? f.Dad : f.Mom;
+        await other.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(20), notes = "Private appointment" });
+        var response = await sender.PostAsync(Events(f), Joint("School Play", f.KaiId));
+        var created = await JsonAsync(response);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("PendingApproval", created.GetProperty("status").GetString());
+        Assert.Contains("OverlapsCoParentUnavailable", created.GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+        Assert.DoesNotContain("Private appointment", created.GetRawText(), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, (await other.PostAsync($"/api/families/{f.FamilyId}/approvals/{created.GetProperty("changeRequestId").GetGuid()}/approve")).StatusCode);
+        var adjacent = await JsonAsync(await sender.PostAsync(Events(f), new { category = "Joint", title = "Afterwards", startsAt = _monday.AddHours(20), endsAt = _monday.AddHours(21) }));
+        Assert.Empty(adjacent.GetProperty("warnings").EnumerateArray());
+        var ordinary = await JsonAsync(await sender.PostAsync(Events(f), new { category = "Activity", title = "Practice", startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(19) }));
+        Assert.Equal("Confirmed", ordinary.GetProperty("status").GetString());
+        Assert.Empty(ordinary.GetProperty("warnings").EnumerateArray());
+    }
+
     [Fact]
     public async Task Parenting_time_waits_for_the_other_parent_then_is_confirmed()
     {
@@ -277,6 +301,32 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Empty(await WeekAsync(f.Dad, f));
     }
 
+    [Theory]
+    [InlineData("ParentingTime")]
+    [InlineData("Holiday")]
+    [InlineData("Joint")]
+    public async Task Every_other_required_title_category_rejects_blank_creation(string category)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        foreach (var title in new[] { "", "   " })
+        {
+            var response = await f.Dad.PostAsync(Events(f), new
+            {
+                category,
+                title,
+                startsAt = _monday,
+                endsAt = _monday.AddDays(1),
+                childIds = new[] { f.KaiId },
+                caregiverMembershipId = category == "ParentingTime" ? (Guid?)f.DadMembershipId : null,
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.True((await JsonAsync(response)).GetProperty("errors").TryGetProperty("title", out var _));
+            Assert.Empty(await WeekAsync(f.Dad, f));
+        }
+    }
+
     [Fact]
     public async Task The_boundaries_are_accepted()
     {
@@ -306,8 +356,8 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         var before = (await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"))).ToString();
         object change = problem switch
         {
-            "end-before-start" => new { startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(17) },
-            "longer-than-31-days" => new { endsAt = _monday.AddDays(32) },
+            "end-before-start" => new { startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(17), location = "Must not save", notes = "Must not save" },
+            "longer-than-31-days" => new { endsAt = _monday.AddDays(32), location = "Must not save", notes = "Must not save" },
             "empty-title" => new { title = "", location = "Field 3", notes = "Must not save" },
             "whitespace-title" => new { title = "   ", location = "Field 3", notes = "Must not save" },
             _ => new { title = new string('a', 121) },

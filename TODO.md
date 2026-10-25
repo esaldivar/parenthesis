@@ -647,6 +647,10 @@ that points back here.
 - Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
 - Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
 
+### #210 — Family-event availability choice
+- Implemented: before sending a family event, a read-only availability check offers Send anyway or Choose different dates for confirmed other-parent unavailability. Draft changes invalidate that choice; stale checks cannot submit an older draft, and failed checks preserve input without saving. Private notes never enter the warning. Joint-event API responses also include the existing non-blocking warning code.
+- Still required: backend CI and owner live warning/approval retest after promotion; existing same-parent blocking and remaining acceptance evidence are retained.
+
 ### #137 — Account review cancellation focus
 - Implemented: Cancel restores Delete account after rendering the closed state. Repeated-review regression retains initial consequence-warning focus, clears the form, stays in Settings and never calls deletion.
 - Still required: owner cancellation keyboard retest after deployment and outstanding disposable-account lifecycle/device acceptance. No live account deletion was submitted for this repair.
@@ -672,3 +676,7 @@ that points back here.
 - Prepared: desktop plus touch Chromium/WebKit 320/390 profiles, reuse of existing M3 journeys without width-overriding loops, new theme/reduced-motion/date/reminder/toast/text-reflow/pending-overflow scenarios, exact-SHA/profile reporting and fail-closed coverage checks.
 - Verified locally: typecheck, discovery and six report-policy tests including controlled absent/failed/skipped profile negatives.
 - Still required: actual green targeted/full browser runs and a detectable browser regression, Edit/Swap and clearing/DST matrix completion, calibrated geometry/text behavior, then review/rollout under the existing release-only gate. Local Docker is absent and Playwright browser download produced invalid archives. No mobile product acceptance or real-device claim.
+
+### #66 — Production artifact security evidence
+- Implemented: production Deploy verifies immutable image provenance/source-tree equivalence and latest exact-candidate main Sonar analysis plus Release security gate before Azure access. Hotfixes and manual released-version redeploys use the same fail-closed checks; development stays independent. Added synthetic guard regressions and agent release instructions.
+- Still required: reviewed rollout through normal releases, live main required-check/no-bypass ruleset evidence, exact-candidate Sonar/API and GHCR evidence for normal/hotfix/manual redeploy paths, and owner environment approval verification. No settings, production deployment or Sonar findings were changed; #65 is not accepted as resolved by these tests.

@@ -22,6 +22,20 @@ env:
 jobs:
   # The PR source check (which branches may merge into main, develop and release/*) is in pr-branch-policy.yml.
 
+  release-security-tests:
+    name: Production security verification tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Verify release and security policy regressions (no network or secrets)
+        run: |
+          node --test .github/scripts/production-security.test.mjs .github/scripts/sonar-release-gate.test.mjs
+          bash .github/scripts/production-plan.test.sh
+
   e2e-tooling:
     name: E2E tooling (typecheck and report policy)
     runs-on: ubuntu-latest

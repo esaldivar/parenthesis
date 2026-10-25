@@ -309,16 +309,28 @@
         }
       </mat-form-field>
 
+      @if (availabilityWarning()) {
+        <section class="alert" aria-labelledby="availability-heading">
+          <h2 id="availability-heading" tabindex="-1">{{ coParent() }} marked that time as unavailable</h2>
+          <p>They may still approve your request. You can send it anyway, or choose different dates.</p>
+          <div class="actions">
+            <button mat-flat-button type="button" [disabled]="busy()" (click)="sendAnyway()">Send anyway</button>
+            <button mat-stroked-button type="button" [disabled]="busy()" (click)="chooseDifferentDates()">Choose different dates</button>
+          </div>
+        </section>
+      }
       <div class="actions">
+        @if (!availabilityWarning()) {
         <button mat-flat-button type="submit" [disabled]="busy()">
           @if (busy()) {
-            Saving…
+            {{ checkingAvailability() ? 'Checking…' : 'Saving…' }}
           } @else if (current === 'family' || (current === 'parenting' && coParent())) {
             Send for approval
           } @else {
             Add to calendar
           }
         </button>
+        }
         <a mat-button routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">Cancel</a>
       </div>
     </form>

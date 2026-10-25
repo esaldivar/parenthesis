@@ -1263,6 +1263,13 @@ internal static class CalendarEndpoints
             && (x.Status == EventStatus.Confirmed || x.Status == EventStatus.PendingApproval));
         var warnings = new List<string>();
 
+        if (category == EventCategory.Joint
+            && await overlapping.AnyAsync(x => x.Category == EventCategory.Unavailable && x.Status == EventStatus.Confirmed
+                && x.OwnerMembershipId != proposer, cancellationToken))
+        {
+            warnings.Add(OverlapsCoParentUnavailable);
+        }
+
         if (category == EventCategory.ParentingTime)
         {
             var unavailable = await overlapping
