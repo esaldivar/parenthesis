@@ -6,6 +6,7 @@
     <ProjectReference Include="..\..\CoParent.SharedKernel\CoParent.SharedKernel.csproj" />
     <ProjectReference Include="..\..\CoParent.Infrastructure\CoParent.Infrastructure.csproj" />
     <ProjectReference Include="..\CoParent.Modules.Identity\CoParent.Modules.Identity.csproj" />
+    <ProjectReference Include="..\CoParent.Modules.Approvals\CoParent.Modules.Approvals.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">

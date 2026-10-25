@@ -1,0 +1,238 @@
+name: Playwright release gate
+
+# End-to-end tests for every released milestone, run only on release PRs: release/* -> develop (owner decision,
+# October 18, 2026). They test the release candidate itself: the API image built from this PR, merged with develop,
+# with its own throwaway Postgres and Mailpit. Runbook: docs/runbooks/playwright-release-gate.md.
+#
+# Ordinary feature PRs, PRs into release/* and develop -> main don't run Playwright. Every PR into develop runs only
+# the tiny "Release E2E gate" job, which is the required check:
+#   - for a release/* PR it passes only if the Playwright job ran and passed;
+#   - for any other PR it passes at once.
+# The Playwright job itself can't be the required check, because GitHub counts a skipped job as passed.
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+# A new push to the PR cancels the run it supersedes.
+concurrency:
+  group: playwright-release-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright (release candidate)
+    # Only release branches from this repository, and not while the PR is a draft. Nothing starts otherwise.
+    if: >-
+      startsWith(github.head_ref, 'release/') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: coparent
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U e2e -d coparent"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.31.6
+        env:
+          MP_SMTP_AUTH_ACCEPT_ANY: "1"
+          MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+        ports: ["1025:1025", "8025:8025"]
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: tests/e2e
+    env:
+      CI: "true"
+      E2E_BASE_URL: https://localhost:8443
+      MAILPIT_URL: http://localhost:8025
+      E2E_TESTED_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v3
+
+      # The same Dockerfile as the CI "API image" job, with layers cached between release runs.
+      - name: Build the release candidate image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/api.Dockerfile
+          tags: parenthesis-api:rc
+          load: true
+          push: false
+          cache-from: type=gha,scope=playwright-release
+          cache-to: type=gha,mode=max,scope=playwright-release
+
+      - name: Start the release candidate
+        run: ./scripts/start-release-candidate.sh parenthesis-api:rc
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      # No dependency install scripts (issue #65); Playwright's browser is installed below by its own CLI.
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Find the Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the browser
+        id: browser-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-mobile-v1-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium and WebKit
+        if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: npm run browser:install
+
+      - name: Install browser system libraries
+        if: steps.browser-cache.outputs.cache-hit == 'true'
+        run: npm run browser:deps
+
+      - name: Run the release gate (every milestone)
+        run: |
+          echo "E2E_RUN_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          npm test
+
+      # Totals, duration, per-milestone and regression results. Also fails if a milestone lost its tests.
+      - name: Summarize
+        if: ${{ !cancelled() }}
+        run: node scripts/summarize.mjs
+
+      - name: API logs
+        if: failure()
+        working-directory: .
+        run: docker logs api > api.log 2>&1 || true
+
+      - name: Upload the HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/test-results/
+          retention-days: 14
+
+      - name: Upload failure screenshots, traces and API logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-failures
+          path: |
+            tests/e2e/test-results/
+            api.log
+          retention-days: 14
+
+      # Read by the Discord job, which runs no PR code.
+      - name: Upload the summary
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-summary
+          path: tests/e2e/results/summary.json
+          retention-days: 14
+
+  gate:
+    name: Release E2E gate
+    needs: e2e
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the Playwright result
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+          FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          case "$HEAD_REF" in
+            release/*) ;;
+            *) echo "Not a release PR ($HEAD_REF): Playwright doesn't run, nothing to check."; exit 0 ;;
+          esac
+          if [ "$FROM_FORK" = "true" ]; then
+            echo "::error title=Release E2E gate::Release PRs must come from a release/* branch in this repository, not a fork."
+            exit 1
+          fi
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "::error title=Release E2E gate::Playwright runs when the release PR is ready for review. Mark it ready to run the gate."
+            exit 1
+          fi
+          if [ "$E2E_RESULT" != "success" ]; then
+            echo "::error title=Release E2E gate::Playwright result: $E2E_RESULT. The release can't merge until every milestone's tests pass."
+            exit 1
+          fi
+          echo "Playwright passed for $HEAD_REF."
+
+  notify:
+    name: Discord release notification
+    needs: [e2e, gate]
+    if: >-
+      always() &&
+      startsWith(github.head_ref, 'release/') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (needs.e2e.result == 'success' || needs.e2e.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Download the summary
+        uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: playwright-summary
+
+      - name: Post the result
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::warning title=Discord::The DISCORD_WEBHOOK_URL secret isn't set, so no notification was sent."
+            exit 0
+          fi
+          if [ -f summary.json ] && [ "$(jq -r '.ran' summary.json)" = "true" ]; then
+            details=$(jq -r '
+              "\(.total) tests in \(.durationSeconds)s: \(.passed) passed, \(.failed) failed, \(.flaky) flaky, \(.skipped) skipped\n" +
+              ([.milestones[] | "• \(.tag | ltrimstr("@") | ascii_upcase): \(.passed)/\(.total)" + (if .failed > 0 then " (\(.failed) failed)" else "" end)] | join("\n")) +
+              "\n• Regression: \(.regression.passed)/\(.regression.total)"' summary.json)
+          else
+            details="The suite didn't produce results. See the run log."
+          fi
+          if [ "$E2E_RESULT" = "success" ]; then
+            headline="✅ Playwright release gate passed"
+          else
+            headline="❌ Playwright release gate failed: the release can't merge"
+          fi
+          # Branch name, PR number and test counts only. Mentions are disabled so a message can never ping anyone.
+          jq -n --arg content "$(printf '%s\n%s → develop (PR #%s)\n%s\nPR: %s\nReport: %s' "$headline" "$HEAD_REF" "$PR_NUMBER" "$details" "$PR_URL" "$RUN_URL")" \
+            '{content: $content, allowed_mentions: {parse: []}}' > payload.json
+          if curl -fsS -X POST -H "Content-Type: application/json" --data @payload.json "$DISCORD_WEBHOOK_URL" > /dev/null; then
+            echo "Discord notified."
+          else
+            echo "::warning title=Discord::Couldn't post to Discord. The gate result above still stands."
+          fi

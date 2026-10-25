@@ -1,11 +1,11 @@
 name: CI
 
-# Every PR is checked. main and develop only change through PRs (protected branches; see CONTRIBUTING.md), and are
-# re-checked after each merge.
+# Every PR is checked. main, develop and release/x.y.z only change through PRs (protected branches; see
+# docs/development-workflow.md), and are re-checked after each merge.
 on:
   pull_request:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "release/**"]
 
 permissions:
   contents: read
@@ -20,22 +20,41 @@ env:
   CI: "true"
 
 jobs:
-  # main is what goes to the site: it only accepts PRs from develop (a release) or a hotfix/* branch. GitHub can't
-  # restrict a PR's source branch itself, so this required check does.
-  pr-source:
-    name: PR source (main accepts develop or hotfix/*)
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+  # The PR source check (which branches may merge into main, develop and release/*) is in pr-branch-policy.yml.
+
+  release-security-tests:
+    name: Production security verification tests
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     steps:
-      - name: Check the source branch
-        env:
-          HEAD_REF: ${{ github.head_ref }}
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Verify release and security policy regressions (no network or secrets)
         run: |
-          case "$HEAD_REF" in
-            develop|hotfix/*) echo "OK: $HEAD_REF -> main" ;;
-            *) echo "::error::PRs into main must come from develop or a hotfix/* branch (this one is from $HEAD_REF)."; exit 1 ;;
-          esac
+          node --test .github/scripts/production-security.test.mjs .github/scripts/sonar-release-gate.test.mjs
+          bash .github/scripts/production-plan.test.sh
+
+  e2e-tooling:
+    name: E2E tooling (typecheck and report policy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: tests/e2e
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: node --test scripts/summary-policy.test.mjs
+      # Discovery only; browser journeys retain release/* -> develop execution policy.
+      - run: npm test -- --list
 
   backend:
     name: Backend (build, format, tests)
@@ -78,14 +97,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: src/frontend/.nvmrc
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
 
+      # No dependency install scripts (issue #65); lint, tests and the build don't need them.
       - name: Install
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Lint (TypeScript + template accessibility rules)
         run: npm run lint
@@ -94,7 +114,7 @@ jobs:
         run: npm test
 
       - name: Build (production)
-        run: npx ng build
+        run: npm run build # The Angular CLI pinned in the lockfile, not an on-demand npx install.
 
   docker:
     name: API image

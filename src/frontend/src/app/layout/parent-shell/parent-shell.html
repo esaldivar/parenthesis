@@ -5,8 +5,9 @@
     <app-icon name="settings" [size]="20" />
     <span>Settings</span>
   </a>
+  <!-- On a registered device, signing out leads to "Who's using Parenthesis?". -->
   <button mat-menu-item type="button" (click)="signOut()">
-    <span>Sign out</span>
+    <span>{{ auth.device() ? 'Switch profile' : 'Sign out' }}</span>
   </button>
 </mat-menu>
 
@@ -71,9 +72,10 @@
           <span class="badge badge--bell" aria-hidden="true">{{ count }}</span>
         }
       </button>
-      <button class="account" type="button" [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
+      <button class="account" type="button" [matMenuTriggerFor]="accountMenu">
         <app-avatar [name]="firstName()" kind="parent" [size]="36" />
         <span class="account__name">{{ firstName() }}</span>
+        <span class="visually-hidden">, account menu</span>
         <app-icon name="chevron-down" [size]="20" />
       </button>
     </div>
@@ -101,3 +103,6 @@
     </ul>
   </nav>
 </div>
+
+<!-- Confirmations (#226): bottom right on desktop, above the bottom navigation on phones. -->
+<app-toast-host />

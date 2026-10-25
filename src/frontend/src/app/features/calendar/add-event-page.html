@@ -1,0 +1,338 @@
+<p class="back"><a routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">← Calendar</a></p>
+<h1>Add to calendar</h1>
+
+@if (loadError(); as message) {
+  <div class="alert" role="alert">{{ message }}</div>
+}
+
+<section aria-labelledby="kind-heading">
+  <h2 id="kind-heading" class="step">What are you creating?</h2>
+  <div class="types kinds" role="group" aria-labelledby="kind-heading">
+    @for (option of kinds; track option.id) {
+      <button type="button" class="type kind" [attr.aria-pressed]="creating() === option.id" (click)="creating.set(option.id)">
+        <span class="type__icon"><app-icon [name]="option.icon" [size]="24" /></span>
+        <span class="type__text">
+          <span class="kind__label">{{ option.label }}</span>
+          <span class="type__desc">{{ option.description }}</span>
+        </span>
+      </button>
+    }
+  </div>
+</section>
+
+@if (creating() === 'reminder') {
+  <app-reminder-form [date]="form.controls.startDate.value" [time]="slotTime()" />
+} @else if (creating() === 'task') {
+  <app-task-form [date]="form.controls.startDate.value" />
+} @else {
+  <section aria-labelledby="type-heading">
+    <h2 id="type-heading" class="step">What kind of event?</h2>
+    <div class="types" role="group" aria-labelledby="type-heading">
+      @for (option of types; track option.id) {
+        <button type="button" class="type" [attr.aria-pressed]="type() === option.id" (click)="choose(option.id)">
+          <span class="type__icon"><app-icon [name]="option.icon" [size]="24" /></span>
+          <span class="type__text">
+            <span class="type__label">{{ option.label }}</span>
+            <span class="type__desc">{{ option.description }}</span>
+          </span>
+        </button>
+      }
+    </div>
+  </section>
+
+  @if (type(); as current) {
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="details-heading">
+      <h2 id="details-heading" class="step">Details</h2>
+
+      @if (approvalNote(); as note) {
+        <p class="note">{{ note }}</p>
+      }
+      @if (error(); as message) {
+        <div class="alert" role="alert">{{ message }}</div>
+      }
+
+      @if (current !== 'unavailable') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Title{{ current === 'parenting' ? ' (optional)' : '' }}</mat-label>
+          <input matInput formControlName="title" maxlength="120" [required]="current !== 'parenting'" />
+          @if (current === 'parenting') {
+            <mat-hint>Leave blank for “Time with …”.</mat-hint>
+          }
+          @if (fieldError('title'); as e) {
+            <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+          }
+        </mat-form-field>
+      }
+
+      @if (current === 'activity') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category">
+            @for (c of categories; track c.id) {
+              <mat-option [value]="c.id">{{ c.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      <!-- Parenting time is always yours (owner decision, October 23, 2026; #246): no choice of parent. -->
+      @if (current === 'parenting' && fieldError('caregiverMembershipId'); as e) {
+        <p class="field-error" role="alert">{{ e }}</p>
+      }
+
+      <fieldset class="when">
+        <legend>When</legend>
+        <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+        <!-- Start and End as separate fields, each opening its own calendar (#249). Only past days are greyed
+             out; an invalid date turns red, with its reason for screen readers, and blocks sending (#248). -->
+        <div class="when__row dates">
+          <app-date-field
+            label="Start date"
+            name="startDate"
+            inputId="add-start-date"
+            [control]="form.controls.startDate"
+            [dateFilter]="dayFilter"
+            [issue]="dateCheck.issues().start"
+          />
+          <app-date-field
+            label="End date"
+            name="endDate"
+            inputId="add-end-date"
+            [control]="form.controls.endDate"
+            [startAt]="form.controls.endDate.value || form.controls.startDate.value || null"
+            [dateFilter]="dayFilter"
+            [issue]="dateCheck.issues().end"
+          />
+        </div>
+        @if (!allDay()) {
+          <div class="when__row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Start time</mat-label>
+              <input matInput type="time" formControlName="startTime" required />
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>End time</mat-label>
+              <input
+                matInput
+                type="time"
+                formControlName="endTime"
+                required
+                [attr.aria-invalid]="dateCheck.issues().end === endBeforeStart"
+                [class.date-invalid]="dateCheck.issues().end === endBeforeStart"
+              />
+            </mat-form-field>
+          </div>
+        }
+        @if (fieldError('when'); as e) {
+          <p class="field-error" role="alert">{{ e }}</p>
+        }
+      </fieldset>
+
+      @if (canRepeat()) {
+        <fieldset class="when repeat">
+          <legend>Repeat</legend>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>How often</mat-label>
+            <mat-select formControlName="repeat" (selectionChange)="chooseRepeat()">
+              <mat-option value="none">Does not repeat</mat-option>
+              <mat-option value="daily">Every day</mat-option>
+              <mat-option value="weekly">{{ weeklyLabel() }}</mat-option>
+              <mat-option value="monthly">{{ monthlyLabel() }}</mat-option>
+              <mat-option value="custom">Custom…</mat-option>
+            </mat-select>
+          </mat-form-field>
+          @if (repeats()) {
+            @if (custom()) {
+              <!-- Custom (#238), as in Google Calendar: every [number] [day/week/month]. Native lists, so phones show
+                   their own scrolling picker. -->
+              <div class="when__row custom" role="group" aria-label="Custom repeat">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Every</mat-label>
+                  <select matNativeControl formControlName="every">
+                    @for (n of intervals(); track n) {
+                      <option [ngValue]="n">{{ n }}</option>
+                    }
+                  </select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Unit</mat-label>
+                  <select matNativeControl formControlName="unit" (change)="chooseUnit()">
+                    <option value="Daily">{{ value().every === 1 ? 'day' : 'days' }}</option>
+                    <option value="Weekly">{{ value().every === 1 ? 'week' : 'weeks' }}</option>
+                    <option value="Monthly">{{ value().every === 1 ? 'month' : 'months' }}</option>
+                  </select>
+                </mat-form-field>
+              </div>
+              @if (fieldError('repeatInterval'); as e) {
+                <p class="field-error" role="alert">{{ e }}</p>
+              }
+              @if (unit() === 'Weekly') {
+                <div class="weekdays" role="group" aria-label="Repeat on">
+                  @for (day of weekdays; track day.id) {
+                    <label class="weekday">
+                      <input
+                        type="checkbox"
+                        [checked]="repeatDays().includes(day.id)"
+                        [attr.aria-label]="day.id"
+                        (change)="toggleDay(day.id, $any($event.target).checked)"
+                      />
+                      <span aria-hidden="true">{{ day.short }}</span>
+                    </label>
+                  }
+                </div>
+              }
+            }
+            <div class="when__row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Ends</mat-label>
+                <mat-select formControlName="ends">
+                  <mat-option value="date">On a date</mat-option>
+                  <mat-option value="count">After a number of times</mat-option>
+                </mat-select>
+              </mat-form-field>
+              @if (endsOnDate()) {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Last day</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="untilPicker"
+                    [min]="value().startDate || today()"
+                    [max]="repeatUntilMax()"
+                    formControlName="repeatUntil"
+                    required
+                  />
+                  <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="Choose the last day" />
+                  <mat-datepicker #untilPicker [calendarHeaderComponent]="calendarHeader" />
+                  @if (fieldError('repeatUntil'); as e) {
+                    <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+                  } @else {
+                    <mat-hint class="visually-hidden">Date format: MM/DD/YYYY or YYYY-MM-DD.</mat-hint>
+                  }
+                </mat-form-field>
+              } @else {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Times in all</mat-label>
+                  <input matInput type="number" min="2" max="366" formControlName="repeatCount" required />
+                  @if (fieldError('repeatCount'); as e) {
+                    <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+                  }
+                </mat-form-field>
+              }
+            </div>
+            @if (fieldError('repeat'); as e) {
+              <p class="field-error" role="alert">{{ e }}</p>
+            }
+            @if (preview().total > 0) {
+              <p class="preview" aria-live="polite">
+                <span class="preview__count">{{ preview().total }} {{ preview().total === 1 ? 'date' : 'dates' }}:</span>
+                {{ preview().shown.join(' · ') }}
+                @if (preview().more > 0) {
+                  <span> · +{{ preview().more }} more</span>
+                }
+              </p>
+            }
+            <p class="legend-hint">
+              Each date is one day, so the end date is the start date. Choose the days, how often and when it ends here.
+              A repeat ends within a year. Each date is its own event, so you can change or cancel one later.
+              @if (current === 'parenting') {
+                {{ coParent() ?? 'Your co-parent' }} approves or declines every date at once.
+              }
+            </p>
+          }
+        </fieldset>
+      }
+
+      @if (current !== 'unavailable' && activeChildren().length > 0) {
+        <fieldset class="kids">
+          <legend>
+            Children
+            @if (current === 'family') {
+              <span class="legend-hint">(optional: both parents always attend)</span>
+            } @else if (current === 'activity') {
+              <span class="legend-hint">(optional)</span>
+            }
+          </legend>
+          <label class="kid">
+            <input type="checkbox" [checked]="allChildren()" (change)="toggleAll($any($event.target).checked)" />
+            All children
+          </label>
+          @for (child of activeChildren(); track child.id) {
+            <label class="kid">
+              <input
+                type="checkbox"
+                [checked]="selectedChildren().includes(child.id)"
+                (change)="toggleChild(child.id, $any($event.target).checked)"
+              />
+              {{ child.firstName }}
+            </label>
+          }
+          @if (fieldError('childIds'); as e) {
+            <p class="field-error" role="alert">{{ e }}</p>
+          }
+        </fieldset>
+      } @else if (current === 'parenting') {
+        <!-- Parenting time needs a child, so say why there's none to choose instead of failing quietly on save. -->
+        <fieldset class="kids">
+          <legend>Children</legend>
+          <p class="note">
+            @if (pendingChildren()) {
+              Your children are waiting for {{ coParent() ?? 'your co-parent' }}’s approval. Parenting time can include them
+              once they’re approved.
+            } @else {
+              Parenting time is for your children. Add them first in <a routerLink="/settings">Settings</a>.
+            }
+          </p>
+          @if (fieldError('childIds'); as e) {
+            <p class="field-error" role="alert">{{ e }}</p>
+          }
+        </fieldset>
+      }
+
+      @if (current !== 'unavailable') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Location (optional)</mat-label>
+          <input matInput formControlName="location" maxlength="200" />
+          @if (fieldError('location'); as e) {
+            <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+          }
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>{{ current === 'unavailable' ? 'Private note (optional)' : 'Notes (optional)' }}</mat-label>
+        <textarea matInput formControlName="notes" rows="3" maxlength="1000"></textarea>
+        @if (current === 'unavailable') {
+          <mat-hint>Only you can see this. Your co-parent sees “Unavailable”.</mat-hint>
+        }
+        @if (fieldError('notes'); as e) {
+          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+        }
+      </mat-form-field>
+
+      @if (availabilityWarning()) {
+        <section class="alert" aria-labelledby="availability-heading">
+          <h2 id="availability-heading" tabindex="-1">{{ coParent() }} marked that time as unavailable</h2>
+          <p>They may still approve your request. You can send it anyway, or choose different dates.</p>
+          <div class="actions">
+            <button mat-flat-button type="button" [disabled]="busy()" (click)="sendAnyway()">Send anyway</button>
+            <button mat-stroked-button type="button" [disabled]="busy()" (click)="chooseDifferentDates()">Choose different dates</button>
+          </div>
+        </section>
+      }
+      <div class="actions">
+        @if (!availabilityWarning()) {
+        <button mat-flat-button type="submit" [disabled]="busy()">
+          @if (busy()) {
+            {{ checkingAvailability() ? 'Checking…' : 'Saving…' }}
+          } @else if (current === 'family' || (current === 'parenting' && coParent())) {
+            Send for approval
+          } @else {
+            Add to calendar
+          }
+        </button>
+        }
+        <a mat-button routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">Cancel</a>
+      </div>
+    </form>
+  }
+}

@@ -1,0 +1,127 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="reminder-heading">
+  <h2 id="reminder-heading" class="step">{{ editing() ? 'Reminder' : 'Reminder details' }}</h2>
+  <p class="note">
+    @if (editing() && reminder()!.repeat !== 'None') {
+      Changes apply to every repeat. It’s updated for both of you at once, with no approval.
+    } @else {
+      A shared note for both of you. It goes on the calendar at once, with no approval.
+    }
+  </p>
+  @if (error(); as message) {
+    <div class="alert" role="alert">{{ message }}</div>
+  }
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Title</mat-label>
+    <input matInput formControlName="title" [maxlength]="titleMax" required />
+    @if (fieldError('title'); as e) {
+      <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+    } @else {
+      <mat-hint>Short enough for the calendar, e.g. “Spirit Day: wear blue”.</mat-hint>
+    }
+  </mat-form-field>
+
+  <fieldset class="when">
+    <legend>When</legend>
+    <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+    <div class="when__row">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Date</mat-label>
+        <input matInput [matDatepicker]="datePicker" [matDatepickerFilter]="dayFilter()" formControlName="date" required />
+        <mat-datepicker-toggle matIconSuffix [for]="datePicker" aria-label="Choose the date" />
+        <mat-datepicker #datePicker [calendarHeaderComponent]="calendarHeader" />
+        @if (fieldError('startsAt'); as e) {
+          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+        } @else {
+          <mat-hint class="visually-hidden">Date format: MM/DD/YYYY or YYYY-MM-DD.</mat-hint>
+        }
+      </mat-form-field>
+      @if (!allDay()) {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Time</mat-label>
+          <input matInput type="time" formControlName="time" required />
+          @if (fieldError('time'); as e) {
+            <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+          }
+        </mat-form-field>
+      }
+    </div>
+  </fieldset>
+
+  <fieldset class="when">
+    <legend>Repeat</legend>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Repeats</mat-label>
+      <mat-select formControlName="repeat">
+        @for (r of repeats; track r.id) {
+          <mat-option [value]="r.id">{{ r.label }}</mat-option>
+        }
+      </mat-select>
+      @if (fieldError('repeat'); as e) {
+        <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+      }
+    </mat-form-field>
+    @if (repeating()) {
+      <div class="when__row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Ends</mat-label>
+          <mat-select formControlName="ends">
+            <mat-option value="count">After a number of times</mat-option>
+            <mat-option value="date">On a date</mat-option>
+          </mat-select>
+        </mat-form-field>
+        @if (endsOnDate()) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Last day</mat-label>
+            <input matInput [matDatepicker]="untilPicker" [min]="value().date || today()" [max]="untilMax()" formControlName="repeatUntil" required />
+            <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="Choose the last day" />
+            <mat-datepicker #untilPicker [calendarHeaderComponent]="calendarHeader" />
+            @if (fieldError('repeatUntil'); as e) {
+              <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+            } @else {
+              <mat-hint class="visually-hidden">Date format: MM/DD/YYYY or YYYY-MM-DD.</mat-hint>
+            }
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Times in all</mat-label>
+            <input matInput type="number" min="2" max="366" formControlName="repeatCount" required />
+            @if (fieldError('repeatCount'); as e) {
+              <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+            }
+          </mat-form-field>
+        }
+      </div>
+    }
+  </fieldset>
+
+  @if (activeChildren().length > 0) {
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>About (optional)</mat-label>
+      <mat-select formControlName="childId">
+        <mat-option value="">No one in particular</mat-option>
+        @for (child of activeChildren(); track child.id) {
+          <mat-option [value]="child.id">{{ child.firstName }}</mat-option>
+        }
+      </mat-select>
+      @if (fieldError('childId'); as e) {
+        <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+      }
+    </mat-form-field>
+  }
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Details (optional)</mat-label>
+    <textarea matInput formControlName="details" rows="3" [maxlength]="detailsMax"></textarea>
+    @if (fieldError('details'); as e) {
+      <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+    }
+  </mat-form-field>
+
+  <div class="actions">
+    <button mat-flat-button type="submit" [disabled]="busy()">
+      {{ busy() ? 'Saving…' : editing() ? 'Save changes' : 'Add to calendar' }}
+    </button>
+    <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">Cancel</a>
+  </div>
+</form>
