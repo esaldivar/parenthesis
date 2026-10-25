@@ -1,7 +1,11 @@
+import { Location } from '@angular/common';
+import { provideLocationMocks } from '@angular/common/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { ComingSoonPage } from '../../shared/coming-soon/coming-soon-page';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
@@ -274,6 +278,58 @@ describe('DashboardPage (approved design)', () => {
       const { el } = await render();
 
       expect(await axeViolations(el)).toEqual([]);
+    });
+  });
+
+  describe('week navigation history (#208)', () => {
+    async function routedHome(url = '/') {
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([
+            { path: '', component: DashboardPage },
+            { path: 'settings', component: ComingSoonPage, data: { heading: 'Settings' } },
+          ], withComponentInputBinding()),
+          provideLocationMocks(),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          fakeAuth(),
+          { provide: NOW, useValue: () => WEDNESDAY_MORNING },
+        ],
+      });
+      TestBed.overrideProvider(LiveDashboardDataSource, {
+        useValue: { load: () => Promise.resolve(EMPTY_WEEK) },
+      });
+      TestBed.inject(Router).setUpLocationChangeListener();
+      const harness = await RouterTestingHarness.create(url);
+      await settle(harness.fixture);
+      return harness;
+    }
+
+    it('keeps the selected week after visiting Settings and going Back', async () => {
+      const harness = await routedHome('/?sample=1');
+      button(harness.routeNativeElement!, 'Next week').click();
+      await settle(harness.fixture);
+      expect(TestBed.inject(Router).url).toBe('/?sample=1&week=2026-10-18');
+
+      await harness.navigateByUrl('/settings');
+      TestBed.inject(Location).back();
+      await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/?sample=1&week=2026-10-18'));
+      await settle(harness.fixture);
+      expect(text(harness.routeNativeElement!.querySelector('#week-heading'))).toBe('Week of October 18 – 24, 2026');
+    });
+
+    it('responds to a different linked week without keeping an earlier local selection', async () => {
+      const harness = await routedHome('/?week=2026-10-21');
+      button(harness.routeNativeElement!, 'Next week').click();
+      await settle(harness.fixture);
+      await harness.navigateByUrl('/?week=2026-11-02');
+      await settle(harness.fixture);
+      expect(text(harness.routeNativeElement!.querySelector('#week-heading'))).toBe('Week of November 1 – 7, 2026');
+
+      button(harness.routeNativeElement!, 'Today').click();
+      await settle(harness.fixture);
+      expect(TestBed.inject(Router).url).toBe('/?week=2026-10-11');
+      expect(text(harness.routeNativeElement!.querySelector('#week-heading'))).toBe('This week, October 11 – 17, 2026');
     });
   });
 

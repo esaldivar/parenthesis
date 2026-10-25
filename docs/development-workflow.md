@@ -27,6 +27,8 @@ hotfix/…                  from main, for urgent production bugs
 - **Work branches** (`feature/`, `feat/`, `bugfix/`, `fix/`, `chore/`, `docs/`, `design/`) start from the active
   release branch and PR back into it. Never merge an incomplete feature into `develop` or `main`, and never merge a
   PR automatically.
+- **Dependabot updates** from same-repository `dependabot/*` branches may PR into a valid active `release/x.y.z`.
+  They retain normal review and required checks; they cannot target `main` or `develop` directly, or originate from a fork.
 - **Hotfixes** for urgent production bugs: branch from `main`, make the smallest safe fix, test, open a PR into
   `main`, get the owner's approval, deploy (approval again in Actions), verify production, then sync into `develop`
   (`chore/sync-main`) and the active release branch. Hotfixes may ship outside a release window, never without
