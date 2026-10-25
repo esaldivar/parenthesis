@@ -379,6 +379,21 @@ describe('the calendar page', () => {
     expect(text(document.querySelector('[role="dialog"] h2'))).toBe('Second event');
   });
 
+  it('gives repeated single-day Month bars distinct full occurrence dates in their accessible names', async () => {
+    await open('/calendar?date=2026-11-07&view=month', [7, 14].map((day) => event({
+      id: `pt-${day}`, title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex',
+      allDay: true, status: 'PendingApproval',
+      startsAt: `2026-11-${String(day).padStart(2, '0')}T06:00:00Z`,
+      endsAt: `2026-11-${String(day + 1).padStart(2, '0')}T06:00:00Z`,
+    })));
+    const labels = [...main().querySelectorAll('app-calendar-month button.bar')].map((bar) => bar.getAttribute('aria-label'));
+    expect(labels).toHaveLength(2);
+    expect(labels[0]).toContain('Saturday, November 7, 2026');
+    expect(labels[1]).toContain('Saturday, November 14, 2026');
+    expect(labels.every((label) => label?.includes('Pending approval'))).toBe(true);
+    expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+  });
+
   it('opens details, and cancelling parenting time asks the co-parent first', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [
       event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex', allDay: true, startsAt: '2026-10-20T05:00:00Z', endsAt: '2026-10-21T05:00:00Z' }),

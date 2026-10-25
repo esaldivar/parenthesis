@@ -91,6 +91,24 @@ describe('Month view bars (#250)', () => {
     expect(hidden.label).toBe('1 more on Wednesday, October 21, 1 pending approval. Open this week.');
   });
 
+  it('distinguishes identical single-day occurrences by their full date', () => {
+    const occurrence = (date: string) => item('pt', date, date, { title: 'Time with Alex', status: 'pending' });
+    const first = layOutWeek(weekOf('2026-11-01'), [occurrence('2026-11-07')]).bars[0].label;
+    const next = layOutWeek(weekOf('2026-11-08'), [occurrence('2026-11-14')]).bars[0].label;
+    expect(first).toContain('Saturday, November 7, 2026');
+    expect(next).toContain('Saturday, November 14, 2026');
+    expect(first).toContain('Pending approval');
+    expect(first).not.toBe(next);
+  });
+
+  it('keeps both full dates on every continuation, including a year boundary', () => {
+    const crossing = item('trip', '2026-12-31', '2027-01-04');
+    for (const first of ['2026-12-27', '2027-01-03']) {
+      const label = layOutWeek(weekOf(first), [crossing]).bars[0].label;
+      expect(label).toContain('Thursday, December 31, 2026 through Monday, January 4, 2027');
+    }
+  });
+
   it('labels status in words for screen readers and on the bar', () => {
     const [proposed] = layOutWeek(week, [item('p', '2026-10-20', '2026-10-20', { status: 'pending', title: 'Weekend with Sam' })]).bars;
     expect(proposed.status).toBe('Proposed');
