@@ -630,3 +630,7 @@ that points back here.
 ### #218 — Withdrawal confirmation focus
 - Implemented: opening Withdraw focuses Keep it with the confirmation explanation; Keep it restores the withdrawal trigger. Repeated transitions, no mutation on cancellation and axe are covered.
 - Still required: owner keyboard retest after deployment and the remaining mobile/screen-reader/approval matrix.
+
+### #260 — Caregiver authorization
+- Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
+- Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
