@@ -170,6 +170,7 @@ export class TaskForm implements OnInit {
       this.conflict.set(false);
       this.error.set(null);
       void this.announcer.announce('Loaded the latest version of this task.');
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLInputElement>('[formcontrolname="title"]')?.focus(), { injector: this.injector });
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
     }

@@ -252,6 +252,45 @@ describe('tasks on the calendar', () => {
     expect(dialog().querySelector('.confetti')).toBeNull();
   });
 
+  it.each(['done', 'undo', 'checklist', 'delete'])('offers focused session recovery after a token refusal on %s without replaying it', async (action) => {
+    const shown = action === 'checklist' ? withChecklist() : action === 'undo'
+      ? task({ completedBy: 'm-alex', completedAt: '2026-10-21T14:00:00Z' }) : task();
+    await open([shown]);
+    await openDetails();
+    if (action === 'checklist') {
+      checkbox('Glue sticks').click();
+    } else if (action === 'delete') {
+      button('Delete task…', dialog()).click();
+      await settle();
+      button('Yes, delete', dialog()).click();
+    } else {
+      button(action === 'done' ? 'Mark done' : 'Undo done', dialog()).click();
+    }
+    (await vi.waitFor(() => http.expectOne((r) => r.method !== 'GET'))).flush(
+      { title: 'Invalid or missing antiforgery token.' }, { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+    const error = dialog().querySelector<HTMLElement>('[role="alert"]')!;
+    expect(text(error)).toContain('Reload the calendar');
+    expect(text(error)).toContain('This action wasn’t saved.');
+    await vi.waitFor(() => expect(document.activeElement).toBe(error));
+    const reload = button('Reload calendar', dialog());
+    expect(reload.tagName).toBe('A');
+    expect(reload.getAttribute('href')).toBe('/calendar?date=2026-10-20');
+    expect(dialog().querySelector('.confetti')).toBeNull();
+    expect([...dialog().querySelectorAll('button')].some((b) => /Mark done|Undo done|Delete task|Yes, delete/.test(text(b)))).toBe(false);
+    if (action === 'checklist') {
+      const box = checkbox('Glue sticks');
+      expect(box.checked).toBe(false);
+      expect(box.getAttribute('aria-disabled')).toBe('true');
+      box.click();
+      await settle();
+      expect(box.checked).toBe(false);
+    }
+    expect(http.match(() => true)).toHaveLength(0);
+    expect(await axeViolations(document.body)).toEqual([]);
+  });
+
   it('when the other parent changed it first, refreshes and says so plainly', async () => {
     await open([withChecklist()]);
     await openDetails();
@@ -306,6 +345,7 @@ describe('tasks on the calendar', () => {
 
     expect(document.querySelector('app-task-details')).toBeNull();
     expect(toastText()).toContain('“Science fair poster” was deleted.');
+    await vi.waitFor(() => expect(document.activeElement).toBe(document.querySelector('app-calendar-page h1')));
   });
 
   it('focuses safe task confirmation and restores its initiating action on cancel (#176)', async () => {

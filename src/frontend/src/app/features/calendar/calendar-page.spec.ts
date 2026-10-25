@@ -571,9 +571,11 @@ describe('the calendar page', () => {
     expect(text(dialog)).not.toMatch(/Where|Mark done|Assign|Attach/);
   });
 
-  it('deletes a reminder for both parents after confirming, with no approval', async () => {
-    const { harness } = await open('/calendar?date=2026-10-20', [], [reminder({ repeat: 'Daily', repeatCount: 2 })]);
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+  it.each(['week', 'month', 'list'])('deletes a reminder and retains calendar focus after reload in %s', async (view) => {
+    const { harness } = await open(`/calendar?date=2026-10-20&view=${view}`, [], [reminder({ repeat: 'Daily', repeatCount: 2 })]);
+    const trigger = main().querySelector<HTMLElement>('button.item')!;
+    trigger.focus();
+    trigger.click();
     await settle(harness);
     const dialog = document.querySelector('[role="dialog"]')!;
     http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
@@ -588,6 +590,8 @@ describe('the calendar page', () => {
 
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(toastText()).toContain('“Spirit Day” was deleted.');
+    await vi.waitFor(() => expect(document.activeElement).toBe(main().querySelector('h1')));
+    expect(trigger.isConnected).toBe(false);
     expect(http.match((r) => r.url.includes('/approvals'))).toHaveLength(0);
   });
 
