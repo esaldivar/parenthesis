@@ -630,3 +630,7 @@ that points back here.
 ### #260 — Caregiver authorization
 - Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
 - Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
+
+### #177 — Task conflict reload focus
+- Implemented: loading the latest task after a version conflict focuses Title after the conflict controls disappear, alongside the existing announcement. Regression verifies current content/checklist/version, focus, and no automatic overwrite/resubmit.
+- Still required: owner stale-tab keyboard retest after deployment and remaining phone/theme/actual-screen-reader acceptance.
