@@ -680,3 +680,8 @@ that points back here.
 ### #66 — Production artifact security evidence
 - Implemented: production Deploy verifies immutable image provenance/source-tree equivalence and latest exact-candidate main Sonar analysis plus Release security gate before Azure access. Hotfixes and manual released-version redeploys use the same fail-closed checks; development stays independent. Added synthetic guard regressions and agent release instructions.
 - Still required: reviewed rollout through normal releases, live main required-check/no-bypass ruleset evidence, exact-candidate Sonar/API and GHCR evidence for normal/hotfix/manual redeploy paths, and owner environment approval verification. No settings, production deployment or Sonar findings were changed; #65 is not accepted as resolved by these tests.
+
+### #279 — Visible text in accessible control names
+- Repaired the three label-content-name mismatches detected by the rendered scans: account name, pending Month “Proposed” status, and the Material picker period button. The picker wrapper retains Material's own header, styles, navigation, live description and focus, and adds its current visible period after rendering.
+- Added focused account/Month/header-navigation regressions. The repaired application image builds; frontend and browser checks are in progress. No green full profile or screen-reader acceptance claimed.
+- Still required: validate every profile/theme and picker view transition, review the wrapper's dependency on Material's period-button selector on dependency upgrades, then owner acceptance after promotion. No scan exclusion or waiver.

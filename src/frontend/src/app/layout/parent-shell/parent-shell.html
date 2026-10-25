@@ -72,7 +72,7 @@
           <span class="badge badge--bell" aria-hidden="true">{{ count }}</span>
         }
       </button>
-      <button class="account" type="button" [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
+      <button class="account" type="button" [matMenuTriggerFor]="accountMenu" [attr.aria-label]="firstName() + ', account menu'">
         <app-avatar [name]="firstName()" kind="parent" [size]="36" />
         <span class="account__name">{{ firstName() }}</span>
         <app-icon name="chevron-down" [size]="20" />
