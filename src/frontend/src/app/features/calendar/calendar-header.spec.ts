@@ -14,6 +14,16 @@ class Host {
 }
 
 describe('Calendar period label (#279)', () => {
+  beforeEach(() => {
+    const noop = () => {};
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: false, media: query, onchange: null,
+      addListener: noop, removeListener: noop, addEventListener: noop, removeEventListener: noop,
+      dispatchEvent: () => false,
+    }));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
   it('includes the visible period and Material action while navigating months and changing views', async () => {
     const fixture = TestBed.createComponent(Host);
     const settle = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
