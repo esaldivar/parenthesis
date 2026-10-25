@@ -152,3 +152,39 @@ required check in the same change.
 - The gate checks that the analysis belongs to this PR, but SonarQube's task answer doesn't name the commit. The task
   id comes from the same workflow run, whose analysis checked out the PR's merge commit, and `main` requires PRs to be
   up to date, so that merge commit is what `main` becomes.
+
+## Production deployment verification
+
+`Deploy` runs `production-security.mjs` after the existing production environment approval and before Azure login,
+reading the existing Sonar workflow through the job's `GITHUB_TOKEN` (`actions: read`). No extra Sonar credential,
+service, subscription or scan is introduced. Development skips this step and retains its existing flow.
+
+- Normal releases reuse the image tested on develop. Its OCI source repository and revision must be present; its
+  Git tree must equal the current main candidate's tree. Hotfix images must satisfy the same rule.
+- The verifier requires the latest **push to main** run of `.github/workflows/sonar.yml` for the candidate SHA.
+  Both `SonarQube Cloud` and `Release security gate` must succeed in that run's current attempt, with matching
+  SHA and repository. It waits at most 15 minutes for a pending/missing run, then fails closed. An older successful
+  run cannot override a newer failure. Pagination, identity mismatches and unavailable API data fail closed.
+- A manual production redeploy must run from main with `vX.Y.Z`. The version's Git tag must resolve to an ancestor
+  of current main, the artifact must have that released candidate's tree, and its historical main Sonar evidence
+  must pass the same verification. Older versions without retained evidence cannot be redeployed by this route.
+- On success, `TARGET` becomes the inspected **digest**, used by migrations, deployment and release image tagging.
+  The job summary links the Sonar run and records source/candidate revisions and the digest. A moved mutable tag
+  cannot replace the verified artifact between this check and those steps.
+- On failure, Azure login, migration, deployment and release tagging are skipped. Existing automatic recovery after
+  a failed deployment restores the image already running before the attempt; it does not select a new manual
+  rollback version or undo migrations. That recovery behavior is retained.
+
+If verification fails, inspect the exact main Sonar run and fix its blocking findings or evidence/configuration.
+Never substitute another SHA, remove the step, mark skipped analysis successful, or bypass approval. A release PR's
+successful analysis is not a substitute for post-merge main evidence. This intentionally prevents deployment when
+main's final analysis disagrees with the PR result. Re-run Deploy only after evidence is valid.
+
+Local verification: `node --test .github/scripts/production-security.test.mjs .github/scripts/sonar-release-gate.test.mjs`
+and `bash .github/scripts/production-plan.test.sh`. These use synthetic responses/temporary Git repositories and do
+not deploy. Real GHCR provenance, Sonar API behavior, owner environment approval and required main rules must still
+be evidenced on the reviewed rollout; local tests alone do not complete #66 or #65.
+
+API references: [workflow runs](https://docs.github.com/en/rest/actions/workflow-runs),
+[workflow jobs](https://docs.github.com/en/rest/actions/workflow-jobs),
+[Docker pull by digest](https://docs.docker.com/reference/cli/docker/image/pull/#pull-an-image-by-digest-immutable-identifier).
