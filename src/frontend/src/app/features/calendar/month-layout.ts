@@ -109,7 +109,7 @@ export function layOutWeek(
       lane,
       continuesBefore,
       continuesAfter,
-      label: `${itemSummary(item)}${item.status === 'pending' ? ', Proposed' : ''}, ${dates}${part}`,
+      label: `${barStatus(item) ? `${barStatus(item)}: ` : ''}${itemSummary(item)}, ${dates}${part}`,
       status: barStatus(item),
     });
   }
