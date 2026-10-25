@@ -301,6 +301,32 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Empty(await WeekAsync(f.Dad, f));
     }
 
+    [Theory]
+    [InlineData("ParentingTime")]
+    [InlineData("Holiday")]
+    [InlineData("Joint")]
+    public async Task Every_other_required_title_category_rejects_blank_creation(string category)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        foreach (var title in new[] { "", "   " })
+        {
+            var response = await f.Dad.PostAsync(Events(f), new
+            {
+                category,
+                title,
+                startsAt = _monday,
+                endsAt = _monday.AddDays(1),
+                childIds = new[] { f.KaiId },
+                caregiverMembershipId = category == "ParentingTime" ? (Guid?)f.DadMembershipId : null,
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.True((await JsonAsync(response)).GetProperty("errors").TryGetProperty("title", out var _));
+            Assert.Empty(await WeekAsync(f.Dad, f));
+        }
+    }
+
     [Fact]
     public async Task The_boundaries_are_accepted()
     {
@@ -330,8 +356,8 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         var before = (await JsonAsync(await f.Dad.GetAsync($"{Events(f)}/{id}"))).ToString();
         object change = problem switch
         {
-            "end-before-start" => new { startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(17) },
-            "longer-than-31-days" => new { endsAt = _monday.AddDays(32) },
+            "end-before-start" => new { startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(17), location = "Must not save", notes = "Must not save" },
+            "longer-than-31-days" => new { endsAt = _monday.AddDays(32), location = "Must not save", notes = "Must not save" },
             "empty-title" => new { title = "", location = "Field 3", notes = "Must not save" },
             "whitespace-title" => new { title = "   ", location = "Field 3", notes = "Must not save" },
             _ => new { title = new string('a', 121) },
