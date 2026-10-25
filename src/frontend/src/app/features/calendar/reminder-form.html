@@ -29,7 +29,7 @@
         <mat-label>Date</mat-label>
         <input matInput [matDatepicker]="datePicker" [matDatepickerFilter]="dayFilter()" formControlName="date" required />
         <mat-datepicker-toggle matIconSuffix [for]="datePicker" aria-label="Choose the date" />
-        <mat-datepicker #datePicker />
+        <mat-datepicker #datePicker [calendarHeaderComponent]="calendarHeader" />
         @if (fieldError('startsAt'); as e) {
           <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
         } @else {
@@ -75,7 +75,7 @@
             <mat-label>Last day</mat-label>
             <input matInput [matDatepicker]="untilPicker" [min]="value().date || today()" [max]="untilMax()" formControlName="repeatUntil" required />
             <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="Choose the last day" />
-            <mat-datepicker #untilPicker />
+            <mat-datepicker #untilPicker [calendarHeaderComponent]="calendarHeader" />
             @if (fieldError('repeatUntil'); as e) {
               <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
             } @else {

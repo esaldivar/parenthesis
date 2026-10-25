@@ -70,6 +70,7 @@ describe('Month view bars (#250)', () => {
     ];
     const { bars, more } = layOutWeek(week, items);
     expect(bars.find((b) => b.item.id === 'proposal')?.lane).toBe(0);
+    expect(bars.find((b) => b.item.id === 'proposal')?.label).toContain('Proposed');
     expect(more.every((m) => m.pending === 0)).toBe(true);
   });
 

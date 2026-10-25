@@ -23,6 +23,7 @@ import { revealFirstProblem } from './reveal-problem';
 import { dayFilter, END_BEFORE_START, rangeProblems, UNREADABLE_DATE } from './date-rules';
 import { DateCheck } from './date-check';
 import { DateField } from './date-field';
+import { CalendarHeader } from './calendar-header';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal } from './time';
 
@@ -110,6 +111,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
   styles: [FORM_STYLES],
 })
 export class AddEventPage implements OnInit {
+  protected readonly calendarHeader = CalendarHeader;
   private readonly api = inject(Api);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
