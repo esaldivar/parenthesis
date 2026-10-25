@@ -212,6 +212,102 @@ describe('Add event', () => {
     expect(card('Activity').getAttribute('aria-pressed')).toBe('false');
   });
 
+  const availability = () => vi.waitFor(() => http.expectOne((r) => r.method === 'GET' && r.url === `${F}/calendar/events`));
+  const action = (label: string) => [...page().querySelectorAll<HTMLButtonElement>('button')].find((b) => text(b) === label)!;
+  const unavailable = () => event({ category: 'Unavailable', ownerMembershipId: 'm-sam', childIds: [],
+    startsAt: '2026-10-20T14:00:00+00:00', endsAt: '2026-10-20T15:00:00+00:00', notes: 'Synthetic private note' });
+
+  async function familyDraft() {
+    const harness = await open();
+    await choose(harness, 'Family event');
+    type(harness, 'input[formcontrolname="title"]', 'School play');
+    await submit(harness);
+    return harness;
+  }
+
+  it('asks before sending over the co-parent’s unavailable time, without sharing their note', async () => {
+    const harness = await familyDraft();
+    const check = await availability();
+    expect(check.request.params.get('from')).toBe('2026-10-20T14:00:00.000Z');
+    expect(check.request.params.get('to')).toBe('2026-10-20T15:00:00.000Z');
+    check.flush([unavailable()]);
+    await settle(harness);
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    expect(text(page())).toContain('Sam marked that time as unavailable');
+    expect(text(page())).not.toContain('Synthetic private note');
+    await vi.waitFor(() => expect(document.activeElement).toBe(page().querySelector('#availability-heading')));
+    expect(await axeViolations(document.body)).toEqual([]);
+    action('Choose different dates').click();
+    await settle(harness);
+    await vi.waitFor(() => expect(document.activeElement).toBe(page().querySelector('#add-start-date')));
+    expect(page().querySelector<HTMLInputElement>('[formcontrolname="title"]')!.value).toBe('School play');
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+  });
+
+  it('sends exactly once only after Send anyway, retaining the ordinary approval flow', async () => {
+    const harness = await familyDraft();
+    (await availability()).flush([unavailable()]);
+    await settle(harness);
+    const send = action('Send anyway');
+    send.click();
+    send.click();
+    const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'));
+    expect(create.request.body).toEqual(expect.objectContaining({ category: 'Joint', title: 'School play', childIds: [] }));
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    create.flush(event({ category: 'Joint', title: 'School play', status: 'PendingApproval', warnings: ['OverlapsCoParentUnavailable'] }));
+    await settle(harness);
+    expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20');
+  });
+
+  it('invalidates the availability choice when the draft changes', async () => {
+    const harness = await familyDraft();
+    (await availability()).flush([unavailable()]);
+    await settle(harness);
+    type(harness, 'input[formcontrolname="title"]', 'New school play');
+    await settle(harness);
+    expect(action('Send anyway')).toBeUndefined();
+    await submit(harness);
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    (await availability()).flush([]);
+    await settle(harness);
+    const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'));
+    expect(create.request.body.title).toBe('New school play');
+  });
+
+  it('ignores a check for an older draft and does not silently submit the edits', async () => {
+    const harness = await familyDraft();
+    const old = await availability();
+    type(harness, 'input[formcontrolname="startTime"]', '10:00');
+    type(harness, 'input[formcontrolname="endTime"]', '11:00');
+    old.flush([unavailable()]);
+    await settle(harness);
+    expect(action('Send anyway')).toBeUndefined();
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+  });
+
+  it.each(['adjacent', 'mine', 'cancelled'])('does not ask for unavailable time that is %s', async (kind) => {
+    const harness = await familyDraft();
+    const away = unavailable();
+    (await availability()).flush([{ ...away,
+      startsAt: kind === 'adjacent' ? '2026-10-20T15:00:00+00:00' : away.startsAt,
+      endsAt: kind === 'adjacent' ? '2026-10-20T16:00:00+00:00' : away.endsAt,
+      ownerMembershipId: kind === 'mine' ? 'm-alex' : away.ownerMembershipId,
+      status: kind === 'cancelled' ? 'Cancelled' : 'Confirmed',
+    }]);
+    await settle(harness);
+    expect(action('Send anyway')).toBeUndefined();
+    expect(await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).toBeTruthy();
+  });
+
+  it('keeps the draft and sends nothing if the availability check fails', async () => {
+    const harness = await familyDraft();
+    (await availability()).flush({}, { status: 500, statusText: 'Server error' });
+    await settle(harness);
+    expect(text(page().querySelector('[role="alert"]'))).toContain('Something went wrong');
+    expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    expect(page().querySelector<HTMLInputElement>('[formcontrolname="title"]')!.value).toBe('School play');
+  });
+
   it('sends a family event for approval with both parents fixed and children optional', async () => {
     const harness = await open();
     await choose(harness, 'Family event');
@@ -220,6 +316,8 @@ describe('Add event', () => {
     expect(text(page().querySelector('button[type="submit"]'))).toBe('Send for approval');
     type(harness, 'input[formcontrolname="title"]', 'School play');
     await submit(harness);
+    (await availability()).flush([]);
+    await settle(harness);
 
     const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events`));
     expect(create.request.body).toEqual(
