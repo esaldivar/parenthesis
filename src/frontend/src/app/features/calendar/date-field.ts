@@ -4,6 +4,7 @@ import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Icon } from '../../shared/icon/icon';
+import { CalendarHeader } from './calendar-header';
 
 /**
  * One date of an event's range, as its own field (#249, owner decision October 23, 2026): a bordered field whose
@@ -17,7 +18,7 @@ import { Icon } from '../../shared/icon/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, Icon],
   template: `
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field" (click)="picker.open()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field" (click)="openFromField($event, picker)">
       <mat-label>{{ label() }}</mat-label>
       <input
         matInput
@@ -37,7 +38,7 @@ import { Icon } from '../../shared/icon/icon';
       @if (issue(); as reason) {
         <mat-hint class="visually-hidden">{{ reason }}</mat-hint>
       }
-      <mat-datepicker #picker [startAt]="startAt()" />
+      <mat-datepicker #picker [startAt]="startAt()" [calendarHeaderComponent]="calendarHeader" />
     </mat-form-field>
   `,
   styles: `
@@ -65,6 +66,7 @@ import { Icon } from '../../shared/icon/icon';
   `,
 })
 export class DateField {
+  protected readonly calendarHeader = CalendarHeader;
   readonly label = input.required<string>();
   /** The field's name, for forms and tests ("startDate"). */
   readonly name = input.required<string>();
@@ -95,4 +97,13 @@ export class DateField {
       picker.open();
     }
   }
+
+  protected openFromField(event: MouseEvent, picker: MatDatepicker<string>): void {
+    // A selection belongs to the calendar. It must not bubble into the field and reopen the closed picker.
+    if (event.composedPath().some(node => node instanceof Element && node.tagName.toLowerCase() === 'mat-calendar')) {
+      return;
+    }
+    picker.open();
+  }
+
 }

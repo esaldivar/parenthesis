@@ -47,8 +47,10 @@ describe('application shells', () => {
     it('offers one account menu, in the top bar, instead of a bare sign-out button', async () => {
       const body = await open('/');
 
-      const menus = [...body.querySelectorAll('button[aria-label="Account menu"]')];
+      const menus = [...body.querySelectorAll('button.account')];
       expect(menus).toHaveLength(1);
+      expect(menus[0].getAttribute('aria-label')).toBeNull();
+      expect(menus[0].querySelector('.visually-hidden')?.textContent).toContain('account menu');
       expect(menus[0].closest('header.topbar')).not.toBeNull();
       expect(menus[0].textContent).toContain('Alex');
       expect(body.querySelector('.sidebar')!.textContent).not.toContain('Hi, Alex');

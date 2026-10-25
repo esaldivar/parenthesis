@@ -170,3 +170,67 @@ browser run and browser-level controlled negative have **not** passed in this wo
 Playwright Chromium download returned invalid/truncated archives. Do not treat discovery or the report-policy
 negative as executed mobile product evidence. The missing journeys and real green/negative runs above keep #278
 acceptance open; this foundation PR must stay draft until that evidence is supplied on a supported isolated runner.
+
+## Rendered accessibility acceptance (#279)
+
+`support/accessibility.ts` reuses axe-core, already used by frontend component tests. Component checks in
+`src/frontend/src/testing/axe.ts` run under jsdom with contrast disabled and may exclude lingering simulated
+overlays. The end-to-end helper instead audits the whole rendered page, including open overlays, with contrast
+enabled and no exclusions. It selects WCAG 2.0 A/AA, 2.1 A/AA, 2.2 AA and best-practice tags. See
+[axe's API and tag reference](https://www.deque.com/axe/core-documentation/api-documentation/).
+
+`specs/m3-calendar/accessibility.spec.ts` reuses the isolated two-parent family fixture and all five existing
+profiles, in both themes. `a11y-states.json` lists required states. Each scan attaches rule IDs, sanitized selectors,
+manual-review results, axe version, timestamp, state, profile, viewport and tested SHA. HTML/value/failure-summary
+fields are omitted. Playwright's existing HTML/artifact uploads retain these JSON attachments. Use synthetic
+fixtures only; do not point this suite at production or an owner's mailbox.
+
+| Requirements | Automated scenarios |
+|---|---|
+| #213, #250 | Week/Month/List, keyboard details entry and return; Month occurrence date in accessible name |
+| #206, #232, #248, #249 | Add/Edit/Swap, open picker, invalid and corrected dates; independent date choices, reason association, refused-submit focus |
+| #173, #236 | Reminder/Task cards and selected state; Reminder typed-date format description |
+| #172, #176 | Reminder/Task confirmation entry, Keep it return, successful final deletion and surviving Calendar focus |
+| #226 | Active toast scan, polite live region and no focus inside toast after save |
+| Approvals/privacy | Pending/declined/other-parent unavailable fixtures; private-note sentinel absent from rendered parent page; Approvals scan |
+| #237 | Existing two-tap empty-slot browser journey remains; no replacement or additional acceptance claim |
+
+The release summary requires every listed state in both themes for every required profile, with nonempty rule
+execution, matching SHA/profile, fresh capture time and zero violations. Missing/invalid/failed scan attachments
+cannot count as green. Ordinary PR CI continues typechecking/discovery/report-policy checks only; browser
+execution stays on release PRs. No baseline or automatic waiver is added.
+
+```bash
+cd tests/e2e
+npm run typecheck
+node --test scripts/summary-policy.test.mjs
+npm test -- accessibility.spec.ts --project=chromium --workers=1
+npm test -- --grep 'controlled scanner regression' --project=chromium
+```
+
+The controlled scanner scenario deliberately renders an unlabeled input, asserts axe reports `label`, restores
+its name and asserts zero violations. This proves the scanner detects that defect in a browser, not that the
+application passes. The report-policy tests separately prove missing, malformed, stale, empty and violating
+evidence fails the gate. Targeted runs cannot satisfy the full-matrix release summary.
+
+### Human and screen-reader checks still required
+
+Review every `incomplete` rule result manually. Axe cannot prove absent/hidden intended content is reachable,
+meaningful reading order, correct or single speech announcements, usable zoom/magnification, physical touch,
+all contrast combinations or complete WCAG conformance. Keyboard focus assertions supplement scans; an ARIA
+pass does not establish actual speech. #281 must provide real VoiceOver/NVDA transcripts; iOS VoiceOver and
+Android TalkBack remain explicit manual checks. Toast focus after navigation does not prove focus preservation
+for every in-place completion/update; error recovery, continued/repeating Month date speech and retained-session
+failure paths require their focused regressions and acceptance evidence. Do not automatically accept linked issues.
+
+Local execution on October 25, 2026 against isolated application base `5269d52` reached all 54 desktop state scans
+in both themes. The controlled scanner scenario passed. All four application journeys failed on
+`label-content-name-mismatch`: account button, pending Month bar and open Material month/year picker button.
+Keyboard focus/date/deletion assertions completed successfully. This is detected product failure evidence,
+not a passing accessibility matrix. Keep the implementation draft until those findings and remaining profile
+evidence are resolved. No scanner rule, element or overlay is excluded.
+
+Follow-up product repairs are in #302. The targeted desktop light-theme journeys and controlled scanner scenario
+pass (3/3) against the repaired image. Tests navigate Material's roving active date with arrow keys before Enter;
+programmatically focusing an otherwise untabbable cell does not establish normal keyboard operation. The full
+repaired profile/theme matrix is still required; do not infer it from this targeted result.
