@@ -81,6 +81,7 @@ describe('declined requests on the calendar', () => {
 
   async function openDetails() {
     (main().querySelector('app-calendar-list button.item[data-status="declined"]') as HTMLElement).click();
+    (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/weekend`))).flush(DECLINED);
     await settle();
     const history = await vi.waitFor(() => http.expectOne((r) => r.url === `${F}/approvals` && r.params.get('view') === 'history'));
     history.flush([DECISION]);
@@ -145,6 +146,7 @@ describe('declined requests on the calendar', () => {
     await open([DECLINED, event()], 'week');
     expect(await axeViolations(document.body)).toEqual([]);
     (main().querySelector('app-calendar-week button.item[data-status="declined"]') as HTMLElement).click();
+    (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/weekend`))).flush(DECLINED);
     await settle();
     (await vi.waitFor(() => http.expectOne((r) => r.url === `${F}/approvals`))).flush([DECISION]);
     await settle();

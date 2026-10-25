@@ -247,7 +247,7 @@ export class CalendarPage {
       const item = this.state() === 'ready' ? this.items().find((i) => i.id === id) : undefined;
       if (item && id !== this.linked) {
         this.linked = id;
-        untracked(() => this.selected.set(item));
+        untracked(() => void this.open(item));
       }
     });
   }
@@ -333,12 +333,48 @@ export class CalendarPage {
     void this.router.navigate(['/calendar/new'], { queryParams: addQuery(at) });
   }
 
-  protected open(item: CalendarItem): void {
+  /** A cached block may have changed in another tab. Never show live actions until its current details are loaded. */
+  private opening = 0;
+
+  protected async open(item: CalendarItem): Promise<void> {
+    const attempt = ++this.opening;
+    const loaded = this.loadToken;
     this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    this.selected.set(item);
+    this.selected.set(null);
+    if (item.reminderId || item.taskId) {
+      this.selected.set(item);
+      return;
+    }
+    const familyId = this.family()?.id;
+    if (!familyId) return;
+    try {
+      const event = await this.api.calendarEvent(familyId, item.id);
+      if (attempt !== this.opening || loaded !== this.loadToken || familyId !== this.family()?.id) return;
+      const fresh = toItems([event], this.members(), this.children(), this.timeZone()).find((i) => i.id === item.id);
+      if (!fresh || event.status === 'Cancelled') {
+        this.unavailable(item.id);
+        return;
+      }
+      this.events.update((events) => events.map((e) => e.id === event.id ? event : e));
+      this.selected.set(fresh);
+    } catch (error) {
+      if (attempt !== this.opening || loaded !== this.loadToken || familyId !== this.family()?.id) return;
+      if ([403, 404].includes(toProblem(error).status ?? 0)) {
+        this.unavailable(item.id);
+      } else {
+        this.toasts.show('We couldn’t open that event. Try again.');
+      }
+    }
+  }
+
+  private unavailable(eventId: string): void {
+    this.events.update((events) => events.filter((e) => e.id !== eventId));
+    this.toasts.show('That event isn’t available on the calendar any more. The calendar has been refreshed.');
+    this.retry();
   }
 
   protected close(): void {
+    this.opening++;
     this.selected.set(null);
     const opener = this.opener;
     afterNextRender(() => (opener?.isConnected ? opener : this.calendarHeading().nativeElement).focus(), { injector: this.injector });

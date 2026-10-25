@@ -71,6 +71,7 @@ describe('repeating events', () => {
 
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
+  let currentEvents: CalendarEvent[];
 
   async function settle() {
     for (let i = 0; i < 3; i++) {
@@ -382,6 +383,7 @@ describe('repeating events', () => {
 
   describe('details and cancelling', () => {
     async function openCalendar(events: CalendarEvent[]) {
+      currentEvents = events;
       configure();
       harness = await RouterTestingHarness.create('/calendar?date=2026-10-20&view=list');
       http = TestBed.inject(HttpTestingController);
@@ -400,14 +402,37 @@ describe('repeating events', () => {
     it.each(anchors)('uses $name in later-occurrence details', async ({ firstStarts, days }) => {
       await openCalendar([weekend(firstStarts)]);
       (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/${currentEvents[0].id}`))).flush(currentEvents[0]);
       await settle();
       const dialog = document.querySelector('app-event-details [role="dialog"]')!;
       expect(text(dialog)).toContain(`RepeatsEvery 2 weeks on ${days}, 6 times`);
     });
 
+    it.each([true, false])('retains focus when entering/leaving cancellation (repeating: %s)', async (repeating) => {
+      await openCalendar([repeating ? swim() : event()]);
+      (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/${currentEvents[0].id}`))).flush(currentEvents[0]);
+      await settle();
+      const dialog = document.querySelector('app-event-details [role="dialog"]')!;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        button('Cancel event…', dialog).focus();
+        button('Cancel event…', dialog).click();
+        await settle();
+        const keep = button(repeating ? 'Keep them' : 'Keep it', dialog);
+        await vi.waitFor(() => expect(document.activeElement).toBe(keep));
+        expect(document.getElementById(keep.getAttribute('aria-describedby')!)?.textContent).toContain(repeating ? 'Which dates' : 'removes it');
+        expect(await axeViolations(document.body)).toEqual([]);
+        keep.click();
+        await settle();
+        await vi.waitFor(() => expect(document.activeElement).toBe(button('Cancel event…', dialog)));
+      }
+      expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+    });
+
     it('says how it repeats and asks which dates to cancel', async () => {
       await openCalendar([swim()]);
       (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/${currentEvents[0].id}`))).flush(currentEvents[0]);
       await settle();
       const dialog = document.querySelector('app-event-details [role="dialog"]')!;
 
@@ -431,6 +456,7 @@ describe('repeating events', () => {
         swim({ id: 'pt-1', category: 'ParentingTime', title: 'Time with Alex', caregiverMembershipId: 'm-alex', location: null }),
       ]);
       (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/${currentEvents[0].id}`))).flush(currentEvents[0]);
       await settle();
       const dialog = document.querySelector('app-event-details [role="dialog"]')!;
       expect(text(dialog)).toContain('Every Tue and Thu until Nov 5, 2026');
@@ -443,6 +469,7 @@ describe('repeating events', () => {
     it('keeps the single-event cancel for events that don’t repeat', async () => {
       await openCalendar([event()]);
       (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/${currentEvents[0].id}`))).flush(currentEvents[0]);
       await settle();
       const dialog = document.querySelector('app-event-details [role="dialog"]')!;
       button('Cancel event…', dialog).click();
