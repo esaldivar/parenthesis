@@ -74,7 +74,7 @@ export function monthGrid(date: PlainDate): PlainDate[] {
                 <span class="bar__cut" aria-hidden="true">‹</span>
               }
               @if (bar.status; as status) {
-                <span class="bar__status" aria-hidden="true">{{ status }}</span>
+                <span class="bar__status" aria-hidden="true">{{ status }}{{ ' ' }}</span>
               }
               <span class="bar__title" [class.bar__title--declined]="bar.item.status === 'declined'" aria-hidden="true">{{
                 bar.item.concealed ? 'Hidden: unavailable' : bar.item.title
