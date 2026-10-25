@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   Injector,
   afterNextRender,
   computed,
@@ -9,6 +10,7 @@ import {
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -100,6 +102,7 @@ export class CalendarPage {
   private readonly router = inject(Router);
   private readonly toasts = inject(Toasts);
   private readonly injector = inject(Injector);
+  private readonly calendarHeading = viewChild.required<ElementRef<HTMLHeadingElement>>('calendarHeading');
 
   /** `?view=week|month|list` */
   readonly view = input<string>();
@@ -244,7 +247,7 @@ export class CalendarPage {
       const item = this.state() === 'ready' ? this.items().find((i) => i.id === id) : undefined;
       if (item && id !== this.linked) {
         this.linked = id;
-        untracked(() => this.selected.set(item));
+        untracked(() => void this.open(item));
       }
     });
   }
@@ -330,15 +333,51 @@ export class CalendarPage {
     void this.router.navigate(['/calendar/new'], { queryParams: addQuery(at) });
   }
 
-  protected open(item: CalendarItem): void {
+  /** A cached block may have changed in another tab. Never show live actions until its current details are loaded. */
+  private opening = 0;
+
+  protected async open(item: CalendarItem): Promise<void> {
+    const attempt = ++this.opening;
+    const loaded = this.loadToken;
     this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    this.selected.set(item);
+    this.selected.set(null);
+    if (item.reminderId || item.taskId) {
+      this.selected.set(item);
+      return;
+    }
+    const familyId = this.family()?.id;
+    if (!familyId) return;
+    try {
+      const event = await this.api.calendarEvent(familyId, item.id);
+      if (attempt !== this.opening || loaded !== this.loadToken || familyId !== this.family()?.id) return;
+      const fresh = toItems([event], this.members(), this.children(), this.timeZone()).find((i) => i.id === item.id);
+      if (!fresh || event.status === 'Cancelled') {
+        this.unavailable(item.id);
+        return;
+      }
+      this.events.update((events) => events.map((e) => e.id === event.id ? event : e));
+      this.selected.set(fresh);
+    } catch (error) {
+      if (attempt !== this.opening || loaded !== this.loadToken || familyId !== this.family()?.id) return;
+      if ([403, 404].includes(toProblem(error).status ?? 0)) {
+        this.unavailable(item.id);
+      } else {
+        this.toasts.show('We couldn’t open that event. Try again.');
+      }
+    }
+  }
+
+  private unavailable(eventId: string): void {
+    this.events.update((events) => events.filter((e) => e.id !== eventId));
+    this.toasts.show('That event isn’t available on the calendar any more. The calendar has been refreshed.');
+    this.retry();
   }
 
   protected close(): void {
+    this.opening++;
     this.selected.set(null);
     const opener = this.opener;
-    afterNextRender(() => opener?.focus(), { injector: this.injector });
+    afterNextRender(() => (opener?.isConnected ? opener : this.calendarHeading().nativeElement).focus(), { injector: this.injector });
   }
 
   /** A task changed in its details (a tick, Mark done): show the new state and keep the details open. */
@@ -398,6 +437,8 @@ export class CalendarPage {
     this.toasts.show(message);
     this.selected.set(null);
     this.retry();
+    // The deleted trigger and the loading grid disappear. This heading survives both renders (#172).
+    afterNextRender(() => this.calendarHeading().nativeElement.focus(), { injector: this.injector });
   }
 
   private navigate(params: { view?: CalendarView; date?: PlainDate; child?: string | null }): void {

@@ -54,6 +54,7 @@ const request = (overrides: Partial<ChangeRequest> = {}): ChangeRequest => ({
 describe('approve or decline from an event’s details (#218)', () => {
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
+  let currentEvents: CalendarEvent[];
 
   async function settle() {
     for (let i = 0; i < 3; i++) {
@@ -63,6 +64,7 @@ describe('approve or decline from an event’s details (#218)', () => {
   }
 
   async function open(events: CalendarEvent[]) {
+    currentEvents = events;
     localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
@@ -99,6 +101,7 @@ describe('approve or decline from an event’s details (#218)', () => {
 
   async function openDetails(waiting: ChangeRequest[]) {
     (main().querySelector('app-calendar-list button.item') as HTMLElement).click();
+    (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/${currentEvents[0].id}`))).flush(currentEvents[0]);
     await settle();
     (
       await vi.waitFor(() =>
@@ -247,6 +250,24 @@ describe('approve or decline from an event’s details (#218)', () => {
     expect(buttons()).toContain('Withdraw request…');
     expect(buttons()).not.toContain('Approve');
     expect(buttons()).not.toContain('Decline…');
+  });
+
+  it('keeps keyboard focus inside withdrawal confirmation and returns it on Keep it', async () => {
+    await open([{ ...PROPOSED, ownerMembershipId: 'm-alex', caregiverMembershipId: 'm-alex' }]);
+    await openDetails([request({ canDecide: false, proposedByYou: true, proposerMembershipId: 'm-alex' })]);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      button('Withdraw request…').focus();
+      button('Withdraw request…').click();
+      await settle();
+      const keep = button('Keep it');
+      await vi.waitFor(() => expect(document.activeElement).toBe(keep));
+      expect(document.getElementById(keep.getAttribute('aria-describedby')!)?.textContent).toContain('This takes your request back.');
+      expect(await axeViolations(document.body)).toEqual([]);
+      keep.click();
+      await settle();
+      await vi.waitFor(() => expect(document.activeElement).toBe(button('Withdraw request…')));
+    }
+    expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
   });
 
   it('has no axe violations with the answer buttons and the decline comment open', async () => {

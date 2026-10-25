@@ -34,12 +34,15 @@ public sealed class DeclinedRequestTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal("Rejected", moms.GetProperty("status").GetString());
 
         var id = created.GetProperty("id").GetGuid();
+        Assert.Equal(HttpStatusCode.OK, (await f.Dad.GetAsync($"{Events(f)}/{id}")).StatusCode);
         var dismissed = await f.Dad.PostAsync($"{Events(f)}/{id}/dismiss");
         var again = await f.Dad.PostAsync($"{Events(f)}/{id}/dismiss");
 
         Assert.Equal(HttpStatusCode.NoContent, dismissed.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
         Assert.Empty(await RangeAsync(f.Dad, f));
+        Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.GetAsync($"{Events(f)}/{id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await f.Mom.GetAsync($"{Events(f)}/{id}")).StatusCode);
         // Only Dad's calendar changed.
         Assert.Equal("Rejected", Assert.Single(await RangeAsync(f.Mom, f)).GetProperty("status").GetString());
     }
