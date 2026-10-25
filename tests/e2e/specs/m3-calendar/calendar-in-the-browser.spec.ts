@@ -268,12 +268,8 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     const family = await familyWithKai();
     try {
       await signIn(page, family.dad.email);
-      for (const size of [
-        { name: 'desktop', width: 1280, height: 800 },
-        { name: 'phone', width: 390, height: 844 },
-      ] as const) {
+      for (const size of [{ name: test.info().project.name, ...page.viewportSize()! }]) {
         await test.step(size.name, async () => {
-          await page.setViewportSize({ width: size.width, height: size.height });
           await page.goto(`/calendar/new?date=${tuesday}`);
           await page.getByRole('button', { name: /Activity/ }).click();
           await page.getByLabel('Title').fill(`Reading club (${size.name})`);
@@ -419,12 +415,8 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     const family = await familyWithKai();
     try {
       await signIn(page, family.dad.email);
-      for (const size of [
-        { name: 'desktop', width: 1280, height: 800 },
-        { name: 'phone', width: 390, height: 844 },
-      ] as const) {
+      for (const size of [{ name: test.info().project.name, ...page.viewportSize()! }]) {
         await test.step(size.name, async () => {
-          await page.setViewportSize({ width: size.width, height: size.height });
           await page.goto(`/calendar/new?date=${tuesday}`);
           await page.getByRole('button', { name: /Activity/ }).click();
           await page.getByLabel('Title').fill(`Swim lesson (${size.name})`);
@@ -435,7 +427,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
           // Announced politely, from the one live region, without taking focus.
           await expect(page.locator('app-toast-host [role="status"][aria-live="polite"] .toast')).toHaveCount(1);
           const box = (await toast.boundingBox())!;
-          if (size.name === 'desktop') {
+          if (size.width > 600) {
             expect(box.x + box.width).toBeGreaterThan(size.width - 60);
             expect(box.y + box.height).toBeGreaterThan(size.height - 60);
           } else {
@@ -467,7 +459,6 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
         endsAt: addHours(monday, 24 * 9 + 5).toISOString(),
       }));
       await signIn(page, dad.email);
-      await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(`/calendar?date=${addHours(monday, 24 * 4).toISOString().slice(0, 10)}&view=month`);
 
       // One bar on Friday's row, continued on the next row (when the month grid shows it: whichever month the
@@ -493,12 +484,8 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     const thursday = addHours(monday, 24 * 3).toISOString().slice(0, 10);
     try {
       await signIn(page, family.dad.email);
-      for (const size of [
-        { name: 'desktop', width: 1280, height: 800 },
-        { name: 'phone', width: 390, height: 844 },
-      ] as const) {
+      for (const size of [{ name: test.info().project.name, ...page.viewportSize()! }]) {
         await test.step(size.name, async () => {
-          await page.setViewportSize({ width: size.width, height: size.height });
           await page.goto(`/calendar/new?date=${tuesday}`);
           await page.getByRole('button', { name: /Parenting time/ }).click();
 

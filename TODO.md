@@ -672,6 +672,11 @@ that points back here.
 - Still required: owner phone and actual screen-reader retest after deployment; rendered names are not a real screen-reader certification.
 
 
+### #278 — Mobile release-test foundation (acceptance blocked)
+- Prepared: desktop plus touch Chromium/WebKit 320/390 profiles, reuse of existing M3 journeys without width-overriding loops, new theme/reduced-motion/date/reminder/toast/text-reflow/pending-overflow scenarios, exact-SHA/profile reporting and fail-closed coverage checks.
+- Verified locally: typecheck, discovery and six report-policy tests including controlled absent/failed/skipped profile negatives.
+- Still required: actual green targeted/full browser runs and a detectable browser regression, Edit/Swap and clearing/DST matrix completion, calibrated geometry/text behavior, then review/rollout under the existing release-only gate. Local Docker is absent and Playwright browser download produced invalid archives. No mobile product acceptance or real-device claim.
+
 ### #66 — Production artifact security evidence
 - Implemented: production Deploy verifies immutable image provenance/source-tree equivalence and latest exact-candidate main Sonar analysis plus Release security gate before Azure access. Hotfixes and manual released-version redeploys use the same fail-closed checks; development stays independent. Added synthetic guard regressions and agent release instructions.
 - Still required: reviewed rollout through normal releases, live main required-check/no-bypass ruleset evidence, exact-candidate Sonar/API and GHCR evidence for normal/hotfix/manual redeploy paths, and owner environment approval verification. No settings, production deployment or Sonar findings were changed; #65 is not accepted as resolved by these tests.
