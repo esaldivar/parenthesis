@@ -59,6 +59,7 @@ jobs:
       CI: "true"
       E2E_BASE_URL: https://localhost:8443
       MAILPIT_URL: http://localhost:8025
+      E2E_TESTED_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v7
 
@@ -98,18 +99,20 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+          key: playwright-mobile-v1-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
-      - name: Install Chromium
+      - name: Install Chromium and WebKit
         if: steps.browser-cache.outputs.cache-hit != 'true'
         run: npm run browser:install
 
-      - name: Install Chromium's system libraries
+      - name: Install browser system libraries
         if: steps.browser-cache.outputs.cache-hit == 'true'
         run: npm run browser:deps
 
       - name: Run the release gate (every milestone)
-        run: npm test
+        run: |
+          echo "E2E_RUN_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          npm test
 
       # Totals, duration, per-milestone and regression results. Also fails if a milestone lost its tests.
       - name: Summarize
@@ -126,7 +129,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
-          path: tests/e2e/playwright-report/
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/test-results/
           retention-days: 14
 
       - name: Upload failure screenshots, traces and API logs

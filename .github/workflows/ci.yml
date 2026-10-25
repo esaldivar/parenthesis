@@ -22,6 +22,26 @@ env:
 jobs:
   # The PR source check (which branches may merge into main, develop and release/*) is in pr-branch-policy.yml.
 
+  e2e-tooling:
+    name: E2E tooling (typecheck and report policy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: tests/e2e
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: node --test scripts/summary-policy.test.mjs
+      # Discovery only; browser journeys retain release/* -> develop execution policy.
+      - run: npm test -- --list
+
   backend:
     name: Backend (build, format, tests)
     runs-on: ubuntu-latest

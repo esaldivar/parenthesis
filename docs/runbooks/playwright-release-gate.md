@@ -7,7 +7,7 @@ it**. A failure blocks the merge.
 | | |
 |---|---|
 | Workflow | [`.github/workflows/playwright-release.yml`](../../.github/workflows/playwright-release.yml) |
-| Tests | [`tests/e2e/`](../../tests/e2e/) (Playwright, Chromium) |
+| Tests | [`tests/e2e/`](../../tests/e2e/) (Playwright, desktop Chromium and mobile Chromium/WebKit) |
 | Required check | **Release E2E gate**, on `develop` |
 | Results | The run's summary page, the `playwright-report` artifact, and the Discord release notification |
 
@@ -101,13 +101,72 @@ node scripts/summarize.mjs                       # the same summary CI shows
 Use a throwaway database: the tests create accounts and families. Stop the API afterwards with `docker rm -f api`.
 
 ## Cost and time
-The repository is public, so GitHub-hosted runners cost nothing. Each run takes about 8–10 minutes: building the
+The repository is public, so GitHub-hosted runners cost nothing. The earlier desktop-only baseline took about 8–10 minutes: building the
 image (cached between runs), installing Chromium (cached), about 20 seconds of tests, and uploads. It runs only on
-release PRs, and a new push cancels the run it replaces. Chromium is the only browser. Add others only if the
-supported platforms call for it, and say so in the PR.
+release PRs, and a new push cancels the run it replaces. The expanded mobile matrix requires a fresh timing measurement; keep the existing job timeout unless evidence justifies increasing it.
 
 ## Discord
 The `notify` job posts the result to the existing Parenthesis Discord webhook, read from the `DISCORD_WEBHOOK_URL`
 secret. The post has the headline, the branch and PR number, test counts per milestone, and links to the PR and the
 run. Mentions are turned off. The job runs no PR code: it only reads the summary file. If the secret is missing or
 Discord is down, the job logs a warning and the gate result stands.
+
+## M3 mobile emulation (#278)
+
+The desktop `chromium` project retains all M1/M2/M3 and regression coverage. Four additional custom projects run M3
+browser/API journeys and the M3 regressions #208/#259: `mobile-chromium-320`, `mobile-chromium-390`,
+`mobile-webkit-320`, `mobile-webkit-390`, all 844px high with `isMobile`/`hasTouch` enabled. Mobile acceptance uses
+`Locator.tap()`; this tests touch-capable browser behavior, not just a desktop resize. These are custom profiles,
+not actual named devices. WebKit is not proof of iPhone Safari. Physical phone checks remain manual (#280 cancelled).
+No paid testing service is used. See [Playwright emulation](https://playwright.dev/docs/emulation).
+
+Existing inline desktop/390px loops now run once at the configured project size, so a 320px profile cannot silently
+switch itself to 390px. Context locale/time zone are en-US/America/Chicago, matching the synthetic family. Each test
+creates isolated parents using the local Mailpit API, never an owner inbox, and disposes its sessions. The entire
+throwaway database/mailbox is discarded with the runner. Tests use next-week dates; existing fixed UTC time seeds
+are not a complete DST-boundary test, which remains a gap.
+
+```bash
+cd tests/e2e
+npm ci --ignore-scripts
+npm run browser:install                           # Chromium + WebKit and system libraries
+npm run typecheck
+npm test -- --grep @mobile --project=mobile-webkit-320 --workers=1
+npm test                                         # full release matrix; required before promotion
+node scripts/summarize.mjs                        # full-matrix policy, not for a targeted-only report
+node --test scripts/summary-policy.test.mjs       # includes controlled missing-WebKit/failed/skipped negatives
+```
+
+Run against the isolated HTTPS app/Postgres/Mailpit described above. Targeted reports intentionally fail the full
+release summary's missing-coverage checks; inspect the targeted Playwright exit status and HTML report instead.
+`E2E_TESTED_SHA` identifies the actual candidate; CI supplies `github.sha` (the merge candidate), not the branch's
+older head. CI also records run start time; stale SHA/timestamps, missing profiles, skipped tests and global runner
+errors cannot certify a release. Summary fields retain Discord compatibility, but distinguish unique scenarios
+from profile executions and list each profile. Ordinary PR CI typechecks/discovers the suite and tests report
+policy only; browser execution still runs exclusively for release/* → develop under the existing gate semantics.
+
+Each new mobile state attaches a full screenshot and JSON containing SHA/profile/browser/dimensions/touch flag and
+family time zone. HTML reports include these on success; failure screenshots/traces/API logs remain available.
+Link a run/report and the precise state/profile to an issue. Diagnose product defects with a focused regression;
+do not skip/exclude them to make infrastructure green. Use only synthetic attachments. Both light/dark reduced-
+motion states are explicit. The 200% text scenario changes root text size and asserts measured text growth, reflow
+and reachable actions; device scale factor or a narrow viewport alone would not establish text enlargement.
+
+### Coverage map and honest remaining gaps
+
+| Issue | Named coverage | Remaining acceptance |
+|---|---|---|
+| #173 | `date recovery and reminder touch selection…`; existing Home reminder/task and API tests | Reminder recurrence/selection matrix and physical phone/SR |
+| #226 | existing `saving shows a toast…`; new reminder toast geometry and Close | Toast focus/announcement behavior in #279/#281, actual phone |
+| #232 | existing `dates are picked…` now follows #248/#249 and every profile | Device calendar/keyboard behavior; no old range-picker expectation |
+| #236 | component format-description tests; reminder field rendered by new journey | E2E reason/format associations in #279 and actual speech #281 |
+| #237 | existing `tapping empty time…` Calendar/Home two-tap journey | Explicit clearing/cancel transitions and mobile screen-reader path |
+| #248/#249 | `date recovery and reminder touch selection…`; existing date journey | Edit/Swap full invalid/corrected matrix and past/today/DST boundaries |
+| #250 | existing Month continuation/details journey; `Month pending overflow…` geometry/reachability | Broader dense/repeated/year-boundary mobile matrix and actual spoken dates |
+| Text/reflow | `200% text enlarges content…` | OS text scaling, pinch zoom, magnification and clipping with longer localized content |
+
+Implementation status: typecheck, test discovery and six synthetic report-policy tests pass locally. A real targeted
+browser run and browser-level controlled negative have **not** passed in this workspace: Docker is absent and the
+Playwright Chromium download returned invalid/truncated archives. Do not treat discovery or the report-policy
+negative as executed mobile product evidence. The missing journeys and real green/negative runs above keep #278
+acceptance open; this foundation PR must stay draft until that evidence is supplied on a supported isolated runner.

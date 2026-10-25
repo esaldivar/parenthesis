@@ -666,3 +666,9 @@ that points back here.
 ### #250 — Month occurrence accessible dates
 - Implemented: every Month bar names its full occurrence date (or full start/end range with years), including single-day repeats and continuations. Layout and rendered-DOM regressions distinguish November 7/14 and preserve pending status; year-boundary coverage names both years.
 - Still required: owner phone and actual screen-reader retest after deployment; rendered names are not a real screen-reader certification.
+
+
+### #278 — Mobile release-test foundation (acceptance blocked)
+- Prepared: desktop plus touch Chromium/WebKit 320/390 profiles, reuse of existing M3 journeys without width-overriding loops, new theme/reduced-motion/date/reminder/toast/text-reflow/pending-overflow scenarios, exact-SHA/profile reporting and fail-closed coverage checks.
+- Verified locally: typecheck, discovery and six report-policy tests including controlled absent/failed/skipped profile negatives.
+- Still required: actual green targeted/full browser runs and a detectable browser regression, Edit/Swap and clearing/DST matrix completion, calibrated geometry/text behavior, then review/rollout under the existing release-only gate. Local Docker is absent and Playwright browser download produced invalid archives. No mobile product acceptance or real-device claim.
