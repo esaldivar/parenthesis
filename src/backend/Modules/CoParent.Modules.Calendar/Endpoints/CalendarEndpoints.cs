@@ -72,6 +72,9 @@ internal sealed record UpdateEventRequest(
 
 internal sealed record ConflictsView(IReadOnlyList<string> Warnings);
 
+/// <summary>A swap changes dates only, never the title, notes, place or caregiver (#260).</summary>
+internal sealed record SwapEventRequest(DateTimeOffset? StartsAt, DateTimeOffset? EndsAt, bool? AllDay, string? Reason);
+
 internal sealed record EventView(
     Guid Id,
     string Title,
@@ -110,6 +113,7 @@ internal static class CalendarEndpoints
         calendar.MapGet("/{eventId:guid}", GetAsync);
         calendar.MapGet("/{eventId:guid}/conflicts", ConflictsAsync);
         calendar.MapPatch("/{eventId:guid}", UpdateAsync);
+        calendar.MapPost("/{eventId:guid}/swap", SwapAsync);
         calendar.MapDelete("/{eventId:guid}", CancelAsync);
         calendar.MapPost("/{eventId:guid}/dismiss", DismissAsync);
     }
@@ -392,7 +396,7 @@ internal static class CalendarEndpoints
     /// parenting-time, holiday or joint event keeps its current values and gets a CalendarModify request ("change
     /// pending", with before → after); a parenting-time swap is such a change. Notes always change at once.
     /// </summary>
-    private static async Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> UpdateAsync(
+    private static Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> UpdateAsync(
         Guid eventId,
         UpdateEventRequest request,
         string? scope,
@@ -404,6 +408,37 @@ internal static class CalendarEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         [FromKeyedServices(CalendarModule.TodayClock)] TimeProvider today,
+        CancellationToken cancellationToken) =>
+        UpdateCoreAsync(eventId, request, scope, http, tenant, db, roster, changeRequests, unitOfWork, audit, today, false, cancellationToken);
+
+    private static Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> SwapAsync(
+        Guid eventId,
+        SwapEventRequest request,
+        HttpContext http,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IFamilyRoster roster,
+        IChangeRequests changeRequests,
+        IUnitOfWork unitOfWork,
+        IAuditLog audit,
+        [FromKeyedServices(CalendarModule.TodayClock)] TimeProvider today,
+        CancellationToken cancellationToken) =>
+        UpdateCoreAsync(eventId, new UpdateEventRequest(null, request.StartsAt, request.EndsAt, request.AllDay, null, null, null, request.Reason),
+            null, http, tenant, db, roster, changeRequests, unitOfWork, audit, today, true, cancellationToken);
+
+    private static async Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> UpdateCoreAsync(
+        Guid eventId,
+        UpdateEventRequest request,
+        string? scope,
+        HttpContext http,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IFamilyRoster roster,
+        IChangeRequests changeRequests,
+        IUnitOfWork unitOfWork,
+        IAuditLog audit,
+        TimeProvider today,
+        bool swap,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -413,7 +448,9 @@ internal static class CalendarEndpoints
 
         var e = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, cancellationToken);
         if (e is null || e.Status is EventStatus.Cancelled or EventStatus.Rejected
-            || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId))
+            || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId)
+            || (e.Category == EventCategory.ParentingTime && e.CaregiverMembershipId != tenant.MembershipId && !swap)
+            || (swap && e.Category != EventCategory.ParentingTime))
         {
             return TypedResults.NotFound();
         }
@@ -426,6 +463,12 @@ internal static class CalendarEndpoints
         if (ParseScope(scope) is not { } editScope)
         {
             return InvalidScope();
+        }
+
+        if (swap && (request.StartsAt is null || request.EndsAt is null
+            || (request.StartsAt == e.StartsAt && request.EndsAt == e.EndsAt && (request.AllDay ?? e.AllDay) == e.AllDay)))
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["startsAt"] = ["Choose different dates or times for the swap."] });
         }
 
         // Whose parenting time it is never changes (#246): each parent adds only their own.
@@ -575,7 +618,8 @@ internal static class CalendarEndpoints
 
         var e = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, cancellationToken);
         if (e is null || e.Status is EventStatus.Cancelled or EventStatus.Rejected
-            || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId))
+            || (e.Category == EventCategory.Unavailable && e.OwnerMembershipId != tenant.MembershipId)
+            || (e.Category == EventCategory.ParentingTime && e.CaregiverMembershipId != tenant.MembershipId))
         {
             return TypedResults.NotFound();
         }

@@ -404,6 +404,18 @@ describe('the calendar page', () => {
     expect(toastText()).toContain('Cancellation sent to Sam for approval.');
   });
 
+  it.each(['week', 'month', 'list'])('keeps the other parent’s time viewable with only Request swap in %s', async (view) => {
+    const { harness } = await open(`/calendar?date=2026-10-20&view=${view}&event=pt`, [
+      event({ id: 'pt', title: 'Time with Sam', category: 'ParentingTime', caregiverMembershipId: 'm-sam', ownerMembershipId: 'm-alex' }),
+    ]);
+    await settle(harness);
+    const dialog = document.querySelector('[role="dialog"]')!;
+    expect(text(dialog)).toContain('Time with Sam');
+    expect(text(dialog)).not.toContain('Edit event');
+    expect(text(dialog)).not.toContain('Cancel event');
+    expect(text(dialog)).toContain('Request swap');
+  });
+
   it('offers Edit and Request swap on confirmed parenting time', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [
       event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex' }),
