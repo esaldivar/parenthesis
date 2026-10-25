@@ -32,6 +32,30 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal([f.KaiId], soccer.GetProperty("childIds").EnumerateArray().Select(c => c.GetGuid()));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_family_event_warns_about_the_other_parents_unavailability_but_still_waits_for_approval(bool momProposes)
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        var sender = momProposes ? f.Mom : f.Dad;
+        var other = momProposes ? f.Dad : f.Mom;
+        await other.PostAsync(Events(f), new { category = "Unavailable", startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(20), notes = "Private appointment" });
+        var response = await sender.PostAsync(Events(f), Joint("School Play", f.KaiId));
+        var created = await JsonAsync(response);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("PendingApproval", created.GetProperty("status").GetString());
+        Assert.Contains("OverlapsCoParentUnavailable", created.GetProperty("warnings").EnumerateArray().Select(w => w.GetString()));
+        Assert.DoesNotContain("Private appointment", created.GetRawText(), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, (await other.PostAsync($"/api/families/{f.FamilyId}/approvals/{created.GetProperty("changeRequestId").GetGuid()}/approve")).StatusCode);
+        var adjacent = await JsonAsync(await sender.PostAsync(Events(f), new { category = "Joint", title = "Afterwards", startsAt = _monday.AddHours(20), endsAt = _monday.AddHours(21) }));
+        Assert.Empty(adjacent.GetProperty("warnings").EnumerateArray());
+        var ordinary = await JsonAsync(await sender.PostAsync(Events(f), new { category = "Activity", title = "Practice", startsAt = _monday.AddHours(18), endsAt = _monday.AddHours(19) }));
+        Assert.Equal("Confirmed", ordinary.GetProperty("status").GetString());
+        Assert.Empty(ordinary.GetProperty("warnings").EnumerateArray());
+    }
+
     [Fact]
     public async Task Parenting_time_waits_for_the_other_parent_then_is_confirmed()
     {
