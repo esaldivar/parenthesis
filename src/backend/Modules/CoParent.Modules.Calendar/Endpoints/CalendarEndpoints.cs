@@ -336,16 +336,16 @@ internal static class CalendarEndpoints
     }
 
     private static async Task<Results<Ok<EventView>, NotFound, ForbidHttpResult>> GetAsync(
-        Guid eventId, ITenantContext tenant, CalendarDbContext db, CancellationToken cancellationToken)
+        Guid eventId, ITenantContext tenant, CalendarDbContext db, TimeProvider clock, CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
         {
             return TypedResults.Forbid();
         }
 
-        var e = await db.Events.SingleOrDefaultAsync(
-            x => x.Id == eventId && (x.Status == EventStatus.Confirmed || x.Status == EventStatus.PendingApproval),
-            cancellationToken);
+        // Details follow the same visibility as the list, including declined requests until dismissed/ended.
+        var e = await DeclinedStillShown(db.Events, db, tenant.MembershipId, clock.GetUtcNow())
+            .SingleOrDefaultAsync(x => x.Id == eventId, cancellationToken);
         return e is null
             ? TypedResults.NotFound()
             : TypedResults.Ok(View(e, tenant, changeRequestId: null, [], await SeriesForAsync(db, tenant, [e], cancellationToken)));

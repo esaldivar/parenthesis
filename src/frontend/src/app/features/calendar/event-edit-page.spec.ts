@@ -215,6 +215,20 @@ describe('Edit an event', () => {
     expect(input.getAttribute('aria-invalid')).toBe('false');
   });
 
+  it('moves keyboard focus from Save to End date after an invalid all-day range, on every attempt', async () => {
+    await open(weekend());
+    type('startDate', '2026-11-06');
+    const end = field('endDate')!;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      submitButton().focus();
+      await submit();
+      await vi.waitFor(() => expect(document.activeElement).toBe(end));
+      expect(describedBy(end)).toBe('Choose an end that’s after the start.');
+    }
+    expect(field('title')!.value).toBe('Time with Alex');
+    expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
+  });
+
   it('checks the times before sending', async () => {
     await open(event());
     type('endTime', '09:00');

@@ -272,6 +272,16 @@ export class EventDetails {
     this.focus('#event-cancel');
   }
 
+  protected startWithdraw(): void {
+    this.withdrawing.set(true);
+    this.focus('#event-keep-request');
+  }
+
+  protected keepRequest(): void {
+    this.withdrawing.set(false);
+    this.focus('#event-withdraw');
+  }
+
   protected startDecline(): void {
     this.comment.reset();
     this.error.set(null);

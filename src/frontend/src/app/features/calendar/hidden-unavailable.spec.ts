@@ -106,6 +106,7 @@ describe('hidden unavailable time', () => {
     await open(hideUnavailable);
 
     gridMarkers()[0].click();
+    (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/away-mon`))).flush(EVENTS.find((e) => e.id === 'away-mon')!);
     await settle();
     let dialog = document.querySelector('app-event-details [role="dialog"]')!;
     expect(text(dialog)).toContain('Private details aren’t shared.');
@@ -118,6 +119,7 @@ describe('hidden unavailable time', () => {
     (dialog.querySelector('button[aria-label="Close details"]') as HTMLElement).click();
     await settle();
     gridMarkers()[1].click();
+    (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/away-wed`))).flush(EVENTS.find((e) => e.id === 'away-wed')!);
     await settle();
     dialog = document.querySelector('app-event-details [role="dialog"]')!;
     expect([...dialog.querySelectorAll('a')].some((a) => text(a) === 'Request parenting time swap')).toBe(false);
@@ -144,6 +146,7 @@ describe('hidden unavailable time', () => {
     await open(hideUnavailable);
     expect(await axeViolations(document.body)).toEqual([]);
     gridMarkers()[0].click();
+    (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/away-mon`))).flush(EVENTS.find((e) => e.id === 'away-mon')!);
     await settle();
     expect(await axeViolations(document.body)).toEqual([]);
   });
