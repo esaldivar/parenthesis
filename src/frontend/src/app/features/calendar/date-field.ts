@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, afterRenderEffect, inject, input, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, input, viewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -33,7 +33,6 @@ import { CalendarHeader } from './calendar-header';
         #dateInput
         [class.date-invalid]="!!issue()"
         (keydown)="openOnKey($event, picker)"
-        (dateChange)="selected(picker)"
       />
       <app-icon matSuffix class="date-field__icon" name="calendar" [size]="20" aria-hidden="true" />
       @if (issue(); as reason) {
@@ -68,7 +67,6 @@ import { CalendarHeader } from './calendar-header';
 })
 export class DateField {
   protected readonly calendarHeader = CalendarHeader;
-  private readonly injector = inject(Injector);
   readonly label = input.required<string>();
   /** The field's name, for forms and tests ("startDate"). */
   readonly name = input.required<string>();
@@ -100,8 +98,4 @@ export class DateField {
     }
   }
 
-  /** Finish selection after rendering so keyboard activation cannot leave the field's calendar reopened. */
-  protected selected(picker: MatDatepicker<string>): void {
-    afterNextRender(() => picker.close(), { injector: this.injector });
-  }
 }
