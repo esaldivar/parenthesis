@@ -197,12 +197,15 @@ describe('Add and edit a task', () => {
     expect(text(form().querySelector('[role="alert"]'))).toContain(
       'The other parent changed this task while you were editing it, so nothing was saved.',
     );
+    button('Load their latest version').focus();
     button('Load their latest version').click();
     (await vi.waitFor(() => http.expectOne((r) => r.method === 'GET' && r.url === `${F}/calendar/tasks/t1`))).flush(
       task({ title: 'Science fair project', version: 9, items: [checklistItem({ id: 'board', text: 'Poster board' })] }),
     );
     await settle();
     expect(field('title').value).toBe('Science fair project');
+    await vi.waitFor(() => expect(document.activeElement).toBe(field('title')));
+    expect(http.match((r) => r.method === 'PUT')).toHaveLength(0);
     expect(itemTexts()).toEqual(['Poster board']);
     expect(form().querySelector('[role="alert"]')).toBeNull();
 
