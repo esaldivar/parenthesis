@@ -14,6 +14,7 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
 | `feature/…`, `feat/…` | New features | Branch from the active release branch, PR into it |
 | `bugfix/…`, `fix/…` | Bug fixes found during the milestone | Branch from the active release branch, PR into it |
 | `chore/…`, `docs/…`, `design/…` | Tooling, CI, documentation, design handoffs | Branch from the active release branch, PR into it |
+| `dependabot/…` | Dependency updates from the same repository | PR into the active `release/x.y.z`; normal review and checks apply |
 | `hotfix/…` | Urgent fix to production | Branch from `main`, PR into `main`, then sync into `develop` and the active release branch |
 
 - `main`, `develop` and `release/*` are **protected**. Nobody can push to them directly, force-push or delete them,
