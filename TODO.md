@@ -630,3 +630,7 @@ that points back here.
 ### #238 — Cancellation confirmation focus
 - Implemented: single and recurring event cancellation focuses the safe Keep action with its explanation; keeping the event restores Cancel event. Repeated transitions and no-mutation/axe regressions cover both branches.
 - Still required: owner live keyboard retest after deployment and remaining phone/screen-reader recurrence acceptance.
+
+### #260 — Caregiver authorization
+- Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
+- Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.

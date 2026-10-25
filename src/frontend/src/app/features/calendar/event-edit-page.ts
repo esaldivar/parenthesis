@@ -20,6 +20,7 @@ import { revealFirstProblem } from './reveal-problem';
 import { dayFilter, END_BEFORE_START, rangeProblems } from './date-rules';
 import { DateCheck } from './date-check';
 import { DateField } from './date-field';
+import { canManageEvent } from './event-permissions';
 import { providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from './time';
 
@@ -121,6 +122,11 @@ export class EventEditPage implements OnInit {
     const event = this.event();
     if (!event) {
       return null;
+    }
+    if (!canManageEvent(event, this.members())) {
+      return event.category === 'ParentingTime'
+        ? 'You can view this event, but only the parent whose time it is can edit or cancel it. You can request a swap from its details.'
+        : 'Only the parent who added this unavailable time can edit or cancel it.';
     }
     if (event.status === 'PendingApproval' || event.pendingChange !== 'None') {
       return 'This event has a request waiting for an answer. Wait for it, or withdraw it, before changing the event again.';
