@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   Injector,
   afterNextRender,
   computed,
@@ -9,6 +10,7 @@ import {
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -100,6 +102,7 @@ export class CalendarPage {
   private readonly router = inject(Router);
   private readonly toasts = inject(Toasts);
   private readonly injector = inject(Injector);
+  private readonly calendarHeading = viewChild.required<ElementRef<HTMLHeadingElement>>('calendarHeading');
 
   /** `?view=week|month|list` */
   readonly view = input<string>();
@@ -338,7 +341,7 @@ export class CalendarPage {
   protected close(): void {
     this.selected.set(null);
     const opener = this.opener;
-    afterNextRender(() => opener?.focus(), { injector: this.injector });
+    afterNextRender(() => (opener?.isConnected ? opener : this.calendarHeading().nativeElement).focus(), { injector: this.injector });
   }
 
   /** A task changed in its details (a tick, Mark done): show the new state and keep the details open. */
@@ -398,6 +401,8 @@ export class CalendarPage {
     this.toasts.show(message);
     this.selected.set(null);
     this.retry();
+    // The deleted trigger and the loading grid disappear. This heading survives both renders (#172).
+    afterNextRender(() => this.calendarHeading().nativeElement.focus(), { injector: this.injector });
   }
 
   private navigate(params: { view?: CalendarView; date?: PlainDate; child?: string | null }): void {

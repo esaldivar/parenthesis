@@ -630,3 +630,7 @@ that points back here.
 ### #260 — Caregiver authorization
 - Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
 - Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
+
+### #172 — Focus after successful deletion
+- Implemented: successful calendar detail actions focus the stable Calendar heading while the removed trigger/grid reload disappear. Closing details also falls back there if its opener has gone. Week/Month/List reminder-deletion regressions verify focus after the complete refresh and retain Seen/approval behavior. This shared path also covers task deletion (#176).
+- Still required: owner live deletion keyboard retest after deployment and outstanding mobile/screen-reader/Seen/privacy acceptance; #176 session recovery remains separate.
