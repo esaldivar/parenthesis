@@ -626,3 +626,7 @@ that points back here.
 - [x] **Date-format accessibility (#236).** Typed reminder/task dates and repeat last-day fields retain a
   screen-reader-only format hint; regression tests verify its actual accessible-description association.
   - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
+
+### #260 — Caregiver authorization
+- Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
+- Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.

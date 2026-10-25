@@ -325,7 +325,7 @@ export class SwapRequestPage {
     try {
       const { startsAt, endsAt } = this.instants();
       const reason = this.form.getRawValue().reason.trim();
-      const result = await this.api.updateEvent(family.id, event.id, {
+      const result = await this.api.requestSwap(family.id, event.id, {
         startsAt,
         endsAt,
         allDay: this.allDay(),

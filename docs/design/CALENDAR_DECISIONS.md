@@ -4,6 +4,7 @@ Status: approved design decisions for future implementation. Do not interrupt th
 
 ## Parenting time and swaps
 - Calendar defaults to weekly, with monthly view available. When children have identical caregiver/time windows, group them visually; otherwise separate.
+- Generic **Edit event** and **Cancel event** belong only to the persisted caregiver of parenting time (#260). The creator does not grant authority, and payload fields cannot grant it. The other parent can view it and use the separate, dates-only **Request Swap** flow; approval/decline and the sender’s withdrawal remain available. The rule covers every occurrence and scope of a repeating event, and direct edit links/API requests.
 - Select an existing parenting-time event and choose **Request Swap**. Proposed changes are pending until the other parent approves; no unilateral custody changes.
 - A parent may add a descriptive title to their parenting-time block (e.g., "Dad's SeaWorld Adventure") and an optional event category (Vacation, Birthday, Holiday, School, Family Outing, Other). Show tasteful, subtle category labels/icons and restrained color accents. Titles/categories are separate fields.
 - Named parenting-time events can later be linked to a photo album.
