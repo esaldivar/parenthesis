@@ -681,6 +681,12 @@ that points back here.
 - Implemented: production Deploy verifies immutable image provenance/source-tree equivalence and latest exact-candidate main Sonar analysis plus Release security gate before Azure access. Hotfixes and manual released-version redeploys use the same fail-closed checks; development stays independent. Added synthetic guard regressions and agent release instructions.
 - Still required: reviewed rollout through normal releases, live main required-check/no-bypass ruleset evidence, exact-candidate Sonar/API and GHCR evidence for normal/hotfix/manual redeploy paths, and owner environment approval verification. No settings, production deployment or Sonar findings were changed; #65 is not accepted as resolved by these tests.
 
+### #160 — Development Application Insights verification (not passed)
+- Inspected active revision/image, telemetry variable names, Application Insights and linked workspace usage/cap/retention. Sent three anonymous synthetic GETs (200/200/401) with trace IDs. Detailed sanitized evidence is in `docs/runbooks/application-insights-verification-2026-10-25.md`.
+- No exporter/configuration was found at the deployed commit; Application Insights showed zero seven-day requests while the workspace had container logs. Correlated API/dependency/failure ingestion and privacy were not established. Logs UI failed to render for direct verification.
+- Current 0.06 GB rolling ingestion, $0.17 estimate, trial-credit $0 display and 0.5 GB/day cap do not establish zero incremental charges or shared billing-account headroom. Cost verification remains pending; no Azure settings, paid features or deployment changed. Missing instrumentation belongs to a separately approved slice of #86, followed by correlated and settled-billing verification.
+
+
 ### #279 — Visible text in accessible control names and rendered acceptance
 - Repaired the three label-content-name mismatches detected by rendered scans: account name, pending Month “Proposed” status, and the Material picker period button. The picker wrapper retains Material's header, styles, navigation, live description and focus, and adds its current visible period after rendering.
 - Added focused account/Month/header-navigation regressions. Preserve the visible word boundary between Month status and title. Picker keyboard tests use Material's roving active-date navigation instead of focusing an untabbable date cell.
