@@ -107,9 +107,9 @@
     } @else if (request()?.proposedByYou) {
       <div class="actions">
         @if (!withdrawing()) {
-          <button mat-stroked-button type="button" class="danger-outline" (click)="withdrawing.set(true)">Withdraw request…</button>
+          <button mat-stroked-button type="button" class="danger-outline" id="event-withdraw" (click)="startWithdraw()">Withdraw request…</button>
         } @else {
-          <p class="explain">This takes your request back. {{ coParent() ?? 'Your co-parent' }} won’t be asked to decide it.</p>
+          <p class="explain" id="event-withdraw-explanation">This takes your request back. {{ coParent() ?? 'Your co-parent' }} won’t be asked to decide it.</p>
           @if (error(); as error) {
             <p class="error" role="alert">{{ error }}</p>
           }
@@ -117,7 +117,7 @@
             <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="withdraw()">
               {{ busy() ? 'Withdrawing…' : 'Yes, withdraw' }}
             </button>
-            <button mat-button type="button" [disabled]="busy()" (click)="withdrawing.set(false)">Keep it</button>
+            <button mat-button type="button" id="event-keep-request" aria-describedby="event-withdraw-explanation" [disabled]="busy()" (click)="keepRequest()">Keep it</button>
           </div>
         }
       </div>
