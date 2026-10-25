@@ -634,3 +634,7 @@ that points back here.
 ### #260 — Caregiver authorization
 - Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
 - Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
+
+### #176 — Task session recovery
+- Implemented: a known antiforgery rejection gives plain feedback, focuses the error and offers a native Reload calendar navigation so session initialization runs again before an explicit retry. Stale write controls are withheld; completion/checklist/deletion are not replayed. Regression coverage verifies unchanged state, no requests/celebration and accessible recovery for all four action paths. Final-delete focus is separately in PR #288.
+- Still required: owner retained-session reproduction after deployment; the original token/session cause is not established. Antiforgery validation is unchanged. Remaining phone/screen-reader acceptance stays open.

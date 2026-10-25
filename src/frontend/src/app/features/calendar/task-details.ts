@@ -17,7 +17,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Api, ChecklistItem, FamilyMember, SharedTask } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
@@ -48,6 +48,8 @@ export class TaskDetails implements OnInit {
   private readonly api = inject(Api);
   private readonly window = inject(DOCUMENT).defaultView;
   private readonly injector = inject(Injector);
+  protected readonly reloadUrl = inject(Router).url;
+  protected readonly sessionChanged = signal(false);
   private readonly deleteButton = viewChild('deleteButton', { read: ElementRef<HTMLButtonElement> });
   private readonly keepButton = viewChild('keepButton', { read: ElementRef<HTMLButtonElement> });
 
@@ -113,7 +115,7 @@ export class TaskDetails implements OnInit {
 
   /** aria-disabled preserves keyboard focus; prevent the native checkbox toggle while a save is in flight. */
   protected holdWhileBusy(event: MouseEvent): void {
-    if (this.busy()) {
+    if (this.busy() || this.sessionChanged()) {
       event.preventDefault();
     }
   }
@@ -129,7 +131,7 @@ export class TaskDetails implements OnInit {
   }
 
   protected confirmDelete(confirming: boolean): void {
-    if (this.busy()) {
+    if (this.busy() || this.sessionChanged()) {
       return;
     }
     this.confirming.set(confirming);
@@ -144,7 +146,7 @@ export class TaskDetails implements OnInit {
   }
 
   protected async remove(): Promise<void> {
-    if (this.busy()) {
+    if (this.busy() || this.sessionChanged()) {
       return;
     }
     this.busy.set(true);
@@ -153,14 +155,14 @@ export class TaskDetails implements OnInit {
       await this.api.deleteTask(this.familyId(), this.current().id);
       this.changed.emit(`“${this.current().title}” was deleted.`);
     } catch (error) {
-      this.error.set(generalMessage(toProblem(error)));
+      this.fail(error);
     } finally {
       this.busy.set(false);
     }
   }
 
   private async change(request: () => Promise<SharedTask>): Promise<void> {
-    if (this.busy()) {
+    if (this.busy() || this.sessionChanged()) {
       return;
     }
     this.busy.set(true);
@@ -177,10 +179,22 @@ export class TaskDetails implements OnInit {
       if (problem.status === 409) {
         await this.refresh();
       } else {
-        this.error.set(generalMessage(problem));
+        this.fail(error);
       }
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  /** A rejected token needs a fresh page/session before the parent explicitly tries again (#176). */
+  private fail(error: unknown): void {
+    const problem = toProblem(error);
+    if (problem.status === 400 && problem.title === 'Invalid or missing antiforgery token.') {
+      this.sessionChanged.set(true);
+      this.error.set('Your session needs to be refreshed. Reload the calendar, then check the task and try again. This action wasn’t saved.');
+      afterNextRender(() => this.window?.document.getElementById('task-session-error')?.focus(), { injector: this.injector });
+    } else {
+      this.error.set(generalMessage(problem));
     }
   }
 
