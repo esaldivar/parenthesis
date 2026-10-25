@@ -234,3 +234,16 @@ Follow-up product repairs are in #302. The targeted desktop light-theme journeys
 pass (3/3) against the repaired image. Tests navigate Material's roving active date with arrow keys before Enter;
 programmatically focusing an otherwise untabbable cell does not establish normal keyboard operation. The full
 repaired profile/theme matrix is still required; do not infer it from this targeted result.
+
+The later full repaired run finished **13 passed / 12 failed**. Diagnostics reproduced a fast Swap selection
+during Material's opening animation: the value changes, but Material ignores `close()` while animating. The
+follow-up completes closing after the opening animation ends, retaining the standard focus restoration. Month
+overflow buttons also need a 24px minimum width (one WebKit measurement was 22.3px).
+
+Mobile diagnostics tied the remaining apparent obscuration/contrast failures to the sticky bottom navigation.
+The same dark 320px Home/Edit/Swap/Approvals scans passed after normal page scrolling without changing styles,
+rules or exclusions. This matches [axe's open sticky spatial-grid limitation](https://github.com/dequelabs/axe-core/issues/3720).
+Scans now use a deterministic document-end position where the sticky footer occupies its normal flow position;
+`auditScroll` records that position. Axe still audits the entire rendered document and every open overlay.
+This does not establish that every focused control is unobscured at every scroll position: retain keyboard,
+physical touch and manual sticky-navigation checks. The initial failures remain failure evidence, not waivers.

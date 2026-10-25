@@ -695,6 +695,8 @@ that points back here.
 - The earlier serial frontend run passed 573/573; a later run had one 5-second timeout and 572 passes. A focused retest and full profile/theme matrix remain outstanding. Error/toast in-place focus, remaining continued/repeated Month behavioral checks, real screen-reader evidence in #281, and manual review of axe incomplete results are also outstanding.
 - Still required: validate picker view transitions and the wrapper's dependency on Material's period-button selector on dependency upgrades, then obtain owner acceptance after promotion. No scan exclusion or waiver.
 
+- Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
+
 ### #281 — Real screen-reader environment prerequisite
 - Windows NVDA is installed; Guidepup starts/connects/stops, but the synthetic control announcement is absent in this agent session. macOS/VoiceOver is unavailable. Both acceptance paths remain blocked, not passed.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.

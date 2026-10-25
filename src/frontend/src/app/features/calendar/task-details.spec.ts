@@ -94,8 +94,8 @@ describe('tasks on the calendar', () => {
 
     (button('Aurora', main().querySelector('.filters')!) as HTMLElement).click();
     await settle();
-    await answerLoad([task(), task({ id: 't2', title: 'Return library books', childId: null })]).catch(() => null);
-    await settle();
+    // Child filtering uses the loaded items. Waiting for a nonexistent reload hid errors and made this test time out.
+    expect(http.match((r) => r.url === `${F}/calendar/tasks`)).toHaveLength(0);
     expect([...main().querySelectorAll('app-calendar-week .agenda button.item[data-kind="task"] .title')].map(text)).toEqual([
       'Return library books',
     ]);

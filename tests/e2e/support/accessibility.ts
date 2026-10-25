@@ -24,11 +24,20 @@ function finding(result: Result) {
 export async function scan(page: Page, info: TestInfo, state: string) {
   await expect(page.locator('main')).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
+  // Audit at the document end, where the sticky footer is in its normal flow position. Axe's target-size and
+  // contrast spatial grid can otherwise treat it as permanently covering offscreen document controls (#3720).
+  // This scrolls the real page only: no style changes, exclusions, disabled rules or hidden overlays.
+  await page.evaluate(() => {
+    const root = document.scrollingElement;
+    root?.scrollTo({ top: root.scrollHeight, behavior: 'instant' });
+    return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+  });
   const result = await analyze(page);
   const report = {
     schemaVersion: 1, state, testedSha: info.config.metadata['testedSha'],
     profile: info.project.name, capturedAt: new Date().toISOString(),
     browser: info.project.use.browserName, viewport: page.viewportSize(), axeVersion: result.testEngine.version,
+    auditScroll: await page.evaluate(() => ({ x: scrollX, y: scrollY, documentHeight: document.documentElement.scrollHeight })),
     rules: [...result.passes, ...result.violations, ...result.incomplete, ...result.inapplicable].map(r => r.id),
     violations: result.violations.map(finding), incomplete: result.incomplete.map(finding),
   };
