@@ -15,11 +15,20 @@ const FAMILY = { id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chica
 
 describe('the calendar page', () => {
   let http: HttpTestingController;
+  let serverEvents: CalendarEvent[] = [];
+  let autoDetails = true;
 
   async function settle(harness: RouterTestingHarness) {
     for (let i = 0; i < 3; i++) {
       await harness.fixture.whenStable();
       harness.fixture.detectChanges();
+      if (autoDetails && http) {
+        for (const request of http.match((r) => r.method === 'GET' && /^\/api\/families\/family-1\/calendar\/events\/[^/]+$/.test(r.url))) {
+          const current = serverEvents.find((event) => request.request.url.endsWith(`/${event.id}`));
+          if (!current) throw new Error('Missing current event fixture');
+          request.flush(current);
+        }
+      }
     }
   }
 
@@ -38,6 +47,8 @@ describe('the calendar page', () => {
     });
 
   async function open(url: string, events: CalendarEvent[] | 'error' = [], reminders: Reminder[] = []) {
+    serverEvents = events === 'error' ? [] : events;
+    autoDetails = true;
     TestBed.configureTestingModule({
       providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
     });
@@ -296,6 +307,76 @@ describe('the calendar page', () => {
     bars[1].click();
     await settle(harness);
     expect(text(document.querySelector('app-event-details [role="dialog"]'))).toContain('Robotics camp');
+  });
+
+  it.each(['week', 'month', 'list'])('refetches a stale block before showing details in %s', async (view) => {
+    const stale = event({ title: 'Old title' });
+    const { harness } = await open(`/calendar?date=2026-10-20&view=${view}`, [stale]);
+    serverEvents = [{ ...stale, title: 'Current title', notes: 'Current notes', pendingChange: 'Cancel' }];
+    (main().querySelector('button.item') as HTMLElement).click();
+    expect(document.querySelector('app-event-details')).toBeNull();
+    await settle(harness);
+    const dialog = document.querySelector('[role="dialog"]')!;
+    expect(text(dialog)).toContain('Current title');
+    expect(text(dialog)).toContain('Current notes');
+    expect(text(dialog)).toContain('Cancellation pending');
+    expect(text(dialog)).not.toContain('Cancel event…');
+    expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+  });
+
+  it.each([403, 404])('removes an unavailable stale block after a %s and refreshes without showing actions', async (status) => {
+    const { harness } = await open('/calendar?date=2026-10-20', [event()]);
+    autoDetails = false;
+    (main().querySelector('button.item') as HTMLElement).click();
+    const request = await vi.waitFor(() => http.expectOne(`${F}/calendar/events/e1`));
+    request.flush({}, { status, statusText: 'Not available' });
+    await settle(harness);
+    (await eventsRequest()).flush([]);
+    await settle(harness);
+    expect(document.querySelector('app-event-details')).toBeNull();
+    expect(toastText()).toContain('isn’t available on the calendar any more');
+    expect(main().querySelector('button.item')).toBeNull();
+    expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+  });
+
+  it('does not fall back to cached actions when current details cannot be loaded', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [event()]);
+    autoDetails = false;
+    (main().querySelector('button.item') as HTMLElement).click();
+    (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/e1`))).flush({}, { status: 500, statusText: 'Server error' });
+    await settle(harness);
+    expect(document.querySelector('app-event-details')).toBeNull();
+    expect(toastText()).toContain('We couldn’t open that event. Try again.');
+    expect(main().querySelector('button.item')).not.toBeNull();
+  });
+
+  it('ignores details that arrive after navigation to another week', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [event()]);
+    autoDetails = false;
+    (main().querySelector('button.item') as HTMLElement).click();
+    const pending = await vi.waitFor(() => http.expectOne(`${F}/calendar/events/e1`));
+    await TestBed.inject(Router).navigateByUrl('/calendar?date=2026-10-27');
+    await settle(harness);
+    (await eventsRequest()).flush([]);
+    await settle(harness);
+    pending.flush(event());
+    await settle(harness);
+    expect(document.querySelector('app-event-details')).toBeNull();
+  });
+
+  it('ignores an older details response when another event has been selected', async () => {
+    const { harness } = await open('/calendar?date=2026-10-20', [event(), event({ id: 'e2', title: 'Second event' })]);
+    autoDetails = false;
+    const blocks = main().querySelectorAll<HTMLElement>('app-calendar-week .agenda button.item');
+    [...blocks].find((b) => text(b).includes('Soccer practice'))!.click();
+    const first = await vi.waitFor(() => http.expectOne(`${F}/calendar/events/e1`));
+    [...blocks].find((b) => text(b).includes('Second event'))!.click();
+    const second = await vi.waitFor(() => http.expectOne(`${F}/calendar/events/e2`));
+    second.flush(event({ id: 'e2', title: 'Second event' }));
+    await settle(harness);
+    first.flush(event());
+    await settle(harness);
+    expect(text(document.querySelector('[role="dialog"] h2'))).toBe('Second event');
   });
 
   it('opens details, and cancelling parenting time asks the co-parent first', async () => {
