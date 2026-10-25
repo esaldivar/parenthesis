@@ -52,14 +52,25 @@ done
 expect fail develop release/0.2.0 "$repo" "someone/parenthesis"
 
 # Into a release branch: work branches from this repository.
-for head in design/x feat/x feature/parent-registration fix/x bugfix/child-pin-validation chore/x docs/x hotfix/x; do
+for head in design/x feat/x feature/parent-registration fix/x bugfix/child-pin-validation chore/x docs/x hotfix/x dependabot/nuget/x; do
   expect pass release/0.2.0 "$head" "$repo" "$repo"
 done
-for head in develop main release/0.3.0 random-branch feature/ ci/x dependabot/nuget/x; do
+for head in develop main release/0.3.0 random-branch feature/ ci/x dependabot/; do
   expect fail release/0.2.0 "$head" "$repo" "$repo"
 done
 expect fail release/0.2.0 feature/x "$repo" "someone/parenthesis"
 expect fail release/next feature/x "$repo" "$repo"
+
+# Dependabot release updates (#275/#277) retain target, fork and valid-release restrictions.
+expect fail main dependabot/github_actions/actions-79bcc16f55 "$repo" "$repo"
+expect pass release/0.3.0 dependabot/github_actions/actions-79bcc16f55 "$repo" "$repo"
+expect pass release/0.3.0 dependabot/docker/docker/node-25-alpine "$repo" "$repo"
+expect pass release/0.3.0 dependabot/nuget/dotnet-7a2cffec59 "$repo" "$repo"
+expect pass release/1.10.3 dependabot/nuget/x "$repo" "$repo"
+expect fail release/0.3.0 dependabot/ "$repo" "$repo"
+expect fail release/0.3.0 dependabot/nuget/x "$repo" "someone/parenthesis"
+expect fail release/next dependabot/nuget/x "$repo" "$repo"
+expect fail release/0.03.0 dependabot/nuget/x "$repo" "$repo"
 
 # Other targets (stacked PRs) have no policy.
 expect pass feat/angular-shell docs/x "$repo" "$repo"

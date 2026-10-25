@@ -2,7 +2,7 @@
 #   docker build -f docker/api.Dockerfile -t parenthesis-api .
 
 # 1. Angular app
-FROM node:24-alpine AS spa
+FROM node:25-alpine AS spa
 WORKDIR /spa
 COPY src/frontend/package.json src/frontend/package-lock.json ./
 # --ignore-scripts: no dependency install scripts run (issue #65). The build doesn't need them: esbuild and

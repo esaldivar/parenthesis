@@ -6,6 +6,11 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [x] **Dependabot release branch policy (#275, #277).** Reconcile the older Copilot branch with the active release:
+  retain the separate edited-event branch-policy workflow, existing issue-link enforcement and full regression suite;
+  allow same-repository dependabot/* only into valid release/x.y.z branches. Main/develop and fork restrictions stay.
+  - [ ] Verify PR CI and the three dependency PRs' source checks after the reviewed policy becomes effective;
+    dependency compatibility decisions and merge/deployment approval remain separate.
 - [ ] **Owner testing and design readiness (#152).** Supervised implementation prepared: one waiting testing slot,
   owner acceptance/deployment evidence, priority rework with comments and fresh branches, explicit design/no-design
   readiness, and a local activation gate. See `docs/runbooks/claude-owner-testing.md`.
@@ -522,6 +527,11 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
+- [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
+  query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
+  local selection. Router regressions cover both journeys.
+  - [ ] After promotion, retest the actual Settings/appearance/Back and reload journey on development. This repair
+    does not establish the remaining original missing-events, mobile or screen-reader acceptance criteria.
 - [x] **Upcoming load states (#208).** Show loading and failed-load messages separately from an empty week;
   offer retry and hide the previous week's Upcoming items while changing weeks. Regression coverage includes
   delayed responses, failures, successful retries and unavailable family data.
