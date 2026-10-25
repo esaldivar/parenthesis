@@ -411,6 +411,7 @@ describe('repeating events', () => {
     it.each([true, false])('retains focus when entering/leaving cancellation (repeating: %s)', async (repeating) => {
       await openCalendar([repeating ? swim() : event()]);
       (document.querySelector('app-calendar-list button.item') as HTMLElement).click();
+      (await vi.waitFor(() => http.expectOne(`${F}/calendar/events/${currentEvents[0].id}`))).flush(currentEvents[0]);
       await settle();
       const dialog = document.querySelector('app-event-details [role="dialog"]')!;
       for (let attempt = 0; attempt < 2; attempt++) {
