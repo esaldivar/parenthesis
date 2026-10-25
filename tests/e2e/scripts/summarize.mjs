@@ -19,6 +19,7 @@ write([
   '## Playwright release gate', '',
   summary.gatePassed ? '✅ **Passed.** Required profiles and milestone scenarios executed successfully.' : '❌ **Failed.** This release cannot merge into develop.', '',
   `Tested SHA: \`${summary.testedSha ?? 'missing'}\``, '',
+  `Accessibility: ${summary.accessibility.scans} scans; ${summary.accessibility.manualReviewRules} rule results require human review (not a screen-reader pass).`, '',
   `${summary.uniqueScenarios} unique scenarios; ${summary.total} profile executions in ${summary.durationSeconds}s. Counts below are executions, not additional unique tests.`, '',
   '| Coverage/profile | Executions | Passed | Failed | Flaky | Skipped |', '|---|---|---|---|---|---|',
   ...summary.milestones.map(m => row(m.name, m)), row('Regression', summary.regression),
