@@ -627,6 +627,10 @@ that points back here.
   screen-reader-only format hint; regression tests verify its actual accessible-description association.
   - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
 
+### #238 — Cancellation confirmation focus
+- Implemented: single and recurring event cancellation focuses the safe Keep action with its explanation; keeping the event restores Cancel event. Repeated transitions and no-mutation/axe regressions cover both branches.
+- Still required: owner live keyboard retest after deployment and remaining phone/screen-reader recurrence acceptance.
+
 ### #218 — Withdrawal confirmation focus
 - Implemented: opening Withdraw focuses Keep it with the confirmation explanation; Keep it restores the withdrawal trigger. Repeated transitions, no mutation on cancellation and axe are covered.
 - Still required: owner keyboard retest after deployment and the remaining mobile/screen-reader/approval matrix.
