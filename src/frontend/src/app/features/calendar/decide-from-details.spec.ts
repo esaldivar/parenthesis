@@ -249,6 +249,24 @@ describe('approve or decline from an event’s details (#218)', () => {
     expect(buttons()).not.toContain('Decline…');
   });
 
+  it('keeps keyboard focus inside withdrawal confirmation and returns it on Keep it', async () => {
+    await open([{ ...PROPOSED, ownerMembershipId: 'm-alex', caregiverMembershipId: 'm-alex' }]);
+    await openDetails([request({ canDecide: false, proposedByYou: true, proposerMembershipId: 'm-alex' })]);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      button('Withdraw request…').focus();
+      button('Withdraw request…').click();
+      await settle();
+      const keep = button('Keep it');
+      await vi.waitFor(() => expect(document.activeElement).toBe(keep));
+      expect(document.getElementById(keep.getAttribute('aria-describedby')!)?.textContent).toContain('This takes your request back.');
+      expect(await axeViolations(document.body)).toEqual([]);
+      keep.click();
+      await settle();
+      await vi.waitFor(() => expect(document.activeElement).toBe(button('Withdraw request…')));
+    }
+    expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+  });
+
   it('has no axe violations with the answer buttons and the decline comment open', async () => {
     await open([PROPOSED]);
     await openDetails([request()]);

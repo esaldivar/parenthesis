@@ -626,3 +626,7 @@ that points back here.
 - [x] **Date-format accessibility (#236).** Typed reminder/task dates and repeat last-day fields retain a
   screen-reader-only format hint; regression tests verify its actual accessible-description association.
   - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
+
+### #218 — Withdrawal confirmation focus
+- Implemented: opening Withdraw focuses Keep it with the confirmation explanation; Keep it restores the withdrawal trigger. Repeated transitions, no mutation on cancellation and axe are covered.
+- Still required: owner keyboard retest after deployment and the remaining mobile/screen-reader/approval matrix.
