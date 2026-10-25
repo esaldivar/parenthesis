@@ -631,6 +631,10 @@ that points back here.
 - Implemented: refused-save focus recognizes the rendered invalid date while Material and DateField synchronize aria-invalid. Regression fails without the fix; repeated all-day Edit submissions focus End date and preserve input without PATCH.
 - Still required: owner retest of the picker/keyboard reproduction after deployment, plus phone scrolling and actual screen-reader checks.
 
+### #213 — Fresh event details
+- Implemented: Calendar Week/Month/List and event links load current event details before opening the shared panel. Unavailable/cancelled events show feedback and refresh; failed loads never fall back to cached actions. Older responses cannot replace a newer selection or reopen a previous week. Home already uses fresh details. Declined request details follow the same per-parent visibility as the list, including dismissal.
+- Still required: owner stale-tab scenario after deployment and outstanding mobile/assistive-technology acceptance.
+
 ### #260 — Caregiver authorization
 - Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
 - Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
