@@ -345,6 +345,7 @@ describe('tasks on the calendar', () => {
 
     expect(document.querySelector('app-task-details')).toBeNull();
     expect(toastText()).toContain('“Science fair poster” was deleted.');
+    await vi.waitFor(() => expect(document.activeElement).toBe(document.querySelector('app-calendar-page h1')));
   });
 
   it('focuses safe task confirmation and restores its initiating action on cancel (#176)', async () => {

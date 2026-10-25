@@ -5,7 +5,9 @@
  */
 export function revealFirstProblem(root: HTMLElement): void {
   // An invalid date has no message on screen, only red text (#248): its own field is the problem.
-  const problem = root.querySelector<HTMLElement>('.alert, .field-error, input[aria-invalid="true"]');
+  // DateField paints its invalid class during rendering, then restores aria-invalid after Material's own write.
+  // Focus must also work in that interval, before the separate ARIA effect has run (#206).
+  const problem = root.querySelector<HTMLElement>('.alert, .field-error, input.date-invalid, input[aria-invalid="true"]');
   if (!problem) {
     return;
   }
