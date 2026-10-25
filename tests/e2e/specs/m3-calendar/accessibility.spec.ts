@@ -15,6 +15,7 @@ async function chooseWithKeyboard(page: Page, target: string) {
   const active = page.locator('mat-calendar .mat-calendar-body-active');
   await expect(active).toBeFocused();
   for (let step = 0; step < 40; step++) {
+    await expect(active).toBeFocused();
     const current = await active.getAttribute('aria-label');
     if (current === target) {
       await page.keyboard.press('Enter');
