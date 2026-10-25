@@ -114,7 +114,7 @@ export class DateField {
     // Material ignores close() during its opening animation. A fast keyboard selection still changes the date,
     // so finish closing after that animation's end handler has run. Keep normal animation and focus restoration.
     const content = this.document.getElementById(picker.id)?.closest('mat-datepicker-content');
-    if (content && !this.pendingClose.has(content) && content.getAnimations().some(animation => animation.playState === 'running')) {
+    if (content && !this.pendingClose.has(content) && content.getAnimations?.().some(animation => animation.playState === 'running')) {
       this.pendingClose.add(content);
       const finish = (event: Event) => {
         if (event.target !== content) return;
