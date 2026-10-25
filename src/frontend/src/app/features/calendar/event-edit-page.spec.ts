@@ -82,6 +82,24 @@ describe('Edit an event', () => {
     await settle();
   }
 
+  it('blocks a direct edit link for the other caregiver even when I created the event', async () => {
+    await open(weekend({ caregiverMembershipId: 'm-sam', ownerMembershipId: 'm-alex' }));
+    expect(text(page())).toContain('only the parent whose time it is can edit or cancel it');
+    expect(page().querySelector('form')).toBeNull();
+    expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
+  });
+
+  it('allows the persisted caregiver to edit an event created by the other parent', async () => {
+    await open(weekend({ caregiverMembershipId: 'm-alex', ownerMembershipId: 'm-sam' }));
+    expect(page().querySelector('form')).not.toBeNull();
+    type('notes', 'Bring the school bag');
+    await submit();
+    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH'));
+    expect(patch.request.body.notes).toBe('Bring the school bag');
+    patch.flush(weekend({ notes: 'Bring the school bag' }));
+    await settle();
+  });
+
   it('changes an activity at once, prefilled in the family’s time zone', async () => {
     await open(event({ location: 'North Field', notes: 'Bring water' }));
 

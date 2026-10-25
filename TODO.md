@@ -630,3 +630,7 @@ that points back here.
 ### #206 — Edit invalid-date focus
 - Implemented: refused-save focus recognizes the rendered invalid date while Material and DateField synchronize aria-invalid. Regression fails without the fix; repeated all-day Edit submissions focus End date and preserve input without PATCH.
 - Still required: owner retest of the picker/keyboard reproduction after deployment, plus phone scrolling and actual screen-reader checks.
+
+### #260 — Caregiver authorization
+- Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
+- Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
