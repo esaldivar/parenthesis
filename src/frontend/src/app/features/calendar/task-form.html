@@ -28,7 +28,7 @@
     <mat-label>Due date</mat-label>
     <input matInput [matDatepicker]="duePicker" [matDatepickerFilter]="dayFilter()" formControlName="dueDate" required />
     <mat-datepicker-toggle matIconSuffix [for]="duePicker" aria-label="Choose the due date" />
-    <mat-datepicker #duePicker />
+    <mat-datepicker #duePicker [calendarHeaderComponent]="calendarHeader" />
     @if (fieldError('dueDate'); as e) {
       <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
     } @else {

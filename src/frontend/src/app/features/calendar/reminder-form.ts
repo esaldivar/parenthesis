@@ -18,6 +18,7 @@ import { revealFirstProblem } from './reveal-problem';
 import { PAST_DATE, UNREADABLE_DATE, choosable } from './date-rules';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal, toFamilyLocal } from './time';
+import { CalendarHeader } from './calendar-header';
 
 export const TITLE_MAX = 80;
 export const DETAILS_MAX = 1000;
@@ -64,6 +65,7 @@ const REPEATS: readonly { id: RepeatFrequency; label: string }[] = [
   styles: [FORM_STYLES],
 })
 export class ReminderForm implements OnInit {
+  protected readonly calendarHeader = CalendarHeader;
   private readonly api = inject(Api);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

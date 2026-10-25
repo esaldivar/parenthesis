@@ -202,7 +202,7 @@
                     required
                   />
                   <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="Choose the last day" />
-                  <mat-datepicker #untilPicker />
+                  <mat-datepicker #untilPicker [calendarHeaderComponent]="calendarHeader" />
                   @if (fieldError('repeatUntil'); as e) {
                     <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
                   } @else {
