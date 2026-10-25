@@ -626,3 +626,7 @@ that points back here.
 - [x] **Date-format accessibility (#236).** Typed reminder/task dates and repeat last-day fields retain a
   screen-reader-only format hint; regression tests verify its actual accessible-description association.
   - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
+
+### #213 — Fresh event details
+- Implemented: Calendar Week/Month/List and event links load current event details before opening the shared panel. Unavailable/cancelled events show feedback and refresh; failed loads never fall back to cached actions. Older responses cannot replace a newer selection or reopen a previous week. Home already uses fresh details. Declined request details follow the same per-parent visibility as the list, including dismissal.
+- Still required: owner stale-tab scenario after deployment and outstanding mobile/assistive-technology acceptance.
