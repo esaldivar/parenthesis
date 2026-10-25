@@ -23,6 +23,8 @@ const PARENTING = event({
 });
 
 describe('Request swap', () => {
+  beforeEach(() => vi.setSystemTime(new Date('2026-10-01T15:00:00Z')));
+  afterEach(() => vi.useRealTimers());
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
 
@@ -84,7 +86,7 @@ describe('Request swap', () => {
     const check = await conflicts();
     expect(check.request.params.get('startsAt')).toBe('2026-10-24T13:00:00.000Z');
     expect(check.request.params.get('endsAt')).toBe('2026-10-24T20:00:00.000Z');
-    expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
+    expect(http.match((r) => r.method === 'PATCH' || r.url.endsWith('/swap'))).toHaveLength(0);
   });
 
   it('reviews current against proposed, then sends with the reason and stays pending', async () => {
@@ -102,7 +104,7 @@ describe('Request swap', () => {
     expect(text(page())).not.toContain('propose a different time');
     await click('Send request');
 
-    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH' && r.url === `${F}/calendar/events/pt`));
+    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events/pt/swap`));
     expect(patch.request.body).toEqual({
       startsAt: '2026-10-24T13:00:00.000Z',
       endsAt: '2026-10-24T20:00:00.000Z',
@@ -127,7 +129,7 @@ describe('Request swap', () => {
     expect(text(clash)).toContain('Sam marked that time as unavailable');
     expect(text(clash)).toContain('They may still approve your request.');
     expect(button('Continue')).toBeUndefined();
-    expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
+    expect(http.match((r) => r.method === 'PATCH' || r.url.endsWith('/swap'))).toHaveLength(0);
 
     await click('Choose different dates');
     expect(page().querySelector('.clash')).toBeNull();
@@ -195,7 +197,7 @@ describe('Request swap', () => {
     (await conflicts()).flush({ warnings: [] });
     await settle();
     await click('Send request');
-    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH'));
+    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/events/pt/swap`));
     patch.flush({ status: 400, errors: { startsAt: ['Choose a start date from today on.'] } }, { status: 400, statusText: 'Bad Request' });
     await settle();
     const start = page().querySelector<HTMLInputElement>('input[name="startDate"]')!;

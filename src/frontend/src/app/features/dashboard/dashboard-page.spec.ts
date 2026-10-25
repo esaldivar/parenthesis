@@ -328,6 +328,15 @@ describe('DashboardPage (approved design)', () => {
       return http;
     }
 
+    it('allows only Request swap for the other caregiver’s time on Home', async () => {
+      const { fixture, el } = await render({ live: LIVE });
+      openButton(el, 'Time with Alex', '.agenda').click();
+      await answer(fixture, { ...WEEKEND, status: 'Confirmed', caregiverMembershipId: 'm-sam', ownerMembershipId: 'm-alex' });
+      expect(text(dialog())).toContain('Request swap');
+      expect(text(dialog())).not.toContain('Edit event');
+      expect(text(dialog())).not.toContain('Cancel event');
+    });
+
     it('opens the clicked event’s details over the page, and closing returns focus to it, with nothing saved', async () => {
       const { fixture, el } = await render({ live: LIVE });
       // The day list is what narrow screens (and this test's page) show; the grid's blocks work the same way.
