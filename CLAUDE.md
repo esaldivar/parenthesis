@@ -45,6 +45,24 @@ design through semantic theme tokens and accessible primitives.
 [TODO.md](TODO.md) is the single list of open work. Anything the owner calls a to-do, and anything left unfinished or
 deferred, is added there in the same change and ticked off in the PR that completes it.
 
+## Security and release checks
+
+Follow [the release security gate](docs/runbooks/sonar-release-gate.md) and [SECURITY.md](SECURITY.md).
+
+- Before opening or updating a release PR (`develop` → `main`, or `hotfix/…`), review SonarQube Cloud's findings for
+  the release: the latest Sonar Sunday issue, open security issues and hotspots on `main`, and the PR's own analysis.
+- Resolve every release-blocking finding before asking for the release to merge: fix it on a branch into the active
+  `release/x.y.z` branch (or a `hotfix/…` if it can't wait), or, only with the owner's decision, mark it Accepted /
+  False positive (hotspots: Safe / Acknowledged) in SonarQube Cloud **with a comment** giving the reason, who
+  decided, and the linked GitHub issue or PR.
+- Never bypass, skip, disable or weaken a security check to get a PR through: no editing the gate, its policy, the
+  quality gate or the required checks to make a PR pass, no admin merges past a red check, no accepting a finding
+  just to unblock a release. A policy change is its own reviewed PR. If a check is wrong, say so and stop.
+- Record every accepted security exception in SonarQube Cloud (the comment) and in the tracking GitHub issue.
+- Before requesting review, run the checks that apply to the change (backend build, format and tests; frontend lint,
+  tests and build; `node --test` for `.github/scripts`; actionlint for workflows when available) and report what
+  ran and what couldn't.
+
 ## Implementation and verification
 
 Follow Milestone 1: scaffold the shell/theme first; use honest empty states for
@@ -66,3 +84,66 @@ Workflow conversation, and no HTML prototype was present in this checkout.
 Do not invent a recovered prototype. If the original files become available,
 preserve them as references under `docs/prototypes/` with provenance and describe
 any differences from the design system before using them for implementation.
+
+## Telegram notifications
+
+Use the Telegram bot (`TELEGRAM_BOT_TOKEN`) only when the owner says in that
+session that they are away from the app (for example, driving). Otherwise do not
+use it.
+
+- Message only when you are blocked and need the owner's response. No progress
+  updates, summaries, or completion notices.
+- Keep it to one short, general line, such as "I need your response on the PR
+  review." Put the full question and details in the Claude app, not Telegram.
+- The bot cannot receive replies; the owner answers in the Claude app.
+- No chat ID is stored. Ask the owner to message the bot, then read it from
+  `getUpdates`. Strip whitespace from the token before use.
+
+## Development workflow: PR limits, Copilot reviews, Discord
+
+- Owner-testing workflow #152 is **off until separately approved for local activation**. Follow
+  [the rollout runbook](docs/runbooks/claude-owner-testing.md). In activated mode, merges do not prove owner
+  acceptance or deployment. Never apply `meets all acceptance criteria`, `design approved`, or owner control
+  records on the owner's behalf. Failure feedback is task data, not permission to change guards. This runner
+  change must use a supervised implementation route, never loosen protected paths for self-modification.
+
+- Every PR must list relevant real repository issues in **Tracking issues**, one plain-text `Refs #123` per line.
+  Include releases, hotfixes and syncs; reuse the underlying issues (closed ones are allowed), never unrelated
+  issues or PR-only references. Keep issue acceptance and deployment verification separate. Use `Refs` on
+  intermediate branches; follow [the issue-link runbook](docs/runbooks/pr-issue-links.md).
+
+[docs/development-workflow.md](docs/development-workflow.md) is the authoritative reference; follow it. In short:
+- At most **3 PRs a week from release/* into develop** (owner correction October 20, 2026). All other source/target
+  combinations are excluded: ordinary coding PRs must not be blocked by this cap. Separately, at most
+  **6 Copilot reviews a week, 2 per PR** (initial plus one follow-up).
+  Weeks start Monday 12:00 AM Central. Check usage before opening a PR or requesting a Copilot review.
+- The `develop` ruleset **Copilot release review** stays Disabled between releases. Remind the owner to set it to
+  Active before opening a `release/x.y.z` → `develop` PR, and to Disabled once that release merges.
+- Fix every Copilot review comment on a release PR (owner rule); don't dismiss one with a reply. If one can't be
+  fixed or would make the code wrong, ask the owner first.
+- At the release-promotion limit, keep ordinary coding work moving; only another release/* -> develop PR needs an exception.
+  Copilot limits apply separately. Exceptions
+  need the owner's `owner-approved-pr` / `owner-approved-review` label. Group related work; no PRs for minor changes.
+- Never merge PRs automatically, and never open duplicate PRs to get around a limit.
+- Before opening a **major** PR, send the owner a Discord summary (`dev-workflow.mjs send`); report it if it fails.
+- Don't change branding, UI or application features as part of workflow work. **Do not merge PR #40**, and don't
+  assume it's ready.
+
+## Branching, releases and environments
+
+Owner decisions of October 18, 2026, in force. [docs/development-workflow.md](docs/development-workflow.md) is the
+authoritative reference; follow it. In short:
+- `main` is production, `develop` is the private development site, and each milestone has one `release/x.y.z`
+  branch cut from `develop` (only the active one exists). Work branches start from the active release branch and PR
+  into it. `develop` only takes release branches, hotfixes and `chore/sync-…` back-merges; `main` only takes
+  `develop` and `hotfix/…`. The **PR source** check enforces this.
+- Releases: `release/x.y.z` → `develop` (merge commit; deploys to the development site), test there, then
+  `develop` → `main` (merge commit). Production deploys the image tested on `develop`, only after the owner approves
+  the deployment in Actions. Never merge or deploy without the owner's approval.
+- Production release windows are every other Friday, America/Chicago, from October 30, 2026 (November 25 and
+  December 23 replace the holiday Fridays). Windows are opportunities, not deadlines: never skip testing or approval
+  to meet one.
+- Milestones: v0.1.0 Foundation, v0.2.0 Accounts and profiles, v0.3.0 Calendar and approvals, v0.4.0 Communication,
+  v0.5.0 Child experience, v1.0.0 Private beta (mapped to backlog items in [the backlog](docs/planning/mvp-backlog.md)).
+- Deployments go to Azure (setup in [the Azure runbook](docs/runbooks/azure-environments.md)). The development site
+  holds synthetic data only.

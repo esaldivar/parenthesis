@@ -34,6 +34,8 @@ On GitHub, open `esaldivar/parenthesis` and go to **Settings → Secrets and var
 - Open or re-run a PR into `main`. The **SonarQube Cloud** check runs and the quality gate result appears on the PR.
 - Once it passes, add **SonarQube Cloud** to `main`'s required status checks, so a failing quality gate blocks
   releases.
+- Also add **Release security gate**, which blocks releases with unresolved security findings. See
+  [sonar-release-gate.md](sonar-release-gate.md).
 - Use the default **Sonar way** quality gate to start with.
 - Add the Sonar quality-gate badge to the README.
 

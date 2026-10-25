@@ -1,0 +1,233 @@
+name: Deploy
+
+# Deploys the app to Azure Container Apps (docs/runbooks/azure-environments.md; rules in docs/development-workflow.md).
+#   - develop  -> the private development site, automatically after each merge.
+#   - main     -> production, only after the owner approves the "production" environment in the Actions tab.
+#   - by hand  -> redeploy a released version (rollback). Run it from develop for development, from main for production.
+# Production gets the exact image that was built and tested on develop: main must hold the same files as the develop
+# commit it merged, or the run stops. Only a hotfix builds a new image for production, and it still needs approval.
+# Dormant until the owner sets the repository variable DEPLOY_ENABLED to "true" (after the Azure setup).
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to redeploy"
+        type: choice
+        options: [development, production]
+        required: true
+      version:
+        description: "Released version to redeploy, e.g. v0.2.0 (rollback)"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref_name }}-${{ inputs.environment || 'push' }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/parenthesis-api
+
+jobs:
+  # Decides what to deploy where, and builds the image when one is needed.
+  prepare:
+    name: Prepare the release artifact
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      environment: ${{ steps.plan.outputs.environment }}
+      image: ${{ steps.plan.outputs.image }}
+      tested_sha: ${{ steps.plan.outputs.tested_sha }}
+      version: ${{ steps.plan.outputs.version }}
+      kind: ${{ steps.plan.outputs.kind }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Sign in to the container registry
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+
+      - name: Plan
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref_name }}
+          INPUT_ENV: ${{ inputs.environment }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          out() { echo "$1=$2" | tee -a "$GITHUB_OUTPUT"; }
+          exists() { docker manifest inspect "$1" >/dev/null 2>&1; }
+          git fetch -q origin '+refs/heads/release/*:refs/remotes/origin/release/*' --tags
+
+          if [[ "$EVENT" == "workflow_dispatch" ]]; then
+            [[ "$INPUT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version must look like v0.2.0"; exit 1; }
+            exists "$IMAGE:$INPUT_VERSION" || { echo "::error::No released image $IMAGE:$INPUT_VERSION"; exit 1; }
+            out environment "$INPUT_ENV"; out image "$IMAGE:$INPUT_VERSION"; out tested_sha ""; out version ""; out kind rollback
+            exit 0
+          fi
+
+          if [[ "$REF" == "develop" ]]; then
+            out environment development; out image "$IMAGE:sha-$GITHUB_SHA"; out tested_sha "$GITHUB_SHA"; out version ""; out kind build
+            exit 0
+          fi
+
+          # main: deploy develop's tested image (or build a hotfix). Rules and checks: production-plan.sh.
+          out environment production
+          bash .github/scripts/production-plan.sh "$IMAGE" | tee -a "$GITHUB_OUTPUT"
+
+      # "Tested" means deployed to the development site with passing smoke tests, not just built.
+      - name: Check the release passed on the development site
+        if: steps.plan.outputs.kind == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.plan.outputs.tested_sha }}
+        run: |
+          id="$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$SHA&environment=development&per_page=1" --jq '.[0].id // ""')"
+          state="$( [[ -n "$id" ]] && gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0].state // ""' || true)"
+          if [[ "$state" != "success" ]]; then
+            echo "::error::$SHA has no successful development deployment (state: ${state:-none}). Test it on the development site first."
+            exit 1
+          fi
+          echo "$SHA passed on the development site (deployment $id)."
+
+      - name: Build and push the image
+        if: steps.plan.outputs.kind == 'build' || steps.plan.outputs.kind == 'build-hotfix'
+        env:
+          TARGET: ${{ steps.plan.outputs.image }}
+        run: |
+          docker build -f docker/api.Dockerfile -t "$TARGET" \
+            --label org.opencontainers.image.source="${{ github.server_url }}/${{ github.repository }}" \
+            --label org.opencontainers.image.revision="$GITHUB_SHA" .
+          docker push "$TARGET"
+
+  deploy:
+    name: Deploy to ${{ needs.prepare.outputs.environment }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Production requires the owner's approval here (environment protection rule), on every run.
+    environment:
+      name: ${{ needs.prepare.outputs.environment }}
+      url: ${{ vars.APP_URL }}
+    permissions:
+      contents: write # version tag and release notes
+      packages: write # tag the released image
+      id-token: write # Azure sign-in without stored passwords (OIDC)
+    env:
+      TARGET: ${{ needs.prepare.outputs.image }}
+      ENVIRONMENT: ${{ needs.prepare.outputs.environment }}
+      VERSION: ${{ needs.prepare.outputs.version }}
+      KIND: ${{ needs.prepare.outputs.kind }}
+      RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+      APP: ${{ vars.AZURE_CONTAINER_APP }}
+      JOB: ${{ vars.AZURE_MIGRATION_JOB }}
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Sign in to Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Note the running version (for rollback)
+        id: before
+        run: |
+          prev="$(az containerapp show -n "$APP" -g "$RG" --query 'properties.template.containers[0].image' -o tsv)"
+          echo "previous=$prev" >> "$GITHUB_OUTPUT"
+          echo "Running before this deployment: \`$prev\`" >> "$GITHUB_STEP_SUMMARY"
+
+      # Migrations run first, as a one-off job with the same image (`dotnet CoParent.Api.dll migrate`). They must be
+      # backward compatible, so the running version keeps working until the new one takes over.
+      - name: Migrate the database
+        run: |
+          az containerapp job update -n "$JOB" -g "$RG" --image "$TARGET" --output none
+          run="$(az containerapp job start -n "$JOB" -g "$RG" --query name -o tsv)"
+          for _ in $(seq 1 60); do
+            status="$(az containerapp job execution show -n "$JOB" -g "$RG" --job-execution-name "$run" --query properties.status -o tsv)"
+            case "$status" in
+              Succeeded) echo "Migrations applied."; exit 0 ;;
+              Failed|Stopped|Degraded) echo "::error::Migration job $run ended: $status. Nothing was deployed."; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::Migration job $run didn't finish in 10 minutes."; exit 1
+
+      - name: Deploy the image
+        run: az containerapp update -n "$APP" -g "$RG" --image "$TARGET" --output none
+
+      - name: Smoke tests
+        id: smoke
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -fsS "$APP_URL/health/live" >/dev/null && curl -fsS "$APP_URL/health/ready" >/dev/null; then
+              curl -fsS "$APP_URL/" | grep -q '<app-root' || { echo "::error::The app shell isn't served at /"; exit 1; }
+              echo "Healthy: live, ready, and the app shell is served."; exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$APP_URL isn't healthy after 5 minutes."; exit 1
+
+      - name: Roll back after a failed deployment
+        if: failure() && steps.before.outputs.previous != ''
+        env:
+          PREVIOUS: ${{ steps.before.outputs.previous }}
+        run: |
+          echo "::warning::Rolling back to $PREVIOUS. Database migrations are not undone (see the runbook)."
+          az containerapp update -n "$APP" -g "$RG" --image "$PREVIOUS" --output none
+
+      - name: Tag the release
+        if: env.ENVIRONMENT == 'production' && env.VERSION != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          docker buildx imagetools create -t "$IMAGE:$VERSION" "$TARGET"
+          gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --generate-notes \
+            --title "Parenthesis $VERSION"
+
+      - name: Summary
+        if: always()
+        env:
+          OUTCOME: ${{ job.status }}
+          PREVIOUS: ${{ steps.before.outputs.previous }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            if [[ "$OUTCOME" == "success" ]]; then echo "PARENTHESIS — DEPLOYED TO ${ENVIRONMENT^^}"; else echo "PARENTHESIS — DEPLOYMENT TO ${ENVIRONMENT^^} FAILED"; fi
+            echo
+            [[ -n "$VERSION" ]] && echo "Version: $VERSION"
+            echo "Image: $TARGET"
+            echo "Kind: $KIND"
+            echo "Commit: $GITHUB_SHA"
+            echo "Previous image: ${PREVIOUS:-unknown}"
+            if [[ "$OUTCOME" == "success" ]]; then echo "Smoke tests and health checks: passed"; else echo "Failed. If the deployment or smoke tests failed, the previous image was put back (migrations aren't undone). Check the run."; fi
+            echo "Run: $RUN_URL"
+          } > message.md
+          cat message.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Tell Discord
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: node .github/scripts/dev-workflow.mjs send message.md

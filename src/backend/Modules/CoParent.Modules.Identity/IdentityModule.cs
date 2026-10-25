@@ -4,6 +4,8 @@ using CoParent.Modules.Identity.Contracts;
 using CoParent.Modules.Identity.Domain;
 using CoParent.Modules.Identity.Endpoints;
 using CoParent.Modules.Identity.Infrastructure;
+using CoParent.SharedKernel.Security;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -43,6 +45,7 @@ public static class IdentityModule
             .AddDefaultTokenProviders();
         services.AddScoped<AccountEmails>();
         services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IAccountRemoval, AccountRemoval>();
 
         services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
         services.ConfigureApplicationCookie(options =>
@@ -58,10 +61,31 @@ public static class IdentityModule
             // An API answers with status codes, not redirects to a login page.
             options.Events.OnRedirectToLogin = context => SetStatus(context.Response, StatusCodes.Status401Unauthorized);
             options.Events.OnRedirectToAccessDenied = context => SetStatus(context.Response, StatusCodes.Status403Forbidden);
+
+            // Child sessions (ADR-0006) have no user account, so the security-stamp check doesn't apply. They're
+            // re-checked on every request instead: an archived child, disabled access or a removed device ends them
+            // at once. Parent sessions keep Identity's own validation.
+            var validateParent = options.Events.OnValidatePrincipal;
+            options.Events.OnValidatePrincipal = async context =>
+            {
+                if (context.Principal?.GetChildSession() is not { } child)
+                {
+                    await validateParent(context);
+                    return;
+                }
+
+                var validator = context.HttpContext.RequestServices.GetRequiredService<IChildSessionValidator>();
+                if (!await validator.IsValidAsync(child, context.HttpContext.RequestAborted))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                }
+            };
         });
         services.AddAuthorization();
 
         services.AddOptions<AuthRateLimitOptions>().BindConfiguration(AuthRateLimitOptions.Section);
+        services.AddOptions<SignUpOptions>().BindConfiguration(SignUpOptions.Section);
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -99,4 +123,26 @@ internal sealed class AuthRateLimitOptions
     public int PermitLimit { get; set; } = 10;
 
     public TimeSpan Window { get; set; } = TimeSpan.FromMinutes(1);
+}
+
+/// <summary>
+/// Who may create an account. Open by default (production). The development site sets <see cref="InviteOnly"/> and lists
+/// its testers, so only they can register there (owner decision, October 18, 2026).
+/// </summary>
+internal sealed class SignUpOptions
+{
+    public const string Section = "Identity:SignUp";
+
+    private static readonly char[] _separators = [',', ';', ' ', '\t', '\r', '\n'];
+
+    /// <summary>When true, only <see cref="AllowedEmails"/> can register. True with an empty list means nobody can.</summary>
+    public bool InviteOnly { get; set; }
+
+    /// <summary>Tester email addresses, separated by commas, semicolons or spaces (one setting, easy to keep in Azure).</summary>
+    public string AllowedEmails { get; set; } = "";
+
+    public bool Allows(string email) =>
+        !InviteOnly
+        || AllowedEmails.Split(_separators, StringSplitOptions.RemoveEmptyEntries)
+            .Any(allowed => string.Equals(allowed, email, StringComparison.OrdinalIgnoreCase));
 }

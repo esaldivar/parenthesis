@@ -1,0 +1,130 @@
+<p class="back"><a routerLink="/calendar" [queryParams]="{ date: back() }">← Calendar</a></p>
+<h1>Edit event</h1>
+
+@if (loadError(); as message) {
+  <div class="alert" role="alert">{{ message }}</div>
+} @else if (!event()) {
+  <p role="status">Loading…</p>
+} @else if (blocked(); as message) {
+  <div class="alert" role="alert">{{ message }}</div>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="details-heading">
+    <h2 id="details-heading" class="step">{{ event()!.title }}</h2>
+    <p class="note">{{ note() }}</p>
+    @if (repeats(); as repeats) {
+      @if (parenting()) {
+        <!-- Repeating parenting time changes one date at a time for now, each through approval (#239). -->
+        <p class="legend-hint">This repeats: {{ repeats }}. A change applies to this date only.</p>
+      } @else {
+      <fieldset class="when scope">
+        <legend>This repeats: {{ repeats }}. Change which dates?</legend>
+        @for (option of scopes; track option.id) {
+          <label class="scope__option">
+            <input type="radio" name="scope" [checked]="scope() === option.id" (change)="setScope(option.id)" />
+            {{ option.label }}
+          </label>
+        }
+        @if (scope() !== 'this') {
+          <p class="legend-hint">Each date keeps its own day. You can change the times, title, place and notes.</p>
+        }
+      </fieldset>
+      }
+    }
+    @if (error(); as message) {
+      <div class="alert" role="alert">{{ message }}</div>
+    }
+
+    @if (!unavailable()) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Title</mat-label>
+        <input matInput formControlName="title" maxlength="120" required [attr.aria-invalid]="!!fieldError('title')" />
+        @if (fieldError('title'); as e) {
+          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+        }
+      </mat-form-field>
+    }
+
+    @if (parenting()) {
+      <!-- Whose parenting time it is never changes (#246). -->
+      <p class="legend-hint">{{ caregiverLabel() }}</p>
+      @if (fieldError('caregiverMembershipId'); as e) {
+        <p class="field-error" role="alert">{{ e }}</p>
+      }
+    }
+
+    <fieldset class="when">
+      <legend>When</legend>
+      <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+      <!-- Start and End as separate fields, each opening its own calendar (#249). Only past days are greyed
+           out; an invalid date turns red, with its reason for screen readers, and blocks sending (#248). -->
+      <div class="when__row dates">
+        <app-date-field
+          label="Start date"
+          name="startDate"
+          inputId="edit-start-date"
+          [control]="form.controls.startDate"
+          [dateFilter]="dayFilter"
+          [issue]="dateCheck.issues().start"
+        />
+        <app-date-field
+          label="End date"
+          name="endDate"
+          inputId="edit-end-date"
+          [control]="form.controls.endDate"
+          [startAt]="form.controls.endDate.value || form.controls.startDate.value || null"
+          [dateFilter]="dayFilter"
+          [issue]="dateCheck.issues().end"
+        />
+      </div>
+      @if (!allDay()) {
+        <div class="when__row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Start time</mat-label>
+            <input matInput type="time" formControlName="startTime" required />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>End time</mat-label>
+            <input
+              matInput
+              type="time"
+              formControlName="endTime"
+              required
+              [attr.aria-invalid]="dateCheck.issues().end === endBeforeStart"
+              [class.date-invalid]="dateCheck.issues().end === endBeforeStart"
+            />
+          </mat-form-field>
+        </div>
+      }
+      @if (fieldError('when'); as e) {
+        <p class="field-error" role="alert">{{ e }}</p>
+      }
+    </fieldset>
+
+    @if (!unavailable()) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Location (optional)</mat-label>
+        <input matInput formControlName="location" maxlength="200" />
+        @if (fieldError('location'); as e) {
+          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+        }
+      </mat-form-field>
+    }
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ unavailable() ? 'Private note (optional)' : 'Notes (optional)' }}</mat-label>
+      <textarea matInput formControlName="notes" rows="3" maxlength="1000"></textarea>
+      @if (fieldError('notes'); as e) {
+        <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+      } @else if (unavailable()) {
+        <mat-hint>Only you can see this. Your co-parent sees “Unavailable”.</mat-hint>
+      }
+    </mat-form-field>
+
+    <div class="actions">
+      <button mat-flat-button type="submit" [disabled]="busy()">
+        {{ busy() ? 'Saving…' : needsApproval() && materialChange() ? 'Send for approval' : 'Save changes' }}
+      </button>
+      <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">Cancel</a>
+    </div>
+  </form>
+}

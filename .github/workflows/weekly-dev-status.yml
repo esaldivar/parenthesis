@@ -1,0 +1,44 @@
+name: Weekly development status
+
+# Monday report to Discord from real GitHub data: PRs and Copilot reviews used against the weekly limits, PRs awaiting
+# review, major changes merged, work waiting for a PR slot, release readiness and blockers. Anything GitHub doesn't
+# expose is listed as not available. Rules: docs/development-workflow.md.
+on:
+  schedule:
+    # 06:15 UTC Monday is 1:15 AM Central in daylight time and 12:15 AM in standard time: always just after the reset.
+    - cron: "15 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      period:
+        description: Which week to report
+        type: choice
+        options: [last, current]
+        default: current
+      dry_run:
+        description: Only show the report here; don't send it to Discord
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  report:
+    name: Weekly status
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Build and send the report
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PERIOD: ${{ inputs.period || 'last' }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: node .github/scripts/dev-workflow.mjs weekly-status

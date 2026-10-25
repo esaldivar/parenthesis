@@ -1,7 +1,6 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
-using MimeKit;
 
 namespace CoParent.Infrastructure.Email;
 
@@ -50,11 +49,7 @@ internal sealed class SmtpEmailSender(IOptions<EmailOptions> options) : IEmailSe
             throw new InvalidOperationException($"{EmailOptions.Section}:Smtp:Host is not configured.");
         }
 
-        using var mime = new MimeMessage();
-        mime.From.Add(new MailboxAddress(settings.FromName, settings.FromAddress));
-        mime.To.Add(MailboxAddress.Parse(message.To));
-        mime.Subject = message.Subject;
-        mime.Body = new BodyBuilder { TextBody = message.TextBody, HtmlBody = message.HtmlBody }.ToMessageBody();
+        using var mime = EmailMime.Build(settings, message);
 
         using var client = new SmtpClient();
         await client.ConnectAsync(

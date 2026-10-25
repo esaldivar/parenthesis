@@ -156,6 +156,28 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal([HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized, HttpStatusCode.TooManyRequests], statuses);
     }
 
+    [Fact]
+    public async Task An_invite_only_site_lets_only_listed_emails_sign_up()
+    {
+        var tester = ApiSession.NewEmail();
+        var stranger = ApiSession.NewEmail();
+        await using var inviteOnly = api.WithWebHostBuilder(b => b
+            .UseSetting("Identity:SignUp:InviteOnly", "true")
+            .UseSetting("Identity:SignUp:AllowedEmails", $"someone@example.test; {tester.ToUpperInvariant()}"));
+        using var session = await ApiSession.StartAsync(inviteOnly);
+
+        var listed = await session.PostAsync(
+            "/api/auth/register", new { email = tester, password = ApiSession.Password, displayName = "Alex" });
+        var unlisted = await session.PostAsync(
+            "/api/auth/register", new { email = stranger, password = ApiSession.Password, displayName = "Sam" });
+
+        Assert.Equal(HttpStatusCode.Accepted, listed.StatusCode);
+        Assert.Single(session.Emails.SentTo(tester));
+        Assert.Equal(HttpStatusCode.Forbidden, unlisted.StatusCode);
+        Assert.Equal("Sign-up here is by invitation only.", await TitleAsync(unlisted));
+        Assert.Empty(session.Emails.SentTo(stranger));
+    }
+
     private static async Task<string?> TitleAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken))
             .GetProperty("title").GetString();

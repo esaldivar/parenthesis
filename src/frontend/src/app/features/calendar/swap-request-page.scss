@@ -1,0 +1,218 @@
+:host {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  max-width: 760px;
+}
+h1,
+.step {
+  margin: 0;
+}
+h1:focus,
+h3:focus {
+  outline: none;
+}
+.step {
+  font-size: var(--font-size-h3);
+  margin-bottom: var(--space-2);
+}
+.back {
+  margin: 0;
+}
+.back a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+}
+p {
+  margin: 0;
+}
+.muted,
+.hint {
+  color: var(--color-text-secondary);
+}
+.card {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-surface-soft);
+  border-left: 4px solid var(--color-leaf);
+  border-radius: var(--radius-card);
+  background: var(--color-parenting-bg);
+  color: var(--color-text);
+  min-width: 0;
+}
+/* Proposed, not confirmed: dashed, like every pending item on the calendar. */
+.card--proposed {
+  border-style: dashed;
+  border-left-style: dashed;
+  background: var(--color-status-pending-bg);
+}
+.card__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2);
+  align-items: start;
+}
+.summary__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+fieldset {
+  border: 1px solid var(--color-surface-soft);
+  border-radius: var(--radius-control);
+  padding: var(--space-3);
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+legend {
+  font-weight: 600;
+  padding: 0 var(--space-1);
+}
+.dates {
+  width: 100%;
+}
+.when__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+.field-error {
+  color: var(--color-danger);
+}
+.note {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-soft);
+}
+.note app-icon {
+  flex: none;
+  margin-top: 2px;
+}
+/* The gentle, non-blocking warning, with an explicit choice (handoff: Send Anyway / Choose Different Dates). */
+.clash {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-leaf-gold);
+  border-radius: var(--radius-control);
+  background: var(--color-status-pending-bg);
+}
+.clash h3 {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin: 0;
+  font-size: 1rem;
+}
+.choices,
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.buttons {
+  justify-content: flex-end;
+}
+.choices > *,
+.buttons > * {
+  min-height: var(--target-min);
+}
+.buttons--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+.compare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: var(--space-2);
+  align-items: center;
+}
+.compare__arrow {
+  color: var(--color-text-secondary);
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+}
+dt {
+  font-weight: 600;
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.status {
+  justify-self: start;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--color-outline);
+  background: var(--color-status-pending-bg);
+  font-weight: 600;
+}
+.sent {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  text-align: center;
+  max-width: 440px;
+  justify-self: center;
+}
+.sent .card {
+  justify-self: stretch;
+  text-align: start;
+}
+.sent .buttons--stack {
+  justify-self: stretch;
+}
+.sent__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.alert {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-control);
+  background: var(--color-status-rejected-bg);
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+@media (max-width: 560px) {
+  .compare {
+    grid-template-columns: 1fr;
+  }
+  .compare__arrow {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+  .buttons {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+// Start and End side by side, at every width (#249).
+.when__row.dates {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
