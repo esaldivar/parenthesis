@@ -187,6 +187,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(["Soccer Practice"], kaisWeek.Select(e => e.GetProperty("title").GetString()));
         Assert.All(kaisWeek, e => Assert.Equal(JsonValueKind.Null, e.GetProperty("notes").ValueKind));
         Assert.Equal(HttpStatusCode.Forbidden, (await kai.PostAsync(Events(f), Activity("Sleepover", f.KaiId))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await kai.PostAsync($"{Events(f)}/{declined.GetProperty("id").GetGuid()}/swap", new { startsAt = later.AddDays(7), endsAt = later.AddDays(9) })).StatusCode);
         Assert.Empty(kaisLater);
         Assert.Equal("Rejected", Assert.Single(dadsLater).GetProperty("status").GetString());
         Assert.Equal(
@@ -684,7 +685,7 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         // Dad can't add Mom's parenting time at all (#246); Mom can't add hers while she's unavailable (#210).
         Assert.Equal(HttpStatusCode.BadRequest, byDad.StatusCode);
         Assert.True((await JsonAsync(byDad)).GetProperty("errors").TryGetProperty("caregiverMembershipId", out var _));
-        Assert.Equal(HttpStatusCode.NotFound, byMom.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, byMom.StatusCode);
         Assert.True((await JsonAsync(byMom)).GetProperty("errors").TryGetProperty("caregiverUnavailable", out var _));
         // Never the unavailable time's private details.
         Assert.DoesNotContain("Surgery", await byMom.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.OrdinalIgnoreCase);
@@ -883,8 +884,6 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         var f = await FamilyAsync();
         using var _ = f;
         var id = await ConfirmedParentingTimeAsync(f);
-        using var kai = await KaiSignedInAsync(f);
-        Assert.Equal(HttpStatusCode.Forbidden, (await kai.PostAsync($"{Events(f)}/{id}/swap", new { startsAt = _monday.AddDays(7), endsAt = _monday.AddDays(13) })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Mom.PostAsync($"{Events(f)}/{id}/swap", new { startsAt = _monday, endsAt = _monday.AddDays(6), allDay = true })).StatusCode);
 
         var response = await f.Mom.PostAsync($"{Events(f)}/{id}/swap", new
