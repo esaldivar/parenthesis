@@ -117,13 +117,14 @@ jobs:
     name: Deploy to ${{ needs.prepare.outputs.environment }}
     needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45 # includes up to 15 minutes waiting for main security evidence
     # Production requires the owner's approval here (environment protection rule), on every run.
     environment:
       name: ${{ needs.prepare.outputs.environment }}
       url: ${{ vars.APP_URL }}
     permissions:
       contents: write # version tag and release notes
+      actions: read # verify the exact production candidate's Sonar workflow and current attempt
       packages: write # tag the released image
       id-token: write # Azure sign-in without stored passwords (OIDC)
     env:
@@ -139,7 +140,23 @@ jobs:
       - uses: actions/checkout@v7
         with:
           sparse-checkout: .github/scripts
+          fetch-depth: 0 # source trees and released rollback tags must be verifiable
           persist-credentials: false
+
+      # Environment approval happens before this job. Missing/stale/failed evidence stops before Azure access.
+      - uses: actions/setup-node@v7
+        if: env.ENVIRONMENT == 'production'
+        with:
+          node-version: "24"
+
+      - name: Verify production artifact security
+        if: env.ENVIRONMENT == 'production'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          node .github/scripts/production-security.mjs
 
       - name: Sign in to Azure
         uses: azure/login@v3

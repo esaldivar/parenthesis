@@ -32,6 +32,11 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
   - PRs into `main` also run the **Release security gate**, which blocks the release on unresolved vulnerabilities,
     high-severity security issues, unreviewed hotspots and accepted findings with no written reason. It fails if
     SonarQube Cloud can't be checked. See [the release security gate](docs/runbooks/sonar-release-gate.md).
+- **Production artifact security:** after environment approval and before Azure login, Deploy verifies the image's
+  immutable digest, source provenance and identical source tree against the latest successful post-merge `main`
+  Sonar analysis and Release security gate. Missing, failed, skipped or stale evidence blocks normal releases,
+  hotfixes and manual production redeploys. Redeploy production only from `main` using a released version.
+  See the [runbook](docs/runbooks/sonar-release-gate.md#production-deployment-verification).
 - **Approvals:** GitHub doesn't let authors approve their own PRs, and this is a single-maintainer project, so the
   passing checks are the gate for merging. **Production** additionally needs the owner's approval of each deployment,
   in the Actions tab (the `production` environment).
