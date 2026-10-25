@@ -72,7 +72,7 @@
               <input
                 type="checkbox"
                 [checked]="entry.completedAt !== null"
-                [attr.aria-disabled]="busy()"
+                [attr.aria-disabled]="busy() || sessionChanged()"
                 (click)="holdWhileBusy($event)"
                 #box
                 (change)="toggle(entry, box)"
@@ -97,9 +97,13 @@
   }
 
   @if (error(); as error) {
-    <p class="error" role="alert">{{ error }}</p>
+    <p class="error" role="alert" [attr.id]="sessionChanged() ? 'task-session-error' : null" tabindex="-1">{{ error }}</p>
   }
 
+  @if (sessionChanged()) {
+    <!-- A native navigation restarts session initialization and refreshes the token before another explicit action. -->
+    <a mat-stroked-button [href]="reloadUrl">Reload calendar</a>
+  } @else {
   <div class="actions">
     @if (!confirming()) {
       @if (!hasChecklist()) {
@@ -125,4 +129,5 @@
       </div>
     }
   </div>
+  }
 </section>
