@@ -22,7 +22,7 @@ import { FORM_STYLES } from '../auth/form-styles';
     @if (!open()) {
       <p class="muted">Permanently delete your Parenthesis account and your personal details.</p>
       <div class="actions actions--start">
-        <button mat-stroked-button class="danger" type="button" (click)="start()">Delete account…</button>
+        <button #deleteButton mat-stroked-button class="danger" type="button" (click)="start()">Delete account…</button>
       </div>
     } @else {
       <div class="confirm">
@@ -113,6 +113,7 @@ export class DeleteAccount {
   readonly families = input.required<readonly { name: string; coParentName: string | null }[]>();
 
   private readonly warning = viewChild<ElementRef<HTMLElement>>('warning');
+  private readonly deleteButton = viewChild('deleteButton', { read: ElementRef<HTMLButtonElement> });
 
   protected readonly form = inject(NonNullableFormBuilder).group({ password: ['', Validators.required] });
   protected readonly open = signal(false);
@@ -131,6 +132,7 @@ export class DeleteAccount {
     this.error.set(null);
     this.fieldError.set(null);
     this.open.set(false);
+    afterNextRender(() => this.deleteButton()?.nativeElement.focus(), { injector: this.injector });
   }
 
   protected async submit(): Promise<void> {
