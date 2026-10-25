@@ -97,6 +97,10 @@ export function layOutWeek(
     const continuesBefore = item.firstDate < first;
     const continuesAfter = item.lastDate > last;
     const part = continuesBefore && continuesAfter ? ' Continues from last week and into next week.' : continuesBefore ? ' Continues from last week.' : continuesAfter ? ' Continues into next week.' : '';
+    // Month bars sit in week rows, without a labelled day ancestor. Every occurrence needs its own full date (#250).
+    const firstDate = `${dayLong(item.firstDate)}, ${item.firstDate.slice(0, 4)}`;
+    const lastDate = `${dayLong(item.lastDate)}, ${item.lastDate.slice(0, 4)}`;
+    const dates = item.firstDate === item.lastDate ? firstDate : `${firstDate} through ${lastDate}`;
     bars.push({
       key: `${item.id}:${first}`,
       item,
@@ -105,7 +109,7 @@ export function layOutWeek(
       lane,
       continuesBefore,
       continuesAfter,
-      label: `${itemSummary(item)}${part}`,
+      label: `${itemSummary(item)}, ${dates}${part}`,
       status: barStatus(item),
     });
   }

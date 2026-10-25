@@ -627,6 +627,10 @@ that points back here.
   screen-reader-only format hint; regression tests verify its actual accessible-description association.
   - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
 
+### #238 — Cancellation confirmation focus
+- Implemented: single and recurring event cancellation focuses the safe Keep action with its explanation; keeping the event restores Cancel event. Repeated transitions and no-mutation/axe regressions cover both branches.
+- Still required: owner live keyboard retest after deployment and remaining phone/screen-reader recurrence acceptance.
+
 ### #218 — Withdrawal confirmation focus
 - Implemented: opening Withdraw focuses Keep it with the confirmation explanation; Keep it restores the withdrawal trigger. Repeated transitions, no mutation on cancellation and axe are covered.
 - Still required: owner keyboard retest after deployment and the remaining mobile/screen-reader/approval matrix.
@@ -646,3 +650,19 @@ that points back here.
 ### #137 — Account review cancellation focus
 - Implemented: Cancel restores Delete account after rendering the closed state. Repeated-review regression retains initial consequence-warning focus, clears the form, stays in Settings and never calls deletion.
 - Still required: owner cancellation keyboard retest after deployment and outstanding disposable-account lifecycle/device acceptance. No live account deletion was submitted for this repair.
+
+### #176 — Task session recovery
+- Implemented: a known antiforgery rejection gives plain feedback, focuses the error and offers a native Reload calendar navigation so session initialization runs again before an explicit retry. Stale write controls are withheld; completion/checklist/deletion are not replayed. Regression coverage verifies unchanged state, no requests/celebration and accessible recovery for all four action paths. Final-delete focus is separately in PR #288.
+- Still required: owner retained-session reproduction after deployment; the original token/session cause is not established. Antiforgery validation is unchanged. Remaining phone/screen-reader acceptance stays open.
+
+### #172 — Focus after successful deletion
+- Implemented: successful calendar detail actions focus the stable Calendar heading while the removed trigger/grid reload disappear. Closing details also falls back there if its opener has gone. Week/Month/List reminder-deletion regressions verify focus after the complete refresh and retain Seen/approval behavior. This shared path also covers task deletion (#176).
+- Still required: owner live deletion keyboard retest after deployment and outstanding mobile/screen-reader/Seen/privacy acceptance; #176 session recovery remains separate.
+
+### #177 — Task conflict reload focus
+- Implemented: loading the latest task after a version conflict focuses Title after the conflict controls disappear, alongside the existing announcement. Regression verifies current content/checklist/version, focus, and no automatic overwrite/resubmit.
+- Still required: owner stale-tab keyboard retest after deployment and remaining phone/theme/actual-screen-reader acceptance.
+
+### #250 — Month occurrence accessible dates
+- Implemented: every Month bar names its full occurrence date (or full start/end range with years), including single-day repeats and continuations. Layout and rendered-DOM regressions distinguish November 7/14 and preserve pending status; year-boundary coverage names both years.
+- Still required: owner phone and actual screen-reader retest after deployment; rendered names are not a real screen-reader certification.

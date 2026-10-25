@@ -379,6 +379,21 @@ describe('the calendar page', () => {
     expect(text(document.querySelector('[role="dialog"] h2'))).toBe('Second event');
   });
 
+  it('gives repeated single-day Month bars distinct full occurrence dates in their accessible names', async () => {
+    await open('/calendar?date=2026-11-07&view=month', [7, 14].map((day) => event({
+      id: `pt-${day}`, title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex',
+      allDay: true, status: 'PendingApproval',
+      startsAt: `2026-11-${String(day).padStart(2, '0')}T06:00:00Z`,
+      endsAt: `2026-11-${String(day + 1).padStart(2, '0')}T06:00:00Z`,
+    })));
+    const labels = [...main().querySelectorAll('app-calendar-month button.bar')].map((bar) => bar.getAttribute('aria-label'));
+    expect(labels).toHaveLength(2);
+    expect(labels[0]).toContain('Saturday, November 7, 2026');
+    expect(labels[1]).toContain('Saturday, November 14, 2026');
+    expect(labels.every((label) => label?.includes('Pending approval'))).toBe(true);
+    expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+  });
+
   it('opens details, and cancelling parenting time asks the co-parent first', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [
       event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex', allDay: true, startsAt: '2026-10-20T05:00:00Z', endsAt: '2026-10-21T05:00:00Z' }),
@@ -556,9 +571,11 @@ describe('the calendar page', () => {
     expect(text(dialog)).not.toMatch(/Where|Mark done|Assign|Attach/);
   });
 
-  it('deletes a reminder for both parents after confirming, with no approval', async () => {
-    const { harness } = await open('/calendar?date=2026-10-20', [], [reminder({ repeat: 'Daily', repeatCount: 2 })]);
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+  it.each(['week', 'month', 'list'])('deletes a reminder and retains calendar focus after reload in %s', async (view) => {
+    const { harness } = await open(`/calendar?date=2026-10-20&view=${view}`, [], [reminder({ repeat: 'Daily', repeatCount: 2 })]);
+    const trigger = main().querySelector<HTMLElement>('button.item')!;
+    trigger.focus();
+    trigger.click();
     await settle(harness);
     const dialog = document.querySelector('[role="dialog"]')!;
     http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
@@ -573,6 +590,8 @@ describe('the calendar page', () => {
 
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(toastText()).toContain('“Spirit Day” was deleted.');
+    await vi.waitFor(() => expect(document.activeElement).toBe(main().querySelector('h1')));
+    expect(trigger.isConnected).toBe(false);
     expect(http.match((r) => r.url.includes('/approvals'))).toHaveLength(0);
   });
 
