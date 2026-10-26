@@ -36,12 +36,10 @@
 
     @if (!unavailable()) {
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Title{{ parenting() ? ' (optional)' : '' }}</mat-label>
-        <input matInput formControlName="title" maxlength="120" [required]="!parenting()" />
+        <mat-label>Title</mat-label>
+        <input matInput formControlName="title" maxlength="120" required [attr.aria-invalid]="!!fieldError('title')" />
         @if (fieldError('title'); as e) {
           <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-        } @else if (parenting()) {
-          <mat-hint>Leave blank to keep “{{ event()!.title }}”.</mat-hint>
         }
       </mat-form-field>
     }

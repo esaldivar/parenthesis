@@ -115,14 +115,22 @@ describe('delete account (A-12)', () => {
     expect(TestBed.inject(Router).url).toBe('/settings');
   });
 
-  it('cancels back to the closed state', async () => {
+  it('restores focus to Delete account after cancellation, including repeated reviews', async () => {
     const { harness, body } = await settings([ALEX, SAM]);
-    await begin(harness, body);
-
-    click(section(body), 'Cancel');
-    await settle(harness);
-
-    expect(section(body).querySelector('input')).toBeNull();
+    const remove = vi.spyOn(TestBed.inject(AuthStore), 'deleteAccount');
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await begin(harness, body);
+      expect(document.activeElement).toBe(section(body).querySelector('.warning'));
+      const cancel = [...section(body).querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Cancel')!;
+      cancel.focus();
+      cancel.click();
+      await settle(harness);
+      expect(section(body).querySelector('input')).toBeNull();
+      const trigger = [...section(body).querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Delete account…')!;
+      await vi.waitFor(() => expect(document.activeElement).toBe(trigger));
+    }
+    expect(remove).not.toHaveBeenCalled();
+    expect(TestBed.inject(Router).url).toBe('/settings');
   });
 
   it('has no axe violations while confirming', async () => {

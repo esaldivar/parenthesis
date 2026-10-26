@@ -82,6 +82,24 @@ describe('Edit an event', () => {
     await settle();
   }
 
+  it('blocks a direct edit link for the other caregiver even when I created the event', async () => {
+    await open(weekend({ caregiverMembershipId: 'm-sam', ownerMembershipId: 'm-alex' }));
+    expect(text(page())).toContain('only the parent whose time it is can edit or cancel it');
+    expect(page().querySelector('form')).toBeNull();
+    expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
+  });
+
+  it('allows the persisted caregiver to edit an event created by the other parent', async () => {
+    await open(weekend({ caregiverMembershipId: 'm-alex', ownerMembershipId: 'm-sam' }));
+    expect(page().querySelector('form')).not.toBeNull();
+    type('notes', 'Bring the school bag');
+    await submit();
+    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH'));
+    expect(patch.request.body.notes).toBe('Bring the school bag');
+    patch.flush(weekend({ notes: 'Bring the school bag' }));
+    await settle();
+  });
+
   it('changes an activity at once, prefilled in the family’s time zone', async () => {
     await open(event({ location: 'North Field', notes: 'Bring water' }));
 
@@ -157,6 +175,58 @@ describe('Edit an event', () => {
     expect(patch.request.body).toEqual(
       expect.objectContaining({ title: undefined, location: undefined, notes: 'Dentist', endsAt: '2026-10-22T05:00:00.000Z' }),
     );
+  });
+
+  it.each([
+    ['Activity', ''],
+    ['Activity', '   '],
+    ['ParentingTime', ''],
+    ['ParentingTime', '   '],
+    ['Holiday', ''],
+    ['Holiday', '   '],
+    ['Joint', ''],
+    ['Joint', '   '],
+  ] as const)('rejects a blank required %s title (%j) without losing input (#273)', async (category, title) => {
+    await open(category === 'ParentingTime' ? weekend() : event({ category }));
+    type('title', title);
+    type('location', 'North Field');
+    type('notes', 'Bring water');
+    await submit();
+
+    const input = field('title')!;
+    expect(input.required).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(input);
+    expect(text(page())).toContain('Enter a title.');
+    expect(text(page())).not.toContain('Leave blank to keep');
+    expect(field('location')!.value).toBe('North Field');
+    expect(field('notes')!.value).toBe('Bring water');
+    expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
+    expect(await axeViolations(document.body, { ignoreOverlay: true })).toEqual([]);
+
+    type('title', 'New title');
+    await submit();
+    const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH'));
+    expect(patch.request.body).toEqual(expect.objectContaining({
+      title: 'New title',
+      location: 'North Field',
+      notes: 'Bring water',
+    }));
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+  });
+
+  it('moves keyboard focus from Save to End date after an invalid all-day range, on every attempt', async () => {
+    await open(weekend());
+    type('startDate', '2026-11-06');
+    const end = field('endDate')!;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      submitButton().focus();
+      await submit();
+      await vi.waitFor(() => expect(document.activeElement).toBe(end));
+      expect(describedBy(end)).toBe('Choose an end that’s after the start.');
+    }
+    expect(field('title')!.value).toBe('Time with Alex');
+    expect(http.match((r) => r.method === 'PATCH')).toHaveLength(0);
   });
 
   it('checks the times before sending', async () => {

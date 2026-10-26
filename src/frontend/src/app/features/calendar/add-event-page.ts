@@ -23,6 +23,7 @@ import { revealFirstProblem } from './reveal-problem';
 import { dayFilter, END_BEFORE_START, rangeProblems, UNREADABLE_DATE } from './date-rules';
 import { DateCheck } from './date-check';
 import { DateField } from './date-field';
+import { CalendarHeader } from './calendar-header';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal } from './time';
 
@@ -110,6 +111,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
   styles: [FORM_STYLES],
 })
 export class AddEventPage implements OnInit {
+  protected readonly calendarHeader = CalendarHeader;
   private readonly api = inject(Api);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -140,6 +142,13 @@ export class AddEventPage implements OnInit {
   protected readonly children = signal<readonly Child[]>([]);
   protected readonly loadError = signal<string | null>(null);
   protected readonly busy = signal(false);
+  protected readonly checkingAvailability = signal(false);
+  private readonly pendingAvailability = signal<string | null>(null);
+  protected readonly availabilityWarning = computed(() => {
+    this.value();
+    const pending = this.pendingAvailability();
+    return pending !== null && pending === this.availabilityKey();
+  });
   protected readonly error = signal<string | null>(null);
   protected readonly fieldErrors = signal<Readonly<Record<string, string>>>({});
 
@@ -372,12 +381,15 @@ export class AddEventPage implements OnInit {
     afterNextRender(() => revealFirstProblem(this.host.nativeElement), { injector: this.injector });
   }
 
-  protected async submit(): Promise<void> {
+  protected async submit(allowOverlap = false): Promise<void> {
     const type = this.type();
     const family = this.family();
-    if (!type || !family) {
+    if (!type || !family || this.busy()) {
       return;
     }
+    const key = this.availabilityKey();
+    const consent = allowOverlap && this.pendingAvailability() === key;
+    this.pendingAvailability.set(null);
     // Clear the last attempt's messages first, so only this attempt's problem is shown and focused.
     this.error.set(null);
     const errors = this.validate(type);
@@ -392,7 +404,22 @@ export class AddEventPage implements OnInit {
     this.busy.set(true);
     this.error.set(null);
     try {
-      const created = await this.api.createEvent(family.id, this.request(type));
+      const request = this.request(type);
+      if (type === 'family' && this.coParent() && !consent) {
+        this.checkingAvailability.set(true);
+        const events = await this.api.calendarEvents(family.id, request.startsAt, request.endsAt);
+        this.checkingAvailability.set(false);
+        // The parent may keep editing while the check runs. Never send or confirm an older draft.
+        if (key !== this.availabilityKey()) return;
+        const otherParents = this.parents().filter((p) => !p.isYou).map((p) => p.membershipId);
+        if (events.some((e) => e.category === 'Unavailable' && e.status === 'Confirmed'
+          && otherParents.includes(e.ownerMembershipId) && Date.parse(e.startsAt) < Date.parse(request.endsAt) && Date.parse(e.endsAt) > Date.parse(request.startsAt))) {
+          this.pendingAvailability.set(key);
+          afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('#availability-heading')?.focus(), { injector: this.injector });
+          return;
+        }
+      }
+      const created = await this.api.createEvent(family.id, request);
       const coParent = this.coParent() ?? 'your co-parent';
       const count = this.repeats() ? this.dates().length : 1;
       const head =
@@ -420,8 +447,23 @@ export class AddEventPage implements OnInit {
       }
       this.revealProblem();
     } finally {
+      this.checkingAvailability.set(false);
       this.busy.set(false);
     }
+  }
+
+  private availabilityKey(): string {
+    const type = this.type();
+    return JSON.stringify({ family: this.family()?.id, parents: this.parents().map((p) => p.membershipId), type, values: this.form.getRawValue() });
+  }
+
+  protected sendAnyway(): void {
+    void this.submit(true);
+  }
+
+  protected chooseDifferentDates(): void {
+    this.pendingAvailability.set(null);
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('#add-start-date')?.focus(), { injector: this.injector });
   }
 
   protected fieldError(name: string): string | null {

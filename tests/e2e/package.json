@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "browser:install": "playwright install --with-deps --only-shell chromium",
-    "browser:deps": "playwright install-deps chromium",
+    "browser:install": "playwright install --with-deps --only-shell chromium webkit",
+    "browser:deps": "playwright install-deps chromium webkit",
     "typecheck": "tsc --noEmit",
     "report": "playwright show-report",
     "trace": "playwright show-trace"
@@ -15,6 +15,7 @@
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@types/node": "24.19.2",
+    "axe-core": "4.14.0",
     "typescript": "6.0.2"
   },
   "engines": {

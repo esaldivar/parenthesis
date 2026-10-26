@@ -1,9 +1,11 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, input, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, inject, input, viewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { DOCUMENT } from '@angular/common';
 import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Icon } from '../../shared/icon/icon';
+import { CalendarHeader } from './calendar-header';
 
 /**
  * One date of an event's range, as its own field (#249, owner decision October 23, 2026): a bordered field whose
@@ -17,7 +19,7 @@ import { Icon } from '../../shared/icon/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, Icon],
   template: `
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field" (click)="picker.open()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field" (click)="openFromField($event, picker)">
       <mat-label>{{ label() }}</mat-label>
       <input
         matInput
@@ -32,12 +34,13 @@ import { Icon } from '../../shared/icon/icon';
         #dateInput
         [class.date-invalid]="!!issue()"
         (keydown)="openOnKey($event, picker)"
+        (dateChange)="closeAfterSelection(picker)"
       />
       <app-icon matSuffix class="date-field__icon" name="calendar" [size]="20" aria-hidden="true" />
       @if (issue(); as reason) {
         <mat-hint class="visually-hidden">{{ reason }}</mat-hint>
       }
-      <mat-datepicker #picker [startAt]="startAt()" />
+      <mat-datepicker #picker [startAt]="startAt()" [calendarHeaderComponent]="calendarHeader" />
     </mat-form-field>
   `,
   styles: `
@@ -65,6 +68,9 @@ import { Icon } from '../../shared/icon/icon';
   `,
 })
 export class DateField {
+  private readonly document = inject(DOCUMENT);
+  private readonly pendingClose = new WeakSet<Element>();
+  protected readonly calendarHeader = CalendarHeader;
   readonly label = input.required<string>();
   /** The field's name, for forms and tests ("startDate"). */
   readonly name = input.required<string>();
@@ -95,4 +101,30 @@ export class DateField {
       picker.open();
     }
   }
+
+  protected openFromField(event: MouseEvent, picker: MatDatepicker<string>): void {
+    // A selection belongs to the calendar. It must not bubble into the field and reopen the closed picker.
+    if (event.composedPath().some(node => node instanceof Element && node.tagName.toLowerCase() === 'mat-calendar')) {
+      return;
+    }
+    picker.open();
+  }
+
+  protected closeAfterSelection(picker: MatDatepicker<string>): void {
+    // Material ignores close() during its opening animation. A fast keyboard selection still changes the date,
+    // so finish closing after that animation's end handler has run. Keep normal animation and focus restoration.
+    const content = this.document.getElementById(picker.id)?.closest('mat-datepicker-content');
+    if (content && !this.pendingClose.has(content) && content.getAnimations?.().some(animation => animation.playState === 'running')) {
+      this.pendingClose.add(content);
+      const finish = (event: Event) => {
+        if (event.target !== content) return;
+        content.removeEventListener('animationend', finish);
+        this.pendingClose.delete(content);
+        picker.close();
+      };
+      content.addEventListener('animationend', finish);
+    }
+    picker.close();
+  }
+
 }

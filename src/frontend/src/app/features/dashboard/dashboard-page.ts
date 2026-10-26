@@ -205,6 +205,13 @@ export class DashboardPage {
   protected readonly timeLabel = timeLabel;
 
   constructor() {
+    // Back/forward or a linked week can change the URL while this component stays mounted.
+    // Drop the immediate button selection so the router-bound week becomes authoritative again.
+    effect(() => {
+      this.week();
+      untracked(() => this.chosenWeek.set(null));
+    });
+
     effect(() => {
       const weekStart = this.shownWeek();
       const familyId = this.auth.currentFamily()?.id;
@@ -214,13 +221,18 @@ export class DashboardPage {
   }
 
   protected goToWeek(offsetWeeks: number): void {
-    this.split.set(false);
-    this.chosenWeek.set(addDays(this.shownWeek(), offsetWeeks * 7));
+    this.chooseWeek(addDays(this.shownWeek(), offsetWeeks * 7));
   }
 
   protected goToToday(): void {
+    this.chooseWeek(this.currentWeekStart());
+  }
+
+  private chooseWeek(week: PlainDate): void {
     this.split.set(false);
-    this.chosenWeek.set(this.currentWeekStart());
+    this.chosenWeek.set(week);
+    // Keep the selected week in this history entry, so Settings/theme changes and reload retain it.
+    void this.router.navigate([], { queryParams: { week }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   protected setSplit(split: boolean): void {

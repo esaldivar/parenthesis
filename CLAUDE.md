@@ -47,6 +47,8 @@ deferred, is added there in the same change and ticked off in the PR that comple
 
 ## Security and release checks
 
+Read [AGENTS.md](AGENTS.md) and inspect release blocker #65 before opening a production release PR.
+
 Follow [the release security gate](docs/runbooks/sonar-release-gate.md) and [SECURITY.md](SECURITY.md).
 
 - Before opening or updating a release PR (`develop` → `main`, or `hotfix/…`), review SonarQube Cloud's findings for

@@ -23,6 +23,7 @@ import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
 import { CalendarItem, FORMER_PARENT } from './calendar-items';
+import { canManageEvent } from './event-permissions';
 import { statusText, whenText } from './item-text';
 import { datesText, repeatText } from './series';
 import { lastDate, toFamilyLocal } from './time';
@@ -207,9 +208,9 @@ export class EventDetails {
     return repeat ? datesText(repeat.dateCount, (repeat.firstStarts ?? []).map((s) => toFamilyLocal(s, zone).slice(0, 10))) : null;
   });
 
-  /** Cancelling is offered on confirmed items; unavailable time only to its owner. */
+  /** Editing/cancelling another parent's parenting time is never offered (#260). */
   protected readonly canCancel = computed(
-    () => this.item().status === 'confirmed' && (this.item().kind !== 'unavailable' || this.item().isMine),
+    () => this.item().status === 'confirmed' && canManageEvent(this.event(), this.members()),
   );
   protected readonly cancelExplanation = computed(() =>
     this.needsBoth() && this.coParent()
@@ -259,6 +260,26 @@ export class EventDetails {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  protected startCancel(): void {
+    this.confirming.set(true);
+    this.focus(this.cancelsTogether() ? '#event-keep-series' : '#event-keep');
+  }
+
+  protected keepEvent(): void {
+    this.confirming.set(false);
+    this.focus('#event-cancel');
+  }
+
+  protected startWithdraw(): void {
+    this.withdrawing.set(true);
+    this.focus('#event-keep-request');
+  }
+
+  protected keepRequest(): void {
+    this.withdrawing.set(false);
+    this.focus('#event-withdraw');
   }
 
   protected startDecline(): void {

@@ -6,7 +6,7 @@
 # Policy (see docs/development-workflow.md):
 #   main          <- develop (production promotion) or hotfix/* only
 #   develop       <- release/x.y.z (a tested milestone release), hotfix/* or chore/sync-* (hotfix propagation)
-#   release/x.y.z <- design/*, feat/*, feature/*, fix/*, bugfix/*, chore/*, docs/*, hotfix/*
+#   release/x.y.z <- design/*, feat/*, feature/*, fix/*, bugfix/*, chore/*, docs/*, hotfix/*, dependabot/*
 #   any other target: no policy (e.g. a PR stacked on a feature branch)
 set -euo pipefail
 
@@ -62,10 +62,10 @@ case "$base" in
       fail "Release branches are named release/x.y.z (this target is $base)."
     fi
     case "$head" in
-      design/?* | feat/?* | feature/?* | fix/?* | bugfix/?* | chore/?* | docs/?* | hotfix/?*)
+      design/?* | feat/?* | feature/?* | fix/?* | bugfix/?* | chore/?* | docs/?* | hotfix/?* | dependabot/?*)
         echo "OK: $head -> $base"
         ;;
-      *) fail "PRs into $base must come from a design/, feat/, feature/, fix/, bugfix/, chore/, docs/ or hotfix/ branch (this one is from $head)." ;;
+      *) fail "PRs into $base must come from a design/, feat/, feature/, fix/, bugfix/, chore/, docs/, hotfix/ or dependabot/ branch (this one is from $head)." ;;
     esac
     ;;
   *)

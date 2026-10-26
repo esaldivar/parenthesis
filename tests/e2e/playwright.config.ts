@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { defineConfig, devices } from '@playwright/test';
 
 // The release gate (docs/runbooks/playwright-release-gate.md). It runs against a release candidate that is already
@@ -7,6 +8,7 @@ const ci = !!process.env['CI'];
 
 export default defineConfig({
   testDir: './specs',
+  metadata: { testedSha: process.env['E2E_TESTED_SHA'] ?? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() },
   // Every test makes its own synthetic family, so tests don't share state and can run in parallel.
   fullyParallel: true,
   forbidOnly: ci,
@@ -27,16 +29,35 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',
+    locale: 'en-US',
+    timezoneId: 'America/Chicago',
   },
-  // Chromium is the baseline. Other browsers are added only when the supported platforms call for them.
+  // #278: retain the desktop baseline; run every M3 journey in custom touch emulation profiles.
+  // These profiles do not certify physical devices.
   projects: [
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
         // Local runs can point at an already-installed Chromium instead of downloading one.
         launchOptions: process.env['E2E_CHROMIUM_PATH'] ? { executablePath: process.env['E2E_CHROMIUM_PATH'] } : {},
       },
     },
+    ...(['chromium', 'webkit'] as const).flatMap(browserName => [320, 390].map(width => ({
+      name: `mobile-${browserName}-${width}`,
+      testMatch: ['**/m3-calendar/**/*.spec.ts', '**/regression/issue-208-*.spec.ts', '**/regression/issue-259-*.spec.ts'],
+      use: {
+        ...devices[browserName === 'chromium' ? 'Pixel 7' : 'iPhone 13'],
+        browserName,
+        viewport: { width, height: 844 },
+        screen: { width, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 1,
+        ...(browserName === 'chromium' && process.env['E2E_CHROMIUM_PATH']
+          ? { launchOptions: { executablePath: process.env['E2E_CHROMIUM_PATH'] } } : {}),
+      },
+    }))),
   ],
 });

@@ -14,6 +14,7 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
 | `feature/…`, `feat/…` | New features | Branch from the active release branch, PR into it |
 | `bugfix/…`, `fix/…` | Bug fixes found during the milestone | Branch from the active release branch, PR into it |
 | `chore/…`, `docs/…`, `design/…` | Tooling, CI, documentation, design handoffs | Branch from the active release branch, PR into it |
+| `dependabot/…` | Dependency updates from the same repository | PR into the active `release/x.y.z`; normal review and checks apply |
 | `hotfix/…` | Urgent fix to production | Branch from `main`, PR into `main`, then sync into `develop` and the active release branch |
 
 - `main`, `develop` and `release/*` are **protected**. Nobody can push to them directly, force-push or delete them,
@@ -31,6 +32,11 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
   - PRs into `main` also run the **Release security gate**, which blocks the release on unresolved vulnerabilities,
     high-severity security issues, unreviewed hotspots and accepted findings with no written reason. It fails if
     SonarQube Cloud can't be checked. See [the release security gate](docs/runbooks/sonar-release-gate.md).
+- **Production artifact security:** after environment approval and before Azure login, Deploy verifies the image's
+  immutable digest, source provenance and identical source tree against the latest successful post-merge `main`
+  Sonar analysis and Release security gate. Missing, failed, skipped or stale evidence blocks normal releases,
+  hotfixes and manual production redeploys. Redeploy production only from `main` using a released version.
+  See the [runbook](docs/runbooks/sonar-release-gate.md#production-deployment-verification).
 - **Approvals:** GitHub doesn't let authors approve their own PRs, and this is a single-maintainer project, so the
   passing checks are the gate for merging. **Production** additionally needs the owner's approval of each deployment,
   in the Actions tab (the `production` environment).

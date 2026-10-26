@@ -29,10 +29,11 @@ h1,
    checkmarks or other selection marks. */
 .type {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-2);
   align-items: center;
   min-height: 72px;
+  min-width: 0;
   padding: var(--space-3);
   border: 1px solid var(--color-surface-soft);
   border-radius: var(--radius-card);
@@ -63,6 +64,8 @@ h1,
 }
 .type__text {
   display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .type__label,
 .kind__label {

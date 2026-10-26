@@ -45,6 +45,12 @@ html {
   --mat-sys-error: var(--color-danger);
 }
 
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-block-end: calc(57px + env(safe-area-inset-bottom));
+  }
+}
+
 *,
 *::before,
 *::after {

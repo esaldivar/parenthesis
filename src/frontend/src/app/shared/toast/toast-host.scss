@@ -1,10 +1,12 @@
 // Toasts (#226). Phones: along the bottom, above the bottom navigation (56px plus its border) and the safe area, full
 // width within the page gutters. Desktop (1024px and up, where the sidebar replaces that navigation): bottom right.
 :host {
+  display: block;
   position: fixed;
   inset-inline: var(--space-4);
   bottom: calc(57px + env(safe-area-inset-bottom) + var(--space-3));
   z-index: 30;
+  min-width: 0;
   pointer-events: none;
 }
 
@@ -28,6 +30,7 @@ ol {
   pointer-events: auto;
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
   border: 1px solid var(--color-outline);

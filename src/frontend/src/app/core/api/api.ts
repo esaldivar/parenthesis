@@ -426,6 +426,9 @@ export class Api {
         params: scope === 'this' ? {} : { scope },
       }),
     );
+  /** A separate dates-only proposal; generic editing of the other parent's time is prohibited (#260). */
+  requestSwap = (familyId: string, eventId: string, change: Pick<CalendarEventChange, 'startsAt' | 'endsAt' | 'allDay' | 'reason'>) =>
+    this.call(this.http.post<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}/swap`, change));
   /** 204 when cancelled at once; 202 with the event when it waits for the other parent. */
   /** Removes a declined request from this parent's own calendar (#199); the co-parent's calendar doesn't change. */
   dismissEvent = (familyId: string, eventId: string) =>

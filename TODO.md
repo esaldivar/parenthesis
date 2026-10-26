@@ -6,6 +6,11 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [x] **Dependabot release branch policy (#275, #277).** Reconcile the older Copilot branch with the active release:
+  retain the separate edited-event branch-policy workflow, existing issue-link enforcement and full regression suite;
+  allow same-repository dependabot/* only into valid release/x.y.z branches. Main/develop and fork restrictions stay.
+  - [ ] Verify PR CI and the three dependency PRs' source checks after the reviewed policy becomes effective;
+    dependency compatibility decisions and merge/deployment approval remain separate.
 - [ ] **Owner testing and design readiness (#152).** Supervised implementation prepared: one waiting testing slot,
   owner acceptance/deployment evidence, priority rework with comments and fresh branches, explicit design/no-design
   readiness, and a local activation gate. See `docs/runbooks/claude-owner-testing.md`.
@@ -522,6 +527,11 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
+- [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
+  query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
+  local selection. Router regressions cover both journeys.
+  - [ ] After promotion, retest the actual Settings/appearance/Back and reload journey on development. This repair
+    does not establish the remaining original missing-events, mobile or screen-reader acceptance criteria.
 - [x] **Upcoming load states (#208).** Show loading and failed-load messages separately from an empty week;
   offer retry and hide the previous week's Upcoming items while changing weeks. Regression coverage includes
   delayed responses, failures, successful retries and unavailable family data.
@@ -545,6 +555,14 @@ that points back here.
   320px.
 
 ## Calendar follow-ups
+
+- [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted
+  titles from explicitly empty/whitespace titles. Required titles are rejected without saving other fields;
+  omitted/null titles keep their values and Unavailable time retains its generic label and private notes.
+  The Edit form requires parenting-time titles too. Regression tests cover validation, scope atomicity,
+  omitted-title updates, privacy, accessible feedback and correction without losing input.
+  - [ ] Run backend build/format/integration and frontend lint/test/build in PR CI; this workspace has no .NET SDK
+    or Docker. After promotion, retest mobile/desktop, both themes and screen-reader behavior before acceptance.
 
 - [x] **Reminder delete confirmation focus (#172).** Opening confirmation focuses Keep it with the deletion
   explanation; cancelling restores Delete reminder. The pending delete action keeps focus and blocks duplicate
@@ -608,3 +626,77 @@ that points back here.
 - [x] **Date-format accessibility (#236).** Typed reminder/task dates and repeat last-day fields retain a
   screen-reader-only format hint; regression tests verify its actual accessible-description association.
   - [ ] Retest with a screen reader and on the development site after promotion; implementation tests are not owner acceptance.
+
+### #238 — Cancellation confirmation focus
+- Implemented: single and recurring event cancellation focuses the safe Keep action with its explanation; keeping the event restores Cancel event. Repeated transitions and no-mutation/axe regressions cover both branches.
+- Still required: owner live keyboard retest after deployment and remaining phone/screen-reader recurrence acceptance.
+
+### #218 — Withdrawal confirmation focus
+- Implemented: opening Withdraw focuses Keep it with the confirmation explanation; Keep it restores the withdrawal trigger. Repeated transitions, no mutation on cancellation and axe are covered.
+- Still required: owner keyboard retest after deployment and the remaining mobile/screen-reader/approval matrix.
+
+### #206 — Edit invalid-date focus
+- Implemented: refused-save focus recognizes the rendered invalid date while Material and DateField synchronize aria-invalid. Regression fails without the fix; repeated all-day Edit submissions focus End date and preserve input without PATCH.
+- Still required: owner retest of the picker/keyboard reproduction after deployment, plus phone scrolling and actual screen-reader checks.
+
+### #213 — Fresh event details
+- Implemented: Calendar Week/Month/List and event links load current event details before opening the shared panel. Unavailable/cancelled events show feedback and refresh; failed loads never fall back to cached actions. Older responses cannot replace a newer selection or reopen a previous week. Home already uses fresh details. Declined request details follow the same per-parent visibility as the list, including dismissal.
+- Still required: owner stale-tab scenario after deployment and outstanding mobile/assistive-technology acceptance.
+
+### #260 — Caregiver authorization
+- Implemented: generic parenting-time edits/cancellations require the persisted caregiver, before notes or proposals change. UI uses the same caregiver rule; Request Swap uses a separate dates-only endpoint and remains available to the other parent. Added frontend and API regression coverage for legacy creators, both parent identities, recurring scopes and swap approval/withdrawal.
+- Still required: backend CI validation and owner acceptance after promotion to the test environment; no acceptance or deployment claim.
+
+### #210 — Family-event availability choice
+- Implemented: before sending a family event, a read-only availability check offers Send anyway or Choose different dates for confirmed other-parent unavailability. Draft changes invalidate that choice; stale checks cannot submit an older draft, and failed checks preserve input without saving. Private notes never enter the warning. Joint-event API responses also include the existing non-blocking warning code.
+- Still required: backend CI and owner live warning/approval retest after promotion; existing same-parent blocking and remaining acceptance evidence are retained.
+
+### #137 — Account review cancellation focus
+- Implemented: Cancel restores Delete account after rendering the closed state. Repeated-review regression retains initial consequence-warning focus, clears the form, stays in Settings and never calls deletion.
+- Still required: owner cancellation keyboard retest after deployment and outstanding disposable-account lifecycle/device acceptance. No live account deletion was submitted for this repair.
+
+### #176 — Task session recovery
+- Implemented: a known antiforgery rejection gives plain feedback, focuses the error and offers a native Reload calendar navigation so session initialization runs again before an explicit retry. Stale write controls are withheld; completion/checklist/deletion are not replayed. Regression coverage verifies unchanged state, no requests/celebration and accessible recovery for all four action paths. Final-delete focus is separately in PR #288.
+- Still required: owner retained-session reproduction after deployment; the original token/session cause is not established. Antiforgery validation is unchanged. Remaining phone/screen-reader acceptance stays open.
+
+### #172 — Focus after successful deletion
+- Implemented: successful calendar detail actions focus the stable Calendar heading while the removed trigger/grid reload disappear. Closing details also falls back there if its opener has gone. Week/Month/List reminder-deletion regressions verify focus after the complete refresh and retain Seen/approval behavior. This shared path also covers task deletion (#176).
+- Still required: owner live deletion keyboard retest after deployment and outstanding mobile/screen-reader/Seen/privacy acceptance; #176 session recovery remains separate.
+
+### #177 — Task conflict reload focus
+- Implemented: loading the latest task after a version conflict focuses Title after the conflict controls disappear, alongside the existing announcement. Regression verifies current content/checklist/version, focus, and no automatic overwrite/resubmit.
+- Still required: owner stale-tab keyboard retest after deployment and remaining phone/theme/actual-screen-reader acceptance.
+
+### #250 — Month occurrence accessible dates
+- Implemented: every Month bar names its full occurrence date (or full start/end range with years), including single-day repeats and continuations. Layout and rendered-DOM regressions distinguish November 7/14 and preserve pending status; year-boundary coverage names both years.
+- Still required: owner phone and actual screen-reader retest after deployment; rendered names are not a real screen-reader certification.
+
+
+### #278 — Mobile release-test foundation (acceptance blocked)
+- Prepared: desktop plus touch Chromium/WebKit 320/390 profiles, reuse of existing M3 journeys without width-overriding loops, new theme/reduced-motion/date/reminder/toast/text-reflow/pending-overflow scenarios, exact-SHA/profile reporting and fail-closed coverage checks.
+- Verified locally: typecheck, discovery and six report-policy tests including controlled absent/failed/skipped profile negatives.
+- Still required: actual green targeted/full browser runs and a detectable browser regression, Edit/Swap and clearing/DST matrix completion, calibrated geometry/text behavior, then review/rollout under the existing release-only gate. Local Docker is absent and Playwright browser download produced invalid archives. No mobile product acceptance or real-device claim.
+
+### #66 — Production artifact security evidence
+- Implemented: production Deploy verifies immutable image provenance/source-tree equivalence and latest exact-candidate main Sonar analysis plus Release security gate before Azure access. Hotfixes and manual released-version redeploys use the same fail-closed checks; development stays independent. Added synthetic guard regressions and agent release instructions.
+- Still required: reviewed rollout through normal releases, live main required-check/no-bypass ruleset evidence, exact-candidate Sonar/API and GHCR evidence for normal/hotfix/manual redeploy paths, and owner environment approval verification. No settings, production deployment or Sonar findings were changed; #65 is not accepted as resolved by these tests.
+
+### #160 — Development Application Insights verification (not passed)
+- Inspected active revision/image, telemetry variable names, Application Insights and linked workspace usage/cap/retention. Sent three anonymous synthetic GETs (200/200/401) with trace IDs. Detailed sanitized evidence is in `docs/runbooks/application-insights-verification-2026-10-25.md`.
+- No exporter/configuration was found at the deployed commit; Application Insights showed zero seven-day requests while the workspace had container logs. Correlated API/dependency/failure ingestion and privacy were not established. Logs UI failed to render for direct verification.
+- Current 0.06 GB rolling ingestion, $0.17 estimate, trial-credit $0 display and 0.5 GB/day cap do not establish zero incremental charges or shared billing-account headroom. Cost verification remains pending; no Azure settings, paid features or deployment changed. Missing instrumentation belongs to a separately approved slice of #86, followed by correlated and settled-billing verification.
+
+
+### #279 — Visible text in accessible control names and rendered acceptance
+- Repaired the three label-content-name mismatches detected by rendered scans: account name, pending Month “Proposed” status, and the Material picker period button. The picker wrapper retains Material's header, styles, navigation, live description and focus, and adds its current visible period after rendering.
+- Added focused account/Month/header-navigation regressions. Preserve the visible word boundary between Month status and title. Picker keyboard tests use Material's roving active-date navigation instead of focusing an untabbable date cell.
+- Prepared whole-page axe scans with contrast enabled and no exclusions across both themes and existing desktop/touch profiles, plus keyboard/date reason/focus/deletion assertions and sanitized exact-SHA state attachments. Full release summaries reject missing, stale, empty or violating scans; existing component tests and release-only browser policy remain.
+- Verified locally: TypeScript typecheck, discovery (179 profile executions), seven report-policy tests, and Chromium controlled unlabeled-input failure followed by passing restoration. On application base `5269d52`, desktop execution reached all 54 scan states across both themes; keyboard/detail/date/deletion assertions passed, but all four journeys exposed the real label-content-name mismatches. Targeted desktop light-theme scan/focus journeys and the controlled scanner scenario then passed (3/3) against the repaired image. No full profile/theme or application-wide pass claimed.
+- The earlier serial frontend run passed 573/573; a later run had one 5-second timeout and 572 passes. A focused retest and full profile/theme matrix remain outstanding. Error/toast in-place focus, remaining continued/repeated Month behavioral checks, real screen-reader evidence in #281, and manual review of axe incomplete results are also outstanding.
+- Still required: validate picker view transitions and the wrapper's dependency on Material's period-button selector on dependency upgrades, then obtain owner acceptance after promotion. No scan exclusion or waiver.
+
+- Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
+
+### #281 — Real screen-reader environment prerequisite
+- Windows NVDA is installed; Guidepup starts/connects/stops, but the synthetic control announcement is absent in this agent session. macOS/VoiceOver is unavailable. Both acceptance paths remain blocked, not passed.
+- See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.

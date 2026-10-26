@@ -28,7 +28,7 @@ async function signIn(page: Page, email: string) {
   await expect(page.getByRole('navigation').first()).toBeVisible();
 }
 
-/** The calendar's List view for next Tuesday's week. */
+/** The calendar's List view for the month containing next Tuesday. */
 async function openList(page: Page) {
   await page.goto(`/calendar?date=${tuesday}&view=list`);
   await expect(page.getByRole('heading', { level: 1, name: 'Calendar' })).toBeVisible();
@@ -257,8 +257,16 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await expect(page.getByText(/is on the calendar on 4 dates/)).toBeVisible();
 
       await openList(page);
-      // Tuesday and Thursday of that week.
-      await expect(page.locator('app-calendar-list button.item[data-kind="unavailable"]')).toHaveCount(2);
+      // The List view shows one month, so only the requested dates that fall in Tuesday's month are listed.
+      const monthPrefix = tuesday.slice(0, 7);
+      const requested = [0, 2, 7, 9]
+        .map((days) => new Date(Date.parse(`${tuesday}T00:00:00Z`) + days * 86_400_000))
+        .filter((date) => date.toISOString().startsWith(monthPrefix));
+      const expectedDates = requested.map((date) =>
+        date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' }),
+      );
+      await expect(page.locator('app-calendar-list button.item[data-kind="unavailable"]')).toHaveCount(expectedDates.length);
+      await expect(page.locator('app-calendar-list .days > li h3')).toHaveText(expectedDates);
     } finally {
       await family.dispose();
     }
@@ -268,12 +276,8 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     const family = await familyWithKai();
     try {
       await signIn(page, family.dad.email);
-      for (const size of [
-        { name: 'desktop', width: 1280, height: 800 },
-        { name: 'phone', width: 390, height: 844 },
-      ] as const) {
+      for (const size of [{ name: test.info().project.name, ...page.viewportSize()! }]) {
         await test.step(size.name, async () => {
-          await page.setViewportSize({ width: size.width, height: size.height });
           await page.goto(`/calendar/new?date=${tuesday}`);
           await page.getByRole('button', { name: /Activity/ }).click();
           await page.getByLabel('Title').fill(`Reading club (${size.name})`);
@@ -379,7 +383,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await dad.json(dad.post(events(familyId), { category: 'Activity', title: 'Piano lesson', childIds: [kaiId], startsAt: at(15), endsAt: at(16) }));
       await signIn(page, dad.email);
 
-      /** Taps 5:00 PM in Tuesday's column of a week grid (the column covers the whole day). */
+      /** Taps 5:00 PM in Tuesday's desktop week-grid column. */
       async function tapFivePm(column: ReturnType<Page['locator']>) {
         await column.evaluate((el, fraction) => {
           const scroller = el.closest('.grid__body') as HTMLElement;
@@ -395,6 +399,18 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       ] as const) {
         await test.step(where, async () => {
           await page.goto(url);
+          if (page.viewportSize()!.width < 720) {
+            // Phones use a two-tap day target in the agenda instead of the desktop time grid.
+            const tuesdayAgenda = page.locator('.agenda__day').filter({ hasText: /Tue(?:sday)?/ });
+            await tuesdayAgenda.locator('.tap-add__button')
+              .tap({ position: { x: 12, y: 12 } });
+            await page.getByRole('button', { name: /^Add on Tuesday/ }).tap();
+            await expect(page).toHaveURL(new RegExp(`/calendar/new\\?date=${tuesday}$`));
+            await page.getByRole('button', { name: /Activity/ }).click();
+            await expect(page.locator('input[formcontrolname="startTime"]')).toHaveValue('09:00');
+            await expect(page.locator('input[formcontrolname="endTime"]')).toHaveValue('10:00');
+            return;
+          }
           await tapFivePm(page.getByRole('button', { name: /^Add on Tuesday/ }));
           // The first tap highlights the hour (#237); tapping the highlight opens Add there.
           const highlight = page.getByRole('button', { name: /^Add on Tuesday, .* at 5:00 PM$/ });
@@ -419,12 +435,8 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     const family = await familyWithKai();
     try {
       await signIn(page, family.dad.email);
-      for (const size of [
-        { name: 'desktop', width: 1280, height: 800 },
-        { name: 'phone', width: 390, height: 844 },
-      ] as const) {
+      for (const size of [{ name: test.info().project.name, ...page.viewportSize()! }]) {
         await test.step(size.name, async () => {
-          await page.setViewportSize({ width: size.width, height: size.height });
           await page.goto(`/calendar/new?date=${tuesday}`);
           await page.getByRole('button', { name: /Activity/ }).click();
           await page.getByLabel('Title').fill(`Swim lesson (${size.name})`);
@@ -435,7 +447,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
           // Announced politely, from the one live region, without taking focus.
           await expect(page.locator('app-toast-host [role="status"][aria-live="polite"] .toast')).toHaveCount(1);
           const box = (await toast.boundingBox())!;
-          if (size.name === 'desktop') {
+          if (size.width > 600) {
             expect(box.x + box.width).toBeGreaterThan(size.width - 60);
             expect(box.y + box.height).toBeGreaterThan(size.height - 60);
           } else {
@@ -467,7 +479,6 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
         endsAt: addHours(monday, 24 * 9 + 5).toISOString(),
       }));
       await signIn(page, dad.email);
-      await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(`/calendar?date=${addHours(monday, 24 * 4).toISOString().slice(0, 10)}&view=month`);
 
       // One bar on Friday's row, continued on the next row (when the month grid shows it: whichever month the
@@ -493,12 +504,8 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
     const thursday = addHours(monday, 24 * 3).toISOString().slice(0, 10);
     try {
       await signIn(page, family.dad.email);
-      for (const size of [
-        { name: 'desktop', width: 1280, height: 800 },
-        { name: 'phone', width: 390, height: 844 },
-      ] as const) {
+      for (const size of [{ name: test.info().project.name, ...page.viewportSize()! }]) {
         await test.step(size.name, async () => {
-          await page.setViewportSize({ width: size.width, height: size.height });
           await page.goto(`/calendar/new?date=${tuesday}`);
           await page.getByRole('button', { name: /Parenting time/ }).click();
 

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, after
 import { FormArray, FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { CalendarHeader } from './calendar-header';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -53,6 +54,7 @@ type ItemGroup = FormGroup<{ id: FormControl<string>; text: FormControl<string>;
   styles: [FORM_STYLES],
 })
 export class TaskForm implements OnInit {
+  protected readonly calendarHeader = CalendarHeader;
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -170,6 +172,7 @@ export class TaskForm implements OnInit {
       this.conflict.set(false);
       this.error.set(null);
       void this.announcer.announce('Loaded the latest version of this task.');
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLInputElement>('[formcontrolname="title"]')?.focus(), { injector: this.injector });
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
     }
