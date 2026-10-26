@@ -704,3 +704,10 @@ that points back here.
 ### #281 — Real screen-reader environment prerequisite
 - Windows NVDA is installed; Guidepup starts/connects/stops, but the synthetic control announcement is absent in this agent session. macOS/VoiceOver is unavailable. Both acceptance paths remain blocked, not passed.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
+
+### #278/#279 — Coverage follow-up (October 26, 2026)
+- Verified historical release PR #315 browser run 40316038202: 179 passing executions on merge candidate `92be9b9e962751f6e6fa3c273d6cb62836eae46e`; original no-run blocker notes above are historical.
+- Added touch Edit/Swap invalid/corrected/cancel checks, Home/Calendar slot moving/clearing, Chicago spring/fall persisted edit boundaries and controlled overflow detection/restoration. Removed the remaining #259 viewport override.
+- Added rendered save-error/retry/toast and repeated Month occurrence date/focus coverage. Required accessibility scan states now include these paths; report policy rejects mobile scans recorded at desktop width.
+- [ ] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code.
+- [ ] Complete remaining manual/incomplete axe review, past/today/ambiguous-time and continued/year-boundary details acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.

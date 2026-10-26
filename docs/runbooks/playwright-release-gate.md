@@ -123,8 +123,9 @@ No paid testing service is used. See [Playwright emulation](https://playwright.d
 Existing inline desktop/390px loops now run once at the configured project size, so a 320px profile cannot silently
 switch itself to 390px. Context locale/time zone are en-US/America/Chicago, matching the synthetic family. Each test
 creates isolated parents using the local Mailpit API, never an owner inbox, and disposes its sessions. The entire
-throwaway database/mailbox is discarded with the runner. Tests use next-week dates; existing fixed UTC time seeds
-are not a complete DST-boundary test, which remains a gap.
+throwaway database/mailbox is discarded with the runner. Most tests use next-week dates. `mobile-recovery.spec.ts` additionally seeds next year’s Chicago spring/fall
+transitions and verifies local fields and persisted UTC duration after an edit. Ambiguous/nonexistent wall times
+themselves, other time zones and real-device date input still need separate acceptance.
 
 ```bash
 cd tests/e2e
@@ -160,16 +161,21 @@ and reachable actions; device scale factor or a narrow viewport alone would not 
 | #226 | existing `saving shows a toast…`; new reminder toast geometry and Close | Toast focus/announcement behavior in #279/#281, actual phone |
 | #232 | existing `dates are picked…` now follows #248/#249 and every profile | Device calendar/keyboard behavior; no old range-picker expectation |
 | #236 | component format-description tests; reminder field rendered by new journey | E2E reason/format associations in #279 and actual speech #281 |
-| #237 | existing `tapping empty time…` Calendar/Home two-tap journey | Explicit clearing/cancel transitions and mobile screen-reader path |
-| #248/#249 | `date recovery and reminder touch selection…`; existing date journey | Edit/Swap full invalid/corrected matrix and past/today/DST boundaries |
+| #237 | existing `tapping empty time…` Calendar/Home two-tap journey | `moving and clearing a slot…` covers Home/Calendar and Escape; real mobile screen-reader path remains |
+| #248/#249 | `date recovery and reminder touch selection…`; existing date journey | `touch Edit and Swap…` adds both themes; Chicago spring/fall edit boundaries added; past/today and ambiguous local times remain |
 | #250 | existing Month continuation/details journey; `Month pending overflow…` geometry/reachability | Broader dense/repeated/year-boundary mobile matrix and actual spoken dates |
 | Text/reflow | `200% text enlarges content…` | OS text scaling, pinch zoom, magnification and clipping with longer localized content |
 
-Implementation status: typecheck, test discovery and six synthetic report-policy tests pass locally. A real targeted
-browser run and browser-level controlled negative have **not** passed in this workspace: Docker is absent and the
-Playwright Chromium download returned invalid/truncated archives. Do not treat discovery or the report-policy
-negative as executed mobile product evidence. The missing journeys and real green/negative runs above keep #278
-acceptance open; this foundation PR must stay draft until that evidence is supplied on a supported isolated runner.
+Implementation evidence was updated on October 26: release PR #315’s full Playwright run
+[40316038202](https://github.com/esaldivar/parenthesis/actions/runs/40316038202) passed **179 executions** and its
+release summary check. Its tested merge candidate is `92be9b9e962751f6e6fa3c273d6cb62836eae46e`, not the branch
+head. This supersedes the earlier statement that no supported runner had executed the foundation.
+
+The subsequent recovery/DST/overflow-negative and accessibility additions are **not covered by that historical
+run**. They require fresh candidate browser execution through the existing release gate. Local typecheck,
+discovery and report-policy tests do not substitute for it. Docker is unavailable in this workspace; no product
+acceptance or physical-device/screen-reader certification is inferred. See the
+[follow-up evidence record](calendar-coverage-followup-2026-10-26.md).
 
 ## Rendered accessibility acceptance (#279)
 
