@@ -59,6 +59,12 @@
     font-size: 1.0625rem;
   }
 }
+@container (max-width: 599px) {
+  app-calendar-month {
+    width: calc(100% + 2 * var(--space-4));
+    margin-inline: calc(-1 * var(--space-4));
+  }
+}
 .pill,
 .chip {
   min-height: var(--target-min);

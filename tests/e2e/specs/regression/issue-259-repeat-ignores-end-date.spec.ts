@@ -89,7 +89,9 @@ test.describe('Issue #259: repeating events aren’t refused for running into ea
       await mom.goto('/approvals');
       await expect(mom.getByText(/every 2 weeks on Fri, Sat and Sun, 6 dates: /)).toHaveCount(1);
       await mom.getByRole('button', { name: 'Approve' }).first().click();
-      await expect(mom.getByRole('heading', { name: 'Decided' })).toBeVisible();
+      const decision = mom.locator('section[aria-labelledby="history-heading"] .request')
+        .filter({ hasText: /every 2 weeks on Fri, Sat and Sun, 6 dates:/ });
+      await expect(decision.locator('.chip[data-status="Approved"]')).toBeVisible();
 
       // Every day of both weekends is confirmed: Friday to Sunday, and the same two weeks later.
       const from = new Date(Date.parse(`${friday}T00:00:00Z`)).toISOString();
@@ -99,7 +101,7 @@ test.describe('Issue #259: repeating events aren’t refused for running into ea
       );
       const parenting = events.filter((e) => e.category === 'ParentingTime');
       expect(parenting).toHaveLength(6);
-      expect(parenting.every((e) => e.status === 'Confirmed')).toBe(true);
+      expect(parenting.map((e) => e.status), 'every occurrence of the series is confirmed').toEqual(Array(6).fill('Confirmed'));
     } finally {
       await momContext.close();
       await family.dispose();
