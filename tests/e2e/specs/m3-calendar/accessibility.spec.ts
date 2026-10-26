@@ -80,14 +80,15 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
     test(`repeated Month occurrences have distinct full dates and return focus, ${theme}`, async ({ page, family }, info) => {
       await page.emulateMedia({ colorScheme: theme });
       const path = `/api/families/${family.familyId}/calendar/events`;
+      const repeatStart = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 11, 28, 16));
       await family.dad.json(family.dad.post(path, {
         category: 'Activity', title: 'Weekly accessible practice', childIds: [family.kaiId],
-        startsAt: addHours(monday, 40).toISOString(), endsAt: addHours(monday, 41).toISOString(),
-        repeat: { frequency: 'Weekly', interval: 1, days: ['Tuesday'], count: 2 },
+        startsAt: repeatStart.toISOString(), endsAt: addHours(repeatStart, 1).toISOString(),
+        repeat: { frequency: 'Weekly', interval: 1, days: [repeatStart.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/Chicago' })], count: 2 },
       }));
       await signIn(page, family.dad.email);
       const occurrences = await family.dad.json<{ id: string; startsAt: string; title: string }[]>(family.dad.get(path, {
-        from: monday.toISOString(), to: addHours(monday, 14 * 24).toISOString(),
+        from: repeatStart.toISOString(), to: addHours(repeatStart, 14 * 24).toISOString(),
       }));
       expect(occurrences).toHaveLength(2);
       for (const occurrence of occurrences) {
@@ -107,6 +108,36 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
         await expect(bar).toBeFocused();
       }
       await scan(page, info, `${theme}-repeated-month`);
+    });
+
+    test(`continued Month segments name the full range and restore focus, ${theme}`, async ({ page, family }, info) => {
+      await page.emulateMedia({ colorScheme: theme });
+      const year = new Date().getUTCFullYear() + 1;
+      const firstFriday = 1 + ((5 - new Date(Date.UTC(year, 4, 1)).getUTCDay() + 7) % 7);
+      const start = new Date(Date.UTC(year, 4, firstFriday, 5)); // Chicago midnight in May.
+      const end = addHours(start, 5 * 24); // Friday through Tuesday, across two week rows.
+      await family.dad.json(family.dad.post(`/api/families/${family.familyId}/calendar/events`, {
+        category: 'Activity', title: 'Accessible continued camp', childIds: [family.kaiId],
+        allDay: true, startsAt: start.toISOString(), endsAt: end.toISOString(),
+      }));
+      await signIn(page, family.dad.email);
+      await page.goto(`/calendar?date=${start.toISOString().slice(0, 10)}&view=month`);
+      const bars = page.locator('app-calendar-month .bar', { hasText: 'Accessible continued camp' });
+      await expect(bars).toHaveCount(2);
+      for (let segment = 0; segment < 2; segment++) {
+        const bar = bars.nth(segment);
+        for (const instant of [start, addHours(end, -24)]) {
+          await expect(bar).toHaveAccessibleName(new RegExp(instant.toLocaleDateString('en-US', {
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Chicago',
+          })));
+        }
+        await bar.press('Enter');
+        const dialog = page.getByRole('dialog');
+        await expect(dialog.getByRole('heading', { name: 'Accessible continued camp', exact: true })).toBeFocused();
+        await dialog.getByRole('button', { name: 'Close details' }).press('Enter');
+        await expect(bar).toBeFocused();
+      }
+      await scan(page, info, `${theme}-continued-month`);
     });
 
     test(`rendered calendar, details and approvals, ${theme}`, async ({ page, family }, info) => {

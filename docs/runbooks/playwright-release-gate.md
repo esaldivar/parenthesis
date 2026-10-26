@@ -162,7 +162,7 @@ and reachable actions; device scale factor or a narrow viewport alone would not 
 | #232 | existing `dates are picked…` now follows #248/#249 and every profile | Device calendar/keyboard behavior; no old range-picker expectation |
 | #236 | component format-description tests; reminder field rendered by new journey | E2E reason/format associations in #279 and actual speech #281 |
 | #237 | existing `tapping empty time…` Calendar/Home two-tap journey | `moving and clearing a slot…` covers Home/Calendar and Escape; real mobile screen-reader path remains |
-| #248/#249 | `date recovery and reminder touch selection…`; existing date journey | `touch Edit and Swap…` adds both themes; Chicago spring/fall edit boundaries added; past/today and ambiguous local times remain |
+| #248/#249 | `date recovery and reminder touch selection…`; existing date journey | `touch Edit and Swap…` adds both themes; Chicago spring/fall edit boundaries added; past/today stale-link recovery added; ambiguous local times remain |
 | #250 | existing Month continuation/details journey; `Month pending overflow…` geometry/reachability | Broader dense/repeated/year-boundary mobile matrix and actual spoken dates |
 | Text/reflow | `200% text enlarges content…` | OS text scaling, pinch zoom, magnification and clipping with longer localized content |
 

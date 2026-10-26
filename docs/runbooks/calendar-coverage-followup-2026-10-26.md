@@ -25,15 +25,16 @@ follow-up tests below, certify physical phones, or replace review of incomplete 
   focus remain usable; retry saves, produces a single polite status region without stealing focus, and does
   not replay the toast after reload.
 - Actual repeating Month series: each occurrence names its own full date, opens details for that date and
-  restores keyboard focus. Separate navigation covers occurrences in different months.
-- Required accessibility states include save-error, recovered-toast and repeated-Month scans. Mobile scans
+  restores keyboard focus. Separate navigation covers December/January occurrences and names both years.
+- Added stale-link recovery from yesterday to today with past picker cells disabled, plus both segments of an all-day Month span with full-range names and focus return.
+- Required accessibility states include save-error, recovered-toast, repeated-Month and continued-Month scans. Mobile scans
   must match their configured width. A controlled report negative proves desktop-width mobile evidence fails.
 - The #259 regression now retains its configured viewport instead of overriding every profile to 1280/390.
 
 ## Local validation and release boundary
 
 `npm run typecheck` passed. `node --test scripts/summary-policy.test.mjs` passed **8/8**.
-Playwright discovery reports **234 executions in 15 files**, including **55 new profile executions**;
+Playwright discovery reports **254 executions in 15 files**, including **75 new profile executions**;
 discovery is not a passing browser run. `git diff --check` passed.
 
 Docker is unavailable locally, so these new scenarios have not run against an isolated candidate here.
@@ -41,6 +42,5 @@ The unchanged release-only workflow runs them after reviewed integration in a `r
 Do not waive the gate, enable ordinary feature-PR browser runs, or relabel #315's historical result as this PR's.
 No merge, deployment, paid testing service, production data, or issue acceptance is part of this follow-up.
 
-Remaining acceptance includes real browser execution of this exact candidate, past/today/ambiguous-time and
-continued/year-boundary cases, review of incomplete axe results, real VoiceOver/NVDA (#281), and physical
+Remaining acceptance includes real browser execution of this exact candidate, ambiguous/nonexistent wall-time cases, review of incomplete axe results, real VoiceOver/NVDA (#281), and physical
 device checks. #278 and #279 stay open until their criteria are actually met.

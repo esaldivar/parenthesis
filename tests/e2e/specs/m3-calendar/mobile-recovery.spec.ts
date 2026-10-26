@@ -30,6 +30,32 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
     await evidence(page, info, 'controlled-overflow-restored');
   });
   for (const theme of ['light', 'dark'] as const) {
+    test(`past days stay disabled and today can correct a stale Add link, ${theme} (#232 #248 #249)`, async ({ page, family }, info) => {
+      await page.emulateMedia({ colorScheme: theme });
+      const year = new Date().getUTCFullYear() + 1;
+      const today = `${year}-10-20`, yesterday = `${year}-10-19`;
+      // Freeze the browser's date only; the isolated API and authentication remain real.
+      await page.clock.setFixedTime(new Date(`${today}T17:00:00Z`));
+      await signIn(page, family.dad.email);
+      await page.goto(`/calendar/new?date=${yesterday}`);
+      await activate(page.getByRole('button', { name: /Activity/ }), info);
+      const label = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+      });
+      await activate(page.locator('#add-start-date'), info);
+      await expect(page.locator(`.mat-calendar-body-cell[aria-label="${label(yesterday)}"]`)).toBeDisabled();
+      const todayCell = page.locator(`.mat-calendar-body-cell[aria-label="${label(today)}"]`);
+      await expect(todayCell).toBeEnabled();
+      await activate(todayCell, info);
+      await expect(page.locator('mat-calendar')).toHaveCount(0);
+      await activate(page.locator('#add-end-date'), info);
+      await activate(page.locator(`.mat-calendar-body-cell[aria-label="${label(today)}"]`), info);
+      await expect(page.locator('mat-calendar')).toHaveCount(0);
+      await expect(page.locator('#add-start-date')).toHaveAttribute('aria-invalid', 'false');
+      await expect(page.locator('#add-end-date')).toHaveAttribute('aria-invalid', 'false');
+      await expect(page).toHaveURL(/\/calendar\/new/);
+      await evidence(page, info, `${theme}-past-today-recovery`);
+    });
     test(`touch Edit and Swap preserve invalid dates until correction, ${theme} (#248 #249)`, async ({ page, family }, info) => {
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       const path = `/api/families/${family.familyId}/calendar/events`;

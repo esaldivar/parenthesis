@@ -710,4 +710,5 @@ that points back here.
 - Added touch Edit/Swap invalid/corrected/cancel checks, Home/Calendar slot moving/clearing, Chicago spring/fall persisted edit boundaries and controlled overflow detection/restoration. Removed the remaining #259 viewport override.
 - Added rendered save-error/retry/toast and repeated Month occurrence date/focus coverage. Required accessibility scan states now include these paths; report policy rejects mobile scans recorded at desktop width.
 - [ ] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code.
-- [ ] Complete remaining manual/incomplete axe review, past/today/ambiguous-time and continued/year-boundary details acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
+- [ ] Complete remaining manual/incomplete axe review, ambiguous/nonexistent-time acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
+- Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
