@@ -2,5 +2,6 @@
   "home", "week", "month", "list", "week-details", "month-details", "list-details",
   "edit", "edit-picker", "edit-invalid", "edit-corrected", "swap", "swap-picker", "swap-invalid", "swap-corrected",
   "approvals", "add", "picker", "invalid", "corrected", "reminder-form", "task-form",
-  "toast", "delete-confirmation", "deleted", "task-delete-confirmation", "task-deleted"
+  "toast", "delete-confirmation", "deleted", "task-delete-confirmation", "task-deleted",
+  "save-error", "save-recovered-toast", "repeated-month", "continued-month"
 ]

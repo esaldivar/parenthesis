@@ -7,7 +7,7 @@ const policy = { expectedSha: sha, startedAt: '2026-10-25T12:00:00Z', milestones
 function report() {
   return { config: { metadata: { testedSha: sha } }, stats: { startTime: policy.startedAt, duration: 1000 }, suites: [{ specs: [
     ...['@m1', '@m2'].map((tag, i) => ({ title: tag, file: 'baseline.ts', line: i, tags: [tag], tests: [{ projectName: 'chromium', status: 'expected' }] })),
-    { title: 'mobile journey', file: 'mobile.ts', line: 1, tags: ['@m3', '@mobile', '@regression'], tests: requiredProfiles.map(projectName => ({ projectName, status: 'expected', results: [{ attachments: ['light', 'dark'].flatMap(theme => a11yStates.map(state => ({ name: `axe-${theme}-${state}`, body: Buffer.from(JSON.stringify({ schemaVersion: 1, testedSha: sha, profile: projectName, state: `${theme}-${state}`, capturedAt: policy.startedAt, axeVersion: '4.14.0', rules: ['label'], violations: [], incomplete: [] })).toString('base64') }))) }] })) },
+    { title: 'mobile journey', file: 'mobile.ts', line: 1, tags: ['@m3', '@mobile', '@regression'], tests: requiredProfiles.map(projectName => ({ projectName, status: 'expected', results: [{ attachments: ['light', 'dark'].flatMap(theme => a11yStates.map(state => ({ name: `axe-${theme}-${state}`, body: Buffer.from(JSON.stringify({ schemaVersion: 1, testedSha: sha, profile: projectName, viewport: { width: projectName === 'chromium' ? 1280 : Number(projectName.split('-').at(-1)), height: projectName === 'chromium' ? 800 : 844 }, state: `${theme}-${state}`, capturedAt: policy.startedAt, axeVersion: '4.14.0', rules: ['label'], violations: [], incomplete: [] })).toString('base64') }))) }] })) },
   ] }] };
 }
 test('passing executions are reported by profile without multiplying unique scenarios', () => {
@@ -36,6 +36,14 @@ for (const outcome of ['unexpected', 'skipped', 'unknown']) test(`${outcome} mob
 test('controlled negative: missing WebKit profile cannot silently pass', () => {
   const input = report(); input.suites[0].specs[2].tests.pop();
   assert(summarize(input, policy).errors.some(e => e.includes('mobile-webkit-390')));
+});
+test('a mobile profile scanned at desktop width cannot certify mobile coverage', () => {
+  const input = report();
+  const attachment = input.suites[0].specs[2].tests[1].results[0].attachments[0];
+  const scan = JSON.parse(Buffer.from(attachment.body, 'base64'));
+  scan.viewport.width = 1280;
+  attachment.body = Buffer.from(JSON.stringify(scan)).toString('base64');
+  assert.equal(summarize(input, policy).gatePassed, false);
 });
 test('stale SHA, stale timestamp, empty results, removed milestones and global errors block', () => {
   for (const mutate of [r => { r.config.metadata.testedSha = 'b'.repeat(40); }, r => { r.stats.startTime = '2026-10-24T00:00:00Z'; }, r => { r.suites = []; }, r => { r.suites[0].specs.shift(); }, r => { r.errors = [{ message: 'runner failed' }]; }]) {

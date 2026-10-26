@@ -41,12 +41,14 @@ export function summarize(report, { milestones, regressionTag, expectedSha, star
   }
   let scans = 0, manualReviewRules = 0;
   for (const profile of requiredProfiles) {
+    const expectedWidth = profile === 'chromium' ? 1280 : Number(profile.split('-').at(-1));
     const states = new Set();
     for (const execution of tests.filter(t => t.profile === profile && ['expected', 'flaky'].includes(t.outcome))) {
       for (const attachment of execution.attachments.filter(a => a.name.startsWith('axe-'))) {
         try {
           const scan = JSON.parse(Buffer.from(attachment.body, 'base64').toString('utf8'));
           if (scan.schemaVersion !== 1 || scan.testedSha !== expectedSha || scan.profile !== profile ||
+              scan.viewport?.width !== expectedWidth ||
               !scan.axeVersion || !Array.isArray(scan.rules) || !scan.rules.length ||
               !Array.isArray(scan.violations) || scan.violations.length || !Array.isArray(scan.incomplete) ||
               !Number.isFinite(Date.parse(scan.capturedAt)) || Date.parse(scan.capturedAt) < Date.parse(report.stats?.startTime)) {
