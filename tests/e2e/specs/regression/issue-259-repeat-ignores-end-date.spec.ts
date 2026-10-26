@@ -33,9 +33,9 @@ test.describe('Issue #259: repeating events aren’t refused for running into ea
     const [tuesday, wednesday] = [date(1), date(2)];
     try {
       await signIn(page, family.dad.email);
-      for (const [size, width, height] of [['desktop', 1280, 800], ['phone', 390, 844]] as const) {
+      // The configured release profile supplies desktop/320px/390px and touch settings (#278).
+      for (const size of [test.info().project.name]) {
         await test.step(size, async () => {
-          await page.setViewportSize({ width, height });
           await page.goto(`/calendar/new?date=${tuesday}`);
           await page.getByRole('button', { name: /Activity/ }).click();
           await page.getByLabel('Title').fill(`Swim lessons (${size})`);

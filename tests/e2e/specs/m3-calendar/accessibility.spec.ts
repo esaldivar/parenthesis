@@ -38,6 +38,108 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
     expect((await analyze(page)).violations).toEqual([]);
   });
   for (const theme of ['light', 'dark'] as const) {
+    test(`save failure recovery preserves input and success toast never takes focus, ${theme}`, async ({ page, family }, info) => {
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+      const path = `/api/families/${family.familyId}/calendar/events`;
+      const activity = await family.dad.json<{ id: string }>(family.dad.post(path, {
+        category: 'Activity', title: 'Recoverable practice', childIds: [family.kaiId],
+        startsAt: addHours(monday, 40).toISOString(), endsAt: addHours(monday, 41).toISOString(),
+      }));
+      await signIn(page, family.dad.email);
+      await page.goto(`/calendar/${activity.id}/edit`);
+      await page.getByLabel('Title', { exact: true }).fill('Recovered practice');
+      await page.getByLabel('Notes (optional)', { exact: true }).fill('Synthetic recovery note');
+      // Fail the browser's first save without mutating the isolated API fixture.
+      const endpoint = `**${path}/${activity.id}`;
+      await page.route(endpoint, route => route.request().method() === 'PATCH'
+        ? route.fulfill({ status: 503, contentType: 'application/problem+json', body: JSON.stringify({ status: 503, title: 'Synthetic service interruption', detail: 'Synthetic retry is safe.' }) })
+        : route.continue());
+      await page.getByRole('button', { name: 'Save changes', exact: true }).press('Enter');
+      const error = page.getByRole('alert').filter({ hasText: 'Synthetic service interruption' });
+      await expect(error).toBeFocused();
+      await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Recovered practice');
+      await expect(page.getByLabel('Notes (optional)', { exact: true })).toHaveValue('Synthetic recovery note');
+      const unchanged = await family.dad.json<{ title: string }>(family.dad.get(`${path}/${activity.id}`));
+      expect(unchanged.title).toBe('Recoverable practice');
+      await scan(page, info, `${theme}-save-error`);
+      await page.unroute(endpoint);
+      await page.getByRole('button', { name: 'Save changes', exact: true }).press('Enter');
+      await expect(page).toHaveURL(/\/calendar\?date=/);
+      const host = page.locator('app-toast-host');
+      const message = host.locator('.toast', { hasText: 'Recovered practice' });
+      await expect(message).toHaveCount(1);
+      await expect(host.locator('[role="status"][aria-live="polite"]')).toHaveCount(1);
+      expect(await host.evaluate(el => el.contains(document.activeElement))).toBe(false);
+      // The notification must not replay merely because the calendar reloads.
+      await scan(page, info, `${theme}-save-recovered-toast`);
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'Calendar', exact: true, level: 1 })).toBeVisible();
+      await expect(host.locator('.toast')).toHaveCount(0);
+    });
+
+    test(`repeated Month occurrences have distinct full dates and return focus, ${theme}`, async ({ page, family }, info) => {
+      await page.emulateMedia({ colorScheme: theme });
+      const path = `/api/families/${family.familyId}/calendar/events`;
+      const repeatStart = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 11, 28, 16));
+      await family.dad.json(family.dad.post(path, {
+        category: 'Activity', title: 'Weekly accessible practice', childIds: [family.kaiId],
+        startsAt: repeatStart.toISOString(), endsAt: addHours(repeatStart, 1).toISOString(),
+        repeat: { frequency: 'Weekly', interval: 1, days: [repeatStart.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/Chicago' })], count: 2 },
+      }));
+      await signIn(page, family.dad.email);
+      const occurrences = await family.dad.json<{ id: string; startsAt: string; title: string }[]>(family.dad.get(path, {
+        from: repeatStart.toISOString(), to: addHours(repeatStart, 14 * 24).toISOString(),
+      }));
+      expect(occurrences).toHaveLength(2);
+      for (const occurrence of occurrences) {
+        const localDate = new Date(occurrence.startsAt).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+        const fullDate = new Date(occurrence.startsAt).toLocaleDateString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Chicago',
+        });
+        // Navigate separately so the test also works when the two dates straddle a month boundary.
+        await page.goto(`/calendar?date=${localDate}&view=month`);
+        const bar = page.getByRole('button', { name: new RegExp(fullDate) }).filter({ hasText: 'Weekly accessible practice' });
+        await expect(bar).toHaveCount(1);
+        await bar.press('Enter');
+        const dialog = page.getByRole('dialog');
+        await expect(dialog.getByRole('heading', { name: 'Weekly accessible practice', exact: true })).toBeFocused();
+        await expect(dialog).toContainText(new RegExp(fullDate.replace(/, \d{4}$/, '')));
+        await dialog.getByRole('button', { name: 'Close details' }).press('Enter');
+        await expect(bar).toBeFocused();
+      }
+      await scan(page, info, `${theme}-repeated-month`);
+    });
+
+    test(`continued Month segments name the full range and restore focus, ${theme}`, async ({ page, family }, info) => {
+      await page.emulateMedia({ colorScheme: theme });
+      const year = new Date().getUTCFullYear() + 1;
+      const firstFriday = 1 + ((5 - new Date(Date.UTC(year, 4, 1)).getUTCDay() + 7) % 7);
+      const start = new Date(Date.UTC(year, 4, firstFriday, 5)); // Chicago midnight in May.
+      const end = addHours(start, 5 * 24); // Friday through Tuesday, across two week rows.
+      await family.dad.json(family.dad.post(`/api/families/${family.familyId}/calendar/events`, {
+        category: 'Activity', title: 'Accessible continued camp', childIds: [family.kaiId],
+        allDay: true, startsAt: start.toISOString(), endsAt: end.toISOString(),
+      }));
+      await signIn(page, family.dad.email);
+      await page.goto(`/calendar?date=${start.toISOString().slice(0, 10)}&view=month`);
+      const bars = page.locator('app-calendar-month .bar', { hasText: 'Accessible continued camp' });
+      await expect(bars).toHaveCount(2);
+      for (let segment = 0; segment < 2; segment++) {
+        const bar = bars.nth(segment);
+        for (const instant of [start, addHours(end, -24)]) {
+          await expect(bar).toHaveAccessibleName(new RegExp(instant.toLocaleDateString('en-US', {
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Chicago',
+          })));
+        }
+        await bar.press('Enter');
+        const dialog = page.getByRole('dialog');
+        await expect(dialog.getByRole('heading', { name: 'Accessible continued camp', exact: true })).toBeFocused();
+        await dialog.getByRole('button', { name: 'Close details' }).press('Enter');
+        await expect(bar).toBeFocused();
+      }
+      await scan(page, info, `${theme}-continued-month`);
+    });
+
     test(`rendered calendar, details and approvals, ${theme}`, async ({ page, family }, info) => {
       await page.emulateMedia({ colorScheme: theme });
       const path = `/api/families/${family.familyId}/calendar/events`;
