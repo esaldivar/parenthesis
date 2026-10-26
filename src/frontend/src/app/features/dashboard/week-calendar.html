@@ -363,14 +363,7 @@
     </div>
 
     <footer class="cal__footer">
-      @if (split()) {
-        <p class="muted">Showing each child separately. This only changes the view, not anyone’s schedule.</p>
-      }
-      @if (canSplit()) {
-        <button mat-button type="button" [attr.aria-pressed]="split()" (click)="splitChange.emit(!split())">
-          {{ split() ? 'Group children with the same schedule' : 'Show children separately this week' }}
-        </button>
-      }
+      <app-dashboard-child-filter [children]="week()?.children ?? []" [selectedChild]="selectedChild()" (changed)="childChange.emit($event)" />
       <app-calendar-key />
     </footer>
   } @else if (state() === 'unavailable') {

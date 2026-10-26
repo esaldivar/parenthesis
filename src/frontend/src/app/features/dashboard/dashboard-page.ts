@@ -92,8 +92,20 @@ export class DashboardPage {
   protected readonly shownWeek = computed(() => this.chosenWeek() ?? this.linkedWeek() ?? this.currentWeekStart());
   protected readonly isCurrentWeek = computed(() => this.shownWeek() === this.currentWeekStart());
 
-  /** "Show children separately this week": a view choice that resets when the week changes and never edits data. */
-  protected readonly split = signal(false);
+  /** Dashboard-only filter, retained across week/list changes in this active page. */
+  protected readonly selectedChild = signal<string | null>(null);
+  private selectionFamily: string | undefined;
+  protected readonly calendarWeek = computed(() => {
+    const data = this.data();
+    const child = this.selectedChild();
+    if (!data || !child) return data;
+    return {
+      ...data,
+      parentingTime: data.parentingTime.filter((p) => p.child.id === child),
+      // Calendar's forChild rule: shared events appear once; child-free events always remain.
+      events: data.events.filter((e) => e.children.length === 0 || e.children.some((c) => c.id === child)),
+    };
+  });
   protected readonly inlineView = signal<InlineView>('week');
 
   protected readonly state = signal<WeekState>('loading');
@@ -229,14 +241,9 @@ export class DashboardPage {
   }
 
   private chooseWeek(week: PlainDate): void {
-    this.split.set(false);
     this.chosenWeek.set(week);
     // Keep the selected week in this history entry, so Settings/theme changes and reload retain it.
     void this.router.navigate([], { queryParams: { week }, queryParamsHandling: 'merge', replaceUrl: true });
-  }
-
-  protected setSplit(split: boolean): void {
-    this.split.set(split);
   }
 
   protected showMemory(offset: number): void {
@@ -312,11 +319,19 @@ export class DashboardPage {
 
   private async load(source: DashboardDataSource, familyId: string | undefined, weekStart: PlainDate): Promise<void> {
     const request = ++this.requestId;
+    if (familyId !== this.selectionFamily) {
+      this.selectedChild.set(null);
+      this.data.set(null);
+      this.selectionFamily = familyId;
+    }
     this.state.set('loading');
     try {
       const data = familyId ? await source.load(familyId, weekStart) : null;
       if (request !== this.requestId) {
         return; // A newer week was requested meanwhile.
+      }
+      if (!data?.children.some((c) => c.id === this.selectedChild())) {
+        this.selectedChild.set(null);
       }
       this.data.set(data);
       this.memoryIndex.set(0);

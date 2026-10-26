@@ -62,6 +62,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
 
     return {
       source: 'live',
+      children: children.filter((c) => c.status === 'Active').map((c) => ({ id: c.id, name: c.firstName })),
       parentingTime: events.filter((e) => e.category === 'ParentingTime').flatMap((e) => parentingTime(e, zone, kids, parent)),
       events: events.filter((e) => e.category !== 'ParentingTime').map((e) => familyEvent(e, zone, kids, members)),
       pendingReviews: approvals
@@ -156,6 +157,7 @@ export class SampleDashboardDataSource extends DashboardDataSource {
 
     return {
       source: 'sample',
+      children: [kai, aurora],
       parentingTime: [
         // One continuous all-day arrangement for both children: shown as a single block across the week.
         ...[kai, aurora].map((child) => ({
