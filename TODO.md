@@ -6,6 +6,11 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Dependency compatibility review (#275, October 26, 2026).** All three dependency PRs are already merged.
+  Prepared a Docker build-stage correction to Node 24, matching `.nvmrc` and the frontend engine range;
+  Node 25 is outside that range and is end of life. See `docs/runbooks/dependency-review-275.md`.
+  - [ ] Review the correction and run the API image build/smoke check in CI; Docker is unavailable locally.
+  - [ ] Finish upstream Actions runner/breaking-change review before signing off the entire issue.
 - [x] **Dependabot release branch policy (#275, #277).** Reconcile the older Copilot branch with the active release:
   retain the separate edited-event branch-policy workflow, existing issue-link enforcement and full regression suite;
   allow same-repository dependabot/* only into valid release/x.y.z branches. Main/develop and fork restrictions stay.
