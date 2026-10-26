@@ -257,13 +257,15 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await expect(page.getByText(/is on the calendar on 4 dates/)).toBeVisible();
 
       await openList(page);
-      // List shows the whole month: the four requested dates are the Tuesday and Thursday of each of two weeks.
-      const expectedDates = [0, 2, 7, 9].map((days) =>
-        new Date(Date.parse(`${tuesday}T00:00:00Z`) + days * 86_400_000).toLocaleDateString('en-US', {
-          weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
-        }),
+      // The List view shows one month, so only the requested dates that fall in Tuesday's month are listed.
+      const monthPrefix = tuesday.slice(0, 7);
+      const requested = [0, 2, 7, 9]
+        .map((days) => new Date(Date.parse(`${tuesday}T00:00:00Z`) + days * 86_400_000))
+        .filter((date) => date.toISOString().startsWith(monthPrefix));
+      const expectedDates = requested.map((date) =>
+        date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' }),
       );
-      await expect(page.locator('app-calendar-list button.item[data-kind="unavailable"]')).toHaveCount(4);
+      await expect(page.locator('app-calendar-list button.item[data-kind="unavailable"]')).toHaveCount(expectedDates.length);
       await expect(page.locator('app-calendar-list .days > li h3')).toHaveText(expectedDates);
     } finally {
       await family.dispose();
