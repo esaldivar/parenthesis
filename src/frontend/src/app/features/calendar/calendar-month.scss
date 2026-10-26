@@ -154,11 +154,11 @@
   .day {
     min-height: 64px;
   }
-  // As wide as the day allows (a 320px phone has 41px columns), still 44px tall.
+  // Keep 44px targets centered inside the padded phone cells.
   .day__number {
-    min-width: 0;
-    width: 100%;
-    max-width: var(--target-min);
+    min-width: var(--target-min);
+    width: var(--target-min);
+    margin-inline-start: calc((100% - var(--target-min)) / 2);
     padding: 0;
     font-size: 0.875rem;
   }

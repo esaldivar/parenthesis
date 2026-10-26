@@ -28,7 +28,7 @@ async function signIn(page: Page, email: string) {
   await expect(page.getByRole('navigation').first()).toBeVisible();
 }
 
-/** The calendar's List view for next Tuesday's week. */
+/** The calendar's List view for the month containing next Tuesday. */
 async function openList(page: Page) {
   await page.goto(`/calendar?date=${tuesday}&view=list`);
   await expect(page.getByRole('heading', { level: 1, name: 'Calendar' })).toBeVisible();
@@ -257,8 +257,16 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await expect(page.getByText(/is on the calendar on 4 dates/)).toBeVisible();
 
       await openList(page);
-      // Tuesday and Thursday of that week.
-      await expect(page.locator('app-calendar-list button.item[data-kind="unavailable"]')).toHaveCount(2);
+      // The List view shows one month, so only the requested dates that fall in Tuesday's month are listed.
+      const monthPrefix = tuesday.slice(0, 7);
+      const requested = [0, 2, 7, 9]
+        .map((days) => new Date(Date.parse(`${tuesday}T00:00:00Z`) + days * 86_400_000))
+        .filter((date) => date.toISOString().startsWith(monthPrefix));
+      const expectedDates = requested.map((date) =>
+        date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' }),
+      );
+      await expect(page.locator('app-calendar-list button.item[data-kind="unavailable"]')).toHaveCount(expectedDates.length);
+      await expect(page.locator('app-calendar-list .days > li h3')).toHaveText(expectedDates);
     } finally {
       await family.dispose();
     }
@@ -375,7 +383,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await dad.json(dad.post(events(familyId), { category: 'Activity', title: 'Piano lesson', childIds: [kaiId], startsAt: at(15), endsAt: at(16) }));
       await signIn(page, dad.email);
 
-      /** Taps 5:00 PM in Tuesday's column of a week grid (the column covers the whole day). */
+      /** Taps 5:00 PM in Tuesday's desktop week-grid column. */
       async function tapFivePm(column: ReturnType<Page['locator']>) {
         await column.evaluate((el, fraction) => {
           const scroller = el.closest('.grid__body') as HTMLElement;
@@ -391,6 +399,18 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       ] as const) {
         await test.step(where, async () => {
           await page.goto(url);
+          if (page.viewportSize()!.width < 720) {
+            // Phones use a two-tap day target in the agenda instead of the desktop time grid.
+            const tuesdayAgenda = page.locator('.agenda__day').filter({ hasText: /Tue(?:sday)?/ });
+            await tuesdayAgenda.locator('.tap-add__button')
+              .tap({ position: { x: 12, y: 12 } });
+            await page.getByRole('button', { name: /^Add on Tuesday/ }).tap();
+            await expect(page).toHaveURL(new RegExp(`/calendar/new\\?date=${tuesday}$`));
+            await page.getByRole('button', { name: /Activity/ }).click();
+            await expect(page.locator('input[formcontrolname="startTime"]')).toHaveValue('09:00');
+            await expect(page.locator('input[formcontrolname="endTime"]')).toHaveValue('10:00');
+            return;
+          }
           await tapFivePm(page.getByRole('button', { name: /^Add on Tuesday/ }));
           // The first tap highlights the hour (#237); tapping the highlight opens Add there.
           const highlight = page.getByRole('button', { name: /^Add on Tuesday, .* at 5:00 PM$/ });

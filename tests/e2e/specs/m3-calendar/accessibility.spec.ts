@@ -141,6 +141,8 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
         await scan(page, info, `${theme}-${kind.toLowerCase()}-form`);
       }
       await page.getByRole('button', { name: /Reminder/ }).press('Enter');
+      await expect(page.getByRole('button', { name: /Reminder/ })).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByRole('form', { name: 'Reminder details' })).toBeVisible();
       await page.getByLabel('Title', { exact: true }).fill('Accessible reminder');
       const dateField = page.getByLabel('Date', { exact: true });
       await expect(dateField).toHaveAccessibleDescription(/Date format: MM\/DD\/YYYY or YYYY-MM-DD/);
