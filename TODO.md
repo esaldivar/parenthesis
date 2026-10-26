@@ -527,6 +527,10 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
+- [ ] **Product README and documentation navigation (#84).** Product landing page, local setup/API guides and
+  documentation index prepared October 26, 2026; approved icon reused unchanged, planned features distinguished
+  from current work. Verify rendered GitHub desktop/phone views in both themes before acceptance. Corrected
+  horizontal wordmark remains pending below; add a gallery only when real synthetic screenshots are approved.
 - [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
   query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
   local selection. Router regressions cover both journeys.
