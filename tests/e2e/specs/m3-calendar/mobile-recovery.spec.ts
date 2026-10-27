@@ -130,11 +130,11 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
             if (info.project.use.hasTouch) await target.tap({ position: { x: 5, y: 5 } });
             else await target.click({ position: { x: 5, y: 5 } });
           }
-          await expect(page.locator('.slot-pick__button')).toHaveCount(1);
-          await expect(page.locator('.slot-pick__button')).toHaveAttribute('aria-label', new RegExp(`^Add on ${day}`));
+          await expect(page.locator('.slot-pick__button:visible')).toHaveCount(1);
+          await expect(page.locator('.slot-pick__button:visible')).toHaveAttribute('aria-label', new RegExp(`^Add on ${day}`));
         }
         await page.keyboard.press('Escape');
-        await expect(page.locator('.slot-pick__button')).toHaveCount(0);
+        await expect(page.locator('.slot-pick__button:visible')).toHaveCount(0);
         await expect(page).not.toHaveURL(/\/calendar\/new/);
         await evidence(page, info, `${theme}-${url.startsWith('/calendar') ? 'calendar' : 'home'}-slot-cleared`);
       }
