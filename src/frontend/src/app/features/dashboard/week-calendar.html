@@ -69,7 +69,7 @@
               @let place = placement(block);
               @if (place) {
                 <li
-                  class="pt"
+                  class="pt" [appCalendarPalette]="block.caregiver.palette ?? 'parenting'"
                   [class.pt--narrow]="place.endColumn - place.startColumn <= 2"
                   [attr.data-status]="block.status"
                   [style.--start]="place.startColumn"
@@ -129,7 +129,7 @@
               @if (place) {
                 <li
                   class="act act--allday"
-                  [attr.data-category]="block.event.category"
+                  [attr.data-category]="block.event.category" [appCalendarPalette]="block.event.palette"
                   [attr.data-status]="block.event.status"
                   [style.--start]="place.startColumn"
                   [style.--end]="place.endColumn"
@@ -205,7 +205,7 @@
                 @if (slot) {
                   <li
                     class="act"
-                    [attr.data-category]="event.category"
+                    [attr.data-category]="event.category" [appCalendarPalette]="event.palette"
                     [attr.data-status]="event.status"
                     [style.grid-row]="slot.row + ' / span ' + slot.span"
                     [style.grid-column]="slot.lane"
@@ -254,7 +254,7 @@
       } @else {
         <ol class="agenda__blocks" aria-labelledby="allday-heading">
           @for (block of allDay(); track block.key) {
-            <li class="pt pt--card" [attr.data-status]="block.status">
+            <li class="pt pt--card" [appCalendarPalette]="block.caregiver.palette ?? 'parenting'" [attr.data-status]="block.status">
               <span class="pt__avatars" aria-hidden="true">
                 <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="36" />
                 @for (child of block.children; track child.id) {
@@ -324,7 +324,7 @@
             } @else {
               <ul>
                 @for (event of day.events; track event.id) {
-                  <li class="act act--row" [attr.data-category]="event.category" [attr.data-status]="event.status">
+                  <li class="act act--row" [attr.data-category]="event.category" [appCalendarPalette]="event.palette" [attr.data-status]="event.status">
                     <app-icon class="act__icon" [name]="icons[event.category]" [size]="22" />
                     <span class="act__title">{{ event.title }}</span>
                     <span class="act__time">
@@ -363,14 +363,7 @@
     </div>
 
     <footer class="cal__footer">
-      @if (split()) {
-        <p class="muted">Showing each child separately. This only changes the view, not anyone’s schedule.</p>
-      }
-      @if (canSplit()) {
-        <button mat-button type="button" [attr.aria-pressed]="split()" (click)="splitChange.emit(!split())">
-          {{ split() ? 'Group children with the same schedule' : 'Show children separately this week' }}
-        </button>
-      }
+      <app-dashboard-child-filter [children]="week()?.children ?? []" [selectedChild]="selectedChild()" (changed)="childChange.emit($event)" />
       <app-calendar-key />
     </footer>
   } @else if (state() === 'unavailable') {

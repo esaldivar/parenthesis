@@ -281,6 +281,13 @@ internal static class InvitationEndpoints
             {
                 return;
             }
+            var occupiedSlot = await db.Memberships
+                .IgnoreQueryFilters([TenantContext.QueryFilterName])
+                .Where(m => m.FamilyId == invitation.FamilyId &&
+                    m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
+                .Select(m => m.PaletteSlot)
+                .SingleOrDefaultAsync(ct);
+            membership.PaletteSlot = occupiedSlot == 0 ? 1 : 0;
             // The invitee is joining this family, so the request acts in it from here on.
             tenant.Resolve(invitation.FamilyId, membership.Id, FamilyRole.Parent);
             invitation.Accept(userId, now);

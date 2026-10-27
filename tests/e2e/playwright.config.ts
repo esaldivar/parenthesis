@@ -16,6 +16,8 @@ export default defineConfig({
   retries: ci ? 1 : 0,
   workers: ci ? 2 : undefined,
   timeout: 30_000,
+  // Leave time within the 60-minute CI job to emit reports and upload diagnostics.
+  globalTimeout: ci ? 48 * 60_000 : undefined,
   expect: { timeout: 10_000 },
   reporter: [
     ['list'],
@@ -26,6 +28,9 @@ export default defineConfig({
   use: {
     baseURL: process.env['E2E_BASE_URL'] ?? 'https://localhost:8443',
     ignoreHTTPSErrors: true,
+    // Fail an unreachable control promptly instead of consuming the whole scenario/job timeout.
+    actionTimeout: 10_000,
+    navigationTimeout: 30_000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',

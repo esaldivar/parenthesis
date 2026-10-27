@@ -23,6 +23,9 @@ const TEXT = 4.5; // Normal text.
 const NON_TEXT = 3; // Focus indicators and meaningful control boundaries.
 
 const pairs: [foreground: string, background: string, minimum: number][] = [
+  ...['parent-a', 'parent-b', 'parenting', 'activity', 'family', 'task', 'reminder', 'unavailable'].map(
+    key => [`color-calendar-${key}-fg`, `color-calendar-${key}-bg`, TEXT] as [string, string, number],
+  ),
   ['color-text', 'color-canvas', TEXT],
   ['color-text', 'color-surface', TEXT],
   ['color-text', 'color-surface-soft', TEXT],
@@ -70,6 +73,18 @@ describe.each(['light', 'dark'] as const)('%s theme tokens', (mixin) => {
   it('defines every token used in the contrast checks', () => {
     const missing = pairs.flatMap(([fg, bg]) => [fg, bg]).filter((name) => !tokens[name]);
     expect(missing).toEqual([]);
+  });
+
+  it('keeps selected category cards distinct and readable, including unknown-parent fallback', () => {
+    expect(tokens['color-calendar-parenting-bg']).not.toBe(tokens['color-calendar-unavailable-bg']);
+    for (const key of ['parent-a', 'parent-b', 'parenting', 'activity', 'family', 'task', 'reminder', 'unavailable']) {
+      const bg = tokens[`color-calendar-${key}-bg`], fg = tokens[`color-calendar-${key}-fg`];
+      const selected = '#' + [1, 3, 5].map(i => Math.round(
+        parseInt(bg.slice(i, i + 2), 16) * 0.78 + parseInt(fg.slice(i, i + 2), 16) * 0.22,
+      ).toString(16).padStart(2, '0')).join('');
+      expect(selected).not.toBe(bg);
+      expect(contrast(fg, selected), `${key} selected text`).toBeGreaterThanOrEqual(TEXT);
+    }
   });
 
   it.each(pairs)('%s on %s meets %s:1', (foreground, background, minimum) => {

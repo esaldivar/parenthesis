@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -56,7 +57,7 @@ function lanes<T extends { start: number; end: number }>(entries: readonly T[]):
 @Component({
   selector: 'app-calendar-week',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ItemText],
+  imports: [CalendarPalette, ItemText],
   templateUrl: './calendar-week.html',
   styleUrl: './calendar-week.scss',
 })

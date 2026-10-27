@@ -16,6 +16,7 @@ export interface ChildRef {
 
 export interface Caregiver {
   readonly membershipId: string;
+  readonly palette?: import('../calendar/calendar-palette').CalendarPaletteKey;
   readonly displayName: string;
 }
 
@@ -41,7 +42,12 @@ export interface ParentingTime {
   readonly eventId?: string;
 }
 
-/** Activity categories for icons and colour accents (always alongside text). */
+/** Subcategories retain their icons; the owner-approved activity palette is shared (#255). */
+export function eventPalette(category: EventCategory): import('../calendar/calendar-palette').CalendarPaletteKey {
+  return category === 'family' || category === 'unavailable' ? category : 'activity';
+}
+
+/** Activity categories for icons (always alongside text). */
 /**
  * `family`: an event both parents attend (e.g. a school play), with its own colour. `unavailable`: a parent's
  * blocked-out time. Both are mock styling for now (see the calendar key); the categories aren't in the API yet.
@@ -63,6 +69,8 @@ export interface FamilyEvent {
    */
   readonly endDate?: PlainDate;
   readonly category: EventCategory;
+  /** Raw links retained even when a child is not in the active display roster. */
+  readonly childIds?: readonly string[];
   readonly children: readonly ChildRef[];
   /** Parents attending, shown before the children (both parents for a family event). */
   readonly parents?: readonly Caregiver[];
@@ -112,6 +120,8 @@ export interface DashboardNote {
 export interface DashboardWeek {
   /** "sample" data is synthetic and must be labelled as such wherever it is shown. */
   readonly source: 'live' | 'sample';
+  /** All active, authorized children, even those with no events this week. */
+  readonly children: readonly ChildRef[];
   readonly parentingTime: readonly ParentingTime[];
   readonly events: readonly FamilyEvent[];
   readonly pendingReviews: readonly PendingReview[];

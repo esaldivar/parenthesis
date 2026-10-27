@@ -2,8 +2,8 @@ import { CalendarEvent, ChecklistItem, Child, FamilyMember, Reminder, SharedTask
 
 // Synthetic family only.
 export const MEMBERS: FamilyMember[] = [
-  { membershipId: 'm-alex', displayName: 'Alex', role: 'Parent', joinedAt: '2026-10-01T00:00:00Z', isYou: true },
-  { membershipId: 'm-sam', displayName: 'Sam', role: 'Parent', joinedAt: '2026-10-02T00:00:00Z', isYou: false },
+  { membershipId: 'm-alex', displayName: 'Alex', role: 'Parent', joinedAt: '2026-10-01T00:00:00Z', paletteSlot: 0, isYou: true },
+  { membershipId: 'm-sam', displayName: 'Sam', role: 'Parent', joinedAt: '2026-10-02T00:00:00Z', paletteSlot: 1, isYou: false },
 ];
 export const child = (id: string, firstName: string): Child => ({
   id,

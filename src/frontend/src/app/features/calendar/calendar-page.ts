@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -80,7 +81,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
 @Component({
   selector: 'app-calendar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [CalendarPalette,
     MatButtonModule,
     RouterLink,
     EmptyState,

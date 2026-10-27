@@ -1,3 +1,4 @@
+import { CalendarPalette, CalendarPaletteKey } from '../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -26,7 +27,7 @@ import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Icon, IconName } from '../../shared/icon/icon';
 import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from './dashboard-data';
 import { blockRange, childNames, groupParentingTime } from './grouping';
-import { DashboardWeek, PlainDate, ScheduleStatus } from './model';
+import { DashboardWeek, PlainDate, ScheduleStatus, eventPalette } from './model';
 import { StatusLabel } from './status-label';
 import { CATEGORY_ICONS } from './timeline';
 import { InlineView, WeekCalendar, WeekState } from './week-calendar';
@@ -40,6 +41,7 @@ interface UpcomingItem {
   readonly key: string;
   readonly icon: IconName;
   readonly category: string;
+  readonly palette?: CalendarPaletteKey;
   readonly title: string;
   readonly when: string;
   readonly people: readonly { name: string; kind: 'parent' | 'child' }[];
@@ -60,7 +62,7 @@ interface UpcomingItem {
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails],
+  imports: [CalendarPalette, RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails],
   providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.scss',
@@ -92,8 +94,20 @@ export class DashboardPage {
   protected readonly shownWeek = computed(() => this.chosenWeek() ?? this.linkedWeek() ?? this.currentWeekStart());
   protected readonly isCurrentWeek = computed(() => this.shownWeek() === this.currentWeekStart());
 
-  /** "Show children separately this week": a view choice that resets when the week changes and never edits data. */
-  protected readonly split = signal(false);
+  /** Dashboard-only filter, retained across week/list changes in this active page. */
+  protected readonly selectedChild = signal<string | null>(null);
+  private selectionFamily: string | undefined;
+  protected readonly calendarWeek = computed(() => {
+    const data = this.data();
+    const child = this.selectedChild();
+    if (!data || !child) return data;
+    return {
+      ...data,
+      parentingTime: data.parentingTime.filter((p) => p.child.id === child),
+      // Calendar's forChild rule: shared events appear once; child-free events always remain.
+      events: data.events.filter((e) => (e.childIds ?? e.children.map((c) => c.id)).length === 0 || (e.childIds ?? e.children.map((c) => c.id)).includes(child)),
+    };
+  });
   protected readonly inlineView = signal<InlineView>('week');
 
   protected readonly state = signal<WeekState>('loading');
@@ -129,6 +143,7 @@ export class DashboardPage {
         key: `pt-${b.key}`,
         icon: 'calendar',
         category: 'parenting',
+        palette: b.caregiver.palette ?? 'parenting',
         title: b.title,
         when: blockRange(b),
         people: [{ name: b.caregiver.displayName, kind: 'parent' as const }, ...b.children.map((c) => ({ name: c.name, kind: 'child' as const }))],
@@ -142,6 +157,7 @@ export class DashboardPage {
         key: `ev-${e.id}`,
         icon: CATEGORY_ICONS[e.category],
         category: e.category,
+        palette: eventPalette(e.category),
         title: e.title,
         when: e.time ? dateTimeLabel(`${e.date}T${e.time}`).replace(/, (\d)/, ' · $1') : dayLong(e.date),
         people: [
@@ -158,6 +174,7 @@ export class DashboardPage {
         key: `${n.kind}-${n.id}`,
         icon: n.kind === 'reminder' ? 'bell' : 'note',
         category: n.kind,
+        palette: n.kind,
         title: n.title,
         when:
           n.kind === 'task'
@@ -229,14 +246,9 @@ export class DashboardPage {
   }
 
   private chooseWeek(week: PlainDate): void {
-    this.split.set(false);
     this.chosenWeek.set(week);
     // Keep the selected week in this history entry, so Settings/theme changes and reload retain it.
     void this.router.navigate([], { queryParams: { week }, queryParamsHandling: 'merge', replaceUrl: true });
-  }
-
-  protected setSplit(split: boolean): void {
-    this.split.set(split);
   }
 
   protected showMemory(offset: number): void {
@@ -312,11 +324,19 @@ export class DashboardPage {
 
   private async load(source: DashboardDataSource, familyId: string | undefined, weekStart: PlainDate): Promise<void> {
     const request = ++this.requestId;
+    if (familyId !== this.selectionFamily) {
+      this.selectedChild.set(null);
+      this.data.set(null);
+      this.selectionFamily = familyId;
+    }
     this.state.set('loading');
     try {
       const data = familyId ? await source.load(familyId, weekStart) : null;
       if (request !== this.requestId) {
         return; // A newer week was requested meanwhile.
+      }
+      if (!data?.children.some((c) => c.id === this.selectedChild())) {
+        this.selectedChild.set(null);
       }
       this.data.set(data);
       this.memoryIndex.set(0);

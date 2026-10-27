@@ -75,6 +75,15 @@ describe('calendar filters on the page', () => {
 
   beforeEach(() => localStorage.clear());
 
+  it('shows both parent colors for Parenting time and keeps Unavailable separate', async () => {
+    await open();
+    filtersButton().click();
+    await settle();
+    const label = box('Parenting time').closest('label')!;
+    expect([...label.querySelectorAll('[data-palette]')].map(e => e.getAttribute('data-palette'))).toEqual(['parent-a', 'parent-b']);
+    expect(box('Unavailable').closest('label')!.querySelector('[data-palette]')?.getAttribute('data-palette')).toBe('unavailable');
+  });
+
   it('opens Filters as a dialog, hides a type at once, and returns focus to the button on Done', async () => {
     await open();
     expect(shownTitles()).toEqual(['School play', 'Science fair poster', 'Soccer', 'Spirit Day', 'Time with Sam', 'Unavailable']);

@@ -9,10 +9,10 @@
   [attr.data-kind]="item().kind"
 >
   <div class="panel__head">
-    <span class="panel__icon"><app-icon [name]="item().icon" [size]="24" /></span>
+    <span class="panel__icon" [appCalendarPalette]="item().palette ?? item().kind"><app-icon [name]="item().icon" [size]="24" /></span>
     <div class="panel__titles">
       <h2 id="event-details-title" tabindex="-1" cdkFocusInitial>{{ item().title }}</h2>
-      <p class="panel__type">{{ item().categoryLabel }}</p>
+      <p class="panel__type" [appCalendarPalette]="item().palette ?? item().kind">{{ item().categoryLabel }}</p>
     </div>
     <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close details">
       <app-icon name="close" />

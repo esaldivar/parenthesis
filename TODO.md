@@ -6,6 +6,43 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Release PR #321 Playwright follow-up (#278, #279).** Run 40444374496 recorded 224 passes and 30
+  failures in the new mobile recovery scenarios. Correct Cancel URL, displayed date and empty-week fixture
+  assumptions; preserve mutation, focus, date and DST assertions. The gate remains fail-closed. Extend the job
+  and global timeout to 60 and 48 minutes respectively so a full run and diagnostics can complete.
+  - [ ] Run the actual release candidate with all profiles, verify the results and review failed traces.
+  - [ ] Verify selected palette cards in light/dark browser views; real-device and screen-reader checks remain open.
+
+- [ ] **PR #321 remaining review and Playwright recovery (#255, #261, #278, #279).** Selected Add cards use a
+  distinct tinted fill; palette keys are typed with documented aliases; dashboard palette mapping replaces shadowed
+  subcategory fills; historical unknown-parent fallback differs from Unavailable. Prior #322 raw child-link fix verified.
+  - [x] Frontend lint, 605 tests and production build; E2E typecheck, 8 report-policy tests and 254 discovered executions.
+  - [ ] Run the exact release candidate in Chromium/WebKit after review. Time fields now use accessible labels;
+    slot targeting follows the visible layout and waits for loaded controls. Action/navigation/global timeouts bound
+    failures while retaining the gate and diagnostic time. No full browser execution claimed locally (Docker/.NET absent).
+  - [ ] Verify selected/unselected controls and unknown-parent fallback visually in both themes; real screen reader and
+    physical-device acceptance remain separate. Existing stylesheet warning remains, reduced to 10.86 kB.
+
+- [ ] **PR #321 Copilot corrections (#255, #261).** Persist parent palette slots, use fixed dual-parent swatches,
+  preserve status borders, retain raw child links and correct completion/style documentation in one fix PR.
+  - [ ] Backend build/format/integration and migration verification in CI (.NET SDK/Docker unavailable locally).
+  - [ ] Release-candidate browser verification, both themes, keyboard and real screen-reader acceptance.
+
+- [ ] **Approved calendar palette (#255, October 26, 2026).** Light/dark event, task, reminder, activity, unavailable and stable parent colors implemented.
+  - [ ] Complete browser/phone visual checks in both modes, keyboard and screen-reader acceptance against the release candidate.
+  - [ ] Verify PR CI and owner review before merge; deployment and issue acceptance remain separate.
+- [ ] **Home calendar child buttons (#261, October 26, 2026).** Replace grouping text with Show all kids and
+  authorized child-name buttons; filter the week without changing schedules, keep shared/child-free events, retain
+  selection across week/list changes, and reset when access or family changes. Focused frontend tests added.
+  - [ ] Owner visual retest after review/promotion: desktop and 320px phone in both themes, long/many child names,
+    keyboard/focus and real screen reader, enlarged text/reflow, reduced motion and forced colors. Local Chromium
+    could not be installed (download returned an invalid ZIP); browser/layout/device checks remain unverified.
+  - [ ] Required PR CI, owner acceptance and deployment remain separate; #261 stays open.
+- [ ] **Dependency compatibility review (#275, October 26, 2026).** All three dependency PRs are already merged.
+  Prepared a Docker build-stage correction to Node 24, matching `.nvmrc` and the frontend engine range;
+  Node 25 is outside that range and is end of life. See `docs/runbooks/dependency-review-275.md`.
+  - [ ] Review the correction and run the API image build/smoke check in CI; Docker is unavailable locally.
+  - [ ] Finish upstream Actions runner/breaking-change review before signing off the entire issue.
 - [x] **Dependabot release branch policy (#275, #277).** Reconcile the older Copilot branch with the active release:
   retain the separate edited-event branch-policy workflow, existing issue-link enforcement and full regression suite;
   allow same-repository dependabot/* only into valid release/x.y.z branches. Main/develop and fork restrictions stay.
@@ -527,6 +564,10 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
+- [ ] **Product README and documentation navigation (#84).** Product landing page, local setup/API guides and
+  documentation index prepared October 26, 2026; approved icon reused unchanged, planned features distinguished
+  from current work. Verify rendered GitHub desktop/phone views in both themes before acceptance. Corrected
+  horizontal wordmark remains pending below; add a gallery only when real synthetic screenshots are approved.
 - [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
   query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
   local selection. Router regressions cover both journeys.
@@ -700,3 +741,11 @@ that points back here.
 ### #281 — Real screen-reader environment prerequisite
 - Windows NVDA is installed; Guidepup starts/connects/stops, but the synthetic control announcement is absent in this agent session. macOS/VoiceOver is unavailable. Both acceptance paths remain blocked, not passed.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
+
+### #278/#279 — Coverage follow-up (October 26, 2026)
+- Verified historical release PR #315 browser run 40316038202: 179 passing executions on merge candidate `92be9b9e962751f6e6fa3c273d6cb62836eae46e`; original no-run blocker notes above are historical.
+- Added touch Edit/Swap invalid/corrected/cancel checks, Home/Calendar slot moving/clearing, Chicago spring/fall persisted edit boundaries and controlled overflow detection/restoration. Removed the remaining #259 viewport override.
+- Added rendered save-error/retry/toast and repeated Month occurrence date/focus coverage. Required accessibility scan states now include these paths; report policy rejects mobile scans recorded at desktop width.
+- [ ] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code.
+- [ ] Complete remaining manual/incomplete axe review, ambiguous/nonexistent-time acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
+- Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.

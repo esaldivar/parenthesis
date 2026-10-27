@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { parentPalette } from '../calendar/calendar-palette';
 import { FORMER_PARENT } from '../calendar/calendar-items';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from '../calendar/time';
 import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from './model';
@@ -52,6 +53,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
     const members = family.members;
     const parent = (membershipId: string | null): Caregiver => ({
       membershipId: membershipId ?? '',
+      palette: parentPalette(membershipId, members),
       displayName: members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT,
     });
     const kids = (ids: readonly (string | null)[]): ChildRef[] =>
@@ -62,6 +64,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
 
     return {
       source: 'live',
+      children: children.filter((c) => c.status === 'Active').map((c) => ({ id: c.id, name: c.firstName })),
       parentingTime: events.filter((e) => e.category === 'ParentingTime').flatMap((e) => parentingTime(e, zone, kids, parent)),
       events: events.filter((e) => e.category !== 'ParentingTime').map((e) => familyEvent(e, zone, kids, members)),
       pendingReviews: approvals
@@ -130,6 +133,7 @@ function familyEvent(
     durationMinutes: e.allDay ? undefined : Math.round((Date.parse(e.endsAt) - Date.parse(e.startsAt)) / 60_000),
     category: CATEGORIES[e.category],
     children: kids(e.childIds),
+    childIds: e.childIds,
     parents:
       e.category === 'Joint'
         ? members.filter((m) => m.role === 'Parent').map((m) => ({ membershipId: m.membershipId, displayName: m.displayName }))
@@ -151,11 +155,12 @@ export class SampleDashboardDataSource extends DashboardDataSource {
     const at = (offset: number, time: string) => `${date(offset)}T${time}`;
     const kai: ChildRef = { id: 'sample-kai', name: 'Kai' };
     const aurora: ChildRef = { id: 'sample-aurora', name: 'Aurora' };
-    const dad = { membershipId: 'sample-dad', displayName: 'Dad' };
-    const mom = { membershipId: 'sample-mom', displayName: 'Mom' };
+    const dad = { membershipId: 'sample-dad', displayName: 'Dad', palette: 'parent-a' as const };
+    const mom = { membershipId: 'sample-mom', displayName: 'Mom', palette: 'parent-b' as const };
 
     return {
       source: 'sample',
+      children: [kai, aurora],
       parentingTime: [
         // One continuous all-day arrangement for both children: shown as a single block across the week.
         ...[kai, aurora].map((child) => ({

@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -91,7 +92,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
 @Component({
   selector: 'app-add-event-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [CalendarPalette,
     DateField,
     ReactiveFormsModule,
     RouterLink,

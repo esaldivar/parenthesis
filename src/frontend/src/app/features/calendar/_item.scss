@@ -7,37 +7,17 @@
   border: 1px solid color-mix(in srgb, var(--color-outline) 45%, transparent);
   background: var(--color-cat-other-bg);
 
-  &[data-kind='parenting'] {
-    background: var(--color-parenting-bg);
-  }
-  &[data-kind='family'] {
-    background: var(--color-cat-family-bg);
-  }
-  &[data-category='School'] {
-    background: var(--color-cat-school-bg);
-  }
-  &[data-category='Medical'],
-  &[data-category='Dental'] {
-    background: var(--color-cat-medical-bg);
-  }
-  &[data-category='Activity'] {
-    background: var(--color-cat-sport-bg);
-  }
-  &[data-category='Birthday'] {
-    background: var(--color-cat-art-bg);
-  }
-  // Reminders: a plain surface with a gold edge, plus the bell icon and the "Reminder" label (never colour alone).
+  // Reminders: a tinted surface with a matching category edge, plus the bell icon and the "Reminder" label (never colour alone).
   &[data-kind='reminder'] {
-    background: var(--color-surface);
-    border-inline-start: 4px solid var(--color-leaf-gold);
+    background: var(--color-calendar-reminder-bg);
+    border-inline-start: 4px solid var(--color-calendar-reminder-fg);
   }
-  // Tasks: a plain surface with a green edge, plus the note icon and the "Task" label (never colour alone).
+  // Tasks: a tinted surface with a matching category edge, plus the note icon and the "Task" label (never colour alone).
   &[data-kind='task'] {
-    background: var(--color-surface);
-    border-inline-start: 4px solid var(--color-leaf-strong);
+    background: var(--color-calendar-task-bg);
+    border-inline-start: 4px solid var(--color-calendar-task-fg);
   }
   &[data-kind='unavailable'] {
-    background: var(--color-cat-unavailable-bg);
     border-style: dotted;
   }
   // Hidden by this parent's filters (#190): faint, dashed and labelled "Hidden", never with private details.

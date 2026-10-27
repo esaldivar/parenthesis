@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { DOCUMENT } from '@angular/common';
 import {
@@ -39,7 +40,7 @@ const CONFETTI_PIECES = 14;
 @Component({
   selector: 'app-task-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [A11yModule, MatButtonModule, RouterLink, Icon],
+  imports: [CalendarPalette, A11yModule, MatButtonModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './task-details.html',
   styleUrls: ['./event-details.scss', './task-details.scss'],

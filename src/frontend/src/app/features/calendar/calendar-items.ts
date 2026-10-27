@@ -1,4 +1,5 @@
 import { CalendarCategory, CalendarEvent, CalendarWarning, Child, FamilyMember, Reminder, SharedTask } from '../../core/api/api';
+import { CalendarPaletteKey, parentPalette } from './calendar-palette';
 import { IconName } from '../../shared/icon/icon';
 import { LocalDateTime, PlainDate } from '../dashboard/model';
 import { addDays, daysBetween } from '../dashboard/week';
@@ -28,6 +29,7 @@ export interface CalendarItem {
   readonly id: string;
   readonly title: string;
   readonly kind: ItemKind;
+  readonly palette?: CalendarPaletteKey;
   readonly category: CalendarCategory | 'Reminder' | 'Task';
   readonly categoryLabel: string;
   readonly icon: IconName;
@@ -149,6 +151,7 @@ export function toItems(
       id: event.id,
       title: hidden ? 'Unavailable' : event.title,
       kind,
+      palette: kind === 'parenting' ? parentPalette(event.caregiverMembershipId, members) : kind,
       category: event.category,
       categoryLabel: CATEGORY_LABELS[event.category],
       icon: ICONS[event.category],
