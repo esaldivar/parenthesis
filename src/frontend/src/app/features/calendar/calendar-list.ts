@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PlainDate } from '../dashboard/model';
 import { addDays, dayLong, daysBetween } from '../dashboard/week';
@@ -8,7 +9,7 @@ import { ItemText } from './item-text';
 @Component({
   selector: 'app-calendar-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ItemText],
+  imports: [CalendarPalette, ItemText],
   template: `
     <ol class="days">
       @for (day of days(); track day.date) {
@@ -20,7 +21,7 @@ import { ItemText } from './item-text';
                 <button
                   type="button"
                   class="item"
-                  [attr.data-kind]="item.kind"
+                  [attr.data-kind]="item.kind" [appCalendarPalette]="item.concealed ? 'concealed' : (item.palette ?? item.kind)"
                   [attr.data-category]="item.category"
                   [attr.data-status]="item.status"
                   [attr.data-concealed]="item.concealed ? 'true' : null"

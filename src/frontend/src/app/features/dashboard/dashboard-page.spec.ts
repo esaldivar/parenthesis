@@ -595,8 +595,11 @@ describe('DashboardPage (approved design)', () => {
       const { el } = await render({ sample: true });
 
       expect([...el.querySelectorAll('.legend li')].map(text)).toEqual([
-        'Parenting time',
+        'Parenting time · parent colors',
         'Family event (both parents)',
+        'Activity',
+        'Task',
+        'Reminder',
         'Proposed',
         'Unavailable',
       ]);

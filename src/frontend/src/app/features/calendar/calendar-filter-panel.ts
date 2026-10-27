@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,7 +13,7 @@ import { CalendarFilters, DIMENSIONS, Dimension } from './calendar-filters';
 @Component({
   selector: 'app-calendar-filter-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [A11yModule, MatButtonModule, Icon],
+  imports: [CalendarPalette, A11yModule, MatButtonModule, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   template: `
     <div class="backdrop" (click)="closed.emit()" aria-hidden="true"></div>
@@ -44,6 +45,9 @@ import { CalendarFilters, DIMENSIONS, Dimension } from './calendar-filters';
                 [checked]="isChecked(dimension.id, option.id)"
                 (change)="toggle(dimension.id, option.id, $any($event.target).checked)"
               />
+              @if (dimension.id === 'types') {
+                <span [appCalendarPalette]="option.id" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+              }
               {{ option.label }}
             </label>
           }

@@ -9,7 +9,7 @@
   <h2 id="kind-heading" class="step">What are you creating?</h2>
   <div class="types kinds" role="group" aria-labelledby="kind-heading">
     @for (option of kinds; track option.id) {
-      <button type="button" class="type kind" [attr.aria-pressed]="creating() === option.id" (click)="creating.set(option.id)">
+      <button type="button" class="type kind" [appCalendarPalette]="option.id" [attr.aria-pressed]="creating() === option.id" (click)="creating.set(option.id)">
         <span class="type__icon"><app-icon [name]="option.icon" [size]="24" /></span>
         <span class="type__text">
           <span class="kind__label">{{ option.label }}</span>
@@ -29,7 +29,7 @@
     <h2 id="type-heading" class="step">What kind of event?</h2>
     <div class="types" role="group" aria-labelledby="type-heading">
       @for (option of types; track option.id) {
-        <button type="button" class="type" [attr.aria-pressed]="type() === option.id" (click)="choose(option.id)">
+        <button type="button" class="type" [appCalendarPalette]="option.id === 'parenting' ? ownPalette() : option.id" [attr.aria-pressed]="type() === option.id" (click)="choose(option.id)">
           <span class="type__icon"><app-icon [name]="option.icon" [size]="24" /></span>
           <span class="type__text">
             <span class="type__label">{{ option.label }}</span>

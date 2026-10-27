@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,7 +30,7 @@ export function repeatText(reminder: Reminder): string | null {
 @Component({
   selector: 'app-reminder-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [A11yModule, MatButtonModule, RouterLink, Icon],
+  imports: [CalendarPalette, A11yModule, MatButtonModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './reminder-details.html',
   styleUrl: './event-details.scss',

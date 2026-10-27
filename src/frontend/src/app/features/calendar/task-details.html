@@ -17,10 +17,10 @@
   }
 
   <div class="panel__head">
-    <span class="panel__icon"><app-icon name="note" [size]="24" /></span>
+    <span class="panel__icon" [appCalendarPalette]="'task'"><app-icon name="note" [size]="24" /></span>
     <div class="panel__titles">
       <h2 id="task-details-title" tabindex="-1" cdkFocusInitial>{{ current().title }}</h2>
-      <p class="panel__type">Task</p>
+      <p class="panel__type" [appCalendarPalette]="'task'">Task</p>
     </div>
     <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close details">
       <app-icon name="close" />

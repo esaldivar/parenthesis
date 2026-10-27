@@ -9,10 +9,10 @@
   data-kind="reminder"
 >
   <div class="panel__head">
-    <span class="panel__icon"><app-icon name="bell" [size]="24" /></span>
+    <span class="panel__icon" [appCalendarPalette]="'reminder'"><app-icon name="bell" [size]="24" /></span>
     <div class="panel__titles">
       <h2 id="reminder-details-title" tabindex="-1" cdkFocusInitial>{{ reminder().title }}</h2>
-      <p class="panel__type">Reminder</p>
+      <p class="panel__type" [appCalendarPalette]="'reminder'">Reminder</p>
     </div>
     <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close details">
       <app-icon name="close" />

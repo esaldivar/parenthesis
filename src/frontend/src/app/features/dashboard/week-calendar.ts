@@ -1,3 +1,4 @@
+import { CalendarPalette } from '../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -67,7 +68,7 @@ const inAllDayRow = (event: FamilyEvent) => !event.time || !!event.endDate;
 @Component({
   selector: 'app-week-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey],
+  imports: [CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey],
   templateUrl: './week-calendar.html',
   styleUrl: './week-calendar.scss',
 })

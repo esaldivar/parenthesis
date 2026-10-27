@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -80,7 +81,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
 @Component({
   selector: 'app-calendar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [CalendarPalette,
     MatButtonModule,
     RouterLink,
     EmptyState,
@@ -160,13 +161,14 @@ export class CalendarPage {
   private readonly events = signal<readonly CalendarEvent[]>([]);
   private readonly reminders = signal<readonly Reminder[]>([]);
   private readonly tasks = signal<readonly SharedTask[]>([]);
+  private readonly familyCreatedAt = signal<string | undefined>(undefined);
   protected readonly members = signal<readonly FamilyMember[]>([]);
   protected readonly children = signal<readonly Child[]>([]);
   private readonly reloads = signal(0);
   /** A message after adding or cancelling, read out politely. */
 
   protected readonly items = computed(() => [
-    ...toItems(this.events(), this.members(), this.children(), this.timeZone()),
+    ...toItems(this.events(), this.members(), this.children(), this.timeZone(), this.familyCreatedAt()),
     ...reminderItems(this.reminders(), this.members(), this.children(), this.timeZone()),
     ...taskItems(this.tasks(), this.members(), this.children()),
   ]);
@@ -276,6 +278,7 @@ export class CalendarPage {
       }
       if (details) {
         this.members.set(details.members);
+      this.familyCreatedAt.set(details.createdAt);
       }
       if (children) {
         this.children.set(children);
@@ -350,7 +353,7 @@ export class CalendarPage {
     try {
       const event = await this.api.calendarEvent(familyId, item.id);
       if (attempt !== this.opening || loaded !== this.loadToken || familyId !== this.family()?.id) return;
-      const fresh = toItems([event], this.members(), this.children(), this.timeZone()).find((i) => i.id === item.id);
+      const fresh = toItems([event], this.members(), this.children(), this.timeZone(), this.familyCreatedAt()).find((i) => i.id === item.id);
       if (!fresh || event.status === 'Cancelled') {
         this.unavailable(item.id);
         return;

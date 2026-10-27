@@ -6,6 +6,9 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Approved calendar palette (#255, October 26, 2026).** Light/dark event, task, reminder, activity, unavailable and stable parent colors implemented.
+  - [ ] Complete browser/phone visual checks in both modes, keyboard and screen-reader acceptance against the release candidate.
+  - [ ] Verify PR CI and owner review before merge; deployment and issue acceptance remain separate.
 - [ ] **Dependency compatibility review (#275, October 26, 2026).** All three dependency PRs are already merged.
   Prepared a Docker build-stage correction to Node 24, matching `.nvmrc` and the frontend engine range;
   Node 25 is outside that range and is end of life. See `docs/runbooks/dependency-review-275.md`.

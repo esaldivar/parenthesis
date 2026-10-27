@@ -55,7 +55,7 @@
       <ul class="upcoming">
         @for (item of upcoming(); track item.key) {
           <li class="upcoming__item" [attr.data-category]="item.category" [attr.data-status]="item.status">
-            <span class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
+            <span [appCalendarPalette]="item.palette ?? (item.category === 'family' || item.category === 'unavailable' || item.category === 'reminder' || item.category === 'task' || item.category === 'review' ? item.category : 'activity')" class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
             <span class="upcoming__text">
               @if (item.link) {
                 <a class="upcoming__title" [routerLink]="item.link">{{ item.title }}</a>
