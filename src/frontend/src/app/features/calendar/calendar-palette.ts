@@ -3,17 +3,12 @@ import { FamilyMember } from '../../core/api/api';
 
 export type CalendarPaletteKey = 'parent-a' | 'parent-b' | 'parenting' | 'activity' | 'family' | 'task' | 'reminder' | 'unavailable' | 'concealed';
 
-/** The founder's membership and family share one persisted timestamp. Never use viewer identity or a name.
- * The later parent retains B even after the founder leaves. Legacy fixtures without family metadata use stable
- * joinedAt/ID ordering, never caller array order. No storage, permissions or API payloads change.
+/** Parent identity comes only from the persisted membership slot. Missing metadata is neutral,
+ * never inferred from timestamps, viewer, names or the remaining roster.
  */
-export function parentPalette(id: string | null, members: readonly FamilyMember[], createdAt?: string): CalendarPaletteKey {
+export function parentPalette(id: string | null, members: readonly FamilyMember[]): CalendarPaletteKey {
   const member = members.find(m => m.membershipId === id && m.role === 'Parent');
-  if (!member) return 'parenting'; // Historical/unknown caregiver: no invented identity.
-  if (createdAt) return Date.parse(member.joinedAt) === Date.parse(createdAt) ? 'parent-a' : 'parent-b';
-  const parents = members.filter(m => m.role === 'Parent').sort((a, b) =>
-    Date.parse(a.joinedAt) - Date.parse(b.joinedAt) || a.membershipId.localeCompare(b.membershipId));
-  return parents[0]?.membershipId === id ? 'parent-a' : 'parent-b';
+  return member?.paletteSlot === 0 ? 'parent-a' : member?.paletteSlot === 1 ? 'parent-b' : 'parenting';
 }
 
 /** Apply the shared category pairing to a small, already laid-out item, never an entire form or dialog.
@@ -28,7 +23,6 @@ export function parentPalette(id: string | null, members: readonly FamilyMember[
     '[style.--color-text]': 'foreground()',
     '[style.--color-text-secondary]': 'foreground()',
     '[style.--color-calendar-label]': 'foreground()',
-    '[style.border-color]': 'foreground()',
     '[style.background-image]': 'hatch()',
   },
 })

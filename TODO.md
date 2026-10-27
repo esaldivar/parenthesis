@@ -6,10 +6,15 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **PR #321 Copilot corrections (#255, #261).** Persist parent palette slots, use fixed dual-parent swatches,
+  preserve status borders, retain raw child links and correct completion/style documentation in one fix PR.
+  - [ ] Backend build/format/integration and migration verification in CI (.NET SDK/Docker unavailable locally).
+  - [ ] Release-candidate browser verification, both themes, keyboard and real screen-reader acceptance.
+
 - [ ] **Approved calendar palette (#255, October 26, 2026).** Light/dark event, task, reminder, activity, unavailable and stable parent colors implemented.
   - [ ] Complete browser/phone visual checks in both modes, keyboard and screen-reader acceptance against the release candidate.
   - [ ] Verify PR CI and owner review before merge; deployment and issue acceptance remain separate.
-- [x] **Home calendar child buttons (#261, October 26, 2026).** Replace grouping text with Show all kids and
+- [ ] **Home calendar child buttons (#261, October 26, 2026).** Replace grouping text with Show all kids and
   authorized child-name buttons; filter the week without changing schedules, keep shared/child-free events, retain
   selection across week/list changes, and reset when access or family changes. Focused frontend tests added.
   - [ ] Owner visual retest after review/promotion: desktop and 320px phone in both themes, long/many child names,

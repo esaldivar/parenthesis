@@ -270,6 +270,10 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("joined_at");
 
+                    b.Property<int?>("PaletteSlot")
+                        .HasColumnType("integer")
+                        .HasColumnName("palette_slot");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(16)

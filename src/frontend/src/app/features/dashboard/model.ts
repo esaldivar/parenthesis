@@ -64,6 +64,8 @@ export interface FamilyEvent {
    */
   readonly endDate?: PlainDate;
   readonly category: EventCategory;
+  /** Raw links retained even when a child is not in the active display roster. */
+  readonly childIds?: readonly string[];
   readonly children: readonly ChildRef[];
   /** Parents attending, shown before the children (both parents for a family event). */
   readonly parents?: readonly Caregiver[];

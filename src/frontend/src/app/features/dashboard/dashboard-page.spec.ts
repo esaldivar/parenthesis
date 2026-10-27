@@ -570,6 +570,23 @@ describe('DashboardPage (approved design)', () => {
       expect(await axeViolations(el)).toEqual([]);
     });
 
+    it('does not treat inactive-child links as a child-free event', async () => {
+      const { fixture, el } = await render({ live: {
+        ...EMPTY_WEEK, children: [kai], events: [familyEvent,
+          { ...familyEvent, id: 'archived', title: 'Archived child event', childIds: ['archived'] },
+          { ...familyEvent, id: 'pending', title: 'Pending child event', childIds: ['pending'] },
+          { ...familyEvent, id: 'mixed', title: 'Shared with Kai', childIds: ['archived', 'kai'], children: [kai] },
+        ],
+      } });
+      button(el, 'Kai').click();
+      await settle(fixture);
+      const calendar = text(el.querySelector('app-week-calendar'));
+      expect(calendar).toContain('Parents-only dinner');
+      expect(calendar).toContain('Shared with Kai');
+      expect(calendar).not.toContain('Archived child event');
+      expect(calendar).not.toContain('Pending child event');
+    });
+
     it('uses the full dynamic child list even with no schedule, including one child and long names', async () => {
       const longName = { id: 'long', name: 'Avery'.repeat(20) };
       let week: DashboardWeek = { ...EMPTY_WEEK, children: [kai] };

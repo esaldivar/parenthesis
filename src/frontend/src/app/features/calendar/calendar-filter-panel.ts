@@ -46,7 +46,12 @@ import { CalendarFilters, DIMENSIONS, Dimension } from './calendar-filters';
                 (change)="toggle(dimension.id, option.id, $any($event.target).checked)"
               />
               @if (dimension.id === 'types') {
-                <span [appCalendarPalette]="option.id" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+                @if (option.id === 'parenting') {
+                  <span appCalendarPalette="parent-a" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+                  <span appCalendarPalette="parent-b" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+                } @else {
+                  <span [appCalendarPalette]="option.id" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+                }
               }
               {{ option.label }}
             </label>

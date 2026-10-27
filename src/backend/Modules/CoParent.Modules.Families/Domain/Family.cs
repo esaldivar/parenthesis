@@ -34,4 +34,7 @@ internal sealed class FamilyMembership : Entity, IFamilyScoped
     public MembershipStatus Status { get; set; } = MembershipStatus.Active;
 
     public DateTimeOffset JoinedAt { get; init; }
+
+    /// <summary>Persisted display slot, independent of viewer and roster ordering. Null for non-parents.</summary>
+    public int? PaletteSlot { get; set; }
 }

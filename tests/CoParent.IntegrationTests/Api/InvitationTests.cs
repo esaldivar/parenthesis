@@ -76,6 +76,37 @@ public sealed class InvitationTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Parent_palette_slots_survive_departures_and_replacement_invitations()
+    {
+        using var founder = await ApiSession.SignedInAsync(api, displayName: "Alex");
+        var familyId = await founder.CreateFamilyAsync();
+        var invitedEmail = ApiSession.NewEmail();
+        await founder.PostAsync($"/api/families/{familyId}/invitations", new { email = invitedEmail });
+        var token = TokenFrom(founder.Emails.LatestLink(invitedEmail, "invited"));
+        using var invited = await ApiSession.SignedInAsync(api, displayName: "Sam", email: invitedEmail);
+        Assert.Equal(HttpStatusCode.OK, (await invited.PostAsync("/api/invitations/accept", new { token })).StatusCode);
+        var before = await JsonAsync(await invited.GetAsync($"/api/families/{familyId}"));
+        Assert.Equal([0, 1], before.GetProperty("members").EnumerateArray().Select(m => m.GetProperty("paletteSlot").GetInt32()));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await founder.PostAsync("/api/me/delete", new { password = ApiSession.Password })).StatusCode);
+        var remaining = await JsonAsync(await invited.GetAsync($"/api/families/{familyId}"));
+        Assert.Equal(1, Assert.Single(remaining.GetProperty("members").EnumerateArray()).GetProperty("paletteSlot").GetInt32());
+
+        var replacementEmail = ApiSession.NewEmail();
+        await invited.PostAsync($"/api/families/{familyId}/invitations", new { email = replacementEmail });
+        var replacementToken = TokenFrom(invited.Emails.LatestLink(replacementEmail, "invited"));
+        using var replacement = await ApiSession.SignedInAsync(api, displayName: "Taylor", email: replacementEmail);
+        Assert.Equal(HttpStatusCode.OK, (await replacement.PostAsync("/api/invitations/accept", new { token = replacementToken })).StatusCode);
+        foreach (var viewer in new[] { invited, replacement })
+        {
+            var family = await JsonAsync(await viewer.GetAsync($"/api/families/{familyId}"));
+            var members = family.GetProperty("members").EnumerateArray().ToArray();
+            Assert.Equal(1, members.Single(m => m.GetProperty("displayName").GetString() == "Sam").GetProperty("paletteSlot").GetInt32());
+            Assert.Equal(0, members.Single(m => m.GetProperty("displayName").GetString() == "Taylor").GetProperty("paletteSlot").GetInt32());
+        }
+    }
+
+    [Fact]
     public async Task Only_the_invited_email_address_can_accept()
     {
         var momEmail = ApiSession.NewEmail();
