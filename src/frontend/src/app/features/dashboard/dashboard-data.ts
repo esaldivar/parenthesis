@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { parentPalette } from '../calendar/calendar-palette';
 import { FORMER_PARENT } from '../calendar/calendar-items';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from '../calendar/time';
 import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from './model';
@@ -52,6 +53,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
     const members = family.members;
     const parent = (membershipId: string | null): Caregiver => ({
       membershipId: membershipId ?? '',
+      palette: parentPalette(membershipId, members, family.createdAt),
       displayName: members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT,
     });
     const kids = (ids: readonly (string | null)[]): ChildRef[] =>
@@ -152,8 +154,8 @@ export class SampleDashboardDataSource extends DashboardDataSource {
     const at = (offset: number, time: string) => `${date(offset)}T${time}`;
     const kai: ChildRef = { id: 'sample-kai', name: 'Kai' };
     const aurora: ChildRef = { id: 'sample-aurora', name: 'Aurora' };
-    const dad = { membershipId: 'sample-dad', displayName: 'Dad' };
-    const mom = { membershipId: 'sample-mom', displayName: 'Mom' };
+    const dad = { membershipId: 'sample-dad', displayName: 'Dad', palette: 'parent-a' as const };
+    const mom = { membershipId: 'sample-mom', displayName: 'Mom', palette: 'parent-b' as const };
 
     return {
       source: 'sample',

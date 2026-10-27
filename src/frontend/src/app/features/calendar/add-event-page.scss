@@ -177,3 +177,8 @@ legend {
 .when__row.dates {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
+// Keep the category identity on selection; inset thickness makes the selected block clear (#255).
+.type[aria-pressed='true'] { box-shadow: inset 0 0 0 2px currentColor; }
+.type__desc { color: inherit; }
+.type__icon { background: transparent; }

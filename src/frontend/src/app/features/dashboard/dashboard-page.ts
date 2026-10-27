@@ -1,3 +1,4 @@
+import { CalendarPalette } from '../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -40,6 +41,7 @@ interface UpcomingItem {
   readonly key: string;
   readonly icon: IconName;
   readonly category: string;
+  readonly palette?: string;
   readonly title: string;
   readonly when: string;
   readonly people: readonly { name: string; kind: 'parent' | 'child' }[];
@@ -60,7 +62,7 @@ interface UpcomingItem {
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails],
+  imports: [CalendarPalette, RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails],
   providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.scss',
@@ -141,6 +143,7 @@ export class DashboardPage {
         key: `pt-${b.key}`,
         icon: 'calendar',
         category: 'parenting',
+        palette: b.caregiver.palette ?? 'parenting',
         title: b.title,
         when: blockRange(b),
         people: [{ name: b.caregiver.displayName, kind: 'parent' as const }, ...b.children.map((c) => ({ name: c.name, kind: 'child' as const }))],
@@ -271,7 +274,7 @@ export class DashboardPage {
       if (attempt !== this.opening) {
         return;
       }
-      const item = toItems([event], family.members, children, this.timeZone()).find((i) => i.id === eventId);
+      const item = toItems([event], family.members, children, this.timeZone(), family.createdAt).find((i) => i.id === eventId);
       if (!item) {
         throw new Error('Not shown on the calendar');
       }
@@ -280,7 +283,7 @@ export class DashboardPage {
       if (attempt !== this.opening) {
         return;
       }
-      const swapTarget = swapTargetFor(item, toItems(overlapping, family.members, children, this.timeZone()));
+      const swapTarget = swapTargetFor(item, toItems(overlapping, family.members, children, this.timeZone(), family.createdAt));
       this.details.set({ item, event, members: family.members, familyId, swapTarget });
     } catch (error) {
       if (attempt === this.opening) {

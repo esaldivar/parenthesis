@@ -16,6 +16,7 @@ export interface ChildRef {
 
 export interface Caregiver {
   readonly membershipId: string;
+  readonly palette?: import('../calendar/calendar-palette').CalendarPaletteKey;
   readonly displayName: string;
 }
 

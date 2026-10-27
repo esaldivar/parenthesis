@@ -27,7 +27,7 @@
         <button
           type="button"
           class="item item--span"
-          [attr.data-kind]="span.item.kind"
+          [attr.data-kind]="span.item.kind" [appCalendarPalette]="span.item.concealed ? 'concealed' : (span.item.palette ?? span.item.kind)"
           [attr.data-category]="span.item.category"
           [attr.data-status]="span.item.status"
           [attr.data-concealed]="span.item.concealed ? 'true' : null"
@@ -67,7 +67,7 @@
             <button
               type="button"
               class="item item--timed"
-              [attr.data-kind]="slot.item.kind"
+              [attr.data-kind]="slot.item.kind" [appCalendarPalette]="slot.item.concealed ? 'concealed' : (slot.item.palette ?? slot.item.kind)"
               [attr.data-category]="slot.item.category"
               [attr.data-status]="slot.item.status"
               [attr.data-concealed]="slot.item.concealed ? 'true' : null"
@@ -117,7 +117,7 @@
               <button
                 type="button"
                 class="item item--row"
-                [attr.data-kind]="item.kind"
+                [attr.data-kind]="item.kind" [appCalendarPalette]="item.concealed ? 'concealed' : (item.palette ?? item.kind)"
                 [attr.data-category]="item.category"
                 [attr.data-status]="item.status"
                 [attr.data-concealed]="item.concealed ? 'true' : null"

@@ -194,7 +194,7 @@
 
 <ng-template #summary let-entry>
   <div class="summary">
-    <span class="summary__icon"><app-icon [name]="entry.icon" [size]="22" /></span>
+    <span class="summary__icon" [appCalendarPalette]="entry.palette ?? entry.kind"><app-icon [name]="entry.icon" [size]="22" /></span>
     <div>
       <p class="card__title">{{ entry.title }}</p>
       <p>{{ describe(entry) }}</p>

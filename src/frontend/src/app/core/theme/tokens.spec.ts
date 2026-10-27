@@ -23,6 +23,9 @@ const TEXT = 4.5; // Normal text.
 const NON_TEXT = 3; // Focus indicators and meaningful control boundaries.
 
 const pairs: [foreground: string, background: string, minimum: number][] = [
+  ...['parent-a', 'parent-b', 'parenting', 'activity', 'family', 'task', 'reminder', 'unavailable'].map(
+    key => [`color-calendar-${key}-fg`, `color-calendar-${key}-bg`, TEXT] as [string, string, number],
+  ),
   ['color-text', 'color-canvas', TEXT],
   ['color-text', 'color-surface', TEXT],
   ['color-text', 'color-surface-soft', TEXT],

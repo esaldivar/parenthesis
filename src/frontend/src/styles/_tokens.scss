@@ -3,6 +3,23 @@
 // Contrast for the text/background pairs is checked by src/app/core/theme/tokens.spec.ts.
 
 @mixin light {
+  // Owner-approved Calendar palette (#255); independent of brand/decorative category tokens.
+  --color-calendar-parent-a-bg: #d5f2f7;
+  --color-calendar-parent-a-fg: #205363;
+  --color-calendar-parent-b-bg: #f7dff0;
+  --color-calendar-parent-b-fg: #71335e;
+  --color-calendar-parenting-bg: #eceef0;
+  --color-calendar-parenting-fg: #4b5158;
+  --color-calendar-activity-bg: #deebfc;
+  --color-calendar-activity-fg: #264d79;
+  --color-calendar-family-bg: #fbe5de;
+  --color-calendar-family-fg: #743c30;
+  --color-calendar-task-bg: #eee8f7;
+  --color-calendar-task-fg: #49345f;
+  --color-calendar-reminder-bg: #fff1cc;
+  --color-calendar-reminder-fg: #604515;
+  --color-calendar-unavailable-bg: #eceef0;
+  --color-calendar-unavailable-fg: #4b5158;
   color-scheme: light;
   --color-canvas: #f7f5ed;
   --color-surface: #ffffff;
@@ -54,6 +71,23 @@
 
 // Dark mode is a full forest-green surface system, not an inversion. Elevation comes from surface steps and borders.
 @mixin dark {
+  // Owner-approved Calendar palette (#255); independent of brand/decorative category tokens.
+  --color-calendar-parent-a-bg: #193d4a;
+  --color-calendar-parent-a-fg: #c6eef7;
+  --color-calendar-parent-b-bg: #452b40;
+  --color-calendar-parent-b-fg: #f3cde7;
+  --color-calendar-parenting-bg: #30353b;
+  --color-calendar-parenting-fg: #d7dbe0;
+  --color-calendar-activity-bg: #26354b;
+  --color-calendar-activity-fg: #d3e5ff;
+  --color-calendar-family-bg: #4a2e28;
+  --color-calendar-family-fg: #ffdcd1;
+  --color-calendar-task-bg: #352a42;
+  --color-calendar-task-fg: #e9ddf5;
+  --color-calendar-reminder-bg: #44351f;
+  --color-calendar-reminder-fg: #ffe8b0;
+  --color-calendar-unavailable-bg: #30353b;
+  --color-calendar-unavailable-fg: #d7dbe0;
   color-scheme: dark;
   --color-canvas: #10251e;
   --color-surface: #19372d;

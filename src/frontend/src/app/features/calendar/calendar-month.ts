@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, HostListener, computed, effect, input, output, untracked } from '@angular/core';
 import { AddAt, SlotPick, clearsPick, pickLabel } from './slot';
 import { PlainDate } from '../dashboard/model';
@@ -23,6 +24,7 @@ export function monthGrid(date: PlainDate): PlainDate[] {
 @Component({
   selector: 'app-calendar-month',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CalendarPalette],
   template: `
     <section class="month" [attr.aria-label]="label()">
       <div class="month__head" aria-hidden="true">
@@ -61,7 +63,7 @@ export function monthGrid(date: PlainDate): PlainDate[] {
               class="item bar"
               [style.grid-column]="bar.start + ' / ' + bar.end"
               [style.grid-row]="bar.lane + 2"
-              [attr.data-kind]="bar.item.kind"
+              [attr.data-kind]="bar.item.kind" [appCalendarPalette]="bar.item.concealed ? 'concealed' : (bar.item.palette ?? bar.item.kind)"
               [attr.data-category]="bar.item.category"
               [attr.data-status]="bar.item.status"
               [attr.data-concealed]="bar.item.concealed ? 'true' : null"

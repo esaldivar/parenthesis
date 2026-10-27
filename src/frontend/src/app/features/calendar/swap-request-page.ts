@@ -1,3 +1,4 @@
+import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -54,7 +55,7 @@ const ASK_FIRST: readonly CalendarWarning[] = ['OverlapsCoParentUnavailable'];
 @Component({
   selector: 'app-swap-request-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [CalendarPalette,
     DateField,
     NgTemplateOutlet,
     ReactiveFormsModule,
@@ -88,6 +89,7 @@ export class SwapRequestPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly loadError = signal<string | null>(null);
   private readonly event = signal<CalendarEvent | null>(null);
+  private readonly familyCreatedAt = signal<string | undefined>(undefined);
   private readonly members = signal<readonly FamilyMember[]>([]);
   private readonly children = signal<readonly Child[]>([]);
   private readonly reloads = signal(0);
@@ -134,7 +136,7 @@ export class SwapRequestPage {
 
   protected readonly item = computed<CalendarItem | null>(() => {
     const event = this.event();
-    return event ? toItems([event], this.members(), this.children(), this.timeZone())[0] : null;
+    return event ? toItems([event], this.members(), this.children(), this.timeZone(), this.familyCreatedAt())[0] : null;
   });
   /** The parent who has the children in this parenting time; a swap keeps them. */
   private readonly caregiver = computed(() => this.members().find((m) => m.membershipId === this.event()?.caregiverMembershipId));
@@ -226,6 +228,7 @@ export class SwapRequestPage {
         this.api.children(familyId),
       ]);
       this.members.set(details.members);
+      this.familyCreatedAt.set(details.createdAt);
       this.children.set(children);
       this.event.set(event);
       const item = this.item()!;

@@ -385,7 +385,7 @@ ul {
 }
 
 .act__icon {
-  color: var(--color-cat-other-icon);
+  color: var(--color-calendar-label, currentColor);
 }
 
 .act__title {
@@ -497,7 +497,7 @@ ul {
     background: var(--color-cat-#{$category}-bg);
 
     .act__icon {
-      color: var(--color-cat-#{$category}-icon);
+      color: var(--color-calendar-label, currentColor);
     }
   }
 }
