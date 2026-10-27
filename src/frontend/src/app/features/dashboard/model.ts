@@ -113,6 +113,8 @@ export interface DashboardNote {
 export interface DashboardWeek {
   /** "sample" data is synthetic and must be labelled as such wherever it is shown. */
   readonly source: 'live' | 'sample';
+  /** All active, authorized children, even those with no events this week. */
+  readonly children: readonly ChildRef[];
   readonly parentingTime: readonly ParentingTime[];
   readonly events: readonly FamilyEvent[];
   readonly pendingReviews: readonly PendingReview[];

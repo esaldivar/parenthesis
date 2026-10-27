@@ -8,6 +8,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { ComingSoonPage } from '../../shared/coming-soon/coming-soon-page';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { axeViolations } from '../../../testing/axe';
+import { AuthStore } from '../../core/auth/auth.store';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { LiveDashboardDataSource } from './dashboard-data';
 import { DashboardWeek } from './model';
@@ -22,6 +23,7 @@ describe('DashboardPage (approved design)', () => {
   /** A live week with nothing in it: what a new family sees. */
   const EMPTY_WEEK: DashboardWeek = {
     source: 'live',
+    children: [],
     parentingTime: [],
     events: [],
     pendingReviews: [],
@@ -554,6 +556,78 @@ describe('DashboardPage (approved design)', () => {
     });
   });
 
+  describe('Home child filter (#261)', () => {
+    const kai = { id: 'kai', name: 'Kai' };
+    const aurora = { id: 'aurora', name: 'Aurora' };
+    const familyEvent = { id: 'family', title: 'Parents-only dinner', date: '2026-10-14', category: 'family' as const, children: [], status: 'proposed' as const };
+    const choices = (el: HTMLElement) => [...el.querySelectorAll('.child-filter button')];
+
+    it('keeps child-free events with no children and exposes a single selected all option', async () => {
+      const { el } = await render({ live: { ...EMPTY_WEEK, events: [familyEvent] } });
+      expect(choices(el).map(text)).toEqual(['Show all kids']);
+      expect(choices(el)[0].getAttribute('aria-pressed')).toBe('true');
+      expect(text(el.querySelector('app-week-calendar'))).toContain('Parents-only dinner');
+      expect(await axeViolations(el)).toEqual([]);
+    });
+
+    it('uses the full dynamic child list even with no schedule, including one child and long names', async () => {
+      const longName = { id: 'long', name: 'Avery'.repeat(20) };
+      let week: DashboardWeek = { ...EMPTY_WEEK, children: [kai] };
+      const { fixture, el } = await render({ load: () => Promise.resolve(week) });
+      expect(choices(el).map(text)).toEqual(['Show all kids', 'Kai']);
+      button(el, 'Kai').click();
+      await settle(fixture);
+      week = { ...week, children: [kai, aurora, longName, { id: 'robin', name: 'Robin' }] };
+      button(el, 'Next week').click();
+      await settle(fixture);
+      expect(choices(el).map(text)).toEqual(['Show all kids', 'Kai', 'Aurora', longName.name, 'Robin']);
+      expect(choices(el).filter((b) => b.getAttribute('aria-pressed') === 'true').map(text)).toEqual(['Kai']);
+      expect(el.querySelector('.child-filter')?.getAttribute('aria-label')).toBe('Filter Home calendar by child');
+      expect(await axeViolations(el)).toEqual([]);
+    });
+
+    it('resets a removed selection and does not revive it if access returns', async () => {
+      let week: DashboardWeek = { ...EMPTY_WEEK, children: [kai, aurora], events: [familyEvent] };
+      const { fixture, el } = await render({ load: () => Promise.resolve(week) });
+      button(el, 'Kai').click();
+      await settle(fixture);
+      week = { ...week, children: [aurora], events: [{ ...familyEvent, date: '2026-10-21' }] };
+      button(el, 'Next week').click();
+      await settle(fixture);
+      expect(choices(el).map(text)).toEqual(['Show all kids', 'Aurora']);
+      expect(button(el, 'Show all kids').getAttribute('aria-pressed')).toBe('true');
+      expect(text(el.querySelector('app-week-calendar'))).toContain('Parents-only dinner');
+      week = { ...week, children: [kai, aurora] };
+      button(el, 'Previous week').click();
+      await settle(fixture);
+      expect(button(el, 'Show all kids').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('resets the choice when the family changes, even if an id happens to match', async () => {
+      const { fixture, el } = await render({ live: { ...EMPTY_WEEK, children: [kai, aurora] } });
+      button(el, 'Kai').click();
+      await settle(fixture);
+      TestBed.inject(AuthStore).families.set([{ id: 'family-2', name: 'Other synthetic family', timeZone: 'UTC', role: 'Parent' }]);
+      await settle(fixture);
+      expect(button(el, 'Show all kids').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('preserves a valid selection through a failed week load and retry', async () => {
+      const week = { ...EMPTY_WEEK, children: [kai, aurora] };
+      let failing = false;
+      const { fixture, el } = await render({ load: () => failing ? Promise.reject(new Error('offline')) : Promise.resolve(week) });
+      button(el, 'Aurora').click();
+      await settle(fixture);
+      failing = true;
+      button(el, 'Next week').click();
+      await settle(fixture);
+      failing = false;
+      button(el, 'Try again').click();
+      await settle(fixture);
+      expect(button(el, 'Aurora').getAttribute('aria-pressed')).toBe('true');
+    });
+  });
+
   describe('sample preview (development builds only)', () => {
     it('labels the data as a fictional sample', async () => {
       const { el } = await render({ sample: true });
@@ -646,18 +720,39 @@ describe('DashboardPage (approved design)', () => {
       expect([...el.querySelectorAll('.upcoming__title')].map(text)).toContain('Time with Dad');
     });
 
-    it('splits children for this week only, as a reversible view preference', async () => {
+    it('filters children and retains selection across week and view changes', async () => {
       const { fixture, el } = await render({ sample: true });
-      const toggle = () => button(el, /children separately|same schedule/);
-
-      toggle().click();
+      const calendar = () => el.querySelector('app-week-calendar')!;
+      const pressed = () => [...el.querySelectorAll('.child-filter [aria-pressed="true"]')].map(text);
+      expect(pressed()).toEqual(['Show all kids']);
+      expect(text(calendar())).not.toMatch(/Show children separately|Group children with the same schedule/);
+      button(el, 'Kai').click();
       await settle(fixture);
-      expect(toggle().getAttribute('aria-pressed')).toBe('true');
-      expect(el.querySelectorAll('.allday > li[data-status="confirmed"]')).toHaveLength(2);
-
+      expect(pressed()).toEqual(['Kai']);
+      expect(text(calendar())).toContain('Soccer Practice');
+      expect(text(calendar())).not.toContain('Piano Lesson');
+      expect(text(calendar())).toContain('Dad unavailable');
+      expect(calendar().querySelectorAll('.daycol .act[data-category="family"]')).toHaveLength(1);
+      expect(text(calendar().querySelector('.allday .pt__meta'))).toContain('Kai ·');
+      expect(text(calendar().querySelector('.allday .pt__meta'))).not.toContain('Aurora');
       button(el, 'Next week').click();
       await settle(fixture);
-      expect(toggle().getAttribute('aria-pressed')).toBe('false');
+      button(el, 'List').click();
+      await settle(fixture);
+      expect(pressed()).toEqual(['Kai']);
+      expect(text(calendar())).not.toContain('Piano Lesson');
+      button(el, 'Aurora').click();
+      await settle(fixture);
+      expect(pressed()).toEqual(['Aurora']);
+      expect(text(calendar())).toContain('Piano Lesson');
+      expect(text(calendar())).not.toContain('Soccer Practice');
+      expect(text(calendar())).toContain('School Play');
+      button(el, 'Show all kids').click();
+      await settle(fixture);
+      expect(pressed()).toEqual(['Show all kids']);
+      expect(text(calendar())).toContain('Soccer Practice');
+      expect(text(calendar())).toContain('Piano Lesson');
+      expect(TestBed.inject(HttpTestingController).match(() => true)).toEqual([]);
     });
 
     it('switches to the List view in place', async () => {

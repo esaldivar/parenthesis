@@ -19,6 +19,7 @@ import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
 import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRows, pickText } from '../calendar/slot';
 import { CalendarKey } from './calendar-key';
+import { DashboardChildFilter } from './dashboard-child-filter';
 import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from './grouping';
 import { DashboardWeek, FamilyEvent, PlainDate } from './model';
 import { StatusLabel } from './status-label';
@@ -62,13 +63,13 @@ const inAllDayRow = (event: FamilyEvent) => !event.time || !!event.endDate;
 /**
  * The dashboard's weekly calendar, laid out as the approved dashboard (docs/design/APPROVED_DASHBOARD_2026-10-16.md):
  * a toolbar, an all-day row where each parenting-time arrangement is one continuous block with the parent's and
- * children's avatars, and timed activities in their slots below. Purely presentational; grouping and splitting are
+ * children's avatars, and timed activities in their slots below. Purely presentational; grouping and child filtering are
  * view choices and never change data.
  */
 @Component({
   selector: 'app-week-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey],
+  imports: [CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey, DashboardChildFilter],
   templateUrl: './week-calendar.html',
   styleUrl: './week-calendar.scss',
 })
@@ -78,14 +79,14 @@ export class WeekCalendar {
   readonly isCurrentWeek = input.required<boolean>();
   readonly state = input.required<WeekState>();
   readonly week = input<DashboardWeek | null>(null);
-  readonly split = input(false);
+  readonly selectedChild = input<string | null>(null);
   readonly view = input<InlineView>('week');
 
   readonly previousWeek = output();
   readonly nextWeek = output();
   readonly goToToday = output();
   readonly viewChange = output<InlineView>();
-  readonly splitChange = output<boolean>();
+  readonly childChange = output<string | null>();
   readonly retry = output();
   /** Opens an event's details over the page (#213), with the calendar event's id. */
   readonly openEvent = output<string>();
@@ -200,7 +201,7 @@ export class WeekCalendar {
     }),
   );
 
-  private readonly blocks = computed(() => groupParentingTime(this.week()?.parentingTime ?? [], { split: this.split() }));
+  private readonly blocks = computed(() => groupParentingTime(this.week()?.parentingTime ?? [], { split: false }));
   /**
    * The all-day row: the schedule (confirmed and rejected arrangements) first, then proposals, which take their own
    * lane beneath it. Proposals are hatched, outlined and labelled "Proposed · Needs approval", so they never read as
@@ -226,11 +227,6 @@ export class WeekCalendar {
   );
   protected readonly placements = computed(() => placeInWeek([...this.allDay(), ...this.allDayEvents()], this.weekStart()));
   protected readonly allDayLanes = computed(() => Math.max(1, ...[...this.placements().values()].map((p) => p.lane + 1)));
-
-  /** The split toggle only matters when some block groups several children, or when split is on. */
-  protected readonly canSplit = computed(
-    () => this.split() || groupParentingTime(this.week()?.parentingTime ?? [], { split: false }).some((b) => b.children.length > 1),
-  );
 
   protected readonly childNames = childNames;
   protected readonly parentNames = (event: FamilyEvent) => (event.parents ?? []).map((p) => p.displayName).join(' and ');

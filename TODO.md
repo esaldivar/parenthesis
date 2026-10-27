@@ -9,6 +9,13 @@ that points back here.
 - [ ] **Approved calendar palette (#255, October 26, 2026).** Light/dark event, task, reminder, activity, unavailable and stable parent colors implemented.
   - [ ] Complete browser/phone visual checks in both modes, keyboard and screen-reader acceptance against the release candidate.
   - [ ] Verify PR CI and owner review before merge; deployment and issue acceptance remain separate.
+- [x] **Home calendar child buttons (#261, October 26, 2026).** Replace grouping text with Show all kids and
+  authorized child-name buttons; filter the week without changing schedules, keep shared/child-free events, retain
+  selection across week/list changes, and reset when access or family changes. Focused frontend tests added.
+  - [ ] Owner visual retest after review/promotion: desktop and 320px phone in both themes, long/many child names,
+    keyboard/focus and real screen reader, enlarged text/reflow, reduced motion and forced colors. Local Chromium
+    could not be installed (download returned an invalid ZIP); browser/layout/device checks remain unverified.
+  - [ ] Required PR CI, owner acceptance and deployment remain separate; #261 stays open.
 - [ ] **Dependency compatibility review (#275, October 26, 2026).** All three dependency PRs are already merged.
   Prepared a Docker build-stage correction to Node 24, matching `.nvmrc` and the frontend engine range;
   Node 25 is outside that range and is end of life. See `docs/runbooks/dependency-review-275.md`.
