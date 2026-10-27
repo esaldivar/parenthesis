@@ -125,7 +125,6 @@ export function toItems(
   members: readonly FamilyMember[],
   children: readonly Child[],
   timeZone: string,
-  familyCreatedAt?: string,
 ): CalendarItem[] {
   const name = (membershipId: string | null) =>
     members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
@@ -152,7 +151,7 @@ export function toItems(
       id: event.id,
       title: hidden ? 'Unavailable' : event.title,
       kind,
-      palette: kind === 'parenting' ? parentPalette(event.caregiverMembershipId, members, familyCreatedAt) : kind,
+      palette: kind === 'parenting' ? parentPalette(event.caregiverMembershipId, members) : kind,
       category: event.category,
       categoryLabel: CATEGORY_LABELS[event.category],
       icon: ICONS[event.category],

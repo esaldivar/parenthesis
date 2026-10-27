@@ -105,7 +105,7 @@ export class DashboardPage {
       ...data,
       parentingTime: data.parentingTime.filter((p) => p.child.id === child),
       // Calendar's forChild rule: shared events appear once; child-free events always remain.
-      events: data.events.filter((e) => e.children.length === 0 || e.children.some((c) => c.id === child)),
+      events: data.events.filter((e) => (e.childIds ?? e.children.map((c) => c.id)).length === 0 || (e.childIds ?? e.children.map((c) => c.id)).includes(child)),
     };
   });
   protected readonly inlineView = signal<InlineView>('week');
@@ -274,7 +274,7 @@ export class DashboardPage {
       if (attempt !== this.opening) {
         return;
       }
-      const item = toItems([event], family.members, children, this.timeZone(), family.createdAt).find((i) => i.id === eventId);
+      const item = toItems([event], family.members, children, this.timeZone()).find((i) => i.id === eventId);
       if (!item) {
         throw new Error('Not shown on the calendar');
       }
@@ -283,7 +283,7 @@ export class DashboardPage {
       if (attempt !== this.opening) {
         return;
       }
-      const swapTarget = swapTargetFor(item, toItems(overlapping, family.members, children, this.timeZone(), family.createdAt));
+      const swapTarget = swapTargetFor(item, toItems(overlapping, family.members, children, this.timeZone()));
       this.details.set({ item, event, members: family.members, familyId, swapTarget });
     } catch (error) {
       if (attempt === this.opening) {

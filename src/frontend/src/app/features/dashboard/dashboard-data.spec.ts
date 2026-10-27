@@ -35,7 +35,7 @@ describe('the live dashboard source (#196)', () => {
       event({ id: 'play', title: 'School play', category: 'Joint', childIds: [] }),
       event({ id: 'away', title: 'Unavailable', category: 'Unavailable', childIds: [], ownerMembershipId: 'm-sam', notes: 'Private reason' }),
       event({ id: 'mine', title: 'Unavailable', category: 'Unavailable', childIds: [], ownerMembershipId: 'm-alex' }),
-      event({ id: 'soccer', title: 'Soccer practice', category: 'Activity', pendingChange: 'Modify' }),
+      event({ id: 'soccer', title: 'Soccer practice', category: 'Activity', pendingChange: 'Modify', childIds: ['archived'] }),
       // All day over two dates (#208): it keeps its end date, with no time.
       event({ id: 'break', title: 'Fall break', category: 'Holiday', allDay: true, childIds: [], startsAt: '2026-10-22T05:00:00Z', endsAt: '2026-10-24T05:00:00Z' }),
       // Declined requests (#199) stay on the Calendar page only.
@@ -67,6 +67,8 @@ describe('the live dashboard source (#196)', () => {
     ]);
     expect(week.events.find((e) => e.id === 'break')?.endDate).toBe('2026-10-23');
     expect(week.events.find((e) => e.id === 'soccer')?.endDate).toBeUndefined();
+    expect(week.events.find((e) => e.id === 'soccer')?.children).toEqual([]);
+    expect(week.events.find((e) => e.id === 'soccer')?.childIds).toEqual(['archived']);
     expect(week.events[0].parents?.map((p) => p.displayName)).toEqual(['Alex', 'Sam']);
     expect(JSON.stringify(week)).not.toContain('Private reason');
     // Only what waits on this parent.

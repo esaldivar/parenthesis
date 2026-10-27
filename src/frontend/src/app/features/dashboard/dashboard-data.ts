@@ -53,7 +53,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
     const members = family.members;
     const parent = (membershipId: string | null): Caregiver => ({
       membershipId: membershipId ?? '',
-      palette: parentPalette(membershipId, members, family.createdAt),
+      palette: parentPalette(membershipId, members),
       displayName: members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT,
     });
     const kids = (ids: readonly (string | null)[]): ChildRef[] =>
@@ -133,6 +133,7 @@ function familyEvent(
     durationMinutes: e.allDay ? undefined : Math.round((Date.parse(e.endsAt) - Date.parse(e.startsAt)) / 60_000),
     category: CATEGORIES[e.category],
     children: kids(e.childIds),
+    childIds: e.childIds,
     parents:
       e.category === 'Joint'
         ? members.filter((m) => m.role === 'Parent').map((m) => ({ membershipId: m.membershipId, displayName: m.displayName }))

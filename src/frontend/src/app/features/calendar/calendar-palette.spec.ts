@@ -4,29 +4,30 @@ import { FamilyMember } from '../../core/api/api';
 import { CalendarPalette, parentPalette } from './calendar-palette';
 
 const createdAt = '2026-10-01T12:00:00Z';
-const founder: FamilyMember = { membershipId: 'founder', displayName: 'Alex', role: 'Parent', joinedAt: createdAt, isYou: true };
-const invited: FamilyMember = { membershipId: 'invited', displayName: 'Sam', role: 'Parent', joinedAt: '2026-10-02T12:00:00Z', isYou: false };
+const founder: FamilyMember = { membershipId: 'founder', displayName: 'Alex', role: 'Parent', joinedAt: createdAt, paletteSlot: 0, isYou: true };
+const invited: FamilyMember = { membershipId: 'invited', displayName: 'Sam', role: 'Parent', joinedAt: '2026-10-02T12:00:00Z', paletteSlot: 1, isYou: false };
 
 describe('Calendar parent color identity', () => {
   it('keeps distinct slots when the viewer, display names and roster order change', () => {
     const original = [founder, invited];
     const otherViewer = [{ ...invited, isYou: true, displayName: 'Renamed' }, { ...founder, isYou: false }];
     for (const members of [original, otherViewer]) {
-      expect(parentPalette('founder', members, createdAt)).toBe('parent-a');
-      expect(parentPalette('invited', members, createdAt)).toBe('parent-b');
+      expect(parentPalette('founder', members)).toBe('parent-a');
+      expect(parentPalette('invited', members)).toBe('parent-b');
     }
   });
   it('does not recolor the invited parent when the founder leaves', () => {
-    expect(parentPalette('invited', [invited], createdAt)).toBe('parent-b');
-    expect(parentPalette('founder', [founder], createdAt)).toBe('parent-a');
+    expect(parentPalette('invited', [invited])).toBe('parent-b');
+    expect(parentPalette('founder', [founder])).toBe('parent-a');
   });
-  it('uses the same timestamp instant across offset serialization and deterministic legacy tie ordering', () => {
-    expect(parentPalette('founder', [founder], '2026-10-01T07:00:00-05:00')).toBe('parent-a');
-    const tied = [{ ...invited, joinedAt: createdAt }, founder];
-    expect(parentPalette('founder', tied)).toBe(parentPalette('founder', [...tied].reverse()));
+  it('keeps the remaining parent B and a replacement A regardless of timestamps or viewer', () => {
+    const replacement: FamilyMember = { ...founder, membershipId: 'replacement', joinedAt: '2026-10-26T00:00:00Z' };
+    expect(parentPalette('invited', [replacement, invited])).toBe('parent-b');
+    expect(parentPalette('replacement', [invited, replacement])).toBe('parent-a');
+    expect(parentPalette('invited', [{ ...invited, paletteSlot: undefined }])).toBe('parenting');
   });
   it('does not invent a parent identity for an unknown historical caregiver', () => {
-    expect(parentPalette('departed', [invited], createdAt)).toBe('parenting');
+    expect(parentPalette('departed', [invited])).toBe('parenting');
   });
 });
 
@@ -40,6 +41,7 @@ describe('Shared category surfaces', () => {
     await fixture.whenStable();
     const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
     expect(button.dataset['palette']).toBe('family');
+    expect(button.style.borderColor).toBe('');
     for (const kind of ['task', 'reminder', 'activity', 'parent-a', 'parent-b']) {
       fixture.componentInstance.kind.set(kind);
       fixture.detectChanges();

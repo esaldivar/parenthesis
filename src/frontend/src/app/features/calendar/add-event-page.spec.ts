@@ -65,6 +65,13 @@ describe('Add event', () => {
     await settle(harness);
   }
 
+  it('uses both fixed parent swatches in the generic chooser independently of viewer', async () => {
+    await open();
+    const chooser = card('Parenting time');
+    expect(chooser.getAttribute('data-palette')).toBeNull();
+    expect([...chooser.querySelectorAll('[data-palette]')].map(e => e.getAttribute('data-palette'))).toEqual(['parent-a', 'parent-b']);
+  });
+
   it('describes a repeat last day without a visible format hint (#236)', async () => {
     const harness = await open();
     await choose(harness, 'Activity');

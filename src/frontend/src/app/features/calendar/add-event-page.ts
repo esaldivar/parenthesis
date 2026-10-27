@@ -1,4 +1,4 @@
-import { CalendarPalette, parentPalette } from './calendar-palette';
+import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -139,8 +139,6 @@ export class AddEventPage implements OnInit {
   private readonly timeZone = computed(() => this.family()?.timeZone ?? 'UTC');
 
   protected readonly type = signal<EventType | null>(null);
-  private readonly familyCreatedAt = signal<string | undefined>(undefined);
-  protected readonly ownPalette = computed(() => parentPalette(this.members().find(m => m.isYou)?.membershipId ?? null, this.members(), this.familyCreatedAt()));
   protected readonly members = signal<readonly FamilyMember[]>([]);
   protected readonly children = signal<readonly Child[]>([]);
   protected readonly loadError = signal<string | null>(null);
@@ -327,7 +325,6 @@ export class AddEventPage implements OnInit {
     try {
       const [details, children] = await Promise.all([this.api.family(family.id), this.api.children(family.id)]);
       this.members.set(details.members);
-      this.familyCreatedAt.set(details.createdAt);
       this.children.set(children);
       this.form.patchValue({ caregiver: details.members.find((m) => m.isYou)?.membershipId ?? '' });
     } catch (error) {

@@ -25,6 +25,8 @@ export interface FamilyMember {
   readonly displayName: string;
   readonly role: FamilyRole;
   readonly joinedAt: string;
+  /** Persisted membership slot; absent only in older responses/fixtures, displayed neutrally. */
+  readonly paletteSlot?: 0 | 1 | null;
   /** The signed-in user's own membership. */
   readonly isYou: boolean;
 }
