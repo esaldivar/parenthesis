@@ -123,9 +123,12 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
           const agendaDay = page.locator('.agenda__day').filter({ hasText: new RegExp(`^\\s*${day.slice(0, 3)}`) });
           const agendaTarget = agendaDay.locator('.tap-add__button');
           if (await agendaTarget.isVisible()) {
-            await activate(agendaTarget, info);
+            if (info.project.use.hasTouch) await agendaTarget.tap({ position: { x: 5, y: 5 } });
+            else await agendaTarget.click({ position: { x: 5, y: 5 } });
           } else {
-            await activate(page.getByRole('button', { name: new RegExp(`^Add on ${day}`) }).first(), info);
+            const target = page.getByRole('button', { name: new RegExp(`^Add on ${day}`) }).first();
+            if (info.project.use.hasTouch) await target.tap({ position: { x: 5, y: 5 } });
+            else await target.click({ position: { x: 5, y: 5 } });
           }
           await expect(page.locator('.slot-pick__button')).toHaveCount(1);
           await expect(page.locator('.slot-pick__button')).toHaveAttribute('aria-label', new RegExp(`^Add on ${day}`));
