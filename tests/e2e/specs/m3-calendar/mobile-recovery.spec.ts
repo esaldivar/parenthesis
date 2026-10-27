@@ -12,6 +12,8 @@ const dayLabel = (offset: number) => addHours(monday, offset * 24).toLocaleDateS
 
 async function chooseDay(page: Page, info: TestInfo, label: string) {
   const cell = page.locator(`.mat-calendar-body-cell[aria-label="${label}"]`);
+  // Wait for the current month to render before deciding whether to advance it.
+  await expect(page.locator('.mat-calendar-body-cell').first()).toBeVisible();
   // This test moves at most one week forward; the target can be in the next month.
   if (!(await cell.count())) await activate(page.getByRole('button', { name: 'Next month', exact: true }), info);
   await activate(cell, info);
