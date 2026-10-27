@@ -261,7 +261,7 @@ export class SwapRequestPage {
     this.dateCheck.tried();
     if (Object.keys(this.dateCheck.problems()).length > 0) {
       this.datesError.set(null);
-      this.focus('input[aria-invalid="true"]');
+      this.focus(this.dateCheck.issues().start ? '#swap-start-date' : '#swap-end-date');
       return;
     }
     const problem = this.validate(event);
@@ -379,7 +379,7 @@ export class SwapRequestPage {
     if (this.step() !== 'choose') {
       this.goTo('choose');
     }
-    this.focus('input[aria-invalid="true"]');
+    this.focus(this.dateCheck.issues().start ? '#swap-start-date' : '#swap-end-date');
     return true;
   }
 
