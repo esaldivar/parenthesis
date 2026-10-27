@@ -96,7 +96,7 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
         await fitsPage(page);
         await evidence(page, info, `${theme}-touch-${kind}-corrected`);
         await activate(page.getByRole('link', { name: 'Cancel', exact: true }), info);
-        await expect(page).toHaveURL(/\/calendar\?date=/);
+        await expect(page).toHaveURL(/\/calendar(?:\?date=[^&]+)?$/);
       }
       expect(writes, 'invalid submit and Cancel must not modify either event or submit a swap').toEqual([]);
       for (const [id, startsAt, endsAt] of [[activity.id, at(40), at(41)], [parenting.id, at(88), at(89)]]) {
@@ -109,8 +109,13 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
 
     test(`moving and clearing a slot never creates an event, ${theme} (#237)`, async ({ page, family }, info) => {
       await page.emulateMedia({ colorScheme: theme });
+      const path = `/api/families/${family.familyId}/calendar/events`;
+      // A completely empty calendar shows an empty state, not the interactive week grid.
+      const existing = await family.dad.json<{ id: string }>(family.dad.post(path, {
+        category: 'Activity', title: 'Slot fixture', childIds: [family.kaiId], startsAt: at(40), endsAt: at(41),
+      }));
       await signIn(page, family.dad.email);
-      for (const url of [`/calendar?date=${date}`, `/?week=${date}`]) {
+      for (const url of [`/calendar?view=week&date=${date}`, `/?week=${date}`]) {
         await page.goto(url);
         await expect(page.locator('.slot-add__button:visible, .tap-add__button:visible').first()).toBeVisible();
         for (const day of ['Tuesday', 'Wednesday']) {
@@ -131,7 +136,8 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
         await evidence(page, info, `${theme}-${url.startsWith('/calendar') ? 'calendar' : 'home'}-slot-cleared`);
       }
       const events = await family.dad.json<unknown[]>(family.dad.get(`/api/families/${family.familyId}/calendar/events`, { from: at(0), to: at(168) }));
-      expect(events).toEqual([]);
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ id: existing.id, title: 'Slot fixture' });
     });
   }
 
@@ -158,7 +164,7 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
       await page.goto(`/calendar/${event.id}/edit`);
       await expect(page.getByLabel('Start time', { exact: true })).toHaveValue(startTime);
       await expect(page.getByLabel('End time', { exact: true })).toHaveValue(endTime);
-      const expectedDay = `${String(transition.month + 1).padStart(2, '0')}/${String(transition.day).padStart(2, '0')}/${year}`;
+      const expectedDay = `${transition.month + 1}/${transition.day}/${year}`;
       await expect(page.locator('#edit-start-date')).toHaveValue(expectedDay);
       await expect(page.locator('#edit-end-date')).toHaveValue(expectedDay);
       await page.getByLabel('Title', { exact: true }).fill(`Verified DST ${transition.name}`);

@@ -16,8 +16,8 @@ export default defineConfig({
   retries: ci ? 1 : 0,
   workers: ci ? 2 : undefined,
   timeout: 30_000,
-  // Leave the 30-minute CI job time to emit failure reports and upload diagnostics.
-  globalTimeout: ci ? 24 * 60_000 : undefined,
+  // Leave time within the 60-minute CI job to emit reports and upload diagnostics.
+  globalTimeout: ci ? 48 * 60_000 : undefined,
   expect: { timeout: 10_000 },
   reporter: [
     ['list'],
