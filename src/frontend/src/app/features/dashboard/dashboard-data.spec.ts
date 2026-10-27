@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { CHILDREN, MEMBERS, event, reminder, task } from '../../../testing/calendar-fixtures';
+import { CHILDREN, MEMBERS, child, event, reminder, task } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { LiveDashboardDataSource } from './dashboard-data';
 
@@ -28,7 +28,7 @@ describe('the live dashboard source (#196)', () => {
     const tasks = http.expectOne((r) => r.url === `${F}/calendar/tasks`);
     expect([tasks.request.params.get('from'), tasks.request.params.get('to')]).toEqual(['2026-10-18', '2026-10-25']);
     http.expectOne(F).flush(FAMILY);
-    http.expectOne(`${F}/children`).flush(CHILDREN);
+    http.expectOne(`${F}/children`).flush([...CHILDREN, child('robin', 'Robin'), { ...child('pending', 'Pending child'), status: 'PendingApproval' }, { ...child('archived', 'Archived child'), status: 'Archived' }]);
     events.flush([
       event({ id: 'pt', title: 'Time with Sam', category: 'ParentingTime', caregiverMembershipId: 'm-sam', childIds: ['kai', 'aurora'], allDay: true, startsAt: '2026-10-19T05:00:00Z', endsAt: '2026-10-21T05:00:00Z' }),
       event({ id: 'new', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex', status: 'PendingApproval', childIds: ['kai'] }),
@@ -51,6 +51,7 @@ describe('the live dashboard source (#196)', () => {
     const week = await loading;
 
     expect(week.source).toBe('live');
+    expect(week.children).toEqual([{ id: 'kai', name: 'Kai' }, { id: 'aurora', name: 'Aurora' }, { id: 'robin', name: 'Robin' }]);
     // Parenting time is one entry per child, with its caregiver; pending reads as proposed.
     expect(week.parentingTime.map((p) => [p.child.name, p.caregiver.displayName, p.status, p.start, p.end])).toEqual([
       ['Kai', 'Sam', 'confirmed', '2026-10-19T00:00', '2026-10-21T00:00'],
