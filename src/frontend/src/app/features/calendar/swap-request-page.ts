@@ -414,6 +414,11 @@ export class SwapRequestPage {
   }
 
   private focus(selector: string): void {
-    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), { injector: this.injector });
+    const target = this.host.nativeElement.querySelector<HTMLElement>(selector);
+    if (target) {
+      target.focus();
+    } else {
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), { injector: this.injector });
+    }
   }
 }
