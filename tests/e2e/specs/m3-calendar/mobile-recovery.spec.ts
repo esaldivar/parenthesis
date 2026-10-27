@@ -99,8 +99,14 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
             }
           });
         }
-        await activate(page.getByRole('button', { name: kind === 'edit' ? 'Save changes' : 'Continue', exact: true }), info);
+        const submit = page.getByRole('button', { name: kind === 'edit' ? 'Save changes' : 'Continue', exact: true });
+        // Leave room around the button on mobile: WebKit can move the page during a tap near the viewport edge.
+        await submit.evaluate(el => el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+        await activate(submit, info);
         try {
+          if (kind === 'swap') {
+            await expect.poll(() => page.evaluate(() => (window as unknown as { focusDiagnostic: { type: string }[] }).focusDiagnostic.some(event => event.type === 'submit')), { message: 'Continue tap submits the swap form' }).toBe(true);
+          }
           await expect(end).toBeFocused();
         } finally {
           if (kind === 'swap') {
