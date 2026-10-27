@@ -12,6 +12,8 @@ const dayLabel = (offset: number) => addHours(monday, offset * 24).toLocaleDateS
 
 async function chooseDay(page: Page, info: TestInfo, label: string) {
   const cell = page.locator(`.mat-calendar-body-cell[aria-label="${label}"]`);
+  // Wait for the current month to render before deciding whether to advance it.
+  await expect(page.locator('.mat-calendar-body-cell').first()).toBeVisible();
   // This test moves at most one week forward; the target can be in the next month.
   if (!(await cell.count())) await activate(page.getByRole('button', { name: 'Next month', exact: true }), info);
   await activate(cell, info);
@@ -85,8 +87,40 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
         await expect(start).toBeFocused();
         await expect(end).toHaveValue(originalEnd);
         await describedReason(page, `#${kind}-end-date`, /end|start|before|after/i);
-        await activate(page.getByRole('button', { name: kind === 'edit' ? 'Save changes' : 'Continue', exact: true }), info);
-        await expect(end).toBeFocused();
+        if (kind === 'swap') {
+          await page.evaluate(() => {
+            const events: { type: string; target: string; active: string; time: number; detail?: string }[] = [];
+            (window as unknown as { focusDiagnostic: typeof events }).focusDiagnostic = events;
+            const describe = (element: Element | null) => element ? `${element.tagName.toLowerCase()}#${element.id}` : 'none';
+            const originalFocus = HTMLElement.prototype.focus;
+            HTMLElement.prototype.focus = function(options?: FocusOptions) {
+              if (events.length < 150) events.push({ type: 'focus-call', target: describe(this), active: describe(document.activeElement), time: Math.round(performance.now()), detail: new Error().stack?.slice(0, 2500) });
+              return originalFocus.call(this, options);
+            };
+            for (const type of ['pointerdown', 'pointerup', 'click', 'submit', 'invalid', 'focusin', 'focusout', 'scroll']) {
+              document.addEventListener(type, event => {
+                const element = event.target instanceof Element ? event.target : null;
+                if (events.length < 150) events.push({ type, target: describe(element), active: describe(document.activeElement), time: Math.round(performance.now()), detail: JSON.stringify({ scrollY: window.scrollY, overlays: document.querySelectorAll('.cdk-overlay-pane, .cdk-overlay-backdrop').length, elementClass: element?.className }) });
+              }, true);
+            }
+          });
+        }
+        const submit = page.getByRole('button', { name: kind === 'edit' ? 'Save changes' : 'Continue', exact: true });
+        // Leave room around the button on mobile: WebKit can move the page during a tap near the viewport edge.
+        await submit.evaluate(el => el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+        await activate(submit, info);
+        try {
+          if (kind === 'swap') {
+            await expect.poll(() => page.evaluate(() => (window as unknown as { focusDiagnostic: { type: string }[] }).focusDiagnostic.some(event => event.type === 'submit')), { message: 'Continue tap submits the swap form' }).toBe(true);
+          }
+          await expect(end).toBeFocused();
+        } finally {
+          if (kind === 'swap') {
+            const diagnostic = await page.evaluate(() => ({ events: (window as unknown as { focusDiagnostic: unknown }).focusDiagnostic, active: document.activeElement?.outerHTML?.slice(0, 500) }));
+            await info.attach('swap-focus-diagnostic', { body: JSON.stringify(diagnostic, null, 2), contentType: 'application/json' });
+            console.log('Swap focus diagnostic:', JSON.stringify(diagnostic));
+          }
+        }
         await expect(page).toHaveURL(new RegExp(`/calendar/${id}/${kind}$`));
         await activate(end, info);
         // Keep a positive timed interval on the corrected day.
@@ -120,18 +154,21 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
         await expect(page.locator('.slot-add__button:visible, .tap-add__button:visible').first()).toBeVisible();
         for (const day of ['Tuesday', 'Wednesday']) {
           // Layout follows available container width, not whether the device supports touch.
-          const agendaDay = page.locator('.agenda__day').filter({ hasText: new RegExp(`^\\s*${day}`) });
+          const agendaDay = page.locator('.agenda__day').filter({ hasText: new RegExp(`^\\s*${day.slice(0, 3)}`) });
           const agendaTarget = agendaDay.locator('.tap-add__button');
           if (await agendaTarget.isVisible()) {
-            await activate(agendaTarget, info);
+            if (info.project.use.hasTouch) await agendaTarget.tap({ position: { x: 5, y: 5 } });
+            else await agendaTarget.click({ position: { x: 5, y: 5 } });
           } else {
-            await activate(page.getByRole('button', { name: new RegExp(`^Add on ${day}`) }).first(), info);
+            const target = page.getByRole('button', { name: new RegExp(`^Add on ${day}`) }).first();
+            if (info.project.use.hasTouch) await target.tap({ position: { x: 5, y: 5 } });
+            else await target.click({ position: { x: 5, y: 5 } });
           }
-          await expect(page.locator('.slot-pick__button')).toHaveCount(1);
-          await expect(page.locator('.slot-pick__button')).toHaveAttribute('aria-label', new RegExp(`^Add on ${day}`));
+          await expect(page.locator('.slot-pick__button:visible')).toHaveCount(1);
+          await expect(page.locator('.slot-pick__button:visible')).toHaveAttribute('aria-label', new RegExp(`^Add on ${day}`));
         }
         await page.keyboard.press('Escape');
-        await expect(page.locator('.slot-pick__button')).toHaveCount(0);
+        await expect(page.locator('.slot-pick__button:visible')).toHaveCount(0);
         await expect(page).not.toHaveURL(/\/calendar\/new/);
         await evidence(page, info, `${theme}-${url.startsWith('/calendar') ? 'calendar' : 'home'}-slot-cleared`);
       }

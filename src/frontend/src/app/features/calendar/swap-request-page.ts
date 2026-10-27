@@ -31,6 +31,7 @@ import { addDays, dayLong, todayIn } from '../dashboard/week';
 import { dayFilter, END_BEFORE_START } from './date-rules';
 import { DateCheck } from './date-check';
 import { DateField } from './date-field';
+import { revealFirstProblem } from './reveal-problem';
 import { providePlainDates, typedValues } from './plain-dates';
 import { warningText } from './add-event-page';
 import { CalendarItem, toItems } from './calendar-items';
@@ -261,7 +262,7 @@ export class SwapRequestPage {
     this.dateCheck.tried();
     if (Object.keys(this.dateCheck.problems()).length > 0) {
       this.datesError.set(null);
-      this.focus('input[aria-invalid="true"]');
+      afterNextRender(() => revealFirstProblem(this.host.nativeElement), { injector: this.injector });
       return;
     }
     const problem = this.validate(event);
@@ -379,7 +380,7 @@ export class SwapRequestPage {
     if (this.step() !== 'choose') {
       this.goTo('choose');
     }
-    this.focus('input[aria-invalid="true"]');
+    this.focus(this.dateCheck.issues().start ? '#swap-start-date' : '#swap-end-date');
     return true;
   }
 

@@ -210,6 +210,9 @@ dd {
     flex-direction: column-reverse;
     align-items: stretch;
   }
+  .buttons > * {
+    width: 100%;
+  }
 }
 
 // Start and End side by side, at every width (#249).

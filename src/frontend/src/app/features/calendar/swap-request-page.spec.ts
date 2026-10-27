@@ -169,6 +169,7 @@ describe('Request swap', () => {
     expect(end.value).toBe('2026-10-24'); // As typed: nothing moved it.
     expect(end.classList).toContain('date-invalid');
     expect(end.getAttribute('aria-invalid')).toBe('true');
+    await vi.waitFor(() => expect(document.activeElement).toBe(end));
     expect(page().querySelector('.field-error')).toBeNull();
     expect(http.match((r) => r.url.endsWith('/conflicts'))).toHaveLength(0);
 
