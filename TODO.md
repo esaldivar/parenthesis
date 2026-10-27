@@ -6,6 +6,13 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Release PR #321 Playwright follow-up (#278, #279).** Run 40444374496 recorded 224 passes and 30
+  failures in the new mobile recovery scenarios. Correct Cancel URL, displayed date and empty-week fixture
+  assumptions; preserve mutation, focus, date and DST assertions. The gate remains fail-closed. Extend the job
+  and global timeout to 60 and 48 minutes respectively so a full run and diagnostics can complete.
+  - [ ] Run the actual release candidate with all profiles, verify the results and review failed traces.
+  - [ ] Verify selected palette cards in light/dark browser views; real-device and screen-reader checks remain open.
+
 - [ ] **PR #321 remaining review and Playwright recovery (#255, #261, #278, #279).** Selected Add cards use a
   distinct tinted fill; palette keys are typed with documented aliases; dashboard palette mapping replaces shadowed
   subcategory fills; historical unknown-parent fallback differs from Unavailable. Prior #322 raw child-link fix verified.
