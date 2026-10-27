@@ -21,7 +21,7 @@ import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRo
 import { CalendarKey } from './calendar-key';
 import { DashboardChildFilter } from './dashboard-child-filter';
 import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from './grouping';
-import { DashboardWeek, FamilyEvent, PlainDate } from './model';
+import { DashboardWeek, FamilyEvent, PlainDate, eventPalette } from './model';
 import { StatusLabel } from './status-label';
 import { CATEGORY_ICONS, TimedPlacement, placeDay, visibleHours } from './timeline';
 import {
@@ -44,7 +44,7 @@ interface DayView {
   readonly monthDay: string;
   readonly longLabel: string;
   readonly isToday: boolean;
-  readonly events: readonly FamilyEvent[];
+  readonly events: readonly (FamilyEvent & { readonly palette: import('../calendar/calendar-palette').CalendarPaletteKey })[];
   readonly placements: Map<string, TimedPlacement>;
   readonly lanes: number;
 }
@@ -54,7 +54,7 @@ interface AllDayEvent {
   readonly key: string;
   readonly start: string;
   readonly end: string;
-  readonly event: FamilyEvent;
+  readonly event: FamilyEvent & { readonly palette: import('../calendar/calendar-palette').CalendarPaletteKey };
 }
 
 /** All-day events and events over several dates go in the all-day row; single-day timed ones in the hour grid. */
@@ -143,7 +143,7 @@ export class WeekCalendar {
   private readonly expanded = signal<ReadonlySet<string>>(new Set());
 
   protected readonly label = computed(() => weekLabelLong(this.weekStart()));
-  private readonly events = computed(() => this.week()?.events ?? []);
+  private readonly events = computed(() => (this.week()?.events ?? []).map(event => ({ ...event, palette: eventPalette(event.category) })));
   /** The whole day is in the grid; it scrolls (see constructor) to where this week's activities begin. */
   protected readonly hours = computed(() => ({ startHour: 0, endHour: 24 }));
   protected readonly rows = computed(() => (this.hours().endHour - this.hours().startHour) * 2);

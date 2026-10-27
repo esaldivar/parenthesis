@@ -44,3 +44,24 @@ No merge, deployment, paid testing service, production data, or issue acceptance
 
 Remaining acceptance includes real browser execution of this exact candidate, ambiguous/nonexistent wall-time cases, review of incomplete axe results, real VoiceOver/NVDA (#281), and physical
 device checks. #278 and #279 stay open until their criteria are actually met.
+
+
+## PR #321 failure follow-up
+
+Run `40436259376` on head `c9723de` built and started its isolated candidate, but was cancelled at the
+30-minute job boundary. The list reporter recorded repeated failures in the touch Edit/Swap, slot clearing,
+and spring/fall Edit scenarios in `mobile-recovery.spec.ts`. No final failure report or trace artifact was uploaded;
+this limits root-cause certainty. The preceding run `40432859080` was cancelled while installing browsers, before tests.
+Neither run is a browser pass.
+
+The proposed correction uses accessible Start/End time labels instead of Angular binding-attribute selectors,
+waits for loaded fields before capturing original values, and chooses slot targets from the rendered agenda/grid
+rather than assuming a layout from hasTouch. It retains the same invalid-date, focus, no-write, UTC-duration and
+API persistence assertions. Action/navigation timeouts are 10/30 seconds; a 24-minute CI global timeout leaves room
+inside the unchanged 30-minute job for Playwright reports and artifact uploads. A global timeout remains a gate failure;
+no test or browser profile is removed, skipped or waived.
+
+Local validation: frontend lint, 605 tests, production build, E2E TypeScript and eight report-policy tests passed.
+Discovery still contains 254 executions. Docker and .NET are unavailable here, so the revised scenarios need actual
+release-candidate CI execution after reviewed integration. The palette review fixes and those test corrections are
+one PR; deployment and full issue acceptance remain separate.

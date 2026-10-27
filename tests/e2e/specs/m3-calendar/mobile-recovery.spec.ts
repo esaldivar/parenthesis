@@ -77,6 +77,7 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
       for (const [kind, id] of [['edit', activity.id], ['swap', parenting.id]] as const) {
         await page.goto(`/calendar/${id}/${kind}`);
         const start = page.locator(`#${kind}-start-date`), end = page.locator(`#${kind}-end-date`);
+        await expect(end).toHaveValue(/\d{1,2}\/\d{1,2}\/\d{4}/);
         const originalEnd = await end.inputValue();
         await activate(start, info);
         await expect(page.locator('mat-calendar')).toBeVisible();
@@ -111,14 +112,16 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
       await signIn(page, family.dad.email);
       for (const url of [`/calendar?date=${date}`, `/?week=${date}`]) {
         await page.goto(url);
-        const mobile = info.project.use.hasTouch;
-        const target = (day: string) => mobile
-          ? page.locator('.agenda__day').filter({ hasText: new RegExp(day.slice(0, 3)) }).locator('.tap-add__button')
-          : page.getByRole('button', { name: new RegExp(`^Add on ${day}`) }).first();
+        await expect(page.locator('.slot-add__button:visible, .tap-add__button:visible').first()).toBeVisible();
         for (const day of ['Tuesday', 'Wednesday']) {
-          const button = target(day);
-          if (mobile) await button.tap({ position: { x: 12, y: 12 } });
-          else await button.click();
+          // Layout follows available container width, not whether the device supports touch.
+          const agendaDay = page.locator('.agenda__day').filter({ hasText: new RegExp(`^\\s*${day}`) });
+          const agendaTarget = agendaDay.locator('.tap-add__button');
+          if (await agendaTarget.isVisible()) {
+            await activate(agendaTarget, info);
+          } else {
+            await activate(page.getByRole('button', { name: new RegExp(`^Add on ${day}`) }).first(), info);
+          }
           await expect(page.locator('.slot-pick__button')).toHaveCount(1);
           await expect(page.locator('.slot-pick__button')).toHaveAttribute('aria-label', new RegExp(`^Add on ${day}`));
         }
@@ -153,8 +156,8 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
       }));
       await signIn(page, family.dad.email);
       await page.goto(`/calendar/${event.id}/edit`);
-      await expect(page.locator('[formcontrolname="startTime"]')).toHaveValue(startTime);
-      await expect(page.locator('[formcontrolname="endTime"]')).toHaveValue(endTime);
+      await expect(page.getByLabel('Start time', { exact: true })).toHaveValue(startTime);
+      await expect(page.getByLabel('End time', { exact: true })).toHaveValue(endTime);
       const expectedDay = `${String(transition.month + 1).padStart(2, '0')}/${String(transition.day).padStart(2, '0')}/${year}`;
       await expect(page.locator('#edit-start-date')).toHaveValue(expectedDay);
       await expect(page.locator('#edit-end-date')).toHaveValue(expectedDay);

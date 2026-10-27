@@ -48,6 +48,7 @@ h1,
 }
 .type[aria-pressed='true'] {
   background: var(--color-selected);
+  --calendar-palette-fill: color-mix(in srgb, var(--calendar-palette-bg) 78%, currentColor 22%);
   border: 2px solid var(--color-action);
 }
 .type:focus-visible {
