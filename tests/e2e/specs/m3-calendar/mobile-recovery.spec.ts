@@ -87,8 +87,28 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
         await expect(start).toBeFocused();
         await expect(end).toHaveValue(originalEnd);
         await describedReason(page, `#${kind}-end-date`, /end|start|before|after/i);
+        if (kind === 'swap') {
+          await page.evaluate(() => {
+            const events: { type: string; target: string; active: string; time: number }[] = [];
+            (window as unknown as { focusDiagnostic: typeof events }).focusDiagnostic = events;
+            const describe = (element: Element | null) => element ? `${element.tagName.toLowerCase()}#${element.id}` : 'none';
+            for (const type of ['pointerdown', 'click', 'submit', 'invalid', 'focusin', 'focusout']) {
+              document.addEventListener(type, event => {
+                if (events.length < 150) events.push({ type, target: describe(event.target as Element), active: describe(document.activeElement), time: Math.round(performance.now()) });
+              }, true);
+            }
+          });
+        }
         await activate(page.getByRole('button', { name: kind === 'edit' ? 'Save changes' : 'Continue', exact: true }), info);
-        await expect(end).toBeFocused();
+        try {
+          await expect(end).toBeFocused();
+        } finally {
+          if (kind === 'swap') {
+            const diagnostic = await page.evaluate(() => ({ events: (window as unknown as { focusDiagnostic: unknown }).focusDiagnostic, active: document.activeElement?.outerHTML?.slice(0, 500) }));
+            await info.attach('swap-focus-diagnostic', { body: JSON.stringify(diagnostic, null, 2), contentType: 'application/json' });
+            console.log('Swap focus diagnostic:', JSON.stringify(diagnostic));
+          }
+        }
         await expect(page).toHaveURL(new RegExp(`/calendar/${id}/${kind}$`));
         await activate(end, info);
         // Keep a positive timed interval on the corrected day.
