@@ -491,17 +491,7 @@ ul {
   }
 }
 
-// "other" is the base .act style.
-@each $category in school, medical, music, sport, art, family, unavailable {
-  .act[data-category='#{$category}'] {
-    background: var(--color-cat-#{$category}-bg);
-
-    .act__icon {
-      color: var(--color-calendar-label, currentColor);
-    }
-  }
-}
-
+// Shared approved palette supplies fills; subcategory icons remain distinct.
 .act[data-status='proposed'] {
   border: 2px dashed var(--color-outline);
 }

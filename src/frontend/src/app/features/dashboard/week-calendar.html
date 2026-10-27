@@ -129,7 +129,7 @@
               @if (place) {
                 <li
                   class="act act--allday"
-                  [attr.data-category]="block.event.category" [appCalendarPalette]="block.event.category === 'family' ? 'family' : block.event.category === 'unavailable' ? 'unavailable' : 'activity'"
+                  [attr.data-category]="block.event.category" [appCalendarPalette]="block.event.palette"
                   [attr.data-status]="block.event.status"
                   [style.--start]="place.startColumn"
                   [style.--end]="place.endColumn"
@@ -205,7 +205,7 @@
                 @if (slot) {
                   <li
                     class="act"
-                    [attr.data-category]="event.category" [appCalendarPalette]="event.category === 'family' ? 'family' : event.category === 'unavailable' ? 'unavailable' : 'activity'"
+                    [attr.data-category]="event.category" [appCalendarPalette]="event.palette"
                     [attr.data-status]="event.status"
                     [style.grid-row]="slot.row + ' / span ' + slot.span"
                     [style.grid-column]="slot.lane"
@@ -324,7 +324,7 @@
             } @else {
               <ul>
                 @for (event of day.events; track event.id) {
-                  <li class="act act--row" [attr.data-category]="event.category" [appCalendarPalette]="event.category === 'family' ? 'family' : event.category === 'unavailable' ? 'unavailable' : 'activity'" [attr.data-status]="event.status">
+                  <li class="act act--row" [attr.data-category]="event.category" [appCalendarPalette]="event.palette" [attr.data-status]="event.status">
                     <app-icon class="act__icon" [name]="icons[event.category]" [size]="22" />
                     <span class="act__title">{{ event.title }}</span>
                     <span class="act__time">

@@ -1,9 +1,13 @@
-import { CalendarPalette } from './calendar-palette';
+import { CalendarPalette, CalendarPaletteKey } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Icon } from '../../shared/icon/icon';
 import { CalendarFilters, DIMENSIONS, Dimension } from './calendar-filters';
+
+const TYPE_PALETTES: Readonly<Record<string, CalendarPaletteKey | undefined>> = {
+  parenting: 'parenting', activity: 'activity', family: 'family', unavailable: 'unavailable', task: 'task', reminder: 'reminder',
+};
 
 /**
  * The Filters panel (#190): a popover on wide screens and a bottom sheet on phones, with the same choices. Changes
@@ -50,7 +54,7 @@ import { CalendarFilters, DIMENSIONS, Dimension } from './calendar-filters';
                   <span appCalendarPalette="parent-a" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
                   <span appCalendarPalette="parent-b" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
                 } @else {
-                  <span [appCalendarPalette]="option.id" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+                  <span [appCalendarPalette]="typePalette(option.id)" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
                 }
               }
               {{ option.label }}
@@ -67,6 +71,9 @@ import { CalendarFilters, DIMENSIONS, Dimension } from './calendar-filters';
   styleUrl: './calendar-filter-panel.scss',
 })
 export class CalendarFilterPanel {
+  protected readonly typePalette = (id: string): CalendarPaletteKey | undefined =>
+    TYPE_PALETTES[id];
+
   readonly filters = input.required<CalendarFilters>();
   readonly changed = output<CalendarFilters>();
   readonly resetAll = output();

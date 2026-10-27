@@ -42,7 +42,12 @@ export interface ParentingTime {
   readonly eventId?: string;
 }
 
-/** Activity categories for icons and colour accents (always alongside text). */
+/** Subcategories retain their icons; the owner-approved activity palette is shared (#255). */
+export function eventPalette(category: EventCategory): import('../calendar/calendar-palette').CalendarPaletteKey {
+  return category === 'family' || category === 'unavailable' ? category : 'activity';
+}
+
+/** Activity categories for icons (always alongside text). */
 /**
  * `family`: an event both parents attend (e.g. a school play), with its own colour. `unavailable`: a parent's
  * blocked-out time. Both are mock styling for now (see the calendar key); the categories aren't in the API yet.

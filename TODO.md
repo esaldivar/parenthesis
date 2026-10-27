@@ -6,6 +6,16 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **PR #321 remaining review and Playwright recovery (#255, #261, #278, #279).** Selected Add cards use a
+  distinct tinted fill; palette keys are typed with documented aliases; dashboard palette mapping replaces shadowed
+  subcategory fills; historical unknown-parent fallback differs from Unavailable. Prior #322 raw child-link fix verified.
+  - [x] Frontend lint, 605 tests and production build; E2E typecheck, 8 report-policy tests and 254 discovered executions.
+  - [ ] Run the exact release candidate in Chromium/WebKit after review. Time fields now use accessible labels;
+    slot targeting follows the visible layout and waits for loaded controls. Action/navigation/global timeouts bound
+    failures while retaining the gate and diagnostic time. No full browser execution claimed locally (Docker/.NET absent).
+  - [ ] Verify selected/unselected controls and unknown-parent fallback visually in both themes; real screen reader and
+    physical-device acceptance remain separate. Existing stylesheet warning remains, reduced to 10.86 kB.
+
 - [ ] **PR #321 Copilot corrections (#255, #261).** Persist parent palette slots, use fixed dual-parent swatches,
   preserve status borders, retain raw child links and correct completion/style documentation in one fix PR.
   - [ ] Backend build/format/integration and migration verification in CI (.NET SDK/Docker unavailable locally).

@@ -1,4 +1,4 @@
-import { CalendarPalette } from '../calendar/calendar-palette';
+import { CalendarPalette, CalendarPaletteKey } from '../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -27,7 +27,7 @@ import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Icon, IconName } from '../../shared/icon/icon';
 import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from './dashboard-data';
 import { blockRange, childNames, groupParentingTime } from './grouping';
-import { DashboardWeek, PlainDate, ScheduleStatus } from './model';
+import { DashboardWeek, PlainDate, ScheduleStatus, eventPalette } from './model';
 import { StatusLabel } from './status-label';
 import { CATEGORY_ICONS } from './timeline';
 import { InlineView, WeekCalendar, WeekState } from './week-calendar';
@@ -41,7 +41,7 @@ interface UpcomingItem {
   readonly key: string;
   readonly icon: IconName;
   readonly category: string;
-  readonly palette?: string;
+  readonly palette?: CalendarPaletteKey;
   readonly title: string;
   readonly when: string;
   readonly people: readonly { name: string; kind: 'parent' | 'child' }[];
@@ -157,6 +157,7 @@ export class DashboardPage {
         key: `ev-${e.id}`,
         icon: CATEGORY_ICONS[e.category],
         category: e.category,
+        palette: eventPalette(e.category),
         title: e.title,
         when: e.time ? dateTimeLabel(`${e.date}T${e.time}`).replace(/, (\d)/, ' · $1') : dayLong(e.date),
         people: [
@@ -173,6 +174,7 @@ export class DashboardPage {
         key: `${n.kind}-${n.id}`,
         icon: n.kind === 'reminder' ? 'bell' : 'note',
         category: n.kind,
+        palette: n.kind,
         title: n.title,
         when:
           n.kind === 'task'
