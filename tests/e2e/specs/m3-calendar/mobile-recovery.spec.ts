@@ -120,7 +120,7 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
         await expect(page.locator('.slot-add__button:visible, .tap-add__button:visible').first()).toBeVisible();
         for (const day of ['Tuesday', 'Wednesday']) {
           // Layout follows available container width, not whether the device supports touch.
-          const agendaDay = page.locator('.agenda__day').filter({ hasText: new RegExp(`^\\s*${day}`) });
+          const agendaDay = page.locator('.agenda__day').filter({ hasText: new RegExp(`^\\s*${day.slice(0, 3)}`) });
           const agendaTarget = agendaDay.locator('.tap-add__button');
           if (await agendaTarget.isVisible()) {
             await activate(agendaTarget, info);
