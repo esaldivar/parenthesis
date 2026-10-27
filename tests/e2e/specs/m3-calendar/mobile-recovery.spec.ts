@@ -89,12 +89,18 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
         await describedReason(page, `#${kind}-end-date`, /end|start|before|after/i);
         if (kind === 'swap') {
           await page.evaluate(() => {
-            const events: { type: string; target: string; active: string; time: number }[] = [];
+            const events: { type: string; target: string; active: string; time: number; detail?: string }[] = [];
             (window as unknown as { focusDiagnostic: typeof events }).focusDiagnostic = events;
             const describe = (element: Element | null) => element ? `${element.tagName.toLowerCase()}#${element.id}` : 'none';
-            for (const type of ['pointerdown', 'click', 'submit', 'invalid', 'focusin', 'focusout']) {
+            const originalFocus = HTMLElement.prototype.focus;
+            HTMLElement.prototype.focus = function(options?: FocusOptions) {
+              if (events.length < 150) events.push({ type: 'focus-call', target: describe(this), active: describe(document.activeElement), time: Math.round(performance.now()), detail: new Error().stack?.slice(0, 2500) });
+              return originalFocus.call(this, options);
+            };
+            for (const type of ['pointerdown', 'pointerup', 'click', 'submit', 'invalid', 'focusin', 'focusout', 'scroll']) {
               document.addEventListener(type, event => {
-                if (events.length < 150) events.push({ type, target: describe(event.target as Element), active: describe(document.activeElement), time: Math.round(performance.now()) });
+                const element = event.target instanceof Element ? event.target : null;
+                if (events.length < 150) events.push({ type, target: describe(element), active: describe(document.activeElement), time: Math.round(performance.now()), detail: JSON.stringify({ scrollY: window.scrollY, overlays: document.querySelectorAll('.cdk-overlay-pane, .cdk-overlay-backdrop').length, elementClass: element?.className }) });
               }, true);
             }
           });
