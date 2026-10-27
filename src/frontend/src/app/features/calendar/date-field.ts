@@ -34,7 +34,7 @@ import { CalendarHeader } from './calendar-header';
         #dateInput
         [class.date-invalid]="!!issue()"
         (keydown)="openOnKey($event, picker)"
-        (dateChange)="closeAfterSelection(picker)"
+        (dateInput)="closeAfterSelection(picker)"
       />
       <app-icon matSuffix class="date-field__icon" name="calendar" [size]="20" aria-hidden="true" />
       @if (issue(); as reason) {
