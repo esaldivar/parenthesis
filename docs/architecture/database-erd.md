@@ -310,7 +310,7 @@ approval:
 - **`device_pairing_code`:** single-use, valid for 10 minutes, stored hashed.
 - **`child_credential`:** the PIN hash, a failed-attempt counter, and the lock state.
 
-#153 ([ADR-0007](../adr/0007-shared-devices-and-parent-pins.md), proposed) adds `devices.expires_at` (shared
+#153 ([ADR-0007](../adr/0007-shared-devices-and-parent-pins.md)) adds `devices.expires_at` (shared
 devices: 30 days from setup), pause and concurrency columns on `child_credentials`, and a `parent_credentials` table
 (one six-digit parent PIN per family membership, hashed, with the same pause-then-lock counters).
 - **`child_profile.status`:** `PendingApproval | Active | Archived`.

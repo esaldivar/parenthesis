@@ -1,9 +1,9 @@
 # ADR-0007: Explicit shared family devices, parent PINs and two-stage PIN lockout
 
-- **Status:** Proposed (2026-10-28). It records the owner's #153 decisions of October 28, 2026 as implemented on
-  `feat/153-shared-device-flow` (PR #336). The owner accepts or changes it in that PR's review.
+- **Status:** Accepted (2026-10-28, owner approval). It records the owner's #153 decisions of October 28, 2026 as
+  implemented in PRs #336, #339 and #340 and released to `develop` in #338.
 - **Date:** 2026-10-28
-- **Supersedes (once accepted):** parts of [ADR-0006](0006-profiles-pins-and-child-devices.md): automatic household
+- **Supersedes:** parts of [ADR-0006](0006-profiles-pins-and-child-devices.md): automatic household
   registration, the password-only parent tile, the immediate three-strike child lock, one-tap unlock, and co-parent
   approval for a child PIN reset. ADR-0006 stays accepted for everything else: child sessions, paired child tablets,
   PINs only on registered devices, both parents approving a new child, invitations and the private diary.
@@ -11,6 +11,10 @@
   parent-requested link per 15 minutes; a child's paired tablet goes straight to the PIN; a parent's "No" to the
   shared-device question is remembered in that browser; devices registered before this change expire 30 days after
   their registration.
+- **Owner confirmations at acceptance (October 28, 2026):** full Sign out removes the shared device (signing in again
+  asks the question afresh); a second parent who sets up an already shared device replaces the first parent's setup;
+  parent PINs are per family membership; a parent's PIN is refused while their account is locked out after wrong
+  passwords; pause and lock emails always carry a fresh reset link; no reminder before the 30-day expiry for now.
 - **Source:** [issue #153](https://github.com/esaldivar/parenthesis/issues/153) body ("Owner-approved shared-device and
   PIN decisions — October 28, 2026") and its owner comments; [design audit](../design/shared-device-state-audit-153.md).
 
@@ -34,8 +38,11 @@ rules below are server-side; hiding things in the app is never the boundary.
   the device up for themselves, which replaces the earlier registration).
 - **Revoking** a device (either parent, immediate, audited) ends every parent and child session on it at once. So
   does expiry, and so does the setting-up parent losing their membership. Signing in again doesn't restore sharing.
-- **Full sign-out** by the setting-up parent removes the device, so its picker is gone until a parent sets it up
-  again. **Switch profile** (`POST /api/device/switch`) ends the current session and keeps the picker.
+- **Full sign-out** by the setting-up parent removes the device, so its picker is gone until a parent signs in and
+  sets it up again; signing in alone never restores it.
+- **One parent per shared device.** If the other parent signs in there and chooses to set it up, their setup replaces
+  the earlier one: the picker then shows them and the children, and the earlier parent's PIN no longer works there.
+- **No expiry reminder** for now: Settings shows when each device's sharing ends. **Switch profile** (`POST /api/device/switch`) ends the current session and keeps the picker.
 
 ### Parent sessions are bound to the shared device
 - A parent session started on the shared device (by PIN, by setup, or by password sign-in on it) carries a
@@ -49,7 +56,8 @@ rules below are server-side; hiding things in the app is never the boundary.
 - **Child PIN:** 4–6 digits, set by the parent who first enables sign-in. **Either authorized parent resets it at once**
   (no co-parent approval). A reset clears any pause or lock and emails the *other* active parent(s) who reset which
   child's PIN, never the PIN. Requests for PIN changes made under ADR-0006 still resolve; no new ones are created.
-- **Parent PIN:** exactly six digits, per family membership, not trivially guessable. A parent changes it in Settings
+- **Parent PIN:** exactly six digits, per family membership (a parent in two families has a separate PIN for each),
+  not trivially guessable. While a parent's account is locked out after wrong passwords, their PIN is refused too. A parent changes it in Settings
   after confirming their account password (rate-limited; wrong passwords count toward the account lockout).
 - **Retry policy (both):** three wrong PINs pause that PIN for ten minutes; no PIN is checked during the pause, the
   right one included. Three more wrong PINs after the pause lock it until it is reset. A right PIN clears the failed
