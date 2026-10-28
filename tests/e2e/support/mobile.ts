@@ -1,6 +1,7 @@
 import { Locator, Page, TestInfo, expect, test as base } from '@playwright/test';
 import { familyWithKai, Family } from './family';
 import { PASSWORD, TIME_ZONE } from './data';
+import { continuePrivatelyIfAsked } from './shared-device';
 
 export const test = base.extend<{ family: Family }>({
   family: async ({}, use) => {
@@ -14,6 +15,7 @@ export async function signIn(page: Page, email: string) {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await continuePrivatelyIfAsked(page);
   await expect(page.getByRole('navigation').first()).toBeVisible();
 }
 

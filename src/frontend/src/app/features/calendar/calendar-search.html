@@ -6,11 +6,13 @@
   #origin="cdkOverlayOrigin"
   aria-haspopup="dialog"
   [attr.aria-expanded]="open()"
-  [attr.aria-label]="todayLabel()"
+  aria-describedby="calendar-search-today"
   (click)="open() ? close() : show()"
 >
+  <!-- The visible word is the accessible name (WCAG 2.5.3, label in name); today's date is its description. -->
   <app-icon name="search" [size]="20" />
   <span class="search-pill__text">Search</span>
+  <span class="visually-hidden" id="calendar-search-today">{{ todayLabel() }}</span>
   <span class="glyph" aria-hidden="true">
     <span class="glyph__day">{{ todayDay() }}</span>
   </span>
