@@ -1,6 +1,6 @@
 # End-to-end tests (Playwright release gate)
 
-These tests run on release PRs (`release/*` → `develop`) against the release candidate, and cover every released
+These tests run on work PRs into `release/*` and release PRs (`release/*` → `develop`) against each PR merge candidate, and cover every released
 milestone. How it works, the rules for the suite, and how to run it locally:
 [docs/runbooks/playwright-release-gate.md](../../docs/runbooks/playwright-release-gate.md).
 
