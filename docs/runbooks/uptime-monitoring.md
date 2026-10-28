@@ -67,7 +67,8 @@ Alerts show the monitor name, URL, status (down/up), reason (such as `503` or ti
    authentication. Don't enter a payment method. The owner owns the account; add nobody else for now.
 2. **Discord webhook.** In Discord, open **#site-status** → *Edit Channel* → *Integrations* → *Webhooks* →
    *New Webhook*. Name it `UptimeRobot`, then *Copy Webhook URL*. Paste it straight into the next step and nowhere else.
-3. **Connect Discord.** In UptimeRobot: *Integrations & API* → *Discord* → *Add*. Paste the webhook URL, label it
+3. **Connect Discord.** In UptimeRobot: *Integrations & API* → *Chat platforms* → *Discord* → *Add* (not under
+   *Connectors & Incident manag.*, where Zapier and PagerDuty are paid). Paste the webhook URL, label it
    `#site-status`, and select both **down** and **up** (recovery) events. Save.
 4. **Add the DEV monitor.** *New monitor* → *HTTP(s)*, with the name, URL and interval from the table above. Set the
    request timeout to the longest allowed. Under notifications, select the `#site-status` Discord integration. Save.
@@ -88,7 +89,7 @@ The real monitor stays as it is. Use a throwaway monitor against a path that's a
 
 - **Change the interval or timeout:** edit the monitor. Keep the cost note above in mind before going under 60 minutes.
 - **Pause alerts** (for example during planned work): pause the monitor; resume it afterwards.
-- **Stop Discord alerts:** remove the Discord integration from the monitor, or delete it under *Integrations & API*.
+- **Stop Discord alerts:** remove the Discord integration from the monitor, or delete it under *Integrations & API* → *Chat platforms*.
 - **The webhook URL leaked:** delete the webhook in Discord (that disables it at once), create a new one, and paste the
   new URL into the UptimeRobot integration.
 - **Turn it all off:** delete the monitors and the Discord integration, then delete the webhook in Discord.
