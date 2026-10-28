@@ -12,14 +12,28 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
     // Wednesday, October 28, 2026, 9:00 AM in Chicago (CDT). Daylight saving ends Sunday, November 1.
     private static readonly DateTimeOffset _wednesday = new(2026, 10, 28, 9, 0, 0, TimeSpan.FromHours(-5));
 
+    /// <summary>
+    /// These tests use fixed dates from Wednesday, October 28, 2026. The API's clock starts the day before, so they
+    /// don't change meaning once those dates pass (a declined date already in the past isn't listed).
+    /// </summary>
+    private static readonly DateTimeOffset _now = new(2026, 10, 27, 12, 0, 0, TimeSpan.FromHours(-5));
+
     private static readonly string[] _wednesdays = ["Wednesday"];
     private static readonly string[] _wednesdayAndFriday = ["Wednesday", "Friday"];
     private static readonly string[] _weekend = ["Friday", "Saturday", "Sunday"];
     private static readonly string[] _weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-    public async ValueTask InitializeAsync() => await api.ResetDatabaseAsync();
+    public async ValueTask InitializeAsync()
+    {
+        await api.ResetDatabaseAsync();
+        api.Clock.SetUtcNow(_now);
+    }
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public ValueTask DisposeAsync()
+    {
+        api.Clock.Reset();
+        return ValueTask.CompletedTask;
+    }
 
     [Fact]
     public async Task Unavailable_time_repeats_on_chosen_days_at_the_same_local_time_and_stays_private()
