@@ -18,8 +18,9 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
 /**
  * "Is this a shared family device?" (#153, owner decision October 28, 2026). Asked after a password sign-in on a
  * browser that isn't already this parent's shared device. "No" continues privately and registers nothing. "Yes" sets
- * the device up for 30 days, creating the parent's six-digit PIN if they have none, and continues into their account
- * without asking for the password again. A failed setup never claims sharing is on.
+ * the device up for 30 days, creating the parent's six-digit PIN if they have none, then shows the picker, where the
+ * parent taps their circle and enters that PIN (owner decision, October 28, 2026). A failed setup never claims sharing
+ * is on.
  */
 @Component({
   selector: 'app-shared-device-setup-page',
@@ -174,7 +175,11 @@ export class SharedDeviceSetupPage implements OnInit {
     this.error.set(null);
     try {
       await this.auth.setUpSharedDevice(family.id, name.trim(), this.needsPin() ? pin : null);
-      await this.router.navigateByUrl(safeReturnUrl(this.returnUrl()), { replaceUrl: true });
+      // Straight to "Who's using Parenthesis?" (owner decision, October 28, 2026): the parent sees their own circle and
+      // the children's, and enters with the PIN they just chose. The setup session ends first, so nobody stays signed in
+      // behind the picker.
+      await this.auth.switchProfile();
+      await this.router.navigateByUrl('/profiles', { replaceUrl: true });
     } catch (error) {
       const problem = toProblem(error);
       const fieldError = problem.errors['pin']?.join(' ') ?? problem.errors['name']?.join(' ');

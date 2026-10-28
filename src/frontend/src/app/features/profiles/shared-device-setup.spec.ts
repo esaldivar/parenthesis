@@ -69,9 +69,10 @@ describe('shared-device setup (#153)', () => {
     expect(router.url).toBe('/calendar');
   });
 
-  it('“Yes” creates the parent PIN with the device and continues without another password prompt', async () => {
+  it('“Yes” creates the parent PIN with the device, then shows the picker to enter it', async () => {
     const { harness, auth, router } = await open();
     const setUp = vi.spyOn(auth, 'setUpSharedDevice');
+    const switchProfile = vi.spyOn(auth, 'switchProfile');
 
     click('Yes, set up sharing');
     harness.fixture.detectChanges();
@@ -82,7 +83,9 @@ describe('shared-device setup (#153)', () => {
     await settle(harness);
 
     expect(setUp).toHaveBeenCalledWith('family-1', 'Kitchen iPad', '583920');
-    expect(router.url).toBe('/calendar');
+    expect(switchProfile).toHaveBeenCalled();
+    expect(switchProfile.mock.invocationCallOrder[0]).toBeGreaterThan(setUp.mock.invocationCallOrder[0]);
+    expect(router.url).toBe('/profiles');
     expect(document.body.querySelector('input[type="password"][autocomplete="current-password"]')).toBeNull();
   });
 

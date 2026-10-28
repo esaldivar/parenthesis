@@ -1,10 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
 import { ChangeRequest, Child, Device, DeviceProfiles } from '../../core/api/api';
+import { AuthStore } from '../../core/auth/auth.store';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { isGuessablePin } from './children-access';
@@ -99,9 +100,9 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
   }
 
   /** The settings page's first load. */
-  async function settings(children: Child[] = [KAI, AURORA, MILO], auth = fakeAuth()) {
+  async function settings(children: Child[] = [KAI, AURORA, MILO], auth = fakeAuth(), devices: Device[] = DEVICES) {
     const opened = await open('/settings', auth);
-    await vi.waitFor(() => http.expectOne(`${F}/devices`), { timeout: 2000 }).then((r) => r.flush(DEVICES));
+    await vi.waitFor(() => http.expectOne(`${F}/devices`), { timeout: 2000 }).then((r) => r.flush(devices));
     for (const r of http.match(`${F}/children`)) r.flush(children);
     for (const r of http.match(F)) r.flush(FAMILY);
     for (const r of http.match(`${F}/invitations`)) r.flush([]);
@@ -257,6 +258,46 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       await answer(harness, { [`${F}/devices`]: [DEVICES[1]], [`${F}/children`]: [KAI] });
 
       expect(toastText()).toContain('Kitchen iPad was removed.');
+    });
+
+    it('marks this browser’s shared device and stops sharing it only after confirming, then signs out', async () => {
+      const auth = fakeAuth({ device: PICKER });
+      const here = [{ ...DEVICES[0], isThisDevice: true }, DEVICES[1]];
+      const { harness, body } = await settings([KAI], auth, here);
+      const store = TestBed.inject(AuthStore);
+      const signOut = vi.spyOn(store, 'signOut');
+      expect(text(body, 'app-device-list')).toContain('Kitchen iPad (this device)');
+      expect(body.querySelector('app-device-list button[aria-label="Remove Kitchen iPad"]')).toBeNull();
+
+      click(body, 'Stop sharing this device', 'app-device-list');
+      harness.fixture.detectChanges();
+      expect(text(body, 'app-device-list')).toContain('including you, is signed out');
+      http.expectNone(`${F}/devices/d1`);
+      click(body, 'Stop sharing', 'app-device-list');
+
+      const remove = await vi.waitFor(() => http.expectOne(`${F}/devices/d1`));
+      expect(remove.request.method).toBe('DELETE');
+      remove.flush(null, { status: 204, statusText: 'No Content' });
+      await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/sign-in'));
+
+      expect(signOut).toHaveBeenCalled();
+      expect(toastText()).toContain('This device is no longer shared.');
+    });
+
+    it('keeps the parent signed in when stopping sharing fails', async () => {
+      const auth = fakeAuth({ device: PICKER });
+      const { harness, body } = await settings([KAI], auth, [{ ...DEVICES[0], isThisDevice: true }]);
+      const signOut = vi.spyOn(TestBed.inject(AuthStore), 'signOut');
+
+      click(body, 'Stop sharing this device', 'app-device-list');
+      harness.fixture.detectChanges();
+      click(body, 'Stop sharing', 'app-device-list');
+      const remove = await vi.waitFor(() => http.expectOne(`${F}/devices/d1`));
+      remove.flush({ title: 'Something went wrong' }, { status: 500, statusText: 'Server Error' });
+      await settle(harness);
+
+      expect(signOut).not.toHaveBeenCalled();
+      expect(body.querySelector('app-device-list [role="alert"]')).not.toBeNull();
     });
 
     it('offers explicit shared-device setup when this browser isn’t the parent’s shared device', async () => {

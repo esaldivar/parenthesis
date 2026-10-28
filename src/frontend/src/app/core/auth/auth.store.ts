@@ -67,7 +67,7 @@ export class AuthStore {
 
   /**
    * The picker loaded while nobody was signed in says the device isn't "yours". Reload it as the parent, so the shell
-   * offers Switch profile (which keeps the device) rather than only Sign out (which removes it).
+   * knows the device is the parent's own shared device (Switch profile, "this device" in Settings).
    */
   private async refreshDeviceAfterSignIn(): Promise<void> {
     await this.loadDevice().catch(() => undefined);
@@ -152,7 +152,7 @@ export class AuthStore {
     return paired;
   }
 
-  /** Full sign-out. On the parent's own shared device the server removes the device too, so its picker is gone. */
+  /** Sign out. A shared device keeps its picker; Settings → "Stop sharing this device" removes it (ADR-0007). */
   async signOut(): Promise<void> {
     try {
       await this.api.logout();

@@ -73,7 +73,10 @@ export class ParentShell {
     await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
   }
 
-  /** Full sign-out: on the parent's own shared device the picker goes too, until a parent sets it up again. */
+  /**
+   * Sign out. On the parent's own shared device it goes back to "Who's using Parenthesis?" and the device stays shared
+   * (owner decision, October 28, 2026); "Stop sharing this device" in Settings removes it.
+   */
   protected async signOut(): Promise<void> {
     await this.auth.signOut();
     await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });

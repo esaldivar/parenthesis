@@ -220,22 +220,41 @@ public sealed class SharedDeviceTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Full_sign_out_removes_the_picker_and_signing_in_again_doesnt_restore_it()
+    public async Task Sign_out_keeps_the_shared_device_and_its_picker()
     {
         var family = await FamilyAsync();
         using var _ = family;
 
         Assert.Equal(HttpStatusCode.NoContent, (await family.Dad.PostAsync("/api/auth/logout")).StatusCode);
         await family.Dad.RefreshAntiforgeryAsync();
-        var pickerAfterSignOut = await family.Dad.GetAsync("/api/device/profiles");
-        var pinAfterSignOut = await ParentPinAsync(family.Dad, family, DadsPin);
+        var picker = await family.Dad.GetAsync("/api/device/profiles");
+        var pin = await ParentPinAsync(family.Dad, family, DadsPin);
+
+        Assert.Equal(HttpStatusCode.OK, picker.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, pin.StatusCode);
+    }
+
+    [Fact]
+    public async Task Stopping_sharing_removes_this_device_and_signing_in_again_doesnt_restore_it()
+    {
+        var family = await FamilyAsync();
+        using var _ = family;
+        var device = Assert.Single((await JsonAsync(await family.Dad.GetAsync($"/api/families/{family.FamilyId}/devices"))).EnumerateArray());
+        Assert.True(device.GetProperty("isThisDevice").GetBoolean());
+        Assert.False(Assert.Single((await JsonAsync(await family.Mom.GetAsync($"/api/families/{family.FamilyId}/devices"))).EnumerateArray())
+            .GetProperty("isThisDevice").GetBoolean());
+
+        var stopped = await family.Dad.SendAsync(HttpMethod.Delete, $"/api/families/{family.FamilyId}/devices/{device.GetProperty("id").GetGuid()}");
+        var pickerAfter = await family.Dad.GetAsync("/api/device/profiles");
+        await family.Dad.RefreshAntiforgeryAsync();
+        var pinAfter = await ParentPinAsync(family.Dad, family, DadsPin);
         await family.Dad.LoginAsync(family.DadEmail);
         var pickerAfterSignIn = await family.Dad.GetAsync("/api/device/profiles");
 
-        Assert.Equal(HttpStatusCode.NotFound, pickerAfterSignOut.StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, pinAfterSignOut.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, stopped.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, pickerAfter.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, pinAfter.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, pickerAfterSignIn.StatusCode);
-        Assert.Empty((await JsonAsync(await family.Dad.GetAsync($"/api/families/{family.FamilyId}/devices"))).EnumerateArray());
     }
 
     [Fact]
