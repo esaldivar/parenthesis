@@ -152,6 +152,16 @@ internal static class EventSchedule
             date.PlusDays(spanDays).At(localEnd.TimeOfDay).InZoneLeniently(zone).ToDateTimeOffset().ToUniversalTime());
     }
 
+    /// <summary>The instants a family-local date starts and ends (exclusive), in UTC.</summary>
+    public static (DateTimeOffset Start, DateTimeOffset End) LocalDay(DateOnly date, string timeZone)
+    {
+        var zone = DateTimeZoneProviders.Tzdb[timeZone];
+        var day = new LocalDate(date.Year, date.Month, date.Day);
+        return (
+            zone.AtStartOfDay(day).ToDateTimeOffset().ToUniversalTime(),
+            zone.AtStartOfDay(day.PlusDays(1)).ToDateTimeOffset().ToUniversalTime());
+    }
+
     public static DateOnly LocalDate(DateTimeOffset moment, string timeZone) =>
         ToDateOnly(Instant.FromDateTimeOffset(moment).InZone(DateTimeZoneProviders.Tzdb[timeZone]).Date);
 

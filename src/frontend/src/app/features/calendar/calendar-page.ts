@@ -39,6 +39,7 @@ import {
 } from './calendar-filters';
 import { CalendarItem, forChild, reminderItems, swapTargetFor, taskItems, toItems } from './calendar-items';
 import { CalendarList } from './calendar-list';
+import { CalendarSearch } from './calendar-search';
 import { CalendarMonth, monthGrid, startOfMonth } from './calendar-month';
 import { CalendarWeek } from './calendar-week';
 import { EventDetails } from './event-details';
@@ -93,6 +94,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
     ReminderDetails,
     TaskDetails,
     CalendarFilterPanel,
+    CalendarSearch,
   ],
   templateUrl: './calendar-page.html',
   styleUrl: './calendar-page.scss',
@@ -320,6 +322,15 @@ export class CalendarPage {
     this.navigate({ date: this.today() });
   }
 
+  /**
+   * A search result (#253): show its first date and open its existing details there, even when it was opened before.
+   * Its details are reloaded from the server, so nothing stale or unauthorized is shown.
+   */
+  protected openFound(item: CalendarItem): void {
+    this.linked = undefined;
+    this.navigate({ date: item.firstDate, event: item.id });
+  }
+
   protected setChild(childId: string | null): void {
     this.navigate({ child: childId });
   }
@@ -442,14 +453,14 @@ export class CalendarPage {
     afterNextRender(() => this.calendarHeading().nativeElement.focus(), { injector: this.injector });
   }
 
-  private navigate(params: { view?: CalendarView; date?: PlainDate; child?: string | null }): void {
+  private navigate(params: { view?: CalendarView; date?: PlainDate; child?: string | null; event?: string }): void {
     void this.router.navigate([], {
       queryParams: {
         view: params.view ?? (this.current() === 'week' ? null : this.current()),
         date: params.date ?? this.date() ?? this.week() ?? null,
         week: null,
         child: params.child === undefined ? (this.childFilter() ?? null) : params.child,
-        event: null,
+        event: params.event ?? null,
       },
       replaceUrl: true,
     });

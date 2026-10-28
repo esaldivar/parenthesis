@@ -66,7 +66,7 @@ export interface CalendarItem {
   readonly concealed?: boolean;
 }
 
-const CATEGORY_LABELS: Record<CalendarCategory, string> = {
+export const CATEGORY_LABELS: Record<CalendarCategory, string> = {
   ParentingTime: 'Parenting time',
   Joint: 'Family event',
   School: 'School',

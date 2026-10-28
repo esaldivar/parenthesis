@@ -1,0 +1,103 @@
+<button
+  #trigger
+  type="button"
+  class="search-pill"
+  cdkOverlayOrigin
+  #origin="cdkOverlayOrigin"
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="open()"
+  [attr.aria-label]="todayLabel()"
+  (click)="open() ? close() : show()"
+>
+  <app-icon name="search" [size]="20" />
+  <span class="search-pill__text">Search</span>
+  <span class="glyph" aria-hidden="true">
+    <span class="glyph__day">{{ todayDay() }}</span>
+  </span>
+</button>
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="origin"
+  [cdkConnectedOverlayOpen]="open()"
+  [cdkConnectedOverlayPositions]="positions"
+  [cdkConnectedOverlayViewportMargin]="16"
+  [cdkConnectedOverlayPush]="false"
+  (attach)="attached()"
+  (detach)="close(false)"
+  (overlayOutsideClick)="outsideClick($event)"
+>
+  <div #panel class="panel" role="dialog" aria-label="Search events" [style.max-height.px]="maxHeight()" (keydown)="keydown($event)">
+    <label class="visually-hidden" for="calendar-search-field">Search events by title, type or date</label>
+    <div class="field">
+      <app-icon name="search" [size]="20" />
+      <input
+        #field
+        id="calendar-search-field"
+        type="search"
+        autocomplete="off"
+        enterkeyhint="search"
+        maxlength="120"
+        placeholder="Search events"
+        aria-describedby="calendar-search-status"
+        [value]="text()"
+        (input)="typed($any($event.target).value)"
+      />
+    </div>
+
+    <p id="calendar-search-status" class="status" role="status" [class.visually-hidden]="state() === 'ready' && total() > 0">
+      {{ status() }}
+    </p>
+    @if (state() === 'error') {
+      <button type="button" class="more" data-stop (click)="retry()">Try again</button>
+    }
+
+    @if (state() === 'ready' && total() > 0) {
+      <div class="results">
+        @if (upcoming().items.length) {
+          <h3 class="visually-hidden">Upcoming and ongoing</h3>
+          <ul class="list">
+            @for (item of upcoming().items; track item.id) {
+              <li>
+                <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
+              </li>
+            }
+          </ul>
+          @if (upcoming().hasMore) {
+            <button type="button" class="more" data-stop [disabled]="upcoming().loadingMore" (click)="more(false)">
+              {{ upcoming().loadingMore ? 'Loading…' : 'Show more upcoming' }}
+            </button>
+          }
+        }
+        @if (past().items.length) {
+          <h3 class="divider"><span>Past events</span></h3>
+          <ul class="list">
+            @for (item of past().items; track item.id) {
+              <li>
+                <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
+              </li>
+            }
+          </ul>
+          @if (past().hasMore) {
+            <button type="button" class="more" data-stop [disabled]="past().loadingMore" (click)="more(true)">
+              {{ past().loadingMore ? 'Loading…' : 'Show more past events' }}
+            </button>
+          }
+        }
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #card let-item>
+  <button type="button" class="card" data-stop (click)="choose(item)">
+    <span class="card__title" [class.card__title--declined]="item.status === 'declined'">{{ item.title }}</span>
+    <span class="card__when">{{ when(item) }}</span>
+    <span class="card__meta">
+      <span>{{ type(item) }}</span>
+      @if (statusOf(item); as status) {
+        <span class="card__status">{{ status }}</span>
+      }
+    </span>
+  </button>
+</ng-template>

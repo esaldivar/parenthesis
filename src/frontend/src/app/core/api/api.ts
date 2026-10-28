@@ -140,6 +140,21 @@ export type CalendarCategory =
   | 'Unavailable'
   | 'Other';
 
+/** What to search the calendar for (#253). An event matches any of these. */
+export interface CalendarSearch {
+  readonly q: string | null;
+  readonly categories: readonly CalendarCategory[];
+  /** Parenting time only: this parent's. */
+  readonly caregiver: string | null;
+  /** A family-local date, `YYYY-MM-DD`. */
+  readonly on: string | null;
+}
+
+export interface CalendarSearchPage {
+  readonly events: CalendarEvent[];
+  readonly hasMore: boolean;
+}
+
 export type CalendarStatus = 'PendingApproval' | 'Confirmed' | 'Rejected' | 'Cancelled';
 
 /** Gentle, non-blocking notes about conflicts. They never block a request or reassign parenting time. */
@@ -408,6 +423,19 @@ export class Api {
   // The shared calendar. A range spans at most 62 days. Children may list (they see only their confirmed events).
   calendarEvents = (familyId: string, from: string, to: string) =>
     this.call(this.http.get<CalendarEvent[]>(`/api/families/${familyId}/calendar/events`, { params: { from, to } }));
+  /**
+   * Searches the whole calendar (#253): one page of upcoming and ongoing events (soonest first), or of past events (most
+   * recent first). Matches the title, any of the categories (parenting time only for the caregiver, when given) or
+   * events on a family-local date. The server applies the same visibility as the calendar.
+   */
+  searchCalendarEvents = (familyId: string, search: CalendarSearch, page: { past: boolean; offset: number; limit: number }) => {
+    const params: Record<string, string | string[]> = { past: String(page.past), offset: String(page.offset), limit: String(page.limit) };
+    if (search.q) params['q'] = search.q;
+    if (search.categories.length) params['category'] = [...search.categories];
+    if (search.caregiver) params['caregiver'] = search.caregiver;
+    if (search.on) params['on'] = search.on;
+    return this.call(this.http.get<CalendarSearchPage>(`/api/families/${familyId}/calendar/events/search`, { params }));
+  };
   /** One event, for a parent. */
   calendarEvent = (familyId: string, eventId: string) =>
     this.call(this.http.get<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`));

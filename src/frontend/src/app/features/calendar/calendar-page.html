@@ -21,6 +21,9 @@
       </button>
     </span>
     <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">Today</button>
+    @if (family(); as f) {
+      <app-calendar-search [familyId]="f.id" [timeZone]="f.timeZone" [members]="members()" [children]="children()" (picked)="openFound($event)" />
+    }
   </div>
   <div class="toolbar__end">
     <div class="segmented" role="group" aria-label="Calendar view">
