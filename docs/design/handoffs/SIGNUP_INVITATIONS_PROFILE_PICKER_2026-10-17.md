@@ -1,5 +1,12 @@
 # Sign-up, invitations & profile picker — design handoff (2026-10-17)
 
+**October 28 reconciliation:** this is historical delivery evidence. For shared-device
+entry, parent PIN, two-stage lock/recovery, explicit device trust and current visual
+approvals, use [issue #153's handoff](../shared-device-issue-153.md) and
+[state audit](../shared-device-state-audit-153.md). The newer owner decisions
+supersede conflicting password-only, immediate-lock and PIN-reset approval rules;
+they do not mean those changes are implemented or the complete handoff is accepted.
+
 - **Status:** Approved by owner (verbal approval, 2026-10-17) for the design requirements and direction; **visual asset delivery pending**. Do not claim pixel-perfect implementation readiness until mockups are committed.
 - **Screens:** Mobile-first and desktop, light and dark: (1) household size and add children, (2) co-parent invite and sent confirmation, (3) two invitation email variants, (4) profile picker and parent password / child PIN, (5) wrong PIN / locked / parent unlock notification, (6) pair Kai's tablet by short code or QR, tablet code entry, device list and remove, (7) co-parent approval for Kai and Aurora.
 - **Assets:** Planned `docs/design/assets/onboarding/onboarding-<screen>-<mobile|desktop>-<light|dark>.png`. **No screen export is included in this commit.** The previously supplied dashboard screenshot is not an onboarding mockup.

@@ -1,5 +1,46 @@
 # Shared-device screen direction — issue #153
 
+## Current status — reconciled October 28, 2026
+
+**In Design. Individual visual approvals do not complete #153 or authorize application implementation.**
+The approval entries below remain valid; their broad “still needs design” sentences
+are historical snapshots, superseded by this current status and the
+[state audit, coverage/reuse matrix, transitions, email contracts and review ledger](shared-device-state-audit-153.md).
+
+Approved directions include mobile-light setup/picker/PIN/pause/lock/expiry, desktop
+picker/parent PIN/child lock, mobile-light parent recovery and the four notification
+emails. Dark desktop **picker, parent PIN entry, parent pause and child lock are
+already approved**; do not redraw or list these as wholly outstanding.
+
+The owner approved the [dark desktop parent recovery and device-expiry board](assets/parent-pin-recovery-dark-desktop-issue-153.png)
+on October 28, 2026, after the actual image was shown in this conversation
+(“Okay this works add it to the docs”). It covers request/check-email/sign-in and
+device-expiry panels. The new-PIN form and saved result remain outside this board’s approval. The
+[static state supplement](reviews/issue-153/states.html) supplies proposed core,
+edge, device and picker states in both themes. All new supplements and explicit
+reuse proposals need review. Source inspection is recorded separately from live verification.
+
+Branding correction: the exact approved icon export **is available** (see the
+October 20 export in `assets/APPROVED_ASSET_MANIFEST.md` and email Brand README).
+The verified exact wordmark/lockups remain unavailable; existing horizontal SVGs
+are recorded defective. New supplements use the unchanged exact icon and an
+asset-pending annotation. Original approved boards retain their approximate logos
+as historical evidence; final branded derivatives remain outstanding. Do not redraw,
+trace or crop a substitute logo from them or the original branding board.
+
+Working notification templates remain implementation work: reuse the existing
+C# `EmailContent`/`EmailTemplate`/MIME pipeline. A recovered standalone HTML/text ZIP
+contains placeholders, is not integrated and has no email-client test evidence.
+The audit lists exact recipients, subject/preheader proposals, content/action contracts
+and remaining security, delivery and rendering tests.
+
+Outstanding gates: review new states and reuse, complete exact wordmark artwork,
+approve superseding ADR/security policy details and paired-child entry choice,
+accept complete handoff, then scope implementation issues with AC/testing. Keep #153
+open; do not mark Ready For Development from concept approval. No merge/deployment.
+
+## Historical approval record
+
 [Picker and setup reference](assets/shared-device-picker-issue-153.png) · [PIN and device reference](assets/shared-device-pin-recovery-issue-153.jpeg) · [Desktop picker and PIN reference](assets/shared-device-desktop-issue-153.png) · [Issue #153](https://github.com/esaldivar/parenthesis/issues/153)
 
 The owner approved the visual direction in both four-screen boards: shared-device setup, picker, child PIN entry and pause; parent PIN entry and pause, child PIN lock, and expired shared-device entry. These are visual references, not proof of implementation or approval of the entire handoff. Their generated logos approximate the approved artwork: use the exact approved brand artwork per BRANDING.md; never extract or recreate the mockup logo for production. Reconcile screens with the existing design system and issue decisions. Use synthetic data for development and tests. PIN reset and recovery flows, desktop, dark mode, emails and other states remain to be designed and reviewed. Child personal-device design is deferred.
@@ -17,3 +58,5 @@ The owner approved the [dark desktop parent PIN screen](assets/parent-pin-dark-d
 Owner approved the [dark desktop parent PIN pause](assets/parent-pin-pause-dark-desktop-issue-153.png). It shows the ten-minute wait, reset, and email notice. Add verified branding in the final header. Only show email-sent confirmation if delivery was successfully initiated; account for delivery failure. Verify accessibility and security in implementation.
 
 Owner approved the [dark desktop child PIN lock screen](assets/child-pin-lock-dark-desktop-issue-153.png). The child is directed to ask a parent and can return to profiles. Add verified branding in the final header. Either authorized parent may reset the PIN; the agreed notification and security rules in #153 still apply.
+
+Owner approved the [dark desktop parent recovery and device-expiry visual direction](assets/parent-pin-recovery-dark-desktop-issue-153.png) on October 28, 2026. This is the unchanged recovered image reviewed in the conversation. It does not approve the new state supplements or complete #153. Exact branding placement, the new-PIN form/result, recovery edge cases and implementation verification remain outstanding.
