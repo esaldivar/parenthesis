@@ -59,7 +59,7 @@ Alerts show the monitor name, URL, status (down/up), reason (such as `503` or ti
   email addresses or anything from the database.
 - Only monitor `/health/*` URLs. Never monitor a page that shows family data or needs a sign-in.
 - **The Discord webhook URL is a secret.** Anyone with it can post in the channel. Never commit it, paste it in an
-  issue, PR, chat or screenshot, or store it anywhere except UptimeRobot.
+  issue, PR, chat or screenshot, or store it anywhere except UptimeRobot and the approved GitHub Actions secret.
 
 ## Setup (owner, once)
 
@@ -101,3 +101,39 @@ The real monitor stays as it is. Use a throwaway monitor against a path that's a
 2. Check the Container App's revisions and logs, and Application Insights if it's wired up
    ([Azure environments](azure-environments.md)).
 3. A recovery alert usually follows on its own after a deploy or a short Azure blip. If not, follow the Azure runbook.
+
+## Daily Discord summary (#114)
+
+The owner added repository secrets `UPTIMEROBOT_API_KEY` and `DISCORD_WEBHOOK_URL` on October 28, 2026.
+Their presence and live delivery still need verification in Actions; no secret values belong in this runbook.
+
+`.github/workflows/daily-health-report.yml` reads **monitor 804458679** for
+`https://dev.parenthesisfamily.com/health/ready` using UptimeRobot's read-only
+[v2 getMonitors API](https://uptimerobot.com/api/legacy/). It does not call the app, edit monitors, change the check
+interval, or change the existing down/up Discord integration. A monitor-specific read-only API key is sufficient.
+
+- Schedule: **8:00 AM America/Chicago**, using GitHub's native
+  [timezone-aware schedule](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onschedule).
+  DST is automatic (13:00 UTC in summer, 14:00 UTC in winter). GitHub may delay or drop scheduled runs during load;
+  this is a daily summary, not an exact-time delivery guarantee.
+- Scheduled execution starts only when the workflow reaches the default branch, `main`. Follow the normal release
+  route; merging into `release/0.3.0` or `develop` alone does not activate it.
+- After promotion, open **Actions → Daily Discord health report → Run workflow**, select `main`, and run it once.
+  Each manual run intentionally posts a fresh summary. Check that the run succeeds and the message arrives in the
+  channel belonging to `DISCORD_WEBHOOK_URL`; separately confirm existing outage/recovery alerts still work.
+- Content: current monitor status; returned trailing 1/7/30-day uptime ratios; mean of valid returned response-time
+  samples from the trailing 24 hours, including sample count; and the configured interval when returned.
+  Windows are rolling periods ending at retrieval, not the previous calendar day. Missing/invalid metrics are
+  omitted, not replaced with zero. No incident counts, percentiles, database timings, CPU, memory or billing data
+  are invented. Sparse monitor samples do not prove continuous health between checks.
+- No paid service, extra application requests, or dependency installation is introduced. The workflow uses a short
+  GitHub-hosted runner job; existing GitHub Actions billing/account limits still apply.
+- API errors, a missing/mismatched monitor, missing secrets, or a failed Discord request fail the run. Errors exclude
+  response bodies and secret URLs. Discord delivery uses `wait=true`; webhook POSTs are not automatically retried,
+  because an ambiguous failure may already have delivered the message. Inspect the channel before rerunning.
+- Disable only this summary in Actions → Daily Discord health report → Disable workflow. Outage alerts keep running.
+  Keep webhook values only in approved secret storage. If the webhook was exposed, replace it in Discord and update
+  the GitHub secret (and UptimeRobot too if it used that same webhook).
+
+Local regression check: `node --test .github/scripts/daily-health-report.test.mjs` (no network or secrets).
+CI runs the same tests on PRs. Live credentials and channel receipt cannot be certified by synthetic tests.
