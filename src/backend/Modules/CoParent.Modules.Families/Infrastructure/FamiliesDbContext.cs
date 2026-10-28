@@ -29,6 +29,8 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<ParentCredential> ParentCredentials => Set<ParentCredential>();
 
+    public DbSet<ParentPinResetToken> ParentPinResetTokens => Set<ParentPinResetToken>();
+
     public DbSet<DevicePairingCode> PairingCodes => Set<DevicePairingCode>();
 
     // Read per query, so each request's filters use its own tenant.
@@ -100,6 +102,16 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             credential.HasOne<FamilyMembership>().WithMany().HasForeignKey(c => c.MembershipId);
             credential.HasIndex(c => c.MembershipId).IsUnique();
             credential.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ParentPinResetToken>(token =>
+        {
+            token.ToTable("parent_pin_reset_tokens");
+            token.Property(t => t.TokenHash).HasMaxLength(32);
+            token.HasOne<FamilyMembership>().WithMany().HasForeignKey(t => t.MembershipId);
+            token.HasIndex(t => t.TokenHash).IsUnique();
+            token.HasIndex(t => new { t.MembershipId, t.CreatedAt });
+            token.HasQueryFilter(TenantContext.QueryFilterName, t => t.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<ChildCredential>(credential =>

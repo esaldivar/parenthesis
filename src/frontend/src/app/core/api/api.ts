@@ -442,6 +442,15 @@ export class Api {
   /** The parent who set up this shared device enters their profile with their six-digit PIN. */
   parentPinSignIn = (membershipId: string, pin: string) =>
     this.call(this.http.post<void>('/api/device/parent-session', { membershipId, pin }));
+  /** "Forgot your PIN?": emails the device's parent a single-use, 15-minute reset link (at most one per 15 minutes). */
+  requestParentPinReset = (membershipId: string) =>
+    this.call(this.http.post<{ notified: boolean }>('/api/device/parent-pin-reset', { membershipId }));
+  /** Checks a reset link without using it up. */
+  checkParentPinReset = (familyId: string, token: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/parent-pin/reset/check`, { token }));
+  /** Uses a reset link: the signed-in parent it was sent to confirms their password and chooses a new PIN. */
+  redeemParentPinReset = (familyId: string, token: string, currentPassword: string, pin: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/parent-pin/reset`, { token, currentPassword, pin }));
   /** Ends whoever is signed in here and keeps the shared device's picker. */
   switchProfile = () => this.call(this.http.post<void>('/api/device/switch', {}));
   pairDevice = (code: string, deviceName: string) =>

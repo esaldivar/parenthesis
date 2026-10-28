@@ -59,11 +59,13 @@ describe('shared-device setup (#153)', () => {
   it('“No” registers nothing and continues to where the parent was heading', async () => {
     const { harness, auth, router } = await open();
     const setUp = vi.spyOn(auth, 'setUpSharedDevice');
+    const decline = vi.spyOn(auth, 'declineSharedSetup');
 
     click('No, continue to my account');
     await settle(harness);
 
     expect(setUp).not.toHaveBeenCalled();
+    expect(decline).toHaveBeenCalled();
     expect(router.url).toBe('/calendar');
   });
 

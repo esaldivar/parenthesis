@@ -70,12 +70,49 @@ export class AuthStore {
       this.loadFamilies().catch(() => [] as readonly FamilySummary[]),
       this.loadDevice().catch(() => null),
     ]);
-    return families.length > 0 && !(device?.deviceKind === 'Household' && device.isYours);
+    return families.length > 0 && !(device?.deviceKind === 'Household' && device.isYours) && !this.declinedSharedSetup();
+  }
+
+  /**
+   * "No, continue to my account": remembered in this browser for this parent only, so a personal device doesn't ask
+   * again at every sign-in (owner decision, October 28, 2026). Not a security setting: Settings still offers setup.
+   */
+  declineSharedSetup(): void {
+    const key = this.declinedKey();
+    try {
+      if (key) {
+        localStorage.setItem(key, '1');
+      }
+    } catch {
+      // Storage unavailable (private mode): the question is simply asked again next time.
+    }
+  }
+
+  private declinedSharedSetup(): boolean {
+    const key = this.declinedKey();
+    try {
+      return key !== null && localStorage.getItem(key) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private declinedKey(): string | null {
+    const id = this.user()?.id;
+    return id ? `parenthesis.sharedDevice.declined:${id}` : null;
   }
 
   /** "Yes, this is a shared family device." The parent stays signed in: no second password prompt (#153). */
   async setUpSharedDevice(familyId: string, name: string, pin: string | null): Promise<void> {
     await this.api.setUpSharedDevice(familyId, name, pin);
+    const key = this.declinedKey();
+    try {
+      if (key) {
+        localStorage.removeItem(key);
+      }
+    } catch {
+      // Nothing to clear.
+    }
     await this.api.antiforgery();
     await this.loadDevice();
   }

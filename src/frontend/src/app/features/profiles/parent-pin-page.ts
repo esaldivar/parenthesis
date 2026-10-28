@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
+import { Api } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Avatar } from '../../shared/avatar/avatar';
@@ -89,10 +90,19 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
       </form>
     }
 
+    <div class="reset">
+      @if (resetMessage(); as message) {
+        <p role="status">{{ message }}</p>
+      }
+      <button mat-stroked-button type="button" [disabled]="resetBusy()" (click)="requestReset()">
+        {{ resetBusy() ? 'Sending…' : 'Forgot your PIN? Email me a reset link' }}
+      </button>
+    </div>
+
     <div class="links">
       <a routerLink="/profiles" [replaceUrl]="true">Back to profiles</a>
       <a [routerLink]="['/profiles', 'parent', id(), 'password']">
-        {{ state() ? 'Sign in with your password' : 'Forgot your PIN? Use your password' }}
+        Sign in with your password
       </a>
     </div>
   `,
@@ -110,6 +120,17 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
       .lead {
         text-align: center;
       }
+      .reset {
+        display: grid;
+        gap: var(--space-2);
+        margin-top: var(--space-4);
+      }
+      .reset p {
+        margin: 0;
+      }
+      .reset button {
+        min-height: var(--target-min);
+      }
       .status__title {
         font-weight: 600;
       }
@@ -124,6 +145,7 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
 })
 export class ParentPinPage {
   private readonly auth = inject(AuthStore);
+  private readonly api = inject(Api);
   private readonly router = inject(Router);
 
   /** The parent's membership id, from the route. */
@@ -153,6 +175,34 @@ export class ParentPinPage {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
   private readonly formDirective = viewChild(FormGroupDirective);
+
+  protected readonly resetBusy = signal(false);
+  protected readonly resetMessage = signal<string | null>(null);
+
+  /** Emails this parent a single-use, 15-minute reset link. Only says it was sent when the mail server accepted it. */
+  protected async requestReset(): Promise<void> {
+    this.resetBusy.set(true);
+    this.resetMessage.set(null);
+    try {
+      const { notified } = await this.api.requestParentPinReset(this.id());
+      this.resetMessage.set(
+        notified
+          ? 'We’ve emailed you a reset link. It works once, for 15 minutes, and you’ll sign in with your password first.'
+          : 'We couldn’t send the email right now. You can sign in with your password and choose a new PIN in Settings.',
+      );
+    } catch (error) {
+      const problem = toProblem(error);
+      this.resetMessage.set(
+        problem.status === 429
+          ? 'We sent you a reset link recently. Check your email, or ask again in a few minutes.'
+          : problem.status === 403
+            ? 'Sign in with your email and password, then choose a new PIN in Settings.'
+            : generalMessage(problem),
+      );
+    } finally {
+      this.resetBusy.set(false);
+    }
+  }
 
   protected tryAgain(): void {
     this.answer.set(null);

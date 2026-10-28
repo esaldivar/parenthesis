@@ -1,5 +1,5 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -225,6 +225,49 @@ describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #
     });
   });
 
+  describe('a parent PIN reset link request', () => {
+    it('says the link was emailed only when it was', async () => {
+      const { body, harness } = await open('/profiles/parent/dad');
+      const http = TestBed.inject(HttpTestingController);
+      const button = () => [...body.querySelectorAll<HTMLButtonElement>('main button')].find((b) => b.textContent!.includes('Email me a reset link'))!;
+
+      button().click();
+      const request = await vi.waitFor(() => http.expectOne('/api/device/parent-pin-reset'));
+      expect(request.request.body).toEqual({ membershipId: 'dad' });
+      request.flush({ notified: true }, { status: 202, statusText: 'Accepted' });
+      await settle(harness);
+      expect(body.querySelector('.reset [role="status"]')!.textContent).toContain('We’ve emailed you a reset link. It works once, for 15 minutes');
+
+      button().click();
+      (await vi.waitFor(() => http.expectOne('/api/device/parent-pin-reset'))).flush(
+        { title: 'We sent a reset link recently.' },
+        { status: 429, statusText: 'Too Many Requests' },
+      );
+      await settle(harness);
+      expect(body.querySelector('.reset [role="status"]')!.textContent).toContain('We sent you a reset link recently');
+
+      button().click();
+      (await vi.waitFor(() => http.expectOne('/api/device/parent-pin-reset'))).flush({ notified: false }, { status: 202, statusText: 'Accepted' });
+      await settle(harness);
+      expect(body.querySelector('.reset [role="status"]')!.textContent).toContain('We couldn’t send the email right now.');
+    });
+  });
+
+  describe('a child’s own tablet', () => {
+    it('goes straight to the child’s PIN, with no way back to a picker', async () => {
+      const paired: DeviceProfiles = {
+        familyName: 'Rivera Family',
+        deviceKind: 'ChildPaired',
+        profiles: [{ kind: 'child', id: 'kai', name: 'Kai', canSignIn: true, locked: false }],
+      };
+      const { body, router } = await open('/profiles', fakeAuth({ signedIn: false, device: paired }));
+
+      expect(router.url).toBe('/profiles/child/kai');
+      expect(body.querySelector('h1')!.textContent).toBe('Hi, Kai');
+      expect(body.querySelector('a[href="/profiles"]')).toBeNull();
+    });
+  });
+
   describe('a parent using their password from the picker', () => {
     it('signs the parent in with their email and password', async () => {
       const { harness, body, auth, router } = await open('/profiles/parent/dad/password');
@@ -335,7 +378,7 @@ describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #
   });
 
   describe('pairing a child’s tablet', () => {
-    it('redeems the code and opens the child’s picker', async () => {
+    it('redeems the code and opens the child’s PIN straight away', async () => {
       const { harness, auth, router } = await open('/pair', fakeAuth({ signedIn: false }));
       const pair = vi.spyOn(auth, 'pairDevice');
 
@@ -344,7 +387,7 @@ describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #
       await submit(harness);
 
       expect(pair).toHaveBeenCalledWith('abcd-2345', 'Kai’s tablet');
-      expect(router.url).toBe('/profiles');
+      expect(router.url).toBe('/profiles/child/kai');
     });
 
     it('explains an expired or used code', async () => {

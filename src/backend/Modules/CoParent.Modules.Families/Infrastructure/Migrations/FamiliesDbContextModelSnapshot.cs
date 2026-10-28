@@ -444,6 +444,52 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.ToTable("parent_credentials", "families");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ParentPinResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<byte[]>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("token_hash");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_parent_pin_reset_tokens");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_parent_pin_reset_tokens_token_hash");
+
+                    b.HasIndex("MembershipId", "CreatedAt")
+                        .HasDatabaseName("ix_parent_pin_reset_tokens_membership_id_created_at");
+
+                    b.ToTable("parent_pin_reset_tokens", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.ChildCredential", b =>
                 {
                     b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
@@ -517,6 +563,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_parent_credentials_memberships_membership_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ParentPinResetToken", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.FamilyMembership", null)
+                        .WithMany()
+                        .HasForeignKey("MembershipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_parent_pin_reset_tokens_memberships_membership_id");
                 });
 #pragma warning restore 612, 618
         }

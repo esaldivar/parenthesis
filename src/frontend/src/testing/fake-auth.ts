@@ -52,6 +52,7 @@ export function fakeAuth(
     },
     // Whether sign-in asks "Is this a shared family device?". No by default; a test turns it on.
     shouldOfferSharedSetup: async () => false,
+    declineSharedSetup: () => undefined,
     setUpSharedDevice: async () => {
       device.set({
         familyName: 'Rivera Family',

@@ -3,7 +3,7 @@
 ## Implementation status — October 28, 2026 (supersedes "no app implementation" below)
 
 After PR #332 merged, the owner labelled #153 for Claude implementation and asked for the approved, fully specified
-parts to be built. Branch `claude/parenthesis-shared-device-flow-8hp9sf` (from `release/0.3.0`) implements the
+parts to be built. Branch `feat/153-shared-device-flow` (from `release/0.3.0`) implements the
 October 28 owner decisions; [ADR-0007](../adr/0007-shared-devices-and-parent-pins.md) records them as **Proposed**
 until the owner accepts the PR. What is done, verified and still open:
 
@@ -24,9 +24,10 @@ until the owner accepts the PR. What is done, verified and still open:
   build, and a headless Chromium walkthrough at 320px light and 1280px dark
   ([screenshots](reviews/issue-153/implementation-2026-10-28/README.md)). Not verified: real screen readers, physical
   devices, email clients, live dev site.
-- **Blocked on owner decisions (not invented):** the short-lived single-use parent PIN reset link (lifetime/resend
-  policy unapproved; emails link to Settings meanwhile, where password sign-in plus password confirmation resets the
-  PIN); direct-to-PIN versus tile for an already paired child tablet (existing single tile kept).
+- **Owner decisions in the PR conversation (October 28, 2026), implemented:** parent PIN reset link single-use and
+  valid 15 minutes, at most one parent-requested link per 15 minutes, still needing the parent's own password sign-in
+  and confirmation (`/parent-pin/reset`); a paired child tablet opens straight to the PIN; "No" to shared setup is
+  remembered per browser and parent; older devices expire 30 days after registration.
 - **Still pending review:** the R/P/E/D state supplements, explicit reuse proposals, final branded derivatives.
 
 ## Current status — reconciled October 28, 2026

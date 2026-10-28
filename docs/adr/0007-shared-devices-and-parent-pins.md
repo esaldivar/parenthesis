@@ -1,12 +1,16 @@
 # ADR-0007: Explicit shared family devices, parent PINs and two-stage PIN lockout
 
 - **Status:** Proposed (2026-10-28). It records the owner's #153 decisions of October 28, 2026 as implemented on
-  `claude/parenthesis-shared-device-flow-8hp9sf`. The owner accepts or changes it in that PR's review.
+  `feat/153-shared-device-flow` (PR #336). The owner accepts or changes it in that PR's review.
 - **Date:** 2026-10-28
 - **Supersedes (once accepted):** parts of [ADR-0006](0006-profiles-pins-and-child-devices.md): automatic household
   registration, the password-only parent tile, the immediate three-strike child lock, one-tap unlock, and co-parent
   approval for a child PIN reset. ADR-0006 stays accepted for everything else: child sessions, paired child tablets,
   PINs only on registered devices, both parents approving a new child, invitations and the private diary.
+- **Owner decisions added in the PR conversation (October 28, 2026):** reset link valid 15 minutes with at most one
+  parent-requested link per 15 minutes; a child's paired tablet goes straight to the PIN; a parent's "No" to the
+  shared-device question is remembered in that browser; devices registered before this change expire 30 days after
+  their registration.
 - **Source:** [issue #153](https://github.com/esaldivar/parenthesis/issues/153) body ("Owner-approved shared-device and
   PIN decisions — October 28, 2026") and its owner comments; [design audit](../design/shared-device-state-audit-153.md).
 
@@ -20,7 +24,8 @@ rules below are server-side; hiding things in the app is never the boundary.
 
 ### Shared family devices are explicit and time-limited
 - Signing in never registers a device. After a password sign-in, a parent with a family is asked **"Is this a shared
-  family device?"**. *No* continues privately. *Yes* registers the browser for the parent's family, creates their
+  family device?"**. *No* continues privately, and is remembered in that browser for that parent only (local storage,
+  not a security setting), so a personal device doesn't ask again; Settings still offers setup. *Yes* registers the browser for the parent's family, creates their
   six-digit parent PIN if they have none, and binds their current session to the device: no second password prompt.
 - A shared device's picker lasts a **fixed 30 days from setup**. Activity never extends it. After that, a parent signs
   in with email and password and sets the device up again.
@@ -38,6 +43,7 @@ rules below are server-side; hiding things in the app is never the boundary.
   parent membership of that user; otherwise the session ends. The claim survives Identity's security-stamp refresh.
 - Switching to a child replaces the parent's session cookie on the server, so browser Back can't restore parent
   access. Returning to the parent needs their PIN or password.
+- A child's own paired tablet opens straight to that child's PIN; it never shows a picker of other profiles.
 
 ### PINs: parents and children share one retry policy
 - **Child PIN:** 4–6 digits, set by the parent who first enables sign-in. **Either authorized parent resets it at once**
@@ -53,6 +59,16 @@ rules below are server-side; hiding things in the app is never the boundary.
 - Other profiles stay available while one PIN is paused or locked. A parent's account and password sign-in are never
   locked by the PIN policy.
 
+### Parent PIN reset link
+- Each parent pause or lock email carries a fresh **single-use reset link valid for 15 minutes**; the parent can ask for
+  one more from their PIN screen at most **once every 15 minutes** (any link issued in that window counts). A new
+  link replaces older unused ones. Tokens are 256-bit random values stored only as SHA-256 hashes.
+- The link alone grants nothing: the parent it was sent to must be signed in with email and password and confirm the
+  password before a new PIN is saved. Only a successful save uses the link. Expired, used and unknown links get the
+  same answer; another parent is only told to use the account the link was sent to. The page moves the token out of
+  the address bar at once (kept for that tab only).
+- A parent can also always reset their PIN in Settings after password sign-in and password confirmation.
+
 ### Notifications reuse the existing email pipeline
 `EmailContent` → `EmailTemplate.Render` (HTML + plain text, approved icon inline by CID) → `IEmailSender`, with links
 from the configured `App:PublicBaseUrl`. Four messages, one recipient each, no PINs or tokens, no names in subjects:
@@ -63,15 +79,12 @@ from the configured `App:PublicBaseUrl`. Four messages, one recipient each, no P
 | Parent PIN locked | that parent | Your parent PIN is locked |
 | Child PIN locked (not the first pause) | each currently active parent | A child's PIN is locked |
 | Child PIN reset | the other active parent(s) | A child's PIN was reset |
+| Reset link the parent asked for | that parent | Reset your parent PIN |
 
 Emails go out only at those transitions, so one lock cycle sends at most two parent emails. The API reports
 `notified: true` only when the mail server accepted the message; the app never claims an email was sent otherwise.
 
-## Not decided here (blocked on the owner)
-- **Short-lived, single-use parent PIN reset link.** The owner requires one, but its lifetime and resend policy aren't
-  approved yet (the design audit forbids inventing them). Until then, the pause and lock emails link to Settings and a
-  parent resets their PIN after password sign-in plus password confirmation.
-- Already paired child tablets: direct-to-PIN versus a single tile. The existing single-child picker is kept.
+## Still deferred
 - Child personal-device sign-in, photo upload, QR pairing and in-app/push alerts stay deferred.
 
 ## Consequences
@@ -88,4 +101,5 @@ Emails go out only at those transitions, so one lock cycle sends at most two par
 |---|---|
 | `devices` | `expires_at` (shared devices: setup + 30 days; null for paired tablets). Existing household devices backfilled. |
 | `child_credentials` | `paused_until`, `check_count`, `xmin` concurrency token. `locked_at` now means "reset required". |
+| `parent_pin_reset_tokens` | New: `membership_id` (FK), `family_id`, `token_hash` (unique), `created_at`, `expires_at`, `used_at`. |
 | `parent_credentials` | New: `membership_id` (unique, FK), `family_id`, `pin_hash`, `failed_attempts`, `paused_until`, `locked_at`, `updated_at`, `check_count`, `xmin`. |

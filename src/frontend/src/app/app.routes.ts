@@ -41,6 +41,10 @@ export const routes: Routes = [
   authPage('profiles/child/:id', 'Enter your PIN', () => import('./features/profiles/child-pin-page').then((m) => m.ChildPinPage), [
     pickerAvailable,
   ]),
+  // From the parent PIN reset email (#153). Works signed in or out; the page asks the right parent to sign in.
+  authPage('parent-pin/reset', 'Choose a new parent PIN', () =>
+    import('./features/profiles/parent-pin-reset-page').then((m) => m.ParentPinResetPage),
+  ),
   // On a child's own tablet: redeem a parent's one-time code (A-11).
   authPage('pair', 'Set up a child’s tablet', () => import('./features/profiles/pair-device-page').then((m) => m.PairDevicePage), [signedOut]),
   authPage('welcome', 'Set up your family', () => import('./features/onboarding/welcome-page').then((m) => m.WelcomePage), [

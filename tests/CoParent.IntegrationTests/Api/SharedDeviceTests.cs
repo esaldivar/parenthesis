@@ -366,22 +366,124 @@ public sealed class SharedDeviceTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Pin_emails_use_the_configured_public_address_and_never_contain_a_token()
+    public async Task The_pause_email_carries_a_single_use_reset_link_on_the_configured_address()
     {
         var family = await FamilyAsync();
         using var _ = family;
+        await PauseDadsPinAsync(family);
+
+        var link = family.Dad.Emails.LatestLink(family.DadEmail, "parent PIN is paused");
+
+        Assert.Equal($"{ApiFactory.PublicBaseUrl}/parent-pin/reset", link.GetLeftPart(UriPartial.Path));
+        Assert.False(string.IsNullOrEmpty(ResetToken(link)));
+        Assert.DoesNotContain(DadsPin, link.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_reset_link_needs_the_right_parent_signed_in_with_their_password_and_works_once()
+    {
+        var family = await FamilyAsync();
+        using var _ = family;
+        await PauseDadsPinAsync(family);
+        var token = ResetToken(family.Dad.Emails.LatestLink(family.DadEmail, "parent PIN is paused"));
+        var reset = $"/api/families/{family.FamilyId}/parent-pin/reset";
+
+        // The other parent can't use it, and an anonymous visitor isn't even in the family.
+        var asMom = await family.Mom.PostAsync(reset, new { token, currentPassword = ApiSession.Password, pin = "604918" });
+        Assert.Equal(HttpStatusCode.Forbidden, asMom.StatusCode);
+        Assert.Contains("Use the parent account this reset link was sent to", await asMom.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+
+        await family.Dad.LoginAsync(family.DadEmail);
+        var check = await family.Dad.PostAsync($"{reset}/check", new { token });
+        var badPassword = await family.Dad.PostAsync(reset, new { token, currentPassword = "not my password", pin = "604918" });
+        var saved = await family.Dad.PostAsync(reset, new { token, currentPassword = ApiSession.Password, pin = "604918" });
+        var reused = await family.Dad.PostAsync(reset, new { token, currentPassword = ApiSession.Password, pin = "720531" });
+
+        Assert.Equal(HttpStatusCode.NoContent, check.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badPassword.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, saved.StatusCode);
+        Assert.Equal(HttpStatusCode.Gone, reused.StatusCode);
+
+        // The pause is cleared and only the new PIN works.
+        await SwitchAsync(family.Dad);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await ParentPinAsync(family.Dad, family, DadsPin)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await ParentPinAsync(family.Dad, family, "604918")).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_reset_link_expires_after_15_minutes()
+    {
+        var family = await FamilyAsync();
+        using var _ = family;
+        await PauseDadsPinAsync(family);
+        var token = ResetToken(family.Dad.Emails.LatestLink(family.DadEmail, "parent PIN is paused"));
+        await family.Dad.LoginAsync(family.DadEmail);
+
+        api.Clock.Advance(TimeSpan.FromMinutes(15));
+
+        var response = await family.Dad.PostAsync(
+            $"/api/families/{family.FamilyId}/parent-pin/reset", new { token, currentPassword = ApiSession.Password, pin = "604918" });
+        Assert.Equal(HttpStatusCode.Gone, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_parent_can_ask_for_one_reset_link_every_15_minutes_and_a_new_link_replaces_the_old()
+    {
+        var family = await FamilyAsync();
+        using var _ = family;
+        await SwitchAsync(family.Dad);
+        var request = new { membershipId = family.DadMembershipId };
+
+        var first = await family.Dad.PostAsync("/api/device/parent-pin-reset", request);
+        var tooSoon = await family.Dad.PostAsync("/api/device/parent-pin-reset", request);
+        var firstToken = ResetToken(family.Dad.Emails.LatestLink(family.DadEmail, "Reset your parent PIN"));
+        api.Clock.Advance(TimeSpan.FromMinutes(15));
+        var later = await family.Dad.PostAsync("/api/device/parent-pin-reset", request);
+        var secondToken = ResetToken(family.Dad.Emails.LatestLink(family.DadEmail, "Reset your parent PIN"));
+
+        Assert.Equal(HttpStatusCode.Accepted, first.StatusCode);
+        Assert.True((await JsonAsync(first)).GetProperty("notified").GetBoolean());
+        Assert.Equal(HttpStatusCode.TooManyRequests, tooSoon.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, later.StatusCode);
+        Assert.NotEqual(firstToken, secondToken);
+        Assert.Equal(2, family.Dad.Emails.SentTo(family.DadEmail).Count(m => m.Subject == "Reset your parent PIN"));
+        Assert.DoesNotContain(family.Dad.Emails.SentTo(family.MomEmail), m => m.Subject.Contains("parent PIN", StringComparison.Ordinal));
+
+        await family.Dad.LoginAsync(family.DadEmail);
+        var reset = $"/api/families/{family.FamilyId}/parent-pin/reset/check";
+        Assert.Equal(HttpStatusCode.Gone, (await family.Dad.PostAsync(reset, new { token = firstToken })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await family.Dad.PostAsync(reset, new { token = secondToken })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Only_the_parent_who_set_up_the_device_can_ask_for_a_reset_link_there()
+    {
+        var family = await FamilyAsync();
+        using var _ = family;
+        using var stranger = await ApiSession.StartAsync(api);
+        var momsMembership = await MembershipIdAsync(family.Mom, family.FamilyId);
+        await SwitchAsync(family.Dad);
+
+        var asMom = await family.Dad.PostAsync("/api/device/parent-pin-reset", new { membershipId = momsMembership });
+        var elsewhere = await stranger.PostAsync("/api/device/parent-pin-reset", new { membershipId = family.DadMembershipId });
+
+        Assert.Equal(HttpStatusCode.Forbidden, asMom.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, elsewhere.StatusCode);
+        Assert.DoesNotContain(family.Dad.Emails.SentTo(family.MomEmail), m => m.Subject.Contains("parent PIN", StringComparison.Ordinal));
+    }
+
+    // --- helpers -----------------------------------------------------------------------------------------------
+
+    private static async Task PauseDadsPinAsync(TestFamily family)
+    {
         await SwitchAsync(family.Dad);
         foreach (var pin in new[] { "111222", "111223", "111224" })
         {
             await ParentPinAsync(family.Dad, family, pin);
         }
-
-        var link = family.Dad.Emails.LatestLink(family.DadEmail, "parent PIN is paused");
-
-        Assert.Equal(new Uri($"{ApiFactory.PublicBaseUrl}/settings"), link);
     }
 
-    // --- helpers -----------------------------------------------------------------------------------------------
+    private static string ResetToken(Uri link) => QueryHelpers.ParseQuery(link.Query)["token"].ToString();
 
     private static async Task SwitchAsync(ApiSession session)
     {

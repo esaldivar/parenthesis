@@ -151,6 +151,7 @@ export class SharedDeviceSetupPage implements OnInit {
   }
 
   protected async continuePrivately(): Promise<void> {
+    this.auth.declineSharedSetup();
     await this.router.navigateByUrl(safeReturnUrl(this.returnUrl()), { replaceUrl: true });
   }
 

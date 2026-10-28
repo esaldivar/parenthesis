@@ -82,7 +82,9 @@ export const PIN_PATTERN = /^\d{4,6}$/;
     }
 
     <div class="links">
-      <a routerLink="/profiles" [replaceUrl]="true">Back to profiles</a>
+      @if (!pairedTablet()) {
+        <a routerLink="/profiles" [replaceUrl]="true">Back to profiles</a>
+      }
     </div>
   `,
   styles: [
@@ -119,6 +121,8 @@ export class ChildPinPage {
 
   private readonly tile = computed(() => this.auth.device()?.profiles.find((p) => p.kind === 'child' && p.id === this.id()));
   protected readonly name = computed(() => this.tile()?.name ?? 'there');
+  /** A child's own tablet opens straight to this page, so there are no other profiles to go back to. */
+  protected readonly pairedTablet = computed(() => this.auth.device()?.deviceKind === 'ChildPaired');
   private readonly answer = signal<{ state: 'paused' | 'locked'; retryAt?: string; notified?: boolean } | null>(null);
   /** Set by "Try again": show the form again. Only the server decides whether the break is over. */
   private readonly retrying = signal(false);

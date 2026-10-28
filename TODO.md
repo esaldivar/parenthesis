@@ -6,7 +6,7 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
-- [ ] **Shared-device flow #153 (design PR #332; implementation branch `claude/parenthesis-shared-device-flow-8hp9sf`,
+- [ ] **Shared-device flow #153 (design PR #332; implementation branch `feat/153-shared-device-flow`,
   October 28, 2026).** Preserve every recorded visual approval (incl. the dark desktop recovery board, the four email
   concepts and the approved dark desktop states); unapproved supplements stay pending. Details:
   `docs/design/shared-device-state-audit-153.md` and [ADR-0007](docs/adr/0007-shared-devices-and-parent-pins.md).
@@ -21,9 +21,10 @@ that points back here.
     PIN entry/pause/lock, child pause/lock, picker failure and expired/revoked state, parent PIN settings, device list
     expiry, child PIN reset, Switch profile and Sign out.
   - [ ] Owner review and acceptance of ADR-0007 (proposed) and of the implementation PR.
-  - [ ] **Blocked on owner:** short-lived single-use parent PIN reset link (lifetime and resend policy not approved).
-    Until then the pause/lock emails link to Settings: password sign-in, then password confirmation to set a new PIN.
-  - [ ] **Blocked on owner:** already paired child tablet: direct-to-PIN versus the existing single tile (kept as is).
+  - [x] Owner decisions (October 28, 2026, PR conversation), implemented: single-use parent PIN reset link valid 15
+    minutes, at most one parent-requested link per 15 minutes, still needing password sign-in and confirmation;
+    paired child tablet opens straight to the PIN; "No" to shared setup remembered per browser and parent; devices
+    registered before the change expire 30 days after registration.
   - [ ] Pending design review: new state supplements (R/P/E/D in `reviews/issue-153/states.html`), explicit
     mobile-dark/desktop-light reuse, parent lock, initial parent PIN form, notification-failure variants. The
     implemented screens follow the existing design system and are not claimed to match unapproved supplements.

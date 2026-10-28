@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ProfileTile } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -141,9 +141,16 @@ export class ProfilePickerPage implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly loadFailed = signal(false);
   protected readonly loading = signal(false);
+  private readonly router = inject(Router);
 
   async ngOnInit(): Promise<void> {
     await this.load();
+    // A child's own tablet has one profile: go straight to its PIN (owner decision, October 28, 2026).
+    const device = this.auth.device();
+    const only = device?.deviceKind === 'ChildPaired' && device.profiles.length === 1 ? device.profiles[0] : null;
+    if (!this.loadFailed() && only?.kind === 'child' && only.canSignIn) {
+      await this.router.navigate(['/profiles', 'child', only.id], { replaceUrl: true });
+    }
   }
 
   /** Refresh, so the picker reflects current permissions and PIN states. On failure, show nothing stale. */

@@ -1,6 +1,6 @@
 # #153 implementation screenshots — October 28, 2026
 
-Headless Chromium screenshots of the implementation branch `claude/parenthesis-shared-device-flow-8hp9sf`, driven
+Headless Chromium screenshots of the implementation branch `feat/153-shared-device-flow`, driven
 through the real Angular app against a local API and PostgreSQL. Synthetic data only (Dad, Kai, Rivera Family).
 No SMTP server was running, so every notice correctly says the email **couldn't** be sent.
 
