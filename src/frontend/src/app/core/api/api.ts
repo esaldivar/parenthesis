@@ -56,14 +56,18 @@ export interface Child {
   readonly status: ChildStatus;
   /** Set when the child was just added: the approval request the co-parent answers. */
   readonly changeRequestId: string | null;
-  /** Whether the child has a PIN, is locked after three wrong tries, or has a new PIN waiting for approval. */
+  /** Whether the child has a PIN, and whether it is paused or locked after wrong tries (#153). */
   readonly signIn: ChildSignIn;
 }
 
 export interface ChildSignIn {
   readonly enabled: boolean;
+  /** Needs a parent to choose a new PIN. */
   readonly locked: boolean;
+  /** Only for a PIN change requested before #153 made resets immediate. */
   readonly pinChangePending: boolean;
+  /** Set while three wrong PINs have paused it; it reopens on its own at this time. */
+  readonly pausedUntil?: string | null;
 }
 
 export type ChangeRequestType =
@@ -104,20 +108,36 @@ export interface Device {
   readonly childProfileId: string | null;
   readonly createdAt: string;
   readonly lastSeenAt: string;
+  /** A shared device's picker stops working at this fixed time (30 days from setup); null for a child's own tablet. */
+  readonly expiresAt?: string | null;
 }
 
 export interface ProfileTile {
   readonly kind: 'parent' | 'child';
+  /** A parent's family membership id, or a child's id. */
   readonly id: string;
   readonly name: string;
+  /** A child has a PIN; a parent has a parent PIN (otherwise they use their password). */
   readonly canSignIn: boolean;
+  /** The PIN needs resetting. */
   readonly locked: boolean;
+  /** Set while the PIN is paused after three wrong tries. */
+  readonly pausedUntil?: string | null;
 }
 
 export interface DeviceProfiles {
   readonly familyName: string;
   readonly deviceKind: DeviceKind;
   readonly profiles: readonly ProfileTile[];
+  /** True when the signed-in parent is the one who set up this shared device. */
+  readonly isYours?: boolean;
+}
+
+/** The signed-in parent's own six-digit PIN for shared devices (#153). */
+export interface ParentPinStatus {
+  readonly isSet: boolean;
+  readonly locked: boolean;
+  readonly pausedUntil: string | null;
 }
 
 export interface ChildSession {
@@ -395,19 +415,22 @@ export class Api {
     this.call(this.http.post<void>(`/api/families/${familyId}/approvals/${requestId}/withdraw`, {}));
 
   // A child's sign-in (ADR-0006). The first PIN applies at once; changing one returns 202 and waits for approval.
+  /** Sets a child's first PIN, or resets it at once (clearing any pause or lock); the other parent is told (#153). */
   setChildPin = (familyId: string, childId: string, pin: string) =>
-    this.call(this.http.put<{ changeRequestId: string } | null>(`/api/families/${familyId}/children/${childId}/pin`, { pin }));
+    this.call(this.http.put<void>(`/api/families/${familyId}/children/${childId}/pin`, { pin }));
   disableChildSignIn = (familyId: string, childId: string) =>
     this.call(this.http.delete<void>(`/api/families/${familyId}/children/${childId}/pin`));
-  unlockChild = (familyId: string, childId: string) =>
-    this.call(this.http.post<void>(`/api/families/${familyId}/children/${childId}/unlock`, {}));
   pairingCode = (familyId: string, childId: string) =>
     this.call(this.http.post<{ code: string; expiresAt: string }>(`/api/families/${familyId}/children/${childId}/pairing-code`, {}));
 
   // Devices.
   devices = (familyId: string) => this.call(this.http.get<Device[]>(`/api/families/${familyId}/devices`));
-  registerHouseholdDevice = (familyId: string, name: string) =>
-    this.call(this.http.post<Device>(`/api/families/${familyId}/devices/household`, { name }));
+  /** "Yes, this is a shared family device": registers it for 30 days, creating the parent PIN when there's none yet. */
+  setUpSharedDevice = (familyId: string, name: string, pin: string | null) =>
+    this.call(this.http.post<Device>(`/api/families/${familyId}/devices/household`, { name, pin }));
+  parentPinStatus = (familyId: string) => this.call(this.http.get<ParentPinStatus>(`/api/families/${familyId}/parent-pin`));
+  setParentPin = (familyId: string, currentPassword: string, pin: string) =>
+    this.call(this.http.put<void>(`/api/families/${familyId}/parent-pin`, { currentPassword, pin }));
   removeDevice = (familyId: string, deviceId: string) =>
     this.call(this.http.delete<void>(`/api/families/${familyId}/devices/${deviceId}`));
 
@@ -416,6 +439,11 @@ export class Api {
   deviceProfiles = () => this.call(this.http.get<DeviceProfiles>('/api/device/profiles'));
   childSignIn = (childId: string, pin: string) =>
     this.call(this.http.post<void>('/api/device/child-session', { childId, pin }));
+  /** The parent who set up this shared device enters their profile with their six-digit PIN. */
+  parentPinSignIn = (membershipId: string, pin: string) =>
+    this.call(this.http.post<void>('/api/device/parent-session', { membershipId, pin }));
+  /** Ends whoever is signed in here and keeps the shared device's picker. */
+  switchProfile = () => this.call(this.http.post<void>('/api/device/switch', {}));
   pairDevice = (code: string, deviceName: string) =>
     this.call(this.http.post<{ childId: string; childFirstName: string }>('/api/device/pair', { code, deviceName }));
   childSession = () => this.call(this.http.get<ChildSession>('/api/session/child'));

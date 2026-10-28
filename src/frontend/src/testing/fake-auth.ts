@@ -41,6 +41,25 @@ export function fakeAuth(
       child.set({ childId, firstName: 'Kai', familyId: 'family-1' });
       fake.status.set('child');
     },
+    parentPinSignIn: async () => {
+      user.set({ id: 'user-1', email: 'alex@example.test', displayName: 'Alex Rivera' });
+      fake.status.set('signed-in');
+    },
+    switchProfile: async () => {
+      user.set(null);
+      child.set(null);
+      fake.status.set('anonymous');
+    },
+    // Whether sign-in asks "Is this a shared family device?". No by default; a test turns it on.
+    shouldOfferSharedSetup: async () => false,
+    setUpSharedDevice: async () => {
+      device.set({
+        familyName: 'Rivera Family',
+        deviceKind: 'Household',
+        isYours: true,
+        profiles: [{ kind: 'parent', id: 'm1', name: 'Alex', canSignIn: true, locked: false }],
+      });
+    },
     pairDevice: async () => {
       device.set({
         familyName: 'Rivera Family',

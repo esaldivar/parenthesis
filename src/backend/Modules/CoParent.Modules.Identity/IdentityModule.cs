@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Identity.Contracts;
@@ -46,6 +47,19 @@ public static class IdentityModule
         services.AddScoped<AccountEmails>();
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<IAccountRemoval, AccountRemoval>();
+        services.AddScoped<IParentSessions, ParentSessions>();
+
+        // Identity rebuilds the principal when it re-checks the security stamp; keep the shared-device binding (#153).
+        services.Configure<SecurityStampValidatorOptions>(options => options.OnRefreshingPrincipal = context =>
+        {
+            if (context.CurrentPrincipal?.FindFirst(SharedDeviceClaims.DeviceId) is { } device
+                && context.NewPrincipal?.Identity is ClaimsIdentity identity)
+            {
+                identity.AddClaim(new Claim(SharedDeviceClaims.DeviceId, device.Value));
+            }
+
+            return Task.CompletedTask;
+        });
 
         services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
         services.ConfigureApplicationCookie(options =>
@@ -64,12 +78,21 @@ public static class IdentityModule
 
             // Child sessions (ADR-0006) have no user account, so the security-stamp check doesn't apply. They're
             // re-checked on every request instead: an archived child, disabled access or a removed device ends them
-            // at once. Parent sessions keep Identity's own validation.
+            // at once. Parent sessions keep Identity's own validation; one started on a shared device is also checked
+            // against that device on every request, so revocation, expiry or lost family access end it at once (#153).
             var validateParent = options.Events.OnValidatePrincipal;
             options.Events.OnValidatePrincipal = async context =>
             {
                 if (context.Principal?.GetChildSession() is not { } child)
                 {
+                    if (context.Principal?.FindFirst(SharedDeviceClaims.DeviceId)?.Value is { } boundDevice
+                        && !await IsSharedDeviceSessionValidAsync(context.HttpContext, context.Principal, boundDevice))
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                        return;
+                    }
+
                     await validateParent(context);
                     return;
                 }
@@ -106,6 +129,17 @@ public static class IdentityModule
     {
         AuthEndpoints.Map(api);
         return api;
+    }
+
+    private static async Task<bool> IsSharedDeviceSessionValidAsync(HttpContext http, ClaimsPrincipal principal, string boundDevice)
+    {
+        if (!Guid.TryParse(boundDevice, out var deviceId) || principal.GetUserId() is not { } userId)
+        {
+            return false;
+        }
+
+        var devices = http.RequestServices.GetRequiredService<ISharedDeviceSessions>();
+        return await devices.IsParentSessionValidAsync(deviceId, userId, http.RequestAborted);
     }
 
     private static Task SetStatus(HttpResponse response, int statusCode)

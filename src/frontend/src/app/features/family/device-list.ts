@@ -1,45 +1,37 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { RouterLink } from '@angular/router';
 import { Api, Child, Device } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Toasts } from '../../shared/toast/toasts';
 
 /**
- * The family's devices (ADR-0006): household devices that show the profile picker, and children's paired tablets.
- * Either parent can remove any device at once; anyone signed in on it is signed out on its next request.
+ * The family's devices (ADR-0006, #153): shared family devices that show the profile picker for a fixed 30 days, and
+ * children's paired tablets. Either parent can remove any device at once: every parent and child session on it ends
+ * on its next request, and its picker is gone until a parent signs in there and sets it up again. A removal is only
+ * reported once the server confirms it.
  */
 @Component({
   selector: 'app-device-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [DatePipe, RouterLink, MatButtonModule],
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
     }
 
-    @if (!auth.device()) {
-      <form class="panel" [formGroup]="form" (ngSubmit)="register()" novalidate>
+    @if (!(auth.device()?.deviceKind === 'Household' && auth.device()?.isYours)) {
+      <div class="panel">
         <p>
-          Use this device for “Who’s using Parenthesis?”, so your children can sign in here with their PIN. You’ll
-          still need your password to get back into your profile.
+          Is this a shared family device, like a kitchen tablet? Set it up so your family can choose their profile here.
+          It lasts 30 days. Don’t do this on a public or borrowed device.
         </p>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Name this device</mat-label>
-          <input matInput formControlName="name" autocomplete="off" maxlength="60" required />
-          <mat-hint>Like “Kitchen iPad” or “Dad’s phone”</mat-hint>
-          @if (form.controls.name.hasError('required') || form.controls.name.hasError('pattern')) {
-            <mat-error>Give this device a name.</mat-error>
-          }
-        </mat-form-field>
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">Use this device</button>
+          <a mat-stroked-button routerLink="/shared-device/setup" [queryParams]="{ returnUrl: '/settings' }">Set up this device for sharing</a>
         </div>
-      </form>
+      </div>
     }
 
     @if (devices(); as devices) {
@@ -52,10 +44,16 @@ import { Toasts } from '../../shared/toast/toasts';
               <div>
                 <p class="device__name">{{ device.name }}</p>
                 <p class="muted">{{ kind(device) }} · Last used {{ device.lastSeenAt | date: 'mediumDate' }}</p>
+                @if (device.expiresAt) {
+                  <p class="muted">Sharing ends {{ device.expiresAt | date: 'mediumDate' }}</p>
+                }
               </div>
               @if (confirming() === device.id) {
                 <div class="panel">
-                  <p>Remove {{ device.name }}? Anyone using it is signed out, and it stops showing your family’s profiles.</p>
+                  <p>
+                    Remove {{ device.name }}? Everyone using it is signed out at once, and it stops showing your family’s
+                    profiles until a parent signs in there and sets it up again.
+                  </p>
                   <div class="actions">
                     <button mat-flat-button type="button" [disabled]="busy()" (click)="remove(device)">Remove device</button>
                     <button mat-button type="button" (click)="confirming.set(null)">Cancel</button>
@@ -118,9 +116,6 @@ import { Toasts } from '../../shared/toast/toasts';
       border: 1px solid var(--color-surface-soft);
       border-radius: var(--radius-control);
     }
-    mat-form-field {
-      width: 100%;
-    }
     .muted {
       color: var(--color-text-secondary);
     }
@@ -144,9 +139,6 @@ export class DeviceList implements OnInit {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
   private readonly toasts = inject(Toasts);
-  protected readonly form = inject(NonNullableFormBuilder).group({
-    name: ['', [Validators.required, Validators.maxLength(60), Validators.pattern(/\S/)]],
-  });
 
   async ngOnInit(): Promise<void> {
     await this.reload();
@@ -154,23 +146,10 @@ export class DeviceList implements OnInit {
 
   protected kind(device: Device): string {
     if (device.kind === 'Household') {
-      return 'Shows the profile picker';
+      return 'Shared family device';
     }
     const child = this.children().find((c) => c.id === device.childProfileId);
     return child ? `${child.firstName}’s own device` : 'A child’s own device';
-  }
-
-  protected async register(): Promise<void> {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-    await this.run(async () => {
-      const device = await this.api.registerHouseholdDevice(this.familyId(), this.form.getRawValue().name.trim());
-      await this.auth.loadDevice();
-      this.form.reset();
-      this.toasts.show(`${device.name} now shows “Who’s using Parenthesis?” when nobody is signed in.`);
-    });
   }
 
   protected async remove(device: Device): Promise<void> {
@@ -191,7 +170,7 @@ export class DeviceList implements OnInit {
       await this.reload();
     } catch (error) {
       const problem = toProblem(error);
-      this.error.set(problem.errors['name']?.join(' ') ?? generalMessage(problem));
+      this.error.set(generalMessage(problem));
     } finally {
       this.busy.set(false);
     }

@@ -5,13 +5,14 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { AppearancePicker } from '../../shared/appearance-picker/appearance-picker';
 import { ChildrenAccess } from '../family/children-access';
 import { DeviceList } from '../family/device-list';
+import { ParentPinSettings } from '../family/parent-pin-settings';
 import { InviteCoParent } from '../family/invite-co-parent';
 import { DeleteAccount } from './delete-account';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, DeleteAccount],
+  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, ParentPinSettings, DeleteAccount],
   template: `
     <h1>Settings</h1>
     <section class="card">
@@ -39,6 +40,11 @@ import { DeleteAccount } from './delete-account';
         <section class="card" aria-labelledby="children-heading">
           <h2 id="children-heading">Children</h2>
           <app-children-access [familyId]="current.id" />
+        </section>
+
+        <section class="card" aria-labelledby="parent-pin-heading">
+          <h2 id="parent-pin-heading">Your parent PIN</h2>
+          <app-parent-pin-settings [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="devices-heading">

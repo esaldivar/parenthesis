@@ -84,7 +84,14 @@ export class SignInPage {
     try {
       const { email, password } = this.form.getRawValue();
       await this.auth.signIn(email.trim(), password);
-      await this.router.navigateByUrl(this.safeReturnUrl());
+      const target = this.safeReturnUrl();
+      // "Is this a shared family device?" is asked only after a fresh password sign-in, never answered for the parent
+      // (#153). An invited co-parent answers their invitation first.
+      if (!this.pending.peek() && (await this.auth.shouldOfferSharedSetup())) {
+        await this.router.navigate(['/shared-device/setup'], { queryParams: target === '/' ? {} : { returnUrl: target } });
+      } else {
+        await this.router.navigateByUrl(target);
+      }
     } catch (error) {
       const problem = toProblem(error);
       // The API gives one answer for every failed sign-in, so the page doesn't guess at the reason.

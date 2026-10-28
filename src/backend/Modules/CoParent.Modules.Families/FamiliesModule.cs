@@ -5,6 +5,7 @@ using CoParent.Modules.Families.Contracts;
 using CoParent.Modules.Families.Domain;
 using CoParent.Modules.Families.Endpoints;
 using CoParent.Modules.Families.Infrastructure;
+using CoParent.Modules.Identity.Contracts;
 using CoParent.SharedKernel.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -25,11 +26,20 @@ public static class FamiliesModule
         services.AddScoped<IApprovalParticipants, FamilyParticipants>();
         services.AddScoped<IFamilyRoster, FamilyRoster>();
         services.AddScoped<IChildSessionValidator, ChildSessionValidator>();
-        services.AddScoped<ChildSafetyEmails>();
+        services.AddScoped<PinSafetyEmails>();
+        services.AddScoped<SharedDevices>();
+        services.AddScoped<ISharedDeviceSessions>(sp => sp.GetRequiredService<SharedDevices>());
         services.AddScoped<AccountDeletionEmails>();
         services.AddSingleton<IPasswordHasher<ChildCredential>, PasswordHasher<ChildCredential>>();
+        services.AddSingleton<IPasswordHasher<ParentCredential>, PasswordHasher<ParentCredential>>();
 
-        // PIN attempts per address, on top of the 3-strikes lock per child.
+        // Changing a parent PIN checks the account password; the sign-in lockout applies too.
+        services.Configure<RateLimiterOptions>(options => options.AddPolicy(SharedDeviceEndpoints.PinChangeRateLimitPolicy, context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                context.User.GetUserId()?.ToString() ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromHours(1) })));
+
+        // PIN attempts per address, on top of each PIN's own pause-then-lock policy.
         services.Configure<RateLimiterOptions>(options => options.AddPolicy(ChildAccessEndpoints.PinRateLimitPolicy, context =>
             RateLimitPartition.GetFixedWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -57,6 +67,7 @@ public static class FamiliesModule
         InvitationEndpoints.Map(api, family);
         ChildEndpoints.Map(family);
         ChildAccessEndpoints.Map(api, family);
+        SharedDeviceEndpoints.Map(api, family);
         AccountDeletionEndpoints.Map(api);
         return api;
     }

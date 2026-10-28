@@ -1,6 +1,16 @@
 # Shared-device state audit and review specification — #153
 
 October 28, 2026. **Draft for owner review; not implementation authorization.**
+
+> **Implementation update (October 28, 2026, later):** the owner then labelled #153 for Claude implementation. The
+> server rules, four runtime emails and the screens listed in the
+> [handoff's implementation status](shared-device-issue-153.md#implementation-status--october-28-2026-supersedes-no-app-implementation-below)
+> are built on `claude/parenthesis-shared-device-flow-8hp9sf`, with [ADR-0007](../adr/0007-shared-devices-and-parent-pins.md)
+> proposed. Routes as built: `/shared-device/setup`, `/profiles/parent/:id` (parent PIN),
+> `/profiles/parent/:id/password`; APIs `POST /api/families/{id}/devices/household` (setup),
+> `GET|PUT /api/families/{id}/parent-pin`, `POST /api/device/parent-session`, `POST /api/device/switch`. The proposed
+> `/parent-pin/reset` token route is **not** built: its link lifetime and resend policy still need the owner. The
+> source-audit gaps below are historical where this update says they are now implemented.
 Source: issue #153 and all 16 comments, PR #332, approved boards, ADR-0006,
 the October 17 handoff and source at design head `b1c8a72`.
 Compared the relevant auth/profile/email files with release/0.3.0 `1f7986e`:

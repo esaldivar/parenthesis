@@ -28,9 +28,9 @@ interface Panel {
 }
 
 /**
- * Children's sign-in, for parents (ADR-0006): set a first PIN, propose a new one (the co-parent approves it), unlock
- * after three wrong tries, turn sign-in off, and pair a child's own tablet. Unlocking and turning sign-in off are
- * protective, so they apply at once without approval.
+ * Children's sign-in, for parents (ADR-0006, #153): set a first PIN, reset it (at once, by either parent, which also
+ * clears a pause or lock; the other parent is emailed without the PIN), turn sign-in off, and pair a child's own
+ * tablet. A locked PIN can only be cleared by choosing a new one.
  */
 @Component({
   selector: 'app-children-access',
@@ -58,14 +58,9 @@ interface Panel {
 
               @if (child.status === 'Active') {
                 <div class="child__actions">
-                  @if (child.signIn.locked) {
-                    <button mat-flat-button type="button" [disabled]="busy()" (click)="unlock(child)">Unlock</button>
-                  }
-                  @if (!child.signIn.pinChangePending) {
-                    <button mat-stroked-button type="button" (click)="open(child, 'pin')">
-                      {{ child.signIn.enabled ? 'Change PIN' : 'Set a PIN' }}
-                    </button>
-                  }
+                  <button mat-stroked-button type="button" (click)="open(child, 'pin')">
+                    {{ child.signIn.enabled ? 'Reset PIN' : 'Set a PIN' }}
+                  </button>
                   @if (child.signIn.enabled) {
                     <button mat-stroked-button type="button" (click)="open(child, 'pair')">Pair a tablet</button>
                     <button mat-button type="button" (click)="open(child, 'disable')">Turn off sign-in</button>
@@ -76,7 +71,8 @@ interface Panel {
                   <form class="panel" [formGroup]="pinForm" (ngSubmit)="savePin(child)" novalidate>
                     <p class="muted">
                       @if (child.signIn.enabled) {
-                        Your co-parent approves a new PIN. {{ child.firstName }}’s current PIN keeps working until then.
+                        The new PIN works straight away and clears any pause or lock. We’ll let your co-parent know
+                        you reset it, without sharing the PIN.
                       } @else {
                         {{ child.firstName }} uses this PIN on your family’s devices.
                       }
@@ -104,7 +100,7 @@ interface Panel {
                     </mat-form-field>
                     <div class="panel__actions">
                       <button mat-flat-button type="submit" [disabled]="busy()">
-                        {{ child.signIn.enabled ? 'Ask your co-parent' : 'Save PIN' }}
+                        {{ child.signIn.enabled ? 'Reset PIN now' : 'Save PIN' }}
                       </button>
                       <button mat-button type="button" (click)="close()">Cancel</button>
                     </div>
@@ -285,10 +281,10 @@ export class ChildrenAccess implements OnInit {
       return 'Waiting for approval';
     }
     if (child.signIn.locked) {
-      return 'Locked after 3 wrong PINs';
+      return 'PIN locked after too many wrong tries: choose a new PIN';
     }
-    if (child.signIn.pinChangePending) {
-      return 'New PIN waiting for your co-parent’s approval';
+    if (child.signIn.pausedUntil && new Date(child.signIn.pausedUntil).getTime() > this.now()) {
+      return 'PIN paused for a few minutes after 3 wrong tries';
     }
     return child.signIn.enabled ? 'Signs in with a PIN' : 'No PIN yet, so can’t sign in';
   }
@@ -316,20 +312,11 @@ export class ChildrenAccess implements OnInit {
       return;
     }
     await this.run(async () => {
-      const proposed = await this.api.setChildPin(this.familyId(), child.id, this.pinForm.getRawValue().pin);
+      await this.api.setChildPin(this.familyId(), child.id, this.pinForm.getRawValue().pin);
       this.close();
       this.toasts.show(
-        proposed
-          ? `We’ve asked your co-parent to approve ${child.firstName}’s new PIN. The current PIN works until then.`
-          : `${child.firstName} can now sign in with their PIN.`,
+        child.signIn.enabled ? `${child.firstName}’s new PIN works now.` : `${child.firstName} can now sign in with their PIN.`,
       );
-    });
-  }
-
-  protected async unlock(child: Child): Promise<void> {
-    await this.run(async () => {
-      await this.api.unlockChild(this.familyId(), child.id);
-      this.toasts.show(`${child.firstName}’s profile is unlocked.`);
     });
   }
 

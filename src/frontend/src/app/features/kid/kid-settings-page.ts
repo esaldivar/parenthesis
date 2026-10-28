@@ -68,9 +68,10 @@ export class KidSettingsPage {
   private readonly router = inject(Router);
 
   /** Ends the child's session. Getting into a parent profile from here always takes that parent's password. */
+  /** Ends this session and keeps the device's picker; Back can't return to the child's pages (#153). */
   protected async switchProfile(): Promise<void> {
-    await this.auth.signOut();
-    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in');
+    await this.auth.switchProfile();
+    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
   }
 
   protected choose(event: MatRadioChange<KidPresentation>): void {

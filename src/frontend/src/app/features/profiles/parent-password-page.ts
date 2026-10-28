@@ -8,14 +8,20 @@ import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FORM_STYLES } from '../auth/form-styles';
 
-/** A parent tile always asks for that parent's full password, never a PIN (ADR-0006). */
+/**
+ * Password sign-in from the picker: for a parent without a parent PIN yet, and for recovering a forgotten, paused or
+ * locked PIN (#153). Then, like any password sign-in, the parent may be asked whether this is a shared device.
+ */
 @Component({
   selector: 'app-parent-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
   template: `
     <h1>Hi, {{ name() }}</h1>
-    <p class="lead">Enter your email and password to continue.</p>
+    <p class="lead">
+      Enter your email and password to continue. If you’ve forgotten your parent PIN, you can choose a new one in
+      Settings after you sign in.
+    </p>
 
     @if (error(); as error) {
       <div class="alert" role="alert">{{ error }}</div>
@@ -79,7 +85,11 @@ export class ParentPasswordPage {
     try {
       const { email, password } = this.form.getRawValue();
       await this.auth.signIn(email.trim(), password);
-      await this.router.navigateByUrl('/');
+      if (await this.auth.shouldOfferSharedSetup()) {
+        await this.router.navigate(['/shared-device/setup'], { replaceUrl: true });
+      } else {
+        await this.router.navigateByUrl('/', { replaceUrl: true });
+      }
     } catch (error) {
       const problem = toProblem(error);
       this.error.set(

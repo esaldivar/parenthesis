@@ -24,11 +24,18 @@ export const routes: Routes = [
   authPage('invitations/accept', 'Join your co-parent’s family', () =>
     import('./features/invitations/accept-invitation-page').then((m) => m.AcceptInvitationPage),
   ),
-  // "Who's using Parenthesis?" on a registered device (ADR-0006).
+  // After a password sign-in: "Is this a shared family device?" (#153). Nothing is registered without a "Yes".
+  authPage('shared-device/setup', 'Is this a shared family device?', () =>
+    import('./features/profiles/shared-device-setup-page').then((m) => m.SharedDeviceSetupPage), [signedIn, hasFamily],
+  ),
+  // "Who's using Parenthesis?" on a registered device (ADR-0006, ADR-0007).
   authPage('profiles', 'Who’s using Parenthesis?', () => import('./features/profiles/profile-picker-page').then((m) => m.ProfilePickerPage), [
     pickerAvailable,
   ]),
-  authPage('profiles/parent/:id', 'Enter your password', () =>
+  authPage('profiles/parent/:id', 'Enter your parent PIN', () =>
+    import('./features/profiles/parent-pin-page').then((m) => m.ParentPinPage), [pickerAvailable],
+  ),
+  authPage('profiles/parent/:id/password', 'Enter your password', () =>
     import('./features/profiles/parent-password-page').then((m) => m.ParentPasswordPage), [pickerAvailable],
   ),
   authPage('profiles/child/:id', 'Enter your PIN', () => import('./features/profiles/child-pin-page').then((m) => m.ChildPinPage), [

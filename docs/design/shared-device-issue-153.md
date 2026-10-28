@@ -1,5 +1,34 @@
 # Shared-device screen direction — issue #153
 
+## Implementation status — October 28, 2026 (supersedes "no app implementation" below)
+
+After PR #332 merged, the owner labelled #153 for Claude implementation and asked for the approved, fully specified
+parts to be built. Branch `claude/parenthesis-shared-device-flow-8hp9sf` (from `release/0.3.0`) implements the
+October 28 owner decisions; [ADR-0007](../adr/0007-shared-devices-and-parent-pins.md) records them as **Proposed**
+until the owner accepts the PR. What is done, verified and still open:
+
+- **Implemented (server):** explicit opt-in shared device after password sign-in, fixed 30 days; picker limited to
+  the setting-up parent and approved children; six-digit parent PIN; shared 3 → 10-minute pause → 3 → reset-required
+  policy for parent and child PINs, counted server-side across devices with a concurrency token; immediate child PIN
+  reset by either parent with a PIN-free notice to the other; parent PIN change after password confirmation;
+  device-bound parent sessions ended by revocation, expiry or lost membership; Switch profile versus full sign-out.
+- **Implemented (emails):** the four approved notifications as runtime `EmailContent` through the existing
+  `EmailTemplate` HTML + plain-text + CID-icon pipeline, one recipient each, configured absolute links, no PINs or
+  tokens, no names in subjects. The API reports whether the mail server accepted each send; screens only say "we
+  emailed" when it did. The approved email board stays a visual reference.
+- **Implemented (screens):** setup question and PIN form, parent PIN entry/pause/lock, child pause/lock, picker
+  fetch failure and expired/revoked state, parent PIN settings, child PIN reset, device sharing end date, Switch
+  profile and Sign out. They use the existing design-system components and tokens and the unchanged approved icon
+  (`app-logo`); the exact wordmark stays pending. They are not claimed to match unapproved supplements.
+- **Verified:** backend integration tests (`SharedDeviceTests`, `ChildAccessTests`), Vitest specs, frontend lint and
+  build, and a headless Chromium walkthrough at 320px light and 1280px dark
+  ([screenshots](reviews/issue-153/implementation-2026-10-28/README.md)). Not verified: real screen readers, physical
+  devices, email clients, live dev site.
+- **Blocked on owner decisions (not invented):** the short-lived single-use parent PIN reset link (lifetime/resend
+  policy unapproved; emails link to Settings meanwhile, where password sign-in plus password confirmation resets the
+  PIN); direct-to-PIN versus tile for an already paired child tablet (existing single tile kept).
+- **Still pending review:** the R/P/E/D state supplements, explicit reuse proposals, final branded derivatives.
+
 ## Current status — reconciled October 28, 2026
 
 **In Design. Individual visual approvals do not complete #153 or authorize application implementation.**

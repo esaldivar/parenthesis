@@ -6,13 +6,35 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
-- [ ] **Shared-device design #153 / PR #332 (October 28, 2026).** Preserve individual concept approvals;
-  dark recovery board approved October 28; review new state supplements, explicit desktop/theme reuse, reset-link/error/
-  empty/pending/revocation/session states; complete exact wordmark exports and final brand placement.
-  See `docs/design/shared-device-state-audit-153.md`. Supersede ADR-0006 conflicts and scope implementation
-  follow-ups only after full handoff approval. Working email factories/links, client testing, accessibility and
-  runtime security verification remain. Broader child personal-device design, photos, QR, push/in-app and
-  child-home redesign stay deferred. #153 remains In Design; no app implementation, merge or deployment authorized.
+- [ ] **Shared-device flow #153 (design PR #332; implementation branch `claude/parenthesis-shared-device-flow-8hp9sf`,
+  October 28, 2026).** Preserve every recorded visual approval (incl. the dark desktop recovery board, the four email
+  concepts and the approved dark desktop states); unapproved supplements stay pending. Details:
+  `docs/design/shared-device-state-audit-153.md` and [ADR-0007](docs/adr/0007-shared-devices-and-parent-pins.md).
+  - [x] Server rules (implementation PR): explicit "Is this a shared family device?" setup after password sign-in;
+    fixed 30-day expiry; picker shows only the setting-up parent and approved children; six-digit parent PIN;
+    shared pause (3) → reset-required lock (3 more) for parent and child PINs, server-side and cross-device, race-safe;
+    immediate child PIN reset by either parent with a notice to the other; parent PIN change after password
+    confirmation; device-bound parent sessions ended by revocation, expiry or lost membership; switch profile versus
+    full sign-out; four PIN emails through the existing `EmailTemplate` pipeline, reporting real send results.
+    Backend integration tests and Vitest specs cover them.
+  - [x] App screens using the existing design system and the unchanged approved icon: setup question/PIN form, parent
+    PIN entry/pause/lock, child pause/lock, picker failure and expired/revoked state, parent PIN settings, device list
+    expiry, child PIN reset, Switch profile and Sign out.
+  - [ ] Owner review and acceptance of ADR-0007 (proposed) and of the implementation PR.
+  - [ ] **Blocked on owner:** short-lived single-use parent PIN reset link (lifetime and resend policy not approved).
+    Until then the pause/lock emails link to Settings: password sign-in, then password confirmation to set a new PIN.
+  - [ ] **Blocked on owner:** already paired child tablet: direct-to-PIN versus the existing single tile (kept as is).
+  - [ ] Pending design review: new state supplements (R/P/E/D in `reviews/issue-153/states.html`), explicit
+    mobile-dark/desktop-light reuse, parent lock, initial parent PIN form, notification-failure variants. The
+    implemented screens follow the existing design system and are not claimed to match unapproved supplements.
+  - [ ] Exact wordmark/lockup exports still unavailable: headers keep the approved icon plus the text wordmark
+    (`shared/brand/logo.ts`, `TODO(brand)`); emails keep the CID icon plus text wordmark.
+  - [ ] Email client testing (Gmail web/mobile, Outlook Windows/web, Apple Mail/iOS, both themes, images blocked) with
+    real test sends; retry/outbox delivery (F-09) instead of log-and-continue.
+  - [ ] Real screen reader, physical phones, 200% text/400% zoom, forced colors and reduced motion on the release
+    candidate; live dev-site walkthrough of every #153 verification scenario.
+  - [ ] Required PR CI, SonarCloud analysis and owner acceptance; #153 stays open until accepted. Deferred: child
+    personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
 - [ ] **Calendar event search (#253, October 28, 2026).** Search pill beside Today (magnifier, today's date in the
   family time zone); server search across history by title, event type, parent's parenting time and date; upcoming
   first, then a labelled Past events group, each paged. Parent-only endpoint; family-scoped `(family_id, ends_at)` index,

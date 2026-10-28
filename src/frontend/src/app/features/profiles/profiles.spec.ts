@@ -25,11 +25,21 @@ const lockedKai: DeviceProfiles = {
   profiles: PICKER.profiles.map((p) => (p.id === 'kai' ? { ...p, locked: true } : p)),
 };
 
+const pausedKai: DeviceProfiles = {
+  ...PICKER,
+  profiles: PICKER.profiles.map((p) => (p.id === 'kai' ? { ...p, pausedUntil: '2099-01-01T10:10:00Z' } : p)),
+};
+
+const dadWithoutPin: DeviceProfiles = {
+  ...PICKER,
+  profiles: PICKER.profiles.map((p) => (p.id === 'dad' ? { ...p, canSignIn: false } : p)),
+};
+
 function problem(status: number, body: object): HttpErrorResponse {
   return new HttpErrorResponse({ status, error: body });
 }
 
-describe('profile picker, parent password and child PIN (ADR-0006)', () => {
+describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #153)', () => {
   async function open(url: string, auth = fakeAuth({ signedIn: false, device: PICKER })) {
     TestBed.configureTestingModule({
       providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), auth],
@@ -71,10 +81,47 @@ describe('profile picker, parent password and child PIN (ADR-0006)', () => {
       expect(text(body)).toContain('A parent needs to set up a PIN first');
     });
 
-    it('marks a locked profile', async () => {
-      const { body } = await open('/profiles', fakeAuth({ signedIn: false, device: lockedKai }));
+    it('marks a locked or paused PIN', async () => {
+      const locked = await open('/profiles', fakeAuth({ signedIn: false, device: lockedKai }));
+      expect(locked.body.querySelector('.tiles a[href="/profiles/child/kai"]')!.textContent).toContain('PIN locked');
+      TestBed.resetTestingModule();
 
-      expect(body.querySelector('.tiles a[href="/profiles/child/kai"]')!.textContent).toContain('Locked');
+      const paused = await open('/profiles', fakeAuth({ signedIn: false, device: pausedKai }));
+      expect(paused.body.querySelector('.tiles a[href="/profiles/child/kai"]')!.textContent).toContain('PIN paused');
+    });
+
+    it('sends a parent without a parent PIN to password sign-in', async () => {
+      const { body } = await open('/profiles', fakeAuth({ signedIn: false, device: dadWithoutPin }));
+
+      expect(body.querySelector('.tiles a')!.getAttribute('href')).toBe('/profiles/parent/dad/password');
+    });
+
+    it('shows no earlier profiles when the picker can’t be loaded, and offers to try again', async () => {
+      const auth = fakeAuth({ signedIn: false, device: PICKER });
+      const store = auth.useValue as unknown as { loadDevice: () => Promise<unknown> };
+      store.loadDevice = () => Promise.reject(new HttpErrorResponse({ status: 0 }));
+
+      const { body } = await open('/profiles', auth);
+
+      expect(body.querySelector('.tiles')).toBeNull();
+      expect(text(body)).not.toContain('Kai');
+      expect(body.querySelector('[role="alert"]')!.textContent).toContain('We couldn’t load the profiles.');
+      expect(body.querySelector('main button')!.textContent).toContain('Try again');
+    });
+
+    it('explains a removed or expired device without showing its old profiles', async () => {
+      const auth = fakeAuth({ signedIn: false, device: PICKER });
+      const store = auth.useValue as unknown as { device: { set(v: null): void }; loadDevice: () => Promise<null> };
+      store.loadDevice = async () => {
+        store.device.set(null); // The server no longer recognises this device.
+        return null;
+      };
+
+      const { body } = await open('/profiles', auth);
+
+      expect(body.querySelector('.tiles')).toBeNull();
+      expect(text(body)).toContain('isn’t set up for sharing right now');
+      expect(text(body)).toContain('sign in with their email and password and set it up again');
     });
 
     it('has no automatically detectable accessibility issues', async () => {
@@ -116,8 +163,71 @@ describe('profile picker, parent password and child PIN (ADR-0006)', () => {
   });
 
   describe('a parent tile', () => {
-    it('asks for the full password and signs the parent in', async () => {
+    it('asks for the parent’s six-digit PIN and signs them in', async () => {
       const { harness, body, auth, router } = await open('/profiles/parent/dad');
+      const signIn = vi.spyOn(auth, 'parentPinSignIn');
+
+      expect(body.querySelector('h1')!.textContent).toBe('Hi, Dad');
+      expect(body.querySelector('label')!.textContent).toContain('Parent PIN');
+      type(harness, 'input[inputmode="numeric"]', '583920');
+      await submit(harness);
+
+      expect(signIn).toHaveBeenCalledWith('dad', '583920');
+      expect(router.url).toBe('/');
+    });
+
+    it('rejects anything but six digits without asking the server', async () => {
+      const { harness, body, auth } = await open('/profiles/parent/dad');
+      const signIn = vi.spyOn(auth, 'parentPinSignIn');
+
+      type(harness, 'input[inputmode="numeric"]', '2580');
+      await submit(harness);
+
+      expect(signIn).not.toHaveBeenCalled();
+      expect(text(body)).toContain('Your parent PIN is 6 numbers.');
+    });
+
+    it('shows the pause with its retry time, and only says an email was sent when it was', async () => {
+      const { harness, body, auth } = await open('/profiles/parent/dad');
+      vi.spyOn(auth, 'parentPinSignIn').mockRejectedValue(
+        problem(423, { title: 'Your parent PIN is paused.', state: 'paused', retryAt: '2099-01-01T10:10:00Z', notified: false }),
+      );
+
+      type(harness, 'input[inputmode="numeric"]', '111222');
+      await submit(harness);
+
+      expect(text(body)).toContain('Your parent PIN is paused.');
+      expect(text(body)).toContain('You can try again after');
+      expect(text(body)).toContain('We couldn’t send you an email about this right now.');
+      expect(text(body)).not.toContain('We’ve emailed you');
+      expect(body.querySelector('main form')).toBeNull();
+      expect(body.querySelector('a[href="/profiles/parent/dad/password"]')).not.toBeNull();
+    });
+
+    it('shows a locked parent PIN with password sign-in as the way back', async () => {
+      const { harness, body, auth } = await open('/profiles/parent/dad');
+      vi.spyOn(auth, 'parentPinSignIn').mockRejectedValue(
+        problem(423, { title: 'Your parent PIN is locked.', state: 'locked', notified: true }),
+      );
+
+      type(harness, 'input[inputmode="numeric"]', '111224');
+      await submit(harness);
+
+      expect(text(body)).toContain('Your parent PIN is locked.');
+      expect(text(body)).toContain('We’ve emailed you instructions.');
+      expect(text(body)).toContain('Your account isn’t locked');
+    });
+
+    it('has no automatically detectable accessibility issues', async () => {
+      const { body } = await open('/profiles/parent/dad');
+
+      expect(await axeViolations(body)).toEqual([]);
+    });
+  });
+
+  describe('a parent using their password from the picker', () => {
+    it('signs the parent in with their email and password', async () => {
+      const { harness, body, auth, router } = await open('/profiles/parent/dad/password');
       const signIn = vi.spyOn(auth, 'signIn');
 
       expect(body.querySelector('h1')!.textContent).toBe('Hi, Dad');
@@ -167,23 +277,54 @@ describe('profile picker, parent password and child PIN (ADR-0006)', () => {
       expect(body.querySelector('mat-error')).toBeNull();
     });
 
-    it('locks calmly after the third wrong PIN, saying the parents have been told', async () => {
+    it('takes a friendly break after three wrong PINs, without mentioning email', async () => {
       const { harness, body, auth } = await open('/profiles/child/kai');
-      vi.spyOn(auth, 'childSignIn').mockRejectedValue(problem(423, { title: 'Kai’s profile is locked.' }));
+      vi.spyOn(auth, 'childSignIn').mockRejectedValue(
+        problem(423, { title: 'Kai’s PIN is taking a short break.', state: 'paused', retryAt: '2099-01-01T10:10:00Z' }),
+      );
 
       type(harness, 'input[inputmode="numeric"]', '1359');
       await submit(harness);
 
-      expect(text(body)).toContain('Your profile is locked.');
-      expect(text(body)).toContain('We’ve let your parents know.');
+      expect(text(body)).toContain('Let’s take a short break.');
+      expect(text(body)).toContain('Ask a parent for help');
+      expect(text(body)).not.toContain('parents know');
       expect(body.querySelector('main form')).toBeNull();
     });
 
-    it('shows a profile that is already locked without asking for the PIN', async () => {
-      const { body } = await open('/profiles/child/kai', fakeAuth({ signedIn: false, device: lockedKai }));
+    it('locks calmly after more wrong PINs, saying the parents were told only when they were', async () => {
+      const { harness, body, auth } = await open('/profiles/child/kai');
+      const signIn = vi.spyOn(auth, 'childSignIn').mockRejectedValue(problem(423, { title: 'Kai’s PIN is locked.', state: 'locked', notified: true }));
 
-      expect(text(body)).toContain('Your profile is locked.');
+      type(harness, 'input[inputmode="numeric"]', '1359');
+      await submit(harness);
+
+      expect(text(body)).toContain('Your PIN is locked.');
+      expect(text(body)).toContain('We’ve let your parents know.');
       expect(body.querySelector('main form')).toBeNull();
+      expect(signIn).toHaveBeenCalledTimes(1);
+    });
+
+    it('doesn’t claim the parents were told when the email failed', async () => {
+      const { harness, body, auth } = await open('/profiles/child/kai');
+      vi.spyOn(auth, 'childSignIn').mockRejectedValue(problem(423, { title: 'Kai’s PIN is locked.', state: 'locked', notified: false }));
+
+      type(harness, 'input[inputmode="numeric"]', '1359');
+      await submit(harness);
+
+      expect(text(body)).toContain('Your PIN is locked.');
+      expect(text(body)).not.toContain('We’ve let your parents know.');
+    });
+
+    it('shows a PIN that is already locked or paused without asking for it', async () => {
+      const { body } = await open('/profiles/child/kai', fakeAuth({ signedIn: false, device: lockedKai }));
+      expect(text(body)).toContain('Your PIN is locked.');
+      expect(body.querySelector('main form')).toBeNull();
+      TestBed.resetTestingModule();
+
+      const paused = await open('/profiles/child/kai', fakeAuth({ signedIn: false, device: pausedKai }));
+      expect(text(paused.body)).toContain('Let’s take a short break.');
+      expect(paused.body.querySelector('main form')).toBeNull();
     });
 
     it('has no automatically detectable accessibility issues', async () => {
