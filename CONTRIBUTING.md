@@ -83,6 +83,9 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
 - Builds with zero warnings (warnings are errors).
 - New behaviour has unit and/or integration tests.
 - Architecture decisions are recorded as an ADR in `docs/adr/`.
+- An architecture change updates its diagrams and documentation in the **same PR**: the
+  [architecture at a glance](docs/architecture.md) and the
+  [solution architecture](docs/architecture/solution-architecture.md).
 - No secrets in the repo. Use `dotnet user-secrets` locally and Key Vault in Azure.
 - **Only synthetic data** in seeds, fixtures, screenshots and issues. Never real family or children's information.
 

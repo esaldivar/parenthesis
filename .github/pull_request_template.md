@@ -41,4 +41,5 @@ Refs #ISSUE
 - [ ] Accessibility: keyboard, labels, contrast (UI changes)
 - [ ] Only synthetic data in code, tests and screenshots
 - [ ] `TODO.md` updated for anything left unfinished or deferred
+- [ ] Architecture diagrams and docs updated in this PR (architecture changes; see `docs/architecture.md`)
 - [ ] Screenshots attached (UI changes)
