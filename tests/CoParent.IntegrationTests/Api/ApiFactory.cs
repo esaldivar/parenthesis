@@ -110,7 +110,8 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         builder.UseWebRoot(_webRoot);
         builder.UseSetting("ConnectionStrings:Postgres", _connectionString);
 
-        // Every test client shares one "IP"; rate limiting has its own test with a low limit.
+        // Each session has its own client address (TestClientAddress), but a test may sign in many times; login rate
+        // limiting has its own test with a low limit.
         builder.UseSetting("Identity:AuthRateLimit:PermitLimit", "10000");
         builder.UseSetting("App:PublicBaseUrl", PublicBaseUrl);
         builder.ConfigureServices(services =>
@@ -118,6 +119,7 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<FakeEmailSender>();
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+            services.AddSingleton<IStartupFilter, TestClientAddress>();
 
             // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
             // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
