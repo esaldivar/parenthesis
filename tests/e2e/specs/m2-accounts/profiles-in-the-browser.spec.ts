@@ -29,13 +29,17 @@ test.describe('Profiles, PINs and approvals in the browser', { tag: '@m2' }, () 
         await page.getByLabel('Choose your parent PIN').fill(DAD_PIN);
         await page.getByLabel('Type your parent PIN again').fill(DAD_PIN);
         await page.getByRole('button', { name: 'Set up sharing' }).click();
-        // Straight into the account: no second password prompt.
+        // Setup ends at the picker: the parent taps their own circle and enters the PIN they just chose.
+        await expect(page.getByRole('heading', { level: 1, name: 'Who’s using Parenthesis?' })).toBeVisible();
+        await expect(page.getByRole('link', { name: /Kai/ })).toBeVisible();
+        await page.getByRole('link', { name: /Dad/ }).click();
+        await page.getByLabel('Parent PIN').fill(DAD_PIN);
+        await page.getByRole('button', { name: 'Continue' }).click();
         await expect(page.getByRole('navigation').first()).toBeVisible();
       });
 
-      await test.step('switching profile shows who can use this device', async () => {
-        await page.getByRole('button', { name: 'Account menu' }).click();
-        await page.getByRole('menuitem', { name: 'Switch profile' }).click();
+      await test.step('the header’s Switch profile button shows who can use this device', async () => {
+        await page.getByRole('banner').getByRole('button', { name: 'Switch profile' }).click();
         await expect(page.getByRole('heading', { level: 1, name: 'Who’s using Parenthesis?' })).toBeVisible();
         await expect(page.getByRole('link', { name: /Dad/ })).toBeVisible();
       });
@@ -67,10 +71,25 @@ test.describe('Profiles, PINs and approvals in the browser', { tag: '@m2' }, () 
         await expect(page.getByRole('navigation').first()).toBeVisible();
       });
 
-      await test.step('back in, the parent can switch profile again without removing the device', async () => {
+      await test.step('signing out keeps the device shared and goes back to the picker', async () => {
         await page.getByRole('button', { name: 'Account menu' }).click();
-        await expect(page.getByRole('menuitem', { name: 'Switch profile' })).toBeVisible();
-        await page.keyboard.press('Escape');
+        await page.getByRole('menuitem', { name: 'Sign out' }).click();
+        await expect(page.getByRole('heading', { level: 1, name: 'Who’s using Parenthesis?' })).toBeVisible();
+      });
+
+      await test.step('Stop sharing this device in Settings ends sharing and returns to sign-in', async () => {
+        await page.getByRole('link', { name: /Dad/ }).click();
+        await page.getByLabel('Parent PIN').fill(DAD_PIN);
+        await page.getByRole('button', { name: 'Continue' }).click();
+        await expect(page.getByRole('navigation').first()).toBeVisible();
+        await page.goto('/settings');
+        const list = page.locator('app-device-list');
+        await expect(list).toContainText('Kitchen iPad (this device)');
+        await list.getByRole('button', { name: 'Stop sharing this device' }).click();
+        await list.getByRole('button', { name: 'Stop sharing', exact: true }).click();
+        await expect(page).toHaveURL(/\/sign-in/);
+        await page.goto('/profiles');
+        await expect(page).toHaveURL(/\/sign-in/);
       });
     } finally {
       await family.dispose();

@@ -34,12 +34,12 @@ internal sealed record RedeemParentPinReset(string? Token, string? CurrentPasswo
 /// Shared family devices and the parent's own PIN (#153, ADR-0007).
 /// <list type="bullet">
 /// <item>A parent explicitly sets up a shared device after signing in with their password; nothing is registered
-/// automatically. Setup creates their six-digit parent PIN if they have none and keeps them signed in: no second
-/// password prompt.</item>
+/// automatically. Setup creates their six-digit parent PIN if they have none; the app then shows the picker, where
+/// the parent enters the PIN they just chose.</item>
 /// <item>On that device the parent later enters their own profile with their PIN. Only the parent who set up the
 /// device can; the other parent signs in with their own email and password.</item>
-/// <item>Switching profile ends the current session but keeps the picker. Full sign-out (/api/auth/logout) also
-/// removes the device.</item>
+/// <item>Switching profile and signing out both end the current session and keep the picker. Removing the device
+/// ("Stop sharing this device" in Settings) ends sharing.</item>
 /// <item>A parent changes their own PIN after confirming their password, which also clears a pause or lock.</item>
 /// <item>A forgotten, paused or locked parent PIN can also be reset from a single-use, 15-minute email link, which
 /// still needs that parent's own sign-in and password (owner decision, October 28, 2026). Each pause or lock email

@@ -64,9 +64,9 @@ Notes:
 | A-03 | Lockout + rate limiting on auth endpoints | P0 | S |
 | A-04 | `/api/me` + Angular auth state (signals), guards, login/register pages | P0 | M |
 | A-05 | ~~Child account activation via one-time code~~ → replaced by A-08–A-11 (ADR-0006) | — | — |
-| A-08 | Household device registration plus "Who's using Parenthesis?" profile picker; a parent tile always needs the full password. *#153 / ADR-0007 (proposed): explicit opt-in shared device for 30 days; parent tile uses the parent's six-digit PIN* | P0 | M |
+| A-08 | Household device registration plus "Who's using Parenthesis?" profile picker; a parent tile always needs the full password. *#153 / ADR-0007: explicit opt-in shared device for 30 days; parent tile uses the parent's six-digit PIN* | P0 | M |
 | A-09 | Child PIN (4–6 digits, hashed). Works only on registered devices. Child session principal | P0 | M |
-| A-10 | PIN lockout after 3 tries; notify both parents; one-tap unlock by either parent (audited). *#153 / ADR-0007 (proposed): 3 tries → 10-minute pause, 3 more → reset required; either parent resets at once* | P0 | S |
+| A-10 | PIN lockout after 3 tries; notify both parents; one-tap unlock by either parent (audited). *#153 / ADR-0007: 3 tries → 10-minute pause, 3 more → reset required; either parent resets at once* | P0 | S |
 | A-11 | Child tablet pairing (10-minute one-time code or QR); device list with instant revoke | P0 | M |
 | A-06 | TOTP two-factor authentication for parents | P1 | M |
 | A-07 | Platform admin role + minimal admin endpoints (aggregates only) | P1 | S |

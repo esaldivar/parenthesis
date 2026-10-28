@@ -6,7 +6,7 @@ October 28, 2026. **Draft for owner review; not implementation authorization.**
 > server rules, four runtime emails and the screens listed in the
 > [handoff's implementation status](shared-device-issue-153.md#implementation-status--october-28-2026-supersedes-no-app-implementation-below)
 > are built on `feat/153-shared-device-flow`, with [ADR-0007](../adr/0007-shared-devices-and-parent-pins.md)
-> proposed. Routes as built: `/shared-device/setup`, `/profiles/parent/:id` (parent PIN),
+> accepted by the owner on October 28, 2026. Routes as built: `/shared-device/setup`, `/profiles/parent/:id` (parent PIN),
 > `/profiles/parent/:id/password`; APIs `POST /api/families/{id}/devices/household` (setup),
 > `GET|PUT /api/families/{id}/parent-pin`, `POST /api/device/parent-session`, `POST /api/device/switch`, and the
 > reset link `/parent-pin/reset` (`POST /api/device/parent-pin-reset`, `POST /api/families/{id}/parent-pin/reset[/check]`)
@@ -86,7 +86,7 @@ Proposed routes below are design contracts only and do not exist yet:
 | Setup save fails / offline | Stay in setup; “We couldn’t set up sharing. Try again.” Retry or Continue privately. Do not create partial trust or repeat initial password unnecessarily |
 | Returning shared device | Current signed-in profile stays active. With no active session and fresh eligibility → `/profiles` |
 | Switch profile | End current session server-side → refresh eligibility/antiforgery → `/profiles`; if ending session fails, clear protected view, offer retry, never show child content over live parent access |
-| Full sign-out | End session AND remove current picker eligibility → `/sign-in`; independently signed-in other parent starts their own setup/association |
+| Full sign-out | **Changed October 28, 2026 (owner, after testing):** Sign out ends the session and returns to the picker on a shared device; "Stop sharing this device" in Settings removes it → `/sign-in` (ADR-0007) |
 | Parent tile / child tile | Existing profile route → corresponding PIN → `/` or `/kid`; invalid input does not count as a server PIN attempt |
 | Parent Forgot PIN / lock reset | `/profiles/parent/:id/reset` (R1) → request pending → R2 only on accepted request; delivery failure uses neutral retry message, no false confirmation |
 | Valid parent reset email | `/parent-pin/reset` → validate token without consuming on GET → R3 own credentials → R4 → E4; consume once only on successful save |

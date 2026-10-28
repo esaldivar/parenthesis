@@ -20,11 +20,18 @@ that points back here.
   - [x] App screens using the existing design system and the unchanged approved icon: setup question/PIN form, parent
     PIN entry/pause/lock, child pause/lock, picker failure and expired/revoked state, parent PIN settings, device list
     expiry, child PIN reset, Switch profile and Sign out.
-  - [ ] Owner review and acceptance of ADR-0007 (proposed) and of the implementation PR.
+  - [x] ADR-0007 accepted by the owner (October 28, 2026), with the sign-out, takeover, PIN scope, lockout, reset-email
+    and expiry-reminder confirmations recorded; implementation released to `develop` in #338.
   - [x] Owner decisions (October 28, 2026, PR conversation), implemented: single-use parent PIN reset link valid 15
     minutes, at most one parent-requested link per 15 minutes, still needing password sign-in and confirmation;
     paired child tablet opens straight to the PIN; "No" to shared setup remembered per browser and parent; devices
     registered before the change expire 30 days after registration.
+  - [x] Owner fix after testing on `develop` (October 28, 2026): parents couldn't find the picker. Setup now ends at
+    the picker (enter the PIN just chosen), shared devices show a visible Switch profile button, Sign out keeps the
+    device and returns to the picker, and Settings offers "Stop sharing this device" for the browser in use.
+  - [x] Owner approved the Switch profile header button (labelled on every size, kept in the account menu too) and
+    the neutral "Stop sharing this device" confirmation, reusing existing components (October 28, 2026; boards in
+    `docs/design/reviews/issue-153/picker-fix-2026-10-28/`).
   - [ ] Pending design review: new state supplements (R/P/E/D in `reviews/issue-153/states.html`), explicit
     mobile-dark/desktop-light reuse, parent lock, initial parent PIN form, notification-failure variants. The
     implemented screens follow the existing design system and are not claimed to match unapproved supplements.
@@ -36,6 +43,10 @@ that points back here.
     candidate; live dev-site walkthrough of every #153 verification scenario.
   - [ ] Required PR CI, SonarCloud analysis and owner acceptance; #153 stays open until accepted. Deferred: child
     personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
+- [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
+  (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
+  classes on fixed 2026 dates before those pass: `CalendarTests`, `CalendarSearchTests`, `DateRuleTests`, `TaskTests`,
+  `TaskChecklistTests`, `ReminderTests`.
 - [ ] **Calendar event search (#253, October 28, 2026).** Search pill beside Today (magnifier, today's date in the
   family time zone); server search across history by title, event type, parent's parenting time and date; upcoming
   first, then a labelled Past events group, each paged. Parent-only endpoint; family-scoped `(family_id, ends_at)` index,
@@ -797,3 +808,7 @@ that points back here.
 - Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
 
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
+
+## Earlier Playwright feedback (#341)
+- [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
+- [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.

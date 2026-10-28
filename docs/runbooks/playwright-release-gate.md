@@ -1,34 +1,33 @@
 # Playwright release gate
 
 End-to-end tests that keep a release from breaking what already works (owner decision, October 18, 2026). They run
-only on milestone release PRs, `release/x.y.z` → `develop`, and test the current milestone **and every milestone before
+on work PRs into `release/*` and milestone release PRs, `release/x.y.z` → `develop`, and test the current milestone **and every milestone before
 it**. A failure blocks the merge.
 
 | | |
 |---|---|
 | Workflow | [`.github/workflows/playwright-release.yml`](../../.github/workflows/playwright-release.yml) |
 | Tests | [`tests/e2e/`](../../tests/e2e/) (Playwright, desktop Chromium and mobile Chromium/WebKit) |
-| Required check | **Release E2E gate**, on `develop` |
+| Required check | **Release E2E gate**, on `release/*` and `develop` |
 | Results | The run's summary page, the `playwright-report` artifact, and the Discord release notification |
 
 ## When it runs
 
 | PR | Playwright |
 |---|---|
-| `release/0.2.0` → `develop` | **Runs** (opened, new pushes, reopened, marked ready for review) |
+| `release/0.2.0` → `develop` | **Runs** (opened, new pushes, reopened, edited/retargeted, marked ready for review) |
 | `hotfix/*`, `chore/sync-*` → `develop` | No. The gate check passes at once. |
-| `feature/*`, `bugfix/*`, `chore/*`, … → `release/x.y.z` | No |
+| Any same-repository work branch → `release/x.y.z` | **Runs** (same events as above) |
 | `develop` → `main`, `hotfix/*` → `main` | No |
 | Pushes to any branch, schedules | No |
 
 `develop` only accepts release branches, hotfixes and `chore/sync-*` back-merges (see
 [the development workflow](../development-workflow.md)), so all other work reaches it through a release PR and this
-gate. Draft release PRs don't run it. Marking the PR ready for review starts the run. A `release/*` branch from a fork
-never runs it, and the gate fails for it.
+gate. Draft work and release PRs don't run it; their gate fails. Converting back to draft reruns the gate. Marking the PR ready for review starts the run. A fork PR in either gated path never runs it, and the gate fails for it.
 
 ## What it tests
 
-The release candidate as it would land: the API image built from the PR (GitHub tests the PR merged with `develop`),
+The release candidate as it would land: the API image built from the PR (GitHub tests the PR merged with its target release branch or `develop`),
 started with its own Postgres and Mailpit on the runner. Nothing touches the shared development environment, and no
 secrets or production settings are used.
 
@@ -73,17 +72,15 @@ A test that fails and then passes on its one retry is reported as **flaky**. The
 before the next release.
 
 ## Branch protection (owner, in GitHub settings)
-On `develop`, under **Settings → Branches** (or the ruleset that protects it):
+On `develop` and the `release/*` ruleset, under **Settings → Branches** (or the ruleset that protects it):
 1. Add **Release E2E gate** to the required status checks. Keep the existing ones (Backend, Frontend, API image,
    PR source).
-2. Don't add **Playwright (release candidate)** as a required check. On ordinary PRs that job is skipped, and GitHub
+2. Don't add **Playwright (release candidate)** as a required check. On other PRs into `develop` that job is skipped, and GitHub
    counts a skipped required check as passed. The gate job always runs and checks the real result.
 3. **Approval:** GitHub doesn't let you approve your own PR, so no approval rule is added. **The owner merging the
    release PR is the approval.** Nobody else merges `release/*` into `develop`.
 
-If a release PR has no **Release E2E gate** check at all (for example, it was opened against another branch and then
-retargeted to `develop`), close and reopen it, or push a commit, to run it. Until then the merge stays blocked, which
-is the safe default.
+PR retargeting triggers a fresh run via `edited`. If a gated PR has no **Release E2E gate** check, reopen it or push a commit. Require branches to be up to date before merging. Keep existing checks; the owner configures settings separately.
 
 ## Running it locally
 You need the app running over HTTPS with Postgres and Mailpit. The CI script does this from a built image:
@@ -102,11 +99,10 @@ Use a throwaway database: the tests create accounts and families. Stop the API a
 
 ## Cost and time
 The repository is public, so GitHub-hosted runners cost nothing. The earlier desktop-only baseline took about 8–10 minutes: building the
-image (cached between runs), installing Chromium (cached), about 20 seconds of tests, and uploads. It runs only on
-release PRs, and a new push cancels the run it replaces. The expanded mobile matrix requires a fresh timing measurement; keep the existing job timeout unless evidence justifies increasing it.
+image (cached between runs), installing Chromium (cached), about 20 seconds of tests, and uploads. It runs on work PRs into release branches and release promotions, and a new push cancels the run it replaces. The expanded mobile matrix requires a fresh timing measurement; keep the existing job timeout unless evidence justifies increasing it.
 
 ## Discord
-The `notify` job posts the result to the existing Parenthesis Discord webhook, read from the `DISCORD_WEBHOOK_URL`
+The `notify` job remains limited to release/* → develop promotions and posts the result to the existing Parenthesis Discord webhook, read from the `DISCORD_WEBHOOK_URL`
 secret. The post has the headline, the branch and PR number, test counts per milestone, and links to the PR and the
 run. Mentions are turned off. The job runs no PR code: it only reads the summary file. If the secret is missing or
 Discord is down, the job logs a warning and the gate result stands.
@@ -144,7 +140,7 @@ release summary's missing-coverage checks; inspect the targeted Playwright exit 
 older head. CI also records run start time; stale SHA/timestamps, missing profiles, skipped tests and global runner
 errors cannot certify a release. Summary fields retain Discord compatibility, but distinguish unique scenarios
 from profile executions and list each profile. Ordinary PR CI typechecks/discovers the suite and tests report
-policy only; browser execution still runs exclusively for release/* → develop under the existing gate semantics.
+policy; the separate browser workflow executes the full matrix on PRs into release/* and release/* → develop.
 
 Each new mobile state attaches a full screenshot and JSON containing SHA/profile/browser/dimensions/touch flag and
 family time zone. HTML reports include these on success; failure screenshots/traces/API logs remain available.
@@ -203,8 +199,8 @@ fixtures only; do not point this suite at production or an owner's mailbox.
 
 The release summary requires every listed state in both themes for every required profile, with nonempty rule
 execution, matching SHA/profile, fresh capture time and zero violations. Missing/invalid/failed scan attachments
-cannot count as green. Ordinary PR CI continues typechecking/discovery/report-policy checks only; browser
-execution stays on release PRs. No baseline or automatic waiver is added.
+cannot count as green. The main CI workflow continues typechecking/discovery/report-policy checks; the separate browser workflow
+runs on work PRs into release/* and release/* → develop. No baseline or automatic waiver is added.
 
 ```bash
 cd tests/e2e
@@ -253,3 +249,14 @@ Scans now use a deterministic document-end position where the sticky footer occu
 `auditScroll` records that position. Axe still audits the entire rendered document and every open overlay.
 This does not establish that every focused control is unobscured at every scroll position: retain keyboard,
 physical touch and manual sticky-navigation checks. The initial failures remain failure evidence, not waivers.
+
+## Earlier-gate rollout (#341)
+
+This extends the October 18 release-only policy with the owner's October 28 decision. Merge the workflow change
+into the active release branch, then use the existing promotion flow to carry it into develop. No default-branch
+policy workflow or deployment change is required for this `pull_request` workflow.
+
+The owner adds **Release E2E gate** as a required check on `release/*`, retaining the existing develop requirement
+and up-to-date-branch rule. Run `node --test .github/scripts/playwright-gate.test.mjs` for controlled policy
+negatives. A real passing full-matrix PR run is still required; local policy tests do not establish browser success.
+Confirm a controlled failing browser assertion blocks the gate, then restore it and rerun before relying on rollout.

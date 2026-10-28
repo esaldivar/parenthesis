@@ -46,7 +46,7 @@ deployment remain separate decisions. Existing PRs need real links supplied by t
 1. Branch from the active release branch.
 2. Implement it and run the relevant tests.
 3. Open a PR into the release branch. Ordinary work is outside the release-promotion cap below.
-4. Required checks run; request a Copilot review within the review limits.
+4. Required checks run, including the full **Release E2E gate** before work enters `release/*`; request a Copilot review within the review limits.
 5. Resolve blocking issues.
 6. The owner merges it (squash).
 
@@ -159,7 +159,7 @@ in [the Azure runbook](runbooks/azure-environments.md#github-settings).
 |---|---|
 | `main` | Existing protection (PRs only, required checks up to date, no force pushes or deletion, admins included). Required checks include **PR source** and the SonarCloud quality gate. |
 | `develop` | Existing protection, plus **PR source** and **Release E2E gate** as required checks. |
-| `release/*` | A ruleset: PRs only, required checks (Backend, Frontend, API image, PR source) up to date, no force pushes, no deletion. Admins included. |
+| `release/*` | A ruleset: PRs only, required checks (Backend, Frontend, API image, PR source, **Release E2E gate**) up to date, no force pushes, no deletion. Admins included. |
 | Environments | `production`: required reviewer = the owner, deployments from `main` only. `development`: deployments from `develop` only. |
 
 - GitHub can't restrict a PR's source branch, which is why **PR source** is a check; it only blocks merging once it's

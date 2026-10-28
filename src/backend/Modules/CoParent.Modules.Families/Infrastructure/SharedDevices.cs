@@ -1,8 +1,6 @@
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Families.Domain;
 using CoParent.Modules.Identity.Contracts;
-using CoParent.SharedKernel.Auditing;
-using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -13,8 +11,7 @@ namespace CoParent.Modules.Families.Infrastructure;
 /// Shared family devices and the parent sessions bound to them (#153, ADR-0007). These run before the tenant is known,
 /// so they read across tenants by exact ids and token hashes only.
 /// </summary>
-internal sealed class SharedDevices(
-    FamiliesDbContext db, TenantContext tenant, IUnitOfWork unitOfWork, IAuditLog audit, TimeProvider clock) : ISharedDeviceSessions
+internal sealed class SharedDevices(FamiliesDbContext db, TimeProvider clock) : ISharedDeviceSessions
 {
     private static readonly string[] _filter = [TenantContext.QueryFilterName];
 
@@ -67,24 +64,5 @@ internal sealed class SharedDevices(
         return device is { Kind: DeviceKind.Household }
             && device.IsUsableAt(clock.GetUtcNow())
             && await OwnerAsync(db, device, userId, cancellationToken) is not null;
-    }
-
-    public async Task ForgetOnSignOutAsync(HttpContext http, Guid userId, CancellationToken cancellationToken = default)
-    {
-        var device = await FindByCookieAsync(http, db, clock.GetUtcNow(), cancellationToken);
-        if (device is not { Kind: DeviceKind.Household }
-            || await OwnerAsync(db, device, userId, cancellationToken) is not { } owner)
-        {
-            return;
-        }
-
-        await unitOfWork.ExecuteAsync(async ct =>
-        {
-            tenant.Resolve(device.FamilyId, owner.Id, FamilyRole.Parent);
-            device.Revoke(clock.GetUtcNow());
-            await db.SaveChangesAsync(ct);
-            await audit.RecordAsync(new AuditEntry(device.FamilyId, userId, "device.shared_signed_out", "device", device.Id), ct);
-        }, cancellationToken);
-        DeviceCookie.Delete(http.Response);
     }
 }

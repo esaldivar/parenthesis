@@ -74,6 +74,27 @@ ul {
   gap: var(--space-2);
 }
 
+// Shared family device only (#153): the way back to "Who's using Parenthesis?", in plain sight.
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--target-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-soft);
+  }
+}
+
 .bell {
   position: relative;
   display: inline-grid;
