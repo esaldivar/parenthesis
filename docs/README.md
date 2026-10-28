@@ -28,7 +28,7 @@ Accepted Architecture Decision Records (ADRs):
 | [ADR-0004](adr/0004-cookie-authentication.md) | Same-origin cookie authentication |
 | [ADR-0005](adr/0005-protective-actions.md) | Immediate protective Restrict actions |
 | [ADR-0006](adr/0006-profiles-pins-and-child-devices.md) | Profiles, child PINs, devices and mutual approval |
-| [ADR-0007](adr/0007-shared-devices-and-parent-pins.md) | Explicit shared family devices, parent PINs and two-stage PIN lockout (proposed, #153) |
+| [ADR-0007](adr/0007-shared-devices-and-parent-pins.md) | Explicit shared family devices, parent PINs and two-stage PIN lockout (#153) |
 
 ## Product plans and design
 
