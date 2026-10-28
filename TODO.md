@@ -29,8 +29,9 @@ that points back here.
   - [x] Owner fix after testing on `develop` (October 28, 2026): parents couldn't find the picker. Setup now ends at
     the picker (enter the PIN just chosen), shared devices show a visible Switch profile button, Sign out keeps the
     device and returns to the picker, and Settings offers "Stop sharing this device" for the browser in use.
-  - [ ] The new Switch profile header button and "Stop sharing this device" use existing components; they have no
-    separate design approval.
+  - [x] Owner approved the Switch profile header button (labelled on every size, kept in the account menu too) and
+    the neutral "Stop sharing this device" confirmation, reusing existing components (October 28, 2026; boards in
+    `docs/design/reviews/issue-153/picker-fix-2026-10-28/`).
   - [ ] Pending design review: new state supplements (R/P/E/D in `reviews/issue-153/states.html`), explicit
     mobile-dark/desktop-light reuse, parent lock, initial parent PIN form, notification-failure variants. The
     implemented screens follow the existing design system and are not claimed to match unapproved supplements.
