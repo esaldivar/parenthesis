@@ -6,6 +6,13 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Shared-device design #153 / PR #332 (October 28, 2026).** Preserve individual concept approvals;
+  dark recovery board approved October 28; review new state supplements, explicit desktop/theme reuse, reset-link/error/
+  empty/pending/revocation/session states; complete exact wordmark exports and final brand placement.
+  See `docs/design/shared-device-state-audit-153.md`. Supersede ADR-0006 conflicts and scope implementation
+  follow-ups only after full handoff approval. Working email factories/links, client testing, accessibility and
+  runtime security verification remain. Broader child personal-device design, photos, QR, push/in-app and
+  child-home redesign stay deferred. #153 remains In Design; no app implementation, merge or deployment authorized.
 - [ ] **Calendar event search (#253, October 28, 2026).** Search pill beside Today (magnifier, today's date in the
   family time zone); server search across history by title, event type, parent's parenting time and date; upcoming
   first, then a labelled Past events group, each paged. Parent-only endpoint; family-scoped `(family_id, ends_at)` index,
