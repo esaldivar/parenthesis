@@ -154,6 +154,9 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         public void Advance(TimeSpan by) => Interlocked.Add(ref _offsetTicks, by.Ticks);
 
         public void Reset() => Interlocked.Exchange(ref _offsetTicks, 0);
+
+        /// <summary>Makes "now" this moment (it keeps ticking from there), for tests written against fixed dates.</summary>
+        public void SetUtcNow(DateTimeOffset now) => Interlocked.Exchange(ref _offsetTicks, (now - System.GetUtcNow()).Ticks);
     }
 
     public override async ValueTask DisposeAsync()
