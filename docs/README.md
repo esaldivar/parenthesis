@@ -45,7 +45,7 @@ verification; do not substitute the provisional concept or treat design mockups 
 
 ## Operations, quality and releases
 
-- [Azure environments](runbooks/azure-environments.md).
+- [Azure environments](runbooks/azure-environments.md) and [uptime monitoring](runbooks/uptime-monitoring.md).
 - [SonarQube Cloud](runbooks/sonarqube-cloud.md) and the [release security gate](runbooks/sonar-release-gate.md).
 - [Playwright release gate](runbooks/playwright-release-gate.md).
 - [PR issue-link requirements](runbooks/pr-issue-links.md).

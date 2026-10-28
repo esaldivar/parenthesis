@@ -24,6 +24,8 @@ public sealed class HealthEndpointTests(ApiFactory api) : IAsyncLifetime
         var response = await api.CreateClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // External uptime checks see this body, so it must stay a single status word (docs/runbooks/uptime-monitoring.md).
+        Assert.Equal("Healthy", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
