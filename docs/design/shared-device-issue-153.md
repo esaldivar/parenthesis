@@ -4,8 +4,9 @@
 
 After PR #332 merged, the owner labelled #153 for Claude implementation and asked for the approved, fully specified
 parts to be built. Branch `feat/153-shared-device-flow` (from `release/0.3.0`) implements the
-October 28 owner decisions; [ADR-0007](../adr/0007-shared-devices-and-parent-pins.md) records them; it was **accepted** by the owner on October 28, 2026
-until the owner accepts the PR. What is done, verified and still open:
+October 28 owner decisions; [ADR-0007](../adr/0007-shared-devices-and-parent-pins.md) records them, and the owner
+**accepted** it on October 28, 2026. Issue #153 itself stays open until the owner accepts the flow after testing it on
+`develop`. What is done, verified and still open:
 
 - **Implemented (server):** explicit opt-in shared device after password sign-in, fixed 30 days; picker limited to
   the setting-up parent and approved children; six-digit parent PIN; shared 3 → 10-minute pause → 3 → reset-required

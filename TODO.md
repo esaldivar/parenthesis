@@ -41,7 +41,8 @@ that points back here.
     real test sends; retry/outbox delivery (F-09) instead of log-and-continue.
   - [ ] Real screen reader, physical phones, 200% text/400% zoom, forced colors and reduced motion on the release
     candidate; live dev-site walkthrough of every #153 verification scenario.
-  - [ ] Required PR CI, SonarCloud analysis and owner acceptance; #153 stays open until accepted. Deferred: child
+  - [ ] Owner acceptance of #153 after testing the flow on `develop` (ADR-0007 itself is accepted), with the release
+    PR's CI and SonarCloud analysis green; #153 stays open until then. Deferred: child
     personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
 - [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
   (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
