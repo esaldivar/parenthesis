@@ -14,6 +14,7 @@ specifications and decisions stay in their existing locations.
 
 ## Architecture and decisions
 
+- [Architecture at a glance](architecture.md): runtime and delivery flow diagrams.
 - [Solution architecture and repository structure](architecture/solution-architecture.md).
 - [Database entity relationship design](architecture/database-erd.md).
 

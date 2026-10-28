@@ -17,6 +17,9 @@
 
 ## 2. High-level view
 
+For what is wired up today, and how changes reach production, see
+[Architecture at a glance](../architecture.md).
+
 ```mermaid
 flowchart LR
   subgraph Client

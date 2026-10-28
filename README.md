@@ -49,6 +49,7 @@ Follow the [draft calendar release notes](docs/releases/v0.3.0.md), [open work](
 
 - [Run Parenthesis locally](docs/development/getting-started.md) — prerequisites, setup and checks.
 - [Browse the documentation](docs/README.md) — development, architecture, design and operations.
+- [See the architecture at a glance](docs/architecture.md) — runtime and delivery flow diagrams.
 - [Read the architecture](docs/architecture/solution-architecture.md) — the canonical technical design.
 - [Contribute](CONTRIBUTING.md) — workflow, conventions and required checks.
 - [Report a security concern privately](SECURITY.md) — please do not open a public vulnerability issue.
