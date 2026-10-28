@@ -141,10 +141,25 @@ describe('AuthStore', () => {
       ['/api/auth/login', 204],
       ['/api/antiforgery', 204],
       ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Alex' }],
+      ['/api/device/profiles', 404],
     );
     await signIn;
 
     expect(store.user()?.displayName).toBe('Alex');
+  });
+
+  it('reloads the picker as the parent after a PIN sign-in, so it knows the device is theirs (#153)', async () => {
+    const signIn = store.parentPinSignIn('m1', '583920');
+    await respond(
+      ['/api/device/parent-session', 204],
+      ['/api/antiforgery', 204],
+      ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Dad' }],
+      ['/api/device/profiles', 200, { ...PICKER, isYours: true }],
+    );
+    await signIn;
+
+    expect(store.status()).toBe('signed-in');
+    expect(store.device()?.isYours).toBe(true);
   });
 
   it('propagates a failed sign-in so the form can explain it', async () => {
@@ -173,7 +188,7 @@ describe('AuthStore', () => {
 
     async function signedIn() {
       const signIn = store.signIn('dad@example.test', 'correct horse battery staple');
-      await respond(['/api/auth/login', 204], ['/api/antiforgery', 204], ['/api/me', 200, ME]);
+      await respond(['/api/auth/login', 204], ['/api/antiforgery', 204], ['/api/me', 200, ME], ['/api/device/profiles', 404]);
       await signIn;
     }
 

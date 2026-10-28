@@ -69,6 +69,24 @@ describe('parent PIN reset link (#153)', () => {
     expect(sessionStorage.getItem(RESET_TOKEN_KEY)).toBeNull();
   });
 
+  it('still works for a signed-in parent when session storage is blocked', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    try {
+      const { harness, http, router } = await open('/parent-pin/reset?token=abc123');
+      const check = await vi.waitFor(() => http.expectOne(CHECK));
+      expect(check.request.body).toEqual({ token: 'abc123' });
+      check.flush(null, { status: 204, statusText: 'No Content' });
+      await settle(harness);
+
+      expect(router.url).toBe('/parent-pin/reset');
+      expect(document.body.querySelector('main form')).not.toBeNull();
+    } finally {
+      setItem.mockRestore();
+    }
+  });
+
   it('explains an expired or used link the same way', async () => {
     sessionStorage.setItem(RESET_TOKEN_KEY, 'old');
     const { harness, http } = await open('/parent-pin/reset');

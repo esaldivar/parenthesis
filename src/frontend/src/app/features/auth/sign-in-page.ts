@@ -7,6 +7,7 @@ import { Router, RouterLink } from '@angular/router';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { PendingInvitation } from '../../core/invitations/pending-invitation';
+import { safeReturnUrl } from '../profiles/safe-return-url';
 import { FORM_STYLES } from './form-styles';
 
 @Component({
@@ -106,12 +107,8 @@ export class SignInPage {
   }
 
   private safeReturnUrl(): string {
-    const url = this.returnUrl();
-    // Only paths within the app, never "//evil.example" or absolute URLs (open redirect).
-    if (url && url.startsWith('/') && !url.startsWith('//')) {
-      return url;
-    }
-    // Back from confirming their email, an invited co-parent goes straight to their invitation.
-    return this.pending.peek() ? '/invitations/accept' : '/';
+    // Only paths within the app, never "//evil.example", "/\\evil.example" or absolute URLs (open redirect). Back from
+    // confirming their email, an invited co-parent goes straight to their invitation.
+    return safeReturnUrl(this.returnUrl(), this.pending.peek() ? '/invitations/accept' : '/');
   }
 }

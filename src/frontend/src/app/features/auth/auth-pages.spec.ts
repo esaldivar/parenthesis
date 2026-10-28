@@ -87,6 +87,23 @@ describe('auth and onboarding routes', () => {
       expect(navigated).toEqual(['/']);
     });
 
+    it('treats a backslash return URL as leaving the app', async () => {
+      const { harness } = await open('/sign-in?returnUrl=%2F%5Cevil.example');
+      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void>; shouldOfferSharedSetup: () => Promise<boolean> };
+      store.signIn = async () => undefined;
+      store.shouldOfferSharedSetup = async () => false;
+      const navigated: string[] = [];
+      const router = routerOf(harness);
+      router.navigateByUrl = (async (url: string) => navigated.push(url)) as never;
+
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[type=password]', 'correct horse battery staple');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle(harness);
+
+      expect(navigated).toEqual(['/']);
+    });
+
     it('asks “Is this a shared family device?” after signing in, keeping where the parent was heading (#153)', async () => {
       const { harness } = await open('/sign-in?returnUrl=%2Fcalendar');
       const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void>; shouldOfferSharedSetup: () => Promise<boolean> };

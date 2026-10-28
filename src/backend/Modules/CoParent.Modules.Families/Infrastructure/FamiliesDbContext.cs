@@ -108,6 +108,7 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
         {
             token.ToTable("parent_pin_reset_tokens");
             token.Property(t => t.TokenHash).HasMaxLength(32);
+            token.Property(t => t.Version).IsRowVersion();
             token.HasOne<FamilyMembership>().WithMany().HasForeignKey(t => t.MembershipId);
             token.HasIndex(t => t.TokenHash).IsUnique();
             token.HasIndex(t => new { t.MembershipId, t.CreatedAt });

@@ -29,6 +29,12 @@ internal sealed class ParentPinResetToken : Entity, IFamilyScoped
 
     public DateTimeOffset? UsedAt { get; private set; }
 
+    /// <summary>
+    /// PostgreSQL xmin. Two requests redeeming the same link at once can't both save: the second update fails, and that
+    /// request is told the link was already used.
+    /// </summary>
+    public uint Version { get; private set; }
+
     public bool IsUsable(DateTimeOffset now) => UsedAt is null && now < ExpiresAt;
 
     public void MarkUsed(DateTimeOffset now) => UsedAt ??= now;

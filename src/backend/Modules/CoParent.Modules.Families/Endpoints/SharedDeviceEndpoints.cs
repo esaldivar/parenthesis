@@ -467,23 +467,33 @@ internal static class SharedDeviceEndpoints
         }
 
         var credential = await db.ParentCredentials.SingleOrDefaultAsync(c => c.MembershipId == tenant.MembershipId, cancellationToken);
-        await unitOfWork.ExecuteAsync(async ct =>
+        try
         {
-            token!.MarkUsed(now);
-            if (credential is null)
+            // The token and the PIN are saved together: if another request used the link first, the token's row version
+            // no longer matches, nothing is saved, and this request gets the "already used" answer.
+            await unitOfWork.ExecuteAsync(async ct =>
             {
-                credential = new ParentCredential { FamilyId = tenant.FamilyId, MembershipId = tenant.MembershipId, PinHash = "", UpdatedAt = now };
-                credential.Reset(hasher.HashPassword(credential, pin), now);
-                db.ParentCredentials.Add(credential);
-            }
-            else
-            {
-                credential.Reset(hasher.HashPassword(credential, pin), now);
-            }
+                token!.MarkUsed(now);
+                if (credential is null)
+                {
+                    credential = new ParentCredential { FamilyId = tenant.FamilyId, MembershipId = tenant.MembershipId, PinHash = "", UpdatedAt = now };
+                    credential.Reset(hasher.HashPassword(credential, pin), now);
+                    db.ParentCredentials.Add(credential);
+                }
+                else
+                {
+                    credential.Reset(hasher.HashPassword(credential, pin), now);
+                }
 
-            await db.SaveChangesAsync(ct);
-            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "parent.pin_reset_by_link", "membership", tenant.MembershipId), ct);
-        }, cancellationToken);
+                await db.SaveChangesAsync(ct);
+                await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "parent.pin_reset_by_link", "membership", tenant.MembershipId), ct);
+            }, cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ResetLinkUsed();
+        }
+
         return TypedResults.NoContent();
     }
 
@@ -494,10 +504,7 @@ internal static class SharedDeviceEndpoints
     private static async Task<(ParentPinResetToken? Token, ProblemHttpResult? Problem)> FindResetTokenAsync(
         FamiliesDbContext db, ITenantContext tenant, string? raw, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        var unusable = TypedResults.Problem(
-            title: "This reset link has expired or was already used.",
-            detail: "Ask for a new link from your parent PIN screen, or choose a new PIN in Settings.",
-            statusCode: StatusCodes.Status410Gone);
+        var unusable = ResetLinkUsed();
         if (string.IsNullOrWhiteSpace(raw))
         {
             return (null, unusable);
@@ -520,6 +527,11 @@ internal static class SharedDeviceEndpoints
 
         return (token, null);
     }
+
+    private static ProblemHttpResult ResetLinkUsed() => TypedResults.Problem(
+        title: "This reset link has expired or was already used.",
+        detail: "Ask for a new link from your parent PIN screen, or choose a new PIN in Settings.",
+        statusCode: StatusCodes.Status410Gone);
 
     /// <summary>Adds a new reset token for the parent (inside the caller's unit of work); older unused ones stop working.</summary>
     private static async Task<string> IssueResetTokenAsync(
