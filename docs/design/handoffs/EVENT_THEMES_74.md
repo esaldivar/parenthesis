@@ -27,7 +27,7 @@ Read issue #74 and latest comments before implementation. Individual concept app
 
 Eric assigned follow-on implementation to ChatGPT on October 28, 2026. All eleven motif directions are visually approved. The nine-theme sheet is preserved unchanged as approval evidence; its extra artwork colors do not supersede the category-color wash requirement. Derive reusable artwork assets rather than shipping entire mockup screenshots as application UI.
 
-Next: inspect current app and settings architecture; specify deterministic title matching and ambiguous fallback, implement the default-On per-user toggle and title reevaluation, integrate reusable decorative assets with existing category tokens, and verify permissions, both themes, accessibility and responsive behavior. Preserve approved brand artwork. Track any remaining specification gaps explicitly. Implementation has not started; this PR remains design/documentation only. No merge or deployment authorized.
+Next: inspect current app and settings architecture; specify deterministic title matching and ambiguous fallback, implement the default-On per-user toggle and title reevaluation, integrate reusable decorative assets with existing category tokens, and verify permissions, both themes, accessibility and responsive behavior. Preserve approved brand artwork. Track any remaining specification gaps explicitly. Historical design checkpoint: implementation has since begun in draft PR #337; see candidate status below. No merge or deployment authorized.
 
 ## Implementation candidate — October 28, 2026
 
@@ -36,3 +36,5 @@ Branch `feat/74-event-themes` implements the Settings toggle and account-isolate
 Event details use a noninteractive, screen-reader-hidden decoration layer with category-token tint. Other-parent unavailable details never receive a motif. Edits and toggling reevaluate reactively. The calendar grid and authorization logic are unchanged. Approved boards remain reference evidence; the generated mask atlas is a new derivative requiring rendered visual review. No approval of exact final artwork is implied.
 
 Validation: 638 frontend tests passed, lint passed, production build passed (existing dashboard stylesheet budget warning). Browser visual review, real screen-reader testing, cross-device preference synchronization and final artwork/contrast acceptance remain outstanding. No merge or deployment.
+
+Implementation published in [draft PR #337](https://github.com/esaldivar/parenthesis/pull/337), targeting release/0.3.0. PR #334 remains the separate design record. Runtime artwork validation remains outstanding.
