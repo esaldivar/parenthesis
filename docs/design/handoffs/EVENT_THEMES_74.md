@@ -17,8 +17,14 @@ Title selects illustration; existing event category supplies the translucent col
 
 ## Remaining
 
-Review sports, holiday, vacation/travel, beach, camping, school, arts/music, outings and nature. Birthday reuses party; travel may reuse vacation. Follow #74's culturally inclusive neutral holiday-art policy without inferring family beliefs.
+The owner approved the [remaining nine themes, light and dark](../assets/remaining-nine-themes-approved-74.png) on October 28, 2026 (“I love it. It's great”). This covers sports, holiday, vacation/travel, beach, camping, school, arts/music, outings and nature. Birthday reuses party; travel may reuse vacation. Follow #74's culturally inclusive neutral holiday-art policy without inferring family beliefs.
 
 Specify matching rules and multiple matches, supported event types, settings placement/persistence/sync, asset licensing/storage, performance and offline behavior. Review desktop/settings examples, both themes, 320px, long titles, text enlargement, pending/declined states, keyboard/focus, final contrast and decorative-image screen-reader handling. These images do not verify runtime behavior.
 
 Read issue #74 and latest comments before implementation. Individual concept approvals do not complete the issue. No merge or deployment without owner approval.
+
+## Implementation ownership and next work
+
+Eric assigned follow-on implementation to ChatGPT on October 28, 2026. All eleven motif directions are visually approved. The nine-theme sheet is preserved unchanged as approval evidence; its extra artwork colors do not supersede the category-color wash requirement. Derive reusable artwork assets rather than shipping entire mockup screenshots as application UI.
+
+Next: inspect current app and settings architecture; specify deterministic title matching and ambiguous fallback, implement the default-On per-user toggle and title reevaluation, integrate reusable decorative assets with existing category tokens, and verify permissions, both themes, accessibility and responsive behavior. Preserve approved brand artwork. Track any remaining specification gaps explicitly. Implementation has not started; this PR remains design/documentation only. No merge or deployment authorized.
