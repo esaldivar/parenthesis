@@ -772,3 +772,5 @@ that points back here.
 - [ ] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code.
 - [ ] Complete remaining manual/incomplete axe review, ambiguous/nonexistent-time acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
 - Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
+
+- [ ] **Event illustration themes #74:** party and meals/gatherings light/dark concepts approved; remaining motifs, desktop/settings examples, title matching, preference persistence, asset delivery and accessibility/runtime verification remain. See `docs/design/handoffs/EVENT_THEMES_74.md`.
