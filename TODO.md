@@ -36,6 +36,10 @@ that points back here.
     candidate; live dev-site walkthrough of every #153 verification scenario.
   - [ ] Required PR CI, SonarCloud analysis and owner acceptance; #153 stays open until accepted. Deferred: child
     personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
+- [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
+  (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
+  classes on fixed 2026 dates before those pass: `CalendarTests`, `CalendarSearchTests`, `DateRuleTests`, `TaskTests`,
+  `TaskChecklistTests`, `ReminderTests`.
 - [ ] **Calendar event search (#253, October 28, 2026).** Search pill beside Today (magnifier, today's date in the
   family time zone); server search across history by title, event type, parent's parenting time and date; upcoming
   first, then a labelled Past events group, each paged. Parent-only endpoint; family-scoped `(family_id, ends_at)` index,
