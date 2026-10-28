@@ -15,3 +15,5 @@ The owner approved the [dark desktop picker visual direction](assets/shared-devi
 The owner approved the [dark desktop parent PIN screen](assets/parent-pin-dark-desktop-issue-153.png). Place the approved brand artwork in the header for the final design. It is a visual reference; keyboard accessibility, error states and runtime security must be verified.
 
 Owner approved the [dark desktop parent PIN pause](assets/parent-pin-pause-dark-desktop-issue-153.png). It shows the ten-minute wait, reset, and email notice. Add verified branding in the final header. Only show email-sent confirmation if delivery was successfully initiated; account for delivery failure. Verify accessibility and security in implementation.
+
+Owner approved the [dark desktop child PIN lock screen](assets/child-pin-lock-dark-desktop-issue-153.png). The child is directed to ask a parent and can return to profiles. Add verified branding in the final header. Either authorized parent may reset the PIN; the agreed notification and security rules in #153 still apply.
