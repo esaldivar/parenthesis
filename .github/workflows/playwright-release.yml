@@ -1,18 +1,13 @@
 name: Playwright release gate
 
-# End-to-end tests for every released milestone, run only on release PRs: release/* -> develop (owner decision,
-# October 18, 2026). They test the release candidate itself: the API image built from this PR, merged with develop,
-# with its own throwaway Postgres and Mailpit. Runbook: docs/runbooks/playwright-release-gate.md.
-#
-# Ordinary feature PRs, PRs into release/* and develop -> main don't run Playwright. Every PR into develop runs only
-# the tiny "Release E2E gate" job, which is the required check:
-#   - for a release/* PR it passes only if the Playwright job ran and passed;
-#   - for any other PR it passes at once.
-# The Playwright job itself can't be the required check, because GitHub counts a skipped job as passed.
+# Full isolated browser coverage for work PRs into release/* and release/* -> develop.
+# The always-running Release E2E gate checks the real job result, including skipped/cancelled jobs.
+# Other PRs into develop retain their existing no-E2E behavior. Runbook:
+# docs/runbooks/playwright-release-gate.md. Owner decision October 28, 2026; refs #341.
 on:
   pull_request:
-    branches: [develop]
-    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [develop, 'release/**']
+    types: [opened, synchronize, reopened, ready_for_review, edited, converted_to_draft]
 
 permissions:
   contents: read
@@ -25,9 +20,10 @@ concurrency:
 jobs:
   e2e:
     name: Playwright (release candidate)
-    # Only release branches from this repository, and not while the PR is a draft. Nothing starts otherwise.
+    # Test work entering a release branch and release promotions, from this repository when ready.
     if: >-
-      startsWith(github.head_ref, 'release/') &&
+      (startsWith(github.base_ref, 'release/') ||
+       (github.base_ref == 'develop' && startsWith(github.head_ref, 'release/'))) &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       !github.event.pull_request.draft
     runs-on: ubuntu-latest
@@ -162,34 +158,36 @@ jobs:
     steps:
       - name: Check the Playwright result
         env:
+          BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
           E2E_RESULT: ${{ needs.e2e.result }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
           FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
-          case "$HEAD_REF" in
-            release/*) ;;
-            *) echo "Not a release PR ($HEAD_REF): Playwright doesn't run, nothing to check."; exit 0 ;;
+          case "$BASE_REF:$HEAD_REF" in
+            release/*:*|develop:release/*) ;;
+            *) echo "Playwright is not required for this source/target combination."; exit 0 ;;
           esac
           if [ "$FROM_FORK" = "true" ]; then
-            echo "::error title=Release E2E gate::Release PRs must come from a release/* branch in this repository, not a fork."
+            echo "::error title=Release E2E gate::Playwright requires a source branch in this repository, not a fork."
             exit 1
           fi
           if [ "$IS_DRAFT" = "true" ]; then
-            echo "::error title=Release E2E gate::Playwright runs when the release PR is ready for review. Mark it ready to run the gate."
+            echo "::error title=Release E2E gate::Playwright runs when the PR is ready for review. Mark it ready to run the gate."
             exit 1
           fi
           if [ "$E2E_RESULT" != "success" ]; then
-            echo "::error title=Release E2E gate::Playwright result: $E2E_RESULT. The release can't merge until every milestone's tests pass."
+            echo "::error title=Release E2E gate::Playwright result: $E2E_RESULT. The PR can't merge until every milestone's tests pass."
             exit 1
           fi
-          echo "Playwright passed for $HEAD_REF."
+          echo "Playwright passed for $HEAD_REF into $BASE_REF."
 
   notify:
     name: Discord release notification
     needs: [e2e, gate]
     if: >-
       always() &&
+      github.base_ref == 'develop' &&
       startsWith(github.head_ref, 'release/') &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       (needs.e2e.result == 'success' || needs.e2e.result == 'failure')
