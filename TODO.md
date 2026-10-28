@@ -166,6 +166,15 @@ that points back here.
       username to forget; "forgot password" covers it.
   - Domain names, HTTPS, the pipeline (deploy `develop` → dev, `main` → prod), secrets in Key Vault, database
     migrations on deploy, backups, monitoring.
+  - **Uptime alerts (#114):** free UptimeRobot checks posting to Discord **#site-status**, $0/month for monitoring.
+    Runbook: [uptime monitoring](docs/runbooks/uptime-monitoring.md). Dev checks every 60 minutes so the app can still
+    scale to zero (owner decision, October 28, 2026).
+    - [x] Runbook, and a test that `/health/ready` returns only `Healthy`/`Unhealthy` (October 28, 2026).
+    - [ ] **Owner:** UptimeRobot Free account, Discord webhook for #site-status, and the `DEV · Parenthesis · ready`
+      monitor (runbook "Setup").
+    - [ ] **Owner:** run the outage and recovery test (runbook), and confirm the alerts look right.
+    - [ ] **Owner:** add the `PROD · Parenthesis · ready` monitor once production has a public address; check its
+      scaling first to choose the interval. Hard deadline: M4, before broader launch.
 
 - [ ] **M2: onboarding, co-parent invitation, children, profile picker** (owner requirements, October 17, 2026).
   - **Sign-up and invitation:** after signing up, a parent invites the co-parent by email.
