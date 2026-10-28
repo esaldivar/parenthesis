@@ -146,3 +146,6 @@ button[mat-button] {
   min-height: var(--target-min);
   justify-self: start;
 }
+
+// Decoration never receives input or changes the reading/focus order.
+.panel > :not(app-event-decoration) { position: relative; z-index: 1; }

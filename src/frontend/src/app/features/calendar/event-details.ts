@@ -1,3 +1,4 @@
+import { EventDecoration } from './event-decoration';
 import { CalendarPalette } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import {
@@ -44,7 +45,7 @@ export const COMMENT_MAX = 500;
 @Component({
   selector: 'app-event-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon],
+  imports: [EventDecoration, CalendarPalette, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './event-details.html',
   styleUrl: './event-details.scss',

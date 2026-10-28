@@ -1,3 +1,5 @@
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { EventThemesService } from '../../core/theme/event-themes.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { Api, FamilyDetails, InvitationSummary } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
@@ -12,11 +14,13 @@ import { DeleteAccount } from './delete-account';
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, ParentPinSettings, DeleteAccount],
+  imports: [MatSlideToggleModule, AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, ParentPinSettings, DeleteAccount],
   template: `
     <h1>Settings</h1>
     <section class="card">
       <app-appearance-picker />
+      <mat-slide-toggle [checked]="eventThemes.enabled()" (change)="eventThemes.setEnabled($event.checked)" aria-describedby="event-theme-help">Add themes to events</mat-slide-toggle>
+      <p id="event-theme-help">Show subtle illustrations when an event title matches a theme. This changes only your view on this device.</p>
     </section>
 
     @if (auth.currentFamily(); as current) {
@@ -89,6 +93,7 @@ import { DeleteAccount } from './delete-account';
   `,
 })
 export class SettingsPage implements OnInit {
+  protected readonly eventThemes = inject(EventThemesService);
   protected readonly auth = inject(AuthStore);
   private readonly api = inject(Api);
 

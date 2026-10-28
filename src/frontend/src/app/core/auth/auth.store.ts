@@ -1,3 +1,4 @@
+import { EventThemesService } from '../theme/event-themes.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Api, ChildSession, DeviceProfiles, FamilySummary, Me } from '../api/api';
@@ -18,6 +19,7 @@ export type AuthStatus = 'unknown' | 'anonymous' | 'signed-in' | 'child';
 export class AuthStore {
   private readonly api = inject(Api);
   private readonly appearance = inject(AppearanceService);
+  private readonly eventThemes = inject(EventThemesService);
 
   readonly user = signal<Me | null>(null);
   readonly child = signal<ChildSession | null>(null);
@@ -208,6 +210,7 @@ export class AuthStore {
     this.status.set(user ? 'signed-in' : 'anonymous');
     // Each account has its own appearance; signed out, the app follows the system.
     this.appearance.useAccount(user?.id ?? null);
+    this.eventThemes.useAccount(user?.id ?? null);
   }
 
   private setChild(child: ChildSession): void {
@@ -217,5 +220,6 @@ export class AuthStore {
     this.status.set('child');
     // A child's appearance is their own, never a parent's (CLAUDE.md: appearance is personal).
     this.appearance.useAccount(`child:${child.childId}`);
+    this.eventThemes.useAccount(`child:${child.childId}`);
   }
 }
