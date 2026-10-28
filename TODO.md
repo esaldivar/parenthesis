@@ -6,6 +6,12 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
+  `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
+  - [ ] Review required PR checks and promote through the normal release route to `main` (scheduled workflows run there).
+  - [ ] Run **Daily Discord health report** manually from `main`; verify real API metrics, Discord receipt and continued
+    native outage/recovery notifications. Secret values and live delivery were not accessible during implementation.
+
 - [ ] **Shared-device flow #153 (design PR #332; implementation branch `feat/153-shared-device-flow`,
   October 28, 2026).** Preserve every recorded visual approval (incl. the dark desktop recovery board, the four email
   concepts and the approved dark desktop states); unapproved supplements stay pending. Details:
