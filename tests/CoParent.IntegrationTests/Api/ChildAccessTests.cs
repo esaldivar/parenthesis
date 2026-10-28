@@ -5,15 +5,20 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace CoParent.IntegrationTests.Api;
 
-/// <summary>Devices, the profile picker, child PINs and lockout (A-08 to A-10, ADR-0006).</summary>
+/// <summary>Devices, the profile picker, child PINs and lockout (A-08 to A-10, ADR-0006 as changed by #153).</summary>
 [Collection(ApiCollectionDefinition.Name)]
 public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
 {
     private const string KaisPin = "2580";
+    private const string DadsPin = "583920";
 
     public async ValueTask InitializeAsync() => await api.ResetDatabaseAsync();
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public ValueTask DisposeAsync()
+    {
+        api.Clock.Reset();
+        return ValueTask.CompletedTask;
+    }
 
     [Fact]
     public async Task A_household_device_shows_only_the_parent_who_registered_it_and_the_child()
@@ -39,7 +44,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         using var _ = family;
         Assert.Equal(
             HttpStatusCode.Created,
-            (await family.Mom.PostAsync($"/api/families/{family.FamilyId}/devices/household", new { name = "Mom's phone" })).StatusCode);
+            (await family.Mom.PostAsync($"/api/families/{family.FamilyId}/devices/household", new { name = "Mom's phone", pin = "740361" })).StatusCode);
 
         var picker = await JsonAsync(await family.Mom.GetAsync("/api/device/profiles"));
 
@@ -93,30 +98,98 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Three_wrong_PINs_lock_the_profile_and_email_both_parents_until_a_parent_unlocks_it()
+    public async Task Three_wrong_PINs_pause_the_childs_PIN_three_more_lock_it_and_only_the_lock_emails_both_parents()
     {
         var family = await FamilyWithKaiAsync();
         using var _ = family;
-        var kidsTablet = family.Dad;
+        var device = family.Dad;
 
-        var first = await kidsTablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1357" });
-        var second = await kidsTablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1358" });
-        var third = await kidsTablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1359" });
-        var rightButLocked = await kidsTablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+        var first = await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1357" });
+        await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1358" });
+        var third = await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1359" });
+        var rightDuringPause = await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
 
         Assert.Equal(HttpStatusCode.Unauthorized, first.StatusCode);
         Assert.Equal(2, (await JsonAsync(first)).GetProperty("triesLeft").GetInt32());
-        Assert.Equal(HttpStatusCode.Unauthorized, second.StatusCode);
         Assert.Equal((HttpStatusCode)423, third.StatusCode);
+        var paused = await JsonAsync(third);
+        Assert.Equal("paused", paused.GetProperty("state").GetString());
+        var retryAt = paused.GetProperty("retryAt").GetDateTimeOffset();
+        Assert.InRange(retryAt - api.Clock.GetUtcNow(), TimeSpan.FromMinutes(9), TimeSpan.FromMinutes(10));
+        Assert.False(paused.TryGetProperty("notified", out var notified), $"notified: {notified}");
+        // A pause can't be skipped with the right PIN, and the first pause emails nobody.
+        Assert.Equal((HttpStatusCode)423, rightDuringPause.StatusCode);
+        Assert.DoesNotContain(device.Emails.SentTo(family.DadEmail), m => m.Subject.Contains("PIN", StringComparison.Ordinal));
+        Assert.DoesNotContain(device.Emails.SentTo(family.MomEmail), m => m.Subject.Contains("PIN", StringComparison.Ordinal));
+
+        api.Clock.Advance(TimeSpan.FromMinutes(10));
+        await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1360" });
+        await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1361" });
+        var sixth = await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1362" });
+        var rightButLocked = await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+
+        Assert.Equal((HttpStatusCode)423, sixth.StatusCode);
+        var locked = await JsonAsync(sixth);
+        Assert.Equal("locked", locked.GetProperty("state").GetString());
+        Assert.True(locked.GetProperty("notified").GetBoolean());
         Assert.Equal((HttpStatusCode)423, rightButLocked.StatusCode);
-        Assert.Contains(kidsTablet.Emails.SentTo(family.DadEmail), m => m.Subject == "Kai's profile is locked");
-        Assert.Contains(kidsTablet.Emails.SentTo(family.MomEmail), m => m.Subject == "Kai's profile is locked");
+        var dadsLockEmail = Assert.Single(device.Emails.SentTo(family.DadEmail), m => m.Subject == "A child's PIN is locked");
+        Assert.Single(device.Emails.SentTo(family.MomEmail), m => m.Subject == "A child's PIN is locked");
+        Assert.Contains("Kai", dadsLockEmail.TextBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(KaisPin, dadsLockEmail.TextBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(KaisPin, dadsLockEmail.HtmlBody, StringComparison.Ordinal);
 
-        var unlocked = await family.Mom.PostAsync($"/api/families/{family.FamilyId}/children/{family.KaiId}/unlock");
-        var afterUnlock = await kidsTablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+        // Either parent resets it through their own account: at once, no approval, and the lock is gone.
+        var reset = await family.Mom.SendAsync(HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" });
+        var oldPin = await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+        var newPin = await device.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "4826" });
 
-        Assert.Equal(HttpStatusCode.NoContent, unlocked.StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, afterUnlock.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, oldPin.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, newPin.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_right_PIN_clears_earlier_failures_and_the_earlier_pause()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+        using var tablet = await PairedTabletAsync(family);
+
+        foreach (var pin in new[] { "1357", "1358", "1359" })
+        {
+            await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin });
+        }
+
+        api.Clock.Advance(TimeSpan.FromMinutes(11));
+        Assert.Equal(HttpStatusCode.NoContent, (await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin })).StatusCode);
+        await tablet.RefreshAntiforgeryAsync();
+        Assert.Equal(HttpStatusCode.NoContent, (await tablet.SendAsync(HttpMethod.Post, "/api/device/switch")).StatusCode);
+        await tablet.RefreshAntiforgeryAsync();
+
+        // Back to a fresh first round: three more wrong PINs pause again rather than lock.
+        await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1357" });
+        await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1358" });
+        var third = await JsonAsync(await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1359" }));
+
+        Assert.Equal("paused", third.GetProperty("state").GetString());
+    }
+
+    [Fact]
+    public async Task A_malformed_PIN_is_rejected_without_counting_as_a_try()
+    {
+        var family = await FamilyWithKaiAsync();
+        using var _ = family;
+
+        foreach (var pin in new[] { "12", "abcd", "1234567", "", "12 34" })
+        {
+            Assert.Equal(
+                HttpStatusCode.BadRequest,
+                (await family.Dad.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin })).StatusCode);
+        }
+
+        var wrong = await family.Dad.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "1357" });
+        Assert.Equal(2, (await JsonAsync(wrong)).GetProperty("triesLeft").GetInt32());
     }
 
     [Fact]
@@ -178,30 +251,24 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Changing_a_PIN_waits_for_the_co_parent_and_the_old_PIN_works_until_then()
+    public async Task Either_parent_resets_a_childs_PIN_at_once_and_only_the_other_parent_is_told_without_the_PIN()
     {
         var family = await FamilyWithKaiAsync();
         using var _ = family;
         using var tablet = await PairedTabletAsync(family);
 
-        var proposed = await family.Dad.SendAsync(
-            HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" });
-        var requestId = (await JsonAsync(proposed)).GetProperty("changeRequestId").GetGuid();
-        var newBeforeApproval = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "4826" });
-        await tablet.RefreshAntiforgeryAsync();
-        var oldBeforeApproval = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
-        var approved = await family.Mom.PostAsync($"/api/families/{family.FamilyId}/approvals/{requestId}/approve");
-        await tablet.SendAsync(HttpMethod.Post, "/api/auth/logout");
-        await tablet.RefreshAntiforgeryAsync();
-        var oldAfter = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
-        var newAfter = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "4826" });
+        var reset = await family.Dad.SendAsync(HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" });
+        var oldPin = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
+        var newPin = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = "4826" });
 
-        Assert.Equal(HttpStatusCode.Accepted, proposed.StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, newBeforeApproval.StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, oldBeforeApproval.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, oldAfter.StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, newAfter.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, oldPin.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, newPin.StatusCode);
+        var notice = Assert.Single(tablet.Emails.SentTo(family.MomEmail), m => m.Subject == "A child's PIN was reset");
+        Assert.Contains("Dad set a new PIN for Kai", notice.TextBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("4826", notice.TextBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("4826", notice.HtmlBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(tablet.Emails.SentTo(family.DadEmail), m => m.Subject == "A child's PIN was reset");
     }
 
     [Fact]
@@ -213,19 +280,26 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         await family.Dad.PostAsync($"/api/families/{family.FamilyId}/children", new { firstName = "Aurora" });
 
         var before = await ChildrenSignInAsync(family);
-        await family.Dad.SendAsync(HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" });
         foreach (var pin in new[] { "1357", "1358", "1359" })
         {
             await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin });
         }
 
-        var after = await ChildrenSignInAsync(family);
+        var paused = await ChildrenSignInAsync(family);
+        api.Clock.Advance(TimeSpan.FromMinutes(10));
+        foreach (var pin in new[] { "1357", "1358", "1359" })
+        {
+            await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin });
+        }
 
-        Assert.Equal(["Kai:True:False:False", "Aurora:False:False:False"], before);
-        Assert.Equal(["Kai:True:True:True", "Aurora:False:False:False"], after);
+        var locked = await ChildrenSignInAsync(family);
+
+        Assert.Equal(["Kai:True:False:False:False", "Aurora:False:False:False:False"], before);
+        Assert.Equal(["Kai:True:False:False:True", "Aurora:False:False:False:False"], paused);
+        Assert.Equal(["Kai:True:True:False:False", "Aurora:False:False:False:False"], locked);
     }
 
-    /// <summary>Each child as "name:enabled:locked:pinChangePending", as Mom's children list shows it.</summary>
+    /// <summary>Each child as "name:enabled:locked:pinChangePending:paused", as Mom's children list shows it.</summary>
     private static async Task<List<string>> ChildrenSignInAsync(TestFamily family) =>
         (await JsonAsync(await family.Mom.GetAsync($"/api/families/{family.FamilyId}/children")))
             .EnumerateArray()
@@ -233,26 +307,10 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
             {
                 var signIn = c.GetProperty("signIn");
                 return $"{c.GetProperty("firstName").GetString()}:{signIn.GetProperty("enabled").GetBoolean()}"
-                    + $":{signIn.GetProperty("locked").GetBoolean()}:{signIn.GetProperty("pinChangePending").GetBoolean()}";
+                    + $":{signIn.GetProperty("locked").GetBoolean()}:{signIn.GetProperty("pinChangePending").GetBoolean()}"
+                    + $":{signIn.GetProperty("pausedUntil").ValueKind != JsonValueKind.Null}";
             })
             .ToList();
-
-    [Fact]
-    public async Task A_rejected_PIN_change_keeps_the_current_PIN()
-    {
-        var family = await FamilyWithKaiAsync();
-        using var _ = family;
-        using var tablet = await PairedTabletAsync(family);
-        var proposed = await JsonAsync(await family.Dad.SendAsync(
-            HttpMethod.Put, $"/api/families/{family.FamilyId}/children/{family.KaiId}/pin", new { pin = "4826" }));
-
-        var rejected = await family.Mom.PostAsync(
-            $"/api/families/{family.FamilyId}/approvals/{proposed.GetProperty("changeRequestId").GetGuid()}/reject");
-        var current = await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin });
-
-        Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, current.StatusCode);
-    }
 
     private async Task<ApiSession> PairedTabletAsync(TestFamily family)
     {
@@ -322,7 +380,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         (await JsonAsync(await family.Mom.PostAsync($"/api/families/{family.FamilyId}/children/{family.KaiId}/pairing-code")))
             .GetProperty("code").GetString()!;
 
-    /// <summary>Dad and Mom, with Kai approved by both, Kai's PIN set, and Dad's browser registered as a household device.</summary>
+    /// <summary>Dad and Mom, with Kai approved by both, Kai's PIN set, and Dad's browser set up as a shared device.</summary>
     private async Task<TestFamily> FamilyWithKaiAsync(bool setPin = true)
     {
         var dadEmail = ApiSession.NewEmail();
@@ -347,7 +405,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
 
         Assert.Equal(
             HttpStatusCode.Created,
-            (await dad.PostAsync($"/api/families/{familyId}/devices/household", new { name = "Kitchen iPad" })).StatusCode);
+            (await dad.PostAsync($"/api/families/{familyId}/devices/household", new { name = "Kitchen iPad", pin = DadsPin })).StatusCode);
         return new TestFamily(dad, mom, familyId, kaiId, dadEmail, momEmail);
     }
 

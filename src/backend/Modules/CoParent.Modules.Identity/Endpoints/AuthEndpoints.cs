@@ -1,5 +1,6 @@
 using System.Net.Mail;
 using System.Security.Claims;
+using CoParent.Modules.Identity.Contracts;
 using CoParent.Modules.Identity.Domain;
 using CoParent.SharedKernel.Security;
 using Microsoft.AspNetCore.Builder;
@@ -94,23 +95,54 @@ internal static class AuthEndpoints
         return TypedResults.Accepted((string?)null);
     }
 
+    /// <summary>
+    /// Password sign-in. On this parent's shared family device, the session is bound to that device (#153), so revoking
+    /// or expiring the device ends it too.
+    /// </summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> LoginAsync(
-        LoginRequest request, SignInManager<AppUser> signIn)
+        LoginRequest request,
+        HttpContext http,
+        UserManager<AppUser> users,
+        SignInManager<AppUser> signIn,
+        ISharedDeviceSessions devices,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrEmpty(request.Password))
         {
             return InvalidCredentials();
         }
 
-        // Locked-out, unknown and wrong-password attempts all get the same response.
-        var result = await signIn.PasswordSignInAsync(
-            request.Email.Trim(), request.Password, isPersistent: true, lockoutOnFailure: true);
+        // Locked-out, unknown, unconfirmed and wrong-password attempts all get the same response.
+        if (await users.FindByNameAsync(request.Email.Trim()) is not { } user)
+        {
+            return InvalidCredentials();
+        }
 
-        return result.Succeeded ? TypedResults.NoContent() : InvalidCredentials();
+        var result = await signIn.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+        if (!result.Succeeded)
+        {
+            return InvalidCredentials();
+        }
+
+        var device = await devices.FindForParentAsync(http, user.Id, cancellationToken);
+        await signIn.SignInWithClaimsAsync(
+            user, isPersistent: true, device is { } id ? [new Claim(SharedDeviceClaims.DeviceId, id.ToString())] : []);
+        return TypedResults.NoContent();
     }
 
-    private static async Task<NoContent> LogoutAsync(SignInManager<AppUser> signIn)
+    /// <summary>
+    /// Full sign-out. A parent's shared device in this browser is removed as well, so its picker is gone until a parent
+    /// signs in and sets it up again (#153). A child's sign-out only ends the child's session; switching profiles
+    /// without removing the picker is <c>POST /api/device/switch</c>.
+    /// </summary>
+    private static async Task<NoContent> LogoutAsync(
+        HttpContext http, SignInManager<AppUser> signIn, ISharedDeviceSessions devices, CancellationToken cancellationToken)
     {
+        if (http.User.GetChildSession() is null && http.User.GetUserId() is { } userId)
+        {
+            await devices.ForgetOnSignOutAsync(http, userId, cancellationToken);
+        }
+
         await signIn.SignOutAsync();
         return TypedResults.NoContent();
     }

@@ -64,9 +64,18 @@ export class ParentShell {
     focusMainOnNavigation(() => this.main());
   }
 
-  /** Signing out on a registered device leads back to "Who's using Parenthesis?". */
+  /** This browser is the signed-in parent's own shared family device (#153). */
+  protected readonly sharedDevice = computed(() => this.auth.device()?.deviceKind === 'Household' && this.auth.device()?.isYours === true);
+
+  /** Ends the parent's session and keeps the picker. Back can't return to the parent's pages: the session is gone. */
+  protected async switchProfile(): Promise<void> {
+    await this.auth.switchProfile();
+    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
+  }
+
+  /** Full sign-out: on the parent's own shared device the picker goes too, until a parent sets it up again. */
   protected async signOut(): Promise<void> {
     await this.auth.signOut();
-    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in');
+    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
   }
 }

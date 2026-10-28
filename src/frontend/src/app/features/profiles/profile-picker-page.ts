@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { Router, RouterLink } from '@angular/router';
 import { ProfileTile } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -7,21 +8,29 @@ import { Avatar } from '../../shared/avatar/avatar';
 import { FORM_STYLES } from '../auth/form-styles';
 
 /**
- * "Who's using Parenthesis?" on a registered device (ADR-0006). Names and initials only: no ages, photos or other
- * family data. A parent tile asks for that parent's full password; a child tile asks for the child's PIN.
+ * "Who's using Parenthesis?" on a registered device (ADR-0006, #153). Names and initials only: no ages, photos or
+ * other family data. A shared device shows only the parent who set it up and the family's approved children; a
+ * child's tablet shows only that child. A parent tile asks for that parent's PIN (or password if they have no PIN);
+ * a child tile asks for the child's PIN. If the picker can't be loaded, no earlier profile data is shown.
  */
 @Component({
   selector: 'app-profile-picker-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Avatar],
+  imports: [RouterLink, MatButtonModule, Avatar],
   template: `
     <h1>Who’s using Parenthesis?</h1>
-    @if (auth.device(); as device) {
+    @if (loadFailed()) {
+      <div class="alert" role="alert">{{ error() }}</div>
+      <div class="actions">
+        <button mat-flat-button type="button" [disabled]="loading()" (click)="load()">
+          {{ loading() ? 'Trying again…' : 'Try again' }}
+        </button>
+      </div>
+      <div class="links">
+        <a routerLink="/sign-in">Sign in with email and password</a>
+      </div>
+    } @else if (auth.device(); as device) {
       <p class="lead">{{ device.familyName }}</p>
-
-      @if (error(); as error) {
-        <div class="alert" role="alert">{{ error }}</div>
-      }
 
       <ul class="tiles" aria-label="Profiles">
         @for (tile of device.profiles; track tile.id) {
@@ -31,7 +40,9 @@ import { FORM_STYLES } from '../auth/form-styles';
                 <app-avatar [name]="tile.name" [kind]="tile.kind" [size]="72" />
                 <span class="tile__name">{{ tile.name }}</span>
                 @if (tile.locked) {
-                  <span class="chip">Locked</span>
+                  <span class="chip">PIN locked</span>
+                } @else if (tile.pausedUntil) {
+                  <span class="chip">PIN paused</span>
                 }
               </a>
             } @else {
@@ -52,8 +63,11 @@ import { FORM_STYLES } from '../auth/form-styles';
         </div>
       }
     } @else {
-      <!-- A parent removed this device, so it no longer has a picker. -->
-      <p class="lead">This device isn’t set up for your family any more.</p>
+      <!-- Removed, expired after 30 days, or signed out: no picker until a parent sets it up again. -->
+      <p class="lead">
+        This device isn’t set up for sharing right now. A parent needs to sign in with their email and password and
+        set it up again.
+      </p>
       <div class="links">
         <a routerLink="/sign-in">Sign in</a>
         <a routerLink="/pair">Pair a child’s tablet</a>
@@ -113,23 +127,48 @@ import { FORM_STYLES } from '../auth/form-styles';
       .links {
         justify-content: center;
       }
+      .actions {
+        display: grid;
+      }
+      .actions button {
+        min-height: var(--target-min);
+      }
     `,
   ],
 })
 export class ProfilePickerPage implements OnInit {
   protected readonly auth = inject(AuthStore);
   protected readonly error = signal<string | null>(null);
+  protected readonly loadFailed = signal(false);
+  protected readonly loading = signal(false);
+  private readonly router = inject(Router);
 
   async ngOnInit(): Promise<void> {
-    // Refresh, so a profile a parent just unlocked or set up shows its current state.
+    await this.load();
+    // A child's own tablet has one profile: go straight to its PIN (owner decision, October 28, 2026).
+    const device = this.auth.device();
+    const only = device?.deviceKind === 'ChildPaired' && device.profiles.length === 1 ? device.profiles[0] : null;
+    if (!this.loadFailed() && only?.kind === 'child' && only.canSignIn) {
+      await this.router.navigate(['/profiles', 'child', only.id], { replaceUrl: true });
+    }
+  }
+
+  /** Refresh, so the picker reflects current permissions and PIN states. On failure, show nothing stale. */
+  protected async load(): Promise<void> {
+    this.loading.set(true);
     try {
       await this.auth.loadDevice();
+      this.loadFailed.set(false);
+      this.error.set(null);
     } catch (error) {
-      this.error.set(generalMessage(toProblem(error)));
+      this.loadFailed.set(true);
+      this.error.set(`We couldn’t load the profiles. ${generalMessage(toProblem(error))}`);
+    } finally {
+      this.loading.set(false);
     }
   }
 
   protected link(tile: ProfileTile): string[] {
-    return ['/profiles', tile.kind, tile.id];
+    return tile.kind === 'parent' && !tile.canSignIn ? ['/profiles', 'parent', tile.id, 'password'] : ['/profiles', tile.kind, tile.id];
   }
 }

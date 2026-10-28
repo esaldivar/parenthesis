@@ -18,7 +18,11 @@ internal sealed record AddChildRequest(string? FirstName);
 internal sealed record ChildView(Guid Id, string FirstName, ChildStatus Status, Guid? ChangeRequestId, ChildSignInView SignIn);
 
 /// <summary>A child's sign-in, for parents: whether a PIN is set, whether it's locked, and whether a new PIN awaits approval.</summary>
-internal sealed record ChildSignInView(bool Enabled, bool Locked, bool PinChangePending)
+/// <summary>
+/// A child's sign-in state. <c>Locked</c>: the PIN needs a parent to reset it (#153). <c>PausedUntil</c>: set while
+/// three wrong PINs have paused it; it reopens on its own then.
+/// </summary>
+internal sealed record ChildSignInView(bool Enabled, bool Locked, bool PinChangePending, DateTimeOffset? PausedUntil = null)
 {
     public static readonly ChildSignInView None = new(false, false, false);
 }
@@ -101,7 +105,7 @@ internal static class ChildEndpoints
 
     /// <summary>Active and pending children, with their sign-in state; rejected or archived ones drop out of the list.</summary>
     private static async Task<Results<Ok<List<ChildView>>, ForbidHttpResult>> ListAsync(
-        ITenantContext tenant, FamiliesDbContext db, CancellationToken cancellationToken)
+        ITenantContext tenant, FamiliesDbContext db, TimeProvider clock, CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
         {
@@ -124,7 +128,11 @@ internal static class ChildEndpoints
                 c.Status,
                 null,
                 credentials.TryGetValue(c.Id, out var credential)
-                    ? new ChildSignInView(true, credential.IsLocked, credential.PendingPinHash is not null)
+                    ? new ChildSignInView(
+                        true,
+                        credential.IsLocked,
+                        credential.PendingPinHash is not null,
+                        credential.StateAt(clock.GetUtcNow()) == PinState.Paused ? credential.PausedUntil : null)
                     : ChildSignInView.None))
             .ToList());
     }

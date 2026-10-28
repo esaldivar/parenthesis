@@ -1,5 +1,4 @@
 using CoParent.Infrastructure.Tenancy;
-using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Families.Domain;
 using CoParent.Modules.Families.Infrastructure;
 using CoParent.Modules.Identity.Contracts;
@@ -17,17 +16,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Families.Endpoints;
 
-internal sealed record RegisterDeviceRequest(string? Name);
+/// <param name="Name">What the device is called in the device list, like "Kitchen iPad".</param>
+/// <param name="Pin">The parent's new six-digit PIN, required when they don't have one yet; ignored otherwise.</param>
+internal sealed record SetUpSharedDeviceRequest(string? Name, string? Pin);
 
-internal sealed record DeviceView(Guid Id, string Name, DeviceKind Kind, Guid? ChildProfileId, DateTimeOffset CreatedAt, DateTimeOffset LastSeenAt);
+internal sealed record DeviceView(
+    Guid Id, string Name, DeviceKind Kind, Guid? ChildProfileId, DateTimeOffset CreatedAt, DateTimeOffset LastSeenAt, DateTimeOffset? ExpiresAt);
 
 internal sealed record SetPinRequest(string? Pin);
 
-internal sealed record PinChangeProposed(Guid ChangeRequestId);
+/// <summary>
+/// One picker tile. <c>CanSignIn</c>: a child has a PIN, or a parent has a parent PIN (otherwise they use their
+/// password). <c>Locked</c>: the PIN needs a parent to reset it. <c>PausedUntil</c>: set while three wrong tries pause it.
+/// </summary>
+internal sealed record ProfileTile(string Kind, Guid Id, string Name, bool CanSignIn, bool Locked, DateTimeOffset? PausedUntil);
 
-internal sealed record ProfileTile(string Kind, Guid Id, string Name, bool CanSignIn, bool Locked);
-
-internal sealed record DeviceProfiles(string FamilyName, DeviceKind DeviceKind, IReadOnlyList<ProfileTile> Profiles);
+/// <summary>The picker. <c>IsYours</c>: the signed-in parent (if any) is the one who set up this shared device.</summary>
+internal sealed record DeviceProfiles(string FamilyName, DeviceKind DeviceKind, IReadOnlyList<ProfileTile> Profiles, bool IsYours);
 
 internal sealed record ChildSignInRequest(Guid ChildId, string? Pin);
 
@@ -40,12 +45,14 @@ internal sealed record PairDeviceRequest(string? Code, string? DeviceName);
 internal sealed record PairedDeviceView(Guid ChildId, string ChildFirstName);
 
 /// <summary>
-/// Devices, the profile picker, child PINs and lockout (A-08 to A-10, ADR-0006).
+/// Devices, the profile picker, child PINs and lockout (A-08 to A-10, ADR-0006, as changed by #153 and ADR-0007).
 /// <list type="bullet">
-/// <item>A child's PIN only works on a device registered to their family, so it can't be tried from anywhere else.</item>
-/// <item>Three wrong PINs lock the profile and email both parents; either parent can unlock it.</item>
-/// <item>A parent tile never uses a PIN: parents sign back in with their full password (/api/auth/login).</item>
+/// <item>A PIN only works on a usable device registered to its family, so it can't be tried from anywhere else.</item>
+/// <item>A shared household device is set up explicitly by a parent and works for a fixed 30 days.</item>
+/// <item>Three wrong PINs pause a PIN for ten minutes; three more lock it until a parent resets it.</item>
+/// <item>Either authorized parent resets a child's PIN at once; the other parent is told, without the PIN.</item>
 /// </list>
+/// The parent's own PIN, shared-device setup and switching profiles are in <see cref="SharedDeviceEndpoints"/>.
 /// </summary>
 internal static class ChildAccessEndpoints
 {
@@ -54,14 +61,12 @@ internal static class ChildAccessEndpoints
     public static void Map(IEndpointRouteBuilder api, IEndpointRouteBuilder family)
     {
         var devices = family.MapGroup("/devices").WithTags("Devices");
-        devices.MapPost("/household", RegisterHouseholdAsync);
         devices.MapGet("/", ListDevicesAsync);
         devices.MapDelete("/{deviceId:guid}", RevokeDeviceAsync);
 
         var children = family.MapGroup("/children/{childId:guid}").WithTags("Children");
         children.MapPut("/pin", SetPinAsync);
         children.MapDelete("/pin", DisableAsync);
-        children.MapPost("/unlock", UnlockAsync);
         children.MapPost("/pairing-code", CreatePairingCodeAsync);
 
         var device = api.MapGroup("/device").WithTags("Profile picker").AllowAnonymous();
@@ -72,68 +77,27 @@ internal static class ChildAccessEndpoints
         api.MapGet("/session/child", CurrentChild).WithTags("Profile picker").WithMetadata(new ChildSessionAllowed());
     }
 
-    /// <summary>Registers this browser as a household device for the family, so it can show the profile picker.</summary>
-    private static async Task<Results<Created<DeviceView>, ValidationProblem, ForbidHttpResult>> RegisterHouseholdAsync(
-        RegisterDeviceRequest request,
-        HttpContext http,
-        ITenantContext tenant,
-        FamiliesDbContext db,
-        IUnitOfWork unitOfWork,
-        IAuditLog audit,
-        TimeProvider clock,
-        CancellationToken cancellationToken)
+    /// <summary>The family's devices that still work: not revoked and, for shared devices, not past their 30 days.</summary>
+    private static async Task<Results<Ok<List<DeviceView>>, ForbidHttpResult>> ListDevicesAsync(
+        ITenantContext tenant, FamiliesDbContext db, TimeProvider clock, CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
         {
             return TypedResults.Forbid();
-        }
-
-        var name = request.Name?.Trim() ?? "";
-        if (name.Length is 0 or > Device.NameMaxLength)
-        {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["name"] = [$"Give this device a name of 1 to {Device.NameMaxLength} characters, like \"Kitchen iPad\"."],
-            });
         }
 
         var now = clock.GetUtcNow();
-        var (token, hash) = Device.NewToken();
-        var device = new Device
-        {
-            FamilyId = tenant.FamilyId,
-            Kind = DeviceKind.Household,
-            Name = name,
-            TokenHash = hash,
-            CreatedByMembershipId = tenant.MembershipId,
-            CreatedAt = now,
-            LastSeenAt = now,
-        };
-
-        await unitOfWork.ExecuteAsync(async ct =>
-        {
-            db.Devices.Add(device);
-            await db.SaveChangesAsync(ct);
-            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, http.User.GetUserId(), "device.registered", "device", device.Id), ct);
-        }, cancellationToken);
-
-        DeviceCookie.Set(http.Response, token, now);
-        return TypedResults.Created($"/api/families/{tenant.FamilyId}/devices/{device.Id}", View(device));
-    }
-
-    private static async Task<Results<Ok<List<DeviceView>>, ForbidHttpResult>> ListDevicesAsync(
-        ITenantContext tenant, FamiliesDbContext db, CancellationToken cancellationToken)
-    {
-        if (tenant.Role != FamilyRole.Parent)
-        {
-            return TypedResults.Forbid();
-        }
-
-        var devices = await db.Devices.Where(d => d.RevokedAt == null).OrderBy(d => d.CreatedAt).ToListAsync(cancellationToken);
+        var devices = await db.Devices
+            .Where(d => d.RevokedAt == null && (d.ExpiresAt == null || d.ExpiresAt > now))
+            .OrderBy(d => d.CreatedAt)
+            .ToListAsync(cancellationToken);
         return TypedResults.Ok(devices.Select(View).ToList());
     }
 
-    /// <summary>Protective and immediate: no approval needed. Any child session on it ends on its next request.</summary>
+    /// <summary>
+    /// Protective and immediate: no approval needed. Every parent and child session on the device ends on its next
+    /// request, and its picker is gone until a parent signs in there and sets it up again (#153).
+    /// </summary>
     private static async Task<Results<NoContent, NotFound, ForbidHttpResult>> RevokeDeviceAsync(
         Guid deviceId,
         HttpContext http,
@@ -165,18 +129,19 @@ internal static class ChildAccessEndpoints
     }
 
     /// <summary>
-    /// Setting a child's first PIN enables their sign-in (the child is already approved by both parents). Changing an
-    /// existing PIN needs the co-parent's approval (ADR-0006): the new PIN is held, hashed, until they approve, and the
-    /// current PIN keeps working meanwhile.
+    /// Setting a child's first PIN enables their sign-in (the child is already approved by both parents). Either
+    /// authorized parent can reset it later, at once and without the other's approval (#153): a reset clears any pause
+    /// or lock, and the other authorized parent is emailed who reset which child's PIN, never the PIN itself.
     /// </summary>
-    private static async Task<Results<NoContent, Accepted<PinChangeProposed>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> SetPinAsync(
+    private static async Task<Results<NoContent, NotFound, ValidationProblem, ForbidHttpResult>> SetPinAsync(
         Guid childId,
         SetPinRequest request,
         HttpContext http,
         ITenantContext tenant,
         FamiliesDbContext db,
         IPasswordHasher<ChildCredential> hasher,
-        IChangeRequests changeRequests,
+        IUserDirectory directory,
+        PinSafetyEmails emails,
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
@@ -207,26 +172,27 @@ internal static class ChildAccessEndpoints
         var existing = await db.ChildCredentials.SingleOrDefaultAsync(c => c.ChildProfileId == childId, cancellationToken);
         if (existing is not null)
         {
-            if (existing.PendingPinHash is not null)
-            {
-                return TypedResults.Problem(
-                    title: $"A new PIN for {child.FirstName} is already waiting for approval.",
-                    detail: "Your co-parent can approve it, or whoever proposed it can withdraw it, before another change.",
-                    statusCode: StatusCodes.Status409Conflict);
-            }
+            // Recipients are read now (the unit of work's transaction ends with it): only the other parents who are
+            // currently active members of this family.
+            var others = await db.Memberships
+                .Where(m => m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active && m.Id != tenant.MembershipId)
+                .Select(m => m.UserId)
+                .ToListAsync(cancellationToken);
+            var contacts = await ParentContactsAsync(directory, others, cancellationToken);
+            var actorName = userId is { } actor
+                ? (await directory.GetDisplayNamesAsync([actor], cancellationToken)).GetValueOrDefault(actor, "A parent")
+                : "A parent";
 
-            Guid requestId = default;
             await unitOfWork.ExecuteAsync(async ct =>
             {
-                existing.PendingPinHash = hasher.HashPassword(existing, pin);
-                existing.UpdatedAt = now;
+                existing.Reset(hasher.HashPassword(existing, pin), now);
+                existing.PendingPinHash = null; // An older change still waiting for approval no longer applies.
                 await db.SaveChangesAsync(ct);
-                requestId = await changeRequests.ProposeAsync(
-                    new ChangeRequestProposal(
-                        ChangeRequestTypes.ChildPinChange, "child", childId, $"Change {child.FirstName}'s PIN", tenant.MembershipId, userId!.Value),
-                    ct);
+                await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "child.pin_reset", "child", childId), ct);
             }, cancellationToken);
-            return TypedResults.Accepted((string?)null, new PinChangeProposed(requestId));
+
+            await emails.SendChildPinResetAsync(contacts, actorName, child.FirstName, cancellationToken);
+            return TypedResults.NoContent();
         }
 
         var credential = new ChildCredential { FamilyId = tenant.FamilyId, ChildProfileId = childId, PinHash = "", UpdatedAt = now };
@@ -270,42 +236,16 @@ internal static class ChildAccessEndpoints
         return TypedResults.NoContent();
     }
 
-    /// <summary>"Tap to unlock": either parent, no approval needed, audited.</summary>
-    private static async Task<Results<NoContent, NotFound, ForbidHttpResult>> UnlockAsync(
-        Guid childId,
-        HttpContext http,
-        ITenantContext tenant,
-        FamiliesDbContext db,
-        IUnitOfWork unitOfWork,
-        IAuditLog audit,
-        TimeProvider clock,
-        CancellationToken cancellationToken)
-    {
-        if (tenant.Role != FamilyRole.Parent)
-        {
-            return TypedResults.Forbid();
-        }
-
-        var credential = await db.ChildCredentials.SingleOrDefaultAsync(c => c.ChildProfileId == childId, cancellationToken);
-        if (credential is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        await unitOfWork.ExecuteAsync(async ct =>
-        {
-            credential.Unlock(clock.GetUtcNow());
-            await db.SaveChangesAsync(ct);
-            await audit.RecordAsync(new AuditEntry(tenant.FamilyId, http.User.GetUserId(), "child.unlocked", "child", childId), ct);
-        }, cancellationToken);
-        return TypedResults.NoContent();
-    }
-
-    /// <summary>"Who's using Parenthesis?" for this registered device: names only, no other family data.</summary>
+    /// <summary>
+    /// "Who's using Parenthesis?" for this usable device: names only, no other family data. A shared device shows only
+    /// the parent who set it up (never the other parent) and the family's approved children; a paired tablet shows only
+    /// its child. Pending, rejected and archived children never appear. A revoked or expired device has no picker.
+    /// </summary>
     private static async Task<Results<Ok<DeviceProfiles>, NotFound>> ProfilesAsync(
-        HttpContext http, FamiliesDbContext db, IUserDirectory directory, CancellationToken cancellationToken)
+        HttpContext http, FamiliesDbContext db, IUserDirectory directory, TimeProvider clock, CancellationToken cancellationToken)
     {
-        if (await FindDeviceAsync(http, db, cancellationToken) is not { } device)
+        var now = clock.GetUtcNow();
+        if (await SharedDevices.FindByCookieAsync(http, db, now, cancellationToken) is not { } device)
         {
             return TypedResults.NotFound();
         }
@@ -324,48 +264,53 @@ internal static class ChildAccessEndpoints
             .ToDictionaryAsync(c => c.ChildProfileId, cancellationToken);
 
         var tiles = new List<ProfileTile>();
-        if (device.Kind == DeviceKind.Household)
+        var isYours = false;
+        if (device.Kind == DeviceKind.Household && await SharedDevices.OwnerAsync(db, device, null, cancellationToken) is { } owner)
         {
-            // Only the parent who registered this device gets a tile, so one parent's phone never lists the other parent.
-            var parents = await db.Memberships.IgnoreQueryFilters(filter)
-                .Where(m => m.Id == device.CreatedByMembershipId && m.FamilyId == device.FamilyId
-                    && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
-                .ToListAsync(cancellationToken);
-            var names = await directory.GetDisplayNamesAsync(parents.Select(p => p.UserId).ToList(), cancellationToken);
-            tiles.AddRange(parents.Select(p => new ProfileTile("parent", p.Id, names.GetValueOrDefault(p.UserId, "Parent"), true, false)));
+            isYours = http.User.GetChildSession() is null && http.User.GetUserId() == owner.UserId;
+            var names = await directory.GetDisplayNamesAsync([owner.UserId], cancellationToken);
+            var pin = await db.ParentCredentials.IgnoreQueryFilters(filter)
+                .SingleOrDefaultAsync(c => c.MembershipId == owner.Id, cancellationToken);
+            tiles.Add(Tile("parent", owner.Id, names.GetValueOrDefault(owner.UserId, "Parent"), pin, now));
         }
 
-        tiles.AddRange(children.Select(c => new ProfileTile(
-            "child",
-            c.Id,
-            c.FirstName,
-            CanSignIn: credentials.ContainsKey(c.Id),
-            Locked: credentials.TryGetValue(c.Id, out var credential) && credential.IsLocked)));
-        return TypedResults.Ok(new DeviceProfiles(familyName, device.Kind, tiles));
+        tiles.AddRange(children.Select(c => Tile("child", c.Id, c.FirstName, credentials.GetValueOrDefault(c.Id), now)));
+        return TypedResults.Ok(new DeviceProfiles(familyName, device.Kind, tiles, isYours));
     }
 
+    private static ProfileTile Tile(string kind, Guid id, string name, PinCredential? credential, DateTimeOffset now) => new(
+        kind,
+        id,
+        name,
+        CanSignIn: credential is not null,
+        Locked: credential?.IsLocked ?? false,
+        PausedUntil: credential?.StateAt(now) == PinState.Paused ? credential.PausedUntil : null);
+
     /// <summary>
-    /// A child signs in with their PIN, on a registered device only. Success replaces whatever session this browser had
-    /// (a parent's included): getting back to a parent profile always takes that parent's full password.
+    /// A child signs in with their PIN, on a usable registered device only. Success replaces whatever session this
+    /// browser had, a parent's included: getting back to a parent profile takes that parent's own PIN or password.
+    /// Three wrong PINs pause the child's PIN for ten minutes with no email; three more lock it until a parent resets it
+    /// and email every authorized parent.
     /// </summary>
-    private static async Task<Results<NoContent, ProblemHttpResult>> ChildSignInAsync(
+    private static async Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> ChildSignInAsync(
         ChildSignInRequest request,
         HttpContext http,
         FamiliesDbContext db,
         TenantContext tenant,
         IPasswordHasher<ChildCredential> hasher,
         IUserDirectory directory,
-        ChildSafetyEmails emails,
+        PinSafetyEmails emails,
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {
+        var now = clock.GetUtcNow();
         var notHere = TypedResults.Problem(
             title: "This profile can't sign in on this device.",
             detail: "Ask a parent to set it up.",
             statusCode: StatusCodes.Status403Forbidden);
-        if (await FindDeviceAsync(http, db, cancellationToken) is not { } device
+        if (await SharedDevices.FindByCookieAsync(http, db, now, cancellationToken) is not { } device
             || (device.Kind == DeviceKind.ChildPaired && device.ChildProfileId != request.ChildId))
         {
             return notHere;
@@ -382,17 +327,23 @@ internal static class ChildAccessEndpoints
             return notHere;
         }
 
-        if (credential.IsLocked)
+        switch (credential.StateAt(now))
         {
-            return Locked(child.FirstName);
+            case PinState.ResetRequired:
+                return PinProblems.ChildLocked(child.FirstName, parentsNotified: null);
+            case PinState.Paused:
+                return PinProblems.ChildPaused(child.FirstName, credential.PausedUntil!.Value);
         }
 
-        var now = clock.GetUtcNow();
+        // Malformed input never reaches the PIN check, so it doesn't count as a try.
         var pin = request.Pin ?? "";
-        var verified = pin.Length is >= 4 and <= 6
-            && hasher.VerifyHashedPassword(credential, credential.PinHash, pin) != PasswordVerificationResult.Failed;
-        var lockedNow = false;
-        List<string> parentEmails = [];
+        if (!PinProblems.ChildPinFormat(pin))
+        {
+            return PinProblems.Malformed("Your PIN is 4 to 6 numbers.");
+        }
+
+        var verified = hasher.VerifyHashedPassword(credential, credential.PinHash, pin) != PasswordVerificationResult.Failed;
+        var failure = PinFailure.TryAgain;
         if (verified)
         {
             credential.RecordSuccess();
@@ -400,53 +351,58 @@ internal static class ChildAccessEndpoints
         }
         else
         {
-            lockedNow = credential.RecordFailure(now);
-            if (lockedNow)
-            {
-                // Read before the unit of work commits (its transaction finishes with it).
-                var parentIds = await db.Memberships.IgnoreQueryFilters(filter)
-                    .Where(m => m.FamilyId == device.FamilyId && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
-                    .Select(m => m.UserId)
-                    .ToListAsync(cancellationToken);
-                foreach (var id in parentIds)
-                {
-                    if (await directory.FindByIdAsync(id, cancellationToken) is { } parent)
-                    {
-                        parentEmails.Add(parent.Email);
-                    }
-                }
-            }
+            failure = credential.RecordFailure(now);
         }
 
-        await unitOfWork.ExecuteAsync(async ct =>
+        // Read before the unit of work commits (its transaction finishes with it): every currently active parent.
+        List<(string Email, string Name)> parents = [];
+        if (failure == PinFailure.LockedNow)
         {
-            // The device acts within its own family for these writes.
-            tenant.Resolve(device.FamilyId, child.Id, FamilyRole.Child);
-            await db.SaveChangesAsync(ct);
-            var action = verified ? "child.signed_in" : lockedNow ? "child.locked" : "child.pin_failed";
-            await audit.RecordAsync(new AuditEntry(device.FamilyId, null, action, "child", child.Id), ct);
-        }, cancellationToken);
-
-        if (!verified)
-        {
-            if (lockedNow)
-            {
-                await emails.SendLockedAsync(parentEmails, child.FirstName, device.Name, cancellationToken);
-                return Locked(child.FirstName);
-            }
-
-            var left = ChildCredential.MaxFailedAttempts - credential.FailedAttempts;
-            return TypedResults.Problem(
-                title: "That PIN didn't work.",
-                detail: left == 1 ? "1 try left." : $"{left} tries left.",
-                statusCode: StatusCodes.Status401Unauthorized,
-                extensions: new Dictionary<string, object?> { ["triesLeft"] = left });
+            var parentIds = await db.Memberships.IgnoreQueryFilters(filter)
+                .Where(m => m.FamilyId == device.FamilyId && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active)
+                .Select(m => m.UserId)
+                .ToListAsync(cancellationToken);
+            parents = await ParentContactsAsync(directory, parentIds, cancellationToken);
         }
 
-        await http.SignInAsync(
-            IdentityConstants.ApplicationScheme,
-            ChildSessionPrincipal.Create(new ChildSession(child.Id, device.FamilyId, device.Id, child.FirstName)));
-        return TypedResults.NoContent();
+        try
+        {
+            await unitOfWork.ExecuteAsync(async ct =>
+            {
+                // The device acts within its own family for these writes.
+                tenant.Resolve(device.FamilyId, child.Id, FamilyRole.Child);
+                await db.SaveChangesAsync(ct);
+                var action = verified ? "child.signed_in"
+                    : failure == PinFailure.PausedNow ? "child.pin_paused"
+                    : failure == PinFailure.LockedNow ? "child.locked"
+                    : "child.pin_failed";
+                await audit.RecordAsync(new AuditEntry(device.FamilyId, null, action, "child", child.Id), ct);
+            }, cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return PinProblems.Busy();
+        }
+
+        if (verified)
+        {
+            await http.SignInAsync(
+                IdentityConstants.ApplicationScheme,
+                ChildSessionPrincipal.Create(new ChildSession(child.Id, device.FamilyId, device.Id, child.FirstName)));
+            return TypedResults.NoContent();
+        }
+
+        switch (failure)
+        {
+            case PinFailure.PausedNow:
+                return PinProblems.ChildPaused(child.FirstName, credential.PausedUntil!.Value);
+            case PinFailure.LockedNow:
+                // Each parent is emailed separately, only after the lock is saved.
+                var sent = await emails.SendChildLockedAsync(parents, child.FirstName, cancellationToken);
+                return PinProblems.ChildLocked(child.FirstName, parentsNotified: sent > 0);
+            default:
+                return PinProblems.Wrong(credential.TriesLeft);
+        }
     }
 
     /// <summary>
@@ -565,7 +521,7 @@ internal static class ChildAccessEndpoints
         }, cancellationToken);
 
         await http.SignOutAsync(IdentityConstants.ApplicationScheme);
-        DeviceCookie.Set(http.Response, token, now);
+        DeviceCookie.Set(http.Response, token, now.AddDays(400));
         return TypedResults.Ok(new PairedDeviceView(child.Id, child.FirstName));
     }
 
@@ -574,24 +530,21 @@ internal static class ChildAccessEndpoints
             ? TypedResults.Ok(new ChildSessionView(child.ChildId, child.FirstName, child.FamilyId))
             : TypedResults.Unauthorized();
 
-    private static ProblemHttpResult Locked(string firstName) => TypedResults.Problem(
-        title: $"{firstName}'s profile is locked.",
-        detail: "Ask Mom or Dad to unlock it.",
-        statusCode: StatusCodes.Status423Locked);
-
-    /// <summary>The active registered device this browser's device cookie belongs to, across families by exact hash.</summary>
-    private static async Task<Device?> FindDeviceAsync(HttpContext http, FamiliesDbContext db, CancellationToken cancellationToken)
+    /// <summary>Email and display name for each user, skipping accounts that no longer exist.</summary>
+    internal static async Task<List<(string Email, string Name)>> ParentContactsAsync(
+        IUserDirectory directory, IEnumerable<Guid> userIds, CancellationToken cancellationToken)
     {
-        if (DeviceCookie.Read(http.Request) is not { } token)
+        var contacts = new List<(string, string)>();
+        foreach (var id in userIds)
         {
-            return null;
+            if (await directory.FindByIdAsync(id, cancellationToken) is { } parent)
+            {
+                contacts.Add((parent.Email, parent.DisplayName));
+            }
         }
 
-        var hash = Device.Hash(token);
-        return await db.Devices
-            .IgnoreQueryFilters([TenantContext.QueryFilterName])
-            .SingleOrDefaultAsync(d => d.TokenHash == hash && d.RevokedAt == null, cancellationToken);
+        return contacts;
     }
 
-    private static DeviceView View(Device d) => new(d.Id, d.Name, d.Kind, d.ChildProfileId, d.CreatedAt, d.LastSeenAt);
+    internal static DeviceView View(Device d) => new(d.Id, d.Name, d.Kind, d.ChildProfileId, d.CreatedAt, d.LastSeenAt, d.ExpiresAt);
 }

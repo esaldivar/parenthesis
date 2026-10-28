@@ -123,9 +123,9 @@ Rules:
 - ASP.NET Core Identity with **cookie authentication**: HttpOnly, Secure, `SameSite=Strict`, plus antiforgery tokens on unsafe methods. No tokens are stored in `localStorage` (ADR-0004).
 - Email confirmation, lockout, and password rules following NIST 800-63B (length over complexity, breached-password check later). TOTP 2FA is on the backlog.
 - **Children sign in with a profile picker and a PIN** ([ADR-0006](../adr/0006-profiles-pins-and-child-devices.md), accepted 2026-10-17). This replaces the earlier design of child accounts with a username and password.
-  - **Where a PIN works:** only on a device registered to the family, either a parent's household device or a child's tablet paired with a one-time code.
-  - **Lockout:** three wrong PINs lock the profile, both parents are notified, and either parent can unlock it.
-  - **Switching to a parent profile** always needs the parent's full password.
+  - **Where a PIN works:** only on a device registered to the family: a shared family device a parent explicitly set up (for a fixed 30 days), or a child's tablet paired with a one-time code. Signing in never registers a device ([ADR-0007](../adr/0007-shared-devices-and-parent-pins.md), proposed, #153).
+  - **Lockout (#153):** three wrong PINs pause that PIN for ten minutes; three more lock it until a parent resets it. Either parent resets a child's PIN at once and the other parent is told, without the PIN. No one-tap unlock.
+  - **Switching to a parent profile** on their own shared device takes the parent's six-digit PIN (or their password); the other parent always uses their own password. Parent sessions there are bound to the device, so revocation, expiry or lost access end them at once.
 
 ### Authorization (three layers, all server-side)
 1. **Tenant gate.** An endpoint filter on every `/api/families/{familyId}/…` route resolves the caller's active membership and fills `ITenantContext`. If the caller isn't a member, the API returns **404**, not 403, so it doesn't leak whether the family exists.
