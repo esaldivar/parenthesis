@@ -26,6 +26,12 @@ that points back here.
     minutes, at most one parent-requested link per 15 minutes, still needing password sign-in and confirmation;
     paired child tablet opens straight to the PIN; "No" to shared setup remembered per browser and parent; devices
     registered before the change expire 30 days after registration.
+  - [x] Owner fix after testing on `develop` (October 28, 2026): parents couldn't find the picker. Setup now ends at
+    the picker (enter the PIN just chosen), shared devices show a visible Switch profile button, Sign out keeps the
+    device and returns to the picker, and Settings offers "Stop sharing this device" for the browser in use.
+  - [x] Owner approved the Switch profile header button (labelled on every size, kept in the account menu too) and
+    the neutral "Stop sharing this device" confirmation, reusing existing components (October 28, 2026; boards in
+    `docs/design/reviews/issue-153/picker-fix-2026-10-28/`).
   - [ ] Pending design review: new state supplements (R/P/E/D in `reviews/issue-153/states.html`), explicit
     mobile-dark/desktop-light reuse, parent lock, initial parent PIN form, notification-failure variants. The
     implemented screens follow the existing design system and are not claimed to match unapproved supplements.

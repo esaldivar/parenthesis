@@ -20,8 +20,16 @@ namespace CoParent.Modules.Families.Endpoints;
 /// <param name="Pin">The parent's new six-digit PIN, required when they don't have one yet; ignored otherwise.</param>
 internal sealed record SetUpSharedDeviceRequest(string? Name, string? Pin);
 
+/// <summary>A device in the family's list. <c>IsThisDevice</c>: it's the browser asking, so Settings can offer "Stop sharing".</summary>
 internal sealed record DeviceView(
-    Guid Id, string Name, DeviceKind Kind, Guid? ChildProfileId, DateTimeOffset CreatedAt, DateTimeOffset LastSeenAt, DateTimeOffset? ExpiresAt);
+    Guid Id,
+    string Name,
+    DeviceKind Kind,
+    Guid? ChildProfileId,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset LastSeenAt,
+    DateTimeOffset? ExpiresAt,
+    bool IsThisDevice = false);
 
 internal sealed record SetPinRequest(string? Pin);
 
@@ -79,7 +87,7 @@ internal static class ChildAccessEndpoints
 
     /// <summary>The family's devices that still work: not revoked and, for shared devices, not past their 30 days.</summary>
     private static async Task<Results<Ok<List<DeviceView>>, ForbidHttpResult>> ListDevicesAsync(
-        ITenantContext tenant, FamiliesDbContext db, TimeProvider clock, CancellationToken cancellationToken)
+        HttpContext http, ITenantContext tenant, FamiliesDbContext db, TimeProvider clock, CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
         {
@@ -91,12 +99,16 @@ internal static class ChildAccessEndpoints
             .Where(d => d.RevokedAt == null && (d.ExpiresAt == null || d.ExpiresAt > now))
             .OrderBy(d => d.CreatedAt)
             .ToListAsync(cancellationToken);
-        return TypedResults.Ok(devices.Select(View).ToList());
+        var thisDevice = DeviceCookie.Read(http.Request) is { } token ? Device.Hash(token) : null;
+        return TypedResults.Ok(devices
+            .Select(d => View(d) with { IsThisDevice = thisDevice is not null && d.TokenHash.AsSpan().SequenceEqual(thisDevice) })
+            .ToList());
     }
 
     /// <summary>
     /// Protective and immediate: no approval needed. Every parent and child session on the device ends on its next
-    /// request, and its picker is gone until a parent signs in there and sets it up again (#153).
+    /// request, and its picker is gone until a parent signs in there and sets it up again (#153). Removing the device
+    /// you're using is how a parent stops sharing it ("Stop sharing this device" in Settings).
     /// </summary>
     private static async Task<Results<NoContent, NotFound, ForbidHttpResult>> RevokeDeviceAsync(
         Guid deviceId,

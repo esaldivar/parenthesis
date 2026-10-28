@@ -22,12 +22,6 @@ public interface ISharedDeviceSessions
 
     /// <summary>Whether a parent session bound to <paramref name="deviceId"/> may continue.</summary>
     Task<bool> IsParentSessionValidAsync(Guid deviceId, Guid userId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Full sign-out: removes this browser's shared device when it belongs to <paramref name="userId"/>, so the picker
-    /// is gone until a parent signs in and sets the device up again.
-    /// </summary>
-    Task ForgetOnSignOutAsync(HttpContext http, Guid userId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Starts a parent's own session from the Families module, after their parent PIN or shared-device setup.</summary>

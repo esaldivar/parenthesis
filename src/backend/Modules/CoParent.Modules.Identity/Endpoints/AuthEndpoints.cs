@@ -131,18 +131,11 @@ internal static class AuthEndpoints
     }
 
     /// <summary>
-    /// Full sign-out. A parent's shared device in this browser is removed as well, so its picker is gone until a parent
-    /// signs in and sets it up again (#153). A child's sign-out only ends the child's session; switching profiles
-    /// without removing the picker is <c>POST /api/device/switch</c>.
+    /// Sign out. A shared family device stays shared, so the browser goes back to "Who's using Parenthesis?" (owner
+    /// decision, October 28, 2026). Stopping sharing is removing the device in Settings (#153).
     /// </summary>
-    private static async Task<NoContent> LogoutAsync(
-        HttpContext http, SignInManager<AppUser> signIn, ISharedDeviceSessions devices, CancellationToken cancellationToken)
+    private static async Task<NoContent> LogoutAsync(SignInManager<AppUser> signIn)
     {
-        if (http.User.GetChildSession() is null && http.User.GetUserId() is { } userId)
-        {
-            await devices.ForgetOnSignOutAsync(http, userId, cancellationToken);
-        }
-
         await signIn.SignOutAsync();
         return TypedResults.NoContent();
     }

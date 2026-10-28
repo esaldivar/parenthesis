@@ -110,6 +110,8 @@ export interface Device {
   readonly lastSeenAt: string;
   /** A shared device's picker stops working at this fixed time (30 days from setup); null for a child's own tablet. */
   readonly expiresAt?: string | null;
+  /** This browser is that device. */
+  readonly isThisDevice?: boolean;
 }
 
 export interface ProfileTile {
