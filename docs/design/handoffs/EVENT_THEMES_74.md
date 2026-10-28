@@ -28,3 +28,11 @@ Read issue #74 and latest comments before implementation. Individual concept app
 Eric assigned follow-on implementation to ChatGPT on October 28, 2026. All eleven motif directions are visually approved. The nine-theme sheet is preserved unchanged as approval evidence; its extra artwork colors do not supersede the category-color wash requirement. Derive reusable artwork assets rather than shipping entire mockup screenshots as application UI.
 
 Next: inspect current app and settings architecture; specify deterministic title matching and ambiguous fallback, implement the default-On per-user toggle and title reevaluation, integrate reusable decorative assets with existing category tokens, and verify permissions, both themes, accessibility and responsive behavior. Preserve approved brand artwork. Track any remaining specification gaps explicitly. Implementation has not started; this PR remains design/documentation only. No merge or deployment authorized.
+
+## Implementation candidate — October 28, 2026
+
+Branch `feat/74-event-themes` implements the Settings toggle and account-isolated, device-local persistence following the existing appearance preference architecture. Cross-device synchronization is not implemented. Signed-out or new accounts default On. Title matching is deterministic and local, case insensitive with whole-word rules. Multiple motif matches and unknown titles remain plain; no event data is sent to an external service. Current matching vocabulary is English; unsupported titles remain plain.
+
+Event details use a noninteractive, screen-reader-hidden decoration layer with category-token tint. Other-parent unavailable details never receive a motif. Edits and toggling reevaluate reactively. The calendar grid and authorization logic are unchanged. Approved boards remain reference evidence; the generated mask atlas is a new derivative requiring rendered visual review. No approval of exact final artwork is implied.
+
+Validation: 638 frontend tests passed, lint passed, production build passed (existing dashboard stylesheet budget warning). Browser visual review, real screen-reader testing, cross-device preference synchronization and final artwork/contrast acceptance remain outstanding. No merge or deployment.
