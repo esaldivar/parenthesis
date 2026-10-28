@@ -6,7 +6,7 @@ October 28, 2026. **Draft for owner review; not implementation authorization.**
 > server rules, four runtime emails and the screens listed in the
 > [handoff's implementation status](shared-device-issue-153.md#implementation-status--october-28-2026-supersedes-no-app-implementation-below)
 > are built on `feat/153-shared-device-flow`, with [ADR-0007](../adr/0007-shared-devices-and-parent-pins.md)
-> proposed. Routes as built: `/shared-device/setup`, `/profiles/parent/:id` (parent PIN),
+> accepted by the owner on October 28, 2026. Routes as built: `/shared-device/setup`, `/profiles/parent/:id` (parent PIN),
 > `/profiles/parent/:id/password`; APIs `POST /api/families/{id}/devices/household` (setup),
 > `GET|PUT /api/families/{id}/parent-pin`, `POST /api/device/parent-session`, `POST /api/device/switch`, and the
 > reset link `/parent-pin/reset` (`POST /api/device/parent-pin-reset`, `POST /api/families/{id}/parent-pin/reset[/check]`)

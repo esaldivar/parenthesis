@@ -20,7 +20,8 @@ that points back here.
   - [x] App screens using the existing design system and the unchanged approved icon: setup question/PIN form, parent
     PIN entry/pause/lock, child pause/lock, picker failure and expired/revoked state, parent PIN settings, device list
     expiry, child PIN reset, Switch profile and Sign out.
-  - [ ] Owner review and acceptance of ADR-0007 (proposed) and of the implementation PR.
+  - [x] ADR-0007 accepted by the owner (October 28, 2026), with the sign-out, takeover, PIN scope, lockout, reset-email
+    and expiry-reminder confirmations recorded; implementation released to `develop` in #338.
   - [x] Owner decisions (October 28, 2026, PR conversation), implemented: single-use parent PIN reset link valid 15
     minutes, at most one parent-requested link per 15 minutes, still needing password sign-in and confirmation;
     paired child tablet opens straight to the PIN; "No" to shared setup remembered per browser and parent; devices
