@@ -47,6 +47,7 @@ export class AuthStore {
     await this.api.login({ email, password });
     await this.api.antiforgery();
     await this.loadSession();
+    await this.refreshDeviceAfterSignIn();
   }
 
   /** A child signs in with their PIN on this registered device. Throws the HTTP error (401 tries left, 423 paused/locked). */
@@ -61,6 +62,15 @@ export class AuthStore {
     await this.api.parentPinSignIn(membershipId, pin);
     await this.api.antiforgery();
     await this.loadSession();
+    await this.refreshDeviceAfterSignIn();
+  }
+
+  /**
+   * The picker loaded while nobody was signed in says the device isn't "yours". Reload it as the parent, so the shell
+   * offers Switch profile (which keeps the device) rather than only Sign out (which removes it).
+   */
+  private async refreshDeviceAfterSignIn(): Promise<void> {
+    await this.loadDevice().catch(() => undefined);
   }
 
   /**

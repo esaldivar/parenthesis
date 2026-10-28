@@ -411,6 +411,31 @@ public sealed class SharedDeviceTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_reset_link_redeemed_twice_at_the_same_moment_saves_only_one_PIN()
+    {
+        var family = await FamilyAsync();
+        using var _ = family;
+        await PauseDadsPinAsync(family);
+        var token = ResetToken(family.Dad.Emails.LatestLink(family.DadEmail, "parent PIN is paused"));
+        using var dadsLaptop = await ApiSession.StartAsync(api);
+        await family.Dad.LoginAsync(family.DadEmail);
+        await dadsLaptop.LoginAsync(family.DadEmail);
+        var reset = $"/api/families/{family.FamilyId}/parent-pin/reset";
+
+        var responses = await Task.WhenAll(
+            family.Dad.PostAsync(reset, new { token, currentPassword = ApiSession.Password, pin = "604918" }),
+            dadsLaptop.PostAsync(reset, new { token, currentPassword = ApiSession.Password, pin = "720531" }));
+
+        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.NoContent);
+        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Gone);
+        var winner = responses[0].StatusCode == HttpStatusCode.NoContent ? "604918" : "720531";
+        var loser = winner == "604918" ? "720531" : "604918";
+        await SwitchAsync(family.Dad);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await ParentPinAsync(family.Dad, family, loser)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await ParentPinAsync(family.Dad, family, winner)).StatusCode);
+    }
+
+    [Fact]
     public async Task A_reset_link_expires_after_15_minutes()
     {
         var family = await FamilyAsync();

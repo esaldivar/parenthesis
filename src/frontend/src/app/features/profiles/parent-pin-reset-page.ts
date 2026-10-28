@@ -208,26 +208,35 @@ export class ParentPinResetPage implements OnInit {
   }
 }
 
+/**
+ * In-memory copy of the token for this page load, so the link still works when session storage is blocked (private
+ * mode, strict settings): the parent can finish if they're already signed in. Signing in first needs storage, since
+ * that leaves the page.
+ */
+let memoryToken: string | null = null;
+
 function store(token: string): void {
+  memoryToken = token;
   try {
     sessionStorage.setItem(RESET_TOKEN_KEY, token);
   } catch {
-    // Without storage the link still works if the parent is already signed in.
+    // The in-memory copy is enough while the parent stays on this page.
   }
 }
 
 function stored(): string | null {
   try {
-    return sessionStorage.getItem(RESET_TOKEN_KEY);
+    return sessionStorage.getItem(RESET_TOKEN_KEY) ?? memoryToken;
   } catch {
-    return null;
+    return memoryToken;
   }
 }
 
 function clear(): void {
+  memoryToken = null;
   try {
     sessionStorage.removeItem(RESET_TOKEN_KEY);
   } catch {
-    // Nothing to clear.
+    // Nothing else to clear.
   }
 }
