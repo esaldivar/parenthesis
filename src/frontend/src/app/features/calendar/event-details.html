@@ -8,6 +8,7 @@
   [cdkTrapFocusAutoCapture]="true"
   [attr.data-kind]="item().kind"
 >
+  <app-event-decoration [title]="item().title" [palette]="item().palette ?? item().kind" [allowed]="item().kind !== 'unavailable' || item().isMine" />
   <div class="panel__head">
     <span class="panel__icon" [appCalendarPalette]="item().palette ?? item().kind"><app-icon [name]="item().icon" [size]="24" /></span>
     <div class="panel__titles">

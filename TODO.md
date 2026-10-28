@@ -772,3 +772,5 @@ that points back here.
 - [ ] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code.
 - [ ] Complete remaining manual/incomplete axe review, ambiguous/nonexistent-time acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
 - Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
+
+- [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
