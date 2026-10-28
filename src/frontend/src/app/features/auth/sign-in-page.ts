@@ -7,6 +7,7 @@ import { Router, RouterLink } from '@angular/router';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { PendingInvitation } from '../../core/invitations/pending-invitation';
+import { safeReturnUrl } from '../profiles/safe-return-url';
 import { FORM_STYLES } from './form-styles';
 
 @Component({
@@ -84,7 +85,14 @@ export class SignInPage {
     try {
       const { email, password } = this.form.getRawValue();
       await this.auth.signIn(email.trim(), password);
-      await this.router.navigateByUrl(this.safeReturnUrl());
+      const target = this.safeReturnUrl();
+      // "Is this a shared family device?" is asked only after a fresh password sign-in, never answered for the parent
+      // (#153). An invited co-parent answers their invitation first.
+      if (!this.pending.peek() && (await this.auth.shouldOfferSharedSetup())) {
+        await this.router.navigate(['/shared-device/setup'], { queryParams: target === '/' ? {} : { returnUrl: target } });
+      } else {
+        await this.router.navigateByUrl(target);
+      }
     } catch (error) {
       const problem = toProblem(error);
       // The API gives one answer for every failed sign-in, so the page doesn't guess at the reason.
@@ -99,12 +107,8 @@ export class SignInPage {
   }
 
   private safeReturnUrl(): string {
-    const url = this.returnUrl();
-    // Only paths within the app, never "//evil.example" or absolute URLs (open redirect).
-    if (url && url.startsWith('/') && !url.startsWith('//')) {
-      return url;
-    }
-    // Back from confirming their email, an invited co-parent goes straight to their invitation.
-    return this.pending.peek() ? '/invitations/accept' : '/';
+    // Only paths within the app, never "//evil.example", "/\\evil.example" or absolute URLs (open redirect). Back from
+    // confirming their email, an invited co-parent goes straight to their invitation.
+    return safeReturnUrl(this.returnUrl(), this.pending.peek() ? '/invitations/accept' : '/');
   }
 }

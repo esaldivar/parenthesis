@@ -6,6 +6,43 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Shared-device flow #153 (design PR #332; implementation branch `feat/153-shared-device-flow`,
+  October 28, 2026).** Preserve every recorded visual approval (incl. the dark desktop recovery board, the four email
+  concepts and the approved dark desktop states); unapproved supplements stay pending. Details:
+  `docs/design/shared-device-state-audit-153.md` and [ADR-0007](docs/adr/0007-shared-devices-and-parent-pins.md).
+  - [x] Server rules (implementation PR): explicit "Is this a shared family device?" setup after password sign-in;
+    fixed 30-day expiry; picker shows only the setting-up parent and approved children; six-digit parent PIN;
+    shared pause (3) → reset-required lock (3 more) for parent and child PINs, server-side and cross-device, race-safe;
+    immediate child PIN reset by either parent with a notice to the other; parent PIN change after password
+    confirmation; device-bound parent sessions ended by revocation, expiry or lost membership; switch profile versus
+    full sign-out; four PIN emails through the existing `EmailTemplate` pipeline, reporting real send results.
+    Backend integration tests and Vitest specs cover them.
+  - [x] App screens using the existing design system and the unchanged approved icon: setup question/PIN form, parent
+    PIN entry/pause/lock, child pause/lock, picker failure and expired/revoked state, parent PIN settings, device list
+    expiry, child PIN reset, Switch profile and Sign out.
+  - [ ] Owner review and acceptance of ADR-0007 (proposed) and of the implementation PR.
+  - [x] Owner decisions (October 28, 2026, PR conversation), implemented: single-use parent PIN reset link valid 15
+    minutes, at most one parent-requested link per 15 minutes, still needing password sign-in and confirmation;
+    paired child tablet opens straight to the PIN; "No" to shared setup remembered per browser and parent; devices
+    registered before the change expire 30 days after registration.
+  - [ ] Pending design review: new state supplements (R/P/E/D in `reviews/issue-153/states.html`), explicit
+    mobile-dark/desktop-light reuse, parent lock, initial parent PIN form, notification-failure variants. The
+    implemented screens follow the existing design system and are not claimed to match unapproved supplements.
+  - [ ] Exact wordmark/lockup exports still unavailable: headers keep the approved icon plus the text wordmark
+    (`shared/brand/logo.ts`, `TODO(brand)`); emails keep the CID icon plus text wordmark.
+  - [ ] Email client testing (Gmail web/mobile, Outlook Windows/web, Apple Mail/iOS, both themes, images blocked) with
+    real test sends; retry/outbox delivery (F-09) instead of log-and-continue.
+  - [ ] Real screen reader, physical phones, 200% text/400% zoom, forced colors and reduced motion on the release
+    candidate; live dev-site walkthrough of every #153 verification scenario.
+  - [ ] Required PR CI, SonarCloud analysis and owner acceptance; #153 stays open until accepted. Deferred: child
+    personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
+- [ ] **Calendar event search (#253, October 28, 2026).** Search pill beside Today (magnifier, today's date in the
+  family time zone); server search across history by title, event type, parent's parenting time and date; upcoming
+  first, then a labelled Past events group, each paged. Parent-only endpoint; family-scoped `(family_id, ends_at)` index,
+  no database extension (owner decision). Backend integration tests, Vitest specs, and headless Chromium screenshots at
+  320/480/1280px in both themes done.
+  - [ ] Real screen reader (VoiceOver), physical phone, enlarged text and forced colors against the release candidate.
+  - [ ] Required PR CI, SonarCloud quality gate and owner acceptance; #253 stays open until accepted.
 - [ ] **Release PR #321 Playwright follow-up (#278, #279).** Run 40444374496 recorded 224 passes and 30
   failures in the new mobile recovery scenarios. Correct Cancel URL, displayed date and empty-week fixture
   assumptions; preserve mutation, focus, date and DST assertions. The gate remains fail-closed. Extend the job
@@ -159,6 +196,15 @@ that points back here.
       username to forget; "forgot password" covers it.
   - Domain names, HTTPS, the pipeline (deploy `develop` → dev, `main` → prod), secrets in Key Vault, database
     migrations on deploy, backups, monitoring.
+  - **Uptime alerts (#114):** free UptimeRobot checks posting to Discord **#site-status**, $0/month for monitoring.
+    Runbook: [uptime monitoring](docs/runbooks/uptime-monitoring.md). Dev checks every 60 minutes so the app can still
+    scale to zero (owner decision, October 28, 2026).
+    - [x] Runbook, and a test that `/health/ready` returns only `Healthy`/`Unhealthy` (October 28, 2026).
+    - [ ] **Owner:** UptimeRobot Free account, Discord webhook for #site-status, and the `DEV · Parenthesis · ready`
+      monitor (runbook "Setup").
+    - [ ] **Owner:** run the outage and recovery test (runbook), and confirm the alerts look right.
+    - [ ] **Owner:** add the `PROD · Parenthesis · ready` monitor once production has a public address; check its
+      scaling first to choose the interval. Hard deadline: M4, before broader launch.
 
 - [ ] **M2: onboarding, co-parent invitation, children, profile picker** (owner requirements, October 17, 2026).
   - **Sign-up and invitation:** after signing up, a parent invites the co-parent by email.
@@ -749,3 +795,5 @@ that points back here.
 - [ ] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code.
 - [ ] Complete remaining manual/incomplete axe review, ambiguous/nonexistent-time acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
 - Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
+
+- [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.

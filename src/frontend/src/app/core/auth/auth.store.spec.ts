@@ -141,10 +141,25 @@ describe('AuthStore', () => {
       ['/api/auth/login', 204],
       ['/api/antiforgery', 204],
       ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Alex' }],
+      ['/api/device/profiles', 404],
     );
     await signIn;
 
     expect(store.user()?.displayName).toBe('Alex');
+  });
+
+  it('reloads the picker as the parent after a PIN sign-in, so it knows the device is theirs (#153)', async () => {
+    const signIn = store.parentPinSignIn('m1', '583920');
+    await respond(
+      ['/api/device/parent-session', 204],
+      ['/api/antiforgery', 204],
+      ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Dad' }],
+      ['/api/device/profiles', 200, { ...PICKER, isYours: true }],
+    );
+    await signIn;
+
+    expect(store.status()).toBe('signed-in');
+    expect(store.device()?.isYours).toBe(true);
   });
 
   it('propagates a failed sign-in so the form can explain it', async () => {
@@ -163,5 +178,39 @@ describe('AuthStore', () => {
     expect(store.status()).toBe('anonymous');
     expect(store.families()).toBeNull();
     expect(accounts).toEqual([null]);
+  });
+  describe('“Is this a shared family device?” (#153)', () => {
+    const FAMILIES = [{ id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', role: 'Parent' }];
+    const ME = { id: 'user-1', email: 'dad@example.test', displayName: 'Dad' };
+
+    beforeEach(() => localStorage.clear());
+    afterEach(() => localStorage.clear());
+
+    async function signedIn() {
+      const signIn = store.signIn('dad@example.test', 'correct horse battery staple');
+      await respond(['/api/auth/login', 204], ['/api/antiforgery', 204], ['/api/me', 200, ME], ['/api/device/profiles', 404]);
+      await signIn;
+    }
+
+    async function offered() {
+      const ask = store.shouldOfferSharedSetup();
+      await respond(['/api/me/families', 200, FAMILIES], ['/api/device/profiles', 404]);
+      return ask;
+    }
+
+    it('asks a parent with a family on a browser that isn’t their shared device', async () => {
+      await signedIn();
+
+      expect(await offered()).toBe(true);
+    });
+
+    it('stops asking in this browser once that parent says no, without affecting another parent', async () => {
+      await signedIn();
+      store.declineSharedSetup();
+
+      expect(await offered()).toBe(false);
+      expect(localStorage.getItem('parenthesis.sharedDevice.declined:user-1')).toBe('1');
+      expect(localStorage.getItem('parenthesis.sharedDevice.declined:user-2')).toBeNull();
+    });
   });
 });

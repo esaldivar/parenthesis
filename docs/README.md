@@ -14,6 +14,7 @@ specifications and decisions stay in their existing locations.
 
 ## Architecture and decisions
 
+- [Architecture at a glance](architecture.md): runtime and delivery flow diagrams.
 - [Solution architecture and repository structure](architecture/solution-architecture.md).
 - [Database entity relationship design](architecture/database-erd.md).
 
@@ -27,6 +28,7 @@ Accepted Architecture Decision Records (ADRs):
 | [ADR-0004](adr/0004-cookie-authentication.md) | Same-origin cookie authentication |
 | [ADR-0005](adr/0005-protective-actions.md) | Immediate protective Restrict actions |
 | [ADR-0006](adr/0006-profiles-pins-and-child-devices.md) | Profiles, child PINs, devices and mutual approval |
+| [ADR-0007](adr/0007-shared-devices-and-parent-pins.md) | Explicit shared family devices, parent PINs and two-stage PIN lockout (proposed, #153) |
 
 ## Product plans and design
 
@@ -45,7 +47,7 @@ verification; do not substitute the provisional concept or treat design mockups 
 
 ## Operations, quality and releases
 
-- [Azure environments](runbooks/azure-environments.md).
+- [Azure environments](runbooks/azure-environments.md) and [uptime monitoring](runbooks/uptime-monitoring.md).
 - [SonarQube Cloud](runbooks/sonarqube-cloud.md) and the [release security gate](runbooks/sonar-release-gate.md).
 - [Playwright release gate](runbooks/playwright-release-gate.md).
 - [PR issue-link requirements](runbooks/pr-issue-links.md).

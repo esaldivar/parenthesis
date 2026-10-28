@@ -1,3 +1,4 @@
+import { EventThemesService } from '../theme/event-themes.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Api, ChildSession, DeviceProfiles, FamilySummary, Me } from '../api/api';
@@ -18,6 +19,7 @@ export type AuthStatus = 'unknown' | 'anonymous' | 'signed-in' | 'child';
 export class AuthStore {
   private readonly api = inject(Api);
   private readonly appearance = inject(AppearanceService);
+  private readonly eventThemes = inject(EventThemesService);
 
   readonly user = signal<Me | null>(null);
   readonly child = signal<ChildSession | null>(null);
@@ -45,13 +47,100 @@ export class AuthStore {
     await this.api.login({ email, password });
     await this.api.antiforgery();
     await this.loadSession();
+    await this.refreshDeviceAfterSignIn();
   }
 
-  /** A child signs in with their PIN on this registered device. Throws the HTTP error (401 tries left, 423 locked). */
+  /** A child signs in with their PIN on this registered device. Throws the HTTP error (401 tries left, 423 paused/locked). */
   async childSignIn(childId: string, pin: string): Promise<void> {
     await this.api.childSignIn(childId, pin);
     await this.api.antiforgery();
     await this.loadSession();
+  }
+
+  /** The parent who set up this shared device enters their profile with their PIN (#153). Throws the HTTP error. */
+  async parentPinSignIn(membershipId: string, pin: string): Promise<void> {
+    await this.api.parentPinSignIn(membershipId, pin);
+    await this.api.antiforgery();
+    await this.loadSession();
+    await this.refreshDeviceAfterSignIn();
+  }
+
+  /**
+   * The picker loaded while nobody was signed in says the device isn't "yours". Reload it as the parent, so the shell
+   * offers Switch profile (which keeps the device) rather than only Sign out (which removes it).
+   */
+  private async refreshDeviceAfterSignIn(): Promise<void> {
+    await this.loadDevice().catch(() => undefined);
+  }
+
+  /**
+   * Whether to ask "Is this a shared family device?" after a password sign-in: only for a parent with a family, on a
+   * browser that isn't already their shared device. Nothing is registered without the parent's explicit choice.
+   */
+  async shouldOfferSharedSetup(): Promise<boolean> {
+    const [families, device] = await Promise.all([
+      this.loadFamilies().catch(() => [] as readonly FamilySummary[]),
+      this.loadDevice().catch(() => null),
+    ]);
+    return families.length > 0 && !(device?.deviceKind === 'Household' && device.isYours) && !this.declinedSharedSetup();
+  }
+
+  /**
+   * "No, continue to my account": remembered in this browser for this parent only, so a personal device doesn't ask
+   * again at every sign-in (owner decision, October 28, 2026). Not a security setting: Settings still offers setup.
+   */
+  declineSharedSetup(): void {
+    const key = this.declinedKey();
+    try {
+      if (key) {
+        localStorage.setItem(key, '1');
+      }
+    } catch {
+      // Storage unavailable (private mode): the question is simply asked again next time.
+    }
+  }
+
+  private declinedSharedSetup(): boolean {
+    const key = this.declinedKey();
+    try {
+      return key !== null && localStorage.getItem(key) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private declinedKey(): string | null {
+    const id = this.user()?.id;
+    return id ? `parenthesis.sharedDevice.declined:${id}` : null;
+  }
+
+  /** "Yes, this is a shared family device." The parent stays signed in: no second password prompt (#153). */
+  async setUpSharedDevice(familyId: string, name: string, pin: string | null): Promise<void> {
+    await this.api.setUpSharedDevice(familyId, name, pin);
+    const key = this.declinedKey();
+    try {
+      if (key) {
+        localStorage.removeItem(key);
+      }
+    } catch {
+      // Nothing to clear.
+    }
+    await this.api.antiforgery();
+    await this.loadDevice();
+  }
+
+  /**
+   * Switch profile: the server ends this session (parent or child) and keeps the shared device's picker. Local state
+   * is cleared even if the request fails, so nothing from the previous profile stays on screen.
+   */
+  async switchProfile(): Promise<void> {
+    try {
+      await this.api.switchProfile();
+    } finally {
+      this.setUser(null);
+      await this.api.antiforgery().catch(() => undefined);
+      await this.loadDevice().catch(() => this.device.set(null));
+    }
   }
 
   /** Makes this browser a child's own tablet. Any session on it ends, so it starts at the picker. */
@@ -63,13 +152,14 @@ export class AuthStore {
     return paired;
   }
 
+  /** Full sign-out. On the parent's own shared device the server removes the device too, so its picker is gone. */
   async signOut(): Promise<void> {
     try {
       await this.api.logout();
     } finally {
       this.setUser(null);
       await this.api.antiforgery().catch(() => undefined);
-      await this.loadDevice().catch(() => undefined);
+      await this.loadDevice().catch(() => this.device.set(null));
     }
   }
 
@@ -93,7 +183,7 @@ export class AuthStore {
     return family;
   }
 
-  /** Refreshes this device's picker, for example after a parent registers it or unlocks a child. */
+  /** Refreshes this device's picker, for example after a parent sets it up or resets a child's PIN. */
   async loadDevice(): Promise<DeviceProfiles | null> {
     try {
       this.device.set(await this.api.deviceProfiles());
@@ -130,6 +220,7 @@ export class AuthStore {
     this.status.set(user ? 'signed-in' : 'anonymous');
     // Each account has its own appearance; signed out, the app follows the system.
     this.appearance.useAccount(user?.id ?? null);
+    this.eventThemes.useAccount(user?.id ?? null);
   }
 
   private setChild(child: ChildSession): void {
@@ -139,5 +230,6 @@ export class AuthStore {
     this.status.set('child');
     // A child's appearance is their own, never a parent's (CLAUDE.md: appearance is personal).
     this.appearance.useAccount(`child:${child.childId}`);
+    this.eventThemes.useAccount(`child:${child.childId}`);
   }
 }

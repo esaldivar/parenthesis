@@ -3,6 +3,12 @@
 **Brand identity locked on October 16, 2026.** The user supplied the original branding board and explicitly selected **Variation 1 (Default)** icon and **Option B** wordmark.
 
 ## Original reference
+Current repository path (verified October 28, 2026):
+`docs/design/assets/F61791C0-BC62-4584-9C48-B5E8CA9A7BFE.jpeg`.
+The expected alias below and “not uploaded” paragraph record this manifest's
+original commit, not the current repository state. Do not crop production artwork
+from this reference; use approved exports below and obtain exact wordmark masters.
+
 - Expected path after binary upload: `docs/design/assets/parenthesis-approved-brand-board.jpeg`
 - Original uploaded JPEG: 1536 × 1024 pixels.
 - SHA-256 of original JPEG: `af89374a86c628e271043d3c41dd6648b9a08e2584028ed10bb0be50d7978e34`

@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormGroupDirective, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,23 +14,39 @@ import { FORM_STYLES } from '../auth/form-styles';
 export const PIN_PATTERN = /^\d{4,6}$/;
 
 /**
- * A child unlocks their profile with their PIN (ADR-0006). Three wrong tries lock it; the API emails both parents,
- * and a parent unlocks it. The wording stays calm and never mentions what parents decide between themselves.
+ * A child enters their profile with their PIN (ADR-0006, #153). Three wrong tries pause it for ten minutes, with a
+ * friendly on-screen message and no email; three more lock it until a parent chooses a new PIN, and the API emails
+ * the parents. The page only says parents were told when the email was actually sent. The wording stays calm and
+ * never mentions what parents decide between themselves. Variable-length PINs need the explicit Go button.
  */
 @Component({
   selector: 'app-child-pin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
   template: `
     <div class="who">
       <app-avatar [name]="name()" [size]="72" />
       <h1>Hi, {{ name() }}</h1>
     </div>
 
-    @if (locked()) {
+    @if (state() === 'locked') {
       <div class="status" role="status">
-        <p class="status__title">Your profile is locked.</p>
-        <p>We’ve let your parents know. Ask a parent to unlock it.</p>
+        <p class="status__title">Your PIN is locked.</p>
+        <p>Ask a parent to help you choose a new PIN.</p>
+        @if (notified() === true) {
+          <p>We’ve let your parents know.</p>
+        }
+      </div>
+    } @else if (state() === 'paused') {
+      <div class="status" role="status">
+        <p class="status__title">Let’s take a short break.</p>
+        <p>
+          That was a few wrong tries. Ask a parent for help, or try again after
+          {{ retryAt() | date: 'shortTime' }}.
+        </p>
+        <div class="actions">
+          <button mat-stroked-button type="button" (click)="tryAgain()">Try again</button>
+        </div>
       </div>
     } @else {
       <p class="lead">Type your PIN.</p>
@@ -65,7 +82,9 @@ export const PIN_PATTERN = /^\d{4,6}$/;
     }
 
     <div class="links">
-      <a routerLink="/profiles">Back to profiles</a>
+      @if (!pairedTablet()) {
+        <a routerLink="/profiles" [replaceUrl]="true">Back to profiles</a>
+      }
     </div>
   `,
   styles: [
@@ -102,8 +121,21 @@ export class ChildPinPage {
 
   private readonly tile = computed(() => this.auth.device()?.profiles.find((p) => p.kind === 'child' && p.id === this.id()));
   protected readonly name = computed(() => this.tile()?.name ?? 'there');
-  private readonly lockedNow = signal(false);
-  protected readonly locked = computed(() => this.lockedNow() || (this.tile()?.locked ?? false));
+  /** A child's own tablet opens straight to this page, so there are no other profiles to go back to. */
+  protected readonly pairedTablet = computed(() => this.auth.device()?.deviceKind === 'ChildPaired');
+  private readonly answer = signal<{ state: 'paused' | 'locked'; retryAt?: string; notified?: boolean } | null>(null);
+  /** Set by "Try again": show the form again. Only the server decides whether the break is over. */
+  private readonly retrying = signal(false);
+  protected readonly state = computed(() => {
+    const answer = this.answer();
+    if (answer) {
+      return answer.state;
+    }
+    const tile = this.tile();
+    return tile?.locked ? 'locked' : tile?.pausedUntil && Date.parse(tile.pausedUntil) > Date.now() && !this.retrying() ? 'paused' : null;
+  });
+  protected readonly retryAt = computed(() => this.answer()?.retryAt ?? this.tile()?.pausedUntil ?? null);
+  protected readonly notified = computed(() => this.answer()?.notified);
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     pin: ['', [Validators.required, Validators.pattern(PIN_PATTERN)]],
@@ -111,6 +143,11 @@ export class ChildPinPage {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
   private readonly formDirective = viewChild(FormGroupDirective);
+
+  protected tryAgain(): void {
+    this.answer.set(null);
+    this.retrying.set(true);
+  }
 
   protected async submit(): Promise<void> {
     if (this.form.invalid) {
@@ -121,13 +158,16 @@ export class ChildPinPage {
     this.error.set(null);
     try {
       await this.auth.childSignIn(this.id(), this.form.getRawValue().pin);
-      await this.router.navigateByUrl('/kid');
+      // Replace the PIN page in history: Back from the child's space never returns to the picker or a parent page.
+      await this.router.navigateByUrl('/kid', { replaceUrl: true });
     } catch (error) {
       const problem = toProblem(error);
       // A clean, empty box for the next try, without an "enter your PIN" error on top of the real message.
       this.formDirective()?.resetForm();
       if (problem.status === 423) {
-        this.lockedNow.set(true);
+        this.answer.set({ state: problem.state === 'paused' ? 'paused' : 'locked', retryAt: problem.retryAt, notified: problem.notified });
+      } else if (problem.status === 409) {
+        this.error.set('We couldn’t check that PIN. Please try again.');
       } else if (problem.status === 401) {
         const left = problem.triesLeft;
         this.error.set(`That PIN didn’t work.${left ? ` ${left === 1 ? '1 try' : `${left} tries`} left.` : ''}`);

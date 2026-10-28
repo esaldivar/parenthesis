@@ -28,7 +28,7 @@ const AURORA: Child = {
 };
 const MILO: Child = { ...AURORA, id: 'milo', firstName: 'Milo', status: 'PendingApproval' };
 const DEVICES: Device[] = [
-  { id: 'd1', name: 'Kitchen iPad', kind: 'Household', childProfileId: null, createdAt: '2026-10-01T12:00:00Z', lastSeenAt: '2026-10-18T12:00:00Z' },
+  { id: 'd1', name: 'Kitchen iPad', kind: 'Household', childProfileId: null, createdAt: '2026-10-01T12:00:00Z', lastSeenAt: '2026-10-18T12:00:00Z', expiresAt: '2026-10-31T12:00:00Z' },
   { id: 'd2', name: 'Kai’s tablet', kind: 'ChildPaired', childProfileId: 'kai', createdAt: '2026-10-02T12:00:00Z', lastSeenAt: '2026-10-17T12:00:00Z' },
 ];
 const FAMILY = {
@@ -41,7 +41,7 @@ const FAMILY = {
     { membershipId: 'm-sam', displayName: 'Sam Rivera', role: 'Parent', joinedAt: '2026-10-02T12:00:00Z' },
   ],
 };
-const PICKER: DeviceProfiles = { familyName: 'Rivera Family', deviceKind: 'Household', profiles: [] };
+const PICKER: DeviceProfiles = { familyName: 'Rivera Family', deviceKind: 'Household', profiles: [], isYours: true };
 
 function request(overrides: Partial<ChangeRequest>): ChangeRequest {
   return {
@@ -105,6 +105,7 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
     for (const r of http.match(`${F}/children`)) r.flush(children);
     for (const r of http.match(F)) r.flush(FAMILY);
     for (const r of http.match(`${F}/invitations`)) r.flush([]);
+    for (const r of http.match(`${F}/parent-pin`)) r.flush({ isSet: true, locked: false, pausedUntil: null });
     await settle(opened.harness);
     return opened;
   }
@@ -137,7 +138,7 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       expect(text(childItem(body, 'Kai'), '.child__state')).toBe('Signs in with a PIN');
       expect(text(childItem(body, 'Aurora'), '.child__state')).toBe('No PIN yet, so can’t sign in');
       expect(text(childItem(body, 'Milo'), '.child__state')).toBe('Waiting for approval');
-      expect(text(childItem(body, 'Kai'), '.child__actions')).toContain('Change PIN');
+      expect(text(childItem(body, 'Kai'), '.child__actions')).toContain('Reset PIN');
       expect(text(childItem(body, 'Aurora'), '.child__actions')).toBe(' Set a PIN ');
       expect(childItem(body, 'Milo').querySelector('.child__actions')).toBeNull();
     });
@@ -160,21 +161,22 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       expect(toastText()).toContain('Aurora can now sign in with their PIN.');
     });
 
-    it('asks the co-parent to approve a changed PIN, saying the old one still works', async () => {
+    it('resets a PIN at once, without the co-parent’s approval (#153)', async () => {
       const { harness, body } = await settings();
-      click(childItem(body, 'Kai'), 'Change PIN', '.child');
+      click(childItem(body, 'Kai'), 'Reset PIN', '.child');
       harness.fixture.detectChanges();
+      expect(text(childItem(body, 'Kai'))).toContain('works straight away and clears any pause or lock');
       const [pin, confirm] = childItem(body, 'Kai').querySelectorAll('input');
       type(harness, pin, '4826');
       type(harness, confirm, '4826');
-      click(childItem(body, 'Kai'), 'Ask your co-parent', '.child');
+      click(childItem(body, 'Kai'), 'Reset PIN now', '.child');
 
-      (await vi.waitFor(() => http.expectOne(`${F}/children/kai/pin`))).flush({ changeRequestId: 'r9' }, { status: 202, statusText: 'Accepted' });
-      await answer(harness, { [`${F}/children`]: [{ ...KAI, signIn: { ...KAI.signIn, pinChangePending: true } }, AURORA, MILO] });
+      const put = await vi.waitFor(() => http.expectOne(`${F}/children/kai/pin`));
+      expect(put.request.method).toBe('PUT');
+      put.flush(null, { status: 204, statusText: 'No Content' });
+      await answer(harness, { [`${F}/children`]: [KAI, AURORA, MILO] });
 
-      expect(toastText()).toContain('The current PIN works until then.');
-      expect(text(childItem(body, 'Kai'), '.child__state')).toBe('New PIN waiting for your co-parent’s approval');
-      expect(text(childItem(body, 'Kai'), '.child__actions')).not.toContain('Change PIN');
+      expect(toastText()).toContain('Kai’s new PIN works now.');
     });
 
     it('refuses easy-to-guess and mismatched PINs before asking the API', async () => {
@@ -192,17 +194,17 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       http.expectNone(`${F}/children/aurora/pin`);
     });
 
-    it('unlocks a locked child with one tap', async () => {
-      const { harness, body } = await settings([{ ...KAI, signIn: { ...KAI.signIn, locked: true } }]);
-      expect(text(childItem(body, 'Kai'), '.child__state')).toBe('Locked after 3 wrong PINs');
+    it('shows a locked or paused PIN, and offers a reset rather than a one-tap unlock', async () => {
+      const paused = new Date(Date.now() + 5 * 60_000).toISOString();
+      const { body } = await settings([
+        { ...KAI, signIn: { ...KAI.signIn, locked: true } },
+        { ...AURORA, signIn: { ...AURORA.signIn, enabled: true, pausedUntil: paused } },
+      ]);
 
-      click(childItem(body, 'Kai'), 'Unlock', '.child');
-      const unlock = await vi.waitFor(() => http.expectOne(`${F}/children/kai/unlock`));
-      expect(unlock.request.method).toBe('POST');
-      unlock.flush(null, { status: 204, statusText: 'No Content' });
-      await answer(harness, { [`${F}/children`]: [KAI] });
-
-      expect(toastText()).toContain('Kai’s profile is unlocked.');
+      expect(text(childItem(body, 'Kai'), '.child__state')).toBe('PIN locked after too many wrong tries: choose a new PIN');
+      expect(text(childItem(body, 'Aurora'), '.child__state')).toBe('PIN paused for a few minutes after 3 wrong tries');
+      expect(text(childItem(body, 'Kai'), '.child__actions')).toContain('Reset PIN');
+      expect(text(childItem(body, 'Kai'), '.child__actions')).not.toContain('Unlock');
     });
 
     it('turns sign-in off only after explaining what happens', async () => {
@@ -257,23 +259,25 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       expect(toastText()).toContain('Kitchen iPad was removed.');
     });
 
-    it('offers to use this browser for the picker when it isn’t registered yet', async () => {
-      const { harness, body } = await settings();
-      type(harness, body.querySelector<HTMLInputElement>('app-device-list input')!, 'Hall tablet');
-      click(body, 'Use this device', 'app-device-list');
+    it('offers explicit shared-device setup when this browser isn’t the parent’s shared device', async () => {
+      const { body } = await settings();
 
-      const register = await vi.waitFor(() => http.expectOne(`${F}/devices/household`));
-      expect(register.request.body).toEqual({ name: 'Hall tablet' });
-      register.flush({ ...DEVICES[0], id: 'd3', name: 'Hall tablet' });
-      await answer(harness, { [`${F}/devices`]: DEVICES, [`${F}/children`]: [KAI] });
-
-      expect(toastText()).toContain('Hall tablet now shows “Who’s using Parenthesis?”');
+      const link = body.querySelector<HTMLAnchorElement>('app-device-list a')!;
+      expect(link.textContent!.trim()).toBe('Set up this device for sharing');
+      expect(link.getAttribute('href')).toBe('/shared-device/setup?returnUrl=%2Fsettings');
+      http.expectNone(`${F}/devices/household`);
     });
 
-    it('doesn’t offer it again on a registered device', async () => {
+    it('doesn’t offer it again on the parent’s own shared device', async () => {
       const { body } = await settings([KAI], fakeAuth({ device: PICKER }));
 
-      expect(text(body, 'app-device-list')).not.toContain('Use this device');
+      expect(text(body, 'app-device-list')).not.toContain('Set up this device for sharing');
+    });
+
+    it('shows when a shared device’s sharing ends', async () => {
+      const { body } = await settings();
+
+      expect(text(body, 'app-device-list')).toContain('Sharing ends');
     });
 
     it('has no automatically detectable accessibility issues in settings', async () => {

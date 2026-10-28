@@ -3,6 +3,7 @@ import { ApiSession } from '../../support/api';
 import { FAMILY_NAME, PASSWORD, newEmail } from '../../support/data';
 import { soloParent } from '../../support/family';
 import { linkFromEmail } from '../../support/mailpit';
+import { continuePrivatelyIfAsked } from '../../support/shared-device';
 
 // Issue #211: an invited co-parent who registers and confirms in the same browser must join the inviter's existing
 // family, never be sent to set up a new family and its children. Synthetic accounts only; each test has its own
@@ -18,6 +19,7 @@ async function signIn(page: Page, email: string) {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
+  await continuePrivatelyIfAsked(page);
 }
 
 async function signOut(page: Page) {

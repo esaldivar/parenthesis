@@ -56,14 +56,18 @@ export interface Child {
   readonly status: ChildStatus;
   /** Set when the child was just added: the approval request the co-parent answers. */
   readonly changeRequestId: string | null;
-  /** Whether the child has a PIN, is locked after three wrong tries, or has a new PIN waiting for approval. */
+  /** Whether the child has a PIN, and whether it is paused or locked after wrong tries (#153). */
   readonly signIn: ChildSignIn;
 }
 
 export interface ChildSignIn {
   readonly enabled: boolean;
+  /** Needs a parent to choose a new PIN. */
   readonly locked: boolean;
+  /** Only for a PIN change requested before #153 made resets immediate. */
   readonly pinChangePending: boolean;
+  /** Set while three wrong PINs have paused it; it reopens on its own at this time. */
+  readonly pausedUntil?: string | null;
 }
 
 export type ChangeRequestType =
@@ -104,20 +108,36 @@ export interface Device {
   readonly childProfileId: string | null;
   readonly createdAt: string;
   readonly lastSeenAt: string;
+  /** A shared device's picker stops working at this fixed time (30 days from setup); null for a child's own tablet. */
+  readonly expiresAt?: string | null;
 }
 
 export interface ProfileTile {
   readonly kind: 'parent' | 'child';
+  /** A parent's family membership id, or a child's id. */
   readonly id: string;
   readonly name: string;
+  /** A child has a PIN; a parent has a parent PIN (otherwise they use their password). */
   readonly canSignIn: boolean;
+  /** The PIN needs resetting. */
   readonly locked: boolean;
+  /** Set while the PIN is paused after three wrong tries. */
+  readonly pausedUntil?: string | null;
 }
 
 export interface DeviceProfiles {
   readonly familyName: string;
   readonly deviceKind: DeviceKind;
   readonly profiles: readonly ProfileTile[];
+  /** True when the signed-in parent is the one who set up this shared device. */
+  readonly isYours?: boolean;
+}
+
+/** The signed-in parent's own six-digit PIN for shared devices (#153). */
+export interface ParentPinStatus {
+  readonly isSet: boolean;
+  readonly locked: boolean;
+  readonly pausedUntil: string | null;
 }
 
 export interface ChildSession {
@@ -139,6 +159,21 @@ export type CalendarCategory =
   | 'Holiday'
   | 'Unavailable'
   | 'Other';
+
+/** What to search the calendar for (#253). An event matches any of these. */
+export interface CalendarSearch {
+  readonly q: string | null;
+  readonly categories: readonly CalendarCategory[];
+  /** Parenting time only: this parent's. */
+  readonly caregiver: string | null;
+  /** A family-local date, `YYYY-MM-DD`. */
+  readonly on: string | null;
+}
+
+export interface CalendarSearchPage {
+  readonly events: CalendarEvent[];
+  readonly hasMore: boolean;
+}
 
 export type CalendarStatus = 'PendingApproval' | 'Confirmed' | 'Rejected' | 'Cancelled';
 
@@ -380,19 +415,22 @@ export class Api {
     this.call(this.http.post<void>(`/api/families/${familyId}/approvals/${requestId}/withdraw`, {}));
 
   // A child's sign-in (ADR-0006). The first PIN applies at once; changing one returns 202 and waits for approval.
+  /** Sets a child's first PIN, or resets it at once (clearing any pause or lock); the other parent is told (#153). */
   setChildPin = (familyId: string, childId: string, pin: string) =>
-    this.call(this.http.put<{ changeRequestId: string } | null>(`/api/families/${familyId}/children/${childId}/pin`, { pin }));
+    this.call(this.http.put<void>(`/api/families/${familyId}/children/${childId}/pin`, { pin }));
   disableChildSignIn = (familyId: string, childId: string) =>
     this.call(this.http.delete<void>(`/api/families/${familyId}/children/${childId}/pin`));
-  unlockChild = (familyId: string, childId: string) =>
-    this.call(this.http.post<void>(`/api/families/${familyId}/children/${childId}/unlock`, {}));
   pairingCode = (familyId: string, childId: string) =>
     this.call(this.http.post<{ code: string; expiresAt: string }>(`/api/families/${familyId}/children/${childId}/pairing-code`, {}));
 
   // Devices.
   devices = (familyId: string) => this.call(this.http.get<Device[]>(`/api/families/${familyId}/devices`));
-  registerHouseholdDevice = (familyId: string, name: string) =>
-    this.call(this.http.post<Device>(`/api/families/${familyId}/devices/household`, { name }));
+  /** "Yes, this is a shared family device": registers it for 30 days, creating the parent PIN when there's none yet. */
+  setUpSharedDevice = (familyId: string, name: string, pin: string | null) =>
+    this.call(this.http.post<Device>(`/api/families/${familyId}/devices/household`, { name, pin }));
+  parentPinStatus = (familyId: string) => this.call(this.http.get<ParentPinStatus>(`/api/families/${familyId}/parent-pin`));
+  setParentPin = (familyId: string, currentPassword: string, pin: string) =>
+    this.call(this.http.put<void>(`/api/families/${familyId}/parent-pin`, { currentPassword, pin }));
   removeDevice = (familyId: string, deviceId: string) =>
     this.call(this.http.delete<void>(`/api/families/${familyId}/devices/${deviceId}`));
 
@@ -401,6 +439,20 @@ export class Api {
   deviceProfiles = () => this.call(this.http.get<DeviceProfiles>('/api/device/profiles'));
   childSignIn = (childId: string, pin: string) =>
     this.call(this.http.post<void>('/api/device/child-session', { childId, pin }));
+  /** The parent who set up this shared device enters their profile with their six-digit PIN. */
+  parentPinSignIn = (membershipId: string, pin: string) =>
+    this.call(this.http.post<void>('/api/device/parent-session', { membershipId, pin }));
+  /** "Forgot your PIN?": emails the device's parent a single-use, 15-minute reset link (at most one per 15 minutes). */
+  requestParentPinReset = (membershipId: string) =>
+    this.call(this.http.post<{ notified: boolean }>('/api/device/parent-pin-reset', { membershipId }));
+  /** Checks a reset link without using it up. */
+  checkParentPinReset = (familyId: string, token: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/parent-pin/reset/check`, { token }));
+  /** Uses a reset link: the signed-in parent it was sent to confirms their password and chooses a new PIN. */
+  redeemParentPinReset = (familyId: string, token: string, currentPassword: string, pin: string) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/parent-pin/reset`, { token, currentPassword, pin }));
+  /** Ends whoever is signed in here and keeps the shared device's picker. */
+  switchProfile = () => this.call(this.http.post<void>('/api/device/switch', {}));
   pairDevice = (code: string, deviceName: string) =>
     this.call(this.http.post<{ childId: string; childFirstName: string }>('/api/device/pair', { code, deviceName }));
   childSession = () => this.call(this.http.get<ChildSession>('/api/session/child'));
@@ -408,6 +460,19 @@ export class Api {
   // The shared calendar. A range spans at most 62 days. Children may list (they see only their confirmed events).
   calendarEvents = (familyId: string, from: string, to: string) =>
     this.call(this.http.get<CalendarEvent[]>(`/api/families/${familyId}/calendar/events`, { params: { from, to } }));
+  /**
+   * Searches the whole calendar (#253): one page of upcoming and ongoing events (soonest first), or of past events (most
+   * recent first). Matches the title, any of the categories (parenting time only for the caregiver, when given) or
+   * events on a family-local date. The server applies the same visibility as the calendar.
+   */
+  searchCalendarEvents = (familyId: string, search: CalendarSearch, page: { past: boolean; offset: number; limit: number }) => {
+    const params: Record<string, string | string[]> = { past: String(page.past), offset: String(page.offset), limit: String(page.limit) };
+    if (search.q) params['q'] = search.q;
+    if (search.categories.length) params['category'] = [...search.categories];
+    if (search.caregiver) params['caregiver'] = search.caregiver;
+    if (search.on) params['on'] = search.on;
+    return this.call(this.http.get<CalendarSearchPage>(`/api/families/${familyId}/calendar/events/search`, { params }));
+  };
   /** One event, for a parent. */
   calendarEvent = (familyId: string, eventId: string) =>
     this.call(this.http.get<CalendarEvent>(`/api/families/${familyId}/calendar/events/${eventId}`));

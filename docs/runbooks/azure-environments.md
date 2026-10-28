@@ -210,6 +210,8 @@ When the app is wired up, it reads `APPLICATIONINSIGHTS_CONNECTION_STRING` from 
 Telemetry must not carry personal data: no names, emails, children's details, diary or message text, and no request
 bodies. Production telemetry is real family activity, so only the production readers below see it.
 
+Outage alerts come from free external checks, not Azure Monitor: see [uptime monitoring](uptime-monitoring.md).
+
 ## 3. Sign-in for GitHub Actions (OpenID Connect, no passwords)
 One identity per environment, each allowed to change only its own resource group.
 

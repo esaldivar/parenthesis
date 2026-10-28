@@ -1,3 +1,5 @@
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { EventThemesService } from '../../core/theme/event-themes.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { Api, FamilyDetails, InvitationSummary } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
@@ -5,17 +7,20 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { AppearancePicker } from '../../shared/appearance-picker/appearance-picker';
 import { ChildrenAccess } from '../family/children-access';
 import { DeviceList } from '../family/device-list';
+import { ParentPinSettings } from '../family/parent-pin-settings';
 import { InviteCoParent } from '../family/invite-co-parent';
 import { DeleteAccount } from './delete-account';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, DeleteAccount],
+  imports: [MatSlideToggleModule, AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, ParentPinSettings, DeleteAccount],
   template: `
     <h1>Settings</h1>
     <section class="card">
       <app-appearance-picker />
+      <mat-slide-toggle [checked]="eventThemes.enabled()" (change)="eventThemes.setEnabled($event.checked)" aria-describedby="event-theme-help">Add themes to events</mat-slide-toggle>
+      <p id="event-theme-help">Show subtle illustrations when an event title matches a theme. This changes only your view on this device.</p>
     </section>
 
     @if (auth.currentFamily(); as current) {
@@ -39,6 +44,11 @@ import { DeleteAccount } from './delete-account';
         <section class="card" aria-labelledby="children-heading">
           <h2 id="children-heading">Children</h2>
           <app-children-access [familyId]="current.id" />
+        </section>
+
+        <section class="card" aria-labelledby="parent-pin-heading">
+          <h2 id="parent-pin-heading">Your parent PIN</h2>
+          <app-parent-pin-settings [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="devices-heading">
@@ -83,6 +93,7 @@ import { DeleteAccount } from './delete-account';
   `,
 })
 export class SettingsPage implements OnInit {
+  protected readonly eventThemes = inject(EventThemesService);
   protected readonly auth = inject(AuthStore);
   private readonly api = inject(Api);
 

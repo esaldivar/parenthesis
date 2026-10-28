@@ -8,7 +8,7 @@ test.describe('Regression #58: profile picker', { tag: ['@regression', '@m2'] },
     const family = await familyWithKai({ householdDevice: true });
     const { dad, mom, familyId } = family;
     try {
-      expect((await mom.post(`/api/families/${familyId}/devices/household`, { name: "Mom's phone" })).status()).toBe(201);
+      expect((await mom.post(`/api/families/${familyId}/devices/household`, { name: "Mom's phone", pin: '740361' })).status()).toBe(201);
       const names = async (session: typeof dad) =>
         (await session.json<{ profiles: { kind: string; name: string }[] }>(session.get('/api/device/profiles'))).profiles.map(
           (p) => `${p.kind}:${p.name}`,

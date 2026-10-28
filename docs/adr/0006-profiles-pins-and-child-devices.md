@@ -1,6 +1,8 @@
 # ADR-0006: Profile picker, child PINs, paired child devices, and children approved by both parents
 
-- **Status:** Accepted (2026-10-17, owner approval)
+- **Status:** Accepted (2026-10-17, owner approval). Partly superseded, once accepted, by
+  [ADR-0007](0007-shared-devices-and-parent-pins.md) (#153): explicit shared devices, parent PINs, two-stage lockout
+  and immediate child PIN reset replace the household, parent-tile, lockout and reset rules below.
 - **Date:** 2026-10-17
 - **Supersedes:** the child-login part of §5, and decisions 7 (for children only) and 8 in
   [solution-architecture.md](../architecture/solution-architecture.md) §9. Backlog item A-05 is replaced.

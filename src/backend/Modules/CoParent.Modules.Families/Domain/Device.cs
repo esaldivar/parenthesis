@@ -7,7 +7,10 @@ namespace CoParent.Modules.Families.Domain;
 
 internal enum DeviceKind
 {
-    /// <summary>A parent's phone or computer: shows the family's profile picker.</summary>
+    /// <summary>
+    /// A shared family device a parent explicitly set up (#153): shows that parent and the family's approved children.
+    /// Its picker works for a fixed 30 days from setup.
+    /// </summary>
     Household,
 
     /// <summary>A child's own tablet, paired with a one-time code: only that child can use it.</summary>
@@ -15,12 +18,16 @@ internal enum DeviceKind
 }
 
 /// <summary>
-/// A registered device (ADR-0006). Child PINs only work on one, so a short PIN can't be tried from anywhere else. The
-/// device keeps a long-lived token in an HttpOnly cookie; only its hash is stored. Parents can revoke it instantly.
+/// A registered device (ADR-0006, ADR-0007). PINs only work on one, so a short PIN can't be tried from anywhere else.
+/// The device keeps a token in an HttpOnly cookie; only its hash is stored. Parents can revoke it instantly, and a
+/// shared household device also expires a fixed 30 days after setup.
 /// </summary>
 internal sealed class Device : Entity, IFamilyScoped
 {
     public const int NameMaxLength = 60;
+
+    /// <summary>Owner decision (#153): 30 days from setup, never extended by activity.</summary>
+    public static readonly TimeSpan SharedDeviceLifetime = TimeSpan.FromDays(30);
 
     public Guid FamilyId { get; init; }
 
@@ -41,7 +48,10 @@ internal sealed class Device : Entity, IFamilyScoped
 
     public DateTimeOffset? RevokedAt { get; private set; }
 
-    public bool IsActive => RevokedAt is null;
+    /// <summary>When a shared household device stops showing its picker. Null for a child's paired tablet.</summary>
+    public DateTimeOffset? ExpiresAt { get; init; }
+
+    public bool IsUsableAt(DateTimeOffset now) => RevokedAt is null && (ExpiresAt is null || now < ExpiresAt);
 
     public void Revoke(DateTimeOffset now) => RevokedAt ??= now;
 

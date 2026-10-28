@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { ApiSession } from '../../support/api';
 import { PASSWORD, addHours, nextMonday } from '../../support/data';
 import { KAI_PIN, familyWithKai } from '../../support/family';
+import { continuePrivatelyIfAsked } from '../../support/shared-device';
 
 interface CalendarEvent {
   id: string;
@@ -125,6 +126,7 @@ test.describe('Shared calendar and approvals', { tag: '@m3' }, () => {
       await page.getByLabel('Email').fill(family.dad.email);
       await page.getByLabel('Password').fill(PASSWORD);
       await page.getByRole('button', { name: 'Sign in' }).click();
+      await continuePrivatelyIfAsked(page);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
       await page.getByRole('link', { name: 'Calendar' }).first().click();

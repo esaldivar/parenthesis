@@ -69,6 +69,7 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
     /// <summary>Deletes all application data, keeping schema and migration history.</summary>
     public async Task ResetDatabaseAsync()
     {
+        Clock.Reset();
         if (_respawner is null)
         {
             return;
@@ -110,7 +111,8 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         builder.UseWebRoot(_webRoot);
         builder.UseSetting("ConnectionStrings:Postgres", _connectionString);
 
-        // Every test client shares one "IP"; rate limiting has its own test with a low limit.
+        // Each session has its own client address (TestClientAddress), but a test may sign in many times; login rate
+        // limiting has its own test with a low limit.
         builder.UseSetting("Identity:AuthRateLimit:PermitLimit", "10000");
         builder.UseSetting("App:PublicBaseUrl", PublicBaseUrl);
         builder.ConfigureServices(services =>
@@ -118,6 +120,11 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<FakeEmailSender>();
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+            services.AddSingleton<IStartupFilter, TestClientAddress>();
+
+            // The real clock, which a test can move forward (PIN pauses, shared-device expiry). Reset between tests.
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(Clock);
 
             // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
             // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
@@ -126,12 +133,27 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         });
     }
 
+    /// <summary>The app's clock: real time plus whatever a test has moved it forward by.</summary>
+    public ShiftableClock Clock { get; } = new();
+
     /// <summary>The day the calendar's "from today on" rule checks against in tests (noon UTC, October 1, 2026).</summary>
     public static readonly DateTimeOffset FixedToday = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
 
     private sealed class FixedClock(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
+    }
+
+    /// <summary>System time plus an offset a test can advance. Tests in the API collection run one at a time.</summary>
+    public sealed class ShiftableClock : TimeProvider
+    {
+        private long _offsetTicks;
+
+        public override DateTimeOffset GetUtcNow() => System.GetUtcNow() + TimeSpan.FromTicks(Interlocked.Read(ref _offsetTicks));
+
+        public void Advance(TimeSpan by) => Interlocked.Add(ref _offsetTicks, by.Ticks);
+
+        public void Reset() => Interlocked.Exchange(ref _offsetTicks, 0);
     }
 
     public override async ValueTask DisposeAsync()

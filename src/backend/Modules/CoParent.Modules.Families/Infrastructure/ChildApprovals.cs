@@ -26,7 +26,10 @@ internal sealed class ChildCreateHandler(FamiliesDbContext db) : IApprovalTarget
     }
 }
 
-/// <summary>A changed PIN takes effect only once the other parent approves (ADR-0006).</summary>
+/// <summary>
+/// Applies PIN changes proposed under the earlier ADR-0006 rule, before #153 made a parent's reset immediate. Kept so
+/// requests already waiting still resolve; no new requests of this type are created.
+/// </summary>
 internal sealed class ChildPinChangeHandler(FamiliesDbContext db, TimeProvider clock) : IApprovalTargetHandler
 {
     public string Type => ChangeRequestTypes.ChildPinChange;
@@ -38,9 +41,8 @@ internal sealed class ChildPinChangeHandler(FamiliesDbContext db, TimeProvider c
         var credential = await db.ChildCredentials.SingleOrDefaultAsync(c => c.ChildProfileId == target.TargetId, cancellationToken);
         if (credential?.PendingPinHash is { } pending)
         {
-            credential.PinHash = pending;
+            credential.Reset(pending, clock.GetUtcNow());
             credential.PendingPinHash = null;
-            credential.Unlock(clock.GetUtcNow());
             await db.SaveChangesAsync(cancellationToken);
         }
     }

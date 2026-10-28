@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { PASSWORD } from '../../support/data';
 import { soloParent } from '../../support/family';
+import { continuePrivatelyIfAsked } from '../../support/shared-device';
 
 // Issue #208: on a desktop-width screen the home calendar left out every all-day event (an all-day activity, a
 // holiday, a day of unavailable time), in either theme. Synthetic data; a parent on their own, with no children.
@@ -36,6 +37,7 @@ test.describe('Issue #208: the home calendar shows the week’s events', { tag: 
       await page.getByLabel('Email').fill(dad.email);
       await page.getByLabel('Password').fill(PASSWORD);
       await page.getByRole('button', { name: 'Sign in' }).click();
+      await continuePrivatelyIfAsked(page);
       await expect(page.getByRole('navigation').first()).toBeVisible();
 
       for (const scheme of ['light', 'dark'] as const) {

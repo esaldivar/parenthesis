@@ -27,6 +27,10 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<ChildCredential> ChildCredentials => Set<ChildCredential>();
 
+    public DbSet<ParentCredential> ParentCredentials => Set<ParentCredential>();
+
+    public DbSet<ParentPinResetToken> ParentPinResetTokens => Set<ParentPinResetToken>();
+
     public DbSet<DevicePairingCode> PairingCodes => Set<DevicePairingCode>();
 
     // Read per query, so each request's filters use its own tenant.
@@ -90,10 +94,32 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             device.HasQueryFilter(TenantContext.QueryFilterName, d => d.FamilyId == CurrentFamilyId);
         });
 
+        modelBuilder.Entity<ParentCredential>(credential =>
+        {
+            credential.ToTable("parent_credentials");
+            credential.Property(c => c.PinHash).HasMaxLength(256);
+            credential.Property(c => c.Version).IsRowVersion();
+            credential.HasOne<FamilyMembership>().WithMany().HasForeignKey(c => c.MembershipId);
+            credential.HasIndex(c => c.MembershipId).IsUnique();
+            credential.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ParentPinResetToken>(token =>
+        {
+            token.ToTable("parent_pin_reset_tokens");
+            token.Property(t => t.TokenHash).HasMaxLength(32);
+            token.Property(t => t.Version).IsRowVersion();
+            token.HasOne<FamilyMembership>().WithMany().HasForeignKey(t => t.MembershipId);
+            token.HasIndex(t => t.TokenHash).IsUnique();
+            token.HasIndex(t => new { t.MembershipId, t.CreatedAt });
+            token.HasQueryFilter(TenantContext.QueryFilterName, t => t.FamilyId == CurrentFamilyId);
+        });
+
         modelBuilder.Entity<ChildCredential>(credential =>
         {
             credential.ToTable("child_credentials");
             credential.Property(c => c.PinHash).HasMaxLength(256);
+            credential.Property(c => c.Version).IsRowVersion();
             credential.Property(c => c.PendingPinHash).HasMaxLength(256);
             credential.HasOne<ChildProfile>().WithMany().HasForeignKey(c => c.ChildProfileId);
             credential.HasIndex(c => c.ChildProfileId).IsUnique();
