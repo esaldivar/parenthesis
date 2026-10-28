@@ -102,7 +102,11 @@ describe('calendar search (#253)', () => {
     const toolbar = pill().closest('.period')!;
     expect([...toolbar.children].map((c) => c.tagName.toLowerCase()).slice(-2)).toEqual(['button', 'app-calendar-search']);
     expect(text(pill().querySelector('.glyph'))).toBe(dayOfMonth(today));
-    expect(pill().getAttribute('aria-label')).toMatch(/^Search events\. Today is /);
+    // Label in name: the visible word is the whole accessible name, and the date is in the description.
+    expect(pill().hasAttribute('aria-label')).toBe(false);
+    expect(text(pill().querySelector('.search-pill__text'))).toBe('Search');
+    const description = document.getElementById(pill().getAttribute('aria-describedby')!)!;
+    expect(description.textContent).toMatch(/^Search events\. Today is /);
     expect(pill().getAttribute('aria-expanded')).toBe('false');
   });
 

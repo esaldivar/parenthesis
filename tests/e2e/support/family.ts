@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { ApiSession } from './api';
 import { FAMILY_NAME, TIME_ZONE, newEmail } from './data';
 import { linkFromEmail } from './mailpit';
+import { DAD_PIN } from './shared-device';
 
 export const KAI_PIN = '2580';
 
@@ -22,7 +23,7 @@ export async function soloParent(displayName = 'Dad') {
 
 /**
  * Dad and Mom, both parents of the Rivera Family, with Kai approved by both (ADR-0006). Optionally Kai has a PIN and
- * Dad's device is registered as a household device, which is what the profile picker needs.
+ * Dad's API session is set up as a shared family device (with Dad's parent PIN), which the profile picker needs.
  */
 export async function familyWithKai(options: { pin?: boolean; householdDevice?: boolean } = {}): Promise<Family> {
   const { dad, familyId } = await soloParent('Dad');
@@ -41,7 +42,8 @@ export async function familyWithKai(options: { pin?: boolean; householdDevice?: 
     expect((await dad.put(`/api/families/${familyId}/children/${kai.id}/pin`, { pin: KAI_PIN })).status()).toBe(204);
   }
   if (options.householdDevice) {
-    expect((await dad.post(`/api/families/${familyId}/devices/household`, { name: 'Kitchen iPad' })).status()).toBe(201);
+    // Explicit shared-device setup, with Dad's first parent PIN (#153).
+    expect((await dad.post(`/api/families/${familyId}/devices/household`, { name: 'Kitchen iPad', pin: DAD_PIN })).status()).toBe(201);
   }
 
   return {

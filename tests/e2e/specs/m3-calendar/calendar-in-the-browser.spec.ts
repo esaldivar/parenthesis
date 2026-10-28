@@ -2,6 +2,7 @@ import { Page, expect, test } from '@playwright/test';
 import { ApiSession } from '../../support/api';
 import { PASSWORD, addHours, nextMonday } from '../../support/data';
 import { familyWithKai } from '../../support/family';
+import { continuePrivatelyIfAsked } from '../../support/shared-device';
 
 // The v0.3.0 calendar screens, in the browser (issue #48). Every family is synthetic and made fresh per test. Dates
 // are next week, so nothing is in the past and declined requests still show.
@@ -25,6 +26,7 @@ async function signIn(page: Page, email: string) {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
+  await continuePrivatelyIfAsked(page);
   await expect(page.getByRole('navigation').first()).toBeVisible();
 }
 

@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { ApiSession } from '../../support/api';
 import { KAI_PIN, familyWithKai } from '../../support/family';
 import { linkFromEmail } from '../../support/mailpit';
+import { DAD_PIN } from '../../support/shared-device';
 
 interface Picker {
   familyName: string;
@@ -45,42 +46,47 @@ test.describe('Profile picker and child PINs', { tag: '@m2' }, () => {
     }
   });
 
-  test('three wrong PINs lock the profile and email both parents until a parent unlocks it', async () => {
+  test('three wrong PINs pause the PIN with no email, and a parent resets it at once (#153)', async () => {
     const family = await familyWithKai({ pin: true, householdDevice: true });
     const tablet = family.dad;
     const attempt = (pin: string) => tablet.post('/api/device/child-session', { childId: family.kaiId, pin });
     try {
       expect((await attempt('1357')).status()).toBe(401);
       expect((await attempt('1358')).status()).toBe(401);
-      expect((await attempt('1359')).status()).toBe(423);
+      const third = await attempt('1359');
+      expect(third.status()).toBe(423);
+      expect((await third.json()).state).toBe('paused');
+      // The pause can't be skipped with the right PIN. (Three more wrong PINs after the 10-minute pause lock it and
+      // email both parents; the API integration tests cover that with a test clock.)
       expect((await attempt(KAI_PIN)).status()).toBe(423);
 
-      await linkFromEmail(family.dad.email, "Kai's profile is locked", '/settings');
-      await linkFromEmail(family.mom.email, "Kai's profile is locked", '/settings');
-
-      expect((await family.mom.post(`/api/families/${family.familyId}/children/${family.kaiId}/unlock`)).status()).toBe(204);
-      expect((await attempt(KAI_PIN)).status()).toBe(204);
+      // Either parent resets the PIN at once, no approval; the other parent is told, without the PIN.
+      expect((await family.mom.put(`/api/families/${family.familyId}/children/${family.kaiId}/pin`, { pin: '9146' })).status()).toBe(204);
+      expect((await attempt('9146')).status()).toBe(204);
+      const notice = await linkFromEmail(family.dad.email, "A child's PIN was reset", '/settings');
+      expect(notice.pathname).toBe('/settings');
     } finally {
       await family.dispose();
     }
   });
 
-  test('changing a PIN waits for the co-parent, and the old PIN works until then', async () => {
+  test('only the parent who set up a shared device enters with their parent PIN there', async () => {
     const family = await familyWithKai({ pin: true, householdDevice: true });
-    const { dad, mom, familyId, kaiId } = family;
+    const { dad, mom, familyId } = family;
     try {
-      expect((await mom.post(`/api/families/${familyId}/devices/household`, { name: "Mom's phone" })).status()).toBe(201);
-      await dad.json(dad.put(`/api/families/${familyId}/children/${kaiId}/pin`, { pin: '9146' }));
+      const picker = await dad.json<{ profiles: { kind: string; id: string; name: string }[] }>(dad.get('/api/device/profiles'));
+      expect(picker.profiles.map((p) => `${p.kind}:${p.name}`)).toEqual(['parent:Dad', 'child:Kai']);
+      const dadTile = picker.profiles.find((p) => p.kind === 'parent')!;
+      expect((await mom.post(`/api/families/${familyId}/devices/household`, { name: "Mom's phone", pin: '740361' })).status()).toBe(201);
 
-      // Not approved yet: the new PIN doesn't work and the old one still does.
-      expect((await mom.post('/api/device/child-session', { childId: kaiId, pin: '9146' })).status()).toBe(401);
-      expect((await dad.post('/api/device/child-session', { childId: kaiId, pin: KAI_PIN })).status()).toBe(204);
-
-      const [request] = await mom.json<{ id: string; type: string }[]>(mom.get(`/api/families/${familyId}/approvals`));
-      expect(request).toBeDefined();
-      await mom.json(mom.post(`/api/families/${familyId}/approvals/${request!.id}/approve`, {}));
-
-      expect((await mom.post('/api/device/child-session', { childId: kaiId, pin: '9146' })).status()).toBe(204);
+      // Switch profile ends Dad's session but keeps the picker; his PIN brings him back.
+      expect((await dad.post('/api/device/switch')).status()).toBe(204);
+      await dad.refreshAntiforgery();
+      expect((await dad.get('/api/me')).status()).toBe(401);
+      expect((await dad.post('/api/device/parent-session', { membershipId: dadTile.id, pin: '111222' })).status()).toBe(401);
+      expect((await dad.post('/api/device/parent-session', { membershipId: dadTile.id, pin: DAD_PIN })).status()).toBe(204);
+      await dad.refreshAntiforgery();
+      expect((await dad.get('/api/me')).status()).toBe(200);
     } finally {
       await family.dispose();
     }

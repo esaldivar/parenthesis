@@ -1,6 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 import { PASSWORD, addHours, nextMonday } from '../../support/data';
 import { familyWithKai } from '../../support/family';
+import { continuePrivatelyIfAsked } from '../../support/shared-device';
 
 // Issue #259: a repeating event was refused with "Each date would run into the next" when the End date was set to
 // when the repeats should stop: every date then lasted until that day. While an event repeats, each date is now one
@@ -18,6 +19,7 @@ async function signIn(page: Page, email: string) {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
+  await continuePrivatelyIfAsked(page);
   await expect(page.getByRole('navigation').first()).toBeVisible();
 }
 
