@@ -57,6 +57,8 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
             });
             e.HasIndex(x => new { x.FamilyId, x.StartsAt });
             e.HasIndex(x => new { x.SeriesId, x.StartsAt });
+            // Search (#253) pages through a family's past events by when they ended.
+            e.HasIndex(x => new { x.FamilyId, x.EndsAt });
             e.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });
 

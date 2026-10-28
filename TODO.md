@@ -6,6 +6,13 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Calendar event search (#253, October 28, 2026).** Search pill beside Today (magnifier, today's date in the
+  family time zone); server search across history by title, event type, parent's parenting time and date; upcoming
+  first, then a labelled Past events group, each paged. Parent-only endpoint; family-scoped `(family_id, ends_at)` index,
+  no database extension (owner decision). Backend integration tests, Vitest specs, and headless Chromium screenshots at
+  320/480/1280px in both themes done.
+  - [ ] Real screen reader (VoiceOver), physical phone, enlarged text and forced colors against the release candidate.
+  - [ ] Required PR CI, SonarCloud quality gate and owner acceptance; #253 stays open until accepted.
 - [ ] **Release PR #321 Playwright follow-up (#278, #279).** Run 40444374496 recorded 224 passes and 30
   failures in the new mobile recovery scenarios. Correct Cancel URL, displayed date and empty-week fixture
   assumptions; preserve mutation, focus, date and DST assertions. The gate remains fail-closed. Extend the job

@@ -113,6 +113,9 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_events");
 
+                    b.HasIndex("FamilyId", "EndsAt")
+                        .HasDatabaseName("ix_events_family_id_ends_at");
+
                     b.HasIndex("FamilyId", "StartsAt")
                         .HasDatabaseName("ix_events_family_id_starts_at");
 

@@ -10,6 +10,7 @@ using CoParent.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,6 +73,9 @@ internal sealed record UpdateEventRequest(
 
 internal sealed record ConflictsView(IReadOnlyList<string> Warnings);
 
+/// <summary>One page of search results (#253), and whether more follow.</summary>
+internal sealed record EventSearchView(IReadOnlyList<EventView> Events, bool HasMore);
+
 /// <summary>A swap changes dates only, never the title, notes, place or caregiver (#260).</summary>
 internal sealed record SwapEventRequest(DateTimeOffset? StartsAt, DateTimeOffset? EndsAt, bool? AllDay, string? Reason);
 
@@ -109,6 +113,7 @@ internal static class CalendarEndpoints
     {
         var calendar = family.MapGroup("/calendar/events").WithTags("Calendar");
         calendar.MapGet("/", ListAsync).WithMetadata(new ChildSessionAllowed());
+        calendar.MapGet("/search", SearchAsync);
         calendar.MapPost("/", CreateAsync);
         calendar.MapGet("/{eventId:guid}", GetAsync);
         calendar.MapGet("/{eventId:guid}/conflicts", ConflictsAsync);
@@ -156,6 +161,101 @@ internal static class CalendarEndpoints
         var series = await SeriesForAsync(db, tenant, events, cancellationToken);
         return TypedResults.Ok(events.Select(e => View(e, tenant, changeRequestId: null, [], series)).ToList());
     }
+
+    /// <summary>The most results one search page returns (#253).</summary>
+    public const int MaxSearchLimit = 50;
+
+    /// <summary>How far "Show more" may page into one group: well past any family's history.</summary>
+    public const int MaxSearchOffset = 1000;
+
+    /// <summary>
+    /// Searches the whole calendar history (#253), not just a visible range. An event matches when its title contains
+    /// <paramref name="q"/>, its category is one of <paramref name="category"/> (parenting time only for
+    /// <paramref name="caregiver"/>, when given), or it overlaps the family-local date <paramref name="on"/>. Results come
+    /// in two groups that page separately: upcoming and ongoing events soonest first, or (<paramref name="past"/>) events
+    /// that have ended, most recent first. Parents only, with the same visibility as the month view: another parent's
+    /// unavailable time is only ever "Unavailable", so it never matches on its title.
+    /// </summary>
+    private static async Task<Results<Ok<EventSearchView>, ValidationProblem, ForbidHttpResult>> SearchAsync(
+        string? q,
+        [FromQuery] EventCategory[]? category,
+        Guid? caregiver,
+        DateOnly? on,
+        bool? past,
+        int? offset,
+        int? limit,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IFamilyRoster roster,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        var text = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+        var categories = (category ?? []).Distinct().ToList();
+        var (skip, take) = (offset ?? 0, limit ?? 20);
+        var errors = new Dictionary<string, string[]>();
+        if (text is { Length: > CalendarEvent.TitleMaxLength })
+        {
+            errors["q"] = [$"Search for at most {CalendarEvent.TitleMaxLength} characters."];
+        }
+
+        if (text is null && categories.Count == 0 && on is null)
+        {
+            errors["q"] = ["Enter something to search for."];
+        }
+
+        if (take is < 1 or > MaxSearchLimit)
+        {
+            errors["limit"] = [$"Choose a limit from 1 to {MaxSearchLimit}."];
+        }
+
+        if (skip is < 0 or > MaxSearchOffset)
+        {
+            errors["offset"] = [$"Choose an offset from 0 to {MaxSearchOffset}."];
+        }
+
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        var now = clock.GetUtcNow();
+        var me = tenant.MembershipId;
+        var hasText = text is not null;
+        var pattern = hasText ? $"%{EscapeLike(text!)}%" : string.Empty;
+        var hasDay = on is not null;
+        var (dayStart, dayEnd) = hasDay ? EventSchedule.LocalDay(on!.Value, await roster.TimeZoneAsync(cancellationToken)) : (now, now);
+
+        var query = DeclinedStillShown(db.Events, db, me, now).Where(e =>
+            (hasText
+                && EF.Functions.ILike(e.Title, pattern, LikeEscape)
+                && (e.Category != EventCategory.Unavailable || e.OwnerMembershipId == me))
+            || (categories.Contains(e.Category)
+                && (caregiver == null || e.Category != EventCategory.ParentingTime || e.CaregiverMembershipId == caregiver))
+            || (hasDay && e.StartsAt < dayEnd && e.EndsAt > dayStart));
+        query = past == true
+            ? query.Where(e => e.EndsAt <= now).OrderByDescending(e => e.EndsAt).ThenBy(e => e.Id)
+            : query.Where(e => e.EndsAt > now).OrderBy(e => e.StartsAt).ThenBy(e => e.Id);
+
+        var events = await query.Skip(skip).Take(take + 1).ToListAsync(cancellationToken);
+        var hasMore = events.Count > take;
+        events = events.Take(take).ToList();
+        var series = await SeriesForAsync(db, tenant, events, cancellationToken);
+        return TypedResults.Ok(new EventSearchView(events.Select(e => View(e, tenant, changeRequestId: null, [], series)).ToList(), hasMore));
+    }
+
+    private const string LikeEscape = "\\";
+
+    /// <summary>Makes <c>%</c>, <c>_</c> and the escape character match literally in a LIKE pattern.</summary>
+    internal static string EscapeLike(string text) =>
+        text.Replace(LikeEscape, LikeEscape + LikeEscape, StringComparison.Ordinal)
+            .Replace("%", LikeEscape + "%", StringComparison.Ordinal)
+            .Replace("_", LikeEscape + "_", StringComparison.Ordinal);
 
     private static async Task<Results<Created<EventView>, ValidationProblem, ForbidHttpResult>> CreateAsync(
         CreateEventRequest request,
