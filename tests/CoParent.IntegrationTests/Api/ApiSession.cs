@@ -33,6 +33,7 @@ public sealed class ApiSession : IDisposable
             BaseAddress = new Uri("https://localhost"),
             HandleCookies = true,
         }), emails);
+        session.Client.DefaultRequestHeaders.Add(TestClientAddress.Header, TestClientAddress.Next());
         await session.RefreshAntiforgeryAsync();
         return session;
     }
