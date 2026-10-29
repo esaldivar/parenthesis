@@ -77,8 +77,9 @@ that points back here.
     limit is Parenthesis's own 300 a day.
   - [x] Owner put the key in the dev Key Vault and app settings (`places-api-key`, `Places__ApiKey`,
     `Places__DailyLimit=300`; October 29, 2026, Succeeded).
-  - [ ] Owner: $1 alert-only budget (all services; spend caps aren't available for Places), then try suggestions on
-    `develop` once #353 and #356 are released there ([runbook](docs/runbooks/google-places-suggestions.md)).
+  - [x] Owner set a $1 alert-only budget (all services; spend caps aren't available for Places), October 29, 2026.
+  - [ ] Owner: try suggestions on `develop` once #353 and #356 are released there
+    ([runbook](docs/runbooks/google-places-suggestions.md), "Check it works").
   - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
     anywhere (`docs/design/reviews/issue-354/`).
   - [ ] Owner: before production, check the "Google Maps" text attribution against Google's current Places API (New)
