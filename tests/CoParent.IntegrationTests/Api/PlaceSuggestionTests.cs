@@ -124,6 +124,31 @@ public sealed class PlaceSuggestionTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task The_daily_cap_resets_at_Pacific_midnight_across_the_daylight_saving_change()
+    {
+        // Daylight saving time ends at 2 AM on November 1, 2026: Pacific midnight is 07:00 UTC that day and 08:00 UTC the next.
+        var google = new FakeGoogle("Example Park");
+        using var host = Host(google, settings: ("Places:DailyLimit", "1"));
+        using var dad = await ApiSession.SignedInAsync(host);
+        var familyId = await dad.CreateFamilyAsync();
+
+        api.Clock.SetUtcNow(new DateTimeOffset(2026, 11, 1, 6, 30, 0, TimeSpan.Zero)); // 11:30 PM October 31, PDT
+        var october31 = await SuggestAsync(dad, familyId, "Example Park");
+        api.Clock.SetUtcNow(new DateTimeOffset(2026, 11, 1, 7, 30, 0, TimeSpan.Zero)); // 12:30 AM November 1, PDT
+        var november1 = await SuggestAsync(dad, familyId, "Example Park");
+        api.Clock.SetUtcNow(new DateTimeOffset(2026, 11, 2, 7, 30, 0, TimeSpan.Zero)); // 11:30 PM November 1, PST
+        var lateNovember1 = await SuggestAsync(dad, familyId, "Example Park");
+        api.Clock.SetUtcNow(new DateTimeOffset(2026, 11, 2, 8, 30, 0, TimeSpan.Zero)); // 12:30 AM November 2, PST
+        var november2 = await SuggestAsync(dad, familyId, "Example Park");
+
+        Assert.True(october31.GetProperty("available").GetBoolean());
+        Assert.True(november1.GetProperty("available").GetBoolean());
+        Assert.False(lateNovember1.GetProperty("available").GetBoolean());
+        Assert.True(november2.GetProperty("available").GetBoolean());
+        Assert.Equal(3, google.Requests.Count);
+    }
+
+    [Fact]
     public async Task When_Google_fails_the_field_just_has_no_suggestions()
     {
         var google = new FakeGoogle { Status = HttpStatusCode.Forbidden };
