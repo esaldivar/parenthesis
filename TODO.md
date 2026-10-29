@@ -840,7 +840,28 @@ that points back here.
 - Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
 
 ### #281 — Real screen-reader environment prerequisite
-- Windows NVDA is installed; Guidepup starts/connects/stops, but the synthetic control announcement is absent in this agent session. macOS/VoiceOver is unavailable. Both acceptance paths remain blocked, not passed.
+- [x] Frontend timeout follow-up: cap Angular/Vitest workers at two (one on hosts with at most two
+  available cores), preserving the default five-second deadline, isolation and every test/axe assertion.
+  On this 12-core Windows host, the unchanged runner passed 678/678 once but timed out in a different
+  test on repeat (677/678), consistent with worker contention rather than five deterministic defects.
+  With the cap, two full runs passed 678/678 across 49 files (39.16s and 46.38s); frontend lint passed.
+- Owner Windows run on `86f6f87`: navigation and event-dialog NVDA journeys passed (2/4 app tests).
+  Activity save speech was captured but the assertion incorrectly required a quote; forms stopped on an
+  incorrect aria-invalid assumption for an empty required Material input.
+- Owner Windows rerun on `9b736e1` (October 29, 2026, 6:38 AM Central): corrected calendar-save and forms
+  journeys passed, 2/2 in 4.0 minutes, including the saved-event check. All four app journeys now have passing
+  NVDA results across two runs; this is not a single full-suite run on one revision.
+- [x] Owner reported all five Guidepup tests passed together on Windows/NVDA on October 29, 2026,
+  after restoring the assertion (checkout `387a415`; local last-run status also passed). Covers the smoke,
+  navigation, forms, calendar saving and event dialog. This is owner-run evidence, not an agent NVDA execution.
+- [x] Controlled negative on the same test code: substituted the expected Notifications speech with
+  `NEGATIVE CONTROL LABEL MUST BE ABSENT`; the speech assertion failed with the actual captured
+  `Notifications, menu button, collapsed, sub Menu`. Original file restored automatically; full suite then passed.
+- [ ] Archive sanitized full-run and negative-control attachments with OS/browser/NVDA/Guidepup versions;
+  repeat for stability. macOS VoiceOver, mobile readers and wider Calendar/approval coverage remain unverified.
+  Required release gate unchanged; no merge, deployment or cross-platform acceptance is implied.
+- Historical agent-session speech-capture failure is superseded by the owner's passing Windows smoke and app runs
+  above. macOS/VoiceOver remains unavailable; evidence archival and repeated stability runs remain open.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
 
 ### #278/#279 — Coverage follow-up (October 26, 2026)
