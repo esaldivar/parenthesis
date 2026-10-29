@@ -45,7 +45,7 @@ const MINIMUM_INPUT = 3;
         <!-- "Open in Google Maps" searches this text as written (#113): a full address finds the right place. -->
         <mat-hint>
           Include the street, city and ZIP so directions find the right place.
-          @if (available()) {
+          @if (confirmed()) {
             <span class="visually-hidden">Address suggestions come from Google Maps.</span>
           }
         </mat-hint>
@@ -77,6 +77,11 @@ export class LocationField implements OnDestroy {
   protected readonly suggestions = signal<readonly string[]>([]);
   /** Turns off for this field once the server says suggestions aren't available. */
   protected readonly available = signal(true);
+  /**
+   * True only once the server has answered that suggestions are on. Until then (and when they're off) nothing
+   * mentions Google, so a plain-text field never claims suggestions it doesn't have.
+   */
+  protected readonly confirmed = signal(false);
 
   private session: string | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -119,9 +124,11 @@ export class LocationField implements OnDestroy {
       }
       if (!answer.available) {
         this.available.set(false);
+        this.confirmed.set(false);
         this.suggestions.set([]);
         return;
       }
+      this.confirmed.set(true);
       this.suggestions.set(answer.suggestions);
     } catch {
       // Suggestions are a convenience: a failure leaves a plain text field, with nothing to explain.

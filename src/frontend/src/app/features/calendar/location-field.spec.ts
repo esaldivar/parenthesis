@@ -75,6 +75,19 @@ describe('the location field’s address suggestions (#354)', () => {
     expect(await axeViolations(document.querySelector<HTMLElement>('.cdk-overlay-container')!)).toEqual([]);
   });
 
+  it('mentions Google only after the server confirms suggestions are on', async () => {
+    const sr = 'Address suggestions come from Google Maps.';
+    expect(fixture.nativeElement.textContent).not.toContain(sr);
+
+    await type('100 Example');
+    vi.advanceTimersByTime(SUGGESTION_DELAY_MS);
+    expect(fixture.nativeElement.textContent).not.toContain(sr);
+    http.expectOne(URL).flush({ suggestions: [], available: true });
+    await settle();
+
+    expect(fixture.nativeElement.textContent).toContain(sr);
+  });
+
   it('saves the picked suggestion’s text and starts a new session after it', async () => {
     await type('100 Example');
     vi.advanceTimersByTime(SUGGESTION_DELAY_MS);

@@ -56,7 +56,8 @@ that points back here.
     referrer. No embedded map, Maps SDK, location permission or tracking. Blank, punctuation-only or over-long
     locations stay plain text. The API already hides locations people mustn't see, and request logs leave out bodies.
   - [x] The Location field's hint asks for "the street, city and ZIP" so directions find the right place (owner,
-    October 29, 2026). No address lookup or suggestions: the text goes to Google only when the link is tapped.
+    October 29, 2026). The link itself sends the address to Google only when it's tapped; suggestions while typing
+    came later in #354 (below), which sends typed text to Google through our API when that feature is on.
   - [x] Vitest (URL building, encoding, malformed input, details link, axe) and a Playwright check that the link opens
     Google's URL in a new tab with the right destination and no referrer (Google answered by a local stand-in).
   - [x] Follow-up opened as #354 (address suggestions while typing); see its entry below.

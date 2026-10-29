@@ -179,7 +179,7 @@ export class DeviceList implements OnInit {
   }
 
   /**
-   * Only the shared family device this browser is gets "Stop sharing this device". A child's paired tablet a parent is
+   * Only the shared family device this browser is using gets "Stop sharing this device". A child's paired tablet a parent is
    * signed in on keeps the ordinary Remove: it isn't shared, and setting up sharing wouldn't bring it back.
    */
   protected stopsSharing(device: Device): boolean {
