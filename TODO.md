@@ -817,7 +817,11 @@ that points back here.
 ### #278 — Mobile release-test foundation (acceptance blocked)
 - Prepared: desktop plus touch Chromium/WebKit 320/390 profiles, reuse of existing M3 journeys without width-overriding loops, new theme/reduced-motion/date/reminder/toast/text-reflow/pending-overflow scenarios, exact-SHA/profile reporting and fail-closed coverage checks.
 - Verified locally: typecheck, discovery and six report-policy tests including controlled absent/failed/skipped profile negatives.
-- Still required: actual green targeted/full browser runs and a detectable browser regression, Edit/Swap and clearing/DST matrix completion, calibrated geometry/text behavior, then review/rollout under the existing release-only gate. Local Docker is absent and Playwright browser download produced invalid archives. No mobile product acceptance or real-device claim.
+- Superseded (October 29, 2026 audit): Edit/Swap, slot clearing, Chicago DST and the controlled overflow negative landed in #318; recovery fixes in #323, #324 and #325. Historical green run 40316038202 (179 executions) predates them; run 40444374496 recorded 224 passes / 30 failures before those fixes.
+- [ ] Fresh exact-candidate run of the full five-profile matrix on the active release, with the green targeted `@mobile` run, the `controlled overflow regression` result and run links recorded in #278.
+- [ ] Runbook "Cost and time" still says to keep the existing job timeout; #324 raised it to 60/48 minutes. Update `docs/runbooks/playwright-release-gate.md` in a run allowed to edit runbooks, with the measured matrix duration.
+- [ ] Ambiguous/nonexistent Chicago wall times, the #173 reminder recurrence matrix and calibrated text-enlargement geometry remain open. Physical-phone and real mobile screen-reader checks stay manual. No mobile product acceptance or real-device claim.
+- October 29, 2026 agent audit: Bash was unavailable in that session, so no typecheck, report-policy test or browser run was executed. Only this TODO entry changed.
 
 ### #66 — Production artifact security evidence
 - Implemented: production Deploy verifies immutable image provenance/source-tree equivalence and latest exact-candidate main Sonar analysis plus Release security gate before Azure access. Hotfixes and manual released-version redeploys use the same fail-closed checks; development stays independent. Added synthetic guard regressions and agent release instructions.
