@@ -840,6 +840,14 @@ that points back here.
 - Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
 
 ### #281 — Real screen-reader environment prerequisite
+- [ ] #364 full website PR check: validate all five tests on the hosted Windows merge candidate using private
+  PostgreSQL 17.11/Mailpit and loopback HTTPS. Verify `NVDA accessibility gate` reports the actual result and
+  retain full speech/source/version evidence. Owner configures and verifies the required check on `release/*`;
+  [runbook](docs/runbooks/nvda-website-ci.md). No protection change or hosted full-suite pass is implied by code.
+- [ ] #364: Validate the separate optional `NVDA runner probe` on GitHub-hosted Windows using the
+  existing smoke test. Record setup/tool versions, actual speech artifacts, repeated passes and a
+  controlled-negative/restored pass before building full-app CI or proposing a required check.
+  Existing release gates and branch protections remain unchanged; local NVDA results are not CI evidence.
 - [x] Frontend timeout follow-up: cap Angular/Vitest workers at two (one on hosts with at most two
   available cores), preserving the default five-second deadline, isolation and every test/axe assertion.
   On this 12-core Windows host, the unchanged runner passed 678/678 once but timed out in a different
