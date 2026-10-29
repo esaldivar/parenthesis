@@ -59,6 +59,10 @@ that points back here.
     October 29, 2026). No address lookup or suggestions: the text goes to Google only when the link is tapped.
   - [x] Vitest (URL building, encoding, malformed input, details link, axe) and a Playwright check that the link opens
     Google's URL in a new tab with the right destination and no referrer (Google answered by a local stand-in).
+  - [ ] Follow-up (owner opens the issue, October 29, 2026): Google Places address suggestions while typing. Needs a
+    Google Cloud billing account and a domain-restricted API key, "Powered by Google" attribution, and sends typed
+    text to Google; near-zero cost at current volume. Owner plans to use it before launch and decide on keeping it
+    in production once it would cost money.
   - [ ] Real devices: iPhone (Safari, Google Maps installed and not), Android (Chrome, with and without the app),
     desktop browsers. Headless browsers can't show whether the Maps app opens.
   - [x] Owner approved the link's design as built (October 29, 2026; `docs/design/reviews/issue-113/`).
