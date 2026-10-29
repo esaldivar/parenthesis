@@ -79,7 +79,8 @@ that points back here.
   - [x] Owner put the key in the dev Key Vault and app settings (`places-api-key`, `Places__ApiKey`,
     `Places__DailyLimit=300`; October 29, 2026, Succeeded).
   - [x] Owner set a $1 alert-only budget (all services; spend caps aren't available for Places), October 29, 2026.
-  - [ ] Owner: try suggestions on `develop` once #353 and #356 are released there
+  - [x] Owner: try suggestions on `develop` once #353 and #356 are released there. Confirmed working October 29,
+    2026, after #360/#363 fixed the Pacific-day lookup in the chiseled image (release PR #362).
     ([runbook](docs/runbooks/google-places-suggestions.md), "Check it works").
   - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
     anywhere (`docs/design/reviews/issue-354/`).
@@ -102,14 +103,16 @@ that points back here.
   failures in the new mobile recovery scenarios. Correct Cancel URL, displayed date and empty-week fixture
   assumptions; preserve mutation, focus, date and DST assertions. The gate remains fail-closed. Extend the job
   and global timeout to 60 and 48 minutes respectively so a full run and diagnostics can complete.
-  - [ ] Run the actual release candidate with all profiles, verify the results and review failed traces.
+  - [x] Run the actual release candidate with all profiles, verify the results and review failed traces. Release PR
+    #362's gate (run 40868443190) passed 259/259 on candidate `9052a9b` in all five profiles.
   - [ ] Verify selected palette cards in light/dark browser views; real-device and screen-reader checks remain open.
 
 - [ ] **PR #321 remaining review and Playwright recovery (#255, #261, #278, #279).** Selected Add cards use a
   distinct tinted fill; palette keys are typed with documented aliases; dashboard palette mapping replaces shadowed
   subcategory fills; historical unknown-parent fallback differs from Unavailable. Prior #322 raw child-link fix verified.
   - [x] Frontend lint, 605 tests and production build; E2E typecheck, 8 report-policy tests and 254 discovered executions.
-  - [ ] Run the exact release candidate in Chromium/WebKit after review. Time fields now use accessible labels;
+  - [x] Run the exact release candidate in Chromium/WebKit after review (later candidates include it; #362's gate
+    passed 259/259 in all five profiles). Time fields now use accessible labels;
     slot targeting follows the visible layout and waits for loaded controls. Action/navigation/global timeouts bound
     failures while retaining the gate and diagnostic time. No full browser execution claimed locally (Docker/.NET absent).
   - [ ] Verify selected/unselected controls and unknown-parent fallback visually in both themes; real screen reader and
@@ -840,6 +843,14 @@ that points back here.
 - Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
 
 ### #281 — Real screen-reader environment prerequisite
+- [ ] #364 full website PR check: validate all five tests on the hosted Windows merge candidate using private
+  PostgreSQL 17.11/Mailpit and loopback HTTPS. Verify `NVDA accessibility gate` reports the actual result and
+  retain full speech/source/version evidence. Owner configures and verifies the required check on `release/*`;
+  [runbook](docs/runbooks/nvda-website-ci.md). No protection change or hosted full-suite pass is implied by code.
+- [ ] #364: Validate the separate optional `NVDA runner probe` on GitHub-hosted Windows using the
+  existing smoke test. Record setup/tool versions, actual speech artifacts, repeated passes and a
+  controlled-negative/restored pass before building full-app CI or proposing a required check.
+  Existing release gates and branch protections remain unchanged; local NVDA results are not CI evidence.
 - [x] Frontend timeout follow-up: cap Angular/Vitest workers at two (one on hosts with at most two
   available cores), preserving the default five-second deadline, isolation and every test/axe assertion.
   On this 12-core Windows host, the unchanged runner passed 678/678 once but timed out in a different
@@ -868,8 +879,10 @@ that points back here.
 - Verified historical release PR #315 browser run 40316038202: 179 passing executions on merge candidate `92be9b9e962751f6e6fa3c273d6cb62836eae46e`; original no-run blocker notes above are historical.
 - Added touch Edit/Swap invalid/corrected/cancel checks, Home/Calendar slot moving/clearing, Chicago spring/fall persisted edit boundaries and controlled overflow detection/restoration. Removed the remaining #259 viewport override.
 - Added rendered save-error/retry/toast and repeated Month occurrence date/focus coverage. Required accessibility scan states now include these paths; report policy rejects mobile scans recorded at desktop width.
-- [ ] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code.
-- [ ] Complete remaining manual/incomplete axe review, ambiguous/nonexistent-time acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
+- [x] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code. Done: #362's gate run 40868443190, 259/259 on `9052a9b` (desktop 71; each mobile profile 47, including 9 recovery and 4 acceptance scenarios).
+- [x] Ambiguous/nonexistent-time browser coverage (#278, October 29): typed Chicago fall-back 1:30 AM saves the first occurrence and spring-forward 2:30 AM saves 3:30 AM, on every profile.
+- [ ] Complete remaining manual/incomplete axe review (#279); retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
+- [x] Controlled product negatives (#278, October 29, local Chromium 320/390): a 600px toast and a nonexistent time moved to 1:30 AM failed exactly the 6 expected executions; restored code passed 171/171 locally (desktop and both Chromium phone widths). WebKit couldn't be downloaded in the agent sandbox; the CI-level red-gate check stays under #341 below. See the runbook.
 - Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
 
 ### #279 — Approvals states and published violations (October 29, 2026)
