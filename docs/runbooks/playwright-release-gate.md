@@ -120,8 +120,10 @@ Existing inline desktop/390px loops now run once at the configured project size,
 switch itself to 390px. Context locale/time zone are en-US/America/Chicago, matching the synthetic family. Each test
 creates isolated parents using the local Mailpit API, never an owner inbox, and disposes its sessions. The entire
 throwaway database/mailbox is discarded with the runner. Most tests use next-week dates. `mobile-recovery.spec.ts` additionally seeds next year’s Chicago spring/fall
-transitions and verifies local fields and persisted UTC duration after an edit. Ambiguous/nonexistent wall times
-themselves, other time zones and real-device date input still need separate acceptance.
+transitions and verifies local fields and persisted UTC duration after an edit. It also types the transition times
+themselves on the Edit form: a fall-back 1:30 AM (which happens twice) saves the first occurrence, and a spring-forward
+2:30 AM (which doesn't exist) saves 3:30 AM, as `fromFamilyLocal` documents. Other time zones and real-device date
+input still need separate acceptance.
 
 ```bash
 cd tests/e2e
@@ -158,20 +160,46 @@ and reachable actions; device scale factor or a narrow viewport alone would not 
 | #232 | existing `dates are picked…` now follows #248/#249 and every profile | Device calendar/keyboard behavior; no old range-picker expectation |
 | #236 | component format-description tests; reminder field rendered by new journey | E2E reason/format associations in #279 and actual speech #281 |
 | #237 | existing `tapping empty time…` Calendar/Home two-tap journey | `moving and clearing a slot…` covers Home/Calendar and Escape; real mobile screen-reader path remains |
-| #248/#249 | `date recovery and reminder touch selection…`; existing date journey | `touch Edit and Swap…` adds both themes; Chicago spring/fall edit boundaries added; past/today stale-link recovery added; ambiguous local times remain |
+| #248/#249 | `date recovery and reminder touch selection…`; existing date journey; `touch Edit and Swap…` (both themes); Chicago spring/fall edit boundaries; `typing a nonexistent/ambiguous Chicago … time…`; past/today stale-link recovery | Device date input and other time zones |
 | #250 | existing Month continuation/details journey; `Month pending overflow…` geometry/reachability | Broader dense/repeated/year-boundary mobile matrix and actual spoken dates |
 | Text/reflow | `200% text enlarges content…` | OS text scaling, pinch zoom, magnification and clipping with longer localized content |
 
-Implementation evidence was updated on October 26: release PR #315’s full Playwright run
-[40316038202](https://github.com/esaldivar/parenthesis/actions/runs/40316038202) passed **179 executions** and its
-release summary check. Its tested merge candidate is `92be9b9e962751f6e6fa3c273d6cb62836eae46e`, not the branch
-head. This supersedes the earlier statement that no supported runner had executed the foundation.
+### Evidence (October 29, 2026)
 
-The subsequent recovery/DST/overflow-negative and accessibility additions are **not covered by that historical
-run**. They require fresh candidate browser execution through the existing release gate. Local typecheck,
-discovery and report-policy tests do not substitute for it. Docker is unavailable in this workspace; no product
-acceptance or physical-device/screen-reader certification is inferred. See the
-[follow-up evidence record](calendar-coverage-followup-2026-10-26.md).
+**Full release gate.** Release PR #362's run
+[40868443190](https://github.com/esaldivar/parenthesis/actions/runs/40868443190) passed **259/259 executions** on merge
+candidate `9052a9bff30d17d696f24f6824ca861ec0a94d71`: desktop `chromium` 71, and 47 in each of `mobile-chromium-320`,
+`mobile-chromium-390`, `mobile-webkit-320` and `mobile-webkit-390`. Each mobile profile ran the 9 recovery and 4
+acceptance scenarios added after #315, so the October 26 additions are now browser-verified. (Earlier history: #315's
+run [40316038202](https://github.com/esaldivar/parenthesis/actions/runs/40316038202), 179 passes; see the
+[follow-up evidence record](calendar-coverage-followup-2026-10-26.md).)
+
+**Controlled product negatives.** Beyond the synthetic-page overflow control in `mobile-recovery.spec.ts`, two
+deliberate product bugs were built into the app and run locally on `mobile-chromium-320` and `mobile-chromium-390`
+(never committed):
+
+| Deliberate bug | Caught by | Result |
+|---|---|---|
+| Toasts forced to 600px wide | `date recovery and reminder touch selection…` (light and dark), toast geometry | 4 failures: right edge 616px vs ≤321/≤391 |
+| A nonexistent 2:30 AM moved back to 1:30 AM CST instead of forward | `typing a nonexistent Chicago spring forward time…` | 2 failures: saved `07:30Z`, expected `08:30Z` |
+
+Exactly those 6 executions failed and the other 24 passed. With the code restored, the full suite passed
+**171/171** locally on `chromium`, `mobile-chromium-320` and `mobile-chromium-390` (73 + 49 + 49). Two caveats. A
+`min-width` change alone didn't break the toast, because a later `min-width: 0` in the same rule wins: that's CSS, not a
+test gap. And WebKit couldn't be downloaded in the agent sandbox, so this negative covers Chromium only. The CI-level
+red-gate check stays open under #341.
+
+**Running it without Docker image builds (agent sandboxes).** Publish the API (`dotnet publish`), copy the built SPA
+into its `wwwroot`, run `migrate`, then start it with the HTTPS/SMTP settings from `scripts/start-release-candidate.sh`
+against local Postgres and Mailpit. Point Playwright at a preinstalled Chromium with `E2E_CHROMIUM_PATH` when the browser
+download is blocked:
+
+```bash
+E2E_BASE_URL=https://localhost:8443 MAILPIT_URL=http://localhost:8025 E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium \
+  npx playwright test --project=chromium --project=mobile-chromium-320 --project=mobile-chromium-390
+```
+
+No physical-device or real-screen-reader certification is implied by any of these runs.
 
 ## Rendered accessibility acceptance (#279)
 
