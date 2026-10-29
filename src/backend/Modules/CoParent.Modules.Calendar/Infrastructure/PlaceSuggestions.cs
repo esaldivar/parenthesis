@@ -4,7 +4,6 @@ using System.Text.RegularExpressions;
 using CoParent.Modules.Calendar.Domain;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NodaTime;
 
 namespace CoParent.Modules.Calendar.Infrastructure;
 
@@ -35,11 +34,11 @@ internal sealed class PlacesOptions
 /// <summary>
 /// Counts Google requests per Pacific day across this API instance and refuses past <see cref="PlacesOptions.DailyLimit"/>.
 /// Google's quota is the hard limit; this keeps a running instance from spending it. The Pacific day comes from NodaTime's
-/// built-in time zones: the production image has no system time zone files.
+/// built-in time zones (through <see cref="EventSchedule.LocalDate"/>): the production image has no system time zone files.
 /// </summary>
 internal sealed class PlaceSuggestionQuota(TimeProvider clock, IOptions<PlacesOptions> options)
 {
-    private static readonly DateTimeZone _pacific = DateTimeZoneProviders.Tzdb["America/Los_Angeles"];
+    private const string Pacific = "America/Los_Angeles";
     private readonly Lock _gate = new();
     private DateOnly _day;
     private int _used;
@@ -47,7 +46,7 @@ internal sealed class PlaceSuggestionQuota(TimeProvider clock, IOptions<PlacesOp
     /// <summary>Takes one request from today's allowance, or returns false when it's used up.</summary>
     public bool TryTake()
     {
-        var today = Instant.FromDateTimeOffset(clock.GetUtcNow()).InZone(_pacific).Date.ToDateOnly();
+        var today = EventSchedule.LocalDate(clock.GetUtcNow(), Pacific);
         lock (_gate)
         {
             if (today != _day)
