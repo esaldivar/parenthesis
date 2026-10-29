@@ -373,9 +373,9 @@ describe('Add event', () => {
     const harness = await open();
     await choose(harness, 'Activity');
 
-    const location = page().querySelector<HTMLInputElement>('input[formcontrolname="location"]')!;
+    const location = page().querySelector<HTMLInputElement>('input[name="location"]')!;
     const hint = document.getElementById(location.getAttribute('aria-describedby')!.split(' ')[0]);
-    expect(text(hint)).toBe('Include the street, city and ZIP so directions find the right place.');
+    expect(text(hint)).toContain('Include the street, city and ZIP so directions find the right place.');
   });
 
   it('keeps unavailable time about you: no title, children or location, and the note is private', async () => {
@@ -383,7 +383,7 @@ describe('Add event', () => {
     await choose(harness, 'I’m unavailable');
 
     expect(page().querySelector('input[formcontrolname="title"]')).toBeNull();
-    expect(page().querySelector('input[formcontrolname="location"]')).toBeNull();
+    expect(page().querySelector('input[name="location"]')).toBeNull();
     expect(page().querySelector('.kid')).toBeNull();
     expect(text(page())).toContain('Only you can see this.');
     type(harness, 'textarea[formcontrolname="notes"]', 'Dentist');

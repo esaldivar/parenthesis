@@ -195,6 +195,11 @@ export interface ProposedTimes {
   readonly caregiverMembershipId: string | null;
 }
 
+export interface PlaceSuggestions {
+  suggestions: string[];
+  available: boolean;
+}
+
 export interface CalendarEvent {
   readonly id: string;
   readonly title: string;
@@ -484,6 +489,14 @@ export class Api {
       this.http.get<{ warnings: CalendarWarning[] }>(`/api/families/${familyId}/calendar/events/${eventId}/conflicts`, {
         params: { startsAt, endsAt },
       }),
+    );
+  /**
+   * Address suggestions for a location (#354). The server asks Google, so the key never reaches the browser.
+   * `available: false` means off, used up for today, or Google didn't answer: stop asking for this field.
+   */
+  placeSuggestions = (familyId: string, input: string, sessionToken: string) =>
+    this.call(
+      this.http.post<PlaceSuggestions>(`/api/families/${familyId}/calendar/place-suggestions`, { input, sessionToken }),
     );
   /** Parenting time, holidays and joint events come back PendingApproval with a changeRequestId. */
   createEvent = (familyId: string, event: NewCalendarEvent) =>

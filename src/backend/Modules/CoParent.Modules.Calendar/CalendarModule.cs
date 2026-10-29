@@ -1,8 +1,11 @@
+using System.Threading.RateLimiting;
 using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Calendar.Endpoints;
 using CoParent.Modules.Calendar.Infrastructure;
 using CoParent.SharedKernel.Accounts;
+using CoParent.SharedKernel.Security;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,6 +28,18 @@ public static class CalendarModule
         services.AddScoped<IApprovalTargetHandler, CalendarModifyHandler>();
         services.AddScoped<IApprovalTargetHandler, CalendarCancelHandler>();
         services.AddScoped<IParentDepartureHandler, CalendarDeparture>();
+
+        // Address suggestions (#354): off unless Places:ApiKey is set. The client logs nothing about requests.
+        services.AddOptions<PlacesOptions>().BindConfiguration(PlacesOptions.Section);
+        services.AddSingleton<PlaceSuggestionQuota>();
+        services.AddScoped<GooglePlaceSuggestions>();
+        services.AddHttpClient(GooglePlaceSuggestions.ClientName, client => client.Timeout = TimeSpan.FromSeconds(3))
+            .RemoveAllLoggers();
+        // Typing is debounced to about one request a second at most; this stops a stuck or scripted client.
+        services.Configure<RateLimiterOptions>(options => options.AddPolicy(PlaceSuggestionEndpoints.RateLimitPolicy, context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                context.User.GetUserId()?.ToString() ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(1) })));
         return services;
     }
 
@@ -34,6 +49,7 @@ public static class CalendarModule
         CalendarEndpoints.Map(family);
         ReminderEndpoints.Map(family);
         TaskEndpoints.Map(family);
+        PlaceSuggestionEndpoints.Map(family);
         return family;
     }
 }
