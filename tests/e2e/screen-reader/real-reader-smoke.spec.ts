@@ -15,3 +15,7 @@ test('real screen reader announces a named heading', async ({ page, screenReader
   // Check real announcements rather than DOM-only accessibility metadata.
   expect(phrases.join(' ').toLowerCase()).toContain('parenthesis accessibility pilot');
 });
+
+
+
+
