@@ -23,7 +23,7 @@ test('NVDA reads parent navigation names and follows Calendar and Settings', asy
   await expect(page.getByRole('heading', { name: 'Settings', level: 1, exact: true })).toBeVisible();
   await expect(page.locator('#main-content')).toBeFocused();
   await expect(nav.getByRole('link', { name: 'Settings', exact: true })).toHaveAttribute('aria-current', 'page');
-  await reader.tabTo(page.getByRole('button', { name: 'Notifications', exact: true }), /notifications/i, /button/i);
+  await reader.tabTo(page.getByRole('button', { name: 'Notifications', exact: true }), /notifications/i, /button/i, 'Shift+Tab');
   await reader.tabTo(page.getByRole('button', { name: /Dad.*account menu/ }), /dad.*account menu/i, /button/i);
   await reader.tabTo(nav.getByRole('link', { name: 'Calendar', exact: true }), /calendar/i, /link/i);
   await reader.checkpoint('Calendar activation');

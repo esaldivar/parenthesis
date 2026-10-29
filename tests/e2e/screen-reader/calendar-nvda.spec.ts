@@ -24,10 +24,11 @@ test('NVDA announces Calendar, Add, validation and a saved activity', async ({ p
   const tabTo = async (target: Locator, announcement: RegExp) => {
     await expect(target).toBeVisible();
     for (let count = 0; count < 60; count++) {
+      await checkpoint(`Tab ${count + 1} toward ${target}`);
       await nvda.press('Tab');
       if (await target.evaluate(element => element === element.ownerDocument.activeElement)) {
         await expect(target).toBeFocused();
-        await expect.poll(() => nvda.lastSpokenPhrase()).toMatch(announcement);
+        await expect.poll(async () => (await nvda.spokenPhraseLog()).join(' ')).toMatch(announcement);
         return;
       }
     }

@@ -19,11 +19,11 @@ export class ReaderJourney {
       { message: `NVDA speech at ${this.stage}` }).toMatch(pattern);
   }
 
-  async tabTo(target: Locator, name: RegExp, role: RegExp) {
+  async tabTo(target: Locator, name: RegExp, role: RegExp, key: 'Tab' | 'Shift+Tab' = 'Tab') {
     await expect(target).toBeVisible();
     for (let count = 0; count < 60; count++) {
       await this.checkpoint(`Tab ${count + 1} toward ${target}`);
-      await this.nvda.press('Tab');
+      await this.nvda.press(key);
       if (await target.evaluate(element => element === element.ownerDocument.activeElement)) {
         await expect(target).toBeFocused();
         await this.heard(name);
