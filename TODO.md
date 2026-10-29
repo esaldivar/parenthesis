@@ -809,16 +809,17 @@ that points back here.
 - Owner Windows rerun on `9b736e1` (October 29, 2026, 6:38 AM Central): corrected calendar-save and forms
   journeys passed, 2/2 in 4.0 minutes, including the saved-event check. All four app journeys now have passing
   NVDA results across two runs; this is not a single full-suite run on one revision.
-- [ ] #281: Run the five opt-in Guidepup tests on the exact candidate in an interactive Windows/NVDA session;
-  attach sanitized per-stage speech and a controlled-negative failure. New app coverage includes desktop navigation,
-  Activity labels/required-title validation and saving, and event-dialog focus trapping/return and Keep it.
-  Owner reported the earlier smoke passed (1 test, 14.5s); this is not evidence for the new specs. Repeat for stability;
-  macOS VoiceOver, mobile readers and wider Calendar/approval coverage remain unverified. Required gate unchanged.
-- [ ] Verify the smoke-test focus fix on an interactive Windows/NVDA host: routed fixture navigation,
-  explicit foreground activation before Guidepup navigation, and a heading announcement distinct from the title.
-  Capture the speech attachment and a controlled negative; code/type checks alone do not establish acceptance.
+- [x] Owner reported all five Guidepup tests passed together on Windows/NVDA on October 29, 2026,
+  after restoring the assertion (checkout `387a415`; local last-run status also passed). Covers the smoke,
+  navigation, forms, calendar saving and event dialog. This is owner-run evidence, not an agent NVDA execution.
+- [x] Controlled negative on the same test code: substituted the expected Notifications speech with
+  `NEGATIVE CONTROL LABEL MUST BE ABSENT`; the speech assertion failed with the actual captured
+  `Notifications, menu button, collapsed, sub Menu`. Original file restored automatically; full suite then passed.
+- [ ] Archive sanitized full-run and negative-control attachments with OS/browser/NVDA/Guidepup versions;
+  repeat for stability. macOS VoiceOver, mobile readers and wider Calendar/approval coverage remain unverified.
+  Required release gate unchanged; no merge, deployment or cross-platform acceptance is implied.
 - Historical agent-session speech-capture failure is superseded by the owner's passing Windows smoke and app runs
-  above. macOS/VoiceOver remains unavailable; exact-head full-suite, controlled-negative and stability evidence remain open.
+  above. macOS/VoiceOver remains unavailable; evidence archival and repeated stability runs remain open.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
 
 ### #278/#279 — Coverage follow-up (October 26, 2026)
