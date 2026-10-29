@@ -1,0 +1,74 @@
+name: NVDA runner probe
+
+on:
+  pull_request:
+    branches: ['release/**']
+    paths:
+      - '.github/workflows/nvda-runner-probe.yml'
+      - 'tests/e2e/**'
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nvda-probe-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: NVDA runner compatibility
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-2022
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: tests/e2e
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Configure screen-reader automation
+        run: npx --yes @guidepup/setup setup --ci
+
+      - name: Install screen-reader assets
+        run: npx --yes @guidepup/setup install
+
+      - name: Install headed Chromium
+        run: npx playwright install chromium
+
+      - name: Record candidate and tooling
+        run: |
+          git rev-parse HEAD
+          node --version
+          npm ls @guidepup/guidepup @guidepup/playwright @playwright/test
+
+      - name: Run real NVDA smoke test
+        run: >
+          npx playwright test
+          --config=guidepup.config.ts
+          --project=screen-reader-desktop
+          --workers=1
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nvda-runner-probe
+          path: |
+            tests/e2e/guidepup-report/
+            tests/e2e/guidepup-results/
+          retention-days: 14
