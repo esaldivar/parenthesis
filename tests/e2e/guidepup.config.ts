@@ -18,9 +18,20 @@ export default withGuidepup({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     locale: 'en-US',
+    baseURL: process.env['E2E_BASE_URL'] ?? 'https://localhost:8443',
+    ignoreHTTPSErrors: true,
+    timezoneId: 'America/Chicago',
+    actionTimeout: 10_000,
+    navigationTimeout: 30_000,
   },
   projects: [{
     name: 'screen-reader-desktop',
+    testMatch: '**/real-reader-smoke.spec.ts',
+    use: { ...devices['Desktop Chrome'], headless: false },
+  }, {
+    name: 'screen-reader-app-nvda',
+    testMatch: '**/*-nvda.spec.ts',
+    timeout: 300_000,
     use: { ...devices['Desktop Chrome'], headless: false },
   }],
 });

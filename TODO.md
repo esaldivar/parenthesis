@@ -803,6 +803,14 @@ that points back here.
 - Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
 
 ### #281 — Real screen-reader environment prerequisite
+- [ ] #281: Run the five opt-in Guidepup tests on the exact candidate in an interactive Windows/NVDA session;
+  attach sanitized per-stage speech and a controlled-negative failure. New app coverage includes desktop navigation,
+  Activity labels/required-title validation and saving, and event-dialog focus trapping/return and Keep it.
+  Owner reported the earlier smoke passed (1 test, 14.5s); this is not evidence for the new specs. Repeat for stability;
+  macOS VoiceOver, mobile readers and wider Calendar/approval coverage remain unverified. Required gate unchanged.
+- [ ] Verify the smoke-test focus fix on an interactive Windows/NVDA host: routed fixture navigation,
+  explicit foreground activation before Guidepup navigation, and a heading announcement distinct from the title.
+  Capture the speech attachment and a controlled negative; code/type checks alone do not establish acceptance.
 - Windows NVDA is installed; Guidepup starts/connects/stops, but the synthetic control announcement is absent in this agent session. macOS/VoiceOver is unavailable. Both acceptance paths remain blocked, not passed.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
 
