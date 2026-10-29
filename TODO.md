@@ -905,13 +905,20 @@ that points back here.
 
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
 
+- [ ] **Calendar header polish (#372, October 29).** Material buttons with an icon centre it with the label (Add,
+  Request swap, Add item); the Switch profile pill left the top bar (account menu and Settings → Devices keep it);
+  both bottom navigations sit above page content (z-index 10), so Month bars scroll under them. The new
+  `calendar-header.spec.ts` failed on the old build ("+" 4.5px off "Add"; a tap on the navigation hit the Month bar)
+  and passes 12/12; full suite 183/183 locally on Chromium desktop/320/390; 703 unit tests.
+  - [x] WebKit profiles in the release gate (#374's gate passed in all five profiles).
+  - [ ] Owner: check the Calendar header and Month view on the iPhone and desktop in both themes.
 - [ ] **Popups clear the bottom navigation (#327, October 29).** Shared rule for every CDK connected popup: the
   navigation (safe-area inset included) is the screen's bottom edge, positions aren't locked so popups flip upward
   after resize/rotation, and the transparent backdrop stops at the navigation so one tap closes the popup and
   navigates. Modal dialogs unchanged. Guidance in `docs/design-system.md`. Unit tests 4/4; new
   `popups-clear-navigation.spec.ts` failed on the old build (picker bottom 584px vs navigation top 544px; navigation
   tap swallowed) and passes 12/12; full suite 183/183 locally on Chromium desktop/320/390.
-  - [ ] WebKit profiles in the release gate (not downloadable in the agent sandbox).
+  - [x] WebKit profiles in the release gate (#371's gate passed in all five profiles).
   - [ ] Owner: on a real iPhone (safe-area inset, Safari bars), open a date picker low on Add activity: it sits above
     the navigation, every date is tappable, and one tap on the navigation navigates.
 

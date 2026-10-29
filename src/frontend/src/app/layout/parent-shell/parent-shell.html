@@ -6,7 +6,7 @@
     <span>Settings</span>
   </a>
   <!-- On this parent's shared device, Sign out goes back to "Who's using Parenthesis?" and keeps the device (#153);
-       stopping sharing is in Settings. Switch profile is also a visible button in the top bar. -->
+       stopping sharing is in Settings. Switch profile is here and in Settings, not in the top bar (#372). -->
   @if (sharedDevice()) {
     <button mat-menu-item type="button" (click)="switchProfile()">
       <span>Switch profile</span>
@@ -67,12 +67,6 @@
       <app-logo [decorative]="true" />
     </a>
     <div class="topbar__actions">
-      @if (sharedDevice()) {
-        <button class="switch" type="button" (click)="switchProfile()">
-          <app-icon name="swap" [size]="20" />
-          <span>Switch profile</span>
-        </button>
-      }
       <button
         class="bell"
         type="button"
