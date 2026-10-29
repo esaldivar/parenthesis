@@ -284,6 +284,14 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       expect(toastText()).toContain('This device is no longer shared.');
     });
 
+    it('keeps the ordinary Remove for a child’s paired tablet a parent is signed in on', async () => {
+      const { body } = await settings([KAI], fakeAuth(), [DEVICES[0], { ...DEVICES[1], isThisDevice: true }]);
+
+      expect(text(body, 'app-device-list')).toContain('Kai’s tablet (this device)');
+      expect(body.querySelector('app-device-list button[aria-label="Remove Kai’s tablet"]')).not.toBeNull();
+      expect(text(body, 'app-device-list')).not.toContain('Stop sharing this device');
+    });
+
     it('keeps the parent signed in when stopping sharing fails', async () => {
       const auth = fakeAuth({ device: PICKER });
       const { harness, body } = await settings([KAI], auth, [{ ...DEVICES[0], isThisDevice: true }]);

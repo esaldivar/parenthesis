@@ -23,6 +23,7 @@ import { withOwnOverlap } from './own-overlap';
 import { revealFirstProblem } from './reveal-problem';
 import { dayFilter, END_BEFORE_START, rangeProblems, UNREADABLE_DATE } from './date-rules';
 import { DateCheck } from './date-check';
+import { LocationField } from './location-field';
 import { DateField } from './date-field';
 import { CalendarHeader } from './calendar-header';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
@@ -92,7 +93,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
 @Component({
   selector: 'app-add-event-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette,
+  imports: [CalendarPalette, LocationField,
     DateField,
     ReactiveFormsModule,
     RouterLink,

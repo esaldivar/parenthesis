@@ -56,7 +56,7 @@ import { Toasts } from '../../shared/toast/toasts';
               </div>
               @if (confirming() === device.id) {
                 <div class="panel">
-                  @if (device.isThisDevice) {
+                  @if (stopsSharing(device)) {
                     <p>
                       Stop sharing this device? Everyone using it, including you, is signed out at once, and “Who’s using
                       Parenthesis?” goes away here until a parent signs in and sets it up again.
@@ -78,7 +78,7 @@ import { Toasts } from '../../shared/toast/toasts';
                 </div>
               } @else {
                 <div class="actions">
-                  @if (device.isThisDevice) {
+                  @if (stopsSharing(device)) {
                     <button mat-stroked-button type="button" (click)="confirming.set(device.id)">Stop sharing this device</button>
                   } @else {
                     <button mat-stroked-button type="button" (click)="confirming.set(device.id)" [attr.aria-label]="'Remove ' + device.name">
@@ -178,8 +178,16 @@ export class DeviceList implements OnInit {
     return child ? `${child.firstName}’s own device` : 'A child’s own device';
   }
 
+  /**
+   * Only the shared family device this browser is using gets "Stop sharing this device". A child's paired tablet a parent is
+   * signed in on keeps the ordinary Remove: it isn't shared, and setting up sharing wouldn't bring it back.
+   */
+  protected stopsSharing(device: Device): boolean {
+    return device.isThisDevice === true && device.kind === 'Household';
+  }
+
   protected async remove(device: Device): Promise<void> {
-    if (device.isThisDevice) {
+    if (this.stopsSharing(device)) {
       await this.stopSharing(device);
       return;
     }

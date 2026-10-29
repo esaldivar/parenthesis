@@ -6,6 +6,12 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
+  `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
+  - [ ] Review required PR checks and promote through the normal release route to `main` (scheduled workflows run there).
+  - [ ] Run **Daily Discord health report** manually from `main`; verify real API metrics, Discord receipt and continued
+    native outage/recovery notifications. Secret values and live delivery were not accessible during implementation.
+
 - [ ] **Shared-device flow #153 (design PR #332; implementation branch `feat/153-shared-device-flow`,
   October 28, 2026).** Preserve every recorded visual approval (incl. the dark desktop recovery board, the four email
   concepts and the approved dark desktop states); unapproved supplements stay pending. Details:
@@ -41,8 +47,46 @@ that points back here.
     real test sends; retry/outbox delivery (F-09) instead of log-and-continue.
   - [ ] Real screen reader, physical phones, 200% text/400% zoom, forced colors and reduced motion on the release
     candidate; live dev-site walkthrough of every #153 verification scenario.
-  - [ ] Required PR CI, SonarCloud analysis and owner acceptance; #153 stays open until accepted. Deferred: child
+  - [ ] Owner acceptance of #153 after testing the flow on `develop` (ADR-0007 itself is accepted), with the release
+    PR's CI and SonarCloud analysis green; #153 stays open until then. Deferred: child
     personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
+- [ ] **Open an event's location in Google Maps (#113, owner-approved stretch, October 29, 2026).**
+  - [x] Event details show **Open in Google Maps** under Where: a Google Maps directions link
+    (`https://www.google.com/maps/dir/?api=1&destination=…`, no API key), percent-encoded, opening in a new tab with no
+    referrer. No embedded map, Maps SDK, location permission or tracking. Blank, punctuation-only or over-long
+    locations stay plain text. The API already hides locations people mustn't see, and request logs leave out bodies.
+  - [x] The Location field's hint asks for "the street, city and ZIP" so directions find the right place (owner,
+    October 29, 2026). The link itself sends the address to Google only when it's tapped; suggestions while typing
+    came later in #354 (below), which sends typed text to Google through our API when that feature is on.
+  - [x] Vitest (URL building, encoding, malformed input, details link, axe) and a Playwright check that the link opens
+    Google's URL in a new tab with the right destination and no referrer (Google answered by a local stand-in).
+  - [x] Follow-up opened as #354 (address suggestions while typing); see its entry below.
+  - [ ] Real devices: iPhone (Safari, Google Maps installed and not), Android (Chrome, with and without the app),
+    desktop browsers. Headless browsers can't show whether the Maps app opens.
+  - [x] Owner approved the link's design as built (October 29, 2026; `docs/design/reviews/issue-113/`).
+- [ ] **Address suggestions while typing a location (#354, owner decisions October 29, 2026).**
+  - [x] Our API asks Google Places Autocomplete (New) with a server-side key; a picked suggestion saves its text only
+    (no Place Details). Parents only, 60 a minute each; 300 Google requests a Pacific day; off without
+    `Places__ApiKey` or with `Places__Enabled=false`; typed text and results never logged or stored.
+  - [x] Location field suggestions on Add and Edit (combobox, keyboard, "Google Maps" attribution); plain text when
+    off, capped or failing. Integration tests with a fake Google, Vitest and axe.
+  - [x] Owner set up Google Cloud project `parenthesis-dev` (October 29, 2026): Places API (New) enabled, key
+    `parenthesis-dev-places` restricted to Places API (New) only, no application restriction (server-side key).
+  - [ ] Owner: when the Google Cloud **free trial is upgraded to a paid account**, lower the quota
+    *AutocompletePlacesRequest per minute* from 12,000 to **10** (the free trial doesn't allow quota changes; it also
+    doesn't charge the card). Google offers no per-day Autocomplete quota and no spend cap for Places, so the daily
+    limit is Parenthesis's own 300 a day.
+  - [x] Owner put the key in the dev Key Vault and app settings (`places-api-key`, `Places__ApiKey`,
+    `Places__DailyLimit=300`; October 29, 2026, Succeeded).
+  - [x] Owner set a $1 alert-only budget (all services; spend caps aren't available for Places), October 29, 2026.
+  - [ ] Owner: try suggestions on `develop` once #353 and #356 are released there
+    ([runbook](docs/runbooks/google-places-suggestions.md), "Check it works").
+  - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
+    anywhere (`docs/design/reviews/issue-354/`).
+  - [ ] Owner: before production, check the "Google Maps" text attribution against Google's current Places API (New)
+    policies (owner decision: keep the text for the development site). Mention Google suggestions in the privacy
+    notice once one exists.
+  - [ ] Production stays off until the owner decides; revisit the cap and cost with real usage.
 - [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
   (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
   classes on fixed 2026 dates before those pass: `CalendarTests`, `CalendarSearchTests`, `DateRuleTests`, `TaskTests`,

@@ -186,7 +186,7 @@ describe('Add and edit a reminder', () => {
     kindCard('Reminder').click();
     await settle();
 
-    expect(form().querySelector('input[formcontrolname="location"]')).toBeNull();
+    expect(form().querySelector('input[name="location"]')).toBeNull();
     expect(text(form())).toContain('It goes on the calendar at once, with no approval.');
     type('input[formcontrolname="title"]', 'Spirit Day');
     type('textarea[formcontrolname="details"]', 'Wear a blue shirt');
