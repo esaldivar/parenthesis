@@ -59,13 +59,21 @@ that points back here.
     October 29, 2026). No address lookup or suggestions: the text goes to Google only when the link is tapped.
   - [x] Vitest (URL building, encoding, malformed input, details link, axe) and a Playwright check that the link opens
     Google's URL in a new tab with the right destination and no referrer (Google answered by a local stand-in).
-  - [ ] Follow-up (owner opens the issue, October 29, 2026): Google Places address suggestions while typing. Needs a
-    Google Cloud billing account and a domain-restricted API key, "Powered by Google" attribution, and sends typed
-    text to Google; near-zero cost at current volume. Owner plans to use it before launch and decide on keeping it
-    in production once it would cost money.
+  - [x] Follow-up opened as #354 (address suggestions while typing); see its entry below.
   - [ ] Real devices: iPhone (Safari, Google Maps installed and not), Android (Chrome, with and without the app),
     desktop browsers. Headless browsers can't show whether the Maps app opens.
   - [x] Owner approved the link's design as built (October 29, 2026; `docs/design/reviews/issue-113/`).
+- [ ] **Address suggestions while typing a location (#354, owner decisions October 29, 2026).**
+  - [x] Our API asks Google Places Autocomplete (New) with a server-side key; a picked suggestion saves its text only
+    (no Place Details). Parents only, 60 a minute each; 300 Google requests a Pacific day; off without
+    `Places__ApiKey` or with `Places__Enabled=false`; typed text and results never logged or stored.
+  - [x] Location field suggestions on Add and Edit (combobox, keyboard, "Google Maps" attribution); plain text when
+    off, capped or failing. Integration tests with a fake Google, Vitest and axe.
+  - [ ] Owner: Google Cloud project, billing, Places API (New), restricted key, quota and $1 budget alert; key in the
+    dev Key Vault and app settings ([runbook](docs/runbooks/google-places-suggestions.md)). Then try it on `develop`.
+  - [ ] Confirm the attribution meets Google's current Places policy (text "Google Maps" under the suggestions) and
+    mention Google suggestions in the privacy notice once one exists.
+  - [ ] Production stays off until the owner decides; revisit the cap and cost with real usage.
 - [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
   (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
   classes on fixed 2026 dates before those pass: `CalendarTests`, `CalendarSearchTests`, `DateRuleTests`, `TaskTests`,

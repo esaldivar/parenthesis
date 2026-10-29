@@ -111,7 +111,7 @@ describe('Edit an event', () => {
     expect(field('location')!.value).toBe('North Field');
     // The hint is read with the field, so a full address makes "Open in Google Maps" find the right place (#113).
     const hint = document.getElementById(field('location')!.getAttribute('aria-describedby')!.split(' ')[0]);
-    expect(text(hint)).toBe('Include the street, city and ZIP so directions find the right place.');
+    expect(text(hint)).toContain('Include the street, city and ZIP so directions find the right place.');
     expect(text(page().querySelector('.note'))).toBe('Changes apply at once, for both of you.');
     type('title', 'Soccer game');
     type('location', '');

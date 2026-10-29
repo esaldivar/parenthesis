@@ -36,6 +36,7 @@ flowchart LR
   KV[Key Vault]
   AI[Application Insights]
   GCal[Google Calendar API]
+  Places[Google Places Autocomplete<br/>address suggestions, off without a key]
   Mail[Email provider<br/>ACS Email / Mailpit locally]
 
   SPA -- "HTTPS, cookie auth,<br/>same origin" --> API
@@ -43,6 +44,7 @@ flowchart LR
   SPA -- "GET via short-lived<br/>read SAS URL" --> BLOB
   API --> PG
   API --> BLOB
+  API -- "typed location text only,<br/>capped daily (#354)" --> Places
   BG --> PG
   BG --> BLOB
   BG --> GCal
@@ -50,6 +52,11 @@ flowchart LR
   API -. secrets .-> KV
   API -. telemetry .-> AI
 ```
+
+**Address suggestions (#354):** while a parent types an event's location, the API (never the browser) asks Google
+Places Autocomplete (New) with a server-side key. Only the typed text and a session token are sent; neither is logged
+or stored. A daily cap keeps it inside Google's free allowance, and without `Places:ApiKey` it is off. Setup:
+[the runbook](../runbooks/google-places-suggestions.md).
 
 **Why one container serving both API and SPA:** same origin means HttpOnly, `SameSite=Strict` cookies work without CORS, and hosting stays cheap. The SPA can be split out to Static Web Apps + Front Door later without code changes.
 

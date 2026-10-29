@@ -108,7 +108,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await page.goto(`/calendar/new?date=${tuesday}`);
       await page.getByRole('button', { name: /Activity/ }).click();
       await page.getByLabel('Title').fill('Swim lesson');
-      await page.getByLabel('Location (optional)').fill('100 Example Ave & Pool #2, Springfield');
+      await page.getByRole('combobox', { name: 'Location (optional)' }).fill('100 Example Ave & Pool #2, Springfield');
       await page.getByLabel('Kai').check();
       await page.getByRole('button', { name: 'Add to calendar' }).click();
       await expect(page.getByText('“Swim lesson” is on the calendar.')).toBeVisible();
