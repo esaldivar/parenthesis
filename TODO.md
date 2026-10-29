@@ -929,6 +929,13 @@ that points back here.
   - [ ] Owner decision later: automatic assignment (apply mode + write permissions), then optionally a required check.
   - [ ] actionlint couldn't be downloaded in the agent sandbox; CI's workflow checks cover the YAML.
 
+- [ ] **PR risk report (#141), report-only.** Phase 1 inventory and gaps in `docs/runbooks/pr-risk-audit.md`;
+  `pr-risk.yml` classifies changed files (never labels) into security-review, database-change (destructive flagged),
+  breaking-change and high-risk. 14 script tests; probed on real history (#370/#374 none, #345 security/breaking/high).
+  - [ ] Owner: once on `main`, check reports on representative PRs and record false positives and misses in #141.
+  - [ ] Owner decisions later: write the four labels (needs pull-requests: write); phase 3 enforcement via ruleset.
+  - [ ] Owner: set the **Copilot release review** ruleset back to Disabled (still Active after #362 merged).
+
 ## Earlier Playwright feedback (#341)
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
