@@ -61,6 +61,6 @@ Leave `Places__ApiKey` unset until the owner decides; the field is plain text th
 separate key and budget for production and revisit the cap with real usage.
 
 ## 4. Check it works
-On the development site, add an activity and type part of a synthetic address (e.g. "100 Example"): up to five
+On the development site, add an activity and type part of a synthetic address (e.g. "100 Example"): up to three
 suggestions appear with "Google Maps" under them. Picking one fills the field. With the key removed or
 `Places__Enabled=false`, the field is plain text and nothing else changes.

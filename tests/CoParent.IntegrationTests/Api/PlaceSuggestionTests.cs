@@ -68,9 +68,9 @@ public sealed class PlaceSuggestionTests(ApiFactory api) : IAsyncLifetime
         var result = await SuggestAsync(dad, familyId, "  100   Example\nAve ", session);
 
         Assert.True(result.GetProperty("available").GetBoolean());
-        // At most five, duplicates removed, in Google's order.
+        // At most three (owner decision), duplicates removed, in Google's order.
         Assert.Equal(
-            ["100 Example Ave, Springfield, IL, USA", "100 Example Ave, Shelbyville, IL, USA", "Example Park, Springfield, IL, USA", "Example Library", "Example School"],
+            ["100 Example Ave, Springfield, IL, USA", "100 Example Ave, Shelbyville, IL, USA", "Example Park, Springfield, IL, USA"],
             result.GetProperty("suggestions").EnumerateArray().Select(s => s.GetString()));
         var sent = Assert.Single(google.Requests);
         Assert.Equal(GoogleUrl, sent.Url);

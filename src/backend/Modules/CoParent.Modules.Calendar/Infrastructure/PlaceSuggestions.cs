@@ -76,7 +76,12 @@ internal sealed partial class GooglePlaceSuggestions(
     /// <summary>Only the suggestion text: the cheapest Autocomplete field, and nothing we don't show.</summary>
     public const string FieldMask = "suggestions.placePrediction.text.text";
 
-    /// <summary>Up to five suggestions, or null when Google couldn't answer (the app then just shows none).</summary>
+    /// <summary>
+    /// At most this many suggestions, so the list stays calm (owner decision, October 29, 2026).
+    /// </summary>
+    public const int MaxSuggestions = 3;
+
+    /// <summary>Up to <see cref="MaxSuggestions"/> suggestions, or null when Google couldn't answer (the app then just shows none).</summary>
     public async Task<IReadOnlyList<string>?> SuggestAsync(string input, string? sessionToken, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
@@ -101,7 +106,7 @@ internal sealed partial class GooglePlaceSuggestions(
                 .OfType<string>()
                 .Where(text => text.Length is > 0 and <= CalendarEvent.LocationMaxLength)
                 .Distinct()
-                .Take(5)
+                .Take(MaxSuggestions)
                 .ToList();
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException

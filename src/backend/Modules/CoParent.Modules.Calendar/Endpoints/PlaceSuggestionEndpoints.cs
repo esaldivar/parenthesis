@@ -12,7 +12,7 @@ namespace CoParent.Modules.Calendar.Endpoints;
 /// <param name="SessionToken">One per typing session (a UUID), so Google counts a session, not each keystroke.</param>
 internal sealed record PlaceSuggestionRequest(string? Input, string? SessionToken);
 
-/// <param name="Suggestions">Up to five suggestions, as Google wrote them; picking one saves that text.</param>
+/// <param name="Suggestions">Up to three suggestions, as Google wrote them; picking one saves that text.</param>
 /// <param name="Available">False when suggestions are off, used up for today, or Google didn't answer: the app stops
 /// asking and the field works as plain text.</param>
 internal sealed record PlaceSuggestionView(IReadOnlyList<string> Suggestions, bool Available);

@@ -71,8 +71,11 @@ that points back here.
     off, capped or failing. Integration tests with a fake Google, Vitest and axe.
   - [ ] Owner: Google Cloud project, billing, Places API (New), restricted key, quota and $1 budget alert; key in the
     dev Key Vault and app settings ([runbook](docs/runbooks/google-places-suggestions.md)). Then try it on `develop`.
-  - [ ] Confirm the attribution meets Google's current Places policy (text "Google Maps" under the suggestions) and
-    mention Google suggestions in the privacy notice once one exists.
+  - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
+    anywhere (`docs/design/reviews/issue-354/`).
+  - [ ] Owner: before production, check the "Google Maps" text attribution against Google's current Places API (New)
+    policies (owner decision: keep the text for the development site). Mention Google suggestions in the privacy
+    notice once one exists.
   - [ ] Production stays off until the owner decides; revisit the cap and cost with real usage.
 - [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
   (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
