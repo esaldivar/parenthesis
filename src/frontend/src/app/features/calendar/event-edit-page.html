@@ -101,13 +101,7 @@
     </fieldset>
 
     @if (!unavailable()) {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Location (optional)</mat-label>
-        <input matInput formControlName="location" maxlength="200" />
-        @if (fieldError('location'); as e) {
-          <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-        }
-      </mat-form-field>
+      <app-location-field [control]="form.controls.location" [error]="fieldError('location')" />
     }
 
     <mat-form-field appearance="outline" subscriptSizing="dynamic">

@@ -26,6 +26,8 @@ const PATHS = {
   alert: 'M12 3.5l9 16H3z M12 10v4 M12 16.8v.4',
   minus: 'M5 12h14',
   send: 'M21 3 3 10.5l7 3 3 7.5z M21 3 10 13.5',
+  // A box with an arrow leaving it: the link opens outside Parenthesis.
+  external: 'M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   block: 'M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M5.6 5.6l12.8 12.8',
   bell: 'M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20a2 2 0 0 0 4 0',
