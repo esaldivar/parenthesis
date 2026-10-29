@@ -872,6 +872,20 @@ that points back here.
 - [ ] Complete remaining manual/incomplete axe review, ambiguous/nonexistent-time acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
 - Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
 
+### #279 — Approvals states and published violations (October 29, 2026)
+- Added the required `approvals-decline` scan state (open decline form, cancelled without deciding, verified by API),
+  Approvals pending/declined labels, and Week/List assertions that pending/declined proposals are never named Confirmed.
+- Release summary now lists each violation's rule ID, state, profile, SHA and sanitized selectors, including failed
+  executions; any violation blocks. New report-policy test added. Runbook (`docs/runbooks/`) was out of scope for
+  this run, so `tests/e2e/README.md` records the additions.
+- [ ] Run `npm run typecheck` and `node --test scripts/summary-policy.test.mjs` in `tests/e2e/`. The agent shell was
+  denied in this session, so no check ran and no browser execution is claimed.
+- [ ] Execute the new states in all five profiles and both themes on the exact release candidate.
+- [ ] Copy the README additions into the runbook's rendered-accessibility section and coverage map.
+- [ ] Suspected focus loss, unverified in a browser: Approvals Decline/Cancel/Approve/Withdraw replace or remove the
+  focused button without moving focus (`approvals-page.ts`), so focus likely falls to `<body>` with no toast-focus
+  preservation. Open a tracked regression before adding an assertion that would fail the release gate.
+
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
 
 ## Earlier Playwright feedback (#341)

@@ -25,6 +25,7 @@ write([
   ...summary.milestones.map(m => row(m.name, m)), row('Regression', summary.regression),
   ...summary.profiles.map(p => row(p.name, p)), '',
   ...summary.errors.map(error => `- ${error}`),
+  ...summary.accessibility.violations.map(v => `- Axe \`${v.rule}\` in \`${v.state}\` [${v.profile}, ${v.testedSha ?? 'no SHA'}]: ${v.targets.map(t => `\`${t}\``).join(', ')}`),
   ...summary.failedTests.map(title => `- Failed: ${title}`), ...summary.flakyTests.map(title => `- Flaky: ${title}`), '',
   'HTML report, state screenshots/profile JSON and failure traces are in the run artifacts. Mobile profiles are emulation, not real-device or screen-reader acceptance.', '',
 ].join('\n'));

@@ -39,6 +39,20 @@ export function summarize(report, { milestones, regressionTag, expectedSha, star
   for (const profile of profiles) {
     if (!tests.some(t => t.profile === profile.name && t.tags.includes('@m3') && t.tags.includes('@mobile') && ['expected', 'flaky'].includes(t.outcome))) errors.push(`Missing executed mobile acceptance scenarios for ${profile.name}.`);
   }
+  // Publish every violation for reproduction, including from failed executions that cannot count as scans below.
+  // Scan attachments already hold only rule IDs and sanitized selectors, never HTML or input values.
+  const violations = [];
+  for (const execution of tests) {
+    for (const attachment of execution.attachments.filter(a => a.name.startsWith('axe-'))) {
+      try {
+        const scan = JSON.parse(Buffer.from(attachment.body, 'base64').toString('utf8'));
+        for (const v of Array.isArray(scan.violations) ? scan.violations : []) {
+          violations.push({ rule: String(v.id), state: String(scan.state), profile: execution.profile, testedSha: scan.testedSha ?? null, targets: (v.targets ?? []).map(t => [t].flat().join(' ')) });
+        }
+      } catch { /* malformed attachments are rejected by the per-profile checks */ }
+    }
+  }
+  if (violations.length) errors.push(`${violations.length} accessibility violations; no exception or baseline applies.`);
   let scans = 0, manualReviewRules = 0;
   for (const profile of requiredProfiles) {
     const expectedWidth = profile === 'chromium' ? 1280 : Number(profile.split('-').at(-1));
@@ -61,5 +75,5 @@ export function summarize(report, { milestones, regressionTag, expectedSha, star
     const missing = ['light', 'dark'].flatMap(theme => a11yStates.map(state => `${theme}-${state}`)).filter(state => !states.has(state));
     if (missing.length) errors.push(`Missing accessibility scans for ${profile}: ${missing.join(', ')}.`);
   }
-  return { ran: true, gatePassed: errors.length === 0, testedSha, accessibility: { scans, manualReviewRules }, uniqueScenarios: new Set(tests.map(t => t.key)).size, ...all, durationSeconds: Math.round((report.stats?.duration ?? 0) / 1000), milestones: perMilestone, regression, profiles, failedTests: tests.filter(t => t.outcome === 'unexpected').map(t => `[${t.profile}] ${t.title}`), flakyTests: tests.filter(t => t.outcome === 'flaky').map(t => `[${t.profile}] ${t.title}`), errors };
+  return { ran: true, gatePassed: errors.length === 0, testedSha, accessibility: { scans, manualReviewRules, violations }, uniqueScenarios: new Set(tests.map(t => t.key)).size, ...all, durationSeconds: Math.round((report.stats?.duration ?? 0) / 1000), milestones: perMilestone, regression, profiles, failedTests: tests.filter(t => t.outcome === 'unexpected').map(t => `[${t.profile}] ${t.title}`), flakyTests: tests.filter(t => t.outcome === 'flaky').map(t => `[${t.profile}] ${t.title}`), errors };
 }
