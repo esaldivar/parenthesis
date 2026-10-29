@@ -231,6 +231,8 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
       await scan(page, info, `${theme}-approvals-decline`);
       await waiting.getByRole('button', { name: 'Cancel', exact: true }).press('Enter');
       await expect(reason).toHaveCount(0);
+      // Closing the form returns focus to the Decline button that opened it, never to the page body.
+      await expect(waiting.getByRole('button', { name: 'Decline', exact: true })).toBeFocused();
       await expect(waiting.getByRole('button', { name: 'Approve', exact: true })).toBeVisible();
       const stillPending = await family.dad.json<{ id: string }[]>(family.dad.get(`/api/families/${family.familyId}/approvals`));
       expect(stillPending.map(r => r.id)).toContain(proposal.changeRequestId);

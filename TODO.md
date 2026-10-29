@@ -898,11 +898,10 @@ that points back here.
 - [ ] Execute the new states in all five profiles and both themes on the exact release candidate (WebKit runs in CI only;
   the agent sandbox can't download it).
 - [ ] Copy the README additions into the runbook's rendered-accessibility section and coverage map.
-- [ ] **Confirmed focus loss** (Chromium, October 29): after keyboard Decline → Cancel on Approvals, focus falls to
-  `<body>` (Decline itself correctly moves focus into the reason box). Approve/Withdraw likely do the same, since they
-  remove the focused button (`approvals-page.ts`); not yet checked. Open a tracked issue and fix: return focus to the
-  item's Decline button on Cancel, and to a stable target after a decision. Add the assertion with the fix, so the
-  release gate isn't red in the meantime.
+- [x] **Approvals focus loss fixed (#369)** (October 29): keyboard Cancel on the Decline form dropped focus to `<body>`, and
+  Approve/Decline/Withdraw removed the focused button. Cancel now returns focus to that item's Decline button; a
+  decision moves focus to the Waiting heading (the toast still never takes focus). Unit tests (4, failing on the old
+  code) and a release-gate assertion after Cancel; accessibility spec 33/33 locally on Chromium desktop/320/390.
 
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
 
