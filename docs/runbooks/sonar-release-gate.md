@@ -4,6 +4,11 @@ Every production release PR into `main` (`develop` → `main`, or a `hotfix/…`
 It blocks the release when SonarQube Cloud has security findings that aren't resolved, or that were accepted
 without a written reason. Setup of SonarQube Cloud itself: [sonarqube-cloud.md](sonarqube-cloud.md).
 
+> **Since #373 (owner decision, October 29, 2026): SonarQube Cloud analyses `develop`, not `main`.** The Free plan
+> analyses only the project's main branch and PRs into it, so that branch was renamed from `main` to `develop` in
+> SonarQube Cloud. Where this page describes `main` being scanned, read the section
+> [Develop is the analysed branch](#develop-is-the-analysed-branch-373), which takes precedence.
+
 ## How it works
 The gate is the `release-gate` job in [`.github/workflows/sonar.yml`](../../.github/workflows/sonar.yml), after the
 existing analysis. It doesn't scan the code again.
@@ -188,3 +193,37 @@ be evidenced on the reviewed rollout; local tests alone do not complete #66 or #
 API references: [workflow runs](https://docs.github.com/en/rest/actions/workflow-runs),
 [workflow jobs](https://docs.github.com/en/rest/actions/workflow-jobs),
 [Docker pull by digest](https://docs.docker.com/reference/cli/docker/image/pull/#pull-an-image-by-digest-immutable-identifier).
+
+## Develop is the analysed branch (#373)
+
+**Why.** On the Free plan SonarQube Cloud analyses one branch, the project's main branch, and PRs into it. Routine
+fixes land on `develop`, so analysing GitHub's `main` reported stale code. The owner renamed SonarQube Cloud's main
+branch from `main` to `develop` (October 29, 2026); renaming keeps its history and accepted-finding comments.
+
+**What runs where** (`.github/workflows/sonar.yml`, `SONAR_PRIMARY_BRANCH: develop`):
+
+| Event | SonarQube Cloud job | Release security gate |
+|---|---|---|
+| Push to `develop` | Full scan of `develop` | `develop`'s findings, post-merge rules |
+| PR into `develop` (release, sync, hotfix) | PR analysis | New code in the PR plus findings already on `develop`, as described above (not a required check on `develop`) |
+| PR into `main` (`develop` → `main`), push to `main` | No scan (the plan can't). Finds `develop`'s **latest** analysis and requires its commit's git tree to equal the release's | That analysis: quality gate, every open security issue on `develop`, hotspots (High blocks), justified acceptances. Fails if `develop` gets a newer analysis during the check |
+
+So a release can only reuse results for **exactly the same code**. A PR into `main` is up to date with `main` (strict
+check), so its merge commit is what `main` becomes; the gate compares that tree with `develop`'s analysed commit.
+The new-code hotspot rule is covered by the quality gate (Sonar way requires new-code hotspots to be reviewed) and by
+the gate on the release's PR into `develop`.
+
+**Production deploys** keep the same evidence rule: the latest push-to-`main` run of `sonar.yml` for the candidate,
+with both jobs successful. On `main` those jobs are the reuse check and the gate above.
+
+**When the gate says the code isn't identical:**
+- `main` has a commit `develop` doesn't (a past hotfix): merge `main` into `develop` with a `chore/sync-…` PR, wait for
+  `develop`'s analysis, re-run.
+- `develop` was just pushed and its analysis isn't finished: wait for the Sonar run on `develop`, re-run.
+- **Hotfixes.** A `hotfix/…` PR straight into `main` can't match `develop`'s analysed code, so the gate blocks it.
+  Fix on `develop` first (hotfix PR into `develop`), then release `develop` → `main`. If an urgent fix can't wait for
+  that, it's an owner decision; the gate is never bypassed or edited to let it through.
+
+**Owner checks after the rename:** in SonarQube Cloud **Administration → Branches and Pull Requests**, the main branch
+reads `develop`, and there's no separate `main` branch left. The first push to `develop` after this change runs a full
+scan; the next release PR into `main` should show "reusing `develop`'s analysis" in the **SonarQube Cloud** job.

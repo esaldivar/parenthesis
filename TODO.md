@@ -936,6 +936,15 @@ that points back here.
   - [ ] Owner decisions later: write the four labels (needs pull-requests: write); phase 3 enforcement via ruleset.
   - [ ] Owner: set the **Copilot release review** ruleset back to Disabled (still Active after #362 merged).
 
+- [ ] **Sonar analyses develop (#373, option A, owner decision October 29).** `sonar.yml` scans pushes to `develop`
+  and PRs into it; PRs into and pushes to `main` reuse `develop`'s latest analysis only when the git trees are
+  identical (otherwise the gate fails), and recheck it didn't change mid-run. Sonar Sunday reports `develop`.
+  Production evidence rule unchanged. 43 gate tests (7 new), 80 with production-security.
+  - [ ] Owner: confirm SonarQube Cloud's main branch now reads `develop` (Administration → Branches and Pull Requests).
+  - [ ] Verify on real runs: the first push to `develop` scans; the next `develop` → `main` PR shows the reuse step.
+  - [ ] Owner decision: a hotfix path (hotfix PRs straight into `main` are now blocked by the gate until the fix is on `develop`).
+  - [ ] Relate fresh `develop` findings to #65, #56 and #294; don't close those just because a scan ran.
+
 ## Earlier Playwright feedback (#341)
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.

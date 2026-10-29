@@ -32,7 +32,9 @@ hotfix/…                  from main, for urgent production bugs
 - **Hotfixes** for urgent production bugs: branch from `main`, make the smallest safe fix, test, open a PR into
   `main`, get the owner's approval, deploy (approval again in Actions), verify production, then sync into `develop`
   (`chore/sync-main`) and the active release branch. Hotfixes may ship outside a release window, never without
-  approval.
+  approval. **Since #373** SonarQube Cloud analyses `develop` only, so the Release security gate blocks a hotfix PR
+  straight into `main` (its code can't match `develop`'s analysis). Until the owner decides a hotfix path, a fix
+  reaches `main` through `develop` ([details](runbooks/sonar-release-gate.md#develop-is-the-analysed-branch-373)).
 - The **PR source** check enforces which branch may merge into which (`.github/scripts/check-pr-branch-policy.sh`).
   Release branches must be named `release/x.y.z`.
 
