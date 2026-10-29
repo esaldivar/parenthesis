@@ -55,6 +55,8 @@ that points back here.
     (`https://www.google.com/maps/dir/?api=1&destination=…`, no API key), percent-encoded, opening in a new tab with no
     referrer. No embedded map, Maps SDK, location permission or tracking. Blank, punctuation-only or over-long
     locations stay plain text. The API already hides locations people mustn't see, and request logs leave out bodies.
+  - [x] The Location field's hint asks for "the street, city and ZIP" so directions find the right place (owner,
+    October 29, 2026). No address lookup or suggestions: the text goes to Google only when the link is tapped.
   - [x] Vitest (URL building, encoding, malformed input, details link, axe) and a Playwright check that the link opens
     Google's URL in a new tab with the right destination and no referrer (Google answered by a local stand-in).
   - [ ] Real devices: iPhone (Safari, Google Maps installed and not), Android (Chrome, with and without the app),

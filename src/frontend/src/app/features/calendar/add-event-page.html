@@ -300,6 +300,9 @@
           <input matInput formControlName="location" maxlength="200" />
           @if (fieldError('location'); as e) {
             <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+          } @else {
+            <!-- "Open in Google Maps" searches this text as written (#113): a full address finds the right place. -->
+            <mat-hint>Include the street, city and ZIP so directions find the right place.</mat-hint>
           }
         </mat-form-field>
       }
