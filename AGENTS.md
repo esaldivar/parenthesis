@@ -1,6 +1,6 @@
 # Coding and release instructions
 
-Read `CONTRIBUTING.md`, `SECURITY.md`, `CLAUDE.md`, applicable directory instructions and the accepted ADRs before editing. Preserve unrelated work. Branch ordinary changes from the active `release/x.y.z` branch and open focused PRs into it. Follow the PR template and list real tracking issues; intermediate fixes use `Refs #N`. Record unfinished acceptance in `TODO.md`.
+Read `CONTRIBUTING.md`, `SECURITY.md`, `CLAUDE.md`, applicable directory instructions and the accepted ADRs before editing. Preserve unrelated work. Branch ordinary changes from the active `release/x.y.z` branch and open focused PRs into it. Follow the PR template and list real tracking issues; intermediate fixes use `Refs #N`. A PR's milestone comes from its tracking issues (#140): read the **PR milestone** report and set it by hand when the issues disagree; never invent one. Record unfinished acceptance in `TODO.md`.
 
 Before opening or updating a production release PR (`develop` → `main`, or `hotfix/…` → `main`), inspect issue #65, the latest Sonar Sunday report, open main security findings/hotspots and the candidate's own Sonar analysis. Verify fixes in the candidate; do not assume a green quality gate resolves existing vulnerabilities. See `docs/runbooks/sonar-release-gate.md` for the overall-code policy and its limitations.
 

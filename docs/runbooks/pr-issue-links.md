@@ -65,3 +65,29 @@ Add or correct the explicit section and edit the body to rerun. For API availabi
 rerun the latest event after checking GitHub availability and the job's read permissions. Private issues this
 workflow cannot read cannot be used to satisfy this repository-local rule. No extra Project token is required:
 the read-only `github.token` is sufficient. Never paste tokens into issue or PR text.
+
+## PR milestones (#140)
+
+A PR's milestone comes from its tracking issues, read with the same parser and verification as **Tracking issue
+links** (`.github/scripts/pr-milestones.mjs`, which imports `pr-issue-links.mjs`). GitHub's milestone field stays the
+source of truth.
+
+| Situation | What the report says |
+|---|---|
+| One milestone across the tracking issues | Which milestone the PR inherits (report-only: not set) |
+| Issues in different milestones | Warning: decision required. Set the PR's milestone by hand or split the PR |
+| No issue has a milestone | Nothing is invented. Fine for repository-wide maintenance; otherwise give the issue one |
+| The PR already has a different milestone | Warning; the chosen milestone is kept |
+| The milestone belongs to another release than the target `release/x.y.z` | Warning (M3 → 0.3.0, v1.0 → 1.0.0, as in the development workflow) |
+| Release promotion, `develop` → `main`, hotfix or `chore/sync-…` | A summary of the milestones involved; nothing is assigned |
+
+**Rollout (owner decision, October 20, 2026).** It's report-only: read-only permissions, it never fails a PR and never
+changes one; API errors and unreadable tracking issues become a warning (the Tracking issue links check owns those
+failures). Like that check it runs from `main` (`pull_request_target`), so it reports only once the workflow reaches
+`main`. Then:
+
+1. Check the reports on real PRs: a single-issue PR, a multi-issue PR, a conflict, an unmilestoned maintenance PR and
+   a release promotion. Record the run links in #140.
+2. Automatic assignment needs a separate owner approval: set `PR_MILESTONE_MODE: apply` and grant `pull-requests: write`
+   and `issues: write` in `.github/workflows/pr-milestones.yml`. Apply mode only fills an empty milestone.
+3. Making it a required check is a separate, reviewed ruleset change. Until then, describe it as not enforced.

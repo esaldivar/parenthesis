@@ -81,6 +81,9 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
   examples do not count. Closed tracking issues can be reused for promotions; list the underlying work instead
   of inventing an unrelated issue. Use non-closing `Refs` on intermediate branches. A reference does not prove
   acceptance or deployment. See [the check and rollout instructions](docs/runbooks/pr-issue-links.md).
+- A PR's milestone comes from its tracking issues (#140). The **PR milestone** report (report-only) says which one it
+  inherits; when the issues disagree, have no milestone or point at another release, set the milestone yourself.
+  Release, hotfix and sync PRs keep theirs. See [PR milestones](docs/runbooks/pr-issue-links.md#pr-milestones-140).
 - Builds with zero warnings (warnings are errors).
 - New behaviour has unit and/or integration tests.
 - Architecture decisions are recorded as an ADR in `docs/adr/`.

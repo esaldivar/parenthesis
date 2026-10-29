@@ -922,6 +922,13 @@ that points back here.
   - [ ] Owner: on a real iPhone (safe-area inset, Safari bars), open a date picker low on Add activity: it sits above
     the navigation, every date is tappable, and one tap on the navigation navigates.
 
+- [ ] **PR milestones from tracking issues (#140), report-only.** `pr-milestones.yml` reports the milestone a PR
+  inherits, and warns on conflicting issues, a different PR milestone, or a milestone from another release; rollups
+  are only summarised. It never blocks or writes. 19 script tests. See `docs/runbooks/pr-issue-links.md#pr-milestones-140`.
+  - [ ] Owner: get the workflow onto `main` (normal release sequence), then check reports on real PRs and record runs in #140.
+  - [ ] Owner decision later: automatic assignment (apply mode + write permissions), then optionally a required check.
+  - [ ] actionlint couldn't be downloaded in the agent sandbox; CI's workflow checks cover the YAML.
+
 ## Earlier Playwright feedback (#341)
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
