@@ -51,6 +51,14 @@ html {
   }
 }
 
+// Nonmodal popups (date pickers, selects, menus, suggestions) stop at the bottom navigation (#327): their invisible
+// backdrop leaves it uncovered, so one tap on the navigation closes the popup and navigates. Modal dialogs use a dark
+// backdrop and still cover everything. The clearance comes from the BottomNav directive; 0 without a bottom navigation.
+.cdk-overlay-container .cdk-overlay-transparent-backdrop,
+.cdk-overlay-container .mat-overlay-transparent-backdrop {
+  bottom: var(--bottom-nav-clearance, 0px);
+}
+
 *,
 *::before,
 *::after {

@@ -905,6 +905,16 @@ that points back here.
 
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
 
+- [ ] **Popups clear the bottom navigation (#327, October 29).** Shared rule for every CDK connected popup: the
+  navigation (safe-area inset included) is the screen's bottom edge, positions aren't locked so popups flip upward
+  after resize/rotation, and the transparent backdrop stops at the navigation so one tap closes the popup and
+  navigates. Modal dialogs unchanged. Guidance in `docs/design-system.md`. Unit tests 4/4; new
+  `popups-clear-navigation.spec.ts` failed on the old build (picker bottom 584px vs navigation top 544px; navigation
+  tap swallowed) and passes 12/12; full suite 183/183 locally on Chromium desktop/320/390.
+  - [ ] WebKit profiles in the release gate (not downloadable in the agent sandbox).
+  - [ ] Owner: on a real iPhone (safe-area inset, Safari bars), open a date picker low on Add activity: it sits above
+    the navigation, every date is tappable, and one tap on the navigation navigates.
+
 ## Earlier Playwright feedback (#341)
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
