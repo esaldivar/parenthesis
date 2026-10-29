@@ -33,11 +33,12 @@ internal sealed class PlacesOptions
 
 /// <summary>
 /// Counts Google requests per Pacific day across this API instance and refuses past <see cref="PlacesOptions.DailyLimit"/>.
-/// Google's quota is the hard limit; this keeps a running instance from spending it.
+/// Google's quota is the hard limit; this keeps a running instance from spending it. The Pacific day comes from NodaTime's
+/// built-in time zones (through <see cref="EventSchedule.LocalDate"/>): the production image has no system time zone files.
 /// </summary>
 internal sealed class PlaceSuggestionQuota(TimeProvider clock, IOptions<PlacesOptions> options)
 {
-    private static readonly TimeZoneInfo _pacific = TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles");
+    private const string Pacific = "America/Los_Angeles";
     private readonly Lock _gate = new();
     private DateOnly _day;
     private int _used;
@@ -45,7 +46,7 @@ internal sealed class PlaceSuggestionQuota(TimeProvider clock, IOptions<PlacesOp
     /// <summary>Takes one request from today's allowance, or returns false when it's used up.</summary>
     public bool TryTake()
     {
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.GetUtcNow(), _pacific).DateTime);
+        var today = EventSchedule.LocalDate(clock.GetUtcNow(), Pacific);
         lock (_gate)
         {
             if (today != _day)
