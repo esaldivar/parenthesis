@@ -1,9 +1,11 @@
 import { devices } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 import { withGuidepup } from '@guidepup/playwright';
 
 // Separate opt-in configuration: never changes the required release Playwright gate.
 // A real, interactive Windows/NVDA or macOS/VoiceOver session is mandatory.
 export default withGuidepup({
+  metadata: { testedSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() },
   testDir: './screen-reader',
   testMatch: '**/*.spec.ts',
   fullyParallel: false,

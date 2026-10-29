@@ -18,7 +18,8 @@ test('NVDA announces activity input labels, required state and title validation'
   await reader.tabTo(page.getByLabel('Start date', { exact: true }), /start date/i, /edit/i);
   await reader.tabTo(page.getByLabel('End date', { exact: true }), /end date/i, /edit/i);
   await reader.tabTo(page.getByRole('checkbox', { name: 'Kai', exact: true }), /kai/i, /check/i);
-  await reader.tabTo(page.getByRole('textbox', { name: 'Location (optional)', exact: true }), /location.*optional/i, /edit/i);
+  // The address-suggestion component (#354) exposes an editable combobox.
+  await reader.tabTo(page.getByRole('combobox', { name: 'Location (optional)', exact: true }), /location.*optional/i, /combo/i);
   await reader.tabTo(page.getByRole('textbox', { name: 'Notes (optional)', exact: true }), /notes.*optional/i, /edit/i);
   const submit = page.getByRole('button', { name: 'Add to calendar', exact: true });
   await reader.tabTo(submit, /add to calendar/i, /button/i);
