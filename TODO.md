@@ -75,8 +75,10 @@ that points back here.
     *AutocompletePlacesRequest per minute* from 12,000 to **10** (the free trial doesn't allow quota changes; it also
     doesn't charge the card). Google offers no per-day Autocomplete quota and no spend cap for Places, so the daily
     limit is Parenthesis's own 300 a day.
-  - [ ] Owner: $1 alert-only budget (all services; spend caps aren't available for Places), then the key in the dev
-    Key Vault and app settings ([runbook](docs/runbooks/google-places-suggestions.md)). Then try it on `develop`.
+  - [x] Owner put the key in the dev Key Vault and app settings (`places-api-key`, `Places__ApiKey`,
+    `Places__DailyLimit=300`; October 29, 2026, Succeeded).
+  - [ ] Owner: $1 alert-only budget (all services; spend caps aren't available for Places), then try suggestions on
+    `develop` once #353 and #356 are released there ([runbook](docs/runbooks/google-places-suggestions.md)).
   - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
     anywhere (`docs/design/reviews/issue-354/`).
   - [ ] Owner: before production, check the "Google Maps" text attribution against Google's current Places API (New)
