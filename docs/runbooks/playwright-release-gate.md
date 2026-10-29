@@ -99,7 +99,7 @@ Use a throwaway database: the tests create accounts and families. Stop the API a
 
 ## Cost and time
 The repository is public, so GitHub-hosted runners cost nothing. The earlier desktop-only baseline took about 8–10 minutes: building the
-image (cached between runs), installing Chromium (cached), about 20 seconds of tests, and uploads. It runs on work PRs into release branches and release promotions, and a new push cancels the run it replaces. The expanded mobile matrix requires a fresh timing measurement; keep the existing job timeout unless evidence justifies increasing it.
+image (cached between runs), installing Chromium (cached), about 20 seconds of tests, and uploads. It runs on work PRs into release branches and release promotions, and a new push cancels the run it replaces. The five-profile matrix (desktop plus four mobile profiles) took about 10 minutes for the whole job on release PR #362 (run 40868443190): 7.8 minutes of tests for 259 executions on 2 workers. The job timeout is 60 minutes and Playwright's global timeout 48 (#324), which leaves room for diagnostics and uploads after a slow or failing run.
 
 ## Discord
 The `notify` job remains limited to release/* → develop promotions and posts the result to the existing Parenthesis Discord webhook, read from the `DISCORD_WEBHOOK_URL`
