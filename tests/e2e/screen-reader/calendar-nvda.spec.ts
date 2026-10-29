@@ -98,7 +98,10 @@ test('NVDA announces Calendar, Add, validation and a saved activity', async ({ p
       await nvda.press('Enter');
       await expect(page).toHaveURL(/\/calendar\?date=/);
       await expect(page.getByRole('heading', { name: 'Calendar', exact: true, level: 1 })).toBeVisible();
-      await expect.poll(async () => (await nvda.spokenPhraseLog()).join(' ').toLowerCase()).toContain(`${title.toLowerCase()}” is on the calendar`);
+      // NVDA's punctuation setting may omit the toast's typographic quotation marks.
+      // Keep the event name and complete success phrase mandatory.
+      await expect.poll(async () => (await nvda.spokenPhraseLog()).join(' ').replace(/[“”"]/g, '').toLowerCase())
+        .toContain(`${title.toLowerCase()} is on the calendar`);
       expect(await page.locator('app-toast-host').evaluate(host => host.contains(host.ownerDocument.activeElement)),
         'The success toast must not take keyboard focus').toBe(false);
       const saved = await family.dad.json<{ title: string; status: string }[]>(family.dad.get(

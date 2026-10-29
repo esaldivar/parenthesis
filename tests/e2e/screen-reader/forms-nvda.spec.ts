@@ -29,7 +29,10 @@ test('NVDA announces activity input labels, required state and title validation'
   await reader.checkpoint('Blank title validation');
   await nvda.press('Enter');
   await expect(title).toBeFocused();
-  await expect(title).toHaveAttribute('aria-invalid', 'true');
+  // Material deliberately omits aria-invalid for empty required inputs, which
+  // browsers already expose as invalid. Verify that native state and the error association.
+  await expect.poll(() => title.evaluate((input: HTMLInputElement) => input.validity.valueMissing)).toBe(true);
+  await expect(title).toHaveAccessibleDescription('Enter a title.');
   await expect(page.getByRole('alert').filter({ hasText: 'Enter a title.' })).toBeVisible();
   await reader.heard(/enter a title/i);
   expect(writes, 'Invalid form must not submit an event').toBe(0);
@@ -38,7 +41,7 @@ test('NVDA announces activity input labels, required state and title validation'
   // Native required state clears after correction. The server-validation hint is
   // intentionally retained until another submission in the current application.
   await nvda.press('Tab');
-  await expect(title).toHaveAttribute('aria-invalid', 'false');
+  await expect.poll(() => title.evaluate((input: HTMLInputElement) => input.validity.valueMissing)).toBe(false);
   await reader.tabTo(page.getByRole('link', { name: 'Cancel', exact: true }), /cancel/i, /link/i);
   await nvda.press('Enter');
   await expect(page).toHaveURL(/\/calendar\?date=/);

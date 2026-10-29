@@ -803,6 +803,10 @@ that points back here.
 - Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
 
 ### #281 — Real screen-reader environment prerequisite
+- Owner Windows run on `86f6f87`: navigation and event-dialog NVDA journeys passed (2/4 app tests).
+  Activity save speech was captured but the assertion incorrectly required a quote; forms stopped on an
+  incorrect aria-invalid assumption for an empty required Material input. Corrected assertions still need
+  supported-host reruns; the captured save announcement alone does not verify the later persisted-state check.
 - [ ] #281: Run the five opt-in Guidepup tests on the exact candidate in an interactive Windows/NVDA session;
   attach sanitized per-stage speech and a controlled-negative failure. New app coverage includes desktop navigation,
   Activity labels/required-title validation and saving, and event-dialog focus trapping/return and Keep it.
