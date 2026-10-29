@@ -803,6 +803,11 @@ that points back here.
 - Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
 
 ### #281 — Real screen-reader environment prerequisite
+- [x] Frontend timeout follow-up: cap Angular/Vitest workers at two (one on hosts with at most two
+  available cores), preserving the default five-second deadline, isolation and every test/axe assertion.
+  On this 12-core Windows host, the unchanged runner passed 678/678 once but timed out in a different
+  test on repeat (677/678), consistent with worker contention rather than five deterministic defects.
+  With the cap, two full runs passed 678/678 across 49 files (39.16s and 46.38s); frontend lint passed.
 - Owner Windows run on `86f6f87`: navigation and event-dialog NVDA journeys passed (2/4 app tests).
   Activity save speech was captured but the assertion incorrectly required a quote; forms stopped on an
   incorrect aria-invalid assumption for an empty required Material input.
