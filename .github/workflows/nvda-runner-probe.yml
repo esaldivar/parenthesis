@@ -71,9 +71,6 @@ jobs:
           @{ sha = (git rev-parse HEAD).Trim(); tree = (git rev-parse 'HEAD^{tree}').Trim() } |
             ConvertTo-Json | Set-Content "$env:RUNNER_TEMP/nvda-candidate/app/candidate-source.json"
 
-      - name: Start isolated HTTPS website and verify readiness
-        run: ./scripts/windows-nvda-candidate.ps1 -Action Start
-
       - name: Install test dependencies
         run: npm ci --ignore-scripts
 
@@ -93,12 +90,13 @@ jobs:
           npm ls @guidepup/guidepup @guidepup/playwright @playwright/test
           node --input-type=module -e "import { chromium } from '@playwright/test'; import fs from 'node:fs'; import path from 'node:path'; const browser = await chromium.launch({headless:true}); const manifest = JSON.parse(fs.readFileSync('node_modules/@guidepup/guidepup/manifest.json','utf8')); fs.writeFileSync(path.join(process.env.RUNNER_TEMP,'nvda-candidate/logs/screen-reader-tools.json'),JSON.stringify({chromium:browser.version(),guidepupSetup:'0.29.3',nvda:manifest.screenReaders.find(reader=>reader.id==='nvda')},null,2)); await browser.close();"
 
-      - name: Run all five real NVDA website tests
-        run: >
-          npx playwright test
-          --config=guidepup.config.ts
-          --workers=1
-          --reporter=list,html,json
+      # Start after screen-reader setup and keep redirected child processes in the
+      # same PowerShell step as their consumers; do not depend on cross-step lifetime.
+      - name: Start website and run all five real NVDA tests
+        run: |
+          ./scripts/windows-nvda-candidate.ps1 -Action Start
+          npx playwright test --config=guidepup.config.ts --workers=1 --reporter=list,html,json
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA website tests failed.' }
 
       - name: Verify all scenarios ran with exact-candidate speech evidence
         run: node scripts/verify-nvda-results.mjs guidepup-results/nvda-results.json
@@ -106,6 +104,15 @@ jobs:
       - name: Stop isolated candidate processes
         if: always()
         run: ./scripts/windows-nvda-candidate.ps1 -Action Stop
+
+      - name: Collect candidate diagnostics
+        if: always()
+        run: |
+          $logs = "$env:RUNNER_TEMP/nvda-candidate/logs"
+          if (Test-Path $logs) {
+            New-Item -ItemType Directory -Force -Path guidepup-results/candidate-logs | Out-Null
+            Copy-Item "$logs/*" -Destination guidepup-results/candidate-logs
+          }
 
       - name: Upload diagnostics
         if: always()
@@ -115,7 +122,6 @@ jobs:
           path: |
             tests/e2e/guidepup-report/
             tests/e2e/guidepup-results/
-            ${{ runner.temp }}/nvda-candidate/logs/
           retention-days: 14
 
   gate:
