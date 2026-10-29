@@ -42,6 +42,8 @@ Use one non-closing `Refs #123` line per issue; release rollups may reuse closed
 issue links** check validates issue existence, and must be made required separately after trusted-base rollout.
 See [the issue-link policy and activation runbook](runbooks/pr-issue-links.md). Issue acceptance and verified
 deployment remain separate decisions. Existing PRs need real links supplied by their authors, not unrelated issues.
+A PR's milestone comes from those issues (#140); the report-only **PR milestone** check explains which, and warns on
+conflicts or a milestone from another release. It never blocks or sets anything until the owner approves that.
 
 1. Branch from the active release branch.
 2. Implement it and run the relevant tests.
