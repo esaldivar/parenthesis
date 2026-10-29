@@ -51,6 +51,14 @@ html {
   }
 }
 
+// Material buttons with one of our icons (#372): the icon and label share one centred row. Left inline, the icon
+// sat on the text baseline and rode above the label ("+ Add" looked misaligned next to "Approvals").
+.mdc-button__label:has(> .app-icon) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 *,
 *::before,
 *::after {

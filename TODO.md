@@ -905,6 +905,14 @@ that points back here.
 
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
 
+- [ ] **Calendar header polish (#372, October 29).** Material buttons with an icon centre it with the label (Add,
+  Request swap, Add item); the Switch profile pill left the top bar (account menu and Settings → Devices keep it);
+  both bottom navigations sit above page content (z-index 10), so Month bars scroll under them. The new
+  `calendar-header.spec.ts` failed on the old build ("+" 4.5px off "Add"; a tap on the navigation hit the Month bar)
+  and passes 12/12; full suite 183/183 locally on Chromium desktop/320/390; 703 unit tests.
+  - [ ] WebKit profiles in the release gate (not downloadable in the agent sandbox).
+  - [ ] Owner: check the Calendar header and Month view on the iPhone and desktop in both themes.
+
 ## Earlier Playwright feedback (#341)
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.

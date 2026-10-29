@@ -284,6 +284,18 @@ describe('children’s sign-in, devices and approvals (Design Request #1, part B
       expect(toastText()).toContain('This device is no longer shared.');
     });
 
+    it('offers Switch profile on this browser’s shared device, returning to the picker (#372)', async () => {
+      const auth = fakeAuth({ device: PICKER });
+      const here = [{ ...DEVICES[0], isThisDevice: true }, DEVICES[1]];
+      const { body } = await settings([KAI], auth, here);
+      const switchProfile = vi.spyOn(TestBed.inject(AuthStore), 'switchProfile');
+
+      click(body, 'Switch profile', 'app-device-list');
+
+      await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/profiles'));
+      expect(switchProfile).toHaveBeenCalled();
+    });
+
     it('keeps the ordinary Remove for a child’s paired tablet a parent is signed in on', async () => {
       const { body } = await settings([KAI], fakeAuth(), [DEVICES[0], { ...DEVICES[1], isThisDevice: true }]);
 
