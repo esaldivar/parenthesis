@@ -27,6 +27,7 @@ import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
 import { CalendarItem, FORMER_PARENT } from './calendar-items';
 import { canManageEvent } from './event-permissions';
 import { statusText, whenText } from './item-text';
+import { mapsDirectionsUrl } from './maps-link';
 import { datesText, repeatText } from './series';
 import { lastDate, toFamilyLocal } from './time';
 
@@ -92,6 +93,9 @@ export class EventDetails {
   protected readonly coParent = computed(
     () => this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null,
   );
+  /** "Open in Google Maps" for the location the viewer is allowed to see (#113); the API already hides the rest. */
+  protected readonly mapsUrl = computed(() => mapsDirectionsUrl(this.item().location));
+
   protected readonly people = computed(() =>
     [...this.item().parents.map((p) => p.name), ...this.item().children.map((c) => c.name)].join(', '),
   );

@@ -503,6 +503,45 @@ describe('the calendar page', () => {
     expect(toastText()).toContain('You withdrew your request. “Time with Alex” stays as it was.');
   });
 
+  describe('a location (#113)', () => {
+    async function details(location: string | null) {
+      const { harness } = await open('/calendar?date=2026-10-20&event=e1', [
+        event({ id: 'e1', title: 'Soccer practice', category: 'Activity', location }),
+      ]);
+      await settle(harness);
+      return document.querySelector('[role="dialog"]')!;
+    }
+    const mapsLink = (dialog: Element) => dialog.querySelector<HTMLAnchorElement>('a.maps');
+
+    it('offers one link that opens directions in Google Maps outside Parenthesis', async () => {
+      const dialog = await details('100 Example Ave, Springfield');
+      const link = mapsLink(dialog)!;
+
+      expect(text(dialog)).toContain('Where 100 Example Ave, Springfield');
+      expect(link.getAttribute('href')).toBe('https://www.google.com/maps/dir/?api=1&destination=100%20Example%20Ave%2C%20Springfield');
+      expect(link.target).toBe('_blank');
+      expect(link.rel.split(' ').sort()).toEqual(['noopener', 'noreferrer']);
+      expect(link.getAttribute('referrerpolicy')).toBe('no-referrer');
+      // The visible words start the accessible name, and the new tab is announced.
+      expect(text(link)).toBe('Open in Google Maps (opens in a new tab)');
+      expect(dialog.querySelectorAll('a.maps')).toHaveLength(1);
+      // No map, frame or map script is ever added to the page.
+      expect(document.querySelector('iframe, gmp-map, [src*="maps.googleapis"]')).toBeNull();
+      expect(await axeViolations(dialog as HTMLElement)).toEqual([]);
+    });
+
+    it('shows no link without a usable location', async () => {
+      expect(mapsLink(await details(null))).toBeNull();
+    });
+
+    it('keeps a location that can’t be looked up as plain text', async () => {
+      const dialog = await details('--');
+
+      expect(text(dialog)).toContain('Where --');
+      expect(mapsLink(dialog)).toBeNull();
+    });
+  });
+
   it('keeps the other parent’s unavailable notes private and offers them no cancel', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [
       event({ id: 'u', title: 'Unavailable', category: 'Unavailable', childIds: [], ownerMembershipId: 'm-sam' }),
