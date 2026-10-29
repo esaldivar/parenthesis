@@ -8,4 +8,4 @@ stays as written, followed by one text link: an outline "leaves the app" icon an
 readers hear "Open in Google Maps (opens in a new tab)".
 
 It reuses the existing link colour (`--color-action`), type and spacing; the only new asset is the outline
-`external` icon in `shared/icon/icon.ts`. No map is shown in Parenthesis. **Design approval pending.**
+`external` icon in `shared/icon/icon.ts`. No map is shown in Parenthesis. **Owner approval (October 29, 2026, in the Claude app):** approved as built.

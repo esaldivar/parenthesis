@@ -59,7 +59,7 @@ that points back here.
     Google's URL in a new tab with the right destination and no referrer (Google answered by a local stand-in).
   - [ ] Real devices: iPhone (Safari, Google Maps installed and not), Android (Chrome, with and without the app),
     desktop browsers. Headless browsers can't show whether the Maps app opens.
-  - [ ] Owner design approval of the link (`docs/design/reviews/issue-113/`).
+  - [x] Owner approved the link's design as built (October 29, 2026; `docs/design/reviews/issue-113/`).
 - [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
   (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
   classes on fixed 2026 dates before those pass: `CalendarTests`, `CalendarSearchTests`, `DateRuleTests`, `TaskTests`,
