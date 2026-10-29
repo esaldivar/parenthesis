@@ -27,7 +27,7 @@ test('real screen reader announces a named heading', async ({ page, nvda: screen
     await screenReader.nextHeading();
     await expect.poll(async () => (await screenReader.spokenPhraseLog()).some(phrase => {
       const spoken = phrase.toLowerCase();
-      return spoken.includes('negative control phrase must be absent') && spoken.includes('heading');
+      return spoken.includes('screen reader control') && spoken.includes('heading');
     }), { message: 'The real screen reader must announce the control heading' }).toBe(true);
   } finally {
     await testInfo.attach('screen-reader-speech', {
