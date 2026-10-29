@@ -32,13 +32,15 @@ under the 10,000 a month Google gives free); a **$1 budget alert**.
    - Application restrictions: leave as *None*, or *IP addresses* with the Container App's outbound IPs
      (`az containerapp show -g $RG -n ca-parenthesis-$ENV --query properties.outboundIpAddresses`). Not *Websites*:
      the key is used by our server, not a browser.
-4. **APIs & Services → Places API (New) → Quotas**: find the Autocomplete quota and lower it.
+4. **APIs & Services → Places API (New) → Quotas**: find the Autocomplete quota and lower it. As of October 2026
+   Google offers only *AutocompletePlacesRequest per minute* (default 12,000): set it to **10**. A **free trial**
+   account can't change quotas, but it doesn't charge the card either; set this when upgrading to a paid account.
    - If a **per-day** limit is offered, set it to **300**.
    - If only **per-minute** limits are offered, set the Autocomplete one low (e.g. **10 per minute**). Parenthesis's
      daily cap then does the daily limiting.
    Google's quota names change; check the current page, not this list.
-5. **Billing → Budgets & alerts → Create budget**: scope it to the project, amount **$1**, alerts at 50%, 90% and 100%
-   to the owner's email.
+5. **Billing → Budgets & alerts → Create budget**: an alert-only budget (spend caps aren't offered for Places),
+   scope it to the project and all services, amount **$1**, alerts at 50%, 90% and 100% to the owner's email.
 6. Check the free allowance and price on Google's [pricing page](https://developers.google.com/maps/billing-and-pricing/pricing)
    (*Autocomplete Requests*). The figures above were current in October 2026 according to third-party summaries.
 

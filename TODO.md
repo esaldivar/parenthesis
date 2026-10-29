@@ -69,8 +69,14 @@ that points back here.
     `Places__ApiKey` or with `Places__Enabled=false`; typed text and results never logged or stored.
   - [x] Location field suggestions on Add and Edit (combobox, keyboard, "Google Maps" attribution); plain text when
     off, capped or failing. Integration tests with a fake Google, Vitest and axe.
-  - [ ] Owner: Google Cloud project, billing, Places API (New), restricted key, quota and $1 budget alert; key in the
-    dev Key Vault and app settings ([runbook](docs/runbooks/google-places-suggestions.md)). Then try it on `develop`.
+  - [x] Owner set up Google Cloud project `parenthesis-dev` (October 29, 2026): Places API (New) enabled, key
+    `parenthesis-dev-places` restricted to Places API (New) only, no application restriction (server-side key).
+  - [ ] Owner: when the Google Cloud **free trial is upgraded to a paid account**, lower the quota
+    *AutocompletePlacesRequest per minute* from 12,000 to **10** (the free trial doesn't allow quota changes; it also
+    doesn't charge the card). Google offers no per-day Autocomplete quota and no spend cap for Places, so the daily
+    limit is Parenthesis's own 300 a day.
+  - [ ] Owner: $1 alert-only budget (all services; spend caps aren't available for Places), then the key in the dev
+    Key Vault and app settings ([runbook](docs/runbooks/google-places-suggestions.md)). Then try it on `develop`.
   - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
     anywhere (`docs/design/reviews/issue-354/`).
   - [ ] Owner: before production, check the "Google Maps" text attribution against Google's current Places API (New)
