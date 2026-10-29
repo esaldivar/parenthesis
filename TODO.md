@@ -885,6 +885,25 @@ that points back here.
 - [x] Controlled product negatives (#278, October 29, local Chromium 320/390): a 600px toast and a nonexistent time moved to 1:30 AM failed exactly the 6 expected executions; restored code passed 171/171 locally (desktop and both Chromium phone widths). WebKit couldn't be downloaded in the agent sandbox; the CI-level red-gate check stays under #341 below. See the runbook.
 - Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
 
+### #279 — Approvals states and published violations (October 29, 2026)
+- Added the required `approvals-decline` scan state (open decline form, cancelled without deciding, verified by API),
+  Approvals pending/declined labels, and Week/List assertions that pending/declined proposals are never named Confirmed.
+- Release summary now lists each violation's rule ID, state, profile, SHA and sanitized selectors, including failed
+  executions; any violation blocks. New report-policy test added. Runbook (`docs/runbooks/`) was out of scope for
+  this run, so `tests/e2e/README.md` records the additions.
+- [x] Run `npm run typecheck` and `node --test scripts/summary-policy.test.mjs` in `tests/e2e/` (October 29, after
+  merging `release/0.3.0`): typecheck clean, report policy 9/9.
+- [x] Local browser run (October 29): `accessibility.spec.ts` 33/33 on `chromium`, `mobile-chromium-320` and
+  `mobile-chromium-390`; `approvals` and `approvals-decline` scanned in both themes on each, with 0 violations.
+- [ ] Execute the new states in all five profiles and both themes on the exact release candidate (WebKit runs in CI only;
+  the agent sandbox can't download it).
+- [ ] Copy the README additions into the runbook's rendered-accessibility section and coverage map.
+- [ ] **Confirmed focus loss** (Chromium, October 29): after keyboard Decline → Cancel on Approvals, focus falls to
+  `<body>` (Decline itself correctly moves focus into the reason box). Approve/Withdraw likely do the same, since they
+  remove the focused button (`approvals-page.ts`); not yet checked. Open a tracked issue and fix: return focus to the
+  item's Decline button on Cancel, and to a stable target after a decision. Add the assertion with the fix, so the
+  release gate isn't red in the meantime.
+
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
 
 ## Earlier Playwright feedback (#341)
