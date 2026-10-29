@@ -891,13 +891,18 @@ that points back here.
 - Release summary now lists each violation's rule ID, state, profile, SHA and sanitized selectors, including failed
   executions; any violation blocks. New report-policy test added. Runbook (`docs/runbooks/`) was out of scope for
   this run, so `tests/e2e/README.md` records the additions.
-- [ ] Run `npm run typecheck` and `node --test scripts/summary-policy.test.mjs` in `tests/e2e/`. The agent shell was
-  denied in this session, so no check ran and no browser execution is claimed.
-- [ ] Execute the new states in all five profiles and both themes on the exact release candidate.
+- [x] Run `npm run typecheck` and `node --test scripts/summary-policy.test.mjs` in `tests/e2e/` (October 29, after
+  merging `release/0.3.0`): typecheck clean, report policy 9/9.
+- [x] Local browser run (October 29): `accessibility.spec.ts` 33/33 on `chromium`, `mobile-chromium-320` and
+  `mobile-chromium-390`; `approvals` and `approvals-decline` scanned in both themes on each, with 0 violations.
+- [ ] Execute the new states in all five profiles and both themes on the exact release candidate (WebKit runs in CI only;
+  the agent sandbox can't download it).
 - [ ] Copy the README additions into the runbook's rendered-accessibility section and coverage map.
-- [ ] Suspected focus loss, unverified in a browser: Approvals Decline/Cancel/Approve/Withdraw replace or remove the
-  focused button without moving focus (`approvals-page.ts`), so focus likely falls to `<body>` with no toast-focus
-  preservation. Open a tracked regression before adding an assertion that would fail the release gate.
+- [ ] **Confirmed focus loss** (Chromium, October 29): after keyboard Decline → Cancel on Approvals, focus falls to
+  `<body>` (Decline itself correctly moves focus into the reason box). Approve/Withdraw likely do the same, since they
+  remove the focused button (`approvals-page.ts`); not yet checked. Open a tracked issue and fix: return focus to the
+  item's Decline button on Cancel, and to a stable target after a decision. Add the assertion with the fix, so the
+  release gate isn't red in the meantime.
 
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
 
