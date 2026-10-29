@@ -805,8 +805,10 @@ that points back here.
 ### #281 — Real screen-reader environment prerequisite
 - Owner Windows run on `86f6f87`: navigation and event-dialog NVDA journeys passed (2/4 app tests).
   Activity save speech was captured but the assertion incorrectly required a quote; forms stopped on an
-  incorrect aria-invalid assumption for an empty required Material input. Corrected assertions still need
-  supported-host reruns; the captured save announcement alone does not verify the later persisted-state check.
+  incorrect aria-invalid assumption for an empty required Material input.
+- Owner Windows rerun on `9b736e1` (October 29, 2026, 6:38 AM Central): corrected calendar-save and forms
+  journeys passed, 2/2 in 4.0 minutes, including the saved-event check. All four app journeys now have passing
+  NVDA results across two runs; this is not a single full-suite run on one revision.
 - [ ] #281: Run the five opt-in Guidepup tests on the exact candidate in an interactive Windows/NVDA session;
   attach sanitized per-stage speech and a controlled-negative failure. New app coverage includes desktop navigation,
   Activity labels/required-title validation and saving, and event-dialog focus trapping/return and Keep it.
@@ -815,7 +817,8 @@ that points back here.
 - [ ] Verify the smoke-test focus fix on an interactive Windows/NVDA host: routed fixture navigation,
   explicit foreground activation before Guidepup navigation, and a heading announcement distinct from the title.
   Capture the speech attachment and a controlled negative; code/type checks alone do not establish acceptance.
-- Windows NVDA is installed; Guidepup starts/connects/stops, but the synthetic control announcement is absent in this agent session. macOS/VoiceOver is unavailable. Both acceptance paths remain blocked, not passed.
+- Historical agent-session speech-capture failure is superseded by the owner's passing Windows smoke and app runs
+  above. macOS/VoiceOver remains unavailable; exact-head full-suite, controlled-negative and stability evidence remain open.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
 
 ### #278/#279 — Coverage follow-up (October 26, 2026)
