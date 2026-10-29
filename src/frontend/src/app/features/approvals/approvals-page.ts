@@ -1,5 +1,15 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  OnInit,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -40,7 +50,7 @@ const COMMENT_MAX = 500;
     }
 
     <section aria-labelledby="waiting-heading">
-      <h2 id="waiting-heading">Waiting</h2>
+      <h2 id="waiting-heading" tabindex="-1">Waiting</h2>
       @if (pending(); as pending) {
         @if (pending.length === 0) {
           <p class="muted">Nothing is waiting for either of you.</p>
@@ -71,13 +81,15 @@ const COMMENT_MAX = 500;
                       </mat-form-field>
                       <div class="actions">
                         <button mat-flat-button type="button" [disabled]="busy()" (click)="decline(request)">Decline</button>
-                        <button mat-button type="button" (click)="declining.set(null)">Cancel</button>
+                        <button mat-button type="button" (click)="cancelDecline(request)">Cancel</button>
                       </div>
                     </div>
                   } @else {
                     <div class="actions">
                       <button mat-flat-button type="button" [disabled]="busy()" (click)="approve(request)">Approve</button>
-                      <button mat-stroked-button type="button" (click)="startDecline(request)">Decline</button>
+                      <button mat-stroked-button type="button" [attr.data-decline]="request.id" (click)="startDecline(request)">
+                        Decline
+                      </button>
                     </div>
                   }
                 } @else if (request.proposedByYou) {
@@ -226,6 +238,8 @@ export class ApprovalsPage implements OnInit {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
   private readonly toasts = inject(Toasts);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   private readonly familyId = computed(() => this.auth.currentFamily()?.id ?? null);
 
   async ngOnInit(): Promise<void> {
@@ -282,6 +296,12 @@ export class ApprovalsPage implements OnInit {
     this.declining.set(request.id);
   }
 
+  /** Closing the form removes the focused Cancel button: return focus to the Decline button that opened it. */
+  protected cancelDecline(request: ChangeRequest): void {
+    this.declining.set(null);
+    this.focusAfterRender(`[data-decline="${request.id}"]`);
+  }
+
   protected approve(request: ChangeRequest): Promise<void> {
     return this.run((familyId) => this.api.approve(familyId, request.id), `You approved “${request.summary}”.`);
   }
@@ -313,6 +333,15 @@ export class ApprovalsPage implements OnInit {
     } finally {
       this.busy.set(false);
     }
+    // The decided item leaves the list with the focused button. Focus the list's heading, a stable place to continue
+    // from; the toast announces the result without taking focus (#226).
+    this.focusAfterRender('#waiting-heading');
+  }
+
+  private focusAfterRender(selector: string): void {
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), {
+      injector: this.injector,
+    });
   }
 
   private async reload(): Promise<void> {
