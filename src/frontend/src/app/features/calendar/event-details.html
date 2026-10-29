@@ -175,7 +175,16 @@
     }
     @if (item().location; as location) {
       <dt>Where</dt>
-      <dd>{{ location }}</dd>
+      <dd>
+        {{ location }}
+        @if (mapsUrl(); as url) {
+          <!-- Leaves Parenthesis: no map is shown here, and no referrer is sent with the address (#113). -->
+          <a class="maps" [href]="url" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">
+            <app-icon name="external" [size]="18" />
+            <span>Open in Google Maps</span><span class="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        }
+      </dd>
     }
     @if (item().kind === 'unavailable') {
       @if (item().isMine) {

@@ -50,6 +50,16 @@ that points back here.
   - [ ] Owner acceptance of #153 after testing the flow on `develop` (ADR-0007 itself is accepted), with the release
     PR's CI and SonarCloud analysis green; #153 stays open until then. Deferred: child
     personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
+- [ ] **Open an event's location in Google Maps (#113, owner-approved stretch, October 29, 2026).**
+  - [x] Event details show **Open in Google Maps** under Where: a Google Maps directions link
+    (`https://www.google.com/maps/dir/?api=1&destination=…`, no API key), percent-encoded, opening in a new tab with no
+    referrer. No embedded map, Maps SDK, location permission or tracking. Blank, punctuation-only or over-long
+    locations stay plain text. The API already hides locations people mustn't see, and request logs leave out bodies.
+  - [x] Vitest (URL building, encoding, malformed input, details link, axe) and a Playwright check that the link opens
+    Google's URL in a new tab with the right destination and no referrer (Google answered by a local stand-in).
+  - [ ] Real devices: iPhone (Safari, Google Maps installed and not), Android (Chrome, with and without the app),
+    desktop browsers. Headless browsers can't show whether the Maps app opens.
+  - [ ] Owner design approval of the link (`docs/design/reviews/issue-113/`).
 - [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
   (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
   classes on fixed 2026 dates before those pass: `CalendarTests`, `CalendarSearchTests`, `DateRuleTests`, `TaskTests`,

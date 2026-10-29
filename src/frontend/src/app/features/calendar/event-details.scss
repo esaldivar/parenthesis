@@ -83,6 +83,15 @@ dd {
   margin: 0;
   overflow-wrap: anywhere;
 }
+.maps {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: fit-content;
+  min-height: var(--target-min);
+  color: var(--color-action);
+  font-weight: 600;
+}
 .hint {
   display: block;
   color: var(--color-text-secondary);
