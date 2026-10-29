@@ -69,6 +69,16 @@ charts, and empty states in both themes.
   menus, focus traps, or date pickers from scratch.
 - Motion is brief and functional; honor `prefers-reduced-motion`. No essential
   content or feedback depends on animation, hover, or drag gestures alone.
+- Nonmodal popups (date pickers, selects, menus, suggestion lists, search panels)
+  never cover or intercept the phone layout's bottom navigation (#327). Build them
+  on CDK connected overlays: the app treats the navigation, safe-area inset included,
+  as the screen's bottom edge, so a popup opens above it or flips upward, including
+  after scrolling, resizing or rotation. Their invisible backdrop stops at the
+  navigation, so one tap there closes the popup and navigates. Don't raise the
+  navigation's z-index to hide content behind it. Modal dialogs are different: they
+  keep a full-screen backdrop and block the page on purpose. A new shell with its
+  own bottom navigation marks it with `appBottomNav`
+  (`src/frontend/src/app/shared/overlay/bottom-nav-clearance.ts`).
 
 ## Accessible appearance preferences
 
@@ -146,6 +156,8 @@ Use synthetic children and media for every prototype and demonstration.
   return from dialogs, accessible names, field errors, and status announcements.
 - Check 320px width, 200% text sizing, and 400% zoom/reflow without lost actions
   or overlapping content. Check mobile touch targets and safe-area spacing.
+- Open each popup near the bottom of a short phone screen: it stays above the
+  bottom navigation, and one tap on the navigation still navigates.
 - Check Light/Dark/System selection, reload, OS changes, and switching between
   two users with different choices, including parent and child accounts.
 - Check reduced motion, high contrast, loading/empty/error/offline states, long
