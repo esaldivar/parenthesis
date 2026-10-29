@@ -1,8 +1,9 @@
-import { defineConfig, devices } from '@playwright/test';
+import { devices } from '@playwright/test';
+import { withGuidepup } from '@guidepup/playwright';
 
 // Separate opt-in configuration: never changes the required release Playwright gate.
 // A real, interactive Windows/NVDA or macOS/VoiceOver session is mandatory.
-export default defineConfig({
+export default withGuidepup({
   testDir: './screen-reader',
   testMatch: '**/*.spec.ts',
   fullyParallel: false,
