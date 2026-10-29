@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } fro
 import { AuthStore } from '../../core/auth/auth.store';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Icon } from '../../shared/icon/icon';
+import { BottomNav } from '../../shared/overlay/bottom-nav-clearance';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { KID_NAV } from '../navigation';
 import { KidPresentationService } from './kid-presentation.service';
@@ -10,7 +11,7 @@ import { KidPresentationService } from './kid-presentation.service';
 @Component({
   selector: 'app-kid-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, BottomNav],
   host: { '[attr.data-presentation]': 'presentation.presentation()' },
   template: `
     <a class="skip-link" href="#kid-main">Skip to main content</a>
@@ -34,7 +35,7 @@ import { KidPresentationService } from './kid-presentation.service';
       <router-outlet />
     </main>
 
-    <nav class="kid-nav" aria-label="My space">
+    <nav class="kid-nav" appBottomNav aria-label="My space">
       <ul>
         @for (item of nav; track item.path) {
           <li>

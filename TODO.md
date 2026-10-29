@@ -910,8 +910,17 @@ that points back here.
   both bottom navigations sit above page content (z-index 10), so Month bars scroll under them. The new
   `calendar-header.spec.ts` failed on the old build ("+" 4.5px off "Add"; a tap on the navigation hit the Month bar)
   and passes 12/12; full suite 183/183 locally on Chromium desktop/320/390; 703 unit tests.
-  - [ ] WebKit profiles in the release gate (not downloadable in the agent sandbox).
+  - [x] WebKit profiles in the release gate (#374's gate passed in all five profiles).
   - [ ] Owner: check the Calendar header and Month view on the iPhone and desktop in both themes.
+- [ ] **Popups clear the bottom navigation (#327, October 29).** Shared rule for every CDK connected popup: the
+  navigation (safe-area inset included) is the screen's bottom edge, positions aren't locked so popups flip upward
+  after resize/rotation, and the transparent backdrop stops at the navigation so one tap closes the popup and
+  navigates. Modal dialogs unchanged. Guidance in `docs/design-system.md`. Unit tests 4/4; new
+  `popups-clear-navigation.spec.ts` failed on the old build (picker bottom 584px vs navigation top 544px; navigation
+  tap swallowed) and passes 12/12; full suite 183/183 locally on Chromium desktop/320/390.
+  - [x] WebKit profiles in the release gate (#371's gate passed in all five profiles).
+  - [ ] Owner: on a real iPhone (safe-area inset, Safari bars), open a date picker low on Add activity: it sits above
+    the navigation, every date is tappable, and one tap on the navigation navigates.
 
 ## Earlier Playwright feedback (#341)
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
