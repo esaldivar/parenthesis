@@ -11,7 +11,7 @@ name: Sonar Sunday
 # Development, P0 - Critical, Work Type Development. It is NOT approved: the queue only runs it once the owner adds
 # owner-approved-claude (docs/runbooks/claude-local-queue.md). Re-running in the same week updates that week's issue
 # instead of opening another, and never edits one the owner has already approved. The board step needs the
-# PROJECTS_TOKEN secret with write access to projects.
+# PROJECTS_WRITE_TOKEN secret (classic token, `project` scope); the read-only PROJECTS_TOKEN stays with the dry run.
 on:
   schedule:
     - cron: "0 14 * * 0" # Sundays 14:00 UTC (9 AM Central, 8 AM in winter).
@@ -160,12 +160,12 @@ jobs:
       - name: Put it on Claude's board
         if: steps.issue.outputs.queue != ''
         env:
-          GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          GH_TOKEN: ${{ secrets.PROJECTS_WRITE_TOKEN }}
           ISSUE_URL: ${{ steps.issue.outputs.queue }}
           OWNER: ${{ github.repository_owner }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::The PROJECTS_TOKEN secret is missing, so $ISSUE_URL wasn't added to Project #$PROJECT_NUMBER."
+            echo "::error::The PROJECTS_WRITE_TOKEN secret is missing, so $ISSUE_URL wasn't added to Project #$PROJECT_NUMBER."
             exit 1
           fi
           gh api graphql -F number="$PROJECT_NUMBER" -f owner="$OWNER" -f query='
@@ -173,7 +173,7 @@ jobs:
               projectV2(number: $number) { id fields(first: 50) { nodes {
                 ... on ProjectV2SingleSelectField { id name options { id name } } } } } } } }' > project.json
           project=$(jq -r '.data.repositoryOwner.projectV2.id // empty' project.json)
-          [ -n "$project" ] || { echo "::error::Couldn't read Project #$PROJECT_NUMBER. Does PROJECTS_TOKEN have the project scope?"; exit 1; }
+          [ -n "$project" ] || { echo "::error::Couldn't read Project #$PROJECT_NUMBER. Does PROJECTS_WRITE_TOKEN have the project scope?"; exit 1; }
           content=$(gh issue view "$ISSUE_URL" --json id --jq .id)
           item=$(gh api graphql -f project="$project" -f content="$content" -f query='
             mutation($project: ID!, $content: ID!) { addProjectV2ItemById(input: {projectId: $project, contentId: $content}) {

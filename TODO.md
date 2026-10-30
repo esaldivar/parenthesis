@@ -199,8 +199,8 @@ that points back here.
     issue.
   - [ ] **Sonar Sunday feeds Claude's queue** (#390, owner request, October 30, 2026). The weekly issue is titled
     "Week of <Sunday> Sonar findings", gets `claude-implementation`, the active milestone and Project #2 fields.
-    - [ ] **Owner:** make sure the `PROJECTS_TOKEN` secret can write to Project #2 (classic token with the `project`
-      scope), then run Sonar Sunday by hand from the Actions tab (pick the branch that has this change) and check the issue's board fields.
+    - [ ] **Owner:** add a `PROJECTS_WRITE_TOKEN` secret (classic token with only the `project` scope; the
+      read-only `PROJECTS_TOKEN` stays as it is), then run Sonar Sunday by hand from the Actions tab (pick the branch that has this change) and check the issue's board fields.
     - [ ] **Owner, weekly:** review the issue and add `owner-approved-claude` if Claude should fix it.
   - [x] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
     with the reason "required so keyboard users can scroll the hours" (accepted, with the WCAG 2.1.1 comment,
