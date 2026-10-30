@@ -2,6 +2,7 @@ import { DatePipe, DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   ElementRef,
   InjectionToken,
   OnInit,
@@ -11,7 +12,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { Api, GoogleCalendarStatus, GoogleCopyType } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Toasts } from '../../shared/toast/toasts';
@@ -32,7 +34,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
 @Component({
   selector: 'app-google-calendar-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, MatButtonModule, MatCheckboxModule],
+  imports: [DatePipe, MatButtonModule, MatFormFieldModule, MatSelectModule],
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
@@ -81,23 +83,27 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
         }
 
         @if (status.state !== 'NotConnected') {
-          <fieldset class="types" [disabled]="saving()">
-            <legend>Events to copy</legend>
-            <p class="hint" id="google-types-hint">
-              Only your Google Calendar changes. Unticked events are removed from it.
-            </p>
-            <div class="choices">
+          <mat-form-field class="types" appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Events to copy</mat-label>
+            <mat-select
+              multiple
+              [value]="selection()"
+              [disabled]="saving()"
+              (selectionChange)="selection.set($event.value)"
+              (openedChange)="$event || saveTypes()"
+              aria-describedby="google-types-hint"
+            >
+              <mat-select-trigger>{{ summary() }}</mat-select-trigger>
               @for (type of types; track type.value) {
-                <mat-checkbox
-                  [checked]="status.copyTypes.includes(type.value)"
-                  (change)="toggle(type.value, $event)"
-                  aria-describedby="google-types-hint"
-                  >{{ type.label }}</mat-checkbox
-                >
+                <mat-option [value]="type.value">{{ type.label }}</mat-option>
               }
-            </div>
-            <p class="hint" role="status">{{ saved() }}</p>
-          </fieldset>
+            </mat-select>
+            <mat-hint id="google-types-hint"
+              >Only your Google Calendar changes. Events you untick are removed from it.</mat-hint
+            >
+          </mat-form-field>
+          <p class="hint">{{ leftOut() }}</p>
+          <p class="hint" role="status">{{ saved() }}</p>
         }
 
         @if (confirming()) {
@@ -183,20 +189,8 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
       border-radius: var(--radius-control);
     }
     .types {
-      display: grid;
-      gap: var(--space-2);
-      margin: 0;
-      padding: var(--space-3);
-      border: 1px solid var(--color-divider);
-      border-radius: var(--radius-control);
-    }
-    legend {
-      padding-inline: var(--space-1);
-      font-weight: 600;
-    }
-    .choices {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+      width: 100%;
+      max-width: 28rem;
     }
     .hint {
       color: var(--color-text-secondary);
@@ -229,9 +223,11 @@ export class GoogleCalendarSettings implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly saved = signal('');
+  /** What the list shows, saved when it closes. */
+  protected readonly selection = signal<readonly GoogleCopyType[]>([]);
 
   /** In the calendar's order and words; the co-parent's unavailable time is off until a parent ticks it. */
-  protected readonly types: readonly { value: GoogleCopyType; label: string }[] = [
+  protected readonly types: readonly { value: GoogleCopyType; label: string; short?: string }[] = [
     { value: 'ParentingTime', label: 'Parenting time' },
     { value: 'Joint', label: 'Family events' },
     { value: 'School', label: 'School' },
@@ -245,12 +241,15 @@ export class GoogleCalendarSettings implements OnInit {
     {
       value: 'CoParentUnavailable',
       label: 'My co-parent’s unavailable time (shown only as “Unavailable”)',
+      short: 'my co-parent’s unavailable time',
     },
   ];
 
   async ngOnInit(): Promise<void> {
     try {
-      this.status.set(await this.api.googleCalendar(this.familyId()));
+      const status = await this.api.googleCalendar(this.familyId());
+      this.status.set(status);
+      this.selection.set(status.copyTypes);
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
     }
@@ -268,24 +267,45 @@ export class GoogleCalendarSettings implements OnInit {
     }
   }
 
-  protected async toggle(type: GoogleCopyType, change: MatCheckboxChange): Promise<void> {
-    const checked = change.checked;
+  /** "All event types" or "10 of 11 event types", short enough for a phone. */
+  protected readonly summary = computed(() => {
+    const chosen = this.selection().length;
+    if (chosen === this.types.length) return 'All event types';
+    return chosen === 0 ? 'Nothing is copied' : `${chosen} of ${this.types.length} event types`;
+  });
+
+  /** What isn't copied, spelled out under the list while only a few are left out. */
+  protected readonly leftOut = computed(() => {
+    const chosen = this.selection();
+    const missing = this.types
+      .filter((t) => !chosen.includes(t.value))
+      .map((t) => t.short ?? t.label.toLowerCase());
+    return missing.length === 0 || missing.length > 3 || chosen.length === 0
+      ? ''
+      : `Not copied: ${missing.join(', ')}.`;
+  });
+
+  /** Saves when the list closes, if anything changed. */
+  protected async saveTypes(): Promise<void> {
     const current = this.status();
-    if (!current) {
+    const next = this.selection();
+    if (
+      !current ||
+      (next.length === current.copyTypes.length && next.every((t) => current.copyTypes.includes(t)))
+    ) {
       return;
     }
-    const next = checked
-      ? [...current.copyTypes, type]
-      : current.copyTypes.filter((t) => t !== type);
     this.saving.set(true);
     this.error.set(null);
     this.saved.set('');
     try {
-      this.status.set(await this.api.googleCalendarCopyTypes(this.familyId(), next));
+      const saved = await this.api.googleCalendarCopyTypes(this.familyId(), next);
+      this.status.set(saved);
+      this.selection.set(saved.copyTypes);
       this.saved.set('Saved. Google Calendar updates within a minute or two.');
     } catch (error) {
-      // Put the box back as it was saved.
-      change.source.checked = !checked;
+      // Show the choice as it was last saved.
+      this.selection.set(current.copyTypes);
       this.error.set(generalMessage(toProblem(error)));
     } finally {
       this.saving.set(false);

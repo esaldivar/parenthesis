@@ -1,6 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { MatSelect } from '@angular/material/select';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
@@ -156,44 +158,73 @@ describe('Google Calendar settings (#386)', () => {
     expect(button(element, 'Disconnect…')).toBeTruthy();
   });
 
-  it('lets a connected parent choose which kinds of event to copy, and keeps the saved choice if saving fails', async () => {
+  it('lets a connected parent choose which kinds of event to copy in a compact list, saved when it closes', async () => {
     const fixture = await render(
       status({ state: 'Connected', connectedAt: '2026-10-30T15:00:00Z' }),
     );
     const element = fixture.nativeElement as HTMLElement;
-    const box = (label: string) =>
-      [...element.querySelectorAll<HTMLInputElement>('input[type=checkbox]')].find((i) =>
-        i.closest('mat-checkbox')!.textContent!.includes(label),
+    const select = fixture.debugElement.query(By.directive(MatSelect))
+      .componentInstance as MatSelect;
+    const option = (label: string) =>
+      [...document.querySelectorAll<HTMLElement>('mat-option')].find((o) =>
+        o.textContent!.includes(label),
       )!;
 
-    expect(element.querySelector('legend')!.textContent).toContain('Events to copy');
-    expect(box('Parenting time').checked).toBe(true);
-    expect(box('co-parent’s unavailable time').checked).toBe(false);
+    expect(element.querySelector('mat-label')!.textContent).toContain('Events to copy');
+    expect(element.querySelector('mat-select')!.textContent).toContain('10 of 11 event types');
     expect(await axeViolations(element)).toEqual([]);
 
-    box('Medical').click();
+    select.open();
+    await settle(fixture);
+    expect(option('Parenting time').getAttribute('aria-selected')).toBe('true');
+    expect(option('co-parent’s unavailable time').getAttribute('aria-selected')).toBe('false');
+    option('Medical').click();
+    await settle(fixture);
+    http.expectNone(`${PATH}/copy-types`);
+    select.close();
+    await settle(fixture);
+
     const save = http.expectOne({ method: 'PUT', url: `${PATH}/copy-types` });
     expect(save.request.body.copyTypes).not.toContain('Medical');
     save.flush(status({ state: 'Connected', copyTypes: ['ParentingTime', 'School'] }));
     await settle(fixture);
-
-    expect(box('Medical').checked).toBe(false);
-    expect(box('Family events').checked).toBe(false);
+    expect(element.querySelector('mat-select')!.textContent).toContain('2 of 11 event types');
     expect(text(element)).toContain('Saved.');
 
-    box('Holidays').click();
+    // Closing without a change saves nothing.
+    select.open();
+    await settle(fixture);
+    select.close();
+    await settle(fixture);
+    http.expectNone(`${PATH}/copy-types`);
+  });
+
+  it('shows the last saved choice when saving fails', async () => {
+    const fixture = await render(
+      status({ state: 'Connected', connectedAt: '2026-10-30T15:00:00Z' }),
+    );
+    const element = fixture.nativeElement as HTMLElement;
+    const select = fixture.debugElement.query(By.directive(MatSelect))
+      .componentInstance as MatSelect;
+
+    select.open();
+    await settle(fixture);
+    [...document.querySelectorAll<HTMLElement>('mat-option')]
+      .find((o) => o.textContent!.includes('Holidays'))!
+      .click();
+    select.close();
     await settle(fixture);
     http.expectOne(`${PATH}/copy-types`).flush({}, { status: 500, statusText: 'Server Error' });
     await settle(fixture);
 
-    expect(box('Holidays').checked).toBe(false);
+    expect(element.querySelector('mat-select')!.textContent).toContain('10 of 11 event types');
     expect(element.querySelector('[role=alert]')).toBeTruthy();
   });
 
   it('shows no choices before the parent connects', async () => {
     const fixture = await render(status());
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('fieldset')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('mat-select')).toBeNull();
   });
 
   it.each([
