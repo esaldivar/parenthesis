@@ -6,6 +6,12 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Dependabot PR #384 dependency validation (#398, October 30, 2026).** Conflicts against `release/0.3.0`
+  resolved while retaining current PR issue-link safeguards, DataProtection, cryptography pins and SkiaSharp packages.
+  Six dependency upgrades remain; SwaggerUI was already current.
+  - [ ] Verify fresh candidate CI, backend build/format/tests and dependency compatibility before owner merge;
+    conflict resolution alone is not acceptance or deployment.
+
 - [ ] **Dependabot milestone routing (#394, October 30, 2026).** All five version-update entries target
   `release/0.3.0`; trusted-default-branch automation routes same-repository bot PRs to the latest existing release
   matching an open milestone, with no main/develop fallback.
