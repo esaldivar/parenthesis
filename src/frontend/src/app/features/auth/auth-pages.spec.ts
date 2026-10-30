@@ -72,8 +72,9 @@ describe('auth and onboarding routes', () => {
 
     it('only returns to in-app paths after signing in', async () => {
       const { harness } = await open('/sign-in?returnUrl=%2F%2Fevil.example');
-      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void> };
+      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void>; shouldOfferSharedSetup: () => Promise<boolean> };
       store.signIn = async () => undefined;
+      store.shouldOfferSharedSetup = async () => false;
       const navigated: string[] = [];
       const router = routerOf(harness);
       router.navigateByUrl = (async (url: string) => navigated.push(url)) as never;
@@ -85,6 +86,40 @@ describe('auth and onboarding routes', () => {
 
       expect(navigated).toEqual(['/']);
     });
+
+    it('treats a backslash return URL as leaving the app', async () => {
+      const { harness } = await open('/sign-in?returnUrl=%2F%5Cevil.example');
+      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void>; shouldOfferSharedSetup: () => Promise<boolean> };
+      store.signIn = async () => undefined;
+      store.shouldOfferSharedSetup = async () => false;
+      const navigated: string[] = [];
+      const router = routerOf(harness);
+      router.navigateByUrl = (async (url: string) => navigated.push(url)) as never;
+
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[type=password]', 'correct horse battery staple');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle(harness);
+
+      expect(navigated).toEqual(['/']);
+    });
+
+    it('asks “Is this a shared family device?” after signing in, keeping where the parent was heading (#153)', async () => {
+      const { harness } = await open('/sign-in?returnUrl=%2Fcalendar');
+      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void>; shouldOfferSharedSetup: () => Promise<boolean> };
+      store.signIn = async () => undefined;
+      store.shouldOfferSharedSetup = async () => true;
+      const navigated: unknown[] = [];
+      const router = routerOf(harness);
+      router.navigate = (async (commands: unknown[], extras: unknown) => navigated.push([commands, extras])) as never;
+
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[type=password]', 'correct horse battery staple');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle(harness);
+
+      expect(navigated).toEqual([[['/shared-device/setup'], { queryParams: { returnUrl: '/calendar' } }]]);
+    });
   });
 
   describe('register', () => {
@@ -93,7 +128,8 @@ describe('auth and onboarding routes', () => {
 
       await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
       await type(harness, 'input[type=email]', 'alex@example.test');
-      await type(harness, 'input[type=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'twelve chars ok');
       harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
       http.expectOne('/api/auth/register').flush(
         { title: 'One or more validation errors occurred.', errors: { password: ['Passwords must be at least 12 characters.'] } },
@@ -105,17 +141,66 @@ describe('auth and onboarding routes', () => {
       expect(body.querySelector('[role=alert]')).toBeNull();
     });
 
+    it('explains an invite-only site and who to ask', async () => {
+      const { harness, http, body } = await open('/register');
+
+      await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[formcontrolname=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'twelve chars ok');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      http.expectOne('/api/auth/register').flush(
+        {
+          title: 'Sign-up here is by invitation only.',
+          detail: 'This is a test site. Ask the Parenthesis team to add your email address.',
+        },
+        { status: 403, statusText: 'Forbidden' },
+      );
+      await settle(harness);
+
+      expect(body.querySelector('[role=alert]')!.textContent!.trim()).toBe(
+        'Sign-up here is by invitation only. This is a test site. Ask the Parenthesis team to add your email address.',
+      );
+    });
+
     it('checks password length before calling the API', async () => {
       const { harness, http, body } = await open('/register');
 
       await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
       await type(harness, 'input[type=email]', 'alex@example.test');
-      await type(harness, 'input[type=password]', 'short');
+      await type(harness, 'input[formcontrolname=password]', 'short');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'short');
       harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
       await settle(harness);
 
       http.expectNone('/api/auth/register');
       expect(text(body)).toContain('Use at least 12 characters.');
+    });
+
+    it('is for parents and asks for the password twice', async () => {
+      const { harness, http, body } = await open('/register');
+
+      expect(body.querySelector('h1')!.textContent).toBe('Create your Parenthesis account');
+      await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[formcontrolname=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'twelve chars no');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle(harness);
+
+      http.expectNone('/api/auth/register');
+      expect(text(body)).toContain('The passwords don’t match.');
+    });
+
+    it('keeps an invitation from a "sign up to join" email and takes it off the address bar', async () => {
+      localStorage.clear();
+      const { harness, body } = await open('/register?token=invite-123');
+      await settle(harness);
+
+      expect(text(body)).toContain('You’ve been invited to join your co-parent’s family');
+      expect(routerOf(harness).url).toBe('/register');
+      expect(localStorage.getItem('parenthesis.pendingInvitation')).toContain('invite-123');
+      localStorage.clear();
     });
   });
 

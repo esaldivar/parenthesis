@@ -2,9 +2,24 @@ import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 // Only this explicit section is evidence. Examples, comments and code are not links.
+// Drops each fenced code block (``` or ~~~ up to a line starting with the same marker). An unclosed fence stays.
+function withoutFences(text) {
+  const lines = text.split('\n');
+  const kept = [];
+  for (let i = 0; i < lines.length; i++) {
+    const marker = /^[ \t]*(`{3,}|~{3,})/.exec(lines[i])?.[1];
+    const close = marker ? lines.findIndex((line, j) => j > i && line.replace(/^[ \t]*/, '').startsWith(marker)) : -1;
+    if (close === -1) {
+      kept.push(lines[i]);
+    } else {
+      i = close;
+    }
+  }
+  return kept.join('\n');
+}
+
 export function references(body, repository) {
-  const text = String(body ?? '').replace(/<!--[\s\S]*?(?:-->|$)/g, '')
-    .replace(/^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?^[ \t]*\1[^\n]*(?:\n|$)/gm, '')
+  const text = withoutFences(String(body ?? '').replace(/<!--[\s\S]*?(?:-->|$)/g, ''))
     .replace(/`[^`\n]*`/g, '');
   const sections = [...text.matchAll(/^##[ \t]+Tracking issues[ \t]*\r?\n([\s\S]*?)(?=^#{1,2}[ \t]|$(?![\s\S]))/gim)];
   if (sections.length !== 1) throw new Error('Include exactly one ## Tracking issues section.');

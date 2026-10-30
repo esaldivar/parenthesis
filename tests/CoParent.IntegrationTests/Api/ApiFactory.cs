@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
 using CoParent.IntegrationTests.Infrastructure;
+using CoParent.Modules.Calendar;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,10 +43,14 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             _respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
             {
                 DbAdapter = DbAdapter.Postgres,
-                TablesToIgnore = [MigrationsHistoryTable],
+                // The data-protection key ring isn't test data: keys issued earlier in the run must stay valid.
+                TablesToIgnore = [MigrationsHistoryTable, new Respawn.Graph.Table("data_protection", "keys")],
             });
         }
     }
+
+    /// <summary>The API's test database, for building a second host that shares it.</summary>
+    public string ConnectionString => _connectionString;
 
     /// <summary>Runs a scalar query against the API's database, for asserting on data no endpoint exposes (e.g. the audit log).</summary>
     public async Task<T?> QueryScalarAsync<T>(string sql, params (string Name, object Value)[] parameters)
@@ -64,6 +69,7 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
     /// <summary>Deletes all application data, keeping schema and migration history.</summary>
     public async Task ResetDatabaseAsync()
     {
+        Clock.Reset();
         if (_respawner is null)
         {
             return;
@@ -105,7 +111,8 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         builder.UseWebRoot(_webRoot);
         builder.UseSetting("ConnectionStrings:Postgres", _connectionString);
 
-        // Every test client shares one "IP"; rate limiting has its own test with a low limit.
+        // Each session has its own client address (TestClientAddress), but a test may sign in many times; login rate
+        // limiting has its own test with a low limit.
         builder.UseSetting("Identity:AuthRateLimit:PermitLimit", "10000");
         builder.UseSetting("App:PublicBaseUrl", PublicBaseUrl);
         builder.ConfigureServices(services =>
@@ -113,7 +120,43 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<FakeEmailSender>();
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+            services.AddSingleton<IStartupFilter, TestClientAddress>();
+
+            // The real clock, which a test can move forward (PIN pauses, shared-device expiry). Reset between tests.
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(Clock);
+
+            // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
+            // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
+            services.RemoveAllKeyed<TimeProvider>(CalendarModule.TodayClock);
+            services.AddKeyedSingleton<TimeProvider>(CalendarModule.TodayClock, new FixedClock(FixedToday));
         });
+    }
+
+    /// <summary>The app's clock: real time plus whatever a test has moved it forward by.</summary>
+    public ShiftableClock Clock { get; } = new();
+
+    /// <summary>The day the calendar's "from today on" rule checks against in tests (noon UTC, October 1, 2026).</summary>
+    public static readonly DateTimeOffset FixedToday = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
+
+    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
+
+    /// <summary>System time plus an offset a test can advance. Tests in the API collection run one at a time.</summary>
+    public sealed class ShiftableClock : TimeProvider
+    {
+        private long _offsetTicks;
+
+        public override DateTimeOffset GetUtcNow() => System.GetUtcNow() + TimeSpan.FromTicks(Interlocked.Read(ref _offsetTicks));
+
+        public void Advance(TimeSpan by) => Interlocked.Add(ref _offsetTicks, by.Ticks);
+
+        public void Reset() => Interlocked.Exchange(ref _offsetTicks, 0);
+
+        /// <summary>Makes "now" this moment (it keeps ticking from there), for tests written against fixed dates.</summary>
+        public void SetUtcNow(DateTimeOffset now) => Interlocked.Exchange(ref _offsetTicks, (now - System.GetUtcNow()).Ticks);
     }
 
     public override async ValueTask DisposeAsync()

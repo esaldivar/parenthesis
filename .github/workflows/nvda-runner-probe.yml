@@ -1,0 +1,140 @@
+name: NVDA website tests
+
+on:
+  pull_request:
+    branches: ['release/**']
+    types: [opened, synchronize, reopened, ready_for_review, edited, converted_to_draft]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nvda-probe-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  website:
+    name: NVDA website tests
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-2022
+    timeout-minutes: 40
+    env:
+      E2E_BASE_URL: https://localhost:8443
+      MAILPIT_URL: http://127.0.0.1:8025
+      E2E_TESTED_SHA: ${{ github.sha }}
+      PLAYWRIGHT_JSON_OUTPUT_NAME: guidepup-results/nvda-results.json
+      PLAYWRIGHT_HTML_OUTPUT_DIR: guidepup-report
+      PLAYWRIGHT_HTML_OPEN: never
+
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: tests/e2e
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Test Windows candidate startup guards
+        run: |
+          ./scripts/windows-nvda-candidate.test.ps1
+          node --test scripts/verify-nvda-results.test.mjs
+
+      - name: Install isolated Postgres and Mailpit
+        run: ./scripts/windows-nvda-candidate.ps1 -Action Install
+
+      - name: Build candidate API and Angular website
+        working-directory: .
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet publish src/backend/CoParent.Api/CoParent.Api.csproj -c Release --self-contained false -p:UseAppHost=false -o "$env:RUNNER_TEMP/nvda-candidate/app"
+          if ($LASTEXITCODE -ne 0) { throw 'API publish failed.' }
+          Push-Location src/frontend
+          try {
+            npm ci --ignore-scripts
+            if ($LASTEXITCODE -ne 0) { throw 'Frontend dependency installation failed.' }
+            npm run build
+            if ($LASTEXITCODE -ne 0) { throw 'Frontend build failed.' }
+          } finally { Pop-Location }
+          Copy-Item src/frontend/dist/parenthesis/browser -Destination "$env:RUNNER_TEMP/nvda-candidate/app/wwwroot" -Recurse
+          @{ sha = (git rev-parse HEAD).Trim(); tree = (git rev-parse 'HEAD^{tree}').Trim() } |
+            ConvertTo-Json | Set-Content "$env:RUNNER_TEMP/nvda-candidate/app/candidate-source.json"
+
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Configure screen-reader automation
+        run: npx --yes @guidepup/setup@0.29.3 setup --ci
+
+      - name: Install screen-reader assets
+        run: npx --yes @guidepup/setup@0.29.3 install
+
+      - name: Install headed Chromium
+        run: npx playwright install chromium
+
+      - name: Record candidate and tooling
+        run: |
+          git rev-parse HEAD
+          node --version
+          npm ls @guidepup/guidepup @guidepup/playwright @playwright/test
+          node --input-type=module -e "import { chromium } from '@playwright/test'; import fs from 'node:fs'; import path from 'node:path'; const browser = await chromium.launch({headless:true}); const manifest = JSON.parse(fs.readFileSync('node_modules/@guidepup/guidepup/manifest.json','utf8')); fs.writeFileSync(path.join(process.env.RUNNER_TEMP,'nvda-candidate/logs/screen-reader-tools.json'),JSON.stringify({chromium:browser.version(),guidepupSetup:'0.29.3',nvda:manifest.screenReaders.find(reader=>reader.id==='nvda')},null,2)); await browser.close();"
+
+      # Start after screen-reader setup and keep redirected child processes in the
+      # same PowerShell step as their consumers; do not depend on cross-step lifetime.
+      - name: Start website and run all five real NVDA tests
+        run: |
+          ./scripts/windows-nvda-candidate.ps1 -Action Start
+          npx playwright test --config=guidepup.config.ts --workers=1 --reporter=list,html,json
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA website tests failed.' }
+
+      - name: Verify all scenarios ran with exact-candidate speech evidence
+        run: node scripts/verify-nvda-results.mjs guidepup-results/nvda-results.json
+
+      - name: Stop isolated candidate processes
+        if: always()
+        run: ./scripts/windows-nvda-candidate.ps1 -Action Stop
+
+      - name: Collect candidate diagnostics
+        if: always()
+        run: |
+          $logs = "$env:RUNNER_TEMP/nvda-candidate/logs"
+          if (Test-Path $logs) {
+            New-Item -ItemType Directory -Force -Path guidepup-results/candidate-logs | Out-Null
+            Copy-Item "$logs/*" -Destination guidepup-results/candidate-logs
+          }
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nvda-website-results
+          path: |
+            tests/e2e/guidepup-report/
+            tests/e2e/guidepup-results/
+          retention-days: 14
+
+  gate:
+    name: NVDA accessibility gate
+    needs: website
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful website tests
+        env:
+          WEBSITE_RESULT: ${{ needs.website.result }}
+        run: |
+          if [ "$WEBSITE_RESULT" != success ]; then
+            echo "::error::NVDA website tests did not succeed: $WEBSITE_RESULT"
+            exit 1
+          fi

@@ -13,6 +13,13 @@ node_modules/
 dist/
 .angular/
 
+# Playwright release gate output
+tests/e2e/playwright-report/
+tests/e2e/test-results/
+tests/e2e/results/
+tests/e2e/guidepup-report/
+tests/e2e/guidepup-results/
+
 # IDEs / OS
 .idea/
 .vscode/*
@@ -36,3 +43,7 @@ appsettings.*.local.json
 
 # Backend coverage for SonarQube Cloud (dotnet-coverage)
 coverage-*.xml
+
+# Python bytecode (queue scripts and tests)
+__pycache__/
+*.pyc

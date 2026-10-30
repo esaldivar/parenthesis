@@ -106,7 +106,7 @@ ul {
   min-width: 0;
   padding: var(--space-4) var(--space-4);
   background: var(--color-surface);
-  border: 1px solid var(--color-surface-soft);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
 }
@@ -162,7 +162,7 @@ ul {
   align-items: center;
   gap: var(--space-3);
   padding-block: var(--space-3);
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
 
   &:last-child {
     border-bottom: 0;
@@ -185,6 +185,12 @@ ul {
     background: var(--color-cat-#{$category}-bg);
     color: var(--color-cat-#{$category}-icon);
   }
+}
+
+// Reminders: a gold accent, as on the calendar. Tasks keep the calm default with their note icon.
+.upcoming__item[data-category='reminder'] .upcoming__icon {
+  background: var(--color-surface);
+  outline: 2px solid var(--color-leaf-gold);
 }
 
 .upcoming__item[data-status='proposed'] .upcoming__icon {
@@ -245,16 +251,28 @@ a.upcoming__title {
   gap: var(--space-3);
   min-height: 3.25rem;
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-surface-soft);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-control);
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
   font-size: 1rem;
   cursor: not-allowed;
+  text-decoration: none;
 
   app-icon {
     color: var(--color-action);
+  }
+}
+// Event and Note work (#196); the rest stay marked unavailable.
+a.quick__btn {
+  cursor: pointer;
+  &:hover {
+    border-color: var(--color-action);
+  }
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
   }
 }
 
@@ -304,7 +322,7 @@ a.upcoming__title {
   align-items: center;
   gap: var(--space-3);
   padding-block: var(--space-3);
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
 
   &:last-child {
     border-bottom: 0;
@@ -344,7 +362,7 @@ a.upcoming__title {
   flex: none;
   width: var(--target-min);
   height: var(--target-min);
-  border: 1px solid var(--color-surface-soft);
+  border: 1px solid var(--color-divider);
   color: var(--color-text);
 }
 

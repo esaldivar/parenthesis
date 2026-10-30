@@ -1,0 +1,46 @@
+// The checklist editor (#177): each row is the item's text, Required, and move and remove buttons (44px targets).
+.checklist ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'text text'
+    'required buttons';
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-divider);
+}
+.item__text {
+  grid-area: text;
+}
+.item__required {
+  grid-area: required;
+}
+.item__buttons {
+  grid-area: buttons;
+  display: flex;
+}
+.item__buttons button {
+  width: var(--target-min);
+  height: var(--target-min);
+}
+.add-item {
+  justify-self: start;
+  min-height: var(--target-min);
+}
+.alert p {
+  margin: 0 0 var(--space-2);
+}
+@container (min-width: 600px) {
+  .item {
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas: 'text required buttons';
+  }
+}

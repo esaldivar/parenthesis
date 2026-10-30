@@ -19,7 +19,8 @@ internal sealed record CreateFamilyRequest(string? Name, string? TimeZone);
 
 internal sealed record FamilySummary(Guid Id, string Name, string TimeZone, FamilyRole Role);
 
-internal sealed record FamilyMember(Guid MembershipId, string DisplayName, FamilyRole Role, DateTimeOffset JoinedAt);
+/// <summary>A family member. <c>IsYou</c> marks the signed-in user's own membership, so the app knows whose events are whose.</summary>
+internal sealed record FamilyMember(Guid MembershipId, string DisplayName, FamilyRole Role, DateTimeOffset JoinedAt, bool IsYou, int? PaletteSlot);
 
 internal sealed record FamilyDetails(Guid Id, string Name, string TimeZone, DateTimeOffset CreatedAt, IReadOnlyList<FamilyMember> Members);
 
@@ -64,7 +65,7 @@ internal static class FamilyEndpoints
         var userId = http.User.GetUserId()!.Value;
         var now = clock.GetUtcNow();
         var family = new Family { Name = name!, TimeZone = timeZone, CreatedAt = now };
-        var membership = new FamilyMembership { FamilyId = family.Id, UserId = userId, Role = FamilyRole.Parent, JoinedAt = now };
+        var membership = new FamilyMembership { FamilyId = family.Id, UserId = userId, Role = FamilyRole.Parent, JoinedAt = now, PaletteSlot = 0 };
 
         await unitOfWork.ExecuteAsync(async ct =>
         {
@@ -100,8 +101,9 @@ internal static class FamilyEndpoints
 
     /// <summary>Behind the tenant gate: only members get here, and the query filters scope every read to this family.</summary>
     private static async Task<Ok<FamilyDetails>> GetAsync(
-        FamiliesDbContext db, IUserDirectory directory, CancellationToken cancellationToken)
+        HttpContext http, FamiliesDbContext db, IUserDirectory directory, CancellationToken cancellationToken)
     {
+        var userId = http.User.GetUserId();
         var family = await db.Families.SingleAsync(cancellationToken);
         var memberships = await db.Memberships
             .Where(m => m.Status == MembershipStatus.Active)
@@ -110,7 +112,7 @@ internal static class FamilyEndpoints
         var names = await directory.GetDisplayNamesAsync(memberships.Select(m => m.UserId).ToList(), cancellationToken);
 
         var members = memberships
-            .Select(m => new FamilyMember(m.Id, names.GetValueOrDefault(m.UserId, "Former member"), m.Role, m.JoinedAt))
+            .Select(m => new FamilyMember(m.Id, names.GetValueOrDefault(m.UserId, "Former parent"), m.Role, m.JoinedAt, m.UserId == userId, m.PaletteSlot))
             .ToList();
         return TypedResults.Ok(new FamilyDetails(family.Id, family.Name, family.TimeZone, family.CreatedAt, members));
     }

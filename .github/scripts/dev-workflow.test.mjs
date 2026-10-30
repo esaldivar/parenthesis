@@ -1,0 +1,320 @@
+// Tests for dev-workflow.mjs. Run: node --test .github/scripts/
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  LIMITS,
+  weekStart,
+  weekRange,
+  countsTowardLimit,
+  classifyPr,
+  isCopilot,
+  parseSections,
+  buildPrMessage,
+  chunk,
+  sendDiscord,
+  developmentPrs,
+  ownerApproved,
+  copilotUsage,
+  copilotWeeklyExempt,
+  prLimit,
+  apiUrl,
+  nextLink,
+} from "./dev-workflow.mjs";
+
+const iso = (d) => d.toISOString();
+const pr = (over = {}) => ({
+  number: 70,
+  title: "Add calendar export",
+  created_at: "2026-10-20T15:00:00Z",
+  user: { login: "esaldivar", type: "User" },
+  base: { ref: "develop" },
+  head: { ref: "feature/calendar-export" },
+  labels: [],
+  additions: 120,
+  deletions: 10,
+  changed_files: 4,
+  html_url: "https://github.com/example/repo/pull/70",
+  body: "",
+  ...over,
+});
+
+test("limits match the owner's brief", () => {
+  assert.deepEqual(LIMITS, { prsPerWeek: 3, copilotPerWeek: 6, copilotPerPr: 2 });
+});
+
+test("week starts Monday 12:00 AM Central in daylight time (UTC-5)", () => {
+  assert.equal(iso(weekStart(new Date("2026-10-21T12:00:00Z"))), "2026-10-19T05:00:00.000Z");
+  // Sunday 11:59 PM Central still belongs to the previous week.
+  assert.equal(iso(weekStart(new Date("2026-10-26T04:59:00Z"))), "2026-10-19T05:00:00.000Z");
+  // Monday 12:00 AM Central starts the new week.
+  assert.equal(iso(weekStart(new Date("2026-10-26T05:00:00Z"))), "2026-10-26T05:00:00.000Z");
+});
+
+test("week starts Monday 12:00 AM Central in standard time (UTC-6), across the DST change", () => {
+  // DST ends Sunday, November 1, 2026.
+  assert.equal(iso(weekStart(new Date("2026-11-04T12:00:00Z"))), "2026-11-02T06:00:00.000Z");
+  assert.equal(iso(weekStart(new Date("2026-11-02T05:30:00Z"))), "2026-10-26T05:00:00.000Z"); // Sunday 11:30 PM CST
+  // DST starts Sunday, March 14, 2027.
+  assert.equal(iso(weekStart(new Date("2027-03-17T12:00:00Z"))), "2027-03-15T05:00:00.000Z");
+});
+
+test("previous week range ends where the current week starts", () => {
+  const { start, end } = weekRange(new Date("2026-11-04T12:00:00Z"), { previous: true });
+  assert.equal(iso(start), "2026-10-26T05:00:00.000Z");
+  assert.equal(iso(end), "2026-11-02T06:00:00.000Z");
+});
+
+test("only release sources into exact develop count, independent of author and replacement labels", () => {
+  assert.equal(countsTowardLimit(pr({ head: { ref: "release/0.3.0" } })).counts, true);
+  assert.equal(countsTowardLimit(pr({ base: { ref: "release/0.2.0" } })).counts, false);
+  assert.equal(countsTowardLimit(pr({ base: { ref: "main" }, head: { ref: "develop" } })).counts, false);
+  assert.equal(countsTowardLimit(pr({ base: { ref: "development" }, head: { ref: "release/0.2.0" } })).counts, false);
+  assert.equal(countsTowardLimit(pr({ head: { ref: "chore/sync-main" } })).counts, false);
+  assert.equal(countsTowardLimit(pr({ base: { ref: "main" }, head: { ref: "hotfix/login" } })).counts, false);
+  assert.equal(countsTowardLimit(pr({ head: { ref: "release/0.3.0" }, user: { login: "dependabot[bot]", type: "Bot" } })).counts, true);
+  assert.equal(countsTowardLimit(pr({ head: { ref: "release/0.3.0" }, labels: [{ name: "replacement" }] })).counts, true);
+});
+
+test("ordinary work cannot consume the cap for any target; release sources count only into develop", () => {
+  for (const head of ['feature/calendar', 'feat/a', 'fix/a', 'bugfix/a', 'docs/a', 'chore/a', 'chore/sync-main', 'hotfix/a', 'develop', 'release/']) {
+    for (const base of ['develop', 'release/0.3.0', 'main', 'development', 'feature/stack']) {
+      assert.equal(countsTowardLimit(pr({ head: { ref: head }, base: { ref: base } })).counts, false, `${head} -> ${base}`);
+    }
+  }
+  for (const head of ['release/0.3.0', 'release/calendar', 'release/nested/name']) {
+    for (const base of ['develop', 'release/0.3.0', 'main', 'development', 'feature/stack']) {
+      assert.equal(countsTowardLimit(pr({ head: { ref: head }, base: { ref: base } })).counts, base === 'develop', `${head} -> ${base}`);
+    }
+  }
+});
+
+test("PRs opened before the limits started stay valid and don't count", () => {
+  assert.equal(countsTowardLimit(pr({ created_at: "2026-10-17T12:17:46Z" })).counts, false);
+});
+
+test("ordinary PR check passes without counting or looking for override", async () => {
+  await prLimit({ repo: 'esaldivar/parenthesis', get: async () => pr(),
+    async *paginate() { throw Error('ordinary PR must not query allowance'); } }, 70);
+});
+
+test("fourth promotion fails, first three pass, and owner override keeps its meaning", async () => {
+  const all = [4, 3, 2, 1].map(number => pr({ number, head: { ref: 'release/0.3.0' }, created_at: `2026-10-2${number}T12:00:00Z` }));
+  const fake = (number, approved = false) => ({ repo: 'esaldivar/parenthesis',
+    get: async () => ({ ...all.find(p => p.number === number), labels: approved ? [{ name: 'owner-approved-pr' }] : [] }),
+    async *paginate(path) {
+      if (path.includes('/pulls?')) yield* all;
+      else if (path.includes('/events?')) yield { event: 'labeled', label: { name: 'owner-approved-pr' }, actor: { login: 'esaldivar' } };
+      else yield { user: { type: 'Bot' }, body: '<!-- dev-workflow:pr-limit-over -->' };
+    }, post: async () => ({}),
+  });
+  for (const number of [1, 2, 3]) await prLimit(fake(number), number);
+  await assert.rejects(prLimit(fake(4), 4), /Weekly PR limit reached/);
+  await prLimit(fake(4, true), 4);
+});
+
+test("weekly count is half-open across the Monday reset and excludes future creations", async () => {
+  const start = new Date('2026-10-26T05:00:00Z'), end = new Date('2026-11-02T06:00:00Z');
+  const gh = { repo: 'esaldivar/parenthesis', async *paginate() {
+    for (const [number, created_at] of [[4, end.toISOString()], [3, '2026-11-02T05:59:59Z'], [2, start.toISOString()], [1, '2026-10-26T04:59:59Z']]) {
+      yield pr({ number, head: { ref: 'release/0.3.0' }, created_at });
+    }
+  } };
+  assert.deepEqual((await developmentPrs(gh, { start, end })).map(p => p.number), [2, 3]);
+});
+
+test("Copilot is recognised as a requested reviewer and as a review author", () => {
+  assert.equal(isCopilot("Copilot"), true);
+  assert.equal(isCopilot("copilot-pull-request-reviewer[bot]"), true);
+  assert.equal(isCopilot("copilot-fan"), false);
+  assert.equal(isCopilot("esaldivar"), false);
+});
+
+test("classification: migrations, auth, security and infrastructure are major", () => {
+  const cases = [
+    ["src/backend/Modules/CoParent.Modules.Calendar/Infrastructure/Migrations/20261020_Add.cs", "database migrations"],
+    ["src/frontend/src/app/core/auth/session.service.ts", "authentication or authorization"],
+    ["src/backend/Modules/CoParent.Modules.Identity/Endpoints/Login.cs", "authentication or authorization"],
+    ["src/backend/CoParent.SharedKernel/Security/TenantGuard.cs", "security-sensitive code"],
+    [".github/workflows/ci.yml", "infrastructure or CI"],
+    ["docker/api.Dockerfile", "infrastructure or CI"],
+  ];
+  for (const [file, reason] of cases) {
+    const c = classifyPr(pr(), [file]);
+    assert.equal(c.major, true, file);
+    assert.ok(c.reasons.includes(reason), `${file}: ${c.reasons}`);
+  }
+});
+
+test("classification: a small UI change isn't major; a large one is", () => {
+  assert.equal(classifyPr(pr(), ["src/frontend/src/app/features/calendar/day.component.ts"]).major, false);
+  assert.equal(classifyPr(pr({ additions: 1400, deletions: 200 }), ["src/a.ts"]).major, true);
+  assert.equal(classifyPr(pr({ changed_files: 31 }), ["src/a.ts"]).major, true);
+});
+
+test("classification: labels force or suppress major; release targets always notify", () => {
+  assert.equal(classifyPr(pr({ labels: [{ name: "major" }] }), ["README.md"]).major, true);
+  assert.equal(classifyPr(pr({ labels: [{ name: "not-major" }] }), [".github/workflows/ci.yml"]).major, false);
+  const release = classifyPr(pr({ base: { ref: "main" }, head: { ref: "develop" }, labels: [{ name: "not-major" }] }), ["README.md"]);
+  assert.equal(release.release, true);
+  assert.ok(release.reasons.includes("release to production"));
+  assert.equal(classifyPr(pr({ base: { ref: "release/0.2.0" } }), ["README.md"]).release, true);
+  assert.equal(classifyPr(pr(), ["README.md"]).release, false);
+  // develop is the development site: a release branch going into it is release work; a hotfix sync isn't.
+  assert.equal(classifyPr(pr({ head: { ref: "release/0.2.0" } }), ["README.md"]).release, true);
+  assert.equal(classifyPr(pr({ head: { ref: "chore/sync-main" } }), ["README.md"]).release, false);
+});
+
+const templateBody = `## Description
+<!-- One or two sentences -->
+Lets a parent export the shared calendar.
+
+## Summary of changes
+<!-- A short bullet list -->
+- New export endpoint.
+- Download button on the calendar.
+
+## Type of change
+- [x] ✨ Feature
+- [ ] 🐛 Bug fix
+
+## Checklist
+- [x] Tests added or updated, and they pass locally (unit 12/12)
+- [ ] Checked at phone size
+
+## Risks and known issues
+- Large calendars export slowly.
+
+---
+_Generated by [Claude Code](https://claude.ai/code)_`;
+
+test("PR sections are parsed without HTML comments, placeholders or footers", () => {
+  const s = parseSections(templateBody);
+  assert.equal(s.description, "Lets a parent export the shared calendar.");
+  assert.equal(s["summary of changes"], "- New export endpoint.\n- Download button on the calendar.");
+  assert.equal(s["risks and known issues"], "- Large calendars export slowly.");
+});
+
+test("the Discord message has every required field and stays under Discord's limit", () => {
+  const p = pr({ body: templateBody });
+  const msg = buildPrMessage(p, classifyPr(p, ["src/frontend/src/app/core/auth/x.ts"]), "major-ready");
+  for (const part of [
+    "PARENTHESIS — MAJOR PR READY",
+    "PR: #70 — Add calendar export",
+    "Branch: feature/calendar-export",
+    "Target: develop",
+    "Why: authentication or authorization",
+    "Type: Feature",
+    "Lets a parent export",
+    "- New export endpoint.",
+    "Tests added or updated, and they pass locally (unit 12/12)",
+    "Large calendars export slowly.",
+    "Outstanding work",
+    "Status: Awaiting owner approval",
+    "GitHub: https://github.com/example/repo/pull/70",
+  ]) assert.ok(msg.includes(part), `missing: ${part}\n${msg}`);
+  const huge = buildPrMessage(pr({ body: `## Summary of changes\n${"- x\n".repeat(3000)}` }), { reasons: ["large change"] }, "major-ready");
+  assert.ok(huge.length <= 2000);
+});
+
+test("release PRs into main are announced as release candidates needing approval", () => {
+  const p = pr({ base: { ref: "main" }, head: { ref: "develop" }, title: "Release 0.2.0" });
+  const msg = buildPrMessage(p, classifyPr(p, []), "release-candidate");
+  assert.match(msg, /RELEASE CANDIDATE NEEDS OWNER APPROVAL/);
+  assert.match(msg, /Not stated in the PR\./);
+});
+
+test("long reports are split on line boundaries under Discord's limit", () => {
+  const parts = chunk(Array.from({ length: 300 }, (_, i) => `- line ${i}`).join("\n"));
+  assert.ok(parts.length > 1);
+  for (const p of parts) assert.ok(p.length <= 1900);
+  assert.equal(parts.join("\n").split("\n").length, 300);
+});
+
+test("Discord: mentions are disabled and errors never reveal the webhook URL", async () => {
+  const secret = "https://discord.com/api/webhooks/123/SECRET-TOKEN";
+  let sent;
+  await sendDiscord("@everyone hello", {
+    webhookUrl: secret,
+    fetchImpl: async (url, init) => ((sent = { url, body: JSON.parse(init.body) }), { ok: true, status: 200 }),
+  });
+  assert.deepEqual(sent.body.allowed_mentions, { parse: [] });
+  assert.match(sent.url, /\?wait=true$/);
+
+  await assert.rejects(
+    sendDiscord("x", { webhookUrl: secret, fetchImpl: async () => ({ ok: false, status: 404 }) }),
+    (e) => /HTTP 404/.test(e.message) && !e.message.includes("SECRET-TOKEN"),
+  );
+  await assert.rejects(
+    sendDiscord("x", { webhookUrl: secret, fetchImpl: async () => { throw new Error(`fetch failed ${secret}`); } }),
+    (e) => !e.message.includes("SECRET-TOKEN"),
+  );
+  await assert.rejects(sendDiscord("x", { webhookUrl: "" }), /not set/);
+});
+
+const fakeGh = (pages) => ({
+  repo: "example/repo",
+  async *paginate(path) {
+    for (const [prefix, items] of pages) if (path.startsWith(prefix)) yield* items;
+  },
+});
+
+test("weekly PR count uses creation time, oldest first, and skips what doesn't count", async () => {
+  const prs = [
+    pr({ number: 9, head: { ref: "release/0.3.0" }, created_at: "2026-10-23T12:00:00Z" }),
+    pr({ number: 8, created_at: "2026-10-22T12:00:00Z", head: { ref: "chore/sync-main" } }),
+    pr({ number: 7, head: { ref: "release/0.3.0" }, created_at: "2026-10-21T12:00:00Z", state: "closed" }), // reopening/closing doesn't matter
+    pr({ number: 6, head: { ref: "release/0.3.0" }, created_at: "2026-10-20T12:00:00Z" }),
+    pr({ number: 5, created_at: "2026-10-18T12:00:00Z" }), // previous week: stops the scan
+  ];
+  const gh = fakeGh([["/repos/example/repo/pulls", prs]]);
+  const found = await developmentPrs(gh, weekRange(new Date("2026-10-21T00:00:00Z")));
+  assert.deepEqual(found.map((p) => p.number), [6, 7, 9]);
+});
+
+test("only the owner's label counts as approval", async () => {
+  const labeled = pr({ labels: [{ name: "owner-approved-pr" }] });
+  const byOwner = fakeGh([["/repos/example/repo/issues/70/events", [{ event: "labeled", label: { name: "owner-approved-pr" }, actor: { login: "Example" } }]]]);
+  const bySomeoneElse = fakeGh([["/repos/example/repo/issues/70/events", [
+    { event: "labeled", label: { name: "owner-approved-pr" }, actor: { login: "example" } },
+    { event: "unlabeled", label: { name: "owner-approved-pr" }, actor: { login: "example" } },
+    { event: "labeled", label: { name: "owner-approved-pr" }, actor: { login: "claude-bot" } },
+  ]]]);
+  assert.equal(await ownerApproved(byOwner, labeled, "owner-approved-pr", "example"), true);
+  assert.equal(await ownerApproved(bySomeoneElse, labeled, "owner-approved-pr", "example"), false);
+  assert.equal(await ownerApproved(byOwner, pr(), "owner-approved-pr", "example"), false);
+});
+
+test("Copilot reviews on PRs into develop don't count toward the weekly limit", async () => {
+  assert.equal(copilotWeeklyExempt(pr({ base: { ref: "develop" }, head: { ref: "release/0.3.0" } })), true);
+  assert.equal(copilotWeeklyExempt(pr({ base: { ref: "release/0.3.0" }, head: { ref: "feature/x" } })), false);
+  assert.equal(copilotWeeklyExempt(pr({ base: { ref: "main" }, head: { ref: "develop" } })), false);
+
+  const review = { user: { login: "copilot-pull-request-reviewer[bot]" }, submitted_at: "2026-10-21T12:00:00Z" };
+  const prs = [
+    pr({ number: 12, updated_at: "2026-10-21T13:00:00Z", base: { ref: "develop" }, head: { ref: "release/0.3.0" } }),
+    pr({ number: 11, updated_at: "2026-10-21T12:30:00Z", base: { ref: "release/0.3.0" } }),
+  ];
+  const gh = fakeGh([
+    ["/repos/example/repo/pulls/12/reviews", [review]],
+    ["/repos/example/repo/pulls/11/reviews", [review]],
+    ["/repos/example/repo/pulls", prs],
+  ]);
+  const usage = await copilotUsage(gh, weekRange(new Date("2026-10-22T00:00:00Z")));
+  assert.equal(usage.used, 1);
+  assert.deepEqual([...usage.perPr.keys()], [11]);
+});
+
+test("GitHub requests stay on api.github.com", () => {
+  assert.equal(apiUrl("/repos/o/r/pulls?per_page=100"), "https://api.github.com/repos/o/r/pulls?per_page=100");
+  assert.equal(apiUrl("https://api.github.com/repositories/1/pulls?page=2"), "https://api.github.com/repositories/1/pulls?page=2");
+  assert.throws(() => apiUrl("https://example.com/repos/o/r"), /outside/);
+  assert.throws(() => apiUrl("@example.com/x"), /outside/);
+  assert.throws(() => apiUrl("https://api.github.com.example.com/x"), /outside/);
+});
+
+test("the next page comes from the Link header's rel=next only", () => {
+  const link = '<https://api.github.com/x?page=1>; rel="prev", <https://api.github.com/x?page=3>; rel="next"';
+  assert.equal(nextLink(link), "https://api.github.com/x?page=3");
+  assert.equal(nextLink('<https://api.github.com/x?page=1>; rel="prev"'), undefined);
+  assert.equal(nextLink(""), undefined);
+});

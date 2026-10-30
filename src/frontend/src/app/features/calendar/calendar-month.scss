@@ -1,0 +1,202 @@
+@use 'item' as *;
+
+// Month view (#250): each week row is one grid. Its seven days sit behind everything, the full height of the row;
+// items are labelled bars across their own days, in up to three lanes under the day numbers; a busy day's "+N more"
+// takes the last row.
+:host {
+  display: block;
+  container-type: inline-size;
+  // Bars stay compact (owner decision, October 23, 2026): 24px tall on every screen, the WCAG 2.2 AA minimum, rather
+  // than 44px lanes that would double the month's height. The 44px day number is the large target: it opens the week,
+  // where every item shows.
+  --bar-h: 24px;
+}
+.month {
+  display: grid;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.month__head {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.month__weekday {
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  // Lanes take room only when used, so a quiet week stays short.
+  grid-template-rows: var(--target-min) repeat(3, auto) auto;
+  row-gap: 2px;
+}
+.day {
+  grid-row: 1 / -1;
+  min-width: 0;
+  min-height: 112px;
+  padding: 2px;
+  border-top: 1px solid var(--color-divider);
+  border-inline-start: 1px solid var(--color-divider);
+  position: relative;
+}
+.day--outside {
+  background: var(--color-canvas);
+}
+.day--outside .day__number {
+  color: var(--color-text-secondary);
+}
+.day__number {
+  min-width: var(--target-min);
+  // 44px targets on every screen size (calendar acceptance checklist).
+  min-height: var(--target-min);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-text);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.day.is-today .day__number {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.day__number:focus-visible,
+.more:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+// A bar: one line, its title truncated with an ellipsis (never broken letter by letter); the full title, dates and
+// status are in its accessible name and its details.
+.item {
+  @include item-button;
+  @include item-colors;
+}
+.bar {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  height: var(--bar-h);
+  margin: 0 3px;
+  padding: 0 var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+// A cut where the item goes on in another week: square on that side, reaching the edge, with a ‹ or › mark.
+.bar--before {
+  margin-inline-start: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+.bar--after {
+  margin-inline-end: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+.bar__cut {
+  flex: none;
+  font-weight: 700;
+}
+.bar__cut--after {
+  margin-inline-start: auto;
+}
+.bar__status {
+  flex: none;
+  font-weight: 700;
+}
+.bar__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.bar__title--declined {
+  text-decoration: line-through;
+}
+.more {
+  grid-row: 5;
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  min-height: 28px;
+  min-width: 24px;
+  margin-inline-start: 3px;
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-action);
+  cursor: pointer;
+}
+// Something pending is among the hidden items: outlined like a proposal, and said in its accessible name.
+.more--pending {
+  border: 1px dashed var(--color-outline);
+}
+
+/* Phones: the same 24px bars (the WCAG 2.2 AA target minimum; owner decision, October 23, 2026), on smaller days. Status words give way to the patterns (hatched, struck through), and the
+   accessible names keep every word. */
+@container (max-width: 599px) {
+  .day {
+    min-height: 64px;
+  }
+  // Keep 44px targets centered inside the padded phone cells.
+  .day__number {
+    min-width: var(--target-min);
+    width: var(--target-min);
+    margin-inline-start: calc((100% - var(--target-min)) / 2);
+    padding: 0;
+    font-size: 0.875rem;
+  }
+  .bar {
+    margin: 0 1px;
+    padding: 0 3px;
+    gap: 2px;
+    font-size: 0.6875rem;
+  }
+  .bar__status,
+  .more__word {
+    display: none;
+  }
+  .more {
+    margin-inline-start: 1px;
+  }
+}
+
+// A tap on a day's empty space adds on that date (#212): a pointer-only layer behind the day's own buttons.
+.day__add {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.day > :not(.day__add) {
+  position: relative;
+}
+
+// The tapped day (#237): outlined, with an Add button along its foot that adds there.
+.day.is-picked {
+  outline: 2px solid var(--color-action);
+  outline-offset: -2px;
+}
+.day > .slot-pick {
+  position: absolute;
+  inset: auto 2px 2px;
+  z-index: 2;
+}

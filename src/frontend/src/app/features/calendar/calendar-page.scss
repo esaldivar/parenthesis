@@ -1,0 +1,232 @@
+@use 'item' as *;
+
+:host {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  container-type: inline-size;
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.head h1 {
+  margin: 0;
+}
+.head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.add,
+.empty-add {
+  min-height: var(--target-min);
+}
+.empty-add {
+  margin-top: var(--space-3);
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.period {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+.period__nav {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.period__label {
+  font-size: var(--font-size-h3);
+  margin: 0;
+  min-width: 0;
+}
+@container (max-width: 420px) {
+  .period__label {
+    font-size: 1.0625rem;
+  }
+}
+@container (max-width: 599px) {
+  app-calendar-month {
+    width: calc(100% + 2 * var(--space-4));
+    margin-inline: calc(-1 * var(--space-4));
+  }
+}
+.pill,
+.chip {
+  min-height: var(--target-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+.pill[aria-disabled='true'] {
+  color: var(--color-text-secondary);
+}
+.chip[aria-pressed='true'] {
+  background: var(--color-action);
+  color: var(--color-on-action);
+  border-color: var(--color-action);
+  font-weight: 600;
+}
+.toolbar__end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.filters-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.chip--active {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  background: var(--color-surface-soft);
+  text-align: start;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+
+  button {
+    min-height: var(--target-min);
+    padding: 0 var(--space-4);
+    border: 0;
+    border-inline-start: 1px solid var(--color-outline);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    cursor: pointer;
+
+    &:first-child {
+      border-inline-start: 0;
+    }
+  }
+  [aria-pressed='true'] {
+    background: var(--color-action);
+    color: var(--color-on-action);
+    font-weight: 600;
+  }
+}
+.pill:focus-visible,
+.chip:focus-visible,
+.filters-button:focus-visible,
+.segmented button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.skeleton {
+  display: grid;
+  gap: var(--space-2);
+}
+.skeleton__bar {
+  height: 48px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-soft);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton__bar {
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+.error {
+  padding: var(--space-4);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-card);
+  background: var(--color-status-rejected-bg);
+}
+.error__title {
+  font-weight: 600;
+  margin: 0 0 var(--space-1);
+}
+.error__body {
+  margin: 0 0 var(--space-3);
+}
+.error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.filtered-out {
+  color: var(--color-text-secondary);
+}
+.key {
+  display: none;
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: 0.875rem;
+}
+.key li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.swatch {
+  @include item-colors;
+  display: inline-block;
+  width: 18px;
+  height: 14px;
+  border-radius: 4px;
+}
+/* A declined swatch is struck through, like a declined item's title. */
+.swatch[data-status='declined'] {
+  background:
+    linear-gradient(to top right, transparent 44%, var(--color-text-secondary) 44% 56%, transparent 56%),
+    var(--color-surface);
+}
+/* The calendar key is for desktop; phones don't show a legend (handoff). */
+@container (min-width: 720px) {
+  .key {
+    display: flex;
+  }
+}

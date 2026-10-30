@@ -5,6 +5,13 @@
     <app-icon name="settings" [size]="20" />
     <span>Settings</span>
   </a>
+  <!-- On this parent's shared device, Sign out goes back to "Who's using Parenthesis?" and keeps the device (#153);
+       stopping sharing is in Settings. Switch profile is here and in Settings, not in the top bar (#372). -->
+  @if (sharedDevice()) {
+    <button mat-menu-item type="button" (click)="switchProfile()">
+      <span>Switch profile</span>
+    </button>
+  }
   <button mat-menu-item type="button" (click)="signOut()">
     <span>Sign out</span>
   </button>
@@ -71,9 +78,10 @@
           <span class="badge badge--bell" aria-hidden="true">{{ count }}</span>
         }
       </button>
-      <button class="account" type="button" [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
-        <app-avatar [name]="firstName()" kind="parent" [size]="36" />
+      <button class="account" type="button" [matMenuTriggerFor]="accountMenu">
+        <app-avatar [name]="firstName()" kind="parent" [size]="36" [src]="photos.own()" />
         <span class="account__name">{{ firstName() }}</span>
+        <span class="visually-hidden">, account menu</span>
         <app-icon name="chevron-down" [size]="20" />
       </button>
     </div>
@@ -83,7 +91,7 @@
     <router-outlet />
   </main>
 
-  <nav class="bottomnav" aria-label="Main">
+  <nav class="bottomnav" appBottomNav aria-label="Main">
     <ul>
       @for (item of mobileNav; track item.path) {
         <li>
@@ -101,3 +109,6 @@
     </ul>
   </nav>
 </div>
+
+<!-- Confirmations (#226): bottom right on desktop, above the bottom navigation on phones. -->
+<app-toast-host />

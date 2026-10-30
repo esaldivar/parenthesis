@@ -11,6 +11,31 @@ const comingSoon = (title: string, data: Record<string, string>) => ({
 export const PARENT_ROUTES: Routes = [
   { path: '', title: 'Home', loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage) },
   {
+    path: 'calendar/new',
+    title: 'Add to calendar',
+    loadComponent: () => import('./calendar/add-event-page').then((m) => m.AddEventPage),
+  },
+  {
+    path: 'calendar/reminders/:reminderId/edit',
+    title: 'Edit reminder',
+    loadComponent: () => import('./calendar/reminder-edit-page').then((m) => m.ReminderEditPage),
+  },
+  {
+    path: 'calendar/tasks/:taskId/edit',
+    title: 'Edit task',
+    loadComponent: () => import('./calendar/task-edit-page').then((m) => m.TaskEditPage),
+  },
+  {
+    path: 'calendar/:eventId/edit',
+    title: 'Edit event',
+    loadComponent: () => import('./calendar/event-edit-page').then((m) => m.EventEditPage),
+  },
+  {
+    path: 'calendar/:eventId/swap',
+    title: 'Request swap',
+    loadComponent: () => import('./calendar/swap-request-page').then((m) => m.SwapRequestPage),
+  },
+  {
     path: 'calendar',
     title: 'Calendar',
     loadComponent: () => import('./calendar/calendar-page').then((m) => m.CalendarPage),
@@ -52,13 +77,15 @@ export const PARENT_ROUTES: Routes = [
   { path: 'children', redirectTo: 'child-essentials' },
   {
     path: 'approvals',
-    ...comingSoon('Approvals', {
-      icon: 'approvals',
-      intro: 'Changes to agreed schedules and deletions of shared memories need both parents to agree.',
-      emptyTitle: 'No requests',
-      emptyBody: 'Approvals aren’t available yet, so there’s nothing waiting for either parent.',
-    }),
+    title: 'Approvals',
+    loadComponent: () => import('./approvals/approvals-page').then((m) => m.ApprovalsPage),
   },
   { path: 'settings', title: 'Settings', loadComponent: () => import('./settings/settings-page').then((m) => m.SettingsPage) },
+  // Google sends parents back here after connecting Google Calendar (#386); the server registers this exact address.
+  {
+    path: 'settings/google-calendar',
+    title: 'Google Calendar',
+    loadComponent: () => import('./settings/google-calendar-callback').then((m) => m.GoogleCalendarCallback),
+  },
   { path: 'more', title: 'More', loadComponent: () => import('./more/more-page').then((m) => m.MorePage) },
 ];

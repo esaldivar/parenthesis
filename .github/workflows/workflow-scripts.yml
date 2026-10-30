@@ -1,0 +1,44 @@
+name: Workflow scripts
+
+# Unit tests for the development workflow automation (.github/scripts) and the Claude queue (scripts/claude_queue_*,
+# issue #94). No secrets: the release security gate is tested against a fake SonarQube Cloud API, and the queue tests
+# use mocked GitHub data.
+on:
+  pull_request:
+    paths:
+      - ".github/scripts/**"
+      - ".github/workflows/**"
+      - "scripts/claude_queue_*.py"
+      - "tests/test_claude_queue_*.py"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Workflow script tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            .github
+            scripts
+            tests
+          persist-credentials: false
+
+      - name: Test the workflow scripts
+        run: node --test .github/scripts/dependabot-release-target.test.mjs .github/scripts/playwright-gate.test.mjs .github/scripts/dev-workflow.test.mjs .github/scripts/sonar-release-gate.test.mjs .github/scripts/pr-issue-links.test.mjs .github/scripts/pr-milestones.test.mjs .github/scripts/pr-risk.test.mjs
+
+      - name: Test the branch policy and the release calendar
+        run: |
+          bash .github/scripts/check-pr-branch-policy.test.sh
+          bash .github/scripts/release-window.test.sh
+          bash .github/scripts/production-plan.test.sh
+
+      - name: Test the Claude queue selector, approval check and runner guards
+        # Python 3 comes with the runner image, so no extra action is needed.
+        run: |
+          python3 --version
+          python3 -B -m unittest discover -s tests -p "test_claude_queue_*.py" -v

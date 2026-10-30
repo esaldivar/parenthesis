@@ -23,6 +23,227 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ChildCredential", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("CheckCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("check_count");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_attempts");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<DateTimeOffset?>("LockedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_at");
+
+                    b.Property<DateTimeOffset?>("PausedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paused_until");
+
+                    b.Property<string>("PendingPinHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("pending_pin_hash");
+
+                    b.Property<string>("PinHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("pin_hash");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_child_credentials");
+
+                    b.HasIndex("ChildProfileId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_child_credentials_child_profile_id");
+
+                    b.ToTable("child_credentials", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ChildProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_membership_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_child_profiles");
+
+                    b.HasIndex("FamilyId", "Status")
+                        .HasDatabaseName("ix_child_profiles_family_id_status");
+
+                    b.ToTable("child_profiles", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.Device", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_membership_id");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTimeOffset>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<byte[]>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("token_hash");
+
+                    b.HasKey("Id")
+                        .HasName("pk_devices");
+
+                    b.HasIndex("ChildProfileId")
+                        .HasDatabaseName("ix_devices_child_profile_id");
+
+                    b.HasIndex("FamilyId")
+                        .HasDatabaseName("ix_devices_family_id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_devices_token_hash");
+
+                    b.ToTable("devices", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.DevicePairingCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<byte[]>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_membership_id");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_device_pairing_codes");
+
+                    b.HasIndex("ChildProfileId")
+                        .HasDatabaseName("ix_device_pairing_codes_child_profile_id");
+
+                    b.HasIndex("CodeHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_device_pairing_codes_code_hash");
+
+                    b.ToTable("device_pairing_codes", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.Family", b =>
                 {
                     b.Property<Guid>("Id")
@@ -67,6 +288,10 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("joined_at");
 
+                    b.Property<int?>("PaletteSlot")
+                        .HasColumnType("integer")
+                        .HasColumnName("palette_slot");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -96,6 +321,280 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.ToTable("memberships", "families");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.Invitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<Guid?>("AcceptedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accepted_by_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<Guid>("InvitedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invited_by_user_id");
+
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_email");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<byte[]>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("token_hash");
+
+                    b.HasKey("Id")
+                        .HasName("pk_invitations");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invitations_token_hash");
+
+                    b.HasIndex("FamilyId", "NormalizedEmail")
+                        .HasDatabaseName("ix_invitations_family_id_normalized_email");
+
+                    b.ToTable("invitations", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ParentCredential", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("CheckCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("check_count");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_attempts");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<DateTimeOffset?>("LockedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_at");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<DateTimeOffset?>("PausedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paused_until");
+
+                    b.Property<string>("PinHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("pin_hash");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_parent_credentials");
+
+                    b.HasIndex("MembershipId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_parent_credentials_membership_id");
+
+                    b.ToTable("parent_credentials", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ParentPinResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<byte[]>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("token_hash");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_parent_pin_reset_tokens");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_parent_pin_reset_tokens_token_hash");
+
+                    b.HasIndex("MembershipId", "CreatedAt")
+                        .HasDatabaseName("ix_parent_pin_reset_tokens_membership_id_created_at");
+
+                    b.ToTable("parent_pin_reset_tokens", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ProfilePhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChooserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("chooser_id");
+
+                    b.Property<string>("ChooserKind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("chooser_kind");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<int>("Side")
+                        .HasColumnType("integer")
+                        .HasColumnName("side");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_profile_photos");
+
+                    b.HasIndex("FamilyId", "ChooserKind", "ChooserId", "SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_profile_photos_family_id_chooser_kind_chooser_id_subject_id");
+
+                    b.ToTable("profile_photos", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ChildCredential", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_child_credentials_child_profiles_child_profile_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ChildProfile", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.Family", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_child_profiles_families_family_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.Device", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .HasConstraintName("fk_devices_child_profiles_child_profile_id");
+
+                    b.HasOne("CoParent.Modules.Families.Domain.Family", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_devices_families_family_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.DevicePairingCode", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_device_pairing_codes_child_profiles_child_profile_id");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.FamilyMembership", b =>
                 {
                     b.HasOne("CoParent.Modules.Families.Domain.Family", null)
@@ -104,6 +603,46 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_families_family_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.Invitation", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.Family", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_invitations_families_family_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ParentCredential", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.FamilyMembership", null)
+                        .WithMany()
+                        .HasForeignKey("MembershipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_parent_credentials_memberships_membership_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ParentPinResetToken", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.FamilyMembership", null)
+                        .WithMany()
+                        .HasForeignKey("MembershipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_parent_pin_reset_tokens_memberships_membership_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ProfilePhoto", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.Family", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_profile_photos_families_family_id");
                 });
 #pragma warning restore 612, 618
         }

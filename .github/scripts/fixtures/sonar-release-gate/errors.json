@@ -1,0 +1,17 @@
+{
+  "_note": "SonarQube's error body shape.",
+  "unauthorized": {
+    "errors": [
+      {
+        "msg": "Authentication is required"
+      }
+    ]
+  },
+  "badParameter": {
+    "errors": [
+      {
+        "msg": "Value of parameter 'issueStatuses' (DISMISSED) must be one of: [OPEN, CONFIRMED, FALSE_POSITIVE, ACCEPTED, FIXED]"
+      }
+    ]
+  }
+}

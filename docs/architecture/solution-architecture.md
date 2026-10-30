@@ -17,6 +17,9 @@
 
 ## 2. High-level view
 
+For what is wired up today, and how changes reach production, see
+[Architecture at a glance](../architecture.md).
+
 ```mermaid
 flowchart LR
   subgraph Client
@@ -33,6 +36,7 @@ flowchart LR
   KV[Key Vault]
   AI[Application Insights]
   GCal[Google Calendar API]
+  Places[Google Places Autocomplete<br/>address suggestions, off without a key]
   Mail[Email provider<br/>ACS Email / Mailpit locally]
 
   SPA -- "HTTPS, cookie auth,<br/>same origin" --> API
@@ -40,6 +44,7 @@ flowchart LR
   SPA -- "GET via short-lived<br/>read SAS URL" --> BLOB
   API --> PG
   API --> BLOB
+  API -- "typed location text only,<br/>capped daily (#354)" --> Places
   BG --> PG
   BG --> BLOB
   BG --> GCal
@@ -47,6 +52,19 @@ flowchart LR
   API -. secrets .-> KV
   API -. telemetry .-> AI
 ```
+
+**Address suggestions (#354):** while a parent types an event's location, the API (never the browser) asks Google
+Places Autocomplete (New) with a server-side key. Only the typed text and a session token are sent; neither is logged
+or stored. A daily cap keeps it inside Google's free allowance, and without `Places:ApiKey` it is off. Setup:
+[the runbook](../runbooks/google-places-suggestions.md).
+
+**Google Calendar copy (#386):** a parent can connect their own Google account under Settings, and the family's
+confirmed events are copied one way into a "Parenthesis Family" calendar there (scope `calendar.app.created` only;
+nothing is read back). It lives in the **Calendar** module (`calendar.google_connections`,
+`calendar.google_synced_events`) rather than a separate Integrations module, and a background worker compares each
+parent's calendar with what was last written instead of draining an outbox, which doesn't exist yet (F-09). That
+covers every way an event changes without hooks in each one. Refresh tokens are encrypted with Data Protection. Off
+without `GoogleCalendar:ClientId` and `ClientSecret`. Setup: [the runbook](../runbooks/google-calendar-sync.md).
 
 **Why one container serving both API and SPA:** same origin means HttpOnly, `SameSite=Strict` cookies work without CORS, and hosting stays cheap. The SPA can be split out to Static Web Apps + Front Door later without code changes.
 
@@ -59,11 +77,11 @@ Each module is **one .NET project** with internal folders (`Domain`, `Applicatio
 | **Identity** | ASP.NET Core Identity users, login, lockout, email confirmation, child logins | `identity` |
 | **Families** | Family, FamilyMembership, Invitation, ChildProfile, ParentChildRelationship, category approval policy | `families` |
 | **Approvals** | ChangeRequest, ApprovalDecision, the PR-style workflow engine | `approvals` |
-| **Calendar** | CalendarEvent, attendees (children), reminders | `calendar` |
+| **Calendar** | CalendarEvent, attendees (children), reminders, each parent's one-way Google Calendar copy (#386) | `calendar` |
 | **Memories** | Memory, MemoryAttachment, MemoryShare, soft delete & purge | `memories` |
 | **Messaging** (post-MVP) | Conversation, Message, MessageAttachment | `messaging` |
 | **Notifications** | Notification inbox, SignalR push, email digests | `notifications` |
-| **Integrations** (post-MVP) | ExternalCalendarConnection, ExternalEventLink, Google sync | `integrations` |
+| **Integrations** (post-MVP) | Other external calendars, if ever needed (Google's one-way copy is in Calendar, #386) | `integrations` |
 
 Cross-cutting building blocks (`CoParent.SharedKernel`, `CoParent.Infrastructure`): base entity types, `ITenantContext`, `TimeProvider`, domain events, transactional outbox, audit interceptor, blob storage abstraction, EXIF stripping.
 
@@ -119,7 +137,10 @@ Rules:
 ### Authentication
 - ASP.NET Core Identity with **cookie authentication**: HttpOnly, Secure, `SameSite=Strict`, plus antiforgery tokens on unsafe methods. No tokens are stored in `localStorage` (ADR-0004).
 - Email confirmation, lockout, and password rules following NIST 800-63B (length over complexity, breached-password check later). TOTP 2FA is on the backlog.
-- **Child logins** need no email. A parent generates a one-time code on the child's device, and the child picks a username and a password or passphrase. A child account is an Identity user with `UserType=Child`.
+- **Children sign in with a profile picker and a PIN** ([ADR-0006](../adr/0006-profiles-pins-and-child-devices.md), accepted 2026-10-17). This replaces the earlier design of child accounts with a username and password.
+  - **Where a PIN works:** only on a device registered to the family: a shared family device a parent explicitly set up (for a fixed 30 days), or a child's tablet paired with a one-time code. Signing in never registers a device ([ADR-0007](../adr/0007-shared-devices-and-parent-pins.md), #153).
+  - **Lockout (#153):** three wrong PINs pause that PIN for ten minutes; three more lock it until a parent resets it. Either parent resets a child's PIN at once and the other parent is told, without the PIN. No one-tap unlock.
+  - **Switching to a parent profile** on their own shared device takes the parent's six-digit PIN (or their password); the other parent always uses their own password. Parent sessions there are bound to the device, so revocation, expiry or lost access end them at once.
 
 ### Authorization (three layers, all server-side)
 1. **Tenant gate.** An endpoint filter on every `/api/families/{familyId}/…` route resolves the caller's active membership and fills `ITenantContext`. If the caller isn't a member, the API returns **404**, not 403, so it doesn't leak whether the family exists.
@@ -245,6 +266,6 @@ CoParent.Modules.Calendar/
 4. **One DbContext per module on a shared connection** (§3), not one global DbContext.
 5. **Frontend test runner.** Use **Vitest** (the default in current Angular CLI; Karma is deprecated) rather than Jasmine/Karma or Jest.
 6. **Hosting.** Azure Container Apps (scales to zero, cheap) over App Service.
-7. **Single-parent families.** Until the co-parent accepts the invitation, approval-required actions are **auto-confirmed and labelled "Confirmed before co-parent joined"**. The new parent sees them in a review list when they join. Alternative: block them until a second parent joins.
-8. **Child login.** Enabling it needs the other parent's approval (`ChildAccessGrant`). Disabling it is immediate, protective and audited.
+7. **Single-parent families.** Until the co-parent accepts the invitation, approval-required actions are **auto-confirmed and labelled "Confirmed before co-parent joined"**. The new parent sees them in a review list when they join. Alternative: block them until a second parent joins. **Exception (ADR-0006, 2026-10-17):** adding a child is never auto-confirmed. The child stays pending until both parents approve.
+8. **Child login.** Enabling it needs the other parent's approval (`ChildAccessGrant`). Disabling it is immediate, protective and audited. Sign-in itself is now by profile picker and PIN on registered devices (ADR-0006).
 9. **Diary sharing.** Private by default. A child can share an entry with *both parents* or *nobody*. Sharing with only one parent is deliberately left out for MVP so the app doesn't become a source of conflict between parents.

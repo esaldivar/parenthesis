@@ -1,0 +1,202 @@
+<header class="head">
+  <h1 #calendarHeading tabindex="-1">Calendar</h1>
+  <div class="head__actions">
+    <a mat-stroked-button class="add" routerLink="/approvals">Approvals</a>
+    <a mat-flat-button class="add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">
+      <app-icon name="plus" [size]="20" /> Add
+    </a>
+  </div>
+</header>
+
+
+<div class="toolbar">
+  <div class="period">
+    <span class="period__nav">
+      <button mat-icon-button type="button" (click)="step(-1)" [attr.aria-label]="'Previous ' + current()">
+        <app-icon name="chevron-left" />
+      </button>
+      <h2 class="period__label" aria-live="polite">{{ heading() }}</h2>
+      <button mat-icon-button type="button" (click)="step(1)" [attr.aria-label]="'Next ' + current()">
+        <app-icon name="chevron-right" />
+      </button>
+    </span>
+    <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">Today</button>
+    @if (family(); as f) {
+      <app-calendar-search [familyId]="f.id" [timeZone]="f.timeZone" [members]="members()" [children]="children()" (picked)="openFound($event)" />
+    }
+  </div>
+  <div class="toolbar__end">
+    <div class="segmented" role="group" aria-label="Calendar view">
+      @for (v of views; track v.id) {
+        <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label }}</button>
+      }
+    </div>
+    <button
+      type="button"
+      class="pill filters-button"
+      aria-haspopup="dialog"
+      [attr.aria-expanded]="filtersOpen()"
+      [attr.aria-label]="activeFilters().length ? 'Filters, ' + activeFilters().length + ' active' : 'Filters'"
+      (click)="openFilters()"
+    >
+      <app-icon name="filter" [size]="18" /> Filters
+      @if (activeFilters().length; as count) {
+        <span class="count" aria-hidden="true">{{ count }}</span>
+      }
+    </button>
+  </div>
+</div>
+
+@if (activeFilters().length) {
+  <div class="active-filters" role="group" aria-label="Active filters">
+    @for (f of activeFilters(); track f.id) {
+      <button type="button" class="chip chip--active" [attr.aria-label]="'Remove ' + f.label + ' filter: ' + f.text" (click)="clearFilter(f.id)">
+        {{ f.label }}: {{ f.text }} <app-icon name="close" [size]="16" />
+      </button>
+    }
+    <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+  </div>
+}
+
+@if (activeChildren().length > 0) {
+  <div class="filters" role="group" aria-label="Show events for">
+    <button type="button" class="chip" [attr.aria-pressed]="childFilter() === null" (click)="setChild(null)">All</button>
+    @for (child of activeChildren(); track child.id) {
+      <button type="button" class="chip" [attr.aria-pressed]="childFilter() === child.id" (click)="setChild(child.id)">
+        {{ child.firstName }}
+      </button>
+    }
+  </div>
+}
+
+<div class="body" [attr.aria-busy]="state() === 'loading'">
+  @switch (state()) {
+    @case ('loading') {
+      <p class="visually-hidden">Loading the calendar…</p>
+      <div class="skeleton" aria-hidden="true">
+        @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+          <span class="skeleton__bar"></span>
+        }
+      </div>
+    }
+    @case ('error') {
+      <div class="error" role="alert">
+        <p class="error__title">We couldn’t load your calendar.</p>
+        <p class="error__body">{{ loadError() }}</p>
+        <div class="error__actions">
+          <button mat-flat-button type="button" (click)="retry()">Try again</button>
+          <button mat-stroked-button type="button" (click)="goToToday()">Go to today</button>
+        </div>
+      </div>
+    }
+    @default {
+      @if (items().length === 0) {
+        <app-empty-state
+          icon="calendar"
+          title="No events yet"
+          body="Start by adding an event or time you’re unavailable. Your co-parent sees it here too."
+        >
+          <a mat-flat-button class="empty-add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">Add to Calendar</a>
+        </app-empty-state>
+      } @else if (shown().length === 0) {
+        @if (childShown().length === 0) {
+          <p class="filtered-out">
+            Nothing for this child here.
+            <button mat-button type="button" (click)="setChild(null)">Show everyone</button>
+          </p>
+        } @else {
+          <p class="filtered-out">
+            No items match your filters.
+            <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+          </p>
+        }
+      } @else {
+        @if (visibleCount() === 0) {
+          <p class="filtered-out">
+            No items match your filters. Hidden unavailable time is marked.
+            <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+          </p>
+        }
+        @switch (current()) {
+          @case ('week') {
+            <app-calendar-week
+              [weekStart]="range().from"
+              [today]="today()"
+              [items]="shown()"
+              (selected)="open($event)"
+              (add)="addAt($event)"
+            />
+          }
+          @case ('month') {
+            <app-calendar-month
+              [date]="anchor()"
+              [today]="today()"
+              [items]="shown()"
+              [label]="heading()"
+              (selected)="open($event)"
+              (openDay)="openWeekOf($event)"
+              (add)="addAt($event)"
+            />
+          }
+          @case ('list') {
+            <app-calendar-list [from]="range().from" [to]="range().to" [today]="today()" [items]="shown()" (selected)="open($event)" />
+          }
+        }
+        <ul class="key" aria-label="Calendar key">
+          <li><span class="swatch" appCalendarPalette="parent-a"></span><span class="swatch" appCalendarPalette="parent-b"></span>Parenting time</li>
+          <li><span class="swatch" appCalendarPalette="family" data-kind="family"></span>Family event (both parents)</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-category="Activity"></span>Activity</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="pending"></span>Pending approval</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="declined"></span>Declined</li>
+          <li><span class="swatch" appCalendarPalette="unavailable" data-kind="unavailable"></span>Unavailable</li>
+          <li><span class="swatch" appCalendarPalette="reminder" data-kind="reminder"></span>Reminder</li>
+          <li><span class="swatch" appCalendarPalette="task" data-kind="task"></span>Task</li>
+        </ul>
+      }
+    }
+  }
+</div>
+
+@if (filtersOpen()) {
+  <app-calendar-filter-panel
+    [filters]="filters()"
+    (changed)="setFilters($event)"
+    (resetAll)="resetFilters()"
+    (closed)="closeFilters()"
+  />
+}
+
+@if (selected(); as item) {
+  @if (selectedReminder(); as reminder) {
+    <app-reminder-details
+      [item]="item"
+      [reminder]="reminder"
+      [members]="members()"
+      [familyId]="family()!.id"
+      (closed)="close()"
+      (changed)="changed($event)"
+    />
+  } @else if (selectedTask(); as task) {
+    <app-task-details
+      [item]="item"
+      [task]="task"
+      [members]="members()"
+      [familyId]="family()!.id"
+      [timeZone]="family()!.timeZone"
+      (closed)="close()"
+      (updated)="taskUpdated($event)"
+      (changed)="changed($event)"
+    />
+  } @else {
+    <app-event-details
+      [item]="item"
+      [event]="selectedEvent()"
+      [members]="members()"
+      [familyId]="family()!.id"
+      [timeZone]="family()!.timeZone"
+      [swapTarget]="swapTarget()"
+      (closed)="close()"
+      (changed)="changed($event)"
+    />
+  }
+}

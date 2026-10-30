@@ -24,29 +24,38 @@
     [today]="today()"
     [isCurrentWeek]="isCurrentWeek()"
     [state]="state()"
-    [week]="data()"
-    [split]="split()"
+    [week]="calendarWeek()"
+    [selectedChild]="selectedChild()"
     [view]="inlineView()"
     (previousWeek)="goToWeek(-1)"
     (nextWeek)="goToWeek(1)"
     (goToToday)="goToToday()"
     (viewChange)="inlineView.set($event)"
-    (splitChange)="setSplit($event)"
+    (childChange)="selectedChild.set($event)"
     (retry)="reload()"
+    (openEvent)="openEvent($event)"
+    (add)="addAt($event)"
   />
 
-  <section class="card area-upcoming" aria-labelledby="upcoming-heading">
+  <section class="card area-upcoming" aria-labelledby="upcoming-heading" [attr.aria-busy]="state() === 'loading'">
     <header class="card__header">
       <h2 id="upcoming-heading">Upcoming</h2>
       <a class="see-all" routerLink="/calendar" [queryParams]="{ view: 'list', week: shownWeek() }">
         See all<span class="visually-hidden"> upcoming events</span>
       </a>
     </header>
-    @if (upcoming().length > 0) {
+    @if (state() === 'loading') {
+      <p role="status">Loading upcoming events…</p>
+    } @else if (state() === 'error') {
+      <div role="alert">
+        <p>We couldn’t load upcoming events.</p>
+        <button mat-button type="button" (click)="reload()">Try again</button>
+      </div>
+    } @else if (state() === 'ready' && upcoming().length > 0) {
       <ul class="upcoming">
         @for (item of upcoming(); track item.key) {
           <li class="upcoming__item" [attr.data-category]="item.category" [attr.data-status]="item.status">
-            <span class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
+            <span [appCalendarPalette]="item.palette" class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
             <span class="upcoming__text">
               @if (item.link) {
                 <a class="upcoming__title" [routerLink]="item.link">{{ item.title }}</a>
@@ -82,7 +91,7 @@
       <app-empty-state
         icon="calendar"
         title="Nothing to show yet"
-        body="Parenting time and activities will appear here once the shared calendar is available."
+        body="Parenting time and activities will appear here once your family is set up."
       />
     }
   </section>
@@ -91,13 +100,24 @@
     <h2 id="quick-heading">Quick Add</h2>
     <div class="quick">
       @for (action of quickActions; track action.label) {
-        <button type="button" class="quick__btn" aria-disabled="true" aria-describedby="quick-note">
-          <app-icon [name]="action.icon" [size]="26" />
-          <span>{{ action.label }}</span>
-        </button>
+        @if (action.kind; as kind) {
+          <a
+            class="quick__btn"
+            routerLink="/calendar/new"
+            [queryParams]="{ date: isCurrentWeek() ? today() : shownWeek(), kind: kind === 'reminder' ? 'reminder' : null }"
+          >
+            <app-icon [name]="action.icon" [size]="26" />
+            <span>{{ action.label }}</span>
+          </a>
+        } @else {
+          <button type="button" class="quick__btn" aria-disabled="true" aria-describedby="quick-note">
+            <app-icon [name]="action.icon" [size]="26" />
+            <span>{{ action.label }}</span>
+          </button>
+        }
       }
     </div>
-    <p id="quick-note" class="muted">Adding from here opens with the calendar, messages and memories.</p>
+    <p id="quick-note" class="muted">Messages and memories open here when they’re ready.</p>
   </section>
 
   <section class="card area-kids" aria-labelledby="kids-heading">
@@ -190,3 +210,16 @@
     }
   </section>
 </div>
+
+@if (details(); as d) {
+  <app-event-details
+    [item]="d.item"
+    [event]="d.event"
+    [members]="d.members"
+    [familyId]="d.familyId"
+    [timeZone]="familyTimeZone()"
+    [swapTarget]="d.swapTarget"
+    (closed)="closeDetails()"
+    (changed)="detailsChanged($event)"
+  />
+}

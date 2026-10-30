@@ -33,6 +33,7 @@ public sealed class ApiSession : IDisposable
             BaseAddress = new Uri("https://localhost"),
             HandleCookies = true,
         }), emails);
+        session.Client.DefaultRequestHeaders.Add(TestClientAddress.Header, TestClientAddress.Next());
         await session.RefreshAntiforgeryAsync();
         return session;
     }
@@ -59,16 +60,31 @@ public sealed class ApiSession : IDisposable
         return Client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
+    /// <summary>An unsafe request with a raw body, like the app's photo uploads.</summary>
+    public Task<HttpResponseMessage> SendBytesAsync(HttpMethod method, string path, byte[] body, string contentType = "image/jpeg")
+    {
+        var content = new ByteArrayContent(body);
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        var request = new HttpRequestMessage(method, path) { Content = content };
+        if (_xsrfToken is not null)
+        {
+            request.Headers.Add("X-XSRF-TOKEN", _xsrfToken);
+        }
+
+        return Client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
     public Task<HttpResponseMessage> GetAsync(string path) => Client.GetAsync(path, TestContext.Current.CancellationToken);
 
     public async Task<HttpResponseMessage> RegisterAsync(string email, string password = Password, string displayName = "Alex Rivera") =>
         await PostAsync("/api/auth/register", new { email, password, displayName });
 
     /// <summary>A confirmed, signed-in user ready to make authenticated calls.</summary>
-    public static async Task<ApiSession> SignedInAsync(WebApplicationFactory<Program> api, string displayName = "Alex Rivera")
+    public static async Task<ApiSession> SignedInAsync(
+        WebApplicationFactory<Program> api, string displayName = "Alex Rivera", string? email = null)
     {
         var session = await StartAsync(api);
-        var email = NewEmail();
+        email ??= NewEmail();
         await session.RegisterConfirmedAsync(email, displayName: displayName);
         Assert.Equal(System.Net.HttpStatusCode.NoContent, (await session.LoginAsync(email)).StatusCode);
         return session;

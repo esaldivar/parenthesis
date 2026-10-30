@@ -1,5 +1,10 @@
-import { Injectable } from '@angular/core';
-import { ChildRef, DashboardWeek, PlainDate } from './model';
+import { Injectable, inject } from '@angular/core';
+import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember } from '../../core/api/api';
+import { AuthStore } from '../../core/auth/auth.store';
+import { parentPalette } from '../calendar/calendar-palette';
+import { FORMER_PARENT } from '../calendar/calendar-items';
+import { fromFamilyLocal, lastDate, toFamilyLocal } from '../calendar/time';
+import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from './model';
 import { addDays } from './week';
 
 /** Loads one week of dashboard data for a family. `null` means the feature isn't available yet. */
@@ -7,16 +12,134 @@ export abstract class DashboardDataSource {
   abstract load(familyId: string, weekStart: PlainDate): Promise<DashboardWeek | null>;
 }
 
+/** How each calendar category reads on the dashboard (its icon and colour accent, always with text). */
+const CATEGORIES: Record<CalendarCategory, EventCategory> = {
+  ParentingTime: 'other',
+  Joint: 'family',
+  School: 'school',
+  Medical: 'medical',
+  Dental: 'medical',
+  Activity: 'sport',
+  Birthday: 'art',
+  Holiday: 'other',
+  Unavailable: 'unavailable',
+  Other: 'other',
+};
+
 /**
- * The real source. The API has no calendar, approval, child-profile, message or memory endpoints yet, so it
- * reports "not available" rather than inventing data or calling endpoints that don't exist. Replace the body when
- * they land; model.ts describes the shapes the dashboard needs.
+ * The real source (#196): the shown week's parenting time and events, approvals waiting on this parent, and the
+ * week's reminders and tasks, all in the family's time zone. Messages, memories and children's shares aren't built
+ * yet, so they stay empty and the page says so. Unavailable time never carries another parent's private note.
  */
 @Injectable({ providedIn: 'root' })
 export class LiveDashboardDataSource extends DashboardDataSource {
-  override async load(): Promise<DashboardWeek | null> {
-    return null;
+  private readonly api = inject(Api);
+  private readonly auth = inject(AuthStore);
+
+  override async load(familyId: string, weekStart: PlainDate): Promise<DashboardWeek> {
+    const zone = this.auth.currentFamily()?.timeZone ?? 'UTC';
+    const weekEnd = addDays(weekStart, 7);
+    const [from, to] = [fromFamilyLocal(`${weekStart}T00:00`, zone), fromFamilyLocal(`${weekEnd}T00:00`, zone)];
+    const [family, children, listed, approvals, reminders, tasks] = await Promise.all([
+      this.api.family(familyId),
+      this.api.children(familyId),
+      this.api.calendarEvents(familyId, from, to),
+      this.api.approvals(familyId),
+      this.api.reminders(familyId, from, to),
+      this.api.tasks(familyId, weekStart, weekEnd),
+    ]);
+    // Declined requests (#199) stay on the Calendar page, labelled; the home page shows only what's planned or asked.
+    const events = listed.filter((e) => e.status === 'Confirmed' || e.status === 'PendingApproval');
+    const members = family.members;
+    const parent = (membershipId: string | null): Caregiver => ({
+      membershipId: membershipId ?? '',
+      palette: parentPalette(membershipId, members),
+      displayName: members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT,
+    });
+    const kids = (ids: readonly (string | null)[]): ChildRef[] =>
+      ids
+        .map((id) => children.find((c) => c.id === id && c.status === 'Active'))
+        .filter((c): c is Child => !!c)
+        .map((c) => ({ id: c.id, name: c.firstName }));
+
+    return {
+      source: 'live',
+      children: children.filter((c) => c.status === 'Active').map((c) => ({ id: c.id, name: c.firstName })),
+      parentingTime: events.filter((e) => e.category === 'ParentingTime').flatMap((e) => parentingTime(e, zone, kids, parent)),
+      events: events.filter((e) => e.category !== 'ParentingTime').map((e) => familyEvent(e, zone, kids, members)),
+      pendingReviews: approvals
+        .filter((r) => r.canDecide && r.status === 'Pending')
+        .map((r) => ({ id: r.id, summary: r.summary, proposedBy: parent(r.proposerMembershipId).displayName })),
+      kidShares: [],
+      recentMessages: [],
+      recentMemories: [],
+      notes: [
+        ...reminders.map((r) => {
+          const local = toFamilyLocal(r.startsAt, zone);
+          return {
+            id: `reminder-${r.id}-${r.startsAt}`,
+            kind: 'reminder' as const,
+            title: r.title,
+            date: local.slice(0, 10),
+            time: r.allDay ? undefined : local.slice(11),
+            children: kids([r.childId]),
+          };
+        }),
+        ...tasks
+          .filter((t) => t.completedAt === null)
+          .map((t) => ({ id: `task-${t.id}`, kind: 'task' as const, title: t.title, date: t.dueDate, children: kids([t.childId]) })),
+      ],
+    };
   }
+}
+
+/** One entry per child, as the dashboard groups parenting time itself. Pending time reads as proposed. */
+function parentingTime(
+  e: CalendarEvent,
+  zone: string,
+  kids: (ids: readonly string[]) => ChildRef[],
+  parent: (membershipId: string | null) => Caregiver,
+): ParentingTime[] {
+  return kids(e.childIds).map((child) => ({
+    id: `${e.id}-${child.id}`,
+    child,
+    caregiver: parent(e.caregiverMembershipId),
+    start: toFamilyLocal(e.startsAt, zone),
+    end: toFamilyLocal(e.endsAt, zone),
+    status: e.status === 'PendingApproval' ? 'proposed' : 'confirmed',
+    changePending: e.pendingChange !== 'None' || undefined,
+    title: e.title,
+    eventId: e.id,
+  }));
+}
+
+function familyEvent(
+  e: CalendarEvent,
+  zone: string,
+  kids: (ids: readonly string[]) => ChildRef[],
+  members: readonly FamilyMember[],
+): FamilyEvent {
+  const start = toFamilyLocal(e.startsAt, zone);
+  const last = lastDate(start, toFamilyLocal(e.endsAt, zone));
+  const unavailable = e.category === 'Unavailable';
+  const owner = members.find((m) => m.membershipId === e.ownerMembershipId);
+  return {
+    id: e.id,
+    // Only "Unavailable" and whose it is: a private note never comes this way.
+    title: unavailable ? `${owner?.isYou ? 'You’re' : `${owner?.displayName ?? FORMER_PARENT} is`} unavailable` : e.title,
+    date: start.slice(0, 10),
+    endDate: last > start.slice(0, 10) ? last : undefined,
+    time: e.allDay ? undefined : start.slice(11),
+    durationMinutes: e.allDay ? undefined : Math.round((Date.parse(e.endsAt) - Date.parse(e.startsAt)) / 60_000),
+    category: CATEGORIES[e.category],
+    children: kids(e.childIds),
+    childIds: e.childIds,
+    parents:
+      e.category === 'Joint'
+        ? members.filter((m) => m.role === 'Parent').map((m) => ({ membershipId: m.membershipId, displayName: m.displayName }))
+        : undefined,
+    status: e.status === 'PendingApproval' ? 'proposed' : 'confirmed',
+  };
 }
 
 /**
@@ -32,11 +155,12 @@ export class SampleDashboardDataSource extends DashboardDataSource {
     const at = (offset: number, time: string) => `${date(offset)}T${time}`;
     const kai: ChildRef = { id: 'sample-kai', name: 'Kai' };
     const aurora: ChildRef = { id: 'sample-aurora', name: 'Aurora' };
-    const dad = { membershipId: 'sample-dad', displayName: 'Dad' };
-    const mom = { membershipId: 'sample-mom', displayName: 'Mom' };
+    const dad = { membershipId: 'sample-dad', displayName: 'Dad', palette: 'parent-a' as const };
+    const mom = { membershipId: 'sample-mom', displayName: 'Mom', palette: 'parent-b' as const };
 
     return {
       source: 'sample',
+      children: [kai, aurora],
       parentingTime: [
         // One continuous all-day arrangement for both children: shown as a single block across the week.
         ...[kai, aurora].map((child) => ({
@@ -76,6 +200,10 @@ export class SampleDashboardDataSource extends DashboardDataSource {
         { id: 'm1', title: 'Sunset at the Lake', sharedBy: 'Dad', date: date(3) },
         { id: 'm2', title: 'Pumpkin Patch', sharedBy: 'Mom', date: date(-4) },
         { id: 'm3', title: 'First Day of School', sharedBy: 'Mom', date: date(-40) },
+      ],
+      notes: [
+        { id: 'n1', kind: 'reminder', title: 'Spirit Day: wear blue', date: date(5), children: [kai] },
+        { id: 'n2', kind: 'task', title: 'Sign field trip form', date: date(4), children: [aurora] },
       ],
     };
   }

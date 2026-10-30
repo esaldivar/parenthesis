@@ -1,0 +1,204 @@
+<p class="back">
+  <a routerLink="/calendar" [queryParams]="{ date: item()?.firstDate ?? null }">← Calendar</a>
+</p>
+
+@switch (state()) {
+  @case ('loading') {
+    <h1 tabindex="-1">Request swap</h1>
+    <p class="muted" role="status">Loading…</p>
+  }
+  @case ('error') {
+    <h1 tabindex="-1">Request swap</h1>
+    <div class="alert" role="alert">
+      <p>{{ loadError() }}</p>
+      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+    </div>
+  }
+  @default {
+    @if (item(); as current) {
+      @if (blocked(); as why) {
+        <h1 tabindex="-1">Request swap</h1>
+        <div class="card">
+          <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: current }" />
+        </div>
+        <p class="note">This parenting time can’t be swapped right now. {{ why }}</p>
+      } @else {
+        @switch (step()) {
+          @case ('choose') {
+            <h1 tabindex="-1">Request parenting time swap</h1>
+            <div class="card">
+              <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: current }" />
+            </div>
+
+            <form [formGroup]="form" (ngSubmit)="continue()" novalidate aria-labelledby="change-heading">
+              <h2 id="change-heading" class="step">Proposed change</h2>
+              @if (error(); as message) {
+                <div class="alert" role="alert">{{ message }}</div>
+              }
+
+              <fieldset class="when">
+                <legend>New date and time</legend>
+                <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+                <!-- Start and End as separate fields, each opening its own calendar (#249). Only past days are greyed
+                     out; an invalid date turns red, with its reason for screen readers, and blocks sending (#248). -->
+                <div class="when__row dates">
+                  <app-date-field
+                    label="Start date"
+                    name="startDate"
+                    inputId="swap-start-date"
+                    [control]="form.controls.startDate"
+                    [dateFilter]="dayFilter"
+                    [issue]="dateCheck.issues().start"
+                  />
+                  <app-date-field
+                    label="End date"
+                    name="endDate"
+                    inputId="swap-end-date"
+                    [control]="form.controls.endDate"
+                    [startAt]="form.controls.endDate.value || form.controls.startDate.value || null"
+                    [dateFilter]="dayFilter"
+                    [issue]="dateCheck.issues().end"
+                  />
+                </div>
+                @if (!allDay()) {
+                  <div class="when__row">
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>Start time</mat-label>
+                      <input matInput type="time" formControlName="startTime" required />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>End time</mat-label>
+                      <input
+                        matInput
+                        type="time"
+                        formControlName="endTime"
+                        required
+                        [attr.aria-invalid]="dateCheck.issues().end === endBeforeStart"
+                        [class.date-invalid]="dateCheck.issues().end === endBeforeStart"
+                      />
+                    </mat-form-field>
+                  </div>
+                }
+                @if (datesError(); as e) {
+                  <p class="field-error" role="alert">{{ e }}</p>
+                }
+              </fieldset>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Reason (optional)</mat-label>
+                <textarea id="swap-reason" matInput formControlName="reason" rows="3" [maxlength]="reasonMax"></textarea>
+                <mat-hint>{{ otherParent() }} sees this with your request.</mat-hint>
+                <mat-hint align="end">{{ reasonLength() }} / {{ reasonMax }}</mat-hint>
+                @if (reasonError(); as e) {
+                  <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+                }
+              </mat-form-field>
+
+              @if (clashText().length > 0) {
+                <section class="clash" aria-labelledby="swap-clash-heading">
+                  <h3 id="swap-clash-heading" tabindex="-1">
+                    <app-icon name="alert" [size]="20" />
+                    Some of that time is marked unavailable
+                  </h3>
+                  @for (text of clashText(); track text) {
+                    <p>{{ text }}</p>
+                  }
+                  <p>They may still approve your request. What would you like to do?</p>
+                  <div class="choices">
+                    <button mat-flat-button type="button" (click)="sendAnyway()">Send anyway</button>
+                    <button mat-stroked-button type="button" (click)="chooseDifferentDates()">Choose different dates</button>
+                  </div>
+                </section>
+              } @else {
+                <div class="buttons">
+                  <a mat-stroked-button routerLink="/calendar" [queryParams]="{ date: current.firstDate }">Cancel</a>
+                  <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Checking…' : 'Continue' }}</button>
+                </div>
+              }
+            </form>
+          }
+
+          @case ('review') {
+            <h1 tabindex="-1">Review and send request</h1>
+            @if (proposed(); as next) {
+              <div class="compare">
+                <section class="card" aria-labelledby="current-heading">
+                  <h2 id="current-heading" class="step">Current schedule</h2>
+                  <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: current }" />
+                </section>
+                <app-icon class="compare__arrow" name="arrow-right" [size]="24" />
+                <section class="card card--proposed" aria-labelledby="proposed-heading">
+                  <h2 id="proposed-heading" class="step">Proposed schedule</h2>
+                  <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: next }" />
+                </section>
+              </div>
+            }
+
+            <dl class="facts">
+              @if (current.children.length > 0) {
+                <dt>Children</dt>
+                <dd>{{ childNames(current) }} <span class="hint">(a swap keeps the same children)</span></dd>
+              }
+              @if (form.controls.reason.value.trim(); as reason) {
+                <dt>Reason</dt>
+                <dd>{{ reason }}</dd>
+              }
+            </dl>
+
+            @for (text of noteText(); track text) {
+              <p class="note">{{ text }}</p>
+            }
+            <p class="note">
+              <app-icon name="note" [size]="18" />
+              This goes to {{ otherParent() }}, who can approve or decline it. Your current schedule stays on the
+              calendar until they approve.
+            </p>
+            @if (error(); as message) {
+              <div class="alert" role="alert">{{ message }}</div>
+            }
+            <div class="buttons">
+              <button mat-stroked-button type="button" [disabled]="busy()" (click)="back()">Back</button>
+              <button mat-flat-button type="button" [disabled]="busy()" (click)="send()">
+                {{ busy() ? 'Sending…' : 'Send request' }}
+              </button>
+            </div>
+          }
+
+          @case ('sent') {
+            <div class="sent">
+              <span class="sent__icon"><app-icon name="check" [size]="40" /></span>
+              <h1 tabindex="-1">Swap request sent</h1>
+              <p>
+                {{ otherParent() }} can approve or decline it. Until then, your current schedule stays on the calendar.
+              </p>
+              @if (proposed(); as next) {
+                <div class="card">
+                  <p class="card__title">{{ current.title }}</p>
+                  <p>New date: {{ describe(next) }}</p>
+                  <p class="status">Pending approval</p>
+                </div>
+              }
+              <div class="buttons buttons--stack">
+                <a mat-flat-button routerLink="/calendar" [queryParams]="{ date: current.firstDate }">View in calendar</a>
+                <a mat-stroked-button routerLink="/calendar" [queryParams]="{ date: current.firstDate, event: current.id }">
+                  View request details
+                </a>
+              </div>
+            </div>
+          }
+        }
+      }
+    }
+  }
+}
+
+<ng-template #summary let-entry>
+  <div class="summary">
+    <span class="summary__icon" [appCalendarPalette]="entry.palette ?? entry.kind"><app-icon [name]="entry.icon" [size]="22" /></span>
+    <div>
+      <p class="card__title">{{ entry.title }}</p>
+      <p>{{ describe(entry) }}</p>
+      <p class="muted">{{ entry.categoryLabel }}</p>
+    </div>
+  </div>
+</ng-template>

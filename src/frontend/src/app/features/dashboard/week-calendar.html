@@ -50,12 +50,26 @@
 
         @if (state() === 'ready') {
           <div class="grid__allday-label" aria-hidden="true">All day</div>
-          <ol class="allday" aria-label="All-day parenting time" [style.--lanes]="allDayLanes()">
+          <ol class="allday" aria-label="All day" [style.--lanes]="allDayLanes()">
+            @if (live()) {
+              <!-- A tap on the row's empty space adds on that day (#212): pointer only, as the day columns below do it
+                   for keyboards. -->
+              <li class="tap-add" aria-hidden="true">
+                <button type="button" class="tap-add__button" tabindex="-1" (click)="addInAllDayRow($event)"></button>
+              </li>
+              @if (pickColumn(); as column) {
+                <li class="slot-pick" [style.grid-column]="column" [style.grid-row]="1">
+                  <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
+                    {{ pickText(pick.at()!) }}
+                  </button>
+                </li>
+              }
+            }
             @for (block of allDay(); track block.key) {
               @let place = placement(block);
               @if (place) {
                 <li
-                  class="pt"
+                  class="pt" [appCalendarPalette]="block.caregiver.palette ?? 'parenting'"
                   [class.pt--narrow]="place.endColumn - place.startColumn <= 2"
                   [attr.data-status]="block.status"
                   [style.--start]="place.startColumn"
@@ -65,9 +79,9 @@
                 >
                   <span class="pt__icon" aria-hidden="true"><app-icon name="calendar" [size]="22" /></span>
                   <span class="pt__avatars" aria-hidden="true">
-                    <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="40" />
+                    <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="40" [personId]="block.caregiver.membershipId" photoOn="desktop" />
                     @for (child of block.children; track child.id) {
-                      <app-avatar [name]="child.name" [size]="40" />
+                      <app-avatar [name]="child.name" [size]="40" [personId]="child.id" photoOn="desktop" />
                     }
                   </span>
                   <span class="pt__text">
@@ -101,6 +115,53 @@
                       }
                     </span>
                   }
+                  @if (live() && eventOf(block); as id) {
+                    <button type="button" class="open" (click)="openEvent.emit(id)">
+                      <span class="visually-hidden">Open details: {{ block.title }}</span>
+                    </button>
+                  }
+                </li>
+              }
+            }
+            <!-- All-day and multi-day events across their dates (#208). -->
+            @for (block of allDayEvents(); track block.key) {
+              @let place = placement(block);
+              @if (place) {
+                <li
+                  class="act act--allday"
+                  [attr.data-category]="block.event.category" [appCalendarPalette]="block.event.palette"
+                  [attr.data-status]="block.event.status"
+                  [style.--start]="place.startColumn"
+                  [style.--end]="place.endColumn"
+                  [style.--lane]="place.lane + 1"
+                  [attr.title]="block.event.title + ', ' + allDayWhen(block.event)"
+                >
+                  <span class="act__head">
+                    <app-icon class="act__icon" [name]="icons[block.event.category]" [size]="20" />
+                    <span class="act__text">
+                      <span class="act__title">
+                        @if (place.continuesBefore) {
+                          <span aria-hidden="true">← </span>
+                        }
+                        {{ block.event.title }}
+                        @if (place.continuesAfter) {
+                          <span aria-hidden="true"> →</span>
+                        }
+                      </span>
+                      <span class="act__time">{{ allDayWhen(block.event) }}</span>
+                    </span>
+                  </span>
+                  @if (block.event.children.length || block.event.parents?.length) {
+                    <span class="visually-hidden">, {{ actMeta(block.event) }}</span>
+                  }
+                  @if (block.event.status !== 'confirmed') {
+                    <app-status-label [status]="block.event.status" />
+                  }
+                  @if (live()) {
+                    <button type="button" class="open" (click)="openEvent.emit(block.event.id)">
+                      <span class="visually-hidden">Open details: {{ block.event.title }}</span>
+                    </button>
+                  }
                 </li>
               }
             }
@@ -122,12 +183,29 @@
           </div>
           @for (day of days(); track day.date) {
             <ol class="daycol" [attr.aria-label]="'Activities on ' + day.longLabel" [style.--lanes]="day.lanes">
+              <!-- Behind the activities: a tap adds at that half-hour; from the keyboard it adds on that day (#212). -->
+              @if (live()) {
+                <li class="slot-add">
+                  <button type="button" class="slot-add__button" (click)="addInColumn($event, day.date)">
+                    <span class="slot-add__label">Add on {{ day.longLabel }}</span>
+                  </button>
+                </li>
+                @if (pick.at(); as at) {
+                  @if (at.date === day.date && at.time) {
+                    <li class="slot-pick" [style.grid-row]="pickRows(at.time)">
+                      <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(at)" (click)="pick.confirm()">
+                        {{ pickText(at) }}
+                      </button>
+                    </li>
+                  }
+                }
+              }
               @for (event of day.events; track event.id) {
                 @let slot = day.placements.get(event.id);
                 @if (slot) {
                   <li
                     class="act"
-                    [attr.data-category]="event.category"
+                    [attr.data-category]="event.category" [appCalendarPalette]="event.palette"
                     [attr.data-status]="event.status"
                     [style.grid-row]="slot.row + ' / span ' + slot.span"
                     [style.grid-column]="slot.lane"
@@ -143,14 +221,19 @@
                     <span class="visually-hidden">, {{ childNames(event.children) }}{{ event.parents?.length ? ', with ' + parentNames(event) : '' }}</span>
                     <span class="act__avatars" aria-hidden="true">
                       @for (parent of event.parents ?? []; track parent.membershipId) {
-                        <app-avatar [name]="parent.displayName" kind="parent" [size]="26" />
+                        <app-avatar [name]="parent.displayName" kind="parent" [size]="26" [personId]="parent.membershipId" photoOn="desktop" />
                       }
                       @for (child of event.children; track child.id) {
-                        <app-avatar [name]="child.name" [size]="26" />
+                        <app-avatar [name]="child.name" [size]="26" [personId]="child.id" photoOn="desktop" />
                       }
                     </span>
                     @if (event.status !== 'confirmed') {
                       <app-status-label [status]="event.status" />
+                    }
+                    @if (live()) {
+                      <button type="button" class="open" (click)="openEvent.emit(event.id)">
+                        <span class="visually-hidden">Open details: {{ event.title }}</span>
+                      </button>
                     }
                   </li>
                 }
@@ -171,11 +254,11 @@
       } @else {
         <ol class="agenda__blocks" aria-labelledby="allday-heading">
           @for (block of allDay(); track block.key) {
-            <li class="pt pt--card" [attr.data-status]="block.status">
+            <li class="pt pt--card" [appCalendarPalette]="block.caregiver.palette ?? 'parenting'" [attr.data-status]="block.status">
               <span class="pt__avatars" aria-hidden="true">
-                <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="36" />
+                <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="36" [personId]="block.caregiver.membershipId" photoOn="desktop" />
                 @for (child of block.children; track child.id) {
-                  <app-avatar [name]="child.name" [size]="36" />
+                  <app-avatar [name]="child.name" [size]="36" [personId]="child.id" photoOn="desktop" />
                 }
               </span>
               <span class="pt__text">
@@ -208,6 +291,11 @@
                   </ul>
                 }
               </span>
+              @if (live() && eventOf(block); as id) {
+                <button type="button" class="open" (click)="openEvent.emit(id)">
+                  <span class="visually-hidden">Open details: {{ block.title }}</span>
+                </button>
+              }
             </li>
           }
         </ol>
@@ -215,7 +303,16 @@
 
       <ol class="agenda__days" aria-label="Activities by day">
         @for (day of days(); track day.date) {
-          <li class="agenda__day" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+          <li
+            class="agenda__day"
+            [class.is-today]="day.isToday"
+            [class.is-picked]="pick.onDay(day.date) && !pick.at()!.time"
+            [attr.aria-current]="day.isToday ? 'date' : null"
+          >
+            @if (live()) {
+              <!-- A tap on the day's empty space adds on that day (#212); pointer only, beside Quick Add's Event. -->
+              <button type="button" class="tap-add__button" tabindex="-1" aria-hidden="true" (click)="addOnDay(day.date)"></button>
+            }
             <p class="agenda__date">
               {{ day.longLabel }}
               @if (day.isToday) {
@@ -227,29 +324,38 @@
             } @else {
               <ul>
                 @for (event of day.events; track event.id) {
-                  <li class="act act--row" [attr.data-category]="event.category" [attr.data-status]="event.status">
+                  <li class="act act--row" [attr.data-category]="event.category" [appCalendarPalette]="event.palette" [attr.data-status]="event.status">
                     <app-icon class="act__icon" [name]="icons[event.category]" [size]="22" />
                     <span class="act__title">{{ event.title }}</span>
                     <span class="act__time">
-                      @if (event.time) {
-                        {{ timeLabel(event.time) }} ·
-                      }
-                      {{ childNames(event.children) }}{{ event.parents?.length ? ' · with ' + parentNames(event) : '' }}
+                      {{ actMeta(event) }}
                     </span>
                     <span class="act__avatars" aria-hidden="true">
                       @for (parent of event.parents ?? []; track parent.membershipId) {
-                        <app-avatar [name]="parent.displayName" kind="parent" [size]="28" />
+                        <app-avatar [name]="parent.displayName" kind="parent" [size]="28" [personId]="parent.membershipId" photoOn="desktop" />
                       }
                       @for (child of event.children; track child.id) {
-                        <app-avatar [name]="child.name" [size]="28" />
+                        <app-avatar [name]="child.name" [size]="28" [personId]="child.id" photoOn="desktop" />
                       }
                     </span>
                     @if (event.status !== 'confirmed') {
                       <app-status-label [status]="event.status" />
                     }
+                    @if (live()) {
+                      <button type="button" class="open" (click)="openEvent.emit(event.id)">
+                        <span class="visually-hidden">Open details: {{ event.title }}</span>
+                      </button>
+                    }
                   </li>
                 }
               </ul>
+            }
+            @if (pick.onDay(day.date) && !pick.at()!.time) {
+              <div class="slot-pick slot-pick--day">
+                <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
+                  {{ pickText(pick.at()!) }}
+                </button>
+              </div>
             }
           </li>
         }
@@ -257,20 +363,13 @@
     </div>
 
     <footer class="cal__footer">
-      @if (split()) {
-        <p class="muted">Showing each child separately. This only changes the view, not anyone’s schedule.</p>
-      }
-      @if (canSplit()) {
-        <button mat-button type="button" [attr.aria-pressed]="split()" (click)="splitChange.emit(!split())">
-          {{ split() ? 'Group children with the same schedule' : 'Show children separately this week' }}
-        </button>
-      }
+      <app-dashboard-child-filter [children]="week()?.children ?? []" [selectedChild]="selectedChild()" (changed)="childChange.emit($event)" />
       <app-calendar-key />
     </footer>
   } @else if (state() === 'unavailable') {
     <p class="note">
-      The shared calendar isn’t available yet. When it is, parenting time and activities for this week will appear
-      here. Nothing shown on this page is a schedule.
+      Once your family is set up, its parenting time and activities for this week will appear here. Nothing shown on
+      this page is a schedule yet.
     </p>
   }
 </section>

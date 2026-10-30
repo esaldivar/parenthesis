@@ -61,8 +61,17 @@ erDiagram
     text display_name
     smallint birth_year "optional"
     smallint birth_month "optional"
-    text avatar_blob_key
+    text avatar_blob_key "superseded by PROFILE_PHOTO (#388)"
     uuid created_by_membership_id FK
+  }
+  PROFILE_PHOTO {
+    uuid id PK
+    uuid family_id FK
+    text chooser_kind "Parent | Child"
+    uuid chooser_id "membership or child"
+    uuid subject_id "membership or child"
+    bytea content "WebP, at most 512px and 200 KB"
+    timestamptz created_at
   }
   PARENT_CHILD_RELATIONSHIP {
     uuid family_id FK
@@ -258,6 +267,7 @@ erDiagram
   FAMILY ||--o{ FAMILY_MEMBERSHIP : "has"
   FAMILY ||--o{ INVITATION : "issues"
   FAMILY ||--o{ CHILD_PROFILE : "has"
+  FAMILY ||--o{ PROFILE_PHOTO : "has"
   CHILD_PROFILE ||--o| FAMILY_MEMBERSHIP : "login (optional)"
   FAMILY_MEMBERSHIP ||--o{ PARENT_CHILD_RELATIONSHIP : "parent of"
   CHILD_PROFILE ||--o{ PARENT_CHILD_RELATIONSHIP : "child of"
@@ -302,6 +312,31 @@ erDiagram
 | Conversation, Message, MessageAttachment | Same names in `messaging` (+ `conversation_participant`) |
 | Notification, AuditLog, ExternalCalendarConnection | Same names (+ `external_event_link` for de-duplication) |
 | *(new)* Invitation, CategoryApprovalPolicy, OutboxMessage | Needed for invitations, configurable approvals and reliable side effects |
+
+## M2 additions (ADR-0006, accepted 2026-10-17)
+The new tables for profile picker sign-in, child PINs, paired child devices, and children that need both parents'
+approval:
+- **`device`:** a household device or a child's paired tablet.
+- **`device_pairing_code`:** single-use, valid for 10 minutes, stored hashed.
+- **`child_credential`:** the PIN hash, a failed-attempt counter, and the lock state.
+
+#153 ([ADR-0007](../adr/0007-shared-devices-and-parent-pins.md)) adds `devices.expires_at` (shared
+devices: 30 days from setup), pause and concurrency columns on `child_credentials`, and a `parent_credentials` table
+(one six-digit parent PIN per family membership, hashed, with the same pause-then-lock counters).
+- **`child_profile.status`:** `PendingApproval | Active | Archived`.
+- **`change_request.type`:** gains `ChildCreate`.
+
+## M3 addition: profile photos (#388, October 30, 2026)
+`families.profile_photos` replaces the single planned `child_profile.avatar_blob_key`: each photo belongs to whoever
+chose it, so one row per **chooser and pictured person** (unique `(family_id, chooser_kind, chooser_id, subject_id)`).
+A parent's own photo (chooser = subject = their membership), a parent's private photo of a child, and a child's own
+photo are separate rows and never overwrite each other. Small processed WebP bytes live in the row (at most 38 per
+family); replacing deletes the old row in the same transaction. Details:
+[profile photos handoff](../design/handoffs/PROFILE_PHOTOS_388.md).
+
+Full columns: [ADR-0006](../adr/0006-profiles-pins-and-child-devices.md#data-model-additions-identity-and-families-schemas).
+Child sign-in no longer uses an Identity user with `user_type = Child`. That column stays for compatibility until the
+migration removes it.
 
 ## Key constraints and indexes
 

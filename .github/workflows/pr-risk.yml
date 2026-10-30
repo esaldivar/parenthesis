@@ -1,0 +1,34 @@
+name: PR risk
+
+# #141, phase 2, report-only (owner decision, October 20, 2026): classifies a PR's risk areas (security-review,
+# database-change, breaking-change, high-risk) from GitHub's list of changed files and shows them in the job summary.
+# Labels are never an input, so removing one can't hide a risk. It never fails a PR and never changes one: read-only
+# permissions, no labels written. Required checks or mandatory review (phase 3) need a separate owner approval.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-risk-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    name: PR risk (report-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # pull_request_target runs from the default branch, and checkout takes that trusted commit. Never check out
+      # or run the PR head, and don't set a ref from event data (SonarQube githubactions:S7631).
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+      - name: Report the PR's risk areas
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/pr-risk.mjs
