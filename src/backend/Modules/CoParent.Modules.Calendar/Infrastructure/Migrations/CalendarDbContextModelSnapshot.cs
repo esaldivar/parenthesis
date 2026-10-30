@@ -236,6 +236,11 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("connected_at");
 
+                    b.PrimitiveCollection<string[]>("CopyTypes")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("copy_types");
+
                     b.Property<Guid>("FamilyId")
                         .HasColumnType("uuid")
                         .HasColumnName("family_id");

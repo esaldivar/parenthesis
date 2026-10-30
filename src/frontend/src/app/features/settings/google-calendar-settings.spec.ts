@@ -20,6 +20,18 @@ const status = (overrides: Partial<GoogleCalendarStatus> = {}): GoogleCalendarSt
   calendarName: 'Parenthesis Family',
   connectedAt: null,
   lastSyncedAt: null,
+  copyTypes: [
+    'ParentingTime',
+    'Joint',
+    'School',
+    'Medical',
+    'Dental',
+    'Activity',
+    'Birthday',
+    'Holiday',
+    'Other',
+    'MyUnavailable',
+  ],
   ...overrides,
 });
 
@@ -142,6 +154,46 @@ describe('Google Calendar settings (#386)', () => {
     await settle(fixture);
 
     expect(button(element, 'Disconnect…')).toBeTruthy();
+  });
+
+  it('lets a connected parent choose which kinds of event to copy, and keeps the saved choice if saving fails', async () => {
+    const fixture = await render(
+      status({ state: 'Connected', connectedAt: '2026-10-30T15:00:00Z' }),
+    );
+    const element = fixture.nativeElement as HTMLElement;
+    const box = (label: string) =>
+      [...element.querySelectorAll<HTMLInputElement>('input[type=checkbox]')].find((i) =>
+        i.closest('mat-checkbox')!.textContent!.includes(label),
+      )!;
+
+    expect(element.querySelector('legend')!.textContent).toContain('Events to copy');
+    expect(box('Parenting time').checked).toBe(true);
+    expect(box('co-parent’s unavailable time').checked).toBe(false);
+    expect(await axeViolations(element)).toEqual([]);
+
+    box('Medical').click();
+    const save = http.expectOne({ method: 'PUT', url: `${PATH}/copy-types` });
+    expect(save.request.body.copyTypes).not.toContain('Medical');
+    save.flush(status({ state: 'Connected', copyTypes: ['ParentingTime', 'School'] }));
+    await settle(fixture);
+
+    expect(box('Medical').checked).toBe(false);
+    expect(box('Family events').checked).toBe(false);
+    expect(text(element)).toContain('Saved.');
+
+    box('Holidays').click();
+    await settle(fixture);
+    http.expectOne(`${PATH}/copy-types`).flush({}, { status: 500, statusText: 'Server Error' });
+    await settle(fixture);
+
+    expect(box('Holidays').checked).toBe(false);
+    expect(element.querySelector('[role=alert]')).toBeTruthy();
+  });
+
+  it('shows no choices before the parent connects', async () => {
+    const fixture = await render(status());
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('fieldset')).toBeNull();
   });
 
   it.each([

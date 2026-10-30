@@ -97,6 +97,7 @@ public sealed class GoogleCalendarSyncTests(ApiFactory api) : IAsyncLifetime
         var f = await FamilyAsync(host);
         using var _ = f;
         await ConnectAsync(f.Dad, f.FamilyId, google);
+        await ChooseAsync(f.Dad, f.FamilyId, _allTypes);
         var soccer = await CreateAsync(f.Dad, f, new
         {
             category = "Activity",
@@ -201,6 +202,7 @@ public sealed class GoogleCalendarSyncTests(ApiFactory api) : IAsyncLifetime
         var f = await FamilyAsync(host);
         using var _ = f;
         await ConnectAsync(f.Dad, f.FamilyId, google);
+        await ChooseAsync(f.Dad, f.FamilyId, _allTypes);
         await CreateAsync(f.Mom, f, new { category = "Unavailable", startsAt = _monday.AddHours(9), endsAt = _monday.AddHours(12), notes = "Mom's note" });
 
         await SyncAsync(host);
@@ -215,6 +217,43 @@ public sealed class GoogleCalendarSyncTests(ApiFactory api) : IAsyncLifetime
         var momsCalendar = google.Calendars.Values.Single(c => c.Events.Values.Any(e => e["description"]!.GetValue<string>().StartsWith("Mom's note", StringComparison.Ordinal)));
         Assert.Equal(2, google.Calendars.Count);
         Assert.Single(momsCalendar.Events);
+    }
+
+    [Fact]
+    public async Task Each_parent_chooses_which_kinds_of_event_to_copy_and_unticked_ones_leave_Google()
+    {
+        var google = new FakeGoogle();
+        using var host = Host(google);
+        var f = await FamilyAsync(host);
+        using var _ = f;
+        var beforeConnecting = await f.Dad.SendAsync(HttpMethod.Put, $"{Path(f.FamilyId)}/copy-types", new { copyTypes = _allTypes });
+        await ConnectAsync(f.Dad, f.FamilyId, google);
+        var defaults = await JsonAsync(await f.Dad.GetAsync(Path(f.FamilyId)));
+        var school = await CreateAsync(f.Dad, f, new { category = "School", title = "Picture Day", startsAt = _monday.AddHours(8), endsAt = _monday.AddHours(9) });
+        var dentist = await CreateAsync(f.Dad, f, new { category = "Dental", title = "Cleaning", startsAt = _monday.AddHours(10), endsAt = _monday.AddHours(11) });
+        await CreateAsync(f.Mom, f, new { category = "Unavailable", startsAt = _monday.AddHours(12), endsAt = _monday.AddHours(13) });
+        await CreateAsync(f.Dad, f, new { category = "Unavailable", startsAt = _monday.AddHours(14), endsAt = _monday.AddHours(15) });
+        await SyncAsync(host);
+        var events = Assert.Single(google.Calendars.Values).Events;
+
+        // By default everything but the co-parent's unavailable time.
+        Assert.Equal(HttpStatusCode.NotFound, beforeConnecting.StatusCode);
+        Assert.DoesNotContain("CoParentUnavailable", defaults.GetProperty("copyTypes").EnumerateArray().Select(t => t.GetString()));
+        Assert.Contains("MyUnavailable", defaults.GetProperty("copyTypes").EnumerateArray().Select(t => t.GetString()));
+        Assert.Equal(3, events.Count);
+        Assert.True(events.ContainsKey(Id(school)));
+
+        var chosen = await ChooseAsync(f.Dad, f.FamilyId, ["Dental", "Activity"]);
+        await SyncAsync(host);
+
+        Assert.Equal(["Dental", "Activity"], chosen.GetProperty("copyTypes").EnumerateArray().Select(t => t.GetString()));
+        Assert.Equal([Id(dentist)], events.Keys);
+
+        // Mom's choices are her own and haven't changed.
+        var moms = await JsonAsync(await f.Mom.GetAsync(Path(f.FamilyId)));
+        Assert.Contains("School", moms.GetProperty("copyTypes").EnumerateArray().Select(t => t.GetString()));
+        var bad = await f.Dad.SendAsync(HttpMethod.Put, $"{Path(f.FamilyId)}/copy-types", new { copyTypes = _unknownType });
+        Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
     }
 
     [Fact]
@@ -384,6 +423,18 @@ public sealed class GoogleCalendarSyncTests(ApiFactory api) : IAsyncLifetime
         var query = QueryHelpers.ParseQuery(url.Query);
         google.ExpectedChallenge = query["code_challenge"].ToString();
         return await parent.PostAsync($"{Path(familyId)}/connect", new { code = FakeGoogle.GoodCode, state = query["state"].ToString() });
+    }
+
+    private static readonly string[] _unknownType = ["Gossip"];
+
+    private static readonly string[] _allTypes =
+        ["ParentingTime", "Joint", "School", "Medical", "Dental", "Activity", "Birthday", "Holiday", "Other", "MyUnavailable", "CoParentUnavailable"];
+
+    private static async Task<JsonElement> ChooseAsync(ApiSession parent, Guid familyId, string[] copyTypes)
+    {
+        var response = await parent.SendAsync(HttpMethod.Put, $"{Path(familyId)}/copy-types", new { copyTypes });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await JsonAsync(response);
     }
 
     private static async Task<int> SyncAsync(WebApplicationFactory<Program> host) =>

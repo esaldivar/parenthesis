@@ -147,6 +147,7 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
             g.Property(x => x.GoogleCalendarId).HasMaxLength(GoogleCalendarConnection.CalendarIdMaxLength);
             g.Property(x => x.Status).HasConversion<string>().HasMaxLength(24);
             g.Property(x => x.Problem).HasConversion<string>().HasMaxLength(24);
+            g.PrimitiveCollection(x => x.CopyTypes).ElementType(t => t.HasConversion<string>());
             // One connection per parent per family.
             g.HasIndex(x => new { x.FamilyId, x.MembershipId }).IsUnique();
             g.HasIndex(x => x.Status);

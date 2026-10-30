@@ -17,6 +17,11 @@ scope; refresh tokens encrypted at rest and never logged; Google's free quota.
   `{App:PublicBaseUrl}/settings/google-calendar`, and the page finishes connecting through the API (same-origin
   cookie and antiforgery, as for everything else). Parenthesis then makes the "Parenthesis Family" calendar in the
   family's time zone.
+- **Each parent chooses what's copied** (owner decision, October 30, 2026): under "Events to copy" they tick the
+  kinds of event they want (parenting time, family events, school, medical, dental, activities, birthdays,
+  holidays, other, their own unavailable time, the co-parent's unavailable time). Everything except the co-parent's
+  unavailable time is ticked at first. Unticking a kind removes those events from their Google calendar on the next
+  pass. The choice is theirs alone and is kept when they reconnect.
 - **What's copied:** confirmed events only, with their confirmed values. A request waiting for approval, or a change
   waiting on a confirmed event, isn't copied until both parents agree. The other parent's unavailable time shows as
   "Unavailable" with no place or notes, as in Parenthesis. Children's names aren't sent.
@@ -81,9 +86,10 @@ Locally: `dotnet user-secrets set GoogleCalendar:ClientId "<id>"` and `GoogleCal
    "Make secondary Google calendars…". Allow it.
 3. Back in Settings it says **Connected**. Within a minute or two Google Calendar shows a "Parenthesis Family" calendar
    with the family's confirmed events.
-4. Edit an event, cancel one, and create a parenting-time request: the edit and cancellation follow within a minute or
+4. Untick **School** under "Events to copy": school events leave Google Calendar within a minute or two.
+5. Edit an event, cancel one, and create a parenting-time request: the edit and cancellation follow within a minute or
    two; the request appears only after the other parent approves it.
-5. **Disconnect…** → **Disconnect**: the calendar disappears from Google Calendar, and Parenthesis no longer appears
+6. **Disconnect…** → **Disconnect**: the calendar disappears from Google Calendar, and Parenthesis no longer appears
    under [Google Account → Third-party connections](https://myaccount.google.com/connections).
 
 ## 4. Before public launch: Google verification

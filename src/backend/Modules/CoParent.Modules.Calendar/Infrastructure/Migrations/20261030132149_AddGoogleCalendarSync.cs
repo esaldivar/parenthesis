@@ -24,7 +24,8 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                     status = table.Column<string>(type: "character varying(24)", maxLength: 24, nullable: false),
                     problem = table.Column<string>(type: "character varying(24)", maxLength: 24, nullable: false),
                     connected_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    last_synced_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    last_synced_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    copy_types = table.Column<string[]>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
                 {

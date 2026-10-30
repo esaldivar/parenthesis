@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CoParent.Modules.Calendar.Infrastructure.Migrations
 {
     [DbContext(typeof(CalendarDbContext))]
-    [Migration("20261030113538_AddGoogleCalendarSync")]
+    [Migration("20261030132149_AddGoogleCalendarSync")]
     partial class AddGoogleCalendarSync
     {
         /// <inheritdoc />
@@ -238,6 +238,11 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("ConnectedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("connected_at");
+
+                    b.PrimitiveCollection<string[]>("CopyTypes")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("copy_types");
 
                     b.Property<Guid>("FamilyId")
                         .HasColumnType("uuid")

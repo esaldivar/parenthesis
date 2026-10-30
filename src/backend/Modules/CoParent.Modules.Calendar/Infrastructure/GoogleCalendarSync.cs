@@ -167,6 +167,7 @@ internal sealed partial class GoogleCalendarSync(
                 .Where(e => e.Status == EventStatus.Confirmed && e.EndsAt > from && e.StartsAt < to)
                 .OrderBy(e => e.StartsAt)
                 .ToListAsync(cancellationToken))
+            .Where(connection.Copies)
             .ToDictionary(e => e.Id, e => GoogleEventProjection.Body(e, connection.MembershipId, timeZone, link));
         var written = await db.GoogleSyncedEvents.Where(s => s.ConnectionId == connection.Id).ToDictionaryAsync(s => s.EventId, cancellationToken);
 
@@ -198,15 +199,17 @@ internal sealed partial class GoogleCalendarSync(
             }
 
             var gone = written.Keys.Where(id => !wanted.ContainsKey(id)).ToList();
-            var stillConfirmed = await db.Events.AsNoTracking()
-                .Where(e => gone.Contains(e.Id) && e.Status == EventStatus.Confirmed)
+            // A confirmed event the parent still copies that only left the window (it ended long ago, or moved far
+            // ahead) stays in Google as it was. Anything cancelled, declined, deleted or no longer chosen is removed.
+            var outOfRange = (await db.Events.AsNoTracking()
+                    .Where(e => gone.Contains(e.Id) && e.Status == EventStatus.Confirmed && (e.EndsAt <= from || e.StartsAt >= to))
+                    .ToListAsync(cancellationToken))
+                .Where(connection.Copies)
                 .Select(e => e.Id)
-                .ToListAsync(cancellationToken);
+                .ToHashSet();
             foreach (var eventId in gone)
             {
-                // A confirmed event that only left the window (it ended long ago, or moved far ahead) stays in Google
-                // as it was; anything cancelled, declined or deleted is removed.
-                if (!stillConfirmed.Contains(eventId))
+                if (!outOfRange.Contains(eventId))
                 {
                     if (writes++ >= options.Value.MaxWritesPerPass)
                     {

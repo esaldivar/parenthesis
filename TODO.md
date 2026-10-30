@@ -98,6 +98,8 @@ that points back here.
     reconnect when access is revoked or the calendar is deleted. Off without `GoogleCalendar__ClientId` and
     `GoogleCalendar__ClientSecret`. Integration tests with a fake Google.
   - [x] Settings → Google Calendar section and the `/settings/google-calendar` return page, with Vitest and axe.
+  - [x] Each parent chooses which kinds of event to copy (owner decision October 30, 2026): checkboxes under
+    "Events to copy", everything but the co-parent's unavailable time ticked at first; unticked kinds leave Google.
   - [ ] **Owner:** Google Cloud setup in `parenthesis-dev` (runbook step 1): enable the Calendar API, consent screen
     with the one scope and test users, web OAuth client with the dev redirect URI.
   - [ ] **Owner:** client ID and secret in the dev Key Vault and app settings (runbook step 2), then "Check it works".

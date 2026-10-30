@@ -33,13 +33,18 @@ internal enum GoogleCalendarState
 /// <param name="CalendarName">The calendar's name in Google Calendar.</param>
 /// <param name="ConnectedAt">When this parent last connected.</param>
 /// <param name="LastSyncedAt">When the last copy pass finished; null until the first one.</param>
+/// <param name="CopyTypes">The kinds of event this parent copies; the defaults until they connect.</param>
 internal sealed record GoogleCalendarView(
     bool Available,
     GoogleCalendarState State,
     GoogleConnectionProblem Problem,
     string CalendarName,
     DateTimeOffset? ConnectedAt,
-    DateTimeOffset? LastSyncedAt);
+    DateTimeOffset? LastSyncedAt,
+    IReadOnlyList<GoogleCopyType> CopyTypes);
+
+/// <param name="CopyTypes">Every kind of event to copy from now on. Empty copies nothing but stays connected.</param>
+internal sealed record GoogleCopyTypesRequest(IReadOnlyList<GoogleCopyType>? CopyTypes);
 
 internal sealed record GoogleAuthorizeView(Uri Url);
 
@@ -66,7 +71,46 @@ internal static class GoogleCalendarEndpoints
         google.MapGet("/", GetAsync);
         google.MapPost("/authorize", Authorize);
         google.MapPost("/connect", ConnectAsync);
+        google.MapPut("/copy-types", SetCopyTypesAsync);
         google.MapDelete("/", DisconnectAsync);
+    }
+
+    /// <summary>
+    /// Chooses which kinds of event this parent copies (owner decision, October 30, 2026). Only their own copy changes;
+    /// events no longer chosen are removed from their Google calendar on the next pass, which this starts.
+    /// </summary>
+    private static async Task<Results<Ok<GoogleCalendarView>, ForbidHttpResult, NotFound, ValidationProblem>> SetCopyTypesAsync(
+        GoogleCopyTypesRequest request,
+        ITenantContext tenant,
+        CalendarDbContext db,
+        IOptions<GoogleCalendarOptions> options,
+        GoogleCalendarSyncSignal signal,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (request.CopyTypes is null || request.CopyTypes.Any(t => !Enum.IsDefined(t)))
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["copyTypes"] = ["Choose which kinds of event to copy."],
+            });
+        }
+
+        var connection = await db.GoogleConnections.SingleOrDefaultAsync(c => c.MembershipId == tenant.MembershipId, cancellationToken);
+        if (connection is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        connection.CopyTypes = [.. request.CopyTypes.Distinct().Order()];
+        await unitOfWork.ExecuteAsync(db.SaveChangesAsync, cancellationToken);
+        signal.Poke();
+        return TypedResults.Ok(View(connection, options.Value));
     }
 
     private static async Task<Results<Ok<GoogleCalendarView>, ForbidHttpResult>> GetAsync(
@@ -279,7 +323,8 @@ internal static class GoogleCalendarEndpoints
         connection?.Problem ?? GoogleConnectionProblem.None,
         options.CalendarName,
         connection?.ConnectedAt,
-        connection?.LastSyncedAt);
+        connection?.LastSyncedAt,
+        connection?.CopyTypes ?? GoogleCalendarConnection.DefaultCopyTypes);
 
     private static bool Granted(string? scope) =>
         scope is null || scope.Split(' ', StringSplitOptions.RemoveEmptyEntries).Contains(GoogleCalendarOptions.Scope, StringComparer.Ordinal);

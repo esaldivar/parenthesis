@@ -206,7 +206,23 @@ export interface GoogleCalendarStatus {
   readonly connectedAt: string | null;
   /** When the last copy finished; null until the first one. */
   readonly lastSyncedAt: string | null;
+  /** The kinds of event this parent copies; the defaults until they connect. */
+  readonly copyTypes: readonly GoogleCopyType[];
 }
+
+/** What a parent can choose to copy: the calendar's categories, with unavailable time split by whose it is. */
+export type GoogleCopyType =
+  | 'ParentingTime'
+  | 'Joint'
+  | 'School'
+  | 'Medical'
+  | 'Dental'
+  | 'Activity'
+  | 'Birthday'
+  | 'Holiday'
+  | 'Other'
+  | 'MyUnavailable'
+  | 'CoParentUnavailable';
 
 export interface PlaceSuggestions {
   suggestions: string[];
@@ -520,6 +536,9 @@ export class Api {
   googleCalendarConnect = (familyId: string, code: string, state: string) =>
     this.call(this.http.post<GoogleCalendarStatus>(`/api/families/${familyId}/google-calendar/connect`, { code, state }));
   /** Stops the copy, removes the "Parenthesis Family" calendar from Google and forgets the access. */
+  /** Chooses what this parent copies; events no longer chosen leave their Google calendar within a minute or two. */
+  googleCalendarCopyTypes = (familyId: string, copyTypes: readonly GoogleCopyType[]) =>
+    this.call(this.http.put<GoogleCalendarStatus>(`/api/families/${familyId}/google-calendar/copy-types`, { copyTypes }));
   googleCalendarDisconnect = (familyId: string) => this.call(this.http.delete<void>(`/api/families/${familyId}/google-calendar`));
   /** Parenting time, holidays and joint events come back PendingApproval with a changeRequestId. */
   createEvent = (familyId: string, event: NewCalendarEvent) =>
