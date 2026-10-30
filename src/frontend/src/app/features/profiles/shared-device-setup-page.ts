@@ -138,7 +138,11 @@ export class SharedDeviceSetupPage implements OnInit {
     confirm: ['', Validators.required],
   });
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const family = this.auth.currentFamily();
     if (!family) {
       return;

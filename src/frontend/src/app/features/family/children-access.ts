@@ -272,7 +272,11 @@ export class ChildrenAccess implements OnInit {
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     await this.reload();
   }
 

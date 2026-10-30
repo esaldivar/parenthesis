@@ -182,7 +182,11 @@ export class EventEditPage implements OnInit {
         : 'Changes apply at once, for both of you.',
   );
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const family = this.family();
     if (!family) {
       return;

@@ -248,7 +248,11 @@ export class ApprovalsPage implements OnInit {
   private readonly injector = inject(Injector);
   private readonly familyId = computed(() => this.auth.currentFamily()?.id ?? null);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     await this.reload();
   }
 

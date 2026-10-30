@@ -17,6 +17,8 @@ import {
   copilotUsage,
   copilotWeeklyExempt,
   prLimit,
+  apiUrl,
+  nextLink,
 } from "./dev-workflow.mjs";
 
 const iso = (d) => d.toISOString();
@@ -300,4 +302,19 @@ test("Copilot reviews on PRs into develop don't count toward the weekly limit", 
   const usage = await copilotUsage(gh, weekRange(new Date("2026-10-22T00:00:00Z")));
   assert.equal(usage.used, 1);
   assert.deepEqual([...usage.perPr.keys()], [11]);
+});
+
+test("GitHub requests stay on api.github.com", () => {
+  assert.equal(apiUrl("/repos/o/r/pulls?per_page=100"), "https://api.github.com/repos/o/r/pulls?per_page=100");
+  assert.equal(apiUrl("https://api.github.com/repositories/1/pulls?page=2"), "https://api.github.com/repositories/1/pulls?page=2");
+  assert.throws(() => apiUrl("https://example.com/repos/o/r"), /outside/);
+  assert.throws(() => apiUrl("@example.com/x"), /outside/);
+  assert.throws(() => apiUrl("https://api.github.com.example.com/x"), /outside/);
+});
+
+test("the next page comes from the Link header's rel=next only", () => {
+  const link = '<https://api.github.com/x?page=1>; rel="prev", <https://api.github.com/x?page=3>; rel="next"';
+  assert.equal(nextLink(link), "https://api.github.com/x?page=3");
+  assert.equal(nextLink('<https://api.github.com/x?page=1>; rel="prev"'), undefined);
+  assert.equal(nextLink(""), undefined);
 });

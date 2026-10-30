@@ -27,7 +27,7 @@ BACKLOG = "Backlog"
 
 # "Closes #98" counts only where it starts a line, a bullet or a sentence, so "...and close #65 later" (a to-do in
 # a PR description) doesn't link the issue.
-_CLOSING = re.compile(r"(?:^[ \t]*(?:[-*][ \t]+)?|[.!?:][ \t]+)(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)[ \t]*:?[ \t]+#(\d+)\b",
+_CLOSING = re.compile(r"(?:(?:^[ \t]*(?:[-*][ \t]+)?)|(?:[.!?:][ \t]+))(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)(?:[ \t]*:)?[ \t]+#(\d+)\b",
                       re.IGNORECASE | re.MULTILINE)
 
 

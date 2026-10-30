@@ -237,6 +237,17 @@ that points back here.
     - [ ] **Owner:** add a `PROJECTS_WRITE_TOKEN` secret (classic token with only the `project` scope; the
       read-only `PROJECTS_TOKEN` stays as it is), then run Sonar Sunday by hand from the Actions tab (pick the branch that has this change) and check the issue's board fields.
     - [ ] **Owner, weekly:** review the issue and add `owner-approved-claude` if Claude should fix it.
+    - [ ] The first queued issue, #392, stopped the queue run: 38 files is over the queue's 30-file limit, and many
+      findings sit in `.github/` and the queue scripts, which the queue may not edit. Decide whether Sonar Sunday
+      should split the issue (app code for the queue, CI and scripts for a person) (October 30, 2026).
+    - [ ] **Owner:** after the #392 fix PR (`fix/sonar-sunday-2026-10-30`), mark these as **Accepted** in SonarCloud,
+      with the reason given: the seven `S4036` PATH findings on `execFileSync("git")` in CI and e2e tooling (git must be
+      found on the runner's or developer's PATH, which they control); the eight "Missing scoping root" findings in
+      `calendar/_item.scss` (they are mixins, always included inside a selector); the `tabindex` on the calendar's
+      scroll area (keyboard scrolling, as accepted on October 19); `pr-weekly-limit.yml` checking out code from a
+      fork (it checks out the default branch's scripts only, never the PR's code); the log-injection finding on
+      `dev-workflow.mjs`'s step summary (the multi-line Markdown summary is intended). Re-check the rest at the next
+      Sonar Sunday after the fix reaches `develop`.
   - [x] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
     with the reason "required so keyboard users can scroll the hours" (accepted, with the WCAG 2.1.1 comment,
     October 19, 2026).

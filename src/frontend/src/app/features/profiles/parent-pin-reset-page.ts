@@ -128,7 +128,11 @@ export class ParentPinResetPage implements OnInit {
     confirm: ['', Validators.required],
   });
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const fromLink = this.token();
     if (fromLink) {
       store(fromLink);
