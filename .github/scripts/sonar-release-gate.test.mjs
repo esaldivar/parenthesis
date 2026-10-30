@@ -88,6 +88,10 @@ function fakeSonar(data = {}, { fail = {} } = {}) {
         return json(200, { issues: list, paging: { pageIndex: 1, pageSize: 500, total: list.length } });
       }
       case "hotspots/search": {
+        // Like SonarQube Cloud, which rejects any other resolution filter with HTTP 400.
+        if (q.resolution && !["FIXED", "SAFE"].includes(q.resolution)) {
+          return json(400, { errors: [{ msg: `Value of parameter 'resolution' (${q.resolution}) must be one of: [FIXED, SAFE]` }] });
+        }
         const list = (data.hotspots?.[scope] ?? []).filter((h) => h.status === q.status && (!q.resolution || h.resolution === q.resolution));
         return json(200, { hotspots: list, paging: { pageIndex: 1, pageSize: 500, total: list.length } });
       }
@@ -251,6 +255,9 @@ test("hotspots reviewed as Safe or Acknowledged need a comment", async () => {
   assert.equal(justified.passed, true, justified.blocking.join("\n"));
   const fixedHotspot = await gate(fakeSonar({ hotspots: { main: [hotspot({ status: "REVIEWED", resolution: "FIXED" })] } }));
   assert.equal(fixedHotspot.passed, true);
+  const acknowledged = await gate(fakeSonar({ hotspots: { main: [hotspot({ status: "REVIEWED", resolution: "ACKNOWLEDGED" })] } }));
+  assert.equal(acknowledged.passed, false);
+  assert.match(acknowledged.blocking.join("\n"), /reviewed as \*\*ACKNOWLEDGED\*\*/);
 });
 
 // ---------- Failing safely ----------
