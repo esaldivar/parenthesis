@@ -38,7 +38,7 @@ services:
 
   # Catches all outgoing email (confirmations, password resets). Web UI on the MAILPIT_UI_PORT.
   mailpit:
-    image: axllent/mailpit:v1.31.6
+    image: axllent/mailpit:v1.32.0
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: "1"
       MP_SMTP_AUTH_ALLOW_INSECURE: "1"
