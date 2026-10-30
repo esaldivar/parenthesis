@@ -30,10 +30,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # Execute only trusted default-branch code. Never check out a dependency PR head.
+      # Execute only trusted default-branch code. Never check out a dependency PR head. The ref is the literal default
+      # branch, not event data (SonarQube githubactions:S7631); a `create` event's own SHA would be the new branch.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: main
           sparse-checkout: .github/scripts
           persist-credentials: false
       - name: Route dependency PRs to the latest release with an open milestone
