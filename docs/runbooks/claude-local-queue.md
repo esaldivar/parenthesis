@@ -39,6 +39,10 @@ An issue runs only when **all** of these are true:
 
 Approval is checked when the run starts and again just before anything is pushed.
 
+The weekly **Sonar Sunday** issue arrives already meeting 1 and 2 when it has findings (`sonar-sunday.yml` sets the
+label, milestone and board fields, using the `PROJECTS_WRITE_TOKEN` secret). It still waits for the owner's
+`owner-approved-claude`; the workflow never adds that label, and a re-run never edits an approved issue.
+
 ## One-time setup
 
 - Python 3.12, Git, Node.js, the .NET SDK and the GitHub CLI on PATH.
