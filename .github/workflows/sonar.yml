@@ -16,9 +16,8 @@ on:
   pull_request:
     branches: [develop, main]
 
-permissions:
-  contents: read
-  pull-requests: read
+# Each job declares the permissions it needs (SonarQube githubactions:S8264).
+permissions: {}
 
 concurrency:
   group: sonar-${{ github.ref }}
@@ -32,6 +31,9 @@ env:
 
 jobs:
   sonar:
+    permissions:
+      contents: read
+      pull-requests: read
     name: SonarQube Cloud
     if: vars.SONAR_ORGANIZATION != ''
     runs-on: ubuntu-latest
@@ -140,6 +142,9 @@ jobs:
           echo "ce-task-id=$task" >> "$GITHUB_OUTPUT"
 
   release-gate:
+    permissions:
+      contents: read
+      pull-requests: read
     # Keep this name: it is meant to be a required status check on main (docs/runbooks/sonar-release-gate.md).
     name: Release security gate
     needs: sonar
