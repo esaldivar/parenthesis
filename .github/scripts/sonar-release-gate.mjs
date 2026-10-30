@@ -26,6 +26,7 @@ import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { isAbsolute, normalize } from "node:path";
 import { pathToFileURL } from "node:url";
+import { gitBinary } from "./git-binary.mjs";
 
 export const POLICY = {
   // Current (MQR) impact severities that block when the impact is on SECURITY. Legacy CRITICAL maps to HIGH.
@@ -441,12 +442,12 @@ export const readCandidateFile = (path) => {
 /** A commit's git tree hash, fetching the commit if this shallow checkout lacks it. Null when it can't be read. */
 export const treeOfCommit = (commit) => {
   if (!/^[0-9a-f]{40}$/.test(commit ?? "")) return null;
-  const tree = () => execFileSync("git", ["rev-parse", "--verify", "--quiet", `${commit}^{tree}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  const tree = () => execFileSync(gitBinary(), ["rev-parse", "--verify", "--quiet", `${commit}^{tree}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   try {
     return tree();
   } catch {
     try {
-      execFileSync("git", ["fetch", "--no-tags", "--depth=1", "origin", commit], { stdio: "ignore" });
+      execFileSync(gitBinary(), ["fetch", "--no-tags", "--depth=1", "origin", commit], { stdio: "ignore" });
       return tree();
     } catch {
       return null;
@@ -456,7 +457,7 @@ export const treeOfCommit = (commit) => {
 
 export const readBaseFile = (baseBranch) => (path) => {
   try {
-    return execFileSync("git", ["show", `origin/${baseBranch}:${safePath(path)}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    return execFileSync(gitBinary(), ["show", `origin/${baseBranch}:${safePath(path)}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
   } catch {
     return null;
   }
@@ -485,7 +486,7 @@ export async function main(env = process.env, deps = {}) {
       // A release into GitHub's main: reuse the primary branch's analysis of identical code (see boundAnalysis).
       const treeOf = deps.treeOf ?? treeOfCommit;
       const projectKey = env.SONAR_PROJECT_KEY;
-      const bound = await boundAnalysis(client, { projectKey, branch: baseBranch, candidateTree: deps.candidateTree ?? treeOf(execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()), treeOf });
+      const bound = await boundAnalysis(client, { projectKey, branch: baseBranch, candidateTree: deps.candidateTree ?? treeOf(execFileSync(gitBinary(), ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()), treeOf });
       if (env.SONAR_BIND_ONLY === "true") {
         summary(`## SonarQube Cloud: reusing \`${baseBranch}\`'s analysis\n\nThe Free plan only analyses \`${baseBranch}\` (#373). This release's code is identical to commit ${bound.revision} there, so the Release security gate checks that analysis.`);
         return true;

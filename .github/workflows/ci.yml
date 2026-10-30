@@ -65,7 +65,7 @@ jobs:
           cache-dependency-path: tests/e2e/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
-      - run: node --test scripts/summary-policy.test.mjs
+      - run: node --test scripts/summary-policy.test.mjs scripts/head-sha.test.mjs
       # Discovery only; browser journeys retain release/* -> develop execution policy.
       - run: npm test -- --list
 

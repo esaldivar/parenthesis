@@ -389,8 +389,11 @@ export async function ownerApproved(gh, pr, label, owner = process.env.OWNER_LOG
 // ---------- Commands ----------
 
 const event = () => JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+// The job log gets one line: text from a PR (a title, a reason) can't start a new line, so it can't forge a
+// `::command::` or a log entry (SonarQube S5145). The step summary keeps the Markdown as written.
+export const logLine = (text) => String(text).replace(/[\r\n\u2028\u2029]+/g, " ");
 const summary = (text) => {
-  console.log(text);
+  console.log(logLine(text));
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${text}\n`);
 };
 
