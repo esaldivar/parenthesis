@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { verifyNvdaResults } from './verify-nvda-results.mjs';
+import { join, resolve } from 'node:path';
+import { reportInWorkingDirectory, verifyNvdaResults } from './verify-nvda-results.mjs';
 
 const sha = 'a'.repeat(40);
 function report() {
@@ -27,5 +28,14 @@ test('wrong revision, missing tests, duplicates, skips, retries, infrastructure 
     const input = report();
     mutate(input);
     assert.throws(() => verifyNvdaResults(input, sha));
+  }
+});
+
+test('the report path must stay inside the working directory', () => {
+  // Platform paths: this test also runs on the Windows NVDA runner.
+  const cwd = resolve('work', 'e2e');
+  assert.equal(reportInWorkingDirectory('guidepup-results/nvda-results.json', cwd), join(cwd, 'guidepup-results', 'nvda-results.json'));
+  for (const outside of ['../secrets.json', resolve(cwd, '..', 'elsewhere.json'), '.', '', undefined]) {
+    assert.throws(() => reportInWorkingDirectory(outside, cwd), /NVDA (JSON )?report/);
   }
 });

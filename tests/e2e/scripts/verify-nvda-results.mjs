@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { relative, resolve, isAbsolute } from 'node:path';
 
 /** A successful optional check must represent every current scenario and actual speech. */
 export function verifyNvdaResults(report, expectedSha) {
@@ -32,6 +33,15 @@ export function verifyNvdaResults(report, expectedSha) {
   return { testedSha: expectedSha, passed: specs.length };
 }
 
+/** The report path must stay inside the working directory (SonarQube jssecurity:S8707). */
+export function reportInWorkingDirectory(argument, cwd = process.cwd()) {
+  if (!argument) throw new Error('Pass the NVDA JSON report path.');
+  const path = resolve(cwd, argument);
+  const inside = relative(cwd, path);
+  if (!inside || inside.startsWith('..') || isAbsolute(inside)) throw new Error('The NVDA report must be inside the working directory.');
+  return path;
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  console.log(JSON.stringify(verifyNvdaResults(JSON.parse(readFileSync(process.argv[2], 'utf8')), process.env.E2E_TESTED_SHA)));
+  console.log(JSON.stringify(verifyNvdaResults(JSON.parse(readFileSync(reportInWorkingDirectory(process.argv[2]), 'utf8')), process.env.E2E_TESTED_SHA)));
 }
