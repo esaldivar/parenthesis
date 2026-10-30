@@ -29,6 +29,23 @@ hotfix/…                  from main, for urgent production bugs
   PR automatically.
 - **Dependabot updates** from same-repository `dependabot/*` branches may PR into a valid active `release/x.y.z`.
   They retain normal review and required checks; they cannot target `main` or `develop` directly, or originate from a fork.
+  Version-update configuration targets `release/0.3.0`. The **Dependabot release target** workflow routes open bot
+  PRs to the highest numeric existing release branch matching an open milestone: `M3 — Calendar` matches
+  `release/0.3.0`; exact version titles such as `v1.0.0` (or `v1.0` for patch zero) also match. Creating a future
+  release branch with an open matching milestone moves the target, so do not create future branches ahead of time.
+  No matching branch/milestone fails the workflow instead of falling back to `main` or `develop`.
+  The workflow checks PR opens/reopens/edits, completion of PR branch policy checks (an independent trusted run
+  for bot events whose token is read-only), branch creation, milestone changes, daily and manual runs.
+  It changes only PR bases, never dependency code, merges, security settings or branch protections.
+  GitHub reads Dependabot configuration and this routing workflow from the default branch; this change takes effect
+  only after normal release promotion to `main`. Keep every `target-branch` current when cutting the next release
+  and carry that configuration through promotion. Routing corrects stale targets during that transition, but
+  Dependabot still scans manifests on its configured branch until configuration reaches `main`.
+  GitHub security-update PRs initially target the default branch and are then retargeted by this workflow;
+  this cannot prevent their initial creation on `main`. Security alerts remain enabled. Retargeting can expose
+  conflicts and dismiss reviews; inspect the new diff and rerun required checks on the release candidate.
+  Changes made with the workflow token may not trigger other workflows; check runs are a separate acceptance step.
+  See [GitHub's target-branch reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#target-branch).
 - **Hotfixes** for urgent production bugs: branch from `main`, make the smallest safe fix, test, open a PR into
   `main`, get the owner's approval, deploy (approval again in Actions), verify production, then sync into `develop`
   (`chore/sync-main`) and the active release branch. Hotfixes may ship outside a release window, never without
