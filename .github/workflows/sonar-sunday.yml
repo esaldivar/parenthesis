@@ -1,6 +1,7 @@
 name: Sonar Sunday
 
-# Weekly review of SonarQube Cloud's findings on main (owner decision, October 17, 2026). Every Sunday this opens an
+# Weekly review of SonarQube Cloud's findings on develop, its analysed branch since #373 (October 29, 2026; first on
+# main, owner decision October 17, 2026). Every Sunday this opens an
 # issue listing open vulnerabilities, bugs, security hotspots and code smells as a checklist. Fixes go on a
 # fix/sonar-sunday-<date> branch with a PR into the active release/x.y.z branch, and reach main with that release's
 # window (or a hotfix, if urgent). See docs/development-workflow.md. It can also be run by hand from the Actions tab.
@@ -25,24 +26,40 @@ jobs:
       KEY: ${{ vars.SONAR_PROJECT_KEY }}
       API: https://sonarcloud.io/api
     steps:
-      - name: Fetch findings on main
+      - name: Fetch findings on develop
         run: |
           get() { curl -fsS -u "$SONAR_TOKEN:" "$API/$1"; }
-          get "qualitygates/project_status?projectKey=$KEY&branch=main" > gate.json
-          get "measures/component?component=$KEY&branch=main&metricKeys=vulnerabilities,bugs,security_hotspots,code_smells,coverage,duplicated_lines_density,sqale_index" > measures.json
-          get "issues/search?componentKeys=$KEY&branch=main&resolved=false&types=VULNERABILITY,BUG&ps=100" > risks.json
-          get "issues/search?componentKeys=$KEY&branch=main&resolved=false&types=CODE_SMELL&severities=BLOCKER,CRITICAL,MAJOR&ps=50" > smells.json
-          get "hotspots/search?projectKey=$KEY&branch=main&status=TO_REVIEW&ps=100" > hotspots.json
+          get "qualitygates/project_status?projectKey=$KEY&branch=develop" > gate.json
+          get "measures/component?component=$KEY&branch=develop&metricKeys=vulnerabilities,bugs,security_hotspots,code_smells,coverage,duplicated_lines_density,sqale_index" > measures.json
+          get "issues/search?componentKeys=$KEY&branch=develop&resolved=false&types=VULNERABILITY,BUG&ps=100" > risks.json
+          get "issues/search?componentKeys=$KEY&branch=develop&resolved=false&types=CODE_SMELL&severities=BLOCKER,CRITICAL,MAJOR&ps=50" > smells.json
+          get "hotspots/search?projectKey=$KEY&branch=develop&status=TO_REVIEW&ps=100" > hotspots.json
+          get "project_analyses/search?project=$KEY&branch=develop&ps=1" > analyses.json
 
       - name: Write the issue
         run: |
           today=$(date -u +%Y-%m-%d)
-          link="https://sonarcloud.io/project/issues?id=$KEY&branch=main"
-          item() { jq -r --arg id "$KEY" '.issues[] | "- [ ] **\(.severity)** \(.type | ascii_downcase | gsub("_"; " ")): \(.message) — `\(.component | split(":")[1]):\(.line // "")` ([open](https://sonarcloud.io/project/issues?id=\($id)&branch=main&open=\(.key)))"' "$1"; }
+          link="https://sonarcloud.io/project/issues?id=$KEY&branch=develop"
+          item() { jq -r --arg id "$KEY" '.issues[] | "- [ ] **\(.severity)** \(.type | ascii_downcase | gsub("_"; " ")): \(.message) — `\(.component | split(":")[1]):\(.line // "")` ([open](https://sonarcloud.io/project/issues?id=\($id)&branch=develop&open=\(.key)))"' "$1"; }
           {
-            echo "Weekly review of SonarQube Cloud's findings on \`main\`, for $today."
+            echo "Weekly review of SonarQube Cloud's findings on \`develop\`, for $today."
             echo
-            echo "**Quality gate on main:** $(jq -r '.projectStatus.status' gate.json)"
+            echo "**Quality gate on develop:** $(jq -r '.projectStatus.status' gate.json)"
+            echo
+            # Say which analysis this is, and warn when it's missing or older than a week (develop hasn't been scanned).
+            analysed=$(jq -r '.analyses[0].date // empty' analyses.json)
+            revision=$(jq -r '.analyses[0].revision // empty' analyses.json)
+            if [ -z "$analysed" ]; then
+              echo "> [!WARNING]"
+              echo "> **No analysis of \`develop\` was found, so this report is incomplete.** Check the SonarQube Cloud job in \`sonar.yml\`."
+            else
+              echo "**Analysis:** $analysed, commit \`${revision:0:7}\`."
+              if [ "$(date -u -d "$analysed" +%s)" -lt "$(date -u -d '8 days ago' +%s)" ]; then
+                echo
+                echo "> [!WARNING]"
+                echo "> **This analysis is more than a week old**, so the findings below may be stale. Check that pushes to \`develop\` are still scanned."
+              fi
+            fi
             echo
             echo "| Vulnerabilities | Bugs | Hotspots to review | Code smells | Coverage | Duplication | Technical debt |"
             echo "|---|---|---|---|---|---|---|"
@@ -54,7 +71,7 @@ jobs:
             echo
             echo "### 2. Security hotspots to review"
             if [ "$(jq '.hotspots | length' hotspots.json)" -gt 0 ]; then
-              jq -r --arg id "$KEY" '.hotspots[] | "- [ ] **\(.vulnerabilityProbability)** \(.message) — `\(.component | split(":")[1]):\(.line // "")` ([review](https://sonarcloud.io/project/security_hotspots?id=\($id)&branch=main&hotspots=\(.key)))"' hotspots.json
+              jq -r --arg id "$KEY" '.hotspots[] | "- [ ] **\(.vulnerabilityProbability)** \(.message) — `\(.component | split(":")[1]):\(.line // "")` ([review](https://sonarcloud.io/project/security_hotspots?id=\($id)&branch=develop&hotspots=\(.key)))"' hotspots.json
             else echo "None."; fi
             echo
             echo "### 3. Major code smells (blocker, critical, major)"

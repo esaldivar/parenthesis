@@ -1,0 +1,36 @@
+name: PR milestones
+
+# #140, report-only (owner decision, October 20, 2026): explains which milestone a PR inherits from its tracking issues,
+# and warns when they disagree or point at another release. It never fails a PR and never changes one: read-only
+# permissions, and PR_MILESTONE_MODE stays "report" until the owner approves automatic assignment after testing.
+# Turning on "apply" also needs pull-requests: write and issues: write; blocking needs a separate, reviewed ruleset change.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review, milestoned, demilestoned]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: pr-milestones-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    name: PR milestone (report-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # pull_request_target runs from the default branch, and checkout takes that trusted commit. Never check out
+      # or run the PR head, and don't set a ref from event data (SonarQube githubactions:S7631).
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+      - name: Report the PR's inherited milestone
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_MILESTONE_MODE: report
+        run: node .github/scripts/pr-milestones.mjs

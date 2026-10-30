@@ -79,7 +79,8 @@ that points back here.
   - [x] Owner put the key in the dev Key Vault and app settings (`places-api-key`, `Places__ApiKey`,
     `Places__DailyLimit=300`; October 29, 2026, Succeeded).
   - [x] Owner set a $1 alert-only budget (all services; spend caps aren't available for Places), October 29, 2026.
-  - [ ] Owner: try suggestions on `develop` once #353 and #356 are released there
+  - [x] Owner: try suggestions on `develop` once #353 and #356 are released there. Confirmed working October 29,
+    2026, after #360/#363 fixed the Pacific-day lookup in the chiseled image (release PR #362).
     ([runbook](docs/runbooks/google-places-suggestions.md), "Check it works").
   - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
     anywhere (`docs/design/reviews/issue-354/`).
@@ -102,14 +103,16 @@ that points back here.
   failures in the new mobile recovery scenarios. Correct Cancel URL, displayed date and empty-week fixture
   assumptions; preserve mutation, focus, date and DST assertions. The gate remains fail-closed. Extend the job
   and global timeout to 60 and 48 minutes respectively so a full run and diagnostics can complete.
-  - [ ] Run the actual release candidate with all profiles, verify the results and review failed traces.
+  - [x] Run the actual release candidate with all profiles, verify the results and review failed traces. Release PR
+    #362's gate (run 40868443190) passed 259/259 on candidate `9052a9b` in all five profiles.
   - [ ] Verify selected palette cards in light/dark browser views; real-device and screen-reader checks remain open.
 
 - [ ] **PR #321 remaining review and Playwright recovery (#255, #261, #278, #279).** Selected Add cards use a
   distinct tinted fill; palette keys are typed with documented aliases; dashboard palette mapping replaces shadowed
   subcategory fills; historical unknown-parent fallback differs from Unavailable. Prior #322 raw child-link fix verified.
   - [x] Frontend lint, 605 tests and production build; E2E typecheck, 8 report-policy tests and 254 discovered executions.
-  - [ ] Run the exact release candidate in Chromium/WebKit after review. Time fields now use accessible labels;
+  - [x] Run the exact release candidate in Chromium/WebKit after review (later candidates include it; #362's gate
+    passed 259/259 in all five profiles). Time fields now use accessible labels;
     slot targeting follows the visible layout and waits for loaded controls. Action/navigation/global timeouts bound
     failures while retaining the gate and diagnostic time. No full browser execution claimed locally (Docker/.NET absent).
   - [ ] Verify selected/unselected controls and unknown-parent fallback visually in both themes; real screen reader and
@@ -696,6 +699,13 @@ that points back here.
   form, and the password goes back to hidden after submitting. Use the shared form components; check both themes and
   320px.
 
+- [x] **Light-mode visibility (#209, October 30, 2026).** Category-tinted calendar item edges (at least 3:1 on the
+  surface), a `--color-divider` hairline token for grid, hour and card lines, and a clearer selected state. Dark mode
+  is visually unchanged. Before/after captures: `docs/design/reviews/issue-209/`.
+  - [ ] Owner retest on development: phone and desktop in light mode, with the original "too bright, hard to see"
+    complaint in mind. If light mode still feels too bright, the deferred option is dimming the ivory canvas and
+    adding card hairlines (owner chose not to include it on October 30, 2026).
+
 ## Calendar follow-ups
 
 - [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted
@@ -840,18 +850,107 @@ that points back here.
 - Follow-up #279: the repaired accessibility matrix passes 25/25 executions and all 270 required scans on candidate `bf0aa3f`, after the fast-selection close fix, 24px overflow minimum and deterministic whole-document scroll protocol. [Exact evidence and limits](docs/runbooks/calendar-accessibility-evidence-2026-10-25.md) retain the prior 13/12 failure result, 343 incomplete rule results and full-release/manual/screen-reader gaps. Final-head CI remains separate; later mock cleanup and absent-animation-API guard are not relabelled as the browser-tested SHA.
 
 ### #281 — Real screen-reader environment prerequisite
-- Windows NVDA is installed; Guidepup starts/connects/stops, but the synthetic control announcement is absent in this agent session. macOS/VoiceOver is unavailable. Both acceptance paths remain blocked, not passed.
+- [ ] #364 full website PR check: validate all five tests on the hosted Windows merge candidate using private
+  PostgreSQL 17.11/Mailpit and loopback HTTPS. Verify `NVDA accessibility gate` reports the actual result and
+  retain full speech/source/version evidence. Owner configures and verifies the required check on `release/*`;
+  [runbook](docs/runbooks/nvda-website-ci.md). No protection change or hosted full-suite pass is implied by code.
+- [ ] #364: Validate the separate optional `NVDA runner probe` on GitHub-hosted Windows using the
+  existing smoke test. Record setup/tool versions, actual speech artifacts, repeated passes and a
+  controlled-negative/restored pass before building full-app CI or proposing a required check.
+  Existing release gates and branch protections remain unchanged; local NVDA results are not CI evidence.
+- [x] Frontend timeout follow-up: cap Angular/Vitest workers at two (one on hosts with at most two
+  available cores), preserving the default five-second deadline, isolation and every test/axe assertion.
+  On this 12-core Windows host, the unchanged runner passed 678/678 once but timed out in a different
+  test on repeat (677/678), consistent with worker contention rather than five deterministic defects.
+  With the cap, two full runs passed 678/678 across 49 files (39.16s and 46.38s); frontend lint passed.
+- Owner Windows run on `86f6f87`: navigation and event-dialog NVDA journeys passed (2/4 app tests).
+  Activity save speech was captured but the assertion incorrectly required a quote; forms stopped on an
+  incorrect aria-invalid assumption for an empty required Material input.
+- Owner Windows rerun on `9b736e1` (October 29, 2026, 6:38 AM Central): corrected calendar-save and forms
+  journeys passed, 2/2 in 4.0 minutes, including the saved-event check. All four app journeys now have passing
+  NVDA results across two runs; this is not a single full-suite run on one revision.
+- [x] Owner reported all five Guidepup tests passed together on Windows/NVDA on October 29, 2026,
+  after restoring the assertion (checkout `387a415`; local last-run status also passed). Covers the smoke,
+  navigation, forms, calendar saving and event dialog. This is owner-run evidence, not an agent NVDA execution.
+- [x] Controlled negative on the same test code: substituted the expected Notifications speech with
+  `NEGATIVE CONTROL LABEL MUST BE ABSENT`; the speech assertion failed with the actual captured
+  `Notifications, menu button, collapsed, sub Menu`. Original file restored automatically; full suite then passed.
+- [ ] Archive sanitized full-run and negative-control attachments with OS/browser/NVDA/Guidepup versions;
+  repeat for stability. macOS VoiceOver, mobile readers and wider Calendar/approval coverage remain unverified.
+  Required release gate unchanged; no merge, deployment or cross-platform acceptance is implied.
+- Historical agent-session speech-capture failure is superseded by the owner's passing Windows smoke and app runs
+  above. macOS/VoiceOver remains unavailable; evidence archival and repeated stability runs remain open.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
 
 ### #278/#279 — Coverage follow-up (October 26, 2026)
 - Verified historical release PR #315 browser run 40316038202: 179 passing executions on merge candidate `92be9b9e962751f6e6fa3c273d6cb62836eae46e`; original no-run blocker notes above are historical.
 - Added touch Edit/Swap invalid/corrected/cancel checks, Home/Calendar slot moving/clearing, Chicago spring/fall persisted edit boundaries and controlled overflow detection/restoration. Removed the remaining #259 viewport override.
 - Added rendered save-error/retry/toast and repeated Month occurrence date/focus coverage. Required accessibility scan states now include these paths; report policy rejects mobile scans recorded at desktop width.
-- [ ] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code.
-- [ ] Complete remaining manual/incomplete axe review, ambiguous/nonexistent-time acceptance; retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
+- [x] Execute these new scenarios against their exact release merge candidate in all five profiles; the older green run does not verify new code. Done: #362's gate run 40868443190, 259/259 on `9052a9b` (desktop 71; each mobile profile 47, including 9 recovery and 4 acceptance scenarios).
+- [x] Ambiguous/nonexistent-time browser coverage (#278, October 29): typed Chicago fall-back 1:30 AM saves the first occurrence and spring-forward 2:30 AM saves 3:30 AM, on every profile.
+- [ ] Complete remaining manual/incomplete axe review (#279); retain real screen-reader/physical-device limits. No issue closure, merge or deployment.
+- [x] Controlled product negatives (#278, October 29, local Chromium 320/390): a 600px toast and a nonexistent time moved to 1:30 AM failed exactly the 6 expected executions; restored code passed 171/171 locally (desktop and both Chromium phone widths). WebKit couldn't be downloaded in the agent sandbox; the CI-level red-gate check stays under #341 below. See the runbook.
 - Added past/today stale-link recovery, repeated December/January occurrence names and both continued Month segments; these additions also await actual browser execution.
 
+### #279 — Approvals states and published violations (October 29, 2026)
+- Added the required `approvals-decline` scan state (open decline form, cancelled without deciding, verified by API),
+  Approvals pending/declined labels, and Week/List assertions that pending/declined proposals are never named Confirmed.
+- Release summary now lists each violation's rule ID, state, profile, SHA and sanitized selectors, including failed
+  executions; any violation blocks. New report-policy test added. Runbook (`docs/runbooks/`) was out of scope for
+  this run, so `tests/e2e/README.md` records the additions.
+- [x] Run `npm run typecheck` and `node --test scripts/summary-policy.test.mjs` in `tests/e2e/` (October 29, after
+  merging `release/0.3.0`): typecheck clean, report policy 9/9.
+- [x] Local browser run (October 29): `accessibility.spec.ts` 33/33 on `chromium`, `mobile-chromium-320` and
+  `mobile-chromium-390`; `approvals` and `approvals-decline` scanned in both themes on each, with 0 violations.
+- [ ] Execute the new states in all five profiles and both themes on the exact release candidate (WebKit runs in CI only;
+  the agent sandbox can't download it).
+- [ ] Copy the README additions into the runbook's rendered-accessibility section and coverage map.
+- [x] **Approvals focus loss fixed (#369)** (October 29): keyboard Cancel on the Decline form dropped focus to `<body>`, and
+  Approve/Decline/Withdraw removed the focused button. Cancel now returns focus to that item's Decline button; a
+  decision moves focus to the Waiting heading (the toast still never takes focus). Unit tests (4, failing on the old
+  code) and a release-gate assertion after Cancel; accessibility spec 33/33 locally on Chromium desktop/320/390.
+
 - [ ] **Event illustration themes #74:** all eleven motif directions approved, including the nine-theme light/dark board; default-On device-local per-account toggle, deterministic title matching and reusable artwork integration implemented in candidate; rendered visual/accessibility review and cross-device preference synchronization remain. 638 frontend tests, lint and production build pass. Follow-on implementation assigned to ChatGPT. See `docs/design/handoffs/EVENT_THEMES_74.md`.
+
+- [ ] **Calendar header polish (#372, October 29).** Material buttons with an icon centre it with the label (Add,
+  Request swap, Add item); the Switch profile pill left the top bar (account menu and Settings → Devices keep it);
+  both bottom navigations sit above page content (z-index 10), so Month bars scroll under them. The new
+  `calendar-header.spec.ts` failed on the old build ("+" 4.5px off "Add"; a tap on the navigation hit the Month bar)
+  and passes 12/12; full suite 183/183 locally on Chromium desktop/320/390; 703 unit tests.
+  - [x] WebKit profiles in the release gate (#374's gate passed in all five profiles).
+  - [ ] Owner: check the Calendar header and Month view on the iPhone and desktop in both themes.
+- [ ] **Popups clear the bottom navigation (#327, October 29).** Shared rule for every CDK connected popup: the
+  navigation (safe-area inset included) is the screen's bottom edge, positions aren't locked so popups flip upward
+  after resize/rotation, and the transparent backdrop stops at the navigation so one tap closes the popup and
+  navigates. Modal dialogs unchanged. Guidance in `docs/design-system.md`. Unit tests 4/4; new
+  `popups-clear-navigation.spec.ts` failed on the old build (picker bottom 584px vs navigation top 544px; navigation
+  tap swallowed) and passes 12/12; full suite 183/183 locally on Chromium desktop/320/390.
+  - [x] WebKit profiles in the release gate (#371's gate passed in all five profiles).
+  - [ ] Owner: on a real iPhone (safe-area inset, Safari bars), open a date picker low on Add activity: it sits above
+    the navigation, every date is tappable, and one tap on the navigation navigates.
+
+- [ ] **PR milestones from tracking issues (#140), report-only.** `pr-milestones.yml` reports the milestone a PR
+  inherits, and warns on conflicting issues, a different PR milestone, or a milestone from another release; rollups
+  are only summarised. It never blocks or writes. 19 script tests. See `docs/runbooks/pr-issue-links.md#pr-milestones-140`.
+  - [ ] Owner: get the workflow onto `main` (normal release sequence), then check reports on real PRs and record runs in #140.
+  - [ ] Owner decision later: automatic assignment (apply mode + write permissions), then optionally a required check.
+  - [ ] actionlint couldn't be downloaded in the agent sandbox; CI's workflow checks cover the YAML.
+
+- [ ] **PR risk report (#141), report-only.** Phase 1 inventory and gaps in `docs/runbooks/pr-risk-audit.md`;
+  `pr-risk.yml` classifies changed files (never labels) into security-review, database-change (destructive flagged),
+  breaking-change and high-risk. 14 script tests; probed on real history (#370/#374 none, #345 security/breaking/high).
+  - [ ] Owner: once on `main`, check reports on representative PRs and record false positives and misses in #141.
+  - [ ] Owner decisions later: write the four labels (needs pull-requests: write); phase 3 enforcement via ruleset.
+  - [ ] Owner: set the **Copilot release review** ruleset back to Disabled (still Active after #362 merged).
+
+- [ ] **Sonar analyses develop (#373, option A, owner decision October 29).** `sonar.yml` scans pushes to `develop`
+  and PRs into it; PRs into and pushes to `main` reuse `develop`'s latest analysis only when the git trees are
+  identical (otherwise the gate fails), and recheck it didn't change mid-run. Sonar Sunday reports `develop`.
+  Production evidence rule unchanged. 43 gate tests (7 new), 80 with production-security.
+  - [ ] Owner: confirm SonarQube Cloud's main branch now reads `develop` (Administration → Branches and Pull Requests).
+  - [ ] Verify on real runs: the first push to `develop` scans; the next `develop` → `main` PR shows the reuse step.
+  - [ ] Owner decision: a hotfix path (hotfix PRs straight into `main` are now blocked by the gate until the fix is on `develop`).
+  - [ ] Relate fresh `develop` findings to #65, #56 and #294; don't close those just because a scan ran.
 
 ## Earlier Playwright feedback (#341)
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.

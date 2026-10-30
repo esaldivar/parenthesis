@@ -13,6 +13,8 @@
     "trace": "playwright show-trace"
   },
   "devDependencies": {
+    "@guidepup/guidepup": "^0.38.0",
+    "@guidepup/playwright": "^0.21.0",
     "@playwright/test": "1.63.0",
     "@types/node": "24.19.2",
     "axe-core": "4.14.0",

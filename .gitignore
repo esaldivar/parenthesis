@@ -17,6 +17,8 @@ dist/
 tests/e2e/playwright-report/
 tests/e2e/test-results/
 tests/e2e/results/
+tests/e2e/guidepup-report/
+tests/e2e/guidepup-results/
 
 # IDEs / OS
 .idea/

@@ -12,6 +12,7 @@ import {
   isAccepted,
   isOpen,
   main,
+  boundAnalysis,
   report,
   sonarClient,
   waitForAnalysis,
@@ -87,8 +88,18 @@ function fakeSonar(data = {}, { fail = {} } = {}) {
         return json(200, { issues: list, paging: { pageIndex: 1, pageSize: 500, total: list.length } });
       }
       case "hotspots/search": {
+        // Like SonarQube Cloud, which rejects any other resolution filter with HTTP 400.
+        if (q.resolution && !["FIXED", "SAFE"].includes(q.resolution)) {
+          return json(400, { errors: [{ msg: `Value of parameter 'resolution' (${q.resolution}) must be one of: [FIXED, SAFE]` }] });
+        }
         const list = (data.hotspots?.[scope] ?? []).filter((h) => h.status === q.status && (!q.resolution || h.resolution === q.resolution));
         return json(200, { hotspots: list, paging: { pageIndex: 1, pageSize: 500, total: list.length } });
+      }
+      case "project_analyses/search": {
+        // Newest first, like SonarQube. A list of answers lets a test show develop moving on between calls.
+        const answers = data.analyses ?? [[{ key: "AN1", revision: "a".repeat(40) }]];
+        const n = calls.filter((c) => c.path === path).length - 1;
+        return json(200, { analyses: answers[Math.min(n, answers.length - 1)], paging: { pageIndex: 1, pageSize: 1, total: 1 } });
       }
       case "hotspots/show":
         return json(200, data.hotspotShow?.[q.hotspot] ?? { key: q.hotspot, comment: data.hotspotComments?.[q.hotspot] ?? [] });
@@ -244,6 +255,9 @@ test("hotspots reviewed as Safe or Acknowledged need a comment", async () => {
   assert.equal(justified.passed, true, justified.blocking.join("\n"));
   const fixedHotspot = await gate(fakeSonar({ hotspots: { main: [hotspot({ status: "REVIEWED", resolution: "FIXED" })] } }));
   assert.equal(fixedHotspot.passed, true);
+  const acknowledged = await gate(fakeSonar({ hotspots: { main: [hotspot({ status: "REVIEWED", resolution: "ACKNOWLEDGED" })] } }));
+  assert.equal(acknowledged.passed, false);
+  assert.match(acknowledged.blocking.join("\n"), /reviewed as \*\*ACKNOWLEDGED\*\*/);
 });
 
 // ---------- Failing safely ----------
@@ -461,6 +475,74 @@ test("sonar.yml: the gate job can't be skipped, reads this run's analysis and ke
   assert.match(gateJob, /PR_NUMBER: \$\{\{ github\.event\.pull_request\.number \}\}/);
   assert.match(gateJob, /run: node \.github\/scripts\/sonar-release-gate\.mjs\n/);
   assert.doesNotMatch(gateJob, /continue-on-error/);
-  assert.match(yml, /pull_request:\n    branches: \[main\]/, "runs on every PR into main");
+  assert.match(yml, /pull_request:\n    branches: \[develop, main\]/, "runs on every PR into develop and main (#373)");
+  assert.match(yml, /push:\n    branches: \[develop, main\]/);
   assert.match(yml, /ce-task-id: \$\{\{ steps\.report\.outputs\.ce-task-id \}\}/);
+  // #373: anything going to main reuses develop's analysis (bound mode), and the gate is told which mode applies.
+  assert.match(yml, /SONAR_PRIMARY_BRANCH: develop\n/);
+  assert.match(gateJob, /SONAR_RELEASE_MODE: \$\{\{ needs\.sonar\.outputs\.mode \}\}/);
+  assert.match(gateJob, /BASE_BRANCH: \$\{\{ env\.SONAR_PRIMARY_BRANCH \}\}/);
+  const scanJob = yml.slice(yml.indexOf("\n  sonar:"), yml.indexOf("\n  release-gate:"));
+  assert.match(scanJob, /elif \[ "\$TARGET" = "main" \]; then echo "mode=bound"/);
+  assert.match(scanJob, /else echo "::error::Unexpected target branch/, "an unknown target fails instead of skipping the scan");
+  const steps = scanJob.split("\n      - ").slice(1);
+  const scanSteps = steps.filter((st) => /^(uses: actions\/setup|name: (Install|Frontend tests|Begin|Build|Backend tests|End analysis|Report the analysis))/.test(st));
+  assert.equal(scanSteps.length, 10);
+  for (const st of scanSteps) assert.match(st, /if: steps\.mode\.outputs\.mode != 'bound'/, st.split("\n")[0]);
+  assert.match(scanJob, /SONAR_BIND_ONLY: "true"/);
+});
+
+// ---------- Bound mode: releases into GitHub's main reuse develop's analysis (#373) ----------
+
+const TREE = "b".repeat(40);
+const sameTree = () => TREE;
+const boundEnv = { SONAR_TOKEN: "synthetic-token", SONAR_PROJECT_KEY: KEY, SONAR_JOB_RESULT: "success", SONAR_RELEASE_MODE: "bound", BASE_BRANCH: "develop", PR_NUMBER: "120" };
+const boundDeps = (sonar, over = {}) => ({ client: sonar.client, candidateTree: TREE, treeOf: sameTree, ...over });
+
+test("bound: a release whose code is identical to develop's latest analysis is checked against that analysis", async () => {
+  const sonar = fakeSonar();
+  assert.equal(await main(boundEnv, boundDeps(sonar)), true);
+  const gateCall = sonar.calls.find((c) => c.path === "qualitygates/project_status");
+  assert.equal(gateCall.q.analysisId, "AN1");
+  const issueCalls = sonar.calls.filter((c) => c.path === "issues/search");
+  assert.ok(issueCalls.length > 0 && issueCalls.every((c) => c.q.branch === "develop" && !c.q.pullRequest), "develop's findings, never a PR scope");
+  assert.ok(!sonar.calls.some((c) => c.path === "ce/task"), "no scan of main is expected");
+});
+
+test("bound: different code (a hotfix, or main not synced into develop) blocks, never reusing other code's results", async () => {
+  const sonar = fakeSonar();
+  await assert.rejects(boundAnalysis(sonar.client, { projectKey: KEY, branch: "develop", candidateTree: TREE, treeOf: () => "c".repeat(40) }), /isn't identical.*A hotfix must reach develop first/);
+  assert.equal(await main(boundEnv, boundDeps(fakeSonar(), { treeOf: () => "c".repeat(40) })), false);
+});
+
+test("bound: no analysis, no commit on it, an unreadable commit or tree all block", async () => {
+  for (const analyses of [[[]], [[{ key: "AN1" }]], [[{ key: "AN1", revision: "not-a-sha" }]]]) {
+    assert.equal(await main(boundEnv, boundDeps(fakeSonar({ analyses }))), false);
+  }
+  assert.equal(await main(boundEnv, boundDeps(fakeSonar(), { treeOf: () => null })), false);
+  assert.equal(await main(boundEnv, boundDeps(fakeSonar(), { candidateTree: "" })), false);
+});
+
+test("bound: develop moving on during the check blocks", async () => {
+  const moved = fakeSonar({ analyses: [[{ key: "AN1", revision: "a".repeat(40) }], [{ key: "AN2", revision: "d".repeat(40) }]] });
+  assert.equal(await main(boundEnv, boundDeps(moved)), false);
+});
+
+test("bound: the same policy applies: an open vulnerability or a failing quality gate on develop blocks", async () => {
+  assert.equal(await main(boundEnv, boundDeps(fakeSonar({ issues: { main: [vulnerability()] } }))), false);
+  assert.equal(await main(boundEnv, boundDeps(fakeSonar({ gate: { status: "ERROR", conditions: [] } }))), false);
+});
+
+test("bound, bind only (the SonarQube Cloud job on main): verifies identical code and checks nothing else", async () => {
+  const sonar = fakeSonar({ issues: { main: [vulnerability()] } });
+  assert.equal(await main({ ...boundEnv, SONAR_BIND_ONLY: "true" }, boundDeps(sonar)), true);
+  assert.ok(sonar.calls.every((c) => c.path === "project_analyses/search"));
+  assert.equal(await main({ ...boundEnv, SONAR_BIND_ONLY: "true" }, boundDeps(fakeSonar(), { treeOf: () => "c".repeat(40) })), false);
+});
+
+test("bound: an unknown mode or a failed bind job blocks without calling SonarQube", async () => {
+  const sonar = fakeSonar();
+  assert.equal(await main({ ...boundEnv, SONAR_RELEASE_MODE: "trust-me" }, boundDeps(sonar)), false);
+  assert.equal(await main({ ...boundEnv, SONAR_JOB_RESULT: "skipped" }, boundDeps(sonar)), false);
+  assert.equal(sonar.calls.length, 0);
 });

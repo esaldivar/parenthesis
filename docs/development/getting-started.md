@@ -87,6 +87,11 @@ npm run build
 Frontend checks include ESLint template accessibility rules, Vitest, axe-core and theme-token contrast checks.
 Automated checks do not replace actual device or screen-reader testing.
 
+The frontend unit runner uses `vitest-base.config.mts` to cap Angular/jsdom workers at two
+(one on hosts with at most two available cores). This keeps DOM rendering and axe scans from
+starving each other on busy desktops. Test isolation, accessibility assertions and the default
+five-second test timeout remain unchanged; `npm test` and `npm run test:watch` use the same cap.
+
 Read [CONTRIBUTING.md](../../CONTRIBUTING.md) and [the development workflow](../development-workflow.md)
 for checks appropriate to your change, the active release branch and PR requirements.
 The [API reference](api-reference.md) covers health checks, OpenAPI, authentication and errors.

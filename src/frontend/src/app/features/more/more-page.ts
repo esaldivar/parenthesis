@@ -30,12 +30,12 @@ import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation'
       margin: 0;
       padding: 0;
       background: var(--color-surface);
-      border: 1px solid var(--color-surface-soft);
+      border: 1px solid var(--color-divider);
       border-radius: var(--radius-card);
       overflow: hidden;
     }
     li + li {
-      border-top: 1px solid var(--color-surface-soft);
+      border-top: 1px solid var(--color-divider);
     }
     a {
       display: flex;

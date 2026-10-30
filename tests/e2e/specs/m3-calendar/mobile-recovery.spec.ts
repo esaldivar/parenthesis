@@ -215,4 +215,41 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
       await evidence(page, info, `dst-${transition.name.replace(' ', '-')}`);
     });
   }
+
+  // The times the transitions above step around. The app's rule (time.ts fromFamilyLocal): a time that happens twice
+  // is the first one; a time that doesn't exist moves forward by the gap. Typed on the touch Edit form, then reopened.
+  const wallTimes = [
+    { name: 'spring forward', month: 2, day: sunday(2, 2), before: '-06:00', kind: 'nonexistent',
+      typed: ['02:30', '04:00'], shown: ['03:30', '04:00'], utc: ['T08:30', 'T09:00'] },
+    { name: 'fall back', month: 10, day: sunday(10, 1), before: '-05:00', kind: 'ambiguous',
+      typed: ['01:30', '02:30'], shown: ['01:30', '02:30'], utc: ['T06:30', 'T08:30'] },
+  ] as const;
+  for (const wall of wallTimes) {
+    test(`typing a ${wall.kind} Chicago ${wall.name} time saves the documented instant (#278)`, async ({ page, family }, info) => {
+      const day = `${year}-${String(wall.month + 1).padStart(2, '0')}-${String(wall.day).padStart(2, '0')}`;
+      // Starts well before the change, so the fixture itself never uses a moved or repeated time.
+      const path = `/api/families/${family.familyId}/calendar/events`;
+      const event = await family.dad.json<{ id: string }>(family.dad.post(path, {
+        category: 'Activity', title: `DST ${wall.kind}`, childIds: [family.kaiId],
+        startsAt: new Date(`${day}T00:00:00${wall.before}`).toISOString(),
+        endsAt: new Date(`${day}T00:30:00${wall.before}`).toISOString(),
+      }));
+      await signIn(page, family.dad.email);
+      await page.goto(`/calendar/${event.id}/edit`);
+      await expect(page.getByLabel('Start time', { exact: true })).toHaveValue('00:00');
+      await page.getByLabel('End time', { exact: true }).fill(wall.typed[1]);
+      await page.getByLabel('Start time', { exact: true }).fill(wall.typed[0]);
+      const response = page.waitForResponse(r => r.url().endsWith(`${path}/${event.id}`) && r.request().method() === 'PATCH');
+      await activate(page.getByRole('button', { name: 'Save changes', exact: true }), info);
+      expect((await response).status()).toBe(200);
+
+      const saved = await family.dad.json<{ startsAt: string; endsAt: string }>(family.dad.get(`${path}/${event.id}`));
+      expect(new Date(saved.startsAt).toISOString()).toBe(`${day}${wall.utc[0]}:00.000Z`);
+      expect(new Date(saved.endsAt).toISOString()).toBe(`${day}${wall.utc[1]}:00.000Z`);
+      await page.goto(`/calendar/${event.id}/edit`);
+      await expect(page.getByLabel('Start time', { exact: true })).toHaveValue(wall.shown[0]);
+      await expect(page.getByLabel('End time', { exact: true })).toHaveValue(wall.shown[1]);
+      await evidence(page, info, `dst-${wall.kind}-time`);
+    });
+  }
 });

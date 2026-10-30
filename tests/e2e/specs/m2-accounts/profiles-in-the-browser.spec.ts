@@ -38,8 +38,11 @@ test.describe('Profiles, PINs and approvals in the browser', { tag: '@m2' }, () 
         await expect(page.getByRole('navigation').first()).toBeVisible();
       });
 
-      await test.step('the header’s Switch profile button shows who can use this device', async () => {
-        await page.getByRole('banner').getByRole('button', { name: 'Switch profile' }).click();
+      await test.step('Switch profile, in the account menu rather than the top bar, shows who can use this device', async () => {
+        // #372: no Switch profile button in the top bar; it lives in the account menu and in Settings.
+        await expect(page.getByRole('banner').getByRole('button', { name: 'Switch profile' })).toHaveCount(0);
+        await page.getByRole('banner').getByRole('button', { name: /account menu/ }).click();
+        await page.getByRole('menuitem', { name: 'Switch profile' }).click();
         await expect(page.getByRole('heading', { level: 1, name: 'Who’s using Parenthesis?' })).toBeVisible();
         await expect(page.getByRole('link', { name: /Dad/ })).toBeVisible();
       });

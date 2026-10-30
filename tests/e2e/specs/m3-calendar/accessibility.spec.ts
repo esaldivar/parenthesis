@@ -172,6 +172,15 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
         await expect(page.getByRole('button', { name: /Accessibility practice/ }).first()).toBeVisible();
         await expect(page.locator('body')).not.toContainText('PRIVATE_A11Y_SENTINEL');
         await scan(page, info, `${theme}-${view}`);
+        // A pending or declined proposal must never be announced as a confirmed calendar change. Month shares this
+        // Tuesday with three other items and may fold them into "+N more", so its "Proposed" name is unit-tested.
+        if (view !== 'month') {
+          for (const [title, status] of [['Pending school meeting', /Pending approval/], ['Declined school meeting', /Declined/]] as const) {
+            const item = page.getByRole('button', { name: new RegExp(title) }).first();
+            await expect(item).toHaveAccessibleName(status);
+            await expect(item).not.toHaveAccessibleName(/Confirmed/);
+          }
+        }
         const trigger = page.getByRole('button', { name: /Accessibility practice/ }).first();
         if (view === 'month') await expect(trigger).toHaveAccessibleName(new RegExp(`${label(1)}`));
         await trigger.focus();
@@ -209,8 +218,24 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
         await scan(page, info, `${theme}-${form}-corrected`);
       }
       await page.goto('/approvals');
+      const waiting = page.locator('section[aria-labelledby="waiting-heading"] li', { hasText: 'Pending school meeting' });
+      await expect(waiting).toContainText('Waiting for you');
+      await expect(page.locator('section[aria-labelledby="history-heading"] li', { hasText: 'Declined school meeting' })).toContainText('Declined');
       await expect(page.getByRole('button', { name: 'Approve', exact: true }).first()).toBeVisible();
       await scan(page, info, `${theme}-approvals`);
+      // Open decline form: scanned, then cancelled by keyboard without deciding the synthetic proposal.
+      await waiting.getByRole('button', { name: 'Decline', exact: true }).press('Enter');
+      const reason = waiting.getByRole('textbox', { name: 'Tell your co-parent why (optional)' });
+      await expect(reason).toBeVisible();
+      await reason.fill('Synthetic draft reason');
+      await scan(page, info, `${theme}-approvals-decline`);
+      await waiting.getByRole('button', { name: 'Cancel', exact: true }).press('Enter');
+      await expect(reason).toHaveCount(0);
+      // Closing the form returns focus to the Decline button that opened it, never to the page body.
+      await expect(waiting.getByRole('button', { name: 'Decline', exact: true })).toBeFocused();
+      await expect(waiting.getByRole('button', { name: 'Approve', exact: true })).toBeVisible();
+      const stillPending = await family.dad.json<{ id: string }[]>(family.dad.get(`/api/families/${family.familyId}/approvals`));
+      expect(stillPending.map(r => r.id)).toContain(proposal.changeRequestId);
     });
 
     test(`forms, picker, invalid recovery and deletion focus, ${theme}`, async ({ page, family }, info) => {

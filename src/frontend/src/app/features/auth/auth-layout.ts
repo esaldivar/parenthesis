@@ -50,7 +50,7 @@ import { Logo } from '../../shared/brand/logo';
       margin-inline: auto;
       padding: var(--space-6) var(--space-4);
       background: var(--color-surface);
-      border: 1px solid var(--color-surface-soft);
+      border: 1px solid var(--color-divider);
       border-radius: var(--radius-card);
     }
     @media (min-width: 480px) {

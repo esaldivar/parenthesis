@@ -65,6 +65,9 @@ const pairs: [foreground: string, background: string, minimum: number][] = [
   ['color-text', 'color-parenting-bg', TEXT],
   ['color-text-secondary', 'color-parenting-bg', TEXT],
   ['color-text', 'color-avatar-parent', TEXT],
+  // Selected nav items and segments (#209).
+  ['color-text', 'color-selected', TEXT],
+  ['color-action', 'color-selected', TEXT],
 ];
 
 describe.each(['light', 'dark'] as const)('%s theme tokens', (mixin) => {
@@ -85,6 +88,25 @@ describe.each(['light', 'dark'] as const)('%s theme tokens', (mixin) => {
       expect(selected).not.toBe(bg);
       expect(contrast(fg, selected), `${key} selected text`).toBeGreaterThanOrEqual(TEXT);
     }
+  });
+
+  it('gives every calendar item a category-tinted edge that stands out from the grid (#209)', () => {
+    const percent = Number(/--calendar-item-edge-mix:\s*(\d+)%/.exec(
+      new RegExp(`@mixin ${mixin} \\{([\\s\\S]*?)\\n\\}`).exec(tokensScss)?.[1] ?? '')?.[1]);
+    expect(percent).toBeGreaterThan(0);
+    for (const key of ['parent-a', 'parent-b', 'parenting', 'activity', 'family', 'task', 'reminder', 'unavailable']) {
+      const bg = tokens[`color-calendar-${key}-bg`], fg = tokens[`color-calendar-${key}-fg`];
+      const edge = '#' + [1, 3, 5].map(i => Math.round(
+        parseInt(fg.slice(i, i + 2), 16) * percent / 100 + parseInt(bg.slice(i, i + 2), 16) * (1 - percent / 100),
+      ).toString(16).padStart(2, '0')).join('');
+      expect(contrast(edge, tokens['color-surface']), `${key} edge`).toBeGreaterThanOrEqual(NON_TEXT);
+    }
+  });
+
+  it('keeps grid and card dividers visible on white and on the canvas (#209)', () => {
+    // Hairlines, not control boundaries: visibly there, but quieter than the 3:1 outline.
+    expect(contrast(tokens['color-divider'], tokens['color-surface'])).toBeGreaterThanOrEqual(1.25);
+    expect(contrast(tokens['color-divider'], tokens['color-canvas'])).toBeGreaterThanOrEqual(1.25);
   });
 
   it.each(pairs)('%s on %s meets %s:1', (foreground, background, minimum) => {

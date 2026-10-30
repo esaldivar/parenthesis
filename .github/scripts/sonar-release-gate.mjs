@@ -8,9 +8,16 @@
 //   SONAR_PROJECT_KEY  Project key, e.g. esaldivar_parenthesis.
 //   SONAR_CE_TASK_ID   The background task of the analysis to check (from the scanner's report-task.txt).
 //   SONAR_JOB_RESULT   Result of the analysis job ("success" expected).
-//   PR_NUMBER          The release PR. Empty after a merge to main (post-merge check of main itself).
-//   BASE_BRANCH        Defaults to main.
+//   PR_NUMBER          The PR being checked. Empty after a merge (post-merge check of the branch itself).
+//   BASE_BRANCH        SonarQube Cloud's main branch. Defaults to main; the workflow passes develop (#373).
 //   SONAR_HOST_URL     Defaults to https://sonarcloud.io.
+//   SONAR_RELEASE_MODE "bound" for releases into GitHub's main (#373): see boundAnalysis. Empty: check this run's scan.
+//   SONAR_BIND_ONLY    "true" with bound mode: only find and verify the analysis (the "SonarQube Cloud" job).
+//
+// Why bound mode (#373, owner decision October 29, 2026): on SonarQube Cloud's Free plan only the project's main
+// branch, now develop, and PRs into it can be analysed. A PR into GitHub's main (develop -> main) or a push to main
+// can't be scanned, so the gate reuses develop's latest analysis, and only when the release's code is identical to
+// that analysed commit (same git tree). Anything else, including develop moving on during the check, fails.
 //
 // Anything unexpected (missing settings, API errors, timeouts, an unknown answer) fails the gate: a release is only
 // allowed when every check positively passed.
@@ -153,6 +160,41 @@ export async function waitForAnalysis(client, taskId, {
       throw new GateError(`SonarQube Cloud didn't finish processing the analysis within ${timeoutMs / 60_000} minutes. Re-run the job.`);
     }
     await sleep(intervalMs);
+  }
+}
+
+/**
+ * Bound mode (#373): the analysis of `branch` (develop) whose code is identical to the release candidate. Takes the
+ * branch's latest analysis only, because issue and hotspot searches always answer for a branch's latest state.
+ * `treeOf(commit)` returns the commit's git tree hash, or null when it can't be read.
+ */
+export async function boundAnalysis(client, { projectKey, branch, candidateTree, treeOf }) {
+  if (!/^[0-9a-f]{40}$/.test(candidateTree ?? "")) throw new GateError("The release candidate's code tree couldn't be read.");
+  const data = await client.get("project_analyses/search", { project: projectKey, branch, ps: 1 });
+  const latest = Array.isArray(data.analyses) ? data.analyses[0] : undefined;
+  if (!latest?.key) {
+    throw new GateError(`SonarQube Cloud has no analysis of \`${branch}\`. Push to ${branch}, or re-run its Sonar workflow, first.`);
+  }
+  if (!/^[0-9a-f]{40}$/.test(latest.revision ?? "")) {
+    throw new GateError(`SonarQube Cloud's latest analysis of \`${branch}\` has no commit to compare with this release.`);
+  }
+  const analysedTree = treeOf(latest.revision);
+  if (!analysedTree) throw new GateError(`Commit ${latest.revision.slice(0, 7)}, analysed on \`${branch}\`, couldn't be read from the repository.`);
+  if (analysedTree !== candidateTree) {
+    throw new GateError(
+      `This release's code isn't identical to the code SonarQube Cloud last analysed on \`${branch}\` (commit ` +
+        `${latest.revision.slice(0, 7)}). Release exactly what ${branch} holds: bring main into ${branch} first (a sync PR), ` +
+        `or wait for ${branch}'s analysis to finish, then re-run. A hotfix must reach ${branch} first.`,
+    );
+  }
+  return { analysisId: latest.key, revision: latest.revision };
+}
+
+/** The latest analysis of `branch` is still `analysisId`: nothing newer replaced the state the searches read. */
+export async function stillLatest(client, { projectKey, branch, analysisId }) {
+  const data = await client.get("project_analyses/search", { project: projectKey, branch, ps: 1 });
+  if (data.analyses?.[0]?.key !== analysisId) {
+    throw new GateError(`A newer analysis of \`${branch}\` arrived during the check, so its results may not match this release. Re-run the job.`);
   }
 }
 
@@ -328,13 +370,13 @@ export async function evaluate({
         blocking.push(`${describe(issue, scope)} — ${noJustification(verdict, `marked **${issue.issueStatus ?? issue.resolution}**`)}`);
       }
     }
-    for (const resolution of ["SAFE", "ACKNOWLEDGED"]) {
-      for (const h of await client.all("hotspots/search", { projectKey, ...scope, status: "REVIEWED", resolution }, "hotspots")) {
-        const detail = await client.get("hotspots/show", { hotspot: h.key });
-        const verdict = hasJustification(detail.comment);
-        if (verdict !== true) {
-          blocking.push(`${hotspotLine(h, scope)} — ${noJustification(verdict, `reviewed as **${resolution}**`)}`);
-        }
+    // hotspots/search only filters resolution by FIXED or SAFE, so fetch every reviewed hotspot and skip the fixed ones.
+    for (const h of await client.all("hotspots/search", { projectKey, ...scope, status: "REVIEWED" }, "hotspots")) {
+      if (h.resolution === "FIXED") continue;
+      const detail = await client.get("hotspots/show", { hotspot: h.key });
+      const verdict = hasJustification(detail.comment);
+      if (verdict !== true) {
+        blocking.push(`${hotspotLine(h, scope)} — ${noJustification(verdict, `reviewed as **${h.resolution ?? "reviewed"}**`)}`);
       }
     }
   }
@@ -342,9 +384,11 @@ export async function evaluate({
   return { passed: blocking.length === 0, gateStatus, blocking, warnings, fixed };
 }
 
-export function report(result, { pullRequest, baseBranch = "main" }) {
+export function report(result, { pullRequest, baseBranch = "main", bound }) {
   const list = (items) => items.map((i) => `- ${i}`).join("\n");
-  const subject = pullRequest ? `release candidate (PR #${pullRequest})` : `\`${baseBranch}\` after the merge`;
+  const subject = bound
+    ? `release${pullRequest ? ` (PR #${pullRequest})` : ""}: \`${baseBranch}\`'s analysis of identical code (commit ${bound.revision.slice(0, 7)})`
+    : pullRequest ? `release candidate (PR #${pullRequest})` : `\`${baseBranch}\` after the merge`;
   const lines = [`## Release security gate: ${result.passed ? "passed ✅" : "failed ❌"}`, ""];
   lines.push(`SonarQube Cloud's analysis of the ${subject}. Quality gate: **${result.gateStatus ?? "unknown"}**.`, "");
   if (result.blocking.length) {
@@ -369,9 +413,10 @@ export function configProblems(env) {
   const problems = [];
   if (!env.SONAR_TOKEN) problems.push("The SONAR_TOKEN secret isn't available to this job. Add it under Settings → Secrets and variables → Actions (see docs/runbooks/sonarqube-cloud.md). PRs from forks don't get secrets.");
   if (!env.SONAR_PROJECT_KEY) problems.push("The SONAR_PROJECT_KEY variable isn't set. Add it under Settings → Secrets and variables → Actions → Variables.");
+  if (env.SONAR_RELEASE_MODE && env.SONAR_RELEASE_MODE !== "bound") problems.push(`Unknown SONAR_RELEASE_MODE "${env.SONAR_RELEASE_MODE}".`);
   if (env.SONAR_JOB_RESULT && env.SONAR_JOB_RESULT !== "success") {
     problems.push(`The SonarQube Cloud analysis job didn't succeed (result: ${env.SONAR_JOB_RESULT}). Fix that job first; a skipped job means SONAR_ORGANIZATION isn't set.`);
-  } else if (!env.SONAR_CE_TASK_ID) {
+  } else if (env.SONAR_RELEASE_MODE !== "bound" && !env.SONAR_CE_TASK_ID) {
     problems.push("The analysis didn't report a SonarQube Cloud task id, so there's no analysis of this release candidate to check.");
   }
   if (env.PR_NUMBER && !/^\d+$/.test(env.PR_NUMBER)) problems.push(`PR_NUMBER "${env.PR_NUMBER}" isn't a number.`);
@@ -389,6 +434,22 @@ function safePath(path) {
 export const readCandidateFile = (path) => {
   const clean = safePath(path);
   return existsSync(clean) ? readFileSync(clean, "utf8") : null;
+};
+
+/** A commit's git tree hash, fetching the commit if this shallow checkout lacks it. Null when it can't be read. */
+export const treeOfCommit = (commit) => {
+  if (!/^[0-9a-f]{40}$/.test(commit ?? "")) return null;
+  const tree = () => execFileSync("git", ["rev-parse", "--verify", "--quiet", `${commit}^{tree}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  try {
+    return tree();
+  } catch {
+    try {
+      execFileSync("git", ["fetch", "--no-tags", "--depth=1", "origin", commit], { stdio: "ignore" });
+      return tree();
+    } catch {
+      return null;
+    }
+  }
 };
 
 export const readBaseFile = (baseBranch) => (path) => {
@@ -418,6 +479,22 @@ export async function main(env = process.env, deps = {}) {
   const pullRequest = env.PR_NUMBER || undefined;
   const client = deps.client ?? sonarClient({ token: env.SONAR_TOKEN, hostUrl, fetchImpl: deps.fetchImpl });
   try {
+    if (env.SONAR_RELEASE_MODE === "bound") {
+      // A release into GitHub's main: reuse the primary branch's analysis of identical code (see boundAnalysis).
+      const treeOf = deps.treeOf ?? treeOfCommit;
+      const projectKey = env.SONAR_PROJECT_KEY;
+      const bound = await boundAnalysis(client, { projectKey, branch: baseBranch, candidateTree: deps.candidateTree ?? treeOf(execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()), treeOf });
+      if (env.SONAR_BIND_ONLY === "true") {
+        summary(`## SonarQube Cloud: reusing \`${baseBranch}\`'s analysis\n\nThe Free plan only analyses \`${baseBranch}\` (#373). This release's code is identical to commit ${bound.revision} there, so the Release security gate checks that analysis.`);
+        return true;
+      }
+      // Branch scope, not the PR: the findings are those of the analysed branch, with the post-merge rules.
+      const result = await evaluate({ client, projectKey, analysisId: bound.analysisId, baseBranch, hostUrl, readBase: () => null, readCandidate: () => null });
+      await stillLatest(client, { projectKey, branch: baseBranch, analysisId: bound.analysisId });
+      summary(report(result, { pullRequest, baseBranch, bound }));
+      if (!result.passed) console.error(`::error::Release blocked: ${result.blocking.length} blocking SonarQube Cloud finding(s). See the job summary.`);
+      return result.passed;
+    }
     const analysisId = await waitForAnalysis(client, env.SONAR_CE_TASK_ID, { projectKey: env.SONAR_PROJECT_KEY, pullRequest, ...deps.wait });
     const result = await evaluate({
       client,

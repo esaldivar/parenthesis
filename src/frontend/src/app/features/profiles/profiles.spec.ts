@@ -155,20 +155,28 @@ describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #
       expect(body.querySelector('.preview')).toBeNull();
     });
 
-    it('gives a parent on their own shared device a visible Switch profile button that returns to the picker', async () => {
+    it('keeps Switch profile out of the top bar, in the account menu on a parent’s own shared device (#372)', async () => {
       const { harness, body, router } = await open('/settings', fakeAuth({ device: { ...PICKER, isYours: true } }));
-      const button = body.querySelector<HTMLButtonElement>('header button.switch');
 
-      expect(button?.textContent!.trim()).toBe('Switch profile');
-      button!.click();
+      expect(body.querySelector('header')!.textContent).not.toContain('Switch profile');
+      body.querySelector<HTMLButtonElement>('header button.account')!.click();
+      await settle(harness);
+      const item = [...document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button')].find(
+        (b) => b.textContent!.trim() === 'Switch profile',
+      );
+      expect(item).toBeDefined();
+      item!.click();
       await settle(harness);
       await vi.waitFor(() => expect(router.url).toBe('/profiles'));
     });
 
-    it('shows no Switch profile button on a personal device', async () => {
-      const { body } = await open('/settings', fakeAuth());
+    it('offers no Switch profile anywhere in the top bar or account menu on a personal device', async () => {
+      const { harness, body } = await open('/settings', fakeAuth());
 
-      expect(body.querySelector('header button.switch')).toBeNull();
+      expect(body.querySelector('header')!.textContent).not.toContain('Switch profile');
+      body.querySelector<HTMLButtonElement>('header button.account')!.click();
+      await settle(harness);
+      expect(document.querySelector('.mat-mdc-menu-panel')!.textContent).not.toContain('Switch profile');
     });
 
     it('tells a parent previewing the children’s space how to get back', async () => {

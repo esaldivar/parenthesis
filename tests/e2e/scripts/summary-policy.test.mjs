@@ -29,6 +29,18 @@ test('missing, stale, empty, malformed and violated accessibility scans cannot c
     assert.equal(summarize(input, policy).gatePassed, false);
   }
 });
+test('violations from a failed execution are published with rule, state, profile, SHA and selectors, and block', () => {
+  const input = report();
+  const execution = input.suites[0].specs[2].tests[2];
+  execution.status = 'unexpected';
+  const scan = JSON.parse(Buffer.from(execution.results[0].attachments[0].body, 'base64'));
+  scan.violations = [{ id: 'label', targets: [['#control'], ['mat-dialog', 'input']] }];
+  execution.results[0].attachments[0].body = Buffer.from(JSON.stringify(scan)).toString('base64');
+  const summary = summarize(input, policy);
+  assert.equal(summary.gatePassed, false);
+  assert.deepEqual(summary.accessibility.violations, [{ rule: 'label', state: scan.state, profile: execution.projectName, testedSha: sha, targets: ['#control', 'mat-dialog input'] }]);
+  assert.deepEqual(summarize(report(), policy).accessibility.violations, []);
+});
 for (const outcome of ['unexpected', 'skipped', 'unknown']) test(`${outcome} mobile result blocks`, () => {
   const input = report(); input.suites[0].specs[2].tests[4].status = outcome;
   assert.equal(summarize(input, policy).gatePassed, false);

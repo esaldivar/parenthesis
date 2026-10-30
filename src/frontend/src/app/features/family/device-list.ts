@@ -79,6 +79,8 @@ import { Toasts } from '../../shared/toast/toasts';
               } @else {
                 <div class="actions">
                   @if (stopsSharing(device)) {
+                    <!-- Switching lives here and in the account menu, not as a top-bar button (#372). -->
+                    <button mat-stroked-button type="button" (click)="switchProfile()">Switch profile</button>
                     <button mat-stroked-button type="button" (click)="confirming.set(device.id)">Stop sharing this device</button>
                   } @else {
                     <button mat-stroked-button type="button" (click)="confirming.set(device.id)" [attr.aria-label]="'Remove ' + device.name">
@@ -113,7 +115,7 @@ import { Toasts } from '../../shared/toast/toasts';
     }
     .device + .device {
       padding-top: var(--space-3);
-      border-top: 1px solid var(--color-surface-soft);
+      border-top: 1px solid var(--color-divider);
     }
     p {
       margin: 0;
@@ -134,7 +136,7 @@ import { Toasts } from '../../shared/toast/toasts';
       display: grid;
       gap: var(--space-2);
       padding: var(--space-3);
-      border: 1px solid var(--color-surface-soft);
+      border: 1px solid var(--color-divider);
       border-radius: var(--radius-control);
     }
     .this {
@@ -197,6 +199,12 @@ export class DeviceList implements OnInit {
       await this.auth.loadDevice();
       this.toasts.show(`${device.name} was removed.`);
     });
+  }
+
+  /** Ends this parent's session and keeps the picker, as the account menu's Switch profile does (#153, #372). */
+  protected async switchProfile(): Promise<void> {
+    await this.auth.switchProfile();
+    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
   }
 
   /** The server ends every session on this device, ours included, so sign out here and start from sign-in. */

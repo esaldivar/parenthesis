@@ -32,7 +32,9 @@ hotfix/…                  from main, for urgent production bugs
 - **Hotfixes** for urgent production bugs: branch from `main`, make the smallest safe fix, test, open a PR into
   `main`, get the owner's approval, deploy (approval again in Actions), verify production, then sync into `develop`
   (`chore/sync-main`) and the active release branch. Hotfixes may ship outside a release window, never without
-  approval.
+  approval. **Since #373** SonarQube Cloud analyses `develop` only, so the Release security gate blocks a hotfix PR
+  straight into `main` (its code can't match `develop`'s analysis). Until the owner decides a hotfix path, a fix
+  reaches `main` through `develop` ([details](runbooks/sonar-release-gate.md#develop-is-the-analysed-branch-373)).
 - The **PR source** check enforces which branch may merge into which (`.github/scripts/check-pr-branch-policy.sh`).
   Release branches must be named `release/x.y.z`.
 
@@ -42,6 +44,10 @@ Use one non-closing `Refs #123` line per issue; release rollups may reuse closed
 issue links** check validates issue existence, and must be made required separately after trusted-base rollout.
 See [the issue-link policy and activation runbook](runbooks/pr-issue-links.md). Issue acceptance and verified
 deployment remain separate decisions. Existing PRs need real links supplied by their authors, not unrelated issues.
+A PR's milestone comes from those issues (#140); the report-only **PR milestone** check explains which, and warns on
+conflicts or a milestone from another release. It never blocks or sets anything until the owner approves that.
+The report-only **PR risk** check (#141) lists a PR's risk areas (security, database, breaking change, high risk) from
+its changed files, never from labels. See [the PR risk audit](runbooks/pr-risk-audit.md) for every check by branch.
 
 1. Branch from the active release branch.
 2. Implement it and run the relevant tests.

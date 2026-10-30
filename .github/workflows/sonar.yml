@@ -1,22 +1,23 @@
 name: Sonar
 
 # Code quality, security and vulnerability analysis with SonarQube Cloud (Free plan, public repository). The Free plan
-# analyses the main branch, so this runs on PRs into main (releases and hotfixes) and on main after each merge.
-# Setup steps for the owner: docs/runbooks/sonarqube-cloud.md. Until the SONAR_ORGANIZATION variable is set, the
-# analysis job is skipped, and the release security gate below fails, so nothing can be released unchecked.
+# analyses only the project's main branch and PRs into it. Since #373 (owner decision, October 29, 2026) that is
+# develop: pushes to develop and PRs into it are scanned. GitHub's main can't be scanned on this plan, so a PR into main
+# or a push to main reuses develop's latest analysis, and only when the code is identical (same git tree); otherwise
+# it fails. Setup steps for the owner: docs/runbooks/sonarqube-cloud.md. Until the SONAR_ORGANIZATION variable is set,
+# the analysis job is skipped, and the release security gate below fails, so nothing can be released unchecked.
 #
 # The "Release security gate" job reads the results of this same analysis (no second scan) and blocks the release on
 # unresolved vulnerabilities, high-severity security issues, unreviewed hotspots and unjustified accepted findings.
 # Policy and troubleshooting: docs/runbooks/sonar-release-gate.md.
 on:
   push:
-    branches: [main]
+    branches: [develop, main]
   pull_request:
-    branches: [main]
+    branches: [develop, main]
 
-permissions:
-  contents: read
-  pull-requests: read
+# Each job declares the permissions it needs (SonarQube githubactions:S8264).
+permissions: {}
 
 concurrency:
   group: sonar-${{ github.ref }}
@@ -25,15 +26,21 @@ concurrency:
 env:
   DOTNET_NOLOGO: "1"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  # SonarQube Cloud's main branch (renamed from main to develop in its settings, #373).
+  SONAR_PRIMARY_BRANCH: develop
 
 jobs:
   sonar:
+    permissions:
+      contents: read
+      pull-requests: read
     name: SonarQube Cloud
     if: vars.SONAR_ORGANIZATION != ''
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
       ce-task-id: ${{ steps.report.outputs.ce-task-id }}
+      mode: ${{ steps.mode.outputs.mode }}
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
@@ -43,11 +50,32 @@ jobs:
         with:
           fetch-depth: 0 # Full history, so Sonar can tell new code from old.
 
+      # Scan what targets SonarQube Cloud's main branch; anything going to GitHub's main reuses that analysis.
+      - name: Choose scan or reuse
+        id: mode
+        env:
+          TARGET: ${{ github.base_ref || github.ref_name }}
+        run: |
+          if [ "$TARGET" = "$SONAR_PRIMARY_BRANCH" ]; then echo "mode=" >> "$GITHUB_OUTPUT"
+          elif [ "$TARGET" = "main" ]; then echo "mode=bound" >> "$GITHUB_OUTPUT"
+          else echo "::error::Unexpected target branch for the Sonar workflow."; exit 1; fi
+
+      - name: Reuse develop's analysis of identical code
+        if: steps.mode.outputs.mode == 'bound'
+        env:
+          SONAR_RELEASE_MODE: bound
+          SONAR_BIND_ONLY: "true"
+          BASE_BRANCH: ${{ env.SONAR_PRIMARY_BRANCH }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/sonar-release-gate.mjs
+
       - uses: actions/setup-dotnet@v6
+        if: steps.mode.outputs.mode != 'bound'
         with:
           global-json-file: global.json
 
       - uses: actions/setup-node@v7
+        if: steps.mode.outputs.mode != 'bound'
         with:
           node-version-file: src/frontend/.nvmrc
           cache: npm
@@ -56,22 +84,26 @@ jobs:
       # Installed so the TypeScript analysis can resolve Angular's types. Analysis only reads code, so package install
       # scripts never need to run here (Sonar githubactions:S6505).
       - name: Install frontend dependencies
+        if: steps.mode.outputs.mode != 'bound'
         working-directory: src/frontend
         run: npm ci --ignore-scripts
 
       - name: Install SonarScanner for .NET and dotnet-coverage
+        if: steps.mode.outputs.mode != 'bound'
         run: |
           dotnet tool install --global dotnet-sonarscanner
           dotnet tool install --global dotnet-coverage
 
       # Coverage for the quality gate (new code must be at least 80% covered).
       - name: Frontend tests with coverage (lcov)
+        if: steps.mode.outputs.mode != 'bound'
         working-directory: src/frontend
         run: npm test -- --coverage --coverage-reporters=lcov
 
       # The .NET scanner analyses C# through the build and, with scanAll, the rest of the repository too (TypeScript,
       # HTML, CSS, Docker, YAML).
       - name: Begin analysis
+        if: steps.mode.outputs.mode != 'bound'
         run: >
           dotnet sonarscanner begin
           /k:"$SONAR_PROJECT_KEY"
@@ -86,17 +118,21 @@ jobs:
           /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,tests/e2e/**,docker/**,.github/**"
 
       - name: Build
+        if: steps.mode.outputs.mode != 'bound'
         run: dotnet build CoParent.slnx -c Release
 
       # Integration tests start PostgreSQL with Testcontainers on the runner's Docker.
       - name: Backend tests with coverage
+        if: steps.mode.outputs.mode != 'bound'
         run: dotnet-coverage collect "dotnet test --solution CoParent.slnx -c Release --no-build" -f xml -o coverage-backend.xml
 
       - name: End analysis (uploads results; the quality gate shows on the PR)
+        if: steps.mode.outputs.mode != 'bound'
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
       # The scanner writes the id of SonarQube Cloud's background task for this analysis; the gate waits for it.
       - name: Report the analysis task
+        if: steps.mode.outputs.mode != 'bound'
         id: report
         run: |
           file=.sonarqube/out/.sonar/report-task.txt
@@ -106,6 +142,9 @@ jobs:
           echo "ce-task-id=$task" >> "$GITHUB_OUTPUT"
 
   release-gate:
+    permissions:
+      contents: read
+      pull-requests: read
     # Keep this name: it is meant to be a required status check on main (docs/runbooks/sonar-release-gate.md).
     name: Release security gate
     needs: sonar
@@ -119,9 +158,9 @@ jobs:
         with:
           persist-credentials: false
 
-      # main's copy of each file, to tell whether the release changes code a finding on main points at.
-      - name: Fetch main for comparison
-        run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+      # develop's copy of each file, to tell whether a PR changes code a finding on develop points at.
+      - name: Fetch develop for comparison
+        run: git fetch --no-tags --depth=1 origin +refs/heads/develop:refs/remotes/origin/develop
 
       - name: Check SonarQube Cloud findings for this release
         env:
@@ -130,5 +169,6 @@ jobs:
           SONAR_CE_TASK_ID: ${{ needs.sonar.outputs.ce-task-id }}
           SONAR_JOB_RESULT: ${{ needs.sonar.result }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_BRANCH: main
+          BASE_BRANCH: ${{ env.SONAR_PRIMARY_BRANCH }}
+          SONAR_RELEASE_MODE: ${{ needs.sonar.outputs.mode }}
         run: node .github/scripts/sonar-release-gate.mjs
