@@ -10,11 +10,12 @@ import { DeviceList } from '../family/device-list';
 import { ParentPinSettings } from '../family/parent-pin-settings';
 import { InviteCoParent } from '../family/invite-co-parent';
 import { DeleteAccount } from './delete-account';
+import { GoogleCalendarSettings } from './google-calendar-settings';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatSlideToggleModule, AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, ParentPinSettings, DeleteAccount],
+  imports: [MatSlideToggleModule, AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, ParentPinSettings, GoogleCalendarSettings, DeleteAccount],
   template: `
     <h1>Settings</h1>
     <section class="card">
@@ -49,6 +50,11 @@ import { DeleteAccount } from './delete-account';
         <section class="card" aria-labelledby="parent-pin-heading">
           <h2 id="parent-pin-heading">Your parent PIN</h2>
           <app-parent-pin-settings [familyId]="current.id" />
+        </section>
+
+        <section class="card" aria-labelledby="google-calendar-heading">
+          <h2 id="google-calendar-heading">Google Calendar</h2>
+          <app-google-calendar-settings [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="devices-heading">
