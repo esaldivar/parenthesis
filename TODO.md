@@ -103,7 +103,7 @@ that points back here.
   - [ ] **Owner:** Google Cloud setup in `parenthesis-dev` (runbook step 1): enable the Calendar API, consent screen
     with the one scope and test users, web OAuth client with the dev redirect URI.
   - [ ] **Owner:** client ID and secret in the dev Key Vault and app settings (runbook step 2), then "Check it works".
-  - [ ] **Owner:** approve the Settings section's design (screenshots in the PR).
+  - [x] Owner approved the "Events to copy" dropdown design as shown in the screenshots (October 30, 2026).
   - [ ] Before public launch: Google verification of the sensitive scope (privacy policy page, verified
     `parenthesisfamily.com`, demo video); runbook step 4. Mention Google Calendar in the privacy notice.
   - [ ] Before production: encrypt the data-protection key ring with Key Vault (Platform hardening below), so the
