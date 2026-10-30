@@ -75,10 +75,8 @@
 
 // A bar: one line, its title truncated with an ellipsis (never broken letter by letter); the full title, dates and
 // status are in its accessible name and its details.
-.item {
-  @include item-button;
-  @include item-colors;
-}
+@include item-button('.item');
+@include item-colors('.item');
 .bar {
   position: relative;
   z-index: 1;

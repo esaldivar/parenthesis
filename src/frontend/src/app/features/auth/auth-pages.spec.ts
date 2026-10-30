@@ -240,7 +240,85 @@ describe('auth and onboarding routes', () => {
     });
   });
 
-  it.each(['/sign-in', '/register', '/forgot-password', '/check-email'])(
+  describe('reset password', () => {
+    const link = '/reset-password?email=alex%40example.test&token=one-time';
+
+    async function submitPassword(harness: RouterTestingHarness, password: string) {
+      await type(harness, 'input[formcontrolname=password]', password);
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+    }
+
+    it('saves the new password with the link’s token and takes the token off the address bar', async () => {
+      const { harness, http, body } = await open(link);
+      await settle(harness);
+      expect(routerOf(harness).url).toBe('/reset-password');
+
+      await submitPassword(harness, 'a new long password');
+      const request = http.expectOne('/api/auth/reset-password');
+      expect(request.request.body).toEqual({ email: 'alex@example.test', token: 'one-time', password: 'a new long password' });
+      request.flush(null, { status: 204, statusText: 'No Content' });
+      await settle(harness);
+
+      expect(body.querySelector('[role=status]')!.textContent).toContain('Your password has been changed. Other devices have been signed out.');
+      expect(body.querySelector('a[href="/sign-in"]')).not.toBeNull();
+    });
+
+    it('checks the length before calling the API', async () => {
+      const { harness, http, body } = await open(link);
+
+      await submitPassword(harness, 'too short');
+      await settle(harness);
+
+      http.expectNone('/api/auth/reset-password');
+      expect(text(body)).toContain('Use at least 12 characters.');
+    });
+
+    it('shows the API’s password rules next to the field', async () => {
+      const { harness, http, body } = await open(link);
+
+      await submitPassword(harness, 'twelve chars ok');
+      http.expectOne('/api/auth/reset-password').flush(
+        { title: 'One or more validation errors occurred.', errors: { password: ['Passwords must have at least one digit.'] } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+      await settle(harness);
+
+      expect(text(body)).toContain('Passwords must have at least one digit.');
+      expect(body.querySelector('[role=alert]')).toBeNull();
+    });
+
+    it('explains a used or expired link and offers a new one', async () => {
+      const { harness, http, body } = await open(link);
+
+      await submitPassword(harness, 'twelve chars ok');
+      http.expectOne('/api/auth/reset-password').flush({ title: 'Invalid token.' }, { status: 400, statusText: 'Bad Request' });
+      await settle(harness);
+
+      expect(body.querySelector('[role=alert]')!.textContent).toContain('This link is invalid or has expired.');
+      expect(body.querySelector('a[href="/forgot-password"]')).not.toBeNull();
+    });
+
+    it('treats a link without its email or token as invalid', async () => {
+      const { body } = await open('/reset-password?token=one-time');
+
+      expect(body.querySelector('[role=alert]')!.textContent).toContain('This link is invalid or has expired.');
+      expect(body.querySelector('form')).toBeNull();
+    });
+
+    it('keeps the form and says what went wrong when the server fails', async () => {
+      const { harness, http, body } = await open(link);
+
+      await submitPassword(harness, 'twelve chars ok');
+      http.expectOne('/api/auth/reset-password').flush({ title: 'Server error' }, { status: 500, statusText: 'Server Error' });
+      await settle(harness);
+
+      expect(body.querySelector('[role=alert]')).not.toBeNull();
+      expect(body.querySelector('form')).not.toBeNull();
+      expect(body.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(false);
+    });
+  });
+
+  it.each(['/sign-in', '/register', '/forgot-password', '/check-email', '/reset-password?email=alex%40example.test&token=t'])(
     'has no automatically detectable accessibility issues at %s',
     async (url) => {
       const { body } = await open(url);

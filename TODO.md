@@ -250,14 +250,11 @@ that points back here.
     - [ ] The first queued issue, #392, stopped the queue run: 38 files is over the queue's 30-file limit, and many
       findings sit in `.github/` and the queue scripts, which the queue may not edit. Decide whether Sonar Sunday
       should split the issue (app code for the queue, CI and scripts for a person) (October 30, 2026).
-    - [ ] **Owner:** after the #392 fix PR (`fix/sonar-sunday-2026-10-30`), mark these as **Accepted** in SonarCloud,
-      with the reason given: the seven `S4036` PATH findings on `execFileSync("git")` in CI and e2e tooling (git must be
-      found on the runner's or developer's PATH, which they control); the eight "Missing scoping root" findings in
-      `calendar/_item.scss` (they are mixins, always included inside a selector); the `tabindex` on the calendar's
-      scroll area (keyboard scrolling, as accepted on October 19); `pr-weekly-limit.yml` checking out code from a
-      fork (it checks out the default branch's scripts only, never the PR's code); the log-injection finding on
-      `dev-workflow.mjs`'s step summary (the multi-line Markdown summary is intended). Re-check the rest at the next
-      Sonar Sunday after the fix reaches `develop`.
+    - [x] The findings #395 left for the owner to accept are fixed instead (owner request, October 30, 2026: all
+      A's, nothing accepted): git runs from a fixed path, the calendar item mixins no longer use `&`, the
+      `pr-weekly-limit.yml` and `pr-issue-links.yml` checkouts name `main`, and `dev-workflow.mjs` logs one line.
+    - [ ] After that fix reaches `develop`, check SonarCloud shows A for security, reliability and maintainability and
+      new-code coverage of at least 80%.
   - [x] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
     with the reason "required so keyboard users can scroll the hours" (accepted, with the WCAG 2.1.1 comment,
     October 19, 2026).

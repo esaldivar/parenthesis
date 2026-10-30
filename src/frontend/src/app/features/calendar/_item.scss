@@ -1,41 +1,47 @@
 @use '../dashboard/proposed-fill' as *;
 
+// Both mixins take the item's selector and write complete rules, so they're included at the top level of a
+// component's styles (`@include item-colors('.item');`). Nothing in them depends on where they're included
+// (SonarQube "Missing scoping root").
+
 // One look for a calendar item in every view: the kind or category sets a calm fill with primary text, pending
 // items get the hatched, dashed proposal pattern (always with a text label too), unavailable time is neutral grey.
-@mixin item-colors {
-  color: var(--color-text);
-  // A category-tinted edge (#209): the item's own text colour mixed into its fill, never a grey outline.
-  border: 1px solid color-mix(in srgb, currentColor var(--calendar-item-edge-mix), var(--calendar-palette-bg, var(--color-surface)));
-  background: var(--color-cat-other-bg);
+@mixin item-colors($item) {
+  #{$item} {
+    color: var(--color-text);
+    // A category-tinted edge (#209): the item's own text colour mixed into its fill, never a grey outline.
+    border: 1px solid color-mix(in srgb, currentColor var(--calendar-item-edge-mix), var(--calendar-palette-bg, var(--color-surface)));
+    background: var(--color-cat-other-bg);
+  }
 
   // Reminders: a tinted surface with a matching category edge, plus the bell icon and the "Reminder" label (never colour alone).
-  &[data-kind='reminder'] {
+  #{$item}[data-kind='reminder'] {
     background: var(--color-calendar-reminder-bg);
     border-inline-start: 4px solid var(--color-calendar-reminder-fg);
   }
   // Tasks: a tinted surface with a matching category edge, plus the note icon and the "Task" label (never colour alone).
-  &[data-kind='task'] {
+  #{$item}[data-kind='task'] {
     background: var(--color-calendar-task-bg);
     border-inline-start: 4px solid var(--color-calendar-task-fg);
   }
-  &[data-kind='unavailable'] {
+  #{$item}[data-kind='unavailable'] {
     border-style: dotted;
   }
   // Hidden by this parent's filters (#190): faint, dashed and labelled "Hidden", never with private details.
-  &[data-concealed='true'] {
+  #{$item}[data-concealed='true'] {
     background: transparent;
     border: 1px dashed var(--color-outline);
     color: var(--color-text-secondary);
   }
-  &[data-status='pending'] {
+  #{$item}[data-status='pending'] {
     @include proposed-fill;
   }
-  &[data-status='change-pending'] {
+  #{$item}[data-status='change-pending'] {
     border: 2px dashed var(--color-outline);
   }
   // Declined (#199): a plain surface, struck-through title and the "Declined" label. Neither the solid fill of a
   // confirmed item nor the hatching of a pending one.
-  &[data-status='declined'] {
+  #{$item}[data-status='declined'] {
     background: var(--color-surface);
     border: 1px solid var(--color-outline);
     color: var(--color-text-secondary);
@@ -43,12 +49,14 @@
 }
 
 // A calendar item is a button: no default chrome, full keyboard focus, 44px tall where it stands alone.
-@mixin item-button {
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-  border-radius: var(--radius-control);
-  &:focus-visible {
+@mixin item-button($item) {
+  #{$item} {
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    border-radius: var(--radius-control);
+  }
+  #{$item}:focus-visible {
     outline: 3px solid var(--color-focus);
     outline-offset: 2px;
   }

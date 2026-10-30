@@ -1,6 +1,6 @@
 // Existing release summary/Discord shape, now with exact SHA and required profile guards (#278).
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { headSha } from './head-sha.mjs';
 import { summarize } from './summary-policy.mjs';
 const here = new URL('..', import.meta.url);
 const reportPath = new URL('results/results.json', here);
@@ -13,7 +13,7 @@ if (!existsSync(reportPath)) {
   write('## Playwright release gate\n\n❌ No test results.\n');
   process.exit(1);
 }
-const summary = summarize(JSON.parse(readFileSync(reportPath, 'utf8')), { ...policy, expectedSha: process.env.E2E_TESTED_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), startedAt: process.env.E2E_RUN_STARTED_AT });
+const summary = summarize(JSON.parse(readFileSync(reportPath, 'utf8')), { ...policy, expectedSha: process.env.E2E_TESTED_SHA ?? headSha(), startedAt: process.env.E2E_RUN_STARTED_AT });
 const row = (name, c) => `| ${name} | ${c.total} | ${c.passed} | ${c.failed} | ${c.flaky} | ${c.skipped} |`;
 write([
   '## Playwright release gate', '',
