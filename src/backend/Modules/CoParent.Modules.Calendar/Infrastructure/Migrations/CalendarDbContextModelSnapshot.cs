@@ -225,6 +225,92 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                     b.ToTable("event_dismissals", "calendar");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.GoogleCalendarConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ConnectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("connected_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("GoogleCalendarId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("google_calendar_id");
+
+                    b.Property<DateTimeOffset?>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_synced_at");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<string>("Problem")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("problem");
+
+                    b.Property<string>("ProtectedRefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("protected_refresh_token");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_google_connections");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_google_connections_status");
+
+                    b.HasIndex("FamilyId", "MembershipId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_google_connections_family_id_membership_id");
+
+                    b.ToTable("google_connections", "calendar");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.GoogleSyncedEvent", b =>
+                {
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connection_id");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("hash")
+                        .IsFixedLength();
+
+                    b.HasKey("ConnectionId", "EventId")
+                        .HasName("pk_google_synced_events");
+
+                    b.ToTable("google_synced_events", "calendar");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Calendar.Domain.Reminder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -618,6 +704,16 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_children_events_event_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.GoogleSyncedEvent", b =>
+                {
+                    b.HasOne("CoParent.Modules.Calendar.Domain.GoogleCalendarConnection", null)
+                        .WithMany()
+                        .HasForeignKey("ConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_google_synced_events_google_connections_connection_id");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Calendar.Domain.CalendarEvent", b =>

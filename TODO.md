@@ -88,6 +88,26 @@ that points back here.
     policies (owner decision: keep the text for the development site). Mention Google suggestions in the privacy
     notice once one exists.
   - [ ] Production stays off until the owner decides; revisit the cap and cost with real usage.
+- [ ] **Copy family events to parents' Google Calendars, one way (#386, owner decisions October 30, 2026).** Under
+  Settings, not on the calendar; Parenthesis never reads Google. Scope `calendar.app.created` only; a "Parenthesis
+  Family" secondary calendar per parent; refresh tokens encrypted with data protection, never logged
+  ([runbook](docs/runbooks/google-calendar-sync.md)).
+  - [x] API: connect (OAuth code flow with PKCE, state bound to the parent), disconnect (removes the calendar, revokes
+    access), and a background copy of confirmed events every minute (creates, edits, cancellations; pending requests
+    and pending changes never copied; the co-parent's unavailable time stays "Unavailable"). Stops and asks to
+    reconnect when access is revoked or the calendar is deleted. Off without `GoogleCalendar__ClientId` and
+    `GoogleCalendar__ClientSecret`. Integration tests with a fake Google.
+  - [x] Settings → Google Calendar section and the `/settings/google-calendar` return page, with Vitest and axe.
+  - [ ] **Owner:** Google Cloud setup in `parenthesis-dev` (runbook step 1): enable the Calendar API, consent screen
+    with the one scope and test users, web OAuth client with the dev redirect URI.
+  - [ ] **Owner:** client ID and secret in the dev Key Vault and app settings (runbook step 2), then "Check it works".
+  - [ ] **Owner:** approve the Settings section's design (screenshots in the PR).
+  - [ ] Before public launch: Google verification of the sensitive scope (privacy policy page, verified
+    `parenthesisfamily.com`, demo video); runbook step 4. Mention Google Calendar in the privacy notice.
+  - [ ] Before production: encrypt the data-protection key ring with Key Vault (Platform hardening below), so the
+    stored tokens are protected from a full database leak, not just a leak of their table.
+  - [ ] Later, if wanted: tidy up a departing parent's Google calendar (today their token is deleted and the calendar
+    stays in their Google account); child names in event descriptions.
 - [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
   (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
   classes on fixed 2026 dates before those pass: `CalendarTests`, `CalendarSearchTests`, `DateRuleTests`, `TaskTests`,

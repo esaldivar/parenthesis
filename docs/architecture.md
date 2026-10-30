@@ -34,7 +34,7 @@ flowchart LR
   KV -. "connection string<br/>(Key Vault reference)" .-> ACA
   API -. "telemetry (not yet<br/>instrumented, #160)" .-> AI
   MOD -. "media (Memories)" .-> BLOB
-  MOD -. "sync (post-MVP)" .-> GCAL
+  MOD -- "one-way copy to each parent's own<br/>calendar, when set up (#386)" --> GCAL
 ```
 
 - **One origin.** The API container serves the Angular build, so cookies stay HttpOnly and `SameSite=Strict`

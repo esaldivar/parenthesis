@@ -81,5 +81,11 @@ export const PARENT_ROUTES: Routes = [
     loadComponent: () => import('./approvals/approvals-page').then((m) => m.ApprovalsPage),
   },
   { path: 'settings', title: 'Settings', loadComponent: () => import('./settings/settings-page').then((m) => m.SettingsPage) },
+  // Google sends parents back here after connecting Google Calendar (#386); the server registers this exact address.
+  {
+    path: 'settings/google-calendar',
+    title: 'Google Calendar',
+    loadComponent: () => import('./settings/google-calendar-callback').then((m) => m.GoogleCalendarCallback),
+  },
   { path: 'more', title: 'More', loadComponent: () => import('./more/more-page').then((m) => m.MorePage) },
 ];
