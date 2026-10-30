@@ -79,10 +79,10 @@ export function itemSummary(item: CalendarItem): string {
       @if (avatars()) {
         <span class="people" aria-hidden="true">
           @for (parent of item().parents; track parent.id) {
-            <app-avatar [name]="parent.name" kind="parent" [size]="22" />
+            <app-avatar [name]="parent.name" kind="parent" [size]="22" [personId]="parent.id" photoOn="desktop" />
           }
           @for (child of item().children; track child.id) {
-            <app-avatar [name]="child.name" [size]="22" />
+            <app-avatar [name]="child.name" [size]="22" [personId]="child.id" photoOn="desktop" />
           }
         </span>
       }

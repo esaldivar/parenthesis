@@ -37,7 +37,7 @@ in v0.2.0 (#59, #70) with the owner's decisions of October 18, 2026, which **ove
 |---|---|
 | Invitations expire in 14 days | 7 days, and the email says 7 days |
 | Three invalid-link screens (expired, used, revoked) | One calm generic screen |
-| Child tiles with photos and ages | Initials, no age |
+| Child tiles with photos and ages | Initials, no age. Since #388 (October 30, 2026) each tile shows that person's own photo when they've chosen one, initials otherwise; still no age ([profile photos](PROFILE_PHOTOS_388.md)) |
 | Child PIN on a numeric keypad with dots | One number box and "Go"; 4 to 6 digits chosen by a parent; tries left shown |
 | Locked PIN: "Request unlock" button | "We've let your parents know"; both parents are emailed; Unlock is in Settings |
 | Pair a tablet: QR code and 6-digit code | 8-character code typed in a text box (QR deferred) |

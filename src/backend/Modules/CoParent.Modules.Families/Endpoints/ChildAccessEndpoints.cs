@@ -37,7 +37,9 @@ internal sealed record SetPinRequest(string? Pin);
 /// One picker tile. <c>CanSignIn</c>: a child has a PIN, or a parent has a parent PIN (otherwise they use their
 /// password). <c>Locked</c>: the PIN needs a parent to reset it. <c>PausedUntil</c>: set while three wrong tries pause it.
 /// </summary>
-internal sealed record ProfileTile(string Kind, Guid Id, string Name, bool CanSignIn, bool Locked, DateTimeOffset? PausedUntil);
+/// <summary>A picker tile. <c>PhotoUrl</c> is that person's own photo (#388), read with this device's cookie, or null.</summary>
+internal sealed record ProfileTile(
+    string Kind, Guid Id, string Name, bool CanSignIn, bool Locked, DateTimeOffset? PausedUntil, string? PhotoUrl = null);
 
 /// <summary>The picker. <c>IsYours</c>: the signed-in parent (if any) is the one who set up this shared device.</summary>
 internal sealed record DeviceProfiles(string FamilyName, DeviceKind DeviceKind, IReadOnlyList<ProfileTile> Profiles, bool IsYours);
@@ -275,18 +277,35 @@ internal static class ChildAccessEndpoints
             .Where(c => childIds.Contains(c.ChildProfileId))
             .ToDictionaryAsync(c => c.ChildProfileId, cancellationToken);
 
+        var owner = device.Kind == DeviceKind.Household ? await SharedDevices.OwnerAsync(db, device, null, cancellationToken) : null;
+
+        // Each tile shows that person's own photo (#388): never a parent's personal photo for a child.
+        var subjects = childIds.Append(owner?.Id ?? Guid.Empty).ToList();
+        var photos = await db.ProfilePhotos.IgnoreQueryFilters(filter)
+            .Where(p => p.FamilyId == device.FamilyId && p.ChooserId == p.SubjectId && subjects.Contains(p.SubjectId))
+            .Select(p => new { p.Id, p.SubjectId, p.ChooserKind })
+            .ToListAsync(cancellationToken);
+        string? PhotoOf(Guid subject, PhotoChooser kind) =>
+            photos.FirstOrDefault(p => p.SubjectId == subject && p.ChooserKind == kind) is { } photo ? PhotoEndpoints.DeviceUrl(photo.Id) : null;
+
         var tiles = new List<ProfileTile>();
         var isYours = false;
-        if (device.Kind == DeviceKind.Household && await SharedDevices.OwnerAsync(db, device, null, cancellationToken) is { } owner)
+        if (owner is not null)
         {
             isYours = http.User.GetChildSession() is null && http.User.GetUserId() == owner.UserId;
             var names = await directory.GetDisplayNamesAsync([owner.UserId], cancellationToken);
             var pin = await db.ParentCredentials.IgnoreQueryFilters(filter)
                 .SingleOrDefaultAsync(c => c.MembershipId == owner.Id, cancellationToken);
-            tiles.Add(Tile("parent", owner.Id, names.GetValueOrDefault(owner.UserId, "Parent"), pin, now));
+            tiles.Add(Tile("parent", owner.Id, names.GetValueOrDefault(owner.UserId, "Parent"), pin, now) with
+            {
+                PhotoUrl = PhotoOf(owner.Id, PhotoChooser.Parent),
+            });
         }
 
-        tiles.AddRange(children.Select(c => Tile("child", c.Id, c.FirstName, credentials.GetValueOrDefault(c.Id), now)));
+        tiles.AddRange(children.Select(c => Tile("child", c.Id, c.FirstName, credentials.GetValueOrDefault(c.Id), now) with
+        {
+            PhotoUrl = PhotoOf(c.Id, PhotoChooser.Child),
+        }));
         return TypedResults.Ok(new DeviceProfiles(familyName, device.Kind, tiles, isYours));
     }
 

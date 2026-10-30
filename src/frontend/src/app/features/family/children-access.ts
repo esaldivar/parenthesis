@@ -49,7 +49,7 @@ interface Panel {
           @for (child of children; track child.id) {
             <li class="child">
               <div class="child__head">
-                <app-avatar [name]="child.firstName" [size]="40" />
+                <app-avatar [name]="child.firstName" [size]="40" [personId]="child.id" />
                 <div>
                   <p class="child__name">{{ child.firstName }}</p>
                   <p class="child__state">{{ state(child) }}</p>

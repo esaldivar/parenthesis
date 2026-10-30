@@ -51,6 +51,15 @@ public static class FamiliesModule
                 context.User.GetUserId()?.ToString() ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromHours(1) })));
 
+        // Profile photos (#388): each upload decodes an image, so each parent or child gets a modest hourly allowance.
+        services.Configure<RateLimiterOptions>(options => options.AddPolicy(PhotoEndpoints.UploadRateLimitPolicy, context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                context.User.GetUserId()?.ToString()
+                    ?? context.User.GetChildSession()?.ChildId.ToString()
+                    ?? context.Connection.RemoteIpAddress?.ToString()
+                    ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromHours(1) })));
+
         // Deleting an account checks the password; the sign-in lockout applies too.
         services.Configure<RateLimiterOptions>(options => options.AddPolicy(AccountDeletionEndpoints.RateLimitPolicy, context =>
             RateLimitPartition.GetFixedWindowLimiter(
@@ -68,6 +77,7 @@ public static class FamiliesModule
         ChildEndpoints.Map(family);
         ChildAccessEndpoints.Map(api, family);
         SharedDeviceEndpoints.Map(api, family);
+        PhotoEndpoints.Map(api, family);
         AccountDeletionEndpoints.Map(api);
         return api;
     }

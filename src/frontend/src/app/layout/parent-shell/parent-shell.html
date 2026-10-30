@@ -79,7 +79,7 @@
         }
       </button>
       <button class="account" type="button" [matMenuTriggerFor]="accountMenu">
-        <app-avatar [name]="firstName()" kind="parent" [size]="36" />
+        <app-avatar [name]="firstName()" kind="parent" [size]="36" [src]="photos.own()" />
         <span class="account__name">{{ firstName() }}</span>
         <span class="visually-hidden">, account menu</span>
         <app-icon name="chevron-down" [size]="20" />
