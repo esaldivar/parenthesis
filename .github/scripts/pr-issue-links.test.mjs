@@ -11,6 +11,10 @@ const issue = (number, state = 'open') => ({ id: number + 1000, number, state, h
 test('explicit local references, duplicates and case-insensitive full URLs', () => {
   assert.deepEqual(references(body('- Refs #132\nRefs #132\nhttps://github.com/ESALDIVAR/Parenthesis/issues/65'), repository), [132, 65]);
 });
+test('references after a code example still count, and an unclosed fence is not removed', () => {
+  assert.deepEqual(references(body('```text\nRefs #1\n```\nRefs #132'), repository), [132]);
+  assert.throws(() => references(body('Refs #132\n```text\nRefs #1'), repository));
+});
 test('release rollups and hotfix syncs can reuse closed tracking issues without closing them', async () => {
   assert.deepEqual(await validate({ body: body('Refs #65\nRefs #132'), repository, getIssue: async n => issue(n, 'closed') }), [65, 132]);
 });
@@ -23,6 +27,8 @@ for (const [name, text] of [
   ['PR URL', body('https://github.com/esaldivar/parenthesis/pull/132')],
   ['comment example', body('<!-- Refs #132 -->')],
   ['code example', body('```text\nRefs #132\n```')],
+  ['tilde code example', body('~~~\nRefs #132\n~~~')],
+  ['longer closing fence', body('```\nRefs #132\n````')],
   ['inline code example', body('`Refs #132`')],
   ['duplicate section', body('Refs #132') + '\n## Tracking issues\nRefs #65'],
   ['reference in other section', body('') + '\nRefs #132'],

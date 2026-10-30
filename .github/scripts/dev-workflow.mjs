@@ -31,6 +31,7 @@ export const LABELS = {
 };
 
 const TIME_ZONE = "America/Chicago";
+const GITHUB_API = "https://api.github.com";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DISCORD_LIMIT = 1900; // Discord allows 2000 characters per message; keep a margin.
 const MARKER = (key) => `<!-- parenthesis-workflow:${key} -->`;
@@ -116,7 +117,7 @@ export const targetsRelease = (base, head = "") =>
 const MAJOR_PATHS = [
   [/\/Migrations\//, "database migrations"],
   [/CoParent\.Modules\.Identity\/|\/(auth|identity)\/|Authenticat|Authoriz|Antiforgery/i, "authentication or authorization"],
-  [/CoParent\.SharedKernel\/Security\/|(^|\/)SECURITY\.md$/, "security-sensitive code"],
+  [/(?:CoParent\.SharedKernel\/Security\/)|(?:(?:^|\/)SECURITY\.md$)/, "security-sensitive code"],
   [/^\.github\/workflows\/|^docker\/|Dockerfile|^compose\.ya?ml$|^infra\/|\.bicep$/, "infrastructure or CI"],
 ];
 const LARGE_FILES = 30;
@@ -260,6 +261,24 @@ export async function sendDiscordLong(text, options) {
 
 // ---------- GitHub ----------
 
+// Only GitHub's own API: a pagination link from elsewhere, or a path that leaves the API root, is refused.
+export function apiUrl(path) {
+  const url = new URL(path.startsWith("https://") ? path : `${GITHUB_API}${path}`);
+  if (url.origin !== GITHUB_API) {
+    throw new Error("Refusing a GitHub API request outside https://api.github.com.");
+  }
+  return url.href;
+}
+
+// The rel="next" target of a GitHub Link header, if any.
+export function nextLink(link) {
+  for (const part of link.split(",")) {
+    const [target, ...params] = part.split(";").map((p) => p.trim());
+    if (params.includes('rel="next"') && target.startsWith("<") && target.endsWith(">")) return target.slice(1, -1);
+  }
+  return undefined;
+}
+
 export function github({
   token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN,
   repo = process.env.GITHUB_REPOSITORY,
@@ -268,7 +287,7 @@ export function github({
   if (!token) throw new Error("GITHUB_TOKEN (or GH_TOKEN) is not set.");
   if (!repo) throw new Error("GITHUB_REPOSITORY is not set (owner/name).");
   async function request(method, path, body) {
-    const url = path.startsWith("https://") ? path : `https://api.github.com${path}`;
+    const url = apiUrl(path);
     const res = await fetchImpl(url, {
       method,
       headers: {
@@ -288,7 +307,7 @@ export function github({
     while (next) {
       const { data, link } = await request("GET", next);
       for (const item of Array.isArray(data) ? data : data.items) yield item;
-      next = /<([^>]+)>;\s*rel="next"/.exec(link)?.[1];
+      next = nextLink(link);
     }
   }
   return {

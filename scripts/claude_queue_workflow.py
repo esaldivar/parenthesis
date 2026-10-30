@@ -102,7 +102,7 @@ def tracking_links(body):
             fence = not fence
         if fence:
             continue
-        match = re.fullmatch(r"\s*(?:[-*]\s+)?(?:Refs|Closes|Fixes|Resolves)\s+#(\d+)\s*\.?\s*", line, re.I)
+        match = re.fullmatch(r"\s*(?:[-*]\s+)?(?:Refs|Closes|Fixes|Resolves)\s+#(\d+)\s*(?:\.\s*)?", line, re.I)
         if match:
             result.add(int(match[1]))
     return result

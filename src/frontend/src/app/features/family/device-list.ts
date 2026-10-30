@@ -168,7 +168,11 @@ export class DeviceList implements OnInit {
   private readonly toasts = inject(Toasts);
   private readonly router = inject(Router);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     await this.reload();
   }
 

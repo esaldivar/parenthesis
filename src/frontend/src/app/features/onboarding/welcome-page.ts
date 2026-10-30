@@ -318,7 +318,11 @@ export class WelcomePage implements OnInit {
     return STEPS.indexOf(step === 'pending' ? 'children' : step) + 1;
   }
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     // Someone who already has a family has finished this page (reloading it must not create a second family).
     const families = this.auth.families() ?? (await this.auth.loadFamilies().catch(() => []));
     if (families.length > 0) {

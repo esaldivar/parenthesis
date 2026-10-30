@@ -140,7 +140,11 @@ export class ParentPinSettings implements OnInit {
     confirm: ['', Validators.required],
   });
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     await this.reload();
   }
 

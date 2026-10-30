@@ -45,7 +45,11 @@ export class ConfirmEmailPage implements OnInit {
   protected readonly state = signal<State>('working');
   protected readonly error = signal('');
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const userId = this.userId();
     const token = this.token();
     // Keep the one-time token out of browser history.

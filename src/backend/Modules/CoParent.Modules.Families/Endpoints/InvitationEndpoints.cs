@@ -261,8 +261,7 @@ internal static class InvitationEndpoints
             Role = FamilyRole.Parent,
             JoinedAt = now,
         };
-        var accepted = false;
-        await unitOfWork.ExecuteAsync(async ct =>
+        var accepted = await unitOfWork.ExecuteAsync(async ct =>
         {
             // Share the family-row lock with account deletion. Recheck under the lock:
             // the family may have been deleted or another parent may have joined.
@@ -271,7 +270,7 @@ internal static class InvitationEndpoints
                 .ToListAsync(ct);
             if (exists.Count == 0)
             {
-                return;
+                return false;
             }
             var activeParents = await db.Memberships
                 .IgnoreQueryFilters([TenantContext.QueryFilterName])
@@ -279,7 +278,7 @@ internal static class InvitationEndpoints
                     m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active, ct);
             if (activeParents >= MaxParents)
             {
-                return;
+                return false;
             }
             var occupiedSlot = await db.Memberships
                 .IgnoreQueryFilters([TenantContext.QueryFilterName])
@@ -294,7 +293,7 @@ internal static class InvitationEndpoints
             db.Memberships.Add(membership);
             await db.SaveChangesAsync(ct);
             await audit.RecordAsync(new AuditEntry(invitation.FamilyId, userId, "invitation.accepted", "invitation", invitation.Id), ct);
-            accepted = true;
+            return true;
         }, cancellationToken);
 
         if (!accepted)

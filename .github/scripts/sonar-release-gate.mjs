@@ -75,7 +75,9 @@ export function sonarClient({
   retries = 2,
   sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
 }) {
-  const api = `${hostUrl.replace(/\/+$/, "")}/api`;
+  let host = hostUrl;
+  while (host.endsWith("/")) host = host.slice(0, -1);
+  const api = `${host}/api`;
 
   async function get(path, params = {}) {
     const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== ""));

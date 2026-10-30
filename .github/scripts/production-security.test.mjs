@@ -108,6 +108,12 @@ test('GitHub requests cannot redirect tokens and error output excludes response 
   });
   await assert.rejects(get('actions/workflows/sonar.yml'), /^Error: GitHub security evidence is unavailable\.$/);
 });
+test('GitHub requests stay inside this repository API', async () => {
+  const get = githubClient(repository, 'test-token', () => assert.fail('unexpected request'));
+  for (const path of ['../../other/repo/actions/runs', '/repos/other/repo', 'https://example.com/x', '//example.com/x']) {
+    await assert.rejects(get(path), /outside this repository/);
+  }
+});
 test('only successful verification publishes digest and evidence; failure leaves outputs unwritten', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'production-security-'));
   try {

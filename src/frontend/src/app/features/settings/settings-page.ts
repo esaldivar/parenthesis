@@ -125,7 +125,11 @@ export class SettingsPage implements OnInit {
   protected readonly deletionError = signal<string | null>(null);
   protected readonly deletionFamilies = signal<readonly { name: string; coParentName: string | null }[] | null>(null);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     await Promise.all([this.loadDeletionFamilies(), this.loadCurrentFamily()]);
   }
 

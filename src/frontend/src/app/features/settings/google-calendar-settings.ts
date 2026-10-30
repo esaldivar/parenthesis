@@ -245,7 +245,11 @@ export class GoogleCalendarSettings implements OnInit {
     },
   ];
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     try {
       const status = await this.api.googleCalendar(this.familyId());
       this.status.set(status);
