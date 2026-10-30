@@ -6,6 +6,8 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Independent profile images (#388, October 30, 2026).** Rendering foundation on `feature/388-profile-images`; pending upload/storage/ownership/API/UI/browser work is in `docs/design/handoffs/profile-images-388.md`. Uploads are not enabled and full acceptance is pending.
+
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
   - [ ] Review required PR checks and promote through the normal release route to `main` (scheduled workflows run there).
