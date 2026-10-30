@@ -125,6 +125,8 @@ export interface ProfileTile {
   readonly locked: boolean;
   /** Set while the PIN is paused after three wrong tries. */
   readonly pausedUntil?: string | null;
+  /** That person's own photo (#388), read with this device's cookie; absent or null shows the initial. */
+  readonly photoUrl?: string | null;
 }
 
 export interface DeviceProfiles {
@@ -140,6 +142,23 @@ export interface ParentPinStatus {
   readonly isSet: boolean;
   readonly locked: boolean;
   readonly pausedUntil: string | null;
+}
+
+/**
+ * A profile photo this viewer may see (#388): a parent's own photo (`kind` "parent", membership id), or, for a parent
+ * viewer, their personal photo of a child; for a child viewer, the child's own photo (`kind` "child", child id).
+ */
+export interface PhotoRef {
+  readonly kind: 'parent' | 'child';
+  readonly id: string;
+  readonly url: string;
+}
+
+/** The viewer's photos, and who the viewer is, so their own photo can be found. */
+export interface PhotoSet {
+  readonly youKind: 'parent' | 'child';
+  readonly youId: string;
+  readonly photos: readonly PhotoRef[];
 }
 
 export interface ChildSession {
@@ -492,6 +511,22 @@ export class Api {
   pairDevice = (code: string, deviceName: string) =>
     this.call(this.http.post<{ childId: string; childFirstName: string }>('/api/device/pair', { code, deviceName }));
   childSession = () => this.call(this.http.get<ChildSession>('/api/session/child'));
+
+  // Profile photos (#388). Each person changes only their own choices; uploads are the raw image file.
+  photos = (familyId: string) => this.call(this.http.get<PhotoSet>(`/api/families/${familyId}/photos`));
+  /** The viewer's own photo: a parent's, or a signed-in child's. */
+  setOwnPhoto = (familyId: string, file: Blob) =>
+    this.call(this.http.put<PhotoRef>(`/api/families/${familyId}/photos/me`, file, { headers: { 'Content-Type': file.type || 'application/octet-stream' } }));
+  removeOwnPhoto = (familyId: string) => this.call(this.http.delete<void>(`/api/families/${familyId}/photos/me`));
+  /** This parent's personal photo of a child, seen only by them. */
+  setChildPhoto = (familyId: string, childId: string, file: Blob) =>
+    this.call(
+      this.http.put<PhotoRef>(`/api/families/${familyId}/photos/children/${childId}`, file, {
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      }),
+    );
+  removeChildPhoto = (familyId: string, childId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/photos/children/${childId}`));
 
   // The shared calendar. A range spans at most 62 days. Children may list (they see only their confirmed events).
   calendarEvents = (familyId: string, from: string, to: string) =>

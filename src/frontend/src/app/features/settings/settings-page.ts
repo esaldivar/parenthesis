@@ -11,11 +11,22 @@ import { ParentPinSettings } from '../family/parent-pin-settings';
 import { InviteCoParent } from '../family/invite-co-parent';
 import { DeleteAccount } from './delete-account';
 import { GoogleCalendarSettings } from './google-calendar-settings';
+import { ProfilePhotoSettings } from './profile-photo-settings';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatSlideToggleModule, AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, ParentPinSettings, GoogleCalendarSettings, DeleteAccount],
+  imports: [
+    MatSlideToggleModule,
+    AppearancePicker,
+    InviteCoParent,
+    ChildrenAccess,
+    DeviceList,
+    ParentPinSettings,
+    GoogleCalendarSettings,
+    DeleteAccount,
+    ProfilePhotoSettings,
+  ],
   template: `
     <h1>Settings</h1>
     <section class="card">
@@ -40,6 +51,11 @@ import { GoogleCalendarSettings } from './google-calendar-settings';
           } @else {
             <p class="muted">Loading…</p>
           }
+        </section>
+
+        <section class="card" aria-labelledby="photos-heading">
+          <h2 id="photos-heading">Profile photos</h2>
+          <app-profile-photo-settings [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="children-heading">

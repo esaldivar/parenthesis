@@ -186,6 +186,42 @@ describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #
     });
   });
 
+  describe('photos (#388)', () => {
+    // The API puts each person's own photo on their tile; a parent's personal photo of a child never reaches it.
+    const withPhotos: DeviceProfiles = {
+      ...PICKER,
+      profiles: PICKER.profiles.map((p) =>
+        p.id === 'dad' ? { ...p, photoUrl: '/api/device/photos/dads-own' } : p.id === 'kai' ? { ...p, photoUrl: '/api/device/photos/kais-own' } : p,
+      ),
+    };
+    const photo = (body: HTMLElement, selector: string) => body.querySelector(`${selector} app-avatar img`)?.getAttribute('src') ?? null;
+
+    it('shows each tile’s own photo, on every screen size, with the initial when there is none', async () => {
+      const { body } = await open('/profiles', fakeAuth({ signedIn: false, device: withPhotos }));
+
+      const tiles = [...body.querySelectorAll<HTMLElement>('.tiles li')];
+      expect(tiles.map((tile) => tile.querySelector('app-avatar img')?.getAttribute('src') ?? null)).toEqual([
+        '/api/device/photos/dads-own',
+        '/api/device/photos/kais-own',
+        null,
+      ]);
+      expect(tiles.map((tile) => tile.querySelector('app-avatar')!.getAttribute('data-photo'))).toEqual(['any', 'any', null]);
+      expect(tiles[2].querySelector('app-avatar')!.textContent!.trim()).toBe('A');
+    });
+
+    it('shows the photo on the parent and child PIN screens, with no way to edit it there', async () => {
+      const parent = await open('/profiles/parent/dad', fakeAuth({ signedIn: false, device: withPhotos }));
+      expect(photo(parent.body, 'main')).toBe('/api/device/photos/dads-own');
+      expect(parent.body.querySelector('main input[type=file]')).toBeNull();
+      TestBed.resetTestingModule();
+
+      const child = await open('/profiles/child/kai', fakeAuth({ signedIn: false, device: withPhotos }));
+      expect(photo(child.body, 'main')).toBe('/api/device/photos/kais-own');
+      expect(child.body.querySelector('main input[type=file]')).toBeNull();
+      expect(text(child.body)).not.toMatch(/change photo|choose a photo/i);
+    });
+  });
+
   describe('a parent tile', () => {
     it('asks for the parent’s six-digit PIN and signs them in', async () => {
       const { harness, body, auth, router } = await open('/profiles/parent/dad');

@@ -25,7 +25,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
   imports: [DatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
   template: `
     <div class="who">
-      <app-avatar [name]="name()" [size]="72" />
+      <app-avatar [name]="name()" [size]="72" [src]="tile()?.photoUrl" />
       <h1>Hi, {{ name() }}</h1>
     </div>
 
@@ -119,7 +119,7 @@ export class ChildPinPage {
   /** The child's id, from the route. */
   readonly id = input.required<string>();
 
-  private readonly tile = computed(() => this.auth.device()?.profiles.find((p) => p.kind === 'child' && p.id === this.id()));
+  protected readonly tile = computed(() => this.auth.device()?.profiles.find((p) => p.kind === 'child' && p.id === this.id()));
   protected readonly name = computed(() => this.tile()?.name ?? 'there');
   /** A child's own tablet opens straight to this page, so there are no other profiles to go back to. */
   protected readonly pairedTablet = computed(() => this.auth.device()?.deviceKind === 'ChildPaired');

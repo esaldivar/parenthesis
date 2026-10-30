@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { AppearanceService } from '../theme/appearance.service';
+import { ProfilePhotos } from '../profile-photos/profile-photos';
 import { AuthStore } from './auth.store';
 
 /** Synthetic family only. */
@@ -18,14 +19,17 @@ describe('AuthStore', () => {
   let http: HttpTestingController;
   let store: AuthStore;
   let accounts: (string | null)[];
+  let photoFamilies: (string | null)[];
 
   beforeEach(() => {
     accounts = [];
+    photoFamilies = [];
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AppearanceService, useValue: { useAccount: (id: string | null) => accounts.push(id) } },
+        { provide: ProfilePhotos, useValue: { load: (familyId: string | null) => photoFamilies.push(familyId) } },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -85,6 +89,33 @@ describe('AuthStore', () => {
     expect(store.child()?.firstName).toBe('Kai');
     expect(store.user()).toBeNull();
     expect(accounts).toEqual(['child:kai']);
+  });
+
+  it('loads photos for whoever is signed in and clears them when the profile changes (#388)', async () => {
+    const init = store.initialize();
+    await respond(
+      ['/api/antiforgery', 204],
+      ['/api/me', 403],
+      ['/api/session/child', 200, { childId: 'kai', firstName: 'Kai', familyId: 'f1' }],
+      ['/api/device/profiles', 200, PICKER],
+    );
+    await init;
+    TestBed.tick();
+    expect(photoFamilies.at(-1)).toBe('f1');
+
+    const signOut = store.signOut();
+    await respond(['/api/auth/logout', 204], ['/api/antiforgery', 204], ['/api/device/profiles', 200, PICKER]);
+    await signOut;
+    TestBed.tick();
+    expect(photoFamilies.at(-1)).toBeNull();
+
+    const load = store.loadFamilies();
+    store.user.set({ id: 'user-1', email: 'dad@example.test', displayName: 'Dad' });
+    store.status.set('signed-in');
+    await respond(['/api/me/families', 200, [{ id: 'f2', name: 'Rivera Family', timeZone: 'America/Chicago', role: 'Parent' }]]);
+    await load;
+    TestBed.tick();
+    expect(photoFamilies.at(-1)).toBe('f2');
   });
 
   it('gets a fresh antiforgery token after a child signs in with their PIN', async () => {

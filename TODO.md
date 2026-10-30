@@ -50,6 +50,19 @@ that points back here.
   - [ ] Owner acceptance of #153 after testing the flow on `develop` (ADR-0007 itself is accepted), with the release
     PR's CI and SonarCloud analysis green; #153 stays open until then. Deferred: child
     personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
+- [ ] **Independent parent and child profile photos (#388, owner decisions October 30, 2026).** Details and limits:
+  `docs/design/handoffs/PROFILE_PHOTOS_388.md`.
+  - [x] Each parent's own photo, each parent's private photo of each child, and each child's own photo, edited only in
+    Settings; picker and PIN screens show each person's own photo; desktop calendar circles show photos, phones keep
+    initials. Uploads validated, bounded, re-encoded without metadata and served only through authorized URLs.
+    API, Vitest and Playwright (desktop and 320/390 touch Chromium, both themes) coverage.
+  - [x] Owner design review of the Settings "Profile photos" section, the photo editor and the child's "Your picture"
+    card: approved by the owner October 30, 2026. The `design approved` label is the owner's to apply.
+  - [ ] Mobile WebKit Playwright profiles in CI, physical iPhone (HEIC photo conversion by Safari) and Android
+    photo pickers, real screen reader pass of the editor.
+  - [ ] Owner test on the dev site after the release reaches `develop`; #388 stays open until then.
+  - [ ] Move profile photos from PostgreSQL to private Azure Blob storage before the private beta (v1.0.0): change
+    the photo endpoints' storage and copy existing photos once. Owner decision October 30, 2026: Postgres for now.
 - [ ] **Open an event's location in Google Maps (#113, owner-approved stretch, October 29, 2026).**
   - [x] Event details show **Open in Google Maps** under Where: a Google Maps directions link
     (`https://www.google.com/maps/dir/?api=1&destination=…`, no API key), percent-encoded, opening in a new tab with no

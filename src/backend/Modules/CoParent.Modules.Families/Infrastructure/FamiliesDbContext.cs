@@ -33,6 +33,8 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<DevicePairingCode> PairingCodes => Set<DevicePairingCode>();
 
+    public DbSet<ProfilePhoto> ProfilePhotos => Set<ProfilePhoto>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -134,6 +136,19 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             code.HasIndex(c => c.CodeHash).IsUnique();
             code.HasIndex(c => c.ChildProfileId);
             code.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ProfilePhoto>(photo =>
+        {
+            photo.ToTable("profile_photos");
+            photo.Property(p => p.ChooserKind).HasConversion<string>().HasMaxLength(16);
+            photo.Property(p => p.ContentType).HasMaxLength(32);
+            photo.Ignore(p => p.IsOwnPhoto);
+            photo.HasOne<Family>().WithMany().HasForeignKey(p => p.FamilyId);
+
+            // One photo per chooser and subject: a replacement removes the old row before adding the new one.
+            photo.HasIndex(p => new { p.FamilyId, p.ChooserKind, p.ChooserId, p.SubjectId }).IsUnique();
+            photo.HasQueryFilter(TenantContext.QueryFilterName, p => p.FamilyId == CurrentFamilyId);
         });
     }
 }

@@ -9,6 +9,7 @@ import { ComingSoonPage } from '../../shared/coming-soon/coming-soon-page';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { axeViolations } from '../../../testing/axe';
 import { AuthStore } from '../../core/auth/auth.store';
+import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { LiveDashboardDataSource } from './dashboard-data';
 import { DashboardWeek } from './model';
@@ -33,7 +34,16 @@ describe('DashboardPage (approved design)', () => {
     notes: [],
   };
 
-  async function render(options: { sample?: boolean; failingSource?: boolean; week?: string; live?: DashboardWeek; load?: () => Promise<DashboardWeek | null> } = {}) {
+  async function render(
+    options: {
+      sample?: boolean;
+      failingSource?: boolean;
+      week?: string;
+      live?: DashboardWeek;
+      load?: () => Promise<DashboardWeek | null>;
+      photos?: Pick<ProfilePhotos, 'url' | 'own'>;
+    } = {},
+  ) {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -41,6 +51,7 @@ describe('DashboardPage (approved design)', () => {
         provideHttpClientTesting(),
         fakeAuth(),
         { provide: NOW, useValue: () => WEDNESDAY_MORNING },
+        ...(options.photos ? [{ provide: ProfilePhotos, useValue: options.photos }] : []),
       ],
     });
     let calls = 0;
@@ -72,6 +83,30 @@ describe('DashboardPage (approved design)', () => {
       typeof label === 'string' ? text(b) === label || b.getAttribute('aria-label') === label : label.test(text(b)),
     )!;
   const link = (el: HTMLElement, label: string) => [...el.querySelectorAll('a')].find((a) => text(a).startsWith(label))!;
+
+  describe('calendar photos (#388)', () => {
+    it('gives every calendar circle the viewer’s photo for that person, shown on desktop only', async () => {
+      const asked: string[] = [];
+      const photos = {
+        url: (kind: 'parent' | 'child', id: string | null | undefined) => (asked.push(`${kind}:${id}`), `/photos/${kind}-${id}`),
+        own: () => null,
+      } as unknown as Pick<ProfilePhotos, 'url' | 'own'>;
+      const { el } = await render({ sample: true, photos });
+
+      const circles = [...el.querySelectorAll<HTMLElement>('.cal app-avatar')];
+      expect(circles.length).toBeGreaterThan(0);
+      for (const circle of circles) {
+        expect(circle.getAttribute('data-photo')).toBe('desktop');
+        const kind = circle.getAttribute('data-kind');
+        expect(circle.querySelector('img')!.getAttribute('src')).toMatch(new RegExp(`^/photos/${kind}-`));
+        // The initial stays underneath: phones and tablets show it (the photo is hidden below 1024px).
+        expect(circle.textContent!.trim()).toMatch(/^[A-Z]$/);
+      }
+      // Parents are looked up by membership and children by child id, never across kinds.
+      expect(asked).toContain('parent:sample-dad');
+      expect(asked.every((a) => /^(parent:sample-|child:)/.test(a))).toBe(true);
+    });
+  });
 
   describe('layout and live data', () => {
     it('greets the parent like the approved design', async () => {

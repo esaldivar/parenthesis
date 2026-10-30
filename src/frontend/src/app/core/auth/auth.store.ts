@@ -1,8 +1,9 @@
 import { EventThemesService } from '../theme/event-themes.service';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Api, ChildSession, DeviceProfiles, FamilySummary, Me } from '../api/api';
 import { AppearanceService } from '../theme/appearance.service';
+import { ProfilePhotos } from '../profile-photos/profile-photos';
 
 /** `signed-in` is a parent's account; `child` is a child signed in with their PIN on a registered device. */
 export type AuthStatus = 'unknown' | 'anonymous' | 'signed-in' | 'child';
@@ -28,6 +29,20 @@ export class AuthStore {
   readonly currentFamily = computed(() => this.families()?.[0] ?? null);
   /** "Who's using Parenthesis?" for this browser, when it's a registered device; null otherwise. */
   readonly device = signal<DeviceProfiles | null>(null);
+
+  private readonly photos = inject(ProfilePhotos);
+  /** The family whose photos the viewer sees: the parent's current family, or the signed-in child's. */
+  private readonly photoFamily = computed(() =>
+    this.status() === 'child' ? (this.child()?.familyId ?? null) : this.status() === 'signed-in' ? (this.currentFamily()?.id ?? null) : null,
+  );
+
+  constructor() {
+    // Each viewer's photos (#388) load for them alone and are cleared as soon as the profile changes.
+    effect(() => {
+      const familyId = this.photoFamily();
+      untracked(() => void this.photos.load(familyId));
+    });
+  }
 
   /** Runs before the first route: an antiforgery token, who (if anyone) is signed in, and this device's picker. */
   async initialize(): Promise<void> {
