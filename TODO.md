@@ -56,8 +56,8 @@ that points back here.
     Settings; picker and PIN screens show each person's own photo; desktop calendar circles show photos, phones keep
     initials. Uploads validated, bounded, re-encoded without metadata and served only through authorized URLs.
     API, Vitest and Playwright (desktop and 320/390 touch Chromium, both themes) coverage.
-  - [ ] Owner design review of the Settings "Profile photos" section, the photo editor and the child's "Your picture"
-    card (built from existing components; screenshots in the project thread). The `design approved` label is the owner's.
+  - [x] Owner design review of the Settings "Profile photos" section, the photo editor and the child's "Your picture"
+    card: approved by the owner October 30, 2026. The `design approved` label is the owner's to apply.
   - [ ] Mobile WebKit Playwright profiles in CI, physical iPhone (HEIC photo conversion by Safari) and Android
     photo pickers, real screen reader pass of the editor.
   - [ ] Owner test on the dev site after the release reaches `develop`; #388 stays open until then.
