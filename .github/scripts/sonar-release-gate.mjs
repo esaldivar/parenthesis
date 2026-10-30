@@ -370,13 +370,13 @@ export async function evaluate({
         blocking.push(`${describe(issue, scope)} — ${noJustification(verdict, `marked **${issue.issueStatus ?? issue.resolution}**`)}`);
       }
     }
-    for (const resolution of ["SAFE", "ACKNOWLEDGED"]) {
-      for (const h of await client.all("hotspots/search", { projectKey, ...scope, status: "REVIEWED", resolution }, "hotspots")) {
-        const detail = await client.get("hotspots/show", { hotspot: h.key });
-        const verdict = hasJustification(detail.comment);
-        if (verdict !== true) {
-          blocking.push(`${hotspotLine(h, scope)} — ${noJustification(verdict, `reviewed as **${resolution}**`)}`);
-        }
+    // hotspots/search only filters resolution by FIXED or SAFE, so fetch every reviewed hotspot and skip the fixed ones.
+    for (const h of await client.all("hotspots/search", { projectKey, ...scope, status: "REVIEWED" }, "hotspots")) {
+      if (h.resolution === "FIXED") continue;
+      const detail = await client.get("hotspots/show", { hotspot: h.key });
+      const verdict = hasJustification(detail.comment);
+      if (verdict !== true) {
+        blocking.push(`${hotspotLine(h, scope)} — ${noJustification(verdict, `reviewed as **${h.resolution ?? "reviewed"}**`)}`);
       }
     }
   }
