@@ -30,10 +30,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # Execute only trusted default-branch code. Never check out a dependency PR head.
+      # No ref: checkout takes the commit this workflow file was read from (the PR's base branch, the default branch,
+      # or a newly created branch, which already controls this file), so it never runs more than the workflow itself
+      # trusts. Never check out a dependency PR head, and don't set a ref (SonarQube githubactions:S7631).
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
           persist-credentials: false
       - name: Route dependency PRs to the latest release with an open milestone

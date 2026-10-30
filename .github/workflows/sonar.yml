@@ -100,6 +100,21 @@ jobs:
         working-directory: src/frontend
         run: npm test -- --coverage --coverage-reporters=lcov
 
+      # The Python queue scripts' unit tests (the same suite workflow-scripts.yml runs). Without this report SonarQube
+      # Cloud counts every line of those scripts as uncovered.
+      - name: Set up Python
+        if: steps.mode.outputs.mode != 'bound'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Python tests with coverage (Cobertura XML)
+        if: steps.mode.outputs.mode != 'bound'
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir --only-binary :all: --require-hashes -r .github/requirements/python-coverage.txt
+          python -B -m coverage run --branch --source=scripts -m unittest discover -s tests -p "test_claude_queue_*.py"
+          python -m coverage xml -o coverage-python.xml
+
       # The .NET scanner analyses C# through the build and, with scanAll, the rest of the repository too (TypeScript,
       # HTML, CSS, Docker, YAML).
       - name: Begin analysis
@@ -112,9 +127,10 @@ jobs:
           /d:sonar.host.url="https://sonarcloud.io"
           /d:sonar.scanner.scanAll=true
           /d:sonar.exclusions="**/node_modules/**,**/dist/**,**/bin/**,**/obj/**,docs/**"
-          /d:sonar.test.inclusions="**/*.spec.ts"
+          /d:sonar.test.inclusions="**/*.spec.ts,tests/test_*.py"
           /d:sonar.cs.vscoveragexml.reportsPaths="coverage-backend.xml"
           /d:sonar.javascript.lcov.reportPaths="src/frontend/coverage/parenthesis/lcov.info"
+          /d:sonar.python.coverage.reportPaths="coverage-python.xml"
           /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,tests/e2e/**,docker/**,.github/**"
 
       - name: Build

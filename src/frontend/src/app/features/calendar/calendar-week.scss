@@ -12,9 +12,9 @@ ol {
   padding: 0;
 }
 
+@include item-button('.item');
+@include item-colors('.item');
 .item {
-  @include item-button;
-  @include item-colors;
   display: block;
   width: 100%;
   height: 100%;

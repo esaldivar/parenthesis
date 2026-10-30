@@ -1,5 +1,5 @@
-import { execFileSync } from 'node:child_process';
 import { defineConfig, devices } from '@playwright/test';
+import { headSha } from './scripts/head-sha.mjs';
 
 // The release gate (docs/runbooks/playwright-release-gate.md). It runs against a release candidate that is already
 // running: in CI, the API image built from the release PR, with its own Postgres and Mailpit. The app only works over
@@ -8,7 +8,7 @@ const ci = !!process.env['CI'];
 
 export default defineConfig({
   testDir: './specs',
-  metadata: { testedSha: process.env['E2E_TESTED_SHA'] ?? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() },
+  metadata: { testedSha: process.env['E2E_TESTED_SHA'] ?? headSha() },
   // Every test makes its own synthetic family, so tests don't share state and can run in parallel.
   fullyParallel: true,
   forbidOnly: ci,

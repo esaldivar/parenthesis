@@ -21,9 +21,10 @@ jobs:
     steps:
       # pull_request_target executes from the default branch. Use trusted default-branch code;
       # never execute or check out the PR head or a policy override on its target.
+      # The ref is the literal default branch, not event data (SonarQube githubactions:S7631).
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: main
           sparse-checkout: .github/scripts
           persist-credentials: false
       - name: Verify the current PR's tracking issues
