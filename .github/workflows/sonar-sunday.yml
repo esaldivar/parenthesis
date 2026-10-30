@@ -34,6 +34,7 @@ jobs:
           get "issues/search?componentKeys=$KEY&branch=develop&resolved=false&types=VULNERABILITY,BUG&ps=100" > risks.json
           get "issues/search?componentKeys=$KEY&branch=develop&resolved=false&types=CODE_SMELL&severities=BLOCKER,CRITICAL,MAJOR&ps=50" > smells.json
           get "hotspots/search?projectKey=$KEY&branch=develop&status=TO_REVIEW&ps=100" > hotspots.json
+          get "project_analyses/search?project=$KEY&branch=develop&ps=1" > analyses.json
 
       - name: Write the issue
         run: |
@@ -44,6 +45,21 @@ jobs:
             echo "Weekly review of SonarQube Cloud's findings on \`develop\`, for $today."
             echo
             echo "**Quality gate on develop:** $(jq -r '.projectStatus.status' gate.json)"
+            echo
+            # Say which analysis this is, and warn when it's missing or older than a week (develop hasn't been scanned).
+            analysed=$(jq -r '.analyses[0].date // empty' analyses.json)
+            revision=$(jq -r '.analyses[0].revision // empty' analyses.json)
+            if [ -z "$analysed" ]; then
+              echo "> [!WARNING]"
+              echo "> **No analysis of \`develop\` was found, so this report is incomplete.** Check the SonarQube Cloud job in \`sonar.yml\`."
+            else
+              echo "**Analysis:** $analysed, commit \`${revision:0:7}\`."
+              if [ "$(date -u -d "$analysed" +%s)" -lt "$(date -u -d '8 days ago' +%s)" ]; then
+                echo
+                echo "> [!WARNING]"
+                echo "> **This analysis is more than a week old**, so the findings below may be stale. Check that pushes to \`develop\` are still scanned."
+              fi
+            fi
             echo
             echo "| Vulnerabilities | Bugs | Hotspots to review | Code smells | Coverage | Duplication | Technical debt |"
             echo "|---|---|---|---|---|---|---|"

@@ -80,13 +80,17 @@ const COMMENT_MAX = 500;
                         <mat-hint align="end">{{ comment.value.length }} / {{ commentMax }}</mat-hint>
                       </mat-form-field>
                       <div class="actions">
-                        <button mat-flat-button type="button" [disabled]="busy()" (click)="decline(request)">Decline</button>
+                        <button mat-flat-button type="button" [attr.data-decline-submit]="request.id" [disabled]="busy()" (click)="decline(request)">
+                          Decline
+                        </button>
                         <button mat-button type="button" (click)="cancelDecline(request)">Cancel</button>
                       </div>
                     </div>
                   } @else {
                     <div class="actions">
-                      <button mat-flat-button type="button" [disabled]="busy()" (click)="approve(request)">Approve</button>
+                      <button mat-flat-button type="button" [attr.data-approve]="request.id" [disabled]="busy()" (click)="approve(request)">
+                        Approve
+                      </button>
                       <button mat-stroked-button type="button" [attr.data-decline]="request.id" (click)="startDecline(request)">
                         Decline
                       </button>
@@ -94,7 +98,9 @@ const COMMENT_MAX = 500;
                   }
                 } @else if (request.proposedByYou) {
                   <div class="actions">
-                    <button mat-stroked-button type="button" [disabled]="busy()" (click)="withdraw(request)">Withdraw</button>
+                    <button mat-stroked-button type="button" [attr.data-withdraw]="request.id" [disabled]="busy()" (click)="withdraw(request)">
+                      Withdraw
+                    </button>
                   </div>
                 }
               </li>
@@ -303,45 +309,58 @@ export class ApprovalsPage implements OnInit {
   }
 
   protected approve(request: ChangeRequest): Promise<void> {
-    return this.run((familyId) => this.api.approve(familyId, request.id), `You approved “${request.summary}”.`);
+    return this.run((familyId) => this.api.approve(familyId, request.id), `You approved “${request.summary}”.`, `[data-approve="${request.id}"]`);
   }
 
   protected decline(request: ChangeRequest): Promise<void> {
     const comment = this.comment.value.trim() || undefined;
-    return this.run((familyId) => this.api.reject(familyId, request.id, comment), `You declined “${request.summary}”.`);
+    return this.run(
+      (familyId) => this.api.reject(familyId, request.id, comment),
+      `You declined “${request.summary}”.`,
+      `[data-decline-submit="${request.id}"]`,
+    );
   }
 
   protected withdraw(request: ChangeRequest): Promise<void> {
-    return this.run((familyId) => this.api.withdraw(familyId, request.id), `You withdrew “${request.summary}”.`);
+    return this.run((familyId) => this.api.withdraw(familyId, request.id), `You withdrew “${request.summary}”.`, `[data-withdraw="${request.id}"]`);
   }
 
-  private async run(action: (familyId: string) => Promise<unknown>, done: string): Promise<void> {
+  /** `retry` is the button that started the action: after a failure, focus returns there so the person can try again. */
+  private async run(action: (familyId: string) => Promise<unknown>, done: string, retry: string): Promise<void> {
     const familyId = this.familyId();
     if (!familyId) {
       return;
     }
     this.busy.set(true);
     this.error.set(null);
+    let failed = false;
     try {
       await action(familyId);
       this.declining.set(null);
       this.toasts.show(done);
       await this.reload();
     } catch (error) {
+      failed = true;
       this.error.set(generalMessage(toProblem(error)));
       await this.reload();
     } finally {
       this.busy.set(false);
     }
     // The decided item leaves the list with the focused button. Focus the list's heading, a stable place to continue
-    // from; the toast announces the result without taking focus (#226).
-    this.focusAfterRender('#waiting-heading');
+    // from; the toast announces the result without taking focus (#226). After a failure the item usually stays, so
+    // focus goes back to its button (the alert announces the error); if it's gone, to the heading.
+    this.focusAfterRender(...(failed ? [retry, '#waiting-heading'] : ['#waiting-heading']));
   }
 
-  private focusAfterRender(selector: string): void {
-    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), {
-      injector: this.injector,
-    });
+  /** Focuses the first of the selectors that matches once the page has rendered. */
+  private focusAfterRender(...selectors: string[]): void {
+    afterNextRender(
+      () => {
+        const host = this.host.nativeElement;
+        selectors.map((s) => host.querySelector<HTMLElement>(s)).find((el) => el)?.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   private async reload(): Promise<void> {
