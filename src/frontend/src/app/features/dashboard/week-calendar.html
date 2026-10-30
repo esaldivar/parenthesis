@@ -79,9 +79,9 @@
                 >
                   <span class="pt__icon" aria-hidden="true"><app-icon name="calendar" [size]="22" /></span>
                   <span class="pt__avatars" aria-hidden="true">
-                    <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="40" />
+                    <app-avatar [calendar]="true" [name]="block.caregiver.displayName" kind="parent" [size]="40" />
                     @for (child of block.children; track child.id) {
-                      <app-avatar [name]="child.name" [size]="40" />
+                      <app-avatar [calendar]="true" [name]="child.name" [size]="40" />
                     }
                   </span>
                   <span class="pt__text">
@@ -221,10 +221,10 @@
                     <span class="visually-hidden">, {{ childNames(event.children) }}{{ event.parents?.length ? ', with ' + parentNames(event) : '' }}</span>
                     <span class="act__avatars" aria-hidden="true">
                       @for (parent of event.parents ?? []; track parent.membershipId) {
-                        <app-avatar [name]="parent.displayName" kind="parent" [size]="26" />
+                        <app-avatar [calendar]="true" [name]="parent.displayName" kind="parent" [size]="26" />
                       }
                       @for (child of event.children; track child.id) {
-                        <app-avatar [name]="child.name" [size]="26" />
+                        <app-avatar [calendar]="true" [name]="child.name" [size]="26" />
                       }
                     </span>
                     @if (event.status !== 'confirmed') {
@@ -256,9 +256,9 @@
           @for (block of allDay(); track block.key) {
             <li class="pt pt--card" [appCalendarPalette]="block.caregiver.palette ?? 'parenting'" [attr.data-status]="block.status">
               <span class="pt__avatars" aria-hidden="true">
-                <app-avatar [name]="block.caregiver.displayName" kind="parent" [size]="36" />
+                <app-avatar [calendar]="true" [name]="block.caregiver.displayName" kind="parent" [size]="36" />
                 @for (child of block.children; track child.id) {
-                  <app-avatar [name]="child.name" [size]="36" />
+                  <app-avatar [calendar]="true" [name]="child.name" [size]="36" />
                 }
               </span>
               <span class="pt__text">
@@ -332,10 +332,10 @@
                     </span>
                     <span class="act__avatars" aria-hidden="true">
                       @for (parent of event.parents ?? []; track parent.membershipId) {
-                        <app-avatar [name]="parent.displayName" kind="parent" [size]="28" />
+                        <app-avatar [calendar]="true" [name]="parent.displayName" kind="parent" [size]="28" />
                       }
                       @for (child of event.children; track child.id) {
-                        <app-avatar [name]="child.name" [size]="28" />
+                        <app-avatar [calendar]="true" [name]="child.name" [size]="28" />
                       }
                     </span>
                     @if (event.status !== 'confirmed') {
