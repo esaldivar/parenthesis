@@ -17,7 +17,7 @@ for the owner's approval after the report has been checked on real PRs.
 | Tracking issue links (#132) | Required | Required | Required |
 | Release E2E gate (Playwright, five profiles) | Required | Required | Not required (develop's tested image is promoted) |
 | NVDA accessibility gate | Required | Not required | Not required |
-| SonarCloud Code Analysis / SonarQube Cloud | Not run | Not run | Required |
+| SonarCloud Code Analysis / SonarQube Cloud | Not run | Runs on PRs into develop; not required (#373) | Not scanned; the Release security gate reuses develop's analysis of identical code (#373) |
 
 `develop` and `main` require up-to-date branches (strict) and apply to admins. No branch requires an approving review:
 the owner merges. Deletion and force-pushes are blocked on all three.
@@ -35,7 +35,7 @@ the owner merges. Deletion and force-pushes are blocked on all three.
 | `pr-weekly-limit.yml` | Every PR (`pull_request_target`) | Release-promotion weekly cap and its owner label |
 | `copilot-review-usage.yml` | Review requests (`pull_request_target`) | Copilot review weekly usage |
 | `discord-pr-notify.yml` | PR events (`pull_request_target`, pull-requests: write) | Discord summaries |
-| `sonar.yml`, `sonar-sunday.yml` | PRs into and pushes to main; Sundays | SonarQube Cloud analysis and the weekly security report |
+| `sonar.yml`, `sonar-sunday.yml` | PRs into and pushes to develop and main; Sundays | SonarQube Cloud analysis of develop (main reuses it, #373) and the weekly report on develop |
 | `deploy.yml` | Pushes to develop and main | Deploys; production waits for the owner's approval and the release security gate |
 | `workflow-scripts.yml` | PRs touching `.github/` or queue scripts | Unit tests for workflow scripts and the Claude queue |
 | `claude-queue-dry-run.yml` | Manual | Read-only Claude queue selection |
@@ -47,8 +47,8 @@ the owner merges. Deletion and force-pushes are blocked on all three.
   edit in the PR list. Phase 2 below adds it, report-only.
 - **No automatic migration-safety check.** Destructive migrations (dropping or renaming columns or tables) rely on
   review alone. Phase 2 flags them; it doesn't block.
-- **Sonar runs only on PRs into main.** Security findings in release work surface at release time (the Sonar Sunday
-  report narrows the gap).
+- **Sonar doesn't run on work PRs into `release/*`.** It analyses `develop` and PRs into it (#373), so findings in
+  release work surface when the release PR into `develop` opens (the Sonar Sunday report narrows the gap).
 - **No required human review.** Acceptable for a single owner; phase 3 can require it for high-risk changes only.
 - **Not covered by the classifier:** new outbound integrations (for example the Google Places call, #354) and
   privacy-relevant UI copy. Review them by hand.
