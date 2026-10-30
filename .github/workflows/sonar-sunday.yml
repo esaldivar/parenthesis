@@ -5,6 +5,13 @@ name: Sonar Sunday
 # issue listing open vulnerabilities, bugs, security hotspots and code smells as a checklist. Fixes go on a
 # fix/sonar-sunday-<date> branch with a PR into the active release/x.y.z branch, and reach main with that release's
 # window (or a hotfix, if urgent). See docs/development-workflow.md. It can also be run by hand from the Actions tab.
+#
+# Claude's queue (owner request, October 30, 2026): a week with findings is titled "Week of <Sunday> Sonar findings",
+# labelled claude-implementation, put in the active release's milestone, and added to Project #2 as Ready For
+# Development, P0 - Critical, Work Type Development. It is NOT approved: the queue only runs it once the owner adds
+# owner-approved-claude (docs/runbooks/claude-local-queue.md). Re-running in the same week updates that week's issue
+# instead of opening another, and never edits one the owner has already approved. The board step needs the
+# PROJECTS_TOKEN secret with write access to projects.
 on:
   schedule:
     - cron: "0 14 * * 0" # Sundays 14:00 UTC (9 AM Central, 8 AM in winter).
@@ -25,7 +32,28 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       KEY: ${{ vars.SONAR_PROJECT_KEY }}
       API: https://sonarcloud.io/api
+      PROJECT_NUMBER: 2 # The board Claude's queue reads (scripts/claude_queue_board.py).
     steps:
+      - name: Name the week and find the queue milestone
+        id: week
+        run: |
+          # The most recent Sunday, today included, so a manual run mid-week files under the same week.
+          sunday=$(date -u -d "today -$(date -u +%w) days" +%Y-%m-%d)
+          day=$(date -u -d "$sunday" +%-d)
+          case $day in 1 | 21 | 31) suffix=st ;; 2 | 22) suffix=nd ;; 3 | 23) suffix=rd ;; *) suffix=th ;; esac
+          echo "sunday=$sunday" >> "$GITHUB_OUTPUT"
+          echo "title=Week of $(date -u -d "$sunday" +%B) $day$suffix, $(date -u -d "$sunday" +%Y) Sonar findings" >> "$GITHUB_OUTPUT"
+          # The active release is the highest release/x.y.z branch; its milestone is "Mn — …" (0.n.0) or "vX.Y — …".
+          release=$(gh api --paginate "repos/$GITHUB_REPOSITORY/branches?per_page=100" --jq '.[].name' \
+            | sed -nE 's#^release/([0-9]+\.[0-9]+\.[0-9]+)$#\1#p' | sort -V | tail -1)
+          milestone=$(gh api "repos/$GITHUB_REPOSITORY/milestones?state=open&per_page=100" | jq -r --arg r "$release" '
+            .[] | .title as $t
+            | ((($t | capture("^M(?<m>[0-9]+)\\b")? | "0.\(.m | tonumber).0"))
+               // ($t | capture("^v(?<a>[0-9]+)\\.(?<b>[0-9]+)\\b")? | "\(.a | tonumber).\(.b | tonumber).0"))
+            | select(. == $r) | $t' | head -1)
+          echo "milestone=$milestone" >> "$GITHUB_OUTPUT"
+          echo "Week: $sunday. Active release: ${release:-none}. Milestone: ${milestone:-none}."
+
       - name: Fetch findings on develop
         run: |
           get() { curl -fsS -u "$SONAR_TOKEN:" "$API/$1"; }
@@ -86,8 +114,83 @@ jobs:
             echo "All findings: $link"
           } > body.md
 
-      - name: Open the issue
+      - name: Open or update this week's issue
+        id: issue
+        env:
+          TITLE: ${{ steps.week.outputs.title }}
+          MILESTONE: ${{ steps.week.outputs.milestone }}
         run: |
-          today=$(date -u +%Y-%m-%d)
+          found=$(( $(jq '.issues | length' risks.json) + $(jq '.hotspots | length' hotspots.json) + $(jq '.issues | length' smells.json) ))
+          if [ "$found" -gt 0 ]; then
+            {
+              echo "> **Claude's queue:** Ready For Development · P0 - Critical · Development. Claude picks this up only after"
+              echo "> the owner reviews it and adds \`owner-approved-claude\`."
+              echo
+              cat body.md
+            } > issue.md
+          else
+            cp body.md issue.md
+          fi
           gh label create sonar-sunday --repo "$GITHUB_REPOSITORY" --color 1F6FEB --description "Weekly SonarQube Cloud review" --force
-          gh issue create --repo "$GITHUB_REPOSITORY" --title "Sonar Sunday: $today" --label sonar-sunday --body-file body.md
+
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --label sonar-sunday --state all --limit 20 \
+            --json number,title,labels | jq -c --arg t "$TITLE" '[.[] | select(.title == $t)][0] // empty')
+          if [ -n "$existing" ]; then
+            number=$(jq -r .number <<<"$existing")
+            if jq -e '.labels | any(.name == "owner-approved-claude")' <<<"$existing" > /dev/null; then
+              echo "#$number is already approved for Claude, so its text is left as it is (editing it would undo the approval)."
+            else
+              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file issue.md
+              echo "Updated #$number."
+            fi
+            exit 0
+          fi
+
+          args=(--repo "$GITHUB_REPOSITORY" --title "$TITLE" --label sonar-sunday --body-file issue.md)
+          if [ "$found" -gt 0 ]; then
+            args+=(--label claude-implementation)
+            if [ -n "$MILESTONE" ]; then args+=(--milestone "$MILESTONE")
+            else echo "::warning::No open milestone matches the active release branch, so Claude's queue won't see this issue until one is set."; fi
+          fi
+          url=$(gh issue create "${args[@]}")
+          echo "Opened $url ($found findings)."
+          if [ "$found" -gt 0 ]; then echo "queue=$url" >> "$GITHUB_OUTPUT"; fi
+
+      # Only a new issue with findings goes on the board, so a re-run never moves an issue the queue already started.
+      - name: Put it on Claude's board
+        if: steps.issue.outputs.queue != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          ISSUE_URL: ${{ steps.issue.outputs.queue }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::The PROJECTS_TOKEN secret is missing, so $ISSUE_URL wasn't added to Project #$PROJECT_NUMBER."
+            exit 1
+          fi
+          gh api graphql -F number="$PROJECT_NUMBER" -f owner="$OWNER" -f query='
+            query($owner: String!, $number: Int!) { repositoryOwner(login: $owner) { ... on ProjectV2Owner {
+              projectV2(number: $number) { id fields(first: 50) { nodes {
+                ... on ProjectV2SingleSelectField { id name options { id name } } } } } } } }' > project.json
+          project=$(jq -r '.data.repositoryOwner.projectV2.id // empty' project.json)
+          [ -n "$project" ] || { echo "::error::Couldn't read Project #$PROJECT_NUMBER. Does PROJECTS_TOKEN have the project scope?"; exit 1; }
+          content=$(gh issue view "$ISSUE_URL" --json id --jq .id)
+          item=$(gh api graphql -f project="$project" -f content="$content" -f query='
+            mutation($project: ID!, $content: ID!) { addProjectV2ItemById(input: {projectId: $project, contentId: $content}) {
+              item { id } } }' --jq .data.addProjectV2ItemById.item.id)
+          missing=()
+          for pair in "Status=Ready For Development" "Priority=P0 - Critical" "Work Type=Development"; do
+            ids=$(jq -r --arg f "${pair%%=*}" --arg o "${pair#*=}" '.data.repositoryOwner.projectV2.fields.nodes[]
+              | select(.name? == $f) | .id as $field | .options[] | select((.name | ascii_downcase) == ($o | ascii_downcase))
+              | "\($field) \(.id)"' project.json | head -1)
+            if [ -z "$ids" ]; then missing+=("$pair"); continue; fi
+            gh api graphql -f project="$project" -f item="$item" -f field="${ids% *}" -f option="${ids#* }" -f query='
+              mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) { updateProjectV2ItemFieldValue(input: {
+                projectId: $project, itemId: $item, fieldId: $field, value: {singleSelectOptionId: $option}}) {
+                projectV2Item { id } } }' > /dev/null
+            echo "Set $pair."
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Project #$PROJECT_NUMBER has no option for: ${missing[*]}. Set it on $ISSUE_URL by hand."
+            exit 1
+          fi

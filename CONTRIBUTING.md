@@ -60,9 +60,12 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
 - Open work is tracked in [TODO.md](TODO.md).
 
 ### Rhythm: Sonar Sunday and biweekly release windows
-- **Every Sunday, Sonar Sunday:** `.github/workflows/sonar-sunday.yml` opens a **Sonar Sunday** issue listing
-  SonarQube Cloud's open vulnerabilities, bugs, security hotspots and major code smells on `main` (owner decision,
-  October 17, 2026).
+- **Every Sunday, Sonar Sunday:** `.github/workflows/sonar-sunday.yml` opens a **Week of <Sunday> Sonar findings**
+  issue listing SonarQube Cloud's open vulnerabilities, bugs, security hotspots and major code smells on `develop`
+  (owner decision, October 17, 2026).
+  - A week with findings is queued for Claude (October 30, 2026): `claude-implementation`, the active release's
+    milestone, and Project #2 as Ready For Development, P0 - Critical, Development. Claude only starts it after the
+    owner reviews it and adds `owner-approved-claude`.
   - Fix them on `fix/sonar-sunday-<date>`, with a PR into the active release branch, and link it in the issue.
   - Work in order: vulnerabilities and bugs first, then hotspots, then code smells. A vulnerability that can't wait
     for the next release is a hotfix.
