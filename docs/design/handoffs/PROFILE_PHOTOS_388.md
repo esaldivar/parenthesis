@@ -55,6 +55,7 @@ Defined before uploads were enabled; implemented in `AvatarImages` and `PhotoEnd
   new row and deletes the old one in one transaction, so nothing is orphaned and a failure keeps the old photo.
   Removing deletes the row. Deleting an account deletes that parent's photos; closing a family deletes all of them.
   Small avatars don't need the Azure Blob store planned for memories (#115); if that lands, avatars can move there.
+  Owner decision October 30, 2026: keep PostgreSQL for now and move to Blob before the private beta (in `TODO.md`).
 - **Reads:** private API URLs only, checked on every request (`Cache-Control: private, no-cache`, the photo id as
   ETag, `nosniff`). Family URLs need membership (or the child's own session); picker URLs need a usable device cookie
   for that device's profiles. Guessed ids, other households, revoked or expired devices and lost membership answer 404.

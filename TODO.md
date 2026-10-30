@@ -61,6 +61,8 @@ that points back here.
   - [ ] Mobile WebKit Playwright profiles in CI, physical iPhone (HEIC photo conversion by Safari) and Android
     photo pickers, real screen reader pass of the editor.
   - [ ] Owner test on the dev site after the release reaches `develop`; #388 stays open until then.
+  - [ ] Move profile photos from PostgreSQL to private Azure Blob storage before the private beta (v1.0.0): change
+    the photo endpoints' storage and copy existing photos once. Owner decision October 30, 2026: Postgres for now.
 - [ ] **Open an event's location in Google Maps (#113, owner-approved stretch, October 29, 2026).**
   - [x] Event details show **Open in Google Maps** under Where: a Google Maps directions link
     (`https://www.google.com/maps/dir/?api=1&destination=…`, no API key), percent-encoded, opening in a new tab with no
