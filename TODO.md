@@ -6,6 +6,16 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Dependabot milestone routing (#394, October 30, 2026).** All five version-update entries target
+  `release/0.3.0`; trusted-default-branch automation routes same-repository bot PRs to the latest existing release
+  matching an open milestone, with no main/develop fallback.
+  - [ ] Promote through the normal release route to `main`; configuration and routing are inactive until then.
+  - [ ] Verify live bot-token permissions, scheduled/manual routing, next-milestone rollover, conflicts/review
+    handling and required checks against the retargeted candidate. No live routing or deployment claimed locally.
+  - [ ] Update all static target-branch entries when cutting each release and promote the configuration normally;
+    routing corrects PR bases in the interim, but cannot change which manifests Dependabot scanned.
+  - [ ] Security updates still start on main under GitHub's platform behavior before routing; alerts stay enabled.
+
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
   - [ ] Review required PR checks and promote through the normal release route to `main` (scheduled workflows run there).

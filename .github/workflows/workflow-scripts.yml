@@ -29,7 +29,7 @@ jobs:
           persist-credentials: false
 
       - name: Test the workflow scripts
-        run: node --test .github/scripts/playwright-gate.test.mjs .github/scripts/dev-workflow.test.mjs .github/scripts/sonar-release-gate.test.mjs .github/scripts/pr-issue-links.test.mjs .github/scripts/pr-milestones.test.mjs .github/scripts/pr-risk.test.mjs
+        run: node --test .github/scripts/dependabot-release-target.test.mjs .github/scripts/playwright-gate.test.mjs .github/scripts/dev-workflow.test.mjs .github/scripts/sonar-release-gate.test.mjs .github/scripts/pr-issue-links.test.mjs .github/scripts/pr-milestones.test.mjs .github/scripts/pr-risk.test.mjs
 
       - name: Test the branch policy and the release calendar
         run: |
