@@ -35,7 +35,11 @@
   --color-outline: #718478;
   --color-danger: #a13333;
   --color-focus: #176b67;
-  --color-selected: #e4ebdd;
+  --color-selected: #d6e4d0;
+  // Hairlines between grid cells, rows and cards (#209). Calm, but visible on white and ivory.
+  --color-divider: #cfd7c9;
+  // How much of an item's category text colour tints its edge (#209), as in the approved calendar boards.
+  --calendar-item-edge-mix: 60%;
   --color-disabled-text: #5f6f66;
   --color-status-pending-bg: #fbeee0;
   --color-status-confirmed-bg: #dcefe9;
@@ -104,6 +108,8 @@
   --color-danger: #ffb4ab;
   --color-focus: #91d2c5;
   --color-selected: #24483a;
+  --color-divider: #24483a;
+  --calendar-item-edge-mix: 45%;
   --color-disabled-text: #9db2a6;
   --color-status-pending-bg: #4a3a22;
   --color-status-confirmed-bg: #1f4a3f;

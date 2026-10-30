@@ -145,7 +145,7 @@ ul {
 // --- Week grid --------------------------------------------------------------------------------------------------
 .grid {
   display: none;
-  border: 1px solid var(--color-surface-soft);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-control);
   background: var(--color-canvas);
   overflow: hidden;
@@ -202,7 +202,7 @@ ul {
 .grid__corner,
 .grid__head {
   padding: var(--space-1);
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
   background: var(--color-surface);
 }
 
@@ -210,7 +210,7 @@ ul {
   display: grid;
   justify-items: center;
   gap: 2px;
-  border-inline-start: 1px solid var(--color-surface-soft);
+  border-inline-start: 1px solid var(--color-divider);
   color: var(--color-text-secondary);
   font-size: 0.875rem;
 }
@@ -240,7 +240,7 @@ ul {
   display: grid;
   place-items: center;
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
   color: var(--color-text-secondary);
   font-size: 0.8125rem;
 }
@@ -251,7 +251,7 @@ ul {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--space-1) 0;
   padding: var(--space-2) var(--space-1);
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
 }
 
 // Parenting time: one continuous block across the days it covers, with the parent's and children's avatars.
@@ -263,7 +263,8 @@ ul {
   padding: var(--space-2) var(--space-3);
   margin-inline: 2px;
   border-radius: var(--radius-control);
-  border: 1px solid var(--color-surface-soft);
+  // Category-tinted edge, as on the Calendar page (#209).
+  border: 1px solid color-mix(in srgb, currentColor var(--calendar-item-edge-mix), var(--calendar-palette-bg, var(--color-surface)));
   background: var(--color-parenting-bg);
   color: var(--color-text);
 
@@ -359,11 +360,11 @@ ul {
   grid-template-columns: repeat(var(--lanes), minmax(0, 1fr));
   gap: 0 3px;
   padding: 0 3px;
-  border-inline-start: 1px solid var(--color-surface-soft);
+  border-inline-start: 1px solid var(--color-divider);
   // Hour lines every two slots.
   background-image: repeating-linear-gradient(
     to bottom,
-    var(--color-surface-soft) 0 1px,
+    var(--color-divider) 0 1px,
     transparent 1px calc(var(--slot) * 2)
   );
 }
@@ -378,6 +379,7 @@ ul {
   margin-block: 2px;
   padding: var(--space-2);
   border-radius: 10px;
+  border: 1px solid color-mix(in srgb, currentColor var(--calendar-item-edge-mix), var(--calendar-palette-bg, var(--color-surface)));
   background: var(--color-cat-other-bg);
   color: var(--color-text);
   font-size: 0.8125rem;

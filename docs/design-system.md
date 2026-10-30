@@ -33,13 +33,16 @@ following is a starting palette; verify every actual foreground/background pair.
 | --- | --- | --- | --- |
 | Canvas | `#F7F5ED` ivory | `#10251E` forest | App background |
 | Surface | `#FFFFFF` | `#19372D` | Cards, menus, dialogs |
-| Surface soft | `#E4EBDD` sage | `#24483A` | Selected groups, quiet panels |
+| Surface soft | `#E4EBDD` sage | `#24483A` | Quiet panels and fills |
+| Selected | `#D6E4D0` sage | `#24483A` | Selected nav items and segments (#209) |
+| Divider | `#CFD7C9` | `#24483A` | Grid, hour and card hairlines (#209) |
 | Text primary | `#203A31` | `#F7F5ED` | Headings and body |
 | Text secondary | `#4D6258` | `#C0D0C5` | Supporting text |
 | Action | `#176B67` teal | `#91D2C5` | Primary buttons and links |
 | On action | `#FFFFFF` | `#10251E` | Primary button text |
 | Accent | `#DE8F7E` coral | `#EDAA98` | Small decorative emphasis |
 | Border/control outline | `#718478` | `#8AA99A` | Meaningful boundaries |
+| Calendar item edge | category text 60% into its fill | 45% | Tinted edge on every calendar block, at least 3:1 on the surface (#209) |
 | Danger text | `#A13333` | `#FFB4AB` | Destructive actions/errors |
 
 Coral and sage are supporting fills, not default small text on ivory. Use primary

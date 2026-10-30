@@ -98,7 +98,7 @@ import { FORM_STYLES } from '../auth/form-styles';
         gap: var(--space-2);
         min-height: 9.5rem;
         padding: var(--space-4) var(--space-2);
-        border: 1px solid var(--color-surface-soft);
+        border: 1px solid var(--color-divider);
         border-radius: var(--radius-card);
         background: var(--color-surface);
         color: var(--color-text);
