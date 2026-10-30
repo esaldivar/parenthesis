@@ -6,6 +6,16 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Dependabot milestone routing (#394, October 30, 2026).** All five version-update entries target
+  `release/0.3.0`; trusted-default-branch automation routes same-repository bot PRs to the latest existing release
+  matching an open milestone, with no main/develop fallback.
+  - [ ] Promote through the normal release route to `main`; configuration and routing are inactive until then.
+  - [ ] Verify live bot-token permissions, scheduled/manual routing, next-milestone rollover, conflicts/review
+    handling and required checks against the retargeted candidate. No live routing or deployment claimed locally.
+  - [ ] Update all static target-branch entries when cutting each release and promote the configuration normally;
+    routing corrects PR bases in the interim, but cannot change which manifests Dependabot scanned.
+  - [ ] Security updates still start on main under GitHub's platform behavior before routing; alerts stay enabled.
+
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
   - [ ] Review required PR checks and promote through the normal release route to `main` (scheduled workflows run there).
@@ -50,6 +60,19 @@ that points back here.
   - [ ] Owner acceptance of #153 after testing the flow on `develop` (ADR-0007 itself is accepted), with the release
     PR's CI and SonarCloud analysis green; #153 stays open until then. Deferred: child
     personal-device sign-in, photos, QR pairing, push/in-app alerts, child-home redesign.
+- [ ] **Independent parent and child profile photos (#388, owner decisions October 30, 2026).** Details and limits:
+  `docs/design/handoffs/PROFILE_PHOTOS_388.md`.
+  - [x] Each parent's own photo, each parent's private photo of each child, and each child's own photo, edited only in
+    Settings; picker and PIN screens show each person's own photo; desktop calendar circles show photos, phones keep
+    initials. Uploads validated, bounded, re-encoded without metadata and served only through authorized URLs.
+    API, Vitest and Playwright (desktop and 320/390 touch Chromium, both themes) coverage.
+  - [x] Owner design review of the Settings "Profile photos" section, the photo editor and the child's "Your picture"
+    card: approved by the owner October 30, 2026. The `design approved` label is the owner's to apply.
+  - [ ] Mobile WebKit Playwright profiles in CI, physical iPhone (HEIC photo conversion by Safari) and Android
+    photo pickers, real screen reader pass of the editor.
+  - [ ] Owner test on the dev site after the release reaches `develop`; #388 stays open until then.
+  - [ ] Move profile photos from PostgreSQL to private Azure Blob storage before the private beta (v1.0.0): change
+    the photo endpoints' storage and copy existing photos once. Owner decision October 30, 2026: Postgres for now.
 - [ ] **Open an event's location in Google Maps (#113, owner-approved stretch, October 29, 2026).**
   - [x] Event details show **Open in Google Maps** under Where: a Google Maps directions link
     (`https://www.google.com/maps/dir/?api=1&destination=…`, no API key), percent-encoded, opening in a new tab with no
@@ -88,6 +111,28 @@ that points back here.
     policies (owner decision: keep the text for the development site). Mention Google suggestions in the privacy
     notice once one exists.
   - [ ] Production stays off until the owner decides; revisit the cap and cost with real usage.
+- [ ] **Copy family events to parents' Google Calendars, one way (#386, owner decisions October 30, 2026).** Under
+  Settings, not on the calendar; Parenthesis never reads Google. Scope `calendar.app.created` only; a "Parenthesis
+  Family" secondary calendar per parent; refresh tokens encrypted with data protection, never logged
+  ([runbook](docs/runbooks/google-calendar-sync.md)).
+  - [x] API: connect (OAuth code flow with PKCE, state bound to the parent), disconnect (removes the calendar, revokes
+    access), and a background copy of confirmed events every minute (creates, edits, cancellations; pending requests
+    and pending changes never copied; the co-parent's unavailable time stays "Unavailable"). Stops and asks to
+    reconnect when access is revoked or the calendar is deleted. Off without `GoogleCalendar__ClientId` and
+    `GoogleCalendar__ClientSecret`. Integration tests with a fake Google.
+  - [x] Settings → Google Calendar section and the `/settings/google-calendar` return page, with Vitest and axe.
+  - [x] Each parent chooses which kinds of event to copy (owner decision October 30, 2026): a multi-select
+    "Events to copy" list, everything but the co-parent's unavailable time ticked at first; unticked kinds leave Google.
+  - [ ] **Owner:** Google Cloud setup in `parenthesis-dev` (runbook step 1): enable the Calendar API, consent screen
+    with the one scope and test users, web OAuth client with the dev redirect URI.
+  - [ ] **Owner:** client ID and secret in the dev Key Vault and app settings (runbook step 2), then "Check it works".
+  - [x] Owner approved the "Events to copy" dropdown design as shown in the screenshots (October 30, 2026).
+  - [ ] Before public launch: Google verification of the sensitive scope (privacy policy page, verified
+    `parenthesisfamily.com`, demo video); runbook step 4. Mention Google Calendar in the privacy notice.
+  - [ ] Before production: encrypt the data-protection key ring with Key Vault (Platform hardening below), so the
+    stored tokens are protected from a full database leak, not just a leak of their table.
+  - [ ] Later, if wanted: tidy up a departing parent's Google calendar (today their token is deleted and the calendar
+    stays in their Google account); child names in event descriptions.
 - [ ] **Fixed-date integration tests (#193, #259, October 28, 2026).** `EventSeriesTests` failed once its fixed date
   (October 28, 2026) passed; PR #346 pins its clock with `ApiFactory.Clock.SetUtcNow`. Do the same for the other
   classes on fixed 2026 dates before those pass: `CalendarTests`, `CalendarSearchTests`, `DateRuleTests`, `TaskTests`,
@@ -197,6 +242,22 @@ that points back here.
     fix PR into the active release branch → the next biweekly release window (Release Tuesday was replaced). The
     workflows start running once they're on `main` (the next release). Then check the first automatic Sonar Sunday
     issue.
+  - [ ] **Sonar Sunday feeds Claude's queue** (#390, owner request, October 30, 2026). The weekly issue is titled
+    "Week of <Sunday> Sonar findings", gets `claude-implementation`, the active milestone and Project #2 fields.
+    - [ ] **Owner:** add a `PROJECTS_WRITE_TOKEN` secret (classic token with only the `project` scope; the
+      read-only `PROJECTS_TOKEN` stays as it is), then run Sonar Sunday by hand from the Actions tab (pick the branch that has this change) and check the issue's board fields.
+    - [ ] **Owner, weekly:** review the issue and add `owner-approved-claude` if Claude should fix it.
+    - [ ] The first queued issue, #392, stopped the queue run: 38 files is over the queue's 30-file limit, and many
+      findings sit in `.github/` and the queue scripts, which the queue may not edit. Decide whether Sonar Sunday
+      should split the issue (app code for the queue, CI and scripts for a person) (October 30, 2026).
+    - [ ] **Owner:** after the #392 fix PR (`fix/sonar-sunday-2026-10-30`), mark these as **Accepted** in SonarCloud,
+      with the reason given: the seven `S4036` PATH findings on `execFileSync("git")` in CI and e2e tooling (git must be
+      found on the runner's or developer's PATH, which they control); the eight "Missing scoping root" findings in
+      `calendar/_item.scss` (they are mixins, always included inside a selector); the `tabindex` on the calendar's
+      scroll area (keyboard scrolling, as accepted on October 19); `pr-weekly-limit.yml` checking out code from a
+      fork (it checks out the default branch's scripts only, never the PR's code); the log-injection finding on
+      `dev-workflow.mjs`'s step summary (the multi-line Markdown summary is intended). Re-check the rest at the next
+      Sonar Sunday after the fix reaches `develop`.
   - [x] **Owner:** in SonarCloud, mark the `tabindex` code smell on the calendar's scroll area as **Accepted**,
     with the reason "required so keyboard users can scroll the hours" (accepted, with the WCAG 2.1.1 comment,
     October 19, 2026).

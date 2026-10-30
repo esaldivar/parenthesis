@@ -5,6 +5,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthStore } from '../../core/auth/auth.store';
+import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Logo } from '../../shared/brand/logo';
 import { Leaves } from '../../shared/decor/leaves';
@@ -38,6 +39,8 @@ export class ParentShell {
     return path === '/' ? HOME_ACTIVE : SECTION_ACTIVE;
   }
   protected readonly auth = inject(AuthStore);
+  /** The account corner shows the parent's own photo on every screen size (#388). */
+  protected readonly photos = inject(ProfilePhotos);
   private readonly router = inject(Router);
   private readonly main = viewChild<ElementRef<HTMLElement>>('main');
   private readonly url = toSignal(

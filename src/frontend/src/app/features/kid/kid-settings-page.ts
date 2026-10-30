@@ -5,17 +5,31 @@ import { Router } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 import { KidPresentation, KidPresentationService } from '../../layout/kid-shell/kid-presentation.service';
 import { AppearancePicker } from '../../shared/appearance-picker/appearance-picker';
+import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
 
 @Component({
   selector: 'app-kid-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, MatRadioModule, MatButtonModule],
+  imports: [AppearancePicker, MatRadioModule, MatButtonModule, PhotoEditor],
   template: `
     <h1>Settings</h1>
 
     <section class="card">
       <app-appearance-picker />
     </section>
+
+    @if (auth.child(); as child) {
+      <section class="card" aria-labelledby="photo-heading">
+        <h2 id="photo-heading">Your picture</h2>
+        <app-photo-editor
+          [familyId]="child.familyId"
+          [subject]="{ kind: 'child', id: child.childId }"
+          [name]="child.firstName"
+          [label]="child.firstName"
+          hint="It shows when you pick your name to sign in."
+        />
+      </section>
+    }
 
     <section class="card">
       <h2 id="size-heading">How things look</h2>

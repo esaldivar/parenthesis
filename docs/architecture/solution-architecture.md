@@ -58,6 +58,14 @@ Places Autocomplete (New) with a server-side key. Only the typed text and a sess
 or stored. A daily cap keeps it inside Google's free allowance, and without `Places:ApiKey` it is off. Setup:
 [the runbook](../runbooks/google-places-suggestions.md).
 
+**Google Calendar copy (#386):** a parent can connect their own Google account under Settings, and the family's
+confirmed events are copied one way into a "Parenthesis Family" calendar there (scope `calendar.app.created` only;
+nothing is read back). It lives in the **Calendar** module (`calendar.google_connections`,
+`calendar.google_synced_events`) rather than a separate Integrations module, and a background worker compares each
+parent's calendar with what was last written instead of draining an outbox, which doesn't exist yet (F-09). That
+covers every way an event changes without hooks in each one. Refresh tokens are encrypted with Data Protection. Off
+without `GoogleCalendar:ClientId` and `ClientSecret`. Setup: [the runbook](../runbooks/google-calendar-sync.md).
+
 **Why one container serving both API and SPA:** same origin means HttpOnly, `SameSite=Strict` cookies work without CORS, and hosting stays cheap. The SPA can be split out to Static Web Apps + Front Door later without code changes.
 
 ## 3. Modular monolith
@@ -69,11 +77,11 @@ Each module is **one .NET project** with internal folders (`Domain`, `Applicatio
 | **Identity** | ASP.NET Core Identity users, login, lockout, email confirmation, child logins | `identity` |
 | **Families** | Family, FamilyMembership, Invitation, ChildProfile, ParentChildRelationship, category approval policy | `families` |
 | **Approvals** | ChangeRequest, ApprovalDecision, the PR-style workflow engine | `approvals` |
-| **Calendar** | CalendarEvent, attendees (children), reminders | `calendar` |
+| **Calendar** | CalendarEvent, attendees (children), reminders, each parent's one-way Google Calendar copy (#386) | `calendar` |
 | **Memories** | Memory, MemoryAttachment, MemoryShare, soft delete & purge | `memories` |
 | **Messaging** (post-MVP) | Conversation, Message, MessageAttachment | `messaging` |
 | **Notifications** | Notification inbox, SignalR push, email digests | `notifications` |
-| **Integrations** (post-MVP) | ExternalCalendarConnection, ExternalEventLink, Google sync | `integrations` |
+| **Integrations** (post-MVP) | Other external calendars, if ever needed (Google's one-way copy is in Calendar, #386) | `integrations` |
 
 Cross-cutting building blocks (`CoParent.SharedKernel`, `CoParent.Infrastructure`): base entity types, `ITenantContext`, `TimeProvider`, domain events, transactional outbox, audit interceptor, blob storage abstraction, EXIF stripping.
 

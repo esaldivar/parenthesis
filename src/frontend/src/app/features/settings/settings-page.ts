@@ -10,11 +10,23 @@ import { DeviceList } from '../family/device-list';
 import { ParentPinSettings } from '../family/parent-pin-settings';
 import { InviteCoParent } from '../family/invite-co-parent';
 import { DeleteAccount } from './delete-account';
+import { GoogleCalendarSettings } from './google-calendar-settings';
+import { ProfilePhotoSettings } from './profile-photo-settings';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatSlideToggleModule, AppearancePicker, InviteCoParent, ChildrenAccess, DeviceList, ParentPinSettings, DeleteAccount],
+  imports: [
+    MatSlideToggleModule,
+    AppearancePicker,
+    InviteCoParent,
+    ChildrenAccess,
+    DeviceList,
+    ParentPinSettings,
+    GoogleCalendarSettings,
+    DeleteAccount,
+    ProfilePhotoSettings,
+  ],
   template: `
     <h1>Settings</h1>
     <section class="card">
@@ -41,6 +53,11 @@ import { DeleteAccount } from './delete-account';
           }
         </section>
 
+        <section class="card" aria-labelledby="photos-heading">
+          <h2 id="photos-heading">Profile photos</h2>
+          <app-profile-photo-settings [familyId]="current.id" />
+        </section>
+
         <section class="card" aria-labelledby="children-heading">
           <h2 id="children-heading">Children</h2>
           <app-children-access [familyId]="current.id" />
@@ -49,6 +66,11 @@ import { DeleteAccount } from './delete-account';
         <section class="card" aria-labelledby="parent-pin-heading">
           <h2 id="parent-pin-heading">Your parent PIN</h2>
           <app-parent-pin-settings [familyId]="current.id" />
+        </section>
+
+        <section class="card" aria-labelledby="google-calendar-heading">
+          <h2 id="google-calendar-heading">Google Calendar</h2>
+          <app-google-calendar-settings [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="devices-heading">
@@ -103,7 +125,11 @@ export class SettingsPage implements OnInit {
   protected readonly deletionError = signal<string | null>(null);
   protected readonly deletionFamilies = signal<readonly { name: string; coParentName: string | null }[] | null>(null);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     await Promise.all([this.loadDeletionFamilies(), this.loadCurrentFamily()]);
   }
 

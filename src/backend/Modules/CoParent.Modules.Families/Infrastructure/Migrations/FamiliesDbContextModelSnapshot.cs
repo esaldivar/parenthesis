@@ -496,6 +496,60 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.ToTable("parent_pin_reset_tokens", "families");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ProfilePhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChooserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("chooser_id");
+
+                    b.Property<string>("ChooserKind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("chooser_kind");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<int>("Side")
+                        .HasColumnType("integer")
+                        .HasColumnName("side");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_profile_photos");
+
+                    b.HasIndex("FamilyId", "ChooserKind", "ChooserId", "SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_profile_photos_family_id_chooser_kind_chooser_id_subject_id");
+
+                    b.ToTable("profile_photos", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.ChildCredential", b =>
                 {
                     b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
@@ -579,6 +633,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_parent_pin_reset_tokens_memberships_membership_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ProfilePhoto", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.Family", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_profile_photos_families_family_id");
                 });
 #pragma warning restore 612, 618
         }

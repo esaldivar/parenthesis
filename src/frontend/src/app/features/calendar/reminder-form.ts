@@ -119,7 +119,11 @@ export class ReminderForm implements OnInit {
   protected readonly editing = computed(() => this.reminder() !== null);
   protected readonly activeChildren = computed(() => this.children().filter((c) => c.status === 'Active'));
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const reminder = this.reminder();
     const zone = this.timeZone();
     if (reminder) {

@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Approvals.Contracts;
+using CoParent.Modules.Calendar.Contracts;
 using CoParent.Modules.Calendar.Endpoints;
 using CoParent.Modules.Calendar.Infrastructure;
 using CoParent.SharedKernel.Accounts;
@@ -40,6 +41,17 @@ public static class CalendarModule
             RateLimitPartition.GetFixedWindowLimiter(
                 context.User.GetUserId()?.ToString() ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(1) })));
+
+        // Google Calendar copies (#386): off unless GoogleCalendar:ClientId and ClientSecret are set. No request logging:
+        // token requests and event bodies must never reach logs or telemetry.
+        services.AddOptions<GoogleCalendarOptions>().BindConfiguration(GoogleCalendarOptions.Section);
+        services.AddHttpClient(GoogleCalendarClient.ClientName, client => client.Timeout = TimeSpan.FromSeconds(15)).RemoveAllLoggers();
+        services.AddSingleton<GoogleCalendarClient>();
+        services.AddSingleton<GoogleCalendarTokens>();
+        services.AddSingleton<GoogleCalendarSyncSignal>();
+        services.AddSingleton<GoogleCalendarSync>();
+        services.AddSingleton<IGoogleCalendarSync>(sp => sp.GetRequiredService<GoogleCalendarSync>());
+        services.AddHostedService<GoogleCalendarSyncWorker>();
         return services;
     }
 
@@ -50,6 +62,7 @@ public static class CalendarModule
         ReminderEndpoints.Map(family);
         TaskEndpoints.Map(family);
         PlaceSuggestionEndpoints.Map(family);
+        GoogleCalendarEndpoints.Map(family);
         return family;
     }
 }

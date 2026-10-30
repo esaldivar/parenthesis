@@ -49,7 +49,7 @@ interface Panel {
           @for (child of children; track child.id) {
             <li class="child">
               <div class="child__head">
-                <app-avatar [name]="child.firstName" [size]="40" />
+                <app-avatar [name]="child.firstName" [size]="40" [personId]="child.id" />
                 <div>
                   <p class="child__name">{{ child.firstName }}</p>
                   <p class="child__state">{{ state(child) }}</p>
@@ -272,7 +272,11 @@ export class ChildrenAccess implements OnInit {
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     await this.reload();
   }
 

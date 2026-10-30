@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: nuget
     directory: "/"
+    target-branch: release/0.3.0
     schedule:
       interval: weekly
     groups:
@@ -10,6 +11,7 @@ updates:
 
   - package-ecosystem: github-actions
     directory: "/"
+    target-branch: release/0.3.0
     schedule:
       interval: weekly
     groups:
@@ -19,6 +21,7 @@ updates:
   # Playwright release gate (tests/e2e). Playwright and its browser move together, so updates come as one group.
   - package-ecosystem: npm
     directory: "/tests/e2e"
+    target-branch: release/0.3.0
     schedule:
       interval: weekly
     groups:
@@ -27,11 +30,13 @@ updates:
 
   - package-ecosystem: docker
     directory: "/docker"
+    target-branch: release/0.3.0
     schedule:
       interval: weekly
 
   - package-ecosystem: docker-compose
     directory: "/"
+    target-branch: release/0.3.0
     schedule:
       interval: weekly
     ignore:

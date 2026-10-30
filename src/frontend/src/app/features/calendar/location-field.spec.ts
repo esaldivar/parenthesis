@@ -121,7 +121,7 @@ describe('the location field’s address suggestions (#354)', () => {
     await type(' 10 ');
     vi.advanceTimersByTime(SUGGESTION_DELAY_MS * 2);
 
-    http.expectNone(URL);
+    expect(() => http.expectNone(URL)).not.toThrow();
   });
 
   it('stops asking once suggestions aren’t available, and stays a plain text field', async () => {

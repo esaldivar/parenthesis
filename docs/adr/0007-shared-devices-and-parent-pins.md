@@ -101,7 +101,8 @@ Emails go out only at those transitions, so one lock cycle sends at most two par
 `notified: true` only when the mail server accepted the message; the app never claims an email was sent otherwise.
 
 ## Still deferred
-- Child personal-device sign-in, photo upload, QR pairing and in-app/push alerts stay deferred.
+- Child personal-device sign-in, QR pairing and in-app/push alerts stay deferred. Profile photos on the picker came
+  later with #388 (each person's own photo; see `docs/design/handoffs/PROFILE_PHOTOS_388.md`).
 
 ## Consequences
 - **(+)** No device is trusted silently; public or borrowed browsers stay personal.

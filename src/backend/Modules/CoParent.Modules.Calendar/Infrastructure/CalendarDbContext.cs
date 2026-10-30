@@ -32,6 +32,10 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
 
     public DbSet<TaskChecklistItem> TaskItems => Set<TaskChecklistItem>();
 
+    public DbSet<GoogleCalendarConnection> GoogleConnections => Set<GoogleCalendarConnection>();
+
+    public DbSet<GoogleSyncedEvent> GoogleSyncedEvents => Set<GoogleSyncedEvent>();
+
     private Guid CurrentFamilyId => tenant.FamilyId;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -135,6 +139,28 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
             d.ToTable("event_dismissals");
             d.HasKey(x => new { x.EventId, x.MembershipId });
             d.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<GoogleCalendarConnection>(g =>
+        {
+            g.ToTable("google_connections");
+            g.Property(x => x.GoogleCalendarId).HasMaxLength(GoogleCalendarConnection.CalendarIdMaxLength);
+            g.Property(x => x.Status).HasConversion<string>().HasMaxLength(24);
+            g.Property(x => x.Problem).HasConversion<string>().HasMaxLength(24);
+            g.PrimitiveCollection(x => x.CopyTypes).ElementType(t => t.HasConversion<string>());
+            // One connection per parent per family.
+            g.HasIndex(x => new { x.FamilyId, x.MembershipId }).IsUnique();
+            g.HasIndex(x => x.Status);
+            g.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<GoogleSyncedEvent>(s =>
+        {
+            s.ToTable("google_synced_events");
+            s.HasKey(x => new { x.ConnectionId, x.EventId });
+            s.Property(x => x.Hash).HasMaxLength(GoogleSyncedEvent.HashLength).IsFixedLength();
+            s.HasOne<GoogleCalendarConnection>().WithMany().HasForeignKey(x => x.ConnectionId).OnDelete(DeleteBehavior.Cascade);
+            s.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<EventChild>(c =>

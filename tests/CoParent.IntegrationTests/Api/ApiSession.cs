@@ -60,6 +60,20 @@ public sealed class ApiSession : IDisposable
         return Client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
+    /// <summary>An unsafe request with a raw body, like the app's photo uploads.</summary>
+    public Task<HttpResponseMessage> SendBytesAsync(HttpMethod method, string path, byte[] body, string contentType = "image/jpeg")
+    {
+        var content = new ByteArrayContent(body);
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        var request = new HttpRequestMessage(method, path) { Content = content };
+        if (_xsrfToken is not null)
+        {
+            request.Headers.Add("X-XSRF-TOKEN", _xsrfToken);
+        }
+
+        return Client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
     public Task<HttpResponseMessage> GetAsync(string path) => Client.GetAsync(path, TestContext.Current.CancellationToken);
 
     public async Task<HttpResponseMessage> RegisterAsync(string email, string password = Password, string displayName = "Alex Rivera") =>

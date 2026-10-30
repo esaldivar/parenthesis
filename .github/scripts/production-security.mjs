@@ -12,8 +12,12 @@ const requireValue = (condition, message) => { if (!condition) throw new Verific
 
 export function githubClient(repository, token, fetchImpl = fetch) {
   requireValue(/^[\w.-]+\/[\w.-]+$/.test(repository ?? '') && token, 'Missing GitHub verification context.');
+  const root = new URL(`https://api.github.com/repos/${repository.split('/').map(encodeURIComponent).join('/')}/`);
   return async path => {
-    const response = await fetchImpl(`https://api.github.com/repos/${repository}/${path}`, {
+    // Only this repository's API: a path that leaves it (another host, "..", an absolute URL) is refused.
+    const url = new URL(path, root);
+    requireValue(url.origin === root.origin && url.pathname.startsWith(root.pathname), 'Refusing a GitHub request outside this repository.');
+    const response = await fetchImpl(url.href, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
       redirect: 'error', signal: AbortSignal.timeout(15000),
     });

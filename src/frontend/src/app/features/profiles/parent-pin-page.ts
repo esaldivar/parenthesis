@@ -24,7 +24,7 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
   imports: [DatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
   template: `
     <div class="who">
-      <app-avatar [name]="name()" kind="parent" [size]="72" />
+      <app-avatar [name]="name()" kind="parent" [size]="72" [src]="tile()?.photoUrl" />
       <h1>Hi, {{ name() }}</h1>
     </div>
 
@@ -151,7 +151,7 @@ export class ParentPinPage {
   /** The parent's membership id, from the route. */
   readonly id = input.required<string>();
 
-  private readonly tile = computed(() => this.auth.device()?.profiles.find((p) => p.kind === 'parent' && p.id === this.id()));
+  protected readonly tile = computed(() => this.auth.device()?.profiles.find((p) => p.kind === 'parent' && p.id === this.id()));
   protected readonly name = computed(() => this.tile()?.name ?? 'there');
 
   private readonly answer = signal<{ state: 'paused' | 'locked'; retryAt?: string; notified?: boolean } | null>(null);

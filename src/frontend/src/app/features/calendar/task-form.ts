@@ -102,7 +102,11 @@ export class TaskForm implements OnInit {
     return this.form.controls.items;
   }
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const task = this.task();
     if (task) {
       this.fill(task);

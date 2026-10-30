@@ -125,6 +125,8 @@ export interface ProfileTile {
   readonly locked: boolean;
   /** Set while the PIN is paused after three wrong tries. */
   readonly pausedUntil?: string | null;
+  /** That person's own photo (#388), read with this device's cookie; absent or null shows the initial. */
+  readonly photoUrl?: string | null;
 }
 
 export interface DeviceProfiles {
@@ -140,6 +142,23 @@ export interface ParentPinStatus {
   readonly isSet: boolean;
   readonly locked: boolean;
   readonly pausedUntil: string | null;
+}
+
+/**
+ * A profile photo this viewer may see (#388): a parent's own photo (`kind` "parent", membership id), or, for a parent
+ * viewer, their personal photo of a child; for a child viewer, the child's own photo (`kind` "child", child id).
+ */
+export interface PhotoRef {
+  readonly kind: 'parent' | 'child';
+  readonly id: string;
+  readonly url: string;
+}
+
+/** The viewer's photos, and who the viewer is, so their own photo can be found. */
+export interface PhotoSet {
+  readonly youKind: 'parent' | 'child';
+  readonly youId: string;
+  readonly photos: readonly PhotoRef[];
 }
 
 export interface ChildSession {
@@ -194,6 +213,35 @@ export interface ProposedTimes {
   readonly location: string | null;
   readonly caregiverMembershipId: string | null;
 }
+
+/** A parent's own one-way copy of the family calendar to Google Calendar (#386). */
+export interface GoogleCalendarStatus {
+  /** False when the server isn't set up for it: Settings says so and offers nothing. */
+  readonly available: boolean;
+  readonly state: 'NotConnected' | 'Connected' | 'NeedsReconnect';
+  /** Why a stopped copy stopped. */
+  readonly problem: 'None' | 'AccessRevoked' | 'CalendarRemoved';
+  readonly calendarName: string;
+  readonly connectedAt: string | null;
+  /** When the last copy finished; null until the first one. */
+  readonly lastSyncedAt: string | null;
+  /** The kinds of event this parent copies; the defaults until they connect. */
+  readonly copyTypes: readonly GoogleCopyType[];
+}
+
+/** What a parent can choose to copy: the calendar's categories, with unavailable time split by whose it is. */
+export type GoogleCopyType =
+  | 'ParentingTime'
+  | 'Joint'
+  | 'School'
+  | 'Medical'
+  | 'Dental'
+  | 'Activity'
+  | 'Birthday'
+  | 'Holiday'
+  | 'Other'
+  | 'MyUnavailable'
+  | 'CoParentUnavailable';
 
 export interface PlaceSuggestions {
   suggestions: string[];
@@ -464,6 +512,22 @@ export class Api {
     this.call(this.http.post<{ childId: string; childFirstName: string }>('/api/device/pair', { code, deviceName }));
   childSession = () => this.call(this.http.get<ChildSession>('/api/session/child'));
 
+  // Profile photos (#388). Each person changes only their own choices; uploads are the raw image file.
+  photos = (familyId: string) => this.call(this.http.get<PhotoSet>(`/api/families/${familyId}/photos`));
+  /** The viewer's own photo: a parent's, or a signed-in child's. */
+  setOwnPhoto = (familyId: string, file: Blob) =>
+    this.call(this.http.put<PhotoRef>(`/api/families/${familyId}/photos/me`, file, { headers: { 'Content-Type': file.type || 'application/octet-stream' } }));
+  removeOwnPhoto = (familyId: string) => this.call(this.http.delete<void>(`/api/families/${familyId}/photos/me`));
+  /** This parent's personal photo of a child, seen only by them. */
+  setChildPhoto = (familyId: string, childId: string, file: Blob) =>
+    this.call(
+      this.http.put<PhotoRef>(`/api/families/${familyId}/photos/children/${childId}`, file, {
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      }),
+    );
+  removeChildPhoto = (familyId: string, childId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/photos/children/${childId}`));
+
   // The shared calendar. A range spans at most 62 days. Children may list (they see only their confirmed events).
   calendarEvents = (familyId: string, from: string, to: string) =>
     this.call(this.http.get<CalendarEvent[]>(`/api/families/${familyId}/calendar/events`, { params: { from, to } }));
@@ -498,6 +562,19 @@ export class Api {
     this.call(
       this.http.post<PlaceSuggestions>(`/api/families/${familyId}/calendar/place-suggestions`, { input, sessionToken }),
     );
+  /** This parent's Google Calendar copy (#386). Parents only; it never changes the co-parent's or children's settings. */
+  googleCalendar = (familyId: string) => this.call(this.http.get<GoogleCalendarStatus>(`/api/families/${familyId}/google-calendar`));
+  /** Google's consent page for this parent, with a state that only works for them, for ten minutes. */
+  googleCalendarAuthorize = (familyId: string) =>
+    this.call(this.http.post<{ url: string }>(`/api/families/${familyId}/google-calendar/authorize`, {}));
+  /** Finishes connecting with what Google added to the callback URL. */
+  googleCalendarConnect = (familyId: string, code: string, state: string) =>
+    this.call(this.http.post<GoogleCalendarStatus>(`/api/families/${familyId}/google-calendar/connect`, { code, state }));
+  /** Stops the copy, removes the "Parenthesis Family" calendar from Google and forgets the access. */
+  /** Chooses what this parent copies; events no longer chosen leave their Google calendar within a minute or two. */
+  googleCalendarCopyTypes = (familyId: string, copyTypes: readonly GoogleCopyType[]) =>
+    this.call(this.http.put<GoogleCalendarStatus>(`/api/families/${familyId}/google-calendar/copy-types`, { copyTypes }));
+  googleCalendarDisconnect = (familyId: string) => this.call(this.http.delete<void>(`/api/families/${familyId}/google-calendar`));
   /** Parenting time, holidays and joint events come back PendingApproval with a changeRequestId. */
   createEvent = (familyId: string, event: NewCalendarEvent) =>
     this.call(this.http.post<CalendarEvent>(`/api/families/${familyId}/calendar/events`, event));

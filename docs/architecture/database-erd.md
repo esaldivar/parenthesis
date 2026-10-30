@@ -61,8 +61,17 @@ erDiagram
     text display_name
     smallint birth_year "optional"
     smallint birth_month "optional"
-    text avatar_blob_key
+    text avatar_blob_key "superseded by PROFILE_PHOTO (#388)"
     uuid created_by_membership_id FK
+  }
+  PROFILE_PHOTO {
+    uuid id PK
+    uuid family_id FK
+    text chooser_kind "Parent | Child"
+    uuid chooser_id "membership or child"
+    uuid subject_id "membership or child"
+    bytea content "WebP, at most 512px and 200 KB"
+    timestamptz created_at
   }
   PARENT_CHILD_RELATIONSHIP {
     uuid family_id FK
@@ -258,6 +267,7 @@ erDiagram
   FAMILY ||--o{ FAMILY_MEMBERSHIP : "has"
   FAMILY ||--o{ INVITATION : "issues"
   FAMILY ||--o{ CHILD_PROFILE : "has"
+  FAMILY ||--o{ PROFILE_PHOTO : "has"
   CHILD_PROFILE ||--o| FAMILY_MEMBERSHIP : "login (optional)"
   FAMILY_MEMBERSHIP ||--o{ PARENT_CHILD_RELATIONSHIP : "parent of"
   CHILD_PROFILE ||--o{ PARENT_CHILD_RELATIONSHIP : "child of"
@@ -315,6 +325,14 @@ devices: 30 days from setup), pause and concurrency columns on `child_credential
 (one six-digit parent PIN per family membership, hashed, with the same pause-then-lock counters).
 - **`child_profile.status`:** `PendingApproval | Active | Archived`.
 - **`change_request.type`:** gains `ChildCreate`.
+
+## M3 addition: profile photos (#388, October 30, 2026)
+`families.profile_photos` replaces the single planned `child_profile.avatar_blob_key`: each photo belongs to whoever
+chose it, so one row per **chooser and pictured person** (unique `(family_id, chooser_kind, chooser_id, subject_id)`).
+A parent's own photo (chooser = subject = their membership), a parent's private photo of a child, and a child's own
+photo are separate rows and never overwrite each other. Small processed WebP bytes live in the row (at most 38 per
+family); replacing deletes the old row in the same transaction. Details:
+[profile photos handoff](../design/handoffs/PROFILE_PHOTOS_388.md).
 
 Full columns: [ADR-0006](../adr/0006-profiles-pins-and-child-devices.md#data-model-additions-identity-and-families-schemas).
 Child sign-in no longer uses an Identity user with `user_type = Child`. That column stays for compatibility until the

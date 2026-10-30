@@ -148,6 +148,11 @@ internal static class AccountDeletionEndpoints
                 invitation.Revoke(now);
             }
 
+            // Their own photo and their personal photos for the children go with them (#388).
+            db.ProfilePhotos.RemoveRange(await db.ProfilePhotos
+                .Where(p => p.ChooserKind == PhotoChooser.Parent && p.ChooserId == membershipId)
+                .ToListAsync(ct));
+
             // The invitation they accepted holds their email address; it isn't needed once they've gone.
             db.Invitations.RemoveRange(await db.Invitations.Where(i => i.AcceptedByUserId == userId).ToListAsync(ct));
 
@@ -166,6 +171,7 @@ internal static class AccountDeletionEndpoints
     /// <summary>Everything the Families module keeps for this family (the tenant filter scopes every query to it).</summary>
     private static async Task DeleteFamilyAsync(FamiliesDbContext db, CancellationToken cancellationToken)
     {
+        db.ProfilePhotos.RemoveRange(await db.ProfilePhotos.ToListAsync(cancellationToken));
         db.PairingCodes.RemoveRange(await db.PairingCodes.ToListAsync(cancellationToken));
         db.ChildCredentials.RemoveRange(await db.ChildCredentials.ToListAsync(cancellationToken));
         db.Devices.RemoveRange(await db.Devices.ToListAsync(cancellationToken));

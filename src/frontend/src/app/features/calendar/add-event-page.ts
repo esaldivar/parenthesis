@@ -302,7 +302,11 @@ export class AddEventPage implements OnInit {
     }
   });
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const wanted = KINDS.find((k) => k.id === this.kind());
     if (wanted) {
       this.creating.set(wanted.id);
