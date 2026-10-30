@@ -33,7 +33,7 @@ ol {
   display: grid;
   justify-items: center;
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
   font-size: 0.875rem;
 }
 .grid__head.is-today .grid__date {
@@ -49,7 +49,7 @@ ol {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   padding: var(--space-2) var(--space-1);
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
 }
 .allday {
   grid-column: 2 / -1;
@@ -59,7 +59,7 @@ ol {
   gap: 4px;
   padding: 4px;
   min-height: calc(var(--target-min) + 8px);
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .grid__body {
@@ -89,8 +89,8 @@ ol {
   grid-template-columns: repeat(var(--lanes), minmax(0, 1fr));
   gap: 0 2px;
   padding: 0 2px;
-  border-inline-start: 1px solid var(--color-surface-soft);
-  background-image: linear-gradient(var(--color-surface-soft) 1px, transparent 1px);
+  border-inline-start: 1px solid var(--color-divider);
+  background-image: linear-gradient(var(--color-divider) 1px, transparent 1px);
   background-size: 100% 112px;
 }
 .daycol li {
@@ -170,7 +170,7 @@ ol {
   .grid {
     display: grid;
     grid-template-columns: 56px repeat(7, minmax(0, 1fr));
-    border: 1px solid var(--color-surface-soft);
+    border: 1px solid var(--color-divider);
     border-radius: var(--radius-card);
     background: var(--color-surface);
     overflow: hidden;

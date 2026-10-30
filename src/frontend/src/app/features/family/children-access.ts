@@ -169,7 +169,7 @@ interface Panel {
     }
     .child + .child {
       padding-top: var(--space-4);
-      border-top: 1px solid var(--color-surface-soft);
+      border-top: 1px solid var(--color-divider);
     }
     .child__head {
       display: flex;
@@ -197,7 +197,7 @@ interface Panel {
       display: grid;
       gap: var(--space-2);
       padding: var(--space-3);
-      border: 1px solid var(--color-surface-soft);
+      border: 1px solid var(--color-divider);
       border-radius: var(--radius-control);
     }
     .panel p {

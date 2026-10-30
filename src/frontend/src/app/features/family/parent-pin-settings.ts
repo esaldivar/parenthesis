@@ -106,7 +106,7 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
       display: grid;
       gap: var(--space-2);
       padding: var(--space-3);
-      border: 1px solid var(--color-surface-soft);
+      border: 1px solid var(--color-divider);
       border-radius: var(--radius-control);
     }
     mat-form-field {

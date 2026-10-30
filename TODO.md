@@ -699,6 +699,13 @@ that points back here.
   form, and the password goes back to hidden after submitting. Use the shared form components; check both themes and
   320px.
 
+- [x] **Light-mode visibility (#209, October 30, 2026).** Category-tinted calendar item edges (at least 3:1 on the
+  surface), a `--color-divider` hairline token for grid, hour and card lines, and a clearer selected state. Dark mode
+  is visually unchanged. Before/after captures: `docs/design/reviews/issue-209/`.
+  - [ ] Owner retest on development: phone and desktop in light mode, with the original "too bright, hard to see"
+    complaint in mind. If light mode still feels too bright, the deferred option is dimming the ivory canvas and
+    adding card hairlines (owner chose not to include it on October 30, 2026).
+
 ## Calendar follow-ups
 
 - [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted

@@ -13,7 +13,7 @@
 }
 .month {
   display: grid;
-  border: 1px solid var(--color-surface-soft);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   overflow: hidden;
@@ -27,7 +27,7 @@
   font-size: 0.8125rem;
   font-weight: 600;
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-divider);
 }
 .week {
   display: grid;
@@ -41,8 +41,8 @@
   min-width: 0;
   min-height: 112px;
   padding: 2px;
-  border-top: 1px solid var(--color-surface-soft);
-  border-inline-start: 1px solid var(--color-surface-soft);
+  border-top: 1px solid var(--color-divider);
+  border-inline-start: 1px solid var(--color-divider);
   position: relative;
 }
 .day--outside {
