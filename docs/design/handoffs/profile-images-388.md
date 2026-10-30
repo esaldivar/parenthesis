@@ -42,3 +42,12 @@ This is the rendering foundation only: no image URLs are currently supplied, and
 
 The existing #115 broad media quotas/gallery work and #179 child experience remain separate. Do not enable uploads
 without the avatar-specific safeguards above. No merge, deployment or full acceptance is implied by this foundation.
+
+## Settings-only editing — owner clarification
+
+All upload/preview/save/replace/remove controls belong in Settings. Parents edit their own self-photo and their
+personal child-photo selections in parent Settings; children edit only their own image in child Settings. The
+account corner, Calendar/Home circles, profile-selection tiles and PIN-entry images are display-only. Do not add
+photo-edit actions or image-click editors to those surfaces. Authentication and server-side ownership remain
+mandatory regardless of the entry point. Include browser coverage confirming no edit/upload control appears on
+the display surfaces.
