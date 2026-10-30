@@ -6,7 +6,7 @@ namespace CoParent.Modules.Calendar.Infrastructure;
 
 /// <summary>
 /// When a parent deletes their account (A-12): their own "Unavailable" time (whose notes only they could see) is
-/// deleted, along with their reminder and task Seen marks and the declined requests they removed from their calendar. Shared events, reminders and tasks stay for the co-parent's
+/// deleted, along with their Google Calendar connection, their reminder and task Seen marks and the declined requests they removed from their calendar. Shared events, reminders and tasks stay for the co-parent's
 /// history; the departing parent shows as "Former parent". If the family is closing, all of them go.
 /// </summary>
 internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDepartureHandler
@@ -42,6 +42,11 @@ internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDeparture
         db.TaskSeen.RemoveRange(departure.FamilyClosing
             ? await db.TaskSeen.ToListAsync(cancellationToken)
             : await db.TaskSeen.Where(s => s.MembershipId == departure.MembershipId).ToListAsync(cancellationToken));
+        // Their Google Calendar copy stops (#386): the encrypted token is deleted with the connection. The copy itself
+        // stays in their Google account, which Parenthesis can no longer reach once the parent has left.
+        db.GoogleConnections.RemoveRange(departure.FamilyClosing
+            ? await db.GoogleConnections.ToListAsync(cancellationToken)
+            : await db.GoogleConnections.Where(c => c.MembershipId == departure.MembershipId).ToListAsync(cancellationToken));
         if (departure.FamilyClosing)
         {
             db.TaskHistory.RemoveRange(await db.TaskHistory.ToListAsync(cancellationToken));
