@@ -5,7 +5,7 @@ name: Weekly PR limit
 # PR from being opened, so this check fails on the 4th and later PRs of the week until the owner adds the
 # "owner-approved-pr" label. Make it a required check on the integration branch to block merging those PRs.
 #
-# pull_request_target runs this file and the script from default branch main, never the PR's code, so a PR can't edit
+# pull_request_target runs this file and the script from the PR's base branch, never the PR's code, so a PR can't edit
 # the rules it is checked against. Nothing from the PR is checked out or executed.
 on:
   pull_request_target:
@@ -27,10 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # The ref is the literal default branch, not event data (SonarQube githubactions:S7631).
+      # No ref: checkout takes the trusted base-branch commit this workflow runs from. Never check out or run the PR
+      # head, and don't set a ref at all (SonarQube githubactions:S7631 flags even a literal one).
       - uses: actions/checkout@v7
         with:
-          ref: main
           sparse-checkout: .github/scripts
           persist-credentials: false
 
