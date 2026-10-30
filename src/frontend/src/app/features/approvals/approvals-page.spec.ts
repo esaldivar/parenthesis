@@ -125,4 +125,42 @@ describe('approvals focus after Cancel and decisions (#279)', () => {
     expect(api.withdraw).toHaveBeenCalled();
     await focused(fixture, page);
   });
+
+  for (const [label, action] of [
+    ['Approve', 'approve'],
+    ['Decline', 'reject'],
+  ] as const) {
+    it(`returns focus to ${label} when the decision fails, so it can be retried`, async () => {
+      const { fixture, page, api } = await render();
+      api[action].mockRejectedValueOnce(new Error('offline'));
+      if (label === 'Decline') {
+        button(page, 'Decline').click();
+        await settle(fixture);
+      }
+      const decide = button(page, label);
+      decide.focus();
+      decide.click();
+      await settle(fixture);
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(page.querySelector('[role="alert"]')).not.toBeNull();
+        expect(document.activeElement).toBe(button(page, label));
+      });
+    });
+  }
+
+  it('moves focus to the Waiting heading when a failed decision’s item has left the list', async () => {
+    const { fixture, page, api } = await render();
+    api.approve.mockImplementationOnce(async () => {
+      pending = [];
+      throw new Error('already decided');
+    });
+    const approve = button(page, 'Approve');
+    approve.focus();
+    approve.click();
+    await settle(fixture);
+
+    await focused(fixture, page);
+  });
 });
