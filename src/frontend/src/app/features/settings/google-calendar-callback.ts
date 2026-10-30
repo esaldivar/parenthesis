@@ -57,7 +57,11 @@ export class GoogleCalendarCallback implements OnInit {
 
   protected readonly message = signal<string | null>(null);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const params = this.route.snapshot.queryParamMap;
     const [code, state, denied] = [params.get('code'), params.get('state'), params.get('error')];
     // Drop the code from the address bar and history before anything else.

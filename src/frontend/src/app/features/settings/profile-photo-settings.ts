@@ -95,7 +95,11 @@ export class ProfilePhotoSettings implements OnInit {
   protected readonly children = signal<readonly Child[] | null>(null);
   protected readonly error = signal<string | null>(null);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     try {
       // Only approved children: a child waiting for the co-parent's approval isn't in the family yet.
       this.children.set((await this.api.children(this.familyId())).filter((c) => c.status === 'Active'));

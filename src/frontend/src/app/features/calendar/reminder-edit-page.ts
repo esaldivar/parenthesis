@@ -35,7 +35,11 @@ export class ReminderEditPage implements OnInit {
   protected readonly reminder = signal<Reminder | null>(null);
   protected readonly error = signal<string | null>(null);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const family = this.family();
     if (!family) {
       return;

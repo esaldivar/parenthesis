@@ -144,7 +144,11 @@ export class ProfilePickerPage implements OnInit {
   protected readonly loading = signal(false);
   private readonly router = inject(Router);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     await this.load();
     // A child's own tablet has one profile: go straight to its PIN (owner decision, October 28, 2026).
     const device = this.auth.device();

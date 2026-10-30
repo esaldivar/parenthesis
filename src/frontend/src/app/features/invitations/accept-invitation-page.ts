@@ -156,7 +156,11 @@ export class AcceptInvitationPage implements OnInit {
   protected readonly busy = signal(false);
   protected readonly canRetry = signal(true);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
     const fromLink = this.token();
     if (fromLink) {
       this.pending.save(fromLink);

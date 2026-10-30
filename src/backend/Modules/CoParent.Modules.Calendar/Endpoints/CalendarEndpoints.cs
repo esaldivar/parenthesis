@@ -229,7 +229,7 @@ internal static class CalendarEndpoints
         var hasText = text is not null;
         var pattern = hasText ? $"%{EscapeLike(text!)}%" : string.Empty;
         var hasDay = on is not null;
-        var (dayStart, dayEnd) = hasDay ? EventSchedule.LocalDay(on!.Value, await roster.TimeZoneAsync(cancellationToken)) : (now, now);
+        var (dayStart, dayEnd) = on is { } day ? EventSchedule.LocalDay(day, await roster.TimeZoneAsync(cancellationToken)) : (now, now);
 
         var query = DeclinedStillShown(db.Events, db, me, now).Where(e =>
             (hasText
@@ -353,12 +353,11 @@ internal static class CalendarEndpoints
             cancellationToken);
         var userId = http.User.GetUserId()!.Value;
         Guid? changeRequestId = null;
-        Dictionary<string, string[]>? refused = null;
-        await unitOfWork.ExecuteAsync(async ct =>
+        var refused = await unitOfWork.ExecuteAsync<Dictionary<string, string[]>?>(async ct =>
         {
-            if ((refused = await RefusedUnderLockAsync(db, category, person, [(starts, ends)], ct)) is not null)
+            if (await RefusedUnderLockAsync(db, category, person, [(starts, ends)], ct) is { } refusedUnderLock)
             {
-                return;
+                return refusedUnderLock;
             }
 
             db.Events.Add(calendarEvent);
@@ -377,6 +376,8 @@ internal static class CalendarEndpoints
             }
 
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_event.created", "calendar_event", calendarEvent.Id), ct);
+
+            return null;
         }, cancellationToken);
 
         if (refused is not null)
@@ -650,12 +651,11 @@ internal static class CalendarEndpoints
         var userId = http.User.GetUserId()!.Value;
         var needsApproval = CalendarEvent.NeedsApproval(e.Category) && parents.Count >= 2 && change != current;
         Guid? changeRequestId = null;
-        Dictionary<string, string[]>? refused = null;
-        await unitOfWork.ExecuteAsync(async ct =>
+        var refused = await unitOfWork.ExecuteAsync<Dictionary<string, string[]>?>(async ct =>
         {
-            if (moved && (refused = await RefusedUnderLockAsync(db, e.Category, person, [(change.StartsAt, change.EndsAt)], ct)) is not null)
+            if (moved && await RefusedUnderLockAsync(db, e.Category, person, [(change.StartsAt, change.EndsAt)], ct) is { } refusedUnderLock)
             {
-                return;
+                return refusedUnderLock;
             }
 
             if (request.Notes is not null)
@@ -684,6 +684,8 @@ internal static class CalendarEndpoints
 
             var action = needsApproval ? "calendar_event.change_proposed" : "calendar_event.updated";
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, action, "calendar_event", e.Id), ct);
+
+            return null;
         }, cancellationToken);
 
         if (refused is not null)
@@ -923,13 +925,12 @@ internal static class CalendarEndpoints
         // Reads first: once the unit of work commits, its transaction is finished.
         var warnings = await SeriesWarningsAsync(db, category, tenant.MembershipId, dates, cancellationToken);
         var userId = http.User.GetUserId()!.Value;
-        Dictionary<string, string[]>? refused = null;
         Guid? changeRequestId = null;
-        await unitOfWork.ExecuteAsync(async ct =>
+        var refused = await unitOfWork.ExecuteAsync<Dictionary<string, string[]>?>(async ct =>
         {
-            if ((refused = await RefusedUnderLockAsync(db, category, person, dates, ct)) is not null)
+            if (await RefusedUnderLockAsync(db, category, person, dates, ct) is { } refusedUnderLock)
             {
-                return;
+                return refusedUnderLock;
             }
 
             db.Series.Add(series);
@@ -945,6 +946,8 @@ internal static class CalendarEndpoints
             }
 
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_series.created", "calendar_series", series.Id), ct);
+
+            return null;
         }, cancellationToken);
 
         if (refused is not null)
@@ -1095,16 +1098,17 @@ internal static class CalendarEndpoints
         var warnings = await SeriesWarningsAsync(db, e.Category, e.OwnerMembershipId, dates, cancellationToken);
         var series = await SeriesForAsync(db, tenant, [e], cancellationToken);
         var userId = http.User.GetUserId()!.Value;
-        Dictionary<string, string[]>? refused = null;
-        await unitOfWork.ExecuteAsync(async ct =>
+        var refused = await unitOfWork.ExecuteAsync<Dictionary<string, string[]>?>(async ct =>
         {
-            if (retime && (refused = await RefusedUnderLockAsync(db, e.Category, e.OwnerMembershipId, dates, ct)) is not null)
+            if (retime && await RefusedUnderLockAsync(db, e.Category, e.OwnerMembershipId, dates, ct) is { } refusedUnderLock)
             {
-                return;
+                return refusedUnderLock;
             }
 
             await db.SaveChangesAsync(ct);
             await audit.RecordAsync(new AuditEntry(tenant.FamilyId, userId, "calendar_series.updated", "calendar_series", seriesId), ct);
+
+            return null;
         }, cancellationToken);
 
         if (refused is not null)
