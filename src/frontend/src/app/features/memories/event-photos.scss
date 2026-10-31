@@ -189,6 +189,11 @@ button[mat-flat-button],
 button[mat-button] {
   min-height: var(--target-min);
 }
+.download-all {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
 .memory-link {
   justify-self: start;
 }

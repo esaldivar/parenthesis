@@ -149,6 +149,25 @@ export class EventPhotosSection {
   );
   protected readonly allPhotos = computed(() => this.batches().flatMap((b) => b.batch.photos));
 
+  /** "Download all": one ZIP of the photos the viewer may download, with what it leaves out. */
+  protected readonly downloadAll = computed(() => {
+    const all = this.view()?.downloadAll;
+    if (!all?.url || all.photoCount === 0) {
+      return null;
+    }
+    const photos = all.photoCount === 1 ? '1 photo' : `${all.photoCount} photos`;
+    const who = this.coParent() ?? 'Your co-parent';
+    const omitted =
+      all.omitted === 0
+        ? ''
+        : ` ${all.omitted === 1 ? '1 photo' : `${all.omitted} photos`} from ${who} ${all.omitted === 1 ? 'isn’t' : 'aren’t'} included because ${who} hasn’t allowed downloads.`;
+    return {
+      url: all.url,
+      label: `Download all (${photos}, about ${sizeText(all.bytes)})`,
+      note: `Saved as one ZIP file. Your browser shows its progress and can cancel it.${omitted}`,
+    };
+  });
+
   /** The final-week warning, from the first photo here to go. */
   protected readonly finalWeek = computed(() => {
     const photos = this.allPhotos();

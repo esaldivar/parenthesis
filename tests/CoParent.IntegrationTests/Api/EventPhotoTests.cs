@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -141,6 +142,68 @@ public sealed class EventPhotoTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Download_all_streams_a_zip_of_exactly_the_photos_the_viewer_may_download()
+    {
+        using var f = await FamilyAsync();
+        var eventId = await ActivityAsync(f);
+        var zipPath = f.Path($"memories/events/{eventId}/download");
+
+        // Nothing to download yet.
+        Assert.Equal(0, (await EventAsync(f.Dad, f, eventId)).GetProperty("downloadAll").GetProperty("photoCount").GetInt32());
+        Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.GetAsync(zipPath)).StatusCode);
+
+        var first = await UploadAsync(f.Dad, f, eventId, Jpeg(SKColors.Red));
+        var dadsBatch = first.GetProperty("batchId").GetGuid();
+        var second = await UploadAsync(f.Dad, f, eventId, Jpeg(SKColors.Blue), dadsBatch);
+        var moms = await UploadAsync(f.Mom, f, eventId, Jpeg(SKColors.Green));
+        await ShareAsync(f.Dad, f, dadsBatch, true);
+        await ShareAsync(f.Mom, f, moms.GetProperty("batchId").GetGuid(), true);
+
+        // Dad sees Mom's shared photo but she hasn't allowed downloads: his ZIP has his two, and says one is left out.
+        var summary = (await EventAsync(f.Dad, f, eventId)).GetProperty("downloadAll");
+        Assert.Equal(2, summary.GetProperty("photoCount").GetInt32());
+        Assert.Equal(1, summary.GetProperty("omitted").GetInt32());
+        Assert.True(summary.GetProperty("bytes").GetInt64() > 0);
+        Assert.Equal(zipPath, summary.GetProperty("url").GetString());
+
+        var download = await f.Dad.GetAsync(zipPath);
+        Assert.Equal(HttpStatusCode.OK, download.StatusCode);
+        Assert.Equal("application/zip", download.Content.Headers.ContentType?.MediaType);
+        Assert.True(download.Headers.CacheControl?.NoStore);
+        Assert.Equal("attachment", download.Content.Headers.ContentDisposition?.DispositionType);
+        Assert.Equal(
+            $"{_start.UtcDateTime:yyyy-MM-dd} Soccer final photos.zip",
+            download.Content.Headers.ContentDisposition?.FileNameStar ?? download.Content.Headers.ContentDisposition?.FileName?.Trim('"'));
+        var entries = await EntriesAsync(download);
+        Assert.Equal(2, entries.Count);
+        Assert.StartsWith($"{_start.UtcDateTime:yyyy-MM-dd} Soccer final 01 ", entries[0].Key, StringComparison.Ordinal);
+        Assert.StartsWith($"{_start.UtcDateTime:yyyy-MM-dd} Soccer final 02 ", entries[^1].Key, StringComparison.Ordinal);
+        foreach (var (uploaded, (_, bytes)) in new[] { first, second }.Zip(entries))
+        {
+            var single = await f.Dad.GetAsync(Url(uploaded.GetProperty("photo"), "downloadUrl"));
+            Assert.Equal(await single.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken), bytes);
+        }
+
+        // Mom allows downloads: Dad's next ZIP has all three. Mom's own ZIP depends only on Dad's setting.
+        await f.Mom.SendAsync(HttpMethod.Put, f.Path("memories/settings"), new { allowCoParentDownload = true });
+        Assert.Equal(0, (await EventAsync(f.Dad, f, eventId)).GetProperty("downloadAll").GetProperty("omitted").GetInt32());
+        Assert.Equal(3, (await EntriesAsync(await f.Dad.GetAsync(zipPath))).Count);
+        var momsSummary = (await EventAsync(f.Mom, f, eventId)).GetProperty("downloadAll");
+        Assert.Equal(1, momsSummary.GetProperty("photoCount").GetInt32());
+        Assert.Equal(2, momsSummary.GetProperty("omitted").GetInt32());
+        Assert.Single(await EntriesAsync(await f.Mom.GetAsync(zipPath)));
+
+        // Mom stops sharing: her photo leaves Dad's next ZIP at once.
+        await ShareAsync(f.Mom, f, moms.GetProperty("batchId").GetGuid(), false);
+        Assert.Equal(2, (await EntriesAsync(await f.Dad.GetAsync(zipPath))).Count);
+
+        // Once the photos expire there's nothing to download.
+        api.Clock.SetUtcNow(api.Clock.GetUtcNow().AddDays(29));
+        await f.SignInAgainAsync(api);
+        Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.GetAsync(zipPath)).StatusCode);
+    }
+
+    [Fact]
     public async Task Children_other_families_and_guessed_ids_get_nothing()
     {
         using var f = await FamilyAsync();
@@ -159,7 +222,7 @@ public sealed class EventPhotoTests(ApiFactory api) : IAsyncLifetime
         await kitchen.RefreshAntiforgeryAsync();
         Assert.Equal(HttpStatusCode.NoContent, (await kitchen.PostAsync("/api/device/child-session", new { childId = f.KaiId, pin = KaisPin })).StatusCode);
         await kitchen.RefreshAntiforgeryAsync();
-        foreach (var url in new[] { f.Path("memories"), f.Path($"memories/events/{eventId}"), Url(photo, "url"), Url(photo, "thumbnailUrl"), Url(photo, "downloadUrl"), f.Path("memories/settings") })
+        foreach (var url in new[] { f.Path("memories"), f.Path($"memories/events/{eventId}"), Url(photo, "url"), Url(photo, "thumbnailUrl"), Url(photo, "downloadUrl"), f.Path($"memories/events/{eventId}/download"), f.Path("memories/settings") })
         {
             Assert.Equal(HttpStatusCode.Forbidden, (await kitchen.GetAsync(url)).StatusCode);
         }
@@ -176,6 +239,7 @@ public sealed class EventPhotoTests(ApiFactory api) : IAsyncLifetime
         }
 
         Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/api/families/{otherFamily}/memories/events/{eventId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/api/families/{otherFamily}/memories/events/{eventId}/download")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.GetAsync(f.Path($"memories/photos/{Guid.CreateVersion7()}"))).StatusCode);
     }
 
@@ -588,6 +652,24 @@ public sealed class EventPhotoTests(ApiFactory api) : IAsyncLifetime
         var response = await parent.GetAsync(f.Path($"memories/events/{eventId}"));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return await JsonAsync(response);
+    }
+
+    /// <summary>A ZIP response's entries in order, by name.</summary>
+    private static async Task<List<KeyValuePair<string, byte[]>>> EntriesAsync(HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var ct = TestContext.Current.CancellationToken;
+        await using var zip = new ZipArchive(new MemoryStream(await response.Content.ReadAsByteArrayAsync(ct)), ZipArchiveMode.Read);
+        var entries = new List<KeyValuePair<string, byte[]>>();
+        foreach (var entry in zip.Entries)
+        {
+            await using var content = await entry.OpenAsync(ct);
+            using var copy = new MemoryStream();
+            await content.CopyToAsync(copy, ct);
+            entries.Add(new(entry.FullName, copy.ToArray()));
+        }
+
+        return entries;
     }
 
     private static string Url(JsonElement photo, string name) => photo.GetProperty(name).GetString()!;

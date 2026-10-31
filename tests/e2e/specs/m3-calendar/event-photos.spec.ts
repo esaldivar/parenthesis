@@ -125,6 +125,14 @@ test.describe('Event photos and Family Memories', { tag: ['@m3', '@mobile'] }, (
         await activate(row, info);
         await expect(page.getByRole('heading', { level: 1, name: 'Soccer final' })).toBeVisible();
         await expect(page.getByRole('button', { name: /^Photo \d of 2, yours$/ })).toHaveCount(2);
+        // Download all streams one ZIP of the photos Dad may download.
+        const zipLink = page.getByRole('link', { name: /^Download all \(2 photos, about .+\)$/ });
+        await expect(zipLink).toBeVisible();
+        const [zip] = await Promise.all([page.waitForEvent('download'), activate(zipLink, info)]);
+        // The name uses the event's UTC date, like single downloads.
+        expect(zip.suggestedFilename()).toBe(`${start.toISOString().slice(0, 10)} Soccer final photos.zip`);
+        // Mom may not download Dad's photos, so she has no ZIP to fetch.
+        expect((await family.mom.get(`/api/families/${family.familyId}/memories/events/${event.id}/download`)).status()).toBe(404);
         await fitsPage(page);
         await scan(page, info, `${theme}-family-memory`);
         await evidence(page, info, `${theme}-family-memory`);
