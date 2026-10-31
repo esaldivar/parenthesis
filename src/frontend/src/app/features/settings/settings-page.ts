@@ -12,6 +12,7 @@ import { InviteCoParent } from '../family/invite-co-parent';
 import { DeleteAccount } from './delete-account';
 import { GoogleCalendarSettings } from './google-calendar-settings';
 import { ProfilePhotoSettings } from './profile-photo-settings';
+import { MemorySettingsSection } from './memory-settings';
 
 @Component({
   selector: 'app-settings-page',
@@ -26,6 +27,7 @@ import { ProfilePhotoSettings } from './profile-photo-settings';
     GoogleCalendarSettings,
     DeleteAccount,
     ProfilePhotoSettings,
+    MemorySettingsSection,
   ],
   template: `
     <h1>Settings</h1>
@@ -56,6 +58,11 @@ import { ProfilePhotoSettings } from './profile-photo-settings';
         <section class="card" aria-labelledby="photos-heading">
           <h2 id="photos-heading">Profile photos</h2>
           <app-profile-photo-settings [familyId]="current.id" />
+        </section>
+
+        <section class="card" aria-labelledby="memories-heading">
+          <h2 id="memories-heading">Memories</h2>
+          <app-memory-settings [familyId]="current.id" [coParent]="details() ? coParent(details()!) : null" />
         </section>
 
         <section class="card" aria-labelledby="children-heading">

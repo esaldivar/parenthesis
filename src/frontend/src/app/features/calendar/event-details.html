@@ -204,6 +204,17 @@
     <dd>{{ item().isMine ? 'You' : item().ownerName }}</dd>
   </dl>
 
+  @if (item().kind !== 'unavailable') {
+    <app-event-photos
+      [familyId]="familyId()"
+      [eventId]="item().id"
+      [timeZone]="timeZone()"
+      [coParent]="coParent()"
+      [caregiver]="item().kind === 'parenting' ? (item().parents[0]?.name ?? null) : null"
+      [eventStatus]="item().status"
+    />
+  }
+
   @if (item().kind === 'unavailable' && swapTarget() && coParent()) {
     <div class="actions">
       <p class="explain">

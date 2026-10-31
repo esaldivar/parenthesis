@@ -20,7 +20,8 @@ that points back here.
     identity granted Storage Blob Data Contributor on it. Development done by the owner October 31, 2026 (uploads
     on); production still to do, with uploads off until the iPhone HEIC check. Owner to confirm in Cost analysis
     (Service name = Storage) that dev storage stays at $0 or cents.
-  - [ ] Frontend PR: event Photos section, upload, sharing, Family Memories page, Settings, dashboard card.
+  - [ ] Frontend PR: event Photos section, upload, sharing, Family Memories page, Settings, dashboard card. PR
+    opened October 31, 2026 (branch `feat/403-event-photos-frontend`, stacked on the backend PR); tick when merged.
   - [ ] ZIP download PR (streamed, nothing stored).
   - [ ] Physical iPhone check that Safari converts HEIC to JPEG in the picker before uploads are enabled on
     production (physical device checks are deferred to #112).

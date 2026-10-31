@@ -248,6 +248,83 @@ export interface PlaceSuggestions {
   available: boolean;
 }
 
+// --- Milestone 3: event photos and Family Memories (#403) --------------------------------------------------------------
+
+/** One photo the viewer may see. `downloadUrl` is null when they may view it but not download it. */
+export interface EventPhoto {
+  readonly id: string;
+  readonly position: number;
+  readonly width: number;
+  readonly height: number;
+  readonly expiresAt: string;
+  readonly thumbnailUrl: string;
+  readonly url: string;
+  readonly downloadUrl: string | null;
+}
+
+/**
+ * One parent's photos from one upload. The co-parent's batches appear only while shared; `downloadsAllowed` says
+ * whether their uploader allows the co-parent to download them.
+ */
+export interface PhotoBatch {
+  readonly id: string;
+  readonly yours: boolean;
+  readonly visibleToCoParent: boolean;
+  readonly downloadsAllowed: boolean;
+  readonly createdAt: string;
+  readonly photos: readonly EventPhoto[];
+}
+
+/** Why this event can't take the viewer's photos now. The server enforces it; the app only explains. */
+export type PhotoUploadBlock = 'not-confirmed' | 'unavailable-time' | 'not-caregiver' | 'not-started' | 'window-closed';
+
+export interface PhotoUploads {
+  /** False while uploads are switched off on this site. */
+  readonly available: boolean;
+  readonly blocked: PhotoUploadBlock | null;
+  readonly cap: number;
+  readonly used: number;
+  readonly remaining: number;
+  readonly storageUsedBytes: number;
+  readonly storageLimitBytes: number;
+  readonly maxPerUpload: number;
+  readonly maxFileBytes: number;
+}
+
+export interface EventPhotos {
+  readonly eventId: string;
+  readonly title: string;
+  readonly startsAt: string;
+  readonly endsAt: string;
+  readonly allDay: boolean;
+  readonly cancelled: boolean;
+  readonly uploads: PhotoUploads;
+  readonly batches: readonly PhotoBatch[];
+  /** When the last photos the viewer could see were deleted, if they all have been. */
+  readonly photosDeletedOn: string | null;
+}
+
+/** A Family Memory: one event with photos the viewer may see. `expiresAt` is when its first photo goes. */
+export interface Memory {
+  readonly eventId: string;
+  readonly title: string;
+  readonly startsAt: string;
+  readonly endsAt: string;
+  readonly allDay: boolean;
+  readonly cancelled: boolean;
+  readonly photoCount: number;
+  readonly yourPhotoCount: number;
+  readonly sharedWithYouCount: number;
+  readonly expiresAt: string;
+  readonly coverThumbnailUrl: string;
+}
+
+export interface MemorySettings {
+  readonly allowCoParentDownload: boolean;
+  readonly storageUsedBytes: number;
+  readonly storageLimitBytes: number;
+}
+
 export interface CalendarEvent {
   readonly id: string;
   readonly title: string;
@@ -527,6 +604,27 @@ export class Api {
     );
   removeChildPhoto = (familyId: string, childId: string) =>
     this.call(this.http.delete<void>(`/api/families/${familyId}/photos/children/${childId}`));
+
+  // Event photos and Family Memories (#403). Parents only; every rule is checked on the server.
+  memories = (familyId: string) => this.call(this.http.get<Memory[]>(`/api/families/${familyId}/memories`));
+  eventPhotos = (familyId: string, eventId: string) =>
+    this.call(this.http.get<EventPhotos>(`/api/families/${familyId}/memories/events/${eventId}`));
+  /** Adds one photo (the raw file) to the viewer's batch, or starts a batch when `batchId` is missing. */
+  addEventPhoto = (familyId: string, eventId: string, file: Blob, batchId?: string) =>
+    this.call(
+      this.http.post<{ batchId: string; photo: EventPhoto }>(`/api/families/${familyId}/memories/events/${eventId}/photos`, file, {
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        params: batchId ? { batchId } : {},
+      }),
+    );
+  /** Turns "Visible to Co-Parent" on or off for one of the viewer's batches. */
+  shareBatch = (familyId: string, batchId: string, visibleToCoParent: boolean) =>
+    this.call(this.http.patch<void>(`/api/families/${familyId}/memories/batches/${batchId}`, { visibleToCoParent }));
+  deleteEventPhoto = (familyId: string, photoId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/memories/photos/${photoId}`));
+  memorySettings = (familyId: string) => this.call(this.http.get<MemorySettings>(`/api/families/${familyId}/memories/settings`));
+  saveMemorySettings = (familyId: string, allowCoParentDownload: boolean) =>
+    this.call(this.http.put<MemorySettings>(`/api/families/${familyId}/memories/settings`, { allowCoParentDownload }));
 
   // The shared calendar. A range spans at most 62 days. Children may list (they see only their confirmed events).
   calendarEvents = (familyId: string, from: string, to: string) =>

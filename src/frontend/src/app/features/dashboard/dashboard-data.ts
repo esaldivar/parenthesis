@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember } from '../../core/api/api';
+import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember, Memory } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { parentPalette } from '../calendar/calendar-palette';
 import { FORMER_PARENT } from '../calendar/calendar-items';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from '../calendar/time';
 import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from './model';
 import { addDays } from './week';
+import { familyDate, whoseText } from '../memories/photo-text';
 
 /** Loads one week of dashboard data for a family. `null` means the feature isn't available yet. */
 export abstract class DashboardDataSource {
@@ -28,8 +29,8 @@ const CATEGORIES: Record<CalendarCategory, EventCategory> = {
 
 /**
  * The real source (#196): the shown week's parenting time and events, approvals waiting on this parent, and the
- * week's reminders and tasks, all in the family's time zone. Messages, memories and children's shares aren't built
- * yet, so they stay empty and the page says so. Unavailable time never carries another parent's private note.
+ * week's reminders and tasks, all in the family's time zone, and the latest Family Memories (#403). Messages and
+ * children's shares aren't built yet, so they stay empty and the page says so. Unavailable time never carries another parent's private note.
  */
 @Injectable({ providedIn: 'root' })
 export class LiveDashboardDataSource extends DashboardDataSource {
@@ -40,13 +41,15 @@ export class LiveDashboardDataSource extends DashboardDataSource {
     const zone = this.auth.currentFamily()?.timeZone ?? 'UTC';
     const weekEnd = addDays(weekStart, 7);
     const [from, to] = [fromFamilyLocal(`${weekStart}T00:00`, zone), fromFamilyLocal(`${weekEnd}T00:00`, zone)];
-    const [family, children, listed, approvals, reminders, tasks] = await Promise.all([
+    const [family, children, listed, approvals, reminders, tasks, memories] = await Promise.all([
       this.api.family(familyId),
       this.api.children(familyId),
       this.api.calendarEvents(familyId, from, to),
       this.api.approvals(familyId),
       this.api.reminders(familyId, from, to),
       this.api.tasks(familyId, weekStart, weekEnd),
+      // Family Memories (#403) are a bonus here: if they can't load, the card just shows its empty state.
+      this.api.memories(familyId).catch((): Memory[] => []),
     ]);
     // Declined requests (#199) stay on the Calendar page, labelled; the home page shows only what's planned or asked.
     const events = listed.filter((e) => e.status === 'Confirmed' || e.status === 'PendingApproval');
@@ -72,7 +75,14 @@ export class LiveDashboardDataSource extends DashboardDataSource {
         .map((r) => ({ id: r.id, summary: r.summary, proposedBy: parent(r.proposerMembershipId).displayName })),
       kidShares: [],
       recentMessages: [],
-      recentMemories: [],
+      recentMemories: memories.slice(0, 5).map((m) => ({
+        id: m.eventId,
+        title: m.title,
+        sharedBy: whoseText(m, members.find((x) => x.role === 'Parent' && !x.isYou)?.displayName ?? null),
+        date: familyDate(m.startsAt, zone),
+        coverUrl: m.coverThumbnailUrl,
+        link: ['/memories', m.eventId],
+      })),
       notes: [
         ...reminders.map((r) => {
           const local = toFamilyLocal(r.startsAt, zone);

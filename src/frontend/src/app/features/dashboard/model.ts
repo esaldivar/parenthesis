@@ -104,6 +104,9 @@ export interface SharedMemory {
   readonly title: string;
   readonly sharedBy: string;
   readonly date: PlainDate;
+  /** A real memory's first photo (#403), and its page. Sample memories have neither. */
+  readonly coverUrl?: string;
+  readonly link?: readonly string[];
 }
 
 /** A shared reminder or task for Upcoming (#196). Tasks that are done aren't listed. */

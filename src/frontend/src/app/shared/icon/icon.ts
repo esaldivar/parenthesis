@@ -42,6 +42,8 @@ const PATHS = {
   book: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z M5 17a3 3 0 0 1 3-3h11',
   star: 'M12 3l2.6 5.6 6.1.7-4.5 4.1 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.1 6.1-.7z',
   leaf: 'M5 19c0-8 6-14 15-14c0 9-6 15-14 15 M5 19l7-7',
+  download: 'M12 4v11 M7 10l5 5 5-5 M5 20h14',
+  trash: 'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6',
 } as const;
 
 export type IconName = keyof typeof PATHS;
