@@ -7,6 +7,7 @@ using CoParent.Modules.Approvals;
 using CoParent.Modules.Calendar;
 using CoParent.Modules.Families;
 using CoParent.Modules.Identity;
+using CoParent.Modules.Memories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +30,8 @@ builder.Services
     .AddIdentityModule()
     .AddApprovalsModule()
     .AddFamiliesModule()
-    .AddCalendarModule();
+    .AddCalendarModule()
+    .AddMemoriesModule();
 
 var app = builder.Build();
 
@@ -69,6 +71,7 @@ api.MapIdentityEndpoints();
 api.MapFamiliesEndpoints(family);
 family.MapApprovalsEndpoints();
 family.MapCalendarEndpoints();
+family.MapMemoriesEndpoints();
 
 // Everything else that looks like a client-side route gets the Angular app.
 app.MapSpaFallback();

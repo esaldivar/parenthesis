@@ -15,7 +15,7 @@ namespace CoParent.IntegrationTests.Api;
 /// The real API host on its own test database: migrations applied once, data reset between tests with Respawn.
 /// Runs in the "Testing" environment, so error handling behaves as in production (no developer exception page).
 /// </summary>
-public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory<Program>, IAsyncLifetime
+public sealed class ApiFactory(PostgresFixture postgres, AzuriteFixture azurite) : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string TestingEnvironment = "Testing";
     public const string PublicBaseUrl = "https://app.parenthesis.test";
@@ -115,6 +115,11 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         // limiting has its own test with a low limit.
         builder.UseSetting("Identity:AuthRateLimit:PermitLimit", "10000");
         builder.UseSetting("App:PublicBaseUrl", PublicBaseUrl);
+
+        // Event photos (#403) in Azurite. The cleanup runs only when a test asks for it.
+        builder.UseSetting("EventPhotos:ConnectionString", azurite.ConnectionString);
+        builder.UseSetting("EventPhotos:UploadsEnabled", "true");
+        builder.UseSetting("EventPhotos:CleanupInterval", "1.00:00:00");
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IEmailSender>();
