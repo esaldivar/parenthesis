@@ -1,11 +1,11 @@
 # Event photos and Family Memories (#403)
 
-Status: **design approved by the owner on October 31, 2026 (in the Claude app); backend merged into `release/0.3.0` (#407), frontend in review, ZIP download
-not started.** Product rules below were approved by the owner on October
+Status: **design approved by the owner on October 31, 2026 (in the Claude app); backend (#407) and frontend (#408) merged into `release/0.3.0`; ZIP download in
+review.** Product rules below were approved by the owner on October
 31, 2026 (issue #403 body and the
 [decisions comment](https://github.com/esaldivar/parenthesis/issues/403#issuecomment-6544684559)). Visual boards:
-[`docs/design/reviews/issue-403/`](../reviews/issue-403/README.md). Implementation is in review; the Family Memories
-page stays the honest "coming soon" placeholder until the implementation PRs land.
+[`docs/design/reviews/issue-403/`](../reviews/issue-403/README.md). The Family Memories page and event Photos section are
+implemented; "Download all" (one streamed ZIP per event) is the last delivery step.
 
 Scope is parents only, in M3. Children don't upload or see event photos until #179 (M5). Google Photos export is #404
 and isn't part of this work; the download permission below is written so #404 can reuse it.
@@ -157,7 +157,9 @@ erDiagram
 - **ZIP download:** streamed by the API, nothing stored. Each photo's access, expiry and download permission is
   checked right before it's written, so a photo that becomes ineligible mid-download is left out. Before starting,
   the app shows the count, approximate size and any omitted-photo explanation; the browser shows progress and can
-  cancel. Filenames are safe and unique (`2026-10-12 Soccer final 01.webp`).
+  cancel. Filenames are safe and unique (`2026-10-12 Soccer final 01 3f9a2c.webp`, in `2026-10-12 Soccer final
+  photos.zip`). As built: "Download all" is a plain download link (the browser's own progress and cancel), offered
+  in the event's Photos section wherever it appears, with the count, approximate size and any omitted photos.
 - **Telemetry:** no photo contents, filenames or private URLs in logs or telemetry.
 
 ## Delivery

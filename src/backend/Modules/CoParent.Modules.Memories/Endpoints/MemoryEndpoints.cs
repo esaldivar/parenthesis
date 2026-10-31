@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.Compression;
 using System.Text;
 using CoParent.Modules.Calendar.Contracts;
 using CoParent.Modules.Families.Contracts;
@@ -45,6 +46,13 @@ internal sealed record UploadsView(
     int MaxPerUpload,
     long MaxFileBytes);
 
+/// <summary>
+/// What "Download all" would include: the photos the viewer may download now, their approximate total size, and how
+/// many photos they can see but not download (the co-parent hasn't allowed downloads). <c>Url</c> is null when there
+/// is nothing to download.
+/// </summary>
+internal sealed record DownloadAllView(int PhotoCount, long Bytes, int Omitted, string? Url);
+
 /// <summary>An event's photos for the viewer. <c>PhotosDeletedOn</c>: when its last photos the viewer could see expired.</summary>
 internal sealed record EventPhotosView(
     Guid EventId,
@@ -55,7 +63,8 @@ internal sealed record EventPhotosView(
     bool Cancelled,
     UploadsView Uploads,
     IReadOnlyList<BatchView> Batches,
-    DateTimeOffset? PhotosDeletedOn);
+    DateTimeOffset? PhotosDeletedOn,
+    DownloadAllView DownloadAll);
 
 /// <summary>A Family Memory: one event with photos the viewer may see. <c>ExpiresAt</c> is its first photo to go.</summary>
 internal sealed record MemoryView(
@@ -109,6 +118,7 @@ internal static partial class MemoryEndpoints
         var memories = family.MapGroup("/memories").WithTags("Family Memories");
         memories.MapGet("/", ListAsync);
         memories.MapGet("/events/{eventId:guid}", EventAsync);
+        memories.MapGet("/events/{eventId:guid}/download", DownloadAllAsync);
         memories.MapPost("/events/{eventId:guid}/photos", UploadAsync).RequireRateLimiting(UploadRateLimitPolicy);
         memories.MapPatch("/batches/{batchId:guid}", ShareAsync);
         memories.MapGet("/photos/{photoId:guid}", PhotoAsync);
@@ -220,8 +230,25 @@ internal static partial class MemoryEndpoints
         }
 
         var uploads = await UploadsAsync(db, photoEvent, tenant.MembershipId, parents, store, options.Value, now, cancellationToken);
+        var downloadable = visible
+            .Where(x => x.Batch.UploaderMembershipId == tenant.MembershipId || allowsDownload.Contains(x.Batch.UploaderMembershipId))
+            .ToList();
+        var downloadAll = new DownloadAllView(
+            downloadable.Count,
+            downloadable.Sum(x => x.Photo.PhotoBytes),
+            visible.Count - downloadable.Count,
+            downloadable.Count > 0 && store.IsConfigured ? $"/api/families/{tenant.FamilyId}/memories/events/{eventId}/download" : null);
         return TypedResults.Ok(new EventPhotosView(
-            photoEvent.Id, photoEvent.Title, photoEvent.StartsAt, photoEvent.EndsAt, photoEvent.AllDay, photoEvent.IsCancelled, uploads, batches, deletedOn));
+            photoEvent.Id,
+            photoEvent.Title,
+            photoEvent.StartsAt,
+            photoEvent.EndsAt,
+            photoEvent.AllDay,
+            photoEvent.IsCancelled,
+            uploads,
+            batches,
+            deletedOn,
+            downloadAll));
     }
 
     /// <summary>
@@ -503,6 +530,112 @@ internal static partial class MemoryEndpoints
         return TypedResults.Stream(content, EventPhotoImages.ContentType, DownloadName(e?.Title ?? "Photo", e?.StartsAt ?? photo.CreatedAt, photo));
     }
 
+    /// <summary>
+    /// "Download all": a ZIP of the event's photos the viewer may download, streamed as it's built and never stored.
+    /// Each photo is checked again right before it's written, so one whose sharing, download permission or expiry
+    /// changes during the download is left out. Photos are already compressed, so entries are stored as they are.
+    /// </summary>
+    private static async Task<IResult> DownloadAllAsync(
+        Guid eventId,
+        HttpContext http,
+        ITenantContext tenant,
+        MemoriesDbContext db,
+        IEventPhotoCalendar calendar,
+        IPhotoStore store,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (!store.IsConfigured || await calendar.FindAsync(eventId, cancellationToken) is not { } photoEvent || photoEvent.IsUnavailable)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var planned = await DownloadableAsync(db, tenant.MembershipId, eventId, null, clock.GetUtcNow(), cancellationToken);
+        if (planned.Count == 0)
+        {
+            return TypedResults.NotFound();
+        }
+
+        http.Response.Headers.CacheControl = "no-store";
+        http.Response.Headers.XContentTypeOptions = "nosniff";
+        return TypedResults.Stream(
+            async body =>
+            {
+                var aborted = http.RequestAborted;
+                await using var output = new AsyncWriteStream(body);
+                var zip = await ZipArchive.CreateAsync(output, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null, aborted);
+                await using (zip)
+                {
+                    await WriteZipAsync(zip, output, new ZipPlan(photoEvent, tenant.MembershipId, planned), db, store, clock, aborted);
+                }
+
+                await output.FlushAsync(aborted);
+            },
+            "application/zip",
+            ZipName(photoEvent.Title, photoEvent.StartsAt));
+    }
+
+    /// <summary>The photos planned for one viewer's ZIP of one event, before each is checked again.</summary>
+    private sealed record ZipPlan(PhotoEvent Event, Guid Viewer, List<EventPhoto> Photos);
+
+    private static async Task WriteZipAsync(
+        ZipArchive zip,
+        AsyncWriteStream output,
+        ZipPlan plan,
+        MemoriesDbContext db,
+        IPhotoStore store,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
+        foreach (var photo in plan.Photos)
+        {
+            if ((await DownloadableAsync(db, plan.Viewer, photo.EventId, photo.Id, clock.GetUtcNow(), cancellationToken)).Count == 0)
+            {
+                continue;
+            }
+
+            await using var content = await store.OpenAsync(photo.PhotoPath, cancellationToken);
+            if (content is null)
+            {
+                continue;
+            }
+
+            var entry = zip.CreateEntry(DownloadName(plan.Event.Title, plan.Event.StartsAt, photo), CompressionLevel.NoCompression);
+            entry.LastWriteTime = photo.CreatedAt;
+            await using (var target = await entry.OpenAsync(cancellationToken))
+            {
+                await content.CopyToAsync(target, cancellationToken);
+            }
+
+            await output.FlushAsync(cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// The event's photos the viewer may download now (or just <paramref name="photoId"/>): their own, and the
+    /// co-parent's shared ones while the co-parent allows downloads. In batch order, then by position.
+    /// </summary>
+    private static async Task<List<EventPhoto>> DownloadableAsync(
+        MemoriesDbContext db, Guid viewer, Guid eventId, Guid? photoId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var visible = await Visible(db, viewer, now)
+            .Where(x => x.Photo.EventId == eventId && (photoId == null || x.Photo.Id == photoId))
+            .Select(x => new { x.Photo, x.Batch.UploaderMembershipId, BatchCreatedAt = x.Batch.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var allowed = await DownloadAllowedAsync(db, visible.Where(x => x.UploaderMembershipId != viewer).Select(x => x.UploaderMembershipId), cancellationToken);
+        return visible
+            .Where(x => x.UploaderMembershipId == viewer || allowed.Contains(x.UploaderMembershipId))
+            .OrderBy(x => x.BatchCreatedAt)
+            .ThenBy(x => x.Photo.Position)
+            .Select(x => x.Photo)
+            .ToList();
+    }
+
     /// <summary>The uploader deletes one of their photos: gone for both parents now, spot and storage freed at once.</summary>
     private static async Task<Results<NoContent, NotFound, ForbidHttpResult>> DeleteAsync(
         Guid photoId,
@@ -747,7 +880,16 @@ internal static partial class MemoryEndpoints
     /// "2026-10-12 Soccer final 01 3f9a2c.webp": the event's date (UTC) and title, the photo's place in its batch and a
     /// short piece of its id so names never clash. Safe on every file system.
     /// </summary>
-    internal static string DownloadName(string title, DateTimeOffset date, EventPhoto photo)
+    internal static string DownloadName(string title, DateTimeOffset date, EventPhoto photo) =>
+        string.Create(
+            CultureInfo.InvariantCulture, $"{date.UtcDateTime:yyyy-MM-dd} {SafeTitle(title)} {photo.Position:00} {photo.Id.ToString("N")[..6]}.webp");
+
+    /// <summary>"2026-10-12 Soccer final photos.zip".</summary>
+    internal static string ZipName(string title, DateTimeOffset date) =>
+        string.Create(CultureInfo.InvariantCulture, $"{date.UtcDateTime:yyyy-MM-dd} {SafeTitle(title)} photos.zip");
+
+    /// <summary>The title with only letters, digits, spaces, dashes and underscores, at most 60 characters.</summary>
+    private static string SafeTitle(string title)
     {
         var safe = new StringBuilder();
         foreach (var c in title)
@@ -761,13 +903,7 @@ internal static partial class MemoryEndpoints
             name = name[..60].TrimEnd();
         }
 
-        if (name.Length == 0)
-        {
-            name = "Photo";
-        }
-
-        return string.Create(
-            CultureInfo.InvariantCulture, $"{date.UtcDateTime:yyyy-MM-dd} {name} {photo.Position:00} {photo.Id.ToString("N")[..6]}.webp");
+        return name.Length == 0 ? "Photo" : name;
     }
 
     /// <summary>The body, or null when it is bigger than an upload may be.</summary>

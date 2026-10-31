@@ -302,6 +302,18 @@ export interface EventPhotos {
   readonly batches: readonly PhotoBatch[];
   /** When the last photos the viewer could see were deleted, if they all have been. */
   readonly photosDeletedOn: string | null;
+  readonly downloadAll: DownloadAll;
+}
+
+/**
+ * What "Download all" would include: the photos the viewer may download now, their approximate size, and how many
+ * they can see but not download. `url` streams them as one ZIP; it's null when there's nothing to download.
+ */
+export interface DownloadAll {
+  readonly photoCount: number;
+  readonly bytes: number;
+  readonly omitted: number;
+  readonly url: string | null;
 }
 
 /** A Family Memory: one event with photos the viewer may see. `expiresAt` is when its first photo goes. */

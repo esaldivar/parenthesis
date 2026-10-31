@@ -247,6 +247,19 @@
         </section>
       }
 
+      @if (downloadAll(); as all) {
+        <div class="download-all">
+          <a
+            mat-stroked-button
+            [href]="all.url"
+            download
+            aria-describedby="photos-download-all-note"
+            ><app-icon name="download" [size]="18" /> {{ all.label }}</a
+          >
+          <p class="hint" id="photos-download-all-note">{{ all.note }}</p>
+        </div>
+      }
+
       @if (openPhoto(); as photo) {
         <section class="viewer" aria-labelledby="photo-viewer-heading">
           <div class="viewer__head">
