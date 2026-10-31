@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatRadioChange, MatRadioModule } from '@angular/material/radio';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 import { KidPresentation, KidPresentationService } from '../../layout/kid-shell/kid-presentation.service';
 import { AppearancePicker } from '../../shared/appearance-picker/appearance-picker';
@@ -10,7 +10,7 @@ import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
 @Component({
   selector: 'app-kid-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppearancePicker, MatRadioModule, MatButtonModule, PhotoEditor],
+  imports: [AppearancePicker, MatRadioModule, MatButtonModule, PhotoEditor, RouterLink],
   template: `
     <h1>Settings</h1>
 
@@ -54,6 +54,8 @@ import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
         <button mat-stroked-button type="button" (click)="switchProfile()">Switch profile</button>
       </section>
     }
+
+    <p class="privacy"><a routerLink="/privacy">Privacy</a></p>
   `,
   styles: `
     .card {
@@ -68,6 +70,11 @@ import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
     }
     button {
       min-height: var(--kid-target, var(--target-min));
+    }
+    .privacy a {
+      display: inline-flex;
+      min-height: var(--kid-target, var(--target-min));
+      align-items: center;
     }
     .options {
       display: flex;
