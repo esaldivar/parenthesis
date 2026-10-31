@@ -31,8 +31,11 @@ that points back here.
     #408 on October 31, 2026.
   - [x] ZIP download PR (streamed, nothing stored, each photo re-checked before it's written). Merged as #409 on
     October 31, 2026.
-  - [ ] Release PR #410 SonarCloud gate (C reliability on new code): fix the `reduce()` without an initial value in
-    the event Photos section (branch `feat/sonar-410-reliability`); tick when merged and #410's gate is green.
+  - [ ] Release PR #410 SonarCloud gate (C reliability on new code). Fixed the `reduce()` without an initial value
+    (#411, merged October 31, 2026). Two more reliability findings had been marked Accepted in SonarCloud: the
+    hidden photo file input with no label (Web:InputWithoutLabelCheck) and a synchronous `Write` in the upload
+    reader (S6966); fixed on branch `feat/sonar-410-reliability-2`. Tick when merged, the two Accepted findings
+    show as Fixed and #410's Release security gate is green.
   - [ ] Physical iPhone check that Safari converts HEIC to JPEG in the picker before uploads are enabled on
     production (physical device checks are deferred to #112).
   - [ ] Owner to reconsider 14-day retention later; existing uploads keep their period.
