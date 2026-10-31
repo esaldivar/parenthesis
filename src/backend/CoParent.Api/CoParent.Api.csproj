@@ -8,6 +8,7 @@
     <ProjectReference Include="..\Modules\CoParent.Modules.Families\CoParent.Modules.Families.csproj" />
     <ProjectReference Include="..\Modules\CoParent.Modules.Approvals\CoParent.Modules.Approvals.csproj" />
     <ProjectReference Include="..\Modules\CoParent.Modules.Calendar\CoParent.Modules.Calendar.csproj" />
+    <ProjectReference Include="..\Modules\CoParent.Modules.Memories\CoParent.Modules.Memories.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />

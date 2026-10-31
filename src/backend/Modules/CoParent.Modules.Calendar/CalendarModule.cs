@@ -29,6 +29,7 @@ public static class CalendarModule
         services.AddScoped<IApprovalTargetHandler, CalendarModifyHandler>();
         services.AddScoped<IApprovalTargetHandler, CalendarCancelHandler>();
         services.AddScoped<IParentDepartureHandler, CalendarDeparture>();
+        services.AddScoped<IEventPhotoCalendar, EventPhotoCalendar>();
 
         // Address suggestions (#354): off unless Places:ApiKey is set. The client logs nothing about requests.
         services.AddOptions<PlacesOptions>().BindConfiguration(PlacesOptions.Section);

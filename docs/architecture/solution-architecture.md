@@ -78,7 +78,7 @@ Each module is **one .NET project** with internal folders (`Domain`, `Applicatio
 | **Families** | Family, FamilyMembership, Invitation, ChildProfile, ParentChildRelationship, category approval policy | `families` |
 | **Approvals** | ChangeRequest, ApprovalDecision, the PR-style workflow engine | `approvals` |
 | **Calendar** | CalendarEvent, attendees (children), reminders, each parent's one-way Google Calendar copy (#386) | `calendar` |
-| **Memories** | Memory, MemoryAttachment, MemoryShare, soft delete & purge | `memories` |
+| **Memories** | M3 event photos: PhotoBatch, EventPhoto, MemorySettings, 28-day expiry (#403). Later: Memory, MemoryAttachment, MemoryShare, soft delete & purge | `memories` |
 | **Messaging** (post-MVP) | Conversation, Message, MessageAttachment | `messaging` |
 | **Notifications** | Notification inbox, SignalR push, email digests | `notifications` |
 | **Integrations** (post-MVP) | Other external calendars, if ever needed (Google's one-way copy is in Calendar, #386) | `integrations` |

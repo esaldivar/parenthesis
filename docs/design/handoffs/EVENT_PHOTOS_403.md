@@ -142,11 +142,13 @@ erDiagram
 - **Storage:** private Azure Blob container `event-photos`, path
   `families/{familyId}/memories/{eventId}/{photoId}/{photo|thumb}`; Azurite locally and in CI.
 - **Serving:** through the API only, rechecking family, role, batch visibility, download permission and expiry on
-  every request, with `Cache-Control: private, max-age=300`. No SAS URLs in M3, so revocation applies within 5
-  minutes.
-- **Concurrency:** one transaction locks the parent's usage row and the event's spot count before reserving, so
-  parallel uploads can't both take the last spot or the last bytes. Failed uploads delete written blobs and release
-  their reservation; a sweep clears reservations older than 15 minutes.
+  every request, with `Cache-Control: private, no-cache` and an ETag, so the browser revalidates each time (a 304
+  sends no bytes) and revocation applies to the next request. Downloads use `no-store` and an attachment filename.
+  No SAS URLs in M3.
+- **Concurrency:** one transaction takes a per-parent PostgreSQL advisory lock, counts that parent's spots on the
+  event and bytes in use, and reserves a row before the upload is processed, so parallel uploads can't both take the
+  last spot or the last bytes (each parent's spots are their own, so a per-parent lock covers both). Failed uploads
+  delete written blobs and release their reservation; a sweep clears reservations older than 15 minutes.
 - **Expiry and cleanup:** every read path checks `expires_at`. An hourly worker deletes expired photo and thumbnail
   blobs, frees spots and reconciles usage. An Azure lifecycle rule scoped to `event-photos` only is a backstop; Azure
   deletes asynchronously, so the app never promises an exact deletion time. Soft-delete and backup retention are
@@ -166,4 +168,4 @@ erDiagram
 
 Owner step before uploads are switched on in development: create the private `event-photos` container in the dev
 storage account and grant the Container App's managed identity **Storage Blob Data Contributor** on it (commands
-will be added to the Azure runbook in the backend PR).
+in the Azure runbook, "Event photos (#403)").

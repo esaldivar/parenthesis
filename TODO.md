@@ -12,9 +12,14 @@ that points back here.
   - [x] Owner design review of the #403 boards: approved October 31, 2026, in the Claude app. The `design approved`
     label is the owner's to apply.
   - [ ] Backend PR: Memories module, migrations, private blob storage, upload/read/delete endpoints, sharing and
-    download settings, per-parent quota and event spots, expiry worker, uploads behind a feature flag.
+    download settings, per-parent quota and event spots, expiry worker, uploads behind a feature flag. PR opened
+    October 31, 2026 (branch `feat/403-event-photos-backend`); tick when merged.
+  - [ ] Verify uploads on the development site once the owner Azure step is done (upload, share, unshare, delete,
+    download permission) before the frontend PR merges.
   - [ ] Owner Azure step: private `event-photos` container in each environment's storage account, Container App
-    identity granted Storage Blob Data Contributor on it.
+    identity granted Storage Blob Data Contributor on it. Development done by the owner October 31, 2026 (uploads
+    on); production still to do, with uploads off until the iPhone HEIC check. Owner to confirm in Cost analysis
+    (Service name = Storage) that dev storage stays at $0 or cents.
   - [ ] Frontend PR: event Photos section, upload, sharing, Family Memories page, Settings, dashboard card.
   - [ ] ZIP download PR (streamed, nothing stored).
   - [ ] Physical iPhone check that Safari converts HEIC to JPEG in the picker before uploads are enabled on

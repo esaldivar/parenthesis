@@ -212,7 +212,7 @@ public sealed class ProfilePhotoTests(ApiFactory api) : IAsyncLifetime
 
         // A 1200x800 JPEG, red on the left and blue on the right, taken with the camera turned (EXIF orientation 6),
         // and carrying a description that stands in for location data.
-        var upload = WithExif(HalvesJpeg(1200, 800), orientation: 6, description: "SYNTHETIC-GPS 41.88N 87.62W");
+        var upload = TestImages.WithExif(TestImages.HalvesJpeg(1200, 800), orientation: 6, description: "SYNTHETIC-GPS 41.88N 87.62W");
         var url = (await UploadAsync(family.Dad, family.Path("photos/me"), upload)).GetProperty("url").GetString()!;
         var response = await family.Dad.GetAsync(url);
         var bytes = await response.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
@@ -321,20 +321,6 @@ public sealed class ProfilePhotoTests(ApiFactory api) : IAsyncLifetime
         return bitmap;
     }
 
-    private static byte[] HalvesJpeg(int width, int height)
-    {
-        using var bitmap = new SKBitmap(width, height);
-        using (var canvas = new SKCanvas(bitmap))
-        {
-            using var red = new SKPaint { Color = SKColors.Red };
-            using var blue = new SKPaint { Color = SKColors.Blue };
-            canvas.DrawRect(0, 0, width / 2f, height, red);
-            canvas.DrawRect(width / 2f, 0, width / 2f, height, blue);
-        }
-
-        return Encode(bitmap, SKEncodedImageFormat.Jpeg, dispose: false);
-    }
-
     private static byte[] Encode(SKBitmap bitmap, SKEncodedImageFormat format, bool dispose = true)
     {
         try
@@ -350,28 +336,6 @@ public sealed class ProfilePhotoTests(ApiFactory api) : IAsyncLifetime
                 bitmap.Dispose();
             }
         }
-    }
-
-    /// <summary>Inserts an EXIF block (orientation and a description) right after the JPEG's start marker.</summary>
-    private static byte[] WithExif(byte[] jpeg, ushort orientation, string description)
-    {
-        var text = Encoding.ASCII.GetBytes(description + "\0");
-        using var tiff = new MemoryStream();
-        void U16(int v) { Span<byte> b = stackalloc byte[2]; BinaryPrimitives.WriteUInt16LittleEndian(b, (ushort)v); tiff.Write(b); }
-        void U32(int v) { Span<byte> b = stackalloc byte[4]; BinaryPrimitives.WriteUInt32LittleEndian(b, (uint)v); tiff.Write(b); }
-        tiff.Write("II"u8);
-        U16(42);
-        U32(8);
-        U16(2); // two entries
-        U16(0x010E); U16(2); U32(text.Length); U32(8 + 2 + (2 * 12) + 4); // ImageDescription, ASCII, at the end
-        U16(0x0112); U16(3); U32(1); U16(orientation); U16(0); // Orientation, SHORT
-        U32(0); // no next IFD
-        tiff.Write(text);
-
-        var payload = "Exif\0\0"u8.ToArray().Concat(tiff.ToArray()).ToArray();
-        var length = payload.Length + 2;
-        byte[] app1 = [0xFF, 0xE1, (byte)(length >> 8), (byte)length, .. payload];
-        return [.. jpeg[..2], .. app1, .. jpeg[2..]];
     }
 
     /// <summary>A tiny PNG whose header claims <paramref name="width"/> by <paramref name="height"/> pixels.</summary>

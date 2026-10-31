@@ -9,6 +9,7 @@
     <Project Path="src/backend/Modules/CoParent.Modules.Families/CoParent.Modules.Families.csproj" />
     <Project Path="src/backend/Modules/CoParent.Modules.Approvals/CoParent.Modules.Approvals.csproj" />
     <Project Path="src/backend/Modules/CoParent.Modules.Calendar/CoParent.Modules.Calendar.csproj" />
+    <Project Path="src/backend/Modules/CoParent.Modules.Memories/CoParent.Modules.Memories.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
