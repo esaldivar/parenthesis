@@ -1,6 +1,6 @@
 # Event photos and Family Memories (#403)
 
-Status: **proposed design, awaiting owner design review.** Product rules below were approved by the owner on October
+Status: **design approved by the owner on October 31, 2026 (in the Claude app); not implemented yet.** Product rules below were approved by the owner on October
 31, 2026 (issue #403 body and the
 [decisions comment](https://github.com/esaldivar/parenthesis/issues/403#issuecomment-6544684559)). Visual boards:
 [`docs/design/reviews/issue-403/`](../reviews/issue-403/README.md). Nothing is implemented yet; the Family Memories

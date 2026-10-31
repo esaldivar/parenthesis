@@ -12,5 +12,6 @@ co-parent, Kai the child); photo tiles are drawn shapes, not photos. Colors are 
 | `phone320-light.png` | Every board at 320px (no horizontal scrolling) |
 | `desktop1280-light.png`, `desktop1280-dark.png` | Every board at 1280px |
 
-**Owner design review:** pending. Once approved, the implementation follows these boards using existing Angular
-Material components; differences found during implementation will be listed in the implementation PR.
+**Owner design review (October 31, 2026, in the Claude app):** approved as shown. The implementation follows these
+boards using existing Angular Material components; differences found during implementation will be listed in the
+implementation PR. The `design approved` label is the owner's to apply.

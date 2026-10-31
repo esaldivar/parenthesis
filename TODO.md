@@ -9,7 +9,8 @@ that points back here.
 - [ ] **Event photos and Family Memories (#403, M3, October 31, 2026).** Owner approved the rules and the delivery
   plan (decisions comment on #403). Design: `docs/design/handoffs/EVENT_PHOTOS_403.md`, boards in
   `docs/design/reviews/issue-403/`. Google Photos export is #404, separate.
-  - [ ] Owner design review of the #403 boards. The `design approved` label is the owner's to apply.
+  - [x] Owner design review of the #403 boards: approved October 31, 2026, in the Claude app. The `design approved`
+    label is the owner's to apply.
   - [ ] Backend PR: Memories module, migrations, private blob storage, upload/read/delete endpoints, sharing and
     download settings, per-parent quota and event spots, expiry worker, uploads behind a feature flag.
   - [ ] Owner Azure step: private `event-photos` container in each environment's storage account, Container App
