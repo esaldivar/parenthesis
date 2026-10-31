@@ -568,6 +568,12 @@ that points back here.
     week's time grid the half-hour tapped (an hour long). Keyboards use each day column's "Add on …" button. Defaults
     are in `docs/design/CALENDAR_DECISIONS.md`.
     - [ ] **Owner:** retest on Home and the Calendar page (phone and desktop), then close #212.
+    - [x] **Owner acceptance (October 31, 2026):** Eric accepted the current interaction after trying November 17
+      on the phone; moved #212 to Awaiting Deployment. This does not claim every original test scenario was rerun.
+    - [ ] **M6 polish follow-up (#212, owner decision October 31, 2026):** revisit discoverability and consistency
+      of tapping a day in mobile Month view, opening its week, and entering Add with the selected date/time.
+      Review Home and full Calendar on phone/desktop with keyboard and both themes; agree the interaction before
+      changing it. Preserve the currently accepted behavior until then; this polish does not block M3 progression.
   - [ ] **Toasts for successful actions (#226).** On `feat/226-toast-notifications`: confirmations on the Calendar,
     Home, Approvals and family pages show as a toast, bottom right on desktop and above the bottom navigation on phones.
     They show 6 seconds for short messages and up to 10 for long ones, pause while hovered, focused or the tab is
