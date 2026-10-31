@@ -151,15 +151,17 @@ with its own managed identity, so there is no storage key or connection string t
 
 ```bash
 ST=stparenthesis$ENV$SUFFIX
-az storage container create --account-name $ST -n event-photos --public-access off --auth-mode login
 ST_ID="$(az storage account show -g $RG -n $ST --query id -o tsv)"
+az role assignment create --assignee "$(az ad signed-in-user show --query id -o tsv)" --role "Storage Blob Data Contributor" --scope "$ST_ID"
+az storage container create --account-name $ST -n event-photos --public-access off --auth-mode login
 APP_ID="$(az containerapp show -g $RG -n ca-parenthesis-$ENV --query identity.principalId -o tsv)" && echo "$APP_ID"
 az role assignment create --assignee-object-id "$APP_ID" --assignee-principal-type ServicePrincipal --role "Storage Blob Data Contributor" --scope "$ST_ID/blobServices/default/containers/event-photos"
 az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars EventPhotos__BlobServiceUri=https://$ST.blob.core.windows.net EventPhotos__UploadsEnabled=true
 ```
 
-- `container create --auth-mode login` needs a data role for you too. If it says you lack permission, grant yourself
-  **Storage Blob Data Contributor** on the account (as with the vault above), wait a minute, and run it again.
+- `container create --auth-mode login` needs a data role for you too, hence the first role assignment (as with the
+  vault above). Wait a minute or two after it before creating the container; if it still says you lack permission,
+  wait and run it again.
 - The role is scoped to the `event-photos` container only, not the whole account. Allow up to 10 minutes for it to
   apply; until then uploads fail with "storage-failed" and nothing is kept.
 - Set `EventPhotos__UploadsEnabled=true` on **development only**. Production stays off until a physical iPhone check
@@ -174,9 +176,7 @@ az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars EventPhotos_
   so it is a backstop, not a promise of exact timing:
 
 ```bash
-cat > event-photos-lifecycle.json <<'JSON'
-{"rules":[{"enabled":true,"name":"event-photos-backstop","type":"Lifecycle","definition":{"filters":{"blobTypes":["blockBlob"],"prefixMatch":["event-photos/"]},"actions":{"baseBlob":{"delete":{"daysAfterCreationGreaterThan":35}}}}}]}
-JSON
+echo '{"rules":[{"enabled":true,"name":"event-photos-backstop","type":"Lifecycle","definition":{"filters":{"blobTypes":["blockBlob"],"prefixMatch":["event-photos/"]},"actions":{"baseBlob":{"delete":{"daysAfterCreationGreaterThan":35}}}}}]}' > event-photos-lifecycle.json
 az storage account management-policy create -g $RG --account-name $ST --policy @event-photos-lifecycle.json
 ```
 
