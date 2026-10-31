@@ -57,13 +57,16 @@ export const PARENT_ROUTES: Routes = [
       emptyBody: 'Sharing from your children’s space isn’t available yet, so nothing has been shared.',
     }),
   },
+  // Event photos (#403): temporary, private by default, parents only.
   {
     path: 'memories',
-    ...comingSoon('Family Memories', {
-      icon: 'album',
-      intro: 'A private library of your family’s photos and children’s artwork.',
-      emptyBody: 'Family memories aren’t available yet, so nothing has been uploaded or shared.',
-    }),
+    title: 'Family Memories',
+    loadComponent: () => import('./memories/memories-page').then((m) => m.MemoriesPage),
+  },
+  {
+    path: 'memories/:eventId',
+    title: 'Family Memory',
+    loadComponent: () => import('./memories/memory-page').then((m) => m.MemoryPage),
   },
   {
     path: 'child-essentials',

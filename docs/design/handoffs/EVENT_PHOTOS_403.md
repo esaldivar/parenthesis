@@ -1,9 +1,10 @@
 # Event photos and Family Memories (#403)
 
-Status: **design approved by the owner on October 31, 2026 (in the Claude app); not implemented yet.** Product rules below were approved by the owner on October
+Status: **design approved by the owner on October 31, 2026 (in the Claude app); backend merged into `release/0.3.0` (#407), frontend in review, ZIP download
+not started.** Product rules below were approved by the owner on October
 31, 2026 (issue #403 body and the
 [decisions comment](https://github.com/esaldivar/parenthesis/issues/403#issuecomment-6544684559)). Visual boards:
-[`docs/design/reviews/issue-403/`](../reviews/issue-403/README.md). Nothing is implemented yet; the Family Memories
+[`docs/design/reviews/issue-403/`](../reviews/issue-403/README.md). Implementation is in review; the Family Memories
 page stays the honest "coming soon" placeholder until the implementation PRs land.
 
 Scope is parents only, in M3. Children don't upload or see event photos until #179 (M5). Google Photos export is #404

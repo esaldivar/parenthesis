@@ -185,14 +185,22 @@
           <app-icon name="chevron-left" />
         </button>
         <figure class="memory__figure" aria-live="polite">
-          <span class="memory__tile" aria-hidden="true"><app-icon name="album" [size]="44" /></span>
+          @if (memory.coverUrl; as cover) {
+            <img class="memory__tile memory__tile--photo" [src]="cover" alt="" />
+          } @else {
+            <span class="memory__tile" aria-hidden="true"><app-icon name="album" [size]="44" /></span>
+          }
           <span class="dots" aria-hidden="true">
             @for (m of memories(); track m.id; let i = $index) {
               <span [class.is-current]="i === memoryIndex()"></span>
             }
           </span>
           <figcaption>
-            <span class="memory__title">{{ memory.title }}</span>
+            @if (memory.link; as link) {
+              <a class="memory__title" [routerLink]="link">{{ memory.title }}</a>
+            } @else {
+              <span class="memory__title">{{ memory.title }}</span>
+            }
             <span class="muted">{{ dateMedium(memory.date) }}</span>
             <span class="visually-hidden">, memory {{ memoryIndex() + 1 }} of {{ memories().length }}</span>
           </figcaption>
@@ -204,8 +212,8 @@
     } @else {
       <app-empty-state
         icon="album"
-        title="No memories shared yet"
-        body="Photos and artwork shared with your family will appear here when memories are available."
+        title="No memories yet"
+        body="Photos added to confirmed events will show here. Each photo is kept for 28 days."
       />
     }
   </section>

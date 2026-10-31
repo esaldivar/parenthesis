@@ -18,6 +18,8 @@ export interface Problem {
   readonly retryAt?: string;
   /** Present when this request tried to email someone: true only if the mail server accepted it. */
   readonly notified?: boolean;
+  /** A short code for why the server refused, when it gives one (for example event photos' "storage-full"). */
+  readonly reason?: string;
 }
 
 export function toProblem(error: unknown): Problem {
@@ -35,6 +37,7 @@ export function toProblem(error: unknown): Problem {
     state: body.state === 'paused' || body.state === 'locked' || body.state === 'no-pin' ? body.state : undefined,
     retryAt: typeof body.retryAt === 'string' ? body.retryAt : undefined,
     notified: typeof body.notified === 'boolean' ? body.notified : undefined,
+    reason: typeof body.reason === 'string' ? body.reason : undefined,
   };
 }
 
