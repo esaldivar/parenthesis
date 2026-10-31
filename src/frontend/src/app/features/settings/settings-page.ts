@@ -1,6 +1,7 @@
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { EventThemesService } from '../../core/theme/event-themes.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Api, FamilyDetails, InvitationSummary } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -28,6 +29,7 @@ import { MemorySettingsSection } from './memory-settings';
     DeleteAccount,
     ProfilePhotoSettings,
     MemorySettingsSection,
+    RouterLink,
   ],
   template: `
     <h1>Settings</h1>
@@ -86,6 +88,12 @@ import { MemorySettingsSection } from './memory-settings';
         </section>
       }
     }
+
+    <section class="card" aria-labelledby="privacy-heading">
+      <h2 id="privacy-heading">Privacy</h2>
+      <p>What Parenthesis collects about you and your children, who it’s shared with, and how long it’s kept.</p>
+      <a routerLink="/privacy">Read the privacy notice</a>
+    </section>
 
     @if (auth.status() === 'signed-in') {
       <section class="card" aria-labelledby="delete-account-heading">

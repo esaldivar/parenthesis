@@ -6,6 +6,20 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
+  `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
+  Settings. Owner decisions: operator Eric Saldivar (individual), US families only, contact
+  `privacy@parenthesisfamily.com`. No consent banner: all storage is essential or a user's own choice, and
+  `storage-inventory.spec.ts` flags new storage.
+  - [x] Inventory, findings, notice, links and tests (PR into `release/0.3.0`, October 31, 2026).
+  - [ ] **Owner:** create `privacy@parenthesisfamily.com` (or a forward to you) before production.
+  - [ ] Owner to check the notice on the development site, signed out and signed in, on a phone and desktop.
+  - [ ] Decide a retention period for audit records (kept indefinitely today).
+  - [ ] Before a significant notice change: a way to tell parents first (the notice promises this).
+  - [ ] Before v0.5.0 child diary/artwork: revisit COPPA notice and consent, since children will add content.
+  - [ ] Before families outside the US: GDPR/UK GDPR wording, lawful bases and regulator contact.
+  - [ ] Later, if wanted: self-service data export (today a copy is sent on request within 30 days).
+  - [ ] Before public launch: a lawyer's review of the notice.
 - [ ] **Branded loading indicator (#413, M3, October 31, 2026).** Reusable approved icon animation is wired to
   calendar event/task/reminder saves and event/profile photo uploads; reduced motion and measured/unknown upload
   progress are supported. Retryable profile upload failures retain the explicitly unsaved preview.
@@ -147,8 +161,8 @@ that points back here.
   - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
     anywhere (`docs/design/reviews/issue-354/`).
   - [ ] Owner: before production, check the "Google Maps" text attribution against Google's current Places API (New)
-    policies (owner decision: keep the text for the development site). Mention Google suggestions in the privacy
-    notice once one exists.
+    policies (owner decision: keep the text for the development site). Google suggestions are in the privacy notice
+    (#416, October 31, 2026).
   - [ ] Production stays off until the owner decides; revisit the cap and cost with real usage.
 - [ ] **Copy family events to parents' Google Calendars, one way (#386, owner decisions October 30, 2026).** Under
   Settings, not on the calendar; Parenthesis never reads Google. Scope `calendar.app.created` only; a "Parenthesis
@@ -167,7 +181,8 @@ that points back here.
   - [ ] **Owner:** client ID and secret in the dev Key Vault and app settings (runbook step 2), then "Check it works".
   - [x] Owner approved the "Events to copy" dropdown design as shown in the screenshots (October 30, 2026).
   - [ ] Before public launch: Google verification of the sensitive scope (privacy policy page, verified
-    `parenthesisfamily.com`, demo video); runbook step 4. Mention Google Calendar in the privacy notice.
+    `parenthesisfamily.com`, demo video); runbook step 4. The privacy notice at `/privacy` covers Google Calendar and
+    the Limited Use statement (#416, October 31, 2026).
   - [ ] Before production: encrypt the data-protection key ring with Key Vault (Platform hardening below), so the
     stored tokens are protected from a full database leak, not just a leak of their table.
   - [ ] Later, if wanted: tidy up a departing parent's Google calendar (today their token is deleted and the calendar
@@ -345,7 +360,8 @@ that points back here.
       address to confirm delivery.
     - [ ] **Owner:** production Brevo SMTP key in the production Key Vault, same settings.
     - [ ] **Owner:** the development SMTP key (`brevo-smtp`) expires in October 2027; rotate it before then.
-    - [ ] Before production: check what Brevo stores (recipients, subjects, bodies) and add it to the privacy notes.
+    - [ ] Before production: check what Brevo stores (recipients, subjects, bodies) and add it to the privacy notes
+      (`docs/privacy/data-inventory.md` and the notice, #416).
       Emails carry first names, family names and links only, never diary, message or approval content.
     - Not built: a "forgot username" email. Sign-in uses the email address as the username, so there is no separate
       username to forget; "forgot password" covers it.
