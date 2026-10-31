@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Starts the release candidate's API image for the Playwright release gate, against the job's own Postgres and
-# Mailpit (service containers on localhost). Nothing here is shared or long-lived: the database, the mailbox and the
+# Mailpit (service containers on localhost) and a throwaway Azurite blob emulator for event photos (#403). Nothing here is shared or long-lived: the database, the mailbox and the
 # certificate exist only for this run, and every account is synthetic.
 #
 # Usage: start-release-candidate.sh <image>
@@ -25,6 +25,12 @@ common=(
   -e ASPNETCORE_ENVIRONMENT=Production
 )
 
+# Event photos go to a local blob emulator, never Azure. It's started here, not as a service container, because it
+# needs its own command line. The API creates the private container on first upload.
+echo "Starting the blob emulator"
+docker run -d --name azurite --network host mcr.microsoft.com/azure-storage/azurite:3.37.0 \
+  azurite-blob --blobHost 127.0.0.1 --blobPort 10000 --skipApiVersionCheck --loose >/dev/null
+
 echo "Applying migrations"
 docker run --rm "${common[@]}" "$image" migrate
 
@@ -40,6 +46,8 @@ docker run -d --name api "${common[@]}" \
   -e Email__Smtp__Port=1025 \
   -e Email__Smtp__UseStartTls=false \
   -e Identity__AuthRateLimit__PermitLimit=1000 \
+  -e EventPhotos__ConnectionString=UseDevelopmentStorage=true \
+  -e EventPhotos__UploadsEnabled=true \
   "$image" >/dev/null
 
 for _ in $(seq 1 60); do

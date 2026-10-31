@@ -77,7 +77,7 @@ az storage account create -g $RG -n stparenthesis$ENV$SUFFIX -l $LOC --sku Stand
 - `--public-access 0.0.0.0` lets only Azure services (including Container Apps) reach the database. It does not open
   it to the internet.
 - `db create` takes `--server-name` and `--name` in the current CLI (the old `-s`/`-d` form failed).
-- The storage account is for uploads when Milestone 5 needs it.
+- The storage account holds event photos (#403, below) and later uploads.
 
 ### The app and its migration job
 The first deployment uses a placeholder image; the workflow replaces it.
@@ -143,6 +143,46 @@ so trusting these headers is safe.
 
 Development's `APP_URL` is `https://dev.parenthesisfamily.com` (custom domain, see below); the built-in address
 `https://ca-parenthesis-dev.calmfield-0e9f47dd.centralus.azurecontainerapps.io` still works.
+
+### Event photos (#403)
+Event photos live in a private blob container in the environment's storage account. The API reads and writes them
+with its own managed identity, so there is no storage key or connection string to keep. Uploads stay off until
+`EventPhotos__UploadsEnabled` is `true`; until then the app still serves and expires any existing photos.
+
+```bash
+ST=stparenthesis$ENV$SUFFIX
+ST_ID="$(az storage account show -g $RG -n $ST --query id -o tsv)"
+az role assignment create --assignee "$(az ad signed-in-user show --query id -o tsv)" --role "Storage Blob Data Contributor" --scope "$ST_ID"
+az storage container create --account-name $ST -n event-photos --public-access off --auth-mode login
+APP_ID="$(az containerapp show -g $RG -n ca-parenthesis-$ENV --query identity.principalId -o tsv)" && echo "$APP_ID"
+az role assignment create --assignee-object-id "$APP_ID" --assignee-principal-type ServicePrincipal --role "Storage Blob Data Contributor" --scope "$ST_ID/blobServices/default/containers/event-photos"
+az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars EventPhotos__BlobServiceUri=https://$ST.blob.core.windows.net EventPhotos__UploadsEnabled=true
+```
+
+- `container create --auth-mode login` needs a data role for you too, hence the first role assignment (as with the
+  vault above). Wait a minute or two after it before creating the container; if it still says you lack permission,
+  wait and run it again.
+- The role is scoped to the `event-photos` container only, not the whole account. Allow up to 10 minutes for it to
+  apply; until then uploads fail with "storage-failed" and nothing is kept.
+- Set `EventPhotos__UploadsEnabled=true` on **development only**. Production stays off until a physical iPhone check
+  confirms Safari converts HEIC photos to JPEG in the picker (TODO.md, #403). Production still needs the container,
+  the role and `EventPhotos__BlobServiceUri`, so photos can be served and expired once uploads open.
+- **Soft delete:** leave blob soft delete and versioning off for this account (`az storage account blob-service-properties
+  show -g $RG -n $ST --query "{softDelete:deleteRetentionPolicy.enabled, versioning:isVersioningEnabled}"`). Deleted
+  and expired photos are meant to be gone; with soft delete on, Azure would keep them for its retention period.
+  Postgres backups keep only photo metadata (no images), for 7 days.
+- **Backstop (optional):** the app's hourly cleanup deletes photos 28 days after upload. A lifecycle rule scoped to
+  this container deletes anything older than 35 days in case the cleanup ever stops. Azure applies it once a day,
+  so it is a backstop, not a promise of exact timing:
+
+```bash
+echo '{"rules":[{"enabled":true,"name":"event-photos-backstop","type":"Lifecycle","definition":{"filters":{"blobTypes":["blockBlob"],"prefixMatch":["event-photos/"]},"actions":{"baseBlob":{"delete":{"daysAfterCreationGreaterThan":35}}}}}]}' > event-photos-lifecycle.json
+az storage account management-policy create -g $RG --account-name $ST --policy @event-photos-lifecycle.json
+```
+
+The management policy replaces any existing policy on the account; if other rules exist, add this rule to them
+instead. Local development and the integration tests use Azurite (`docker compose up azurite`) with
+`EventPhotos:ConnectionString=UseDevelopmentStorage=true`.
 
 ### Custom domain
 Development uses `dev.parenthesisfamily.com` with Azure's free managed certificate (October 20, 2026):

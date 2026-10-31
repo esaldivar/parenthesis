@@ -118,7 +118,9 @@ jobs:
       - name: API logs
         if: failure()
         working-directory: .
-        run: docker logs api > api.log 2>&1 || true
+        run: |
+          docker logs api > api.log 2>&1 || true
+          docker logs azurite > azurite.log 2>&1 || true
 
       - name: Upload the HTML report
         if: ${{ !cancelled() }}
@@ -138,6 +140,7 @@ jobs:
           path: |
             tests/e2e/test-results/
             api.log
+            azurite.log
           retention-days: 14
 
       # Read by the Discord job, which runs no PR code.

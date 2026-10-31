@@ -48,6 +48,21 @@ describe('the live dashboard source (#196)', () => {
     ]);
     http.expectOne((r) => r.url === `${F}/calendar/reminders`).flush([reminder()]);
     tasks.flush([task(), task({ id: 't2', title: 'Already done', completedAt: '2026-10-19T12:00:00Z', completedBy: 'm-sam' })]);
+    http.expectOne(`${F}/memories`).flush([
+      {
+        eventId: 'soccer-final',
+        title: 'Soccer final',
+        startsAt: '2026-10-12T15:00:00Z',
+        endsAt: '2026-10-12T17:00:00Z',
+        allDay: false,
+        cancelled: false,
+        photoCount: 7,
+        yourPhotoCount: 4,
+        sharedWithYouCount: 3,
+        expiresAt: '2026-11-09T15:00:00Z',
+        coverThumbnailUrl: `${F}/memories/photos/p1/thumbnail`,
+      },
+    ]);
     const week = await loading;
 
     expect(week.source).toBe('live');
@@ -78,6 +93,17 @@ describe('the live dashboard source (#196)', () => {
       ['reminder', 'Spirit Day', '2026-10-20', '08:00', ['Kai']],
       ['task', 'Science fair poster', '2026-10-22', undefined, ['Kai']],
     ]);
-    expect([week.kidShares, week.recentMessages, week.recentMemories]).toEqual([[], [], []]);
+    expect([week.kidShares, week.recentMessages]).toEqual([[], []]);
+    // The latest Family Memories (#403), with their first photo and page.
+    expect(week.recentMemories).toEqual([
+      {
+        id: 'soccer-final',
+        title: 'Soccer final',
+        sharedBy: 'You and Sam',
+        date: '2026-10-12',
+        coverUrl: `${F}/memories/photos/p1/thumbnail`,
+        link: ['/memories', 'soccer-final'],
+      },
+    ]);
   });
 });

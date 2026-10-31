@@ -1,0 +1,343 @@
+<section class="photos" [attr.aria-labelledby]="heading()">
+  <div class="photos__head">
+    @if (headingLevel() === 2) {
+      <h2 [id]="heading()" tabindex="-1">Photos</h2>
+    } @else {
+      <h3 [id]="heading()" tabindex="-1">Photos</h3>
+    }
+    @if (canAdd() && sheet() === 'closed') {
+      <button mat-stroked-button type="button" id="photos-add" (click)="choose()">
+        <app-icon name="plus" [size]="18" /> Add photos
+      </button>
+    }
+  </div>
+  <input
+    #fileInput
+    class="visually-hidden"
+    type="file"
+    multiple
+    [accept]="accept"
+    tabindex="-1"
+    aria-hidden="true"
+    (change)="chosen($event)"
+  />
+
+  @if (notConfirmed()) {
+    <p class="muted">Photos can be added once this event is confirmed.</p>
+  } @else {
+    @switch (state()) {
+      @case ('loading') {
+        <p class="muted" role="status">Loading photos…</p>
+      }
+      @case ('error') {
+        <p class="error" role="alert">{{ loadError() }}</p>
+        <button mat-stroked-button type="button" (click)="load()">Try again</button>
+      }
+    }
+
+    @if (view(); as v) {
+      @if (deletedOn(); as on) {
+        <p class="muted">
+          The photos from this event were deleted on {{ on }}, {{ retentionDays }} days after they
+          were added.
+        </p>
+      }
+      @if (uploadsText(); as text) {
+        <p class="muted">{{ text }}</p>
+      }
+      @if (finalWeek(); as warning) {
+        <p class="warning" role="note"><app-icon name="alert" [size]="18" /> {{ warning }}</p>
+      }
+
+      @if (sheet() !== 'closed') {
+        <section class="sheet" aria-labelledby="photos-sheet-heading">
+          <p
+            class="subhead"
+            role="heading"
+            [attr.aria-level]="headingLevel() + 1"
+            id="photos-sheet-heading"
+            tabindex="-1"
+          >
+            {{
+              sheet() === 'review'
+                ? 'Add photos to ' + v.title
+                : sheet() === 'uploading'
+                  ? 'Adding photos…'
+                  : 'Photos added'
+            }}
+          </p>
+          <ul class="files">
+            @for (pick of picks(); track pick.key) {
+              <li [attr.data-state]="pick.state">
+                <span class="files__name">
+                  @if (pick.state === 'skipped' || pick.state === 'failed') {
+                    <span class="badge badge--bad">Not added</span>
+                  }
+                  {{ pick.file.name }}
+                </span>
+                <span class="files__status">
+                  @switch (pick.state) {
+                    @case ('ready') {
+                      {{ size(pick.file.size) }}
+                    }
+                    @case ('waiting') {
+                      Waiting
+                    }
+                    @case ('uploading') {
+                      Adding…
+                    }
+                    @case ('added') {
+                      <app-icon name="check" [size]="16" /> Added
+                    }
+                  }
+                </span>
+                @if (pick.message; as message) {
+                  <span class="files__message">{{ message }}</span>
+                }
+                @if (pick.state === 'failed' && pick.retry && sheet() === 'done') {
+                  <button mat-button type="button" (click)="retry(pick.key)">
+                    Try again<span class="visually-hidden"> {{ pick.file.name }}</span>
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+
+          @if (sheet() === 'review') {
+            @if (offline()) {
+              <p class="error" role="alert">You’re offline. Nothing was uploaded.</p>
+            }
+            @if (tooMany(); as message) {
+              <p class="error" role="alert">{{ message }}</p>
+            } @else if (ready().length > 0) {
+              <p>
+                {{ ready().length === 1 ? '1 photo' : ready().length + ' photos' }} will be added.
+                @if (coParent()) {
+                  Only you will see {{ ready().length === 1 ? 'it' : 'them' }} until you turn on
+                  Visible to Co-Parent.
+                } @else {
+                  Only you will see {{ ready().length === 1 ? 'it' : 'them' }}.
+                }
+                {{ ready().length === 1 ? 'It’s' : 'They’re' }} deleted on
+                <strong>{{ deletedOnIfAdded() }}</strong
+                >, {{ retentionDays }} days after upload.
+              </p>
+            } @else {
+              <p class="error" role="alert">None of these can be added. Choose other photos.</p>
+            }
+            <p class="hint">
+              Up to {{ v.uploads.maxPerUpload }} at a time · You can add
+              {{ v.uploads.remaining }} more to this event · {{ storageLeft() }}
+            </p>
+            <div class="actions__row">
+              @if (ready().length > 0 && !tooMany()) {
+                <button mat-flat-button type="button" (click)="upload()">
+                  Add {{ ready().length === 1 ? '1 photo' : ready().length + ' photos' }}
+                </button>
+              } @else {
+                <button mat-flat-button type="button" (click)="choose()">Choose photos</button>
+              }
+              <button mat-button type="button" (click)="cancelSheet()">Cancel</button>
+            </div>
+          } @else {
+            <p class="visually-hidden" aria-live="polite">{{ progress() }}</p>
+            @if (sheet() === 'done') {
+              <p>{{ progress() }}</p>
+              <div class="actions__row">
+                <button mat-flat-button type="button" (click)="closeSheet()">Done</button>
+              </div>
+            }
+          }
+        </section>
+      }
+
+      @if (actionError(); as error) {
+        <p class="error" role="alert">{{ error }}</p>
+      }
+
+      @for (shown of batches(); track shown.batch.id) {
+        <section class="batch" [attr.aria-label]="batchLabel(shown)">
+          <div class="batch__head">
+            <p class="batch__title">
+              <strong>{{ batchLabel(shown) }}</strong>
+              <span
+                class="chip"
+                [attr.data-shared]="shown.batch.visibleToCoParent || !shown.batch.yours"
+                >{{ sharingChip(shown.batch) }}</span
+              >
+            </p>
+            @if (shown.batch.yours && coParent()) {
+              <mat-slide-toggle
+                [id]="'share-' + shown.batch.id"
+                [checked]="shown.batch.visibleToCoParent"
+                [disabled]="busy()"
+                (change)="toggleSharing(shown.batch, $event.checked, $event.source)"
+                [aria-label]="'Visible to Co-Parent, your ' + shown.date + ' photos'"
+                >Visible to Co-Parent</mat-slide-toggle
+              >
+            }
+          </div>
+
+          @if (confirmingUnshare() === shown.batch.id) {
+            <div
+              class="confirm"
+              role="group"
+              [attr.aria-label]="'Stop sharing your ' + shown.date + ' photos'"
+            >
+              <p [id]="'unshare-explain-' + shown.batch.id">
+                Stop sharing
+                {{
+                  shown.batch.photos.length === 1
+                    ? 'this photo'
+                    : 'these ' + shown.batch.photos.length + ' photos'
+                }}? {{ coParent() }} won’t see
+                {{ shown.batch.photos.length === 1 ? 'it' : 'them' }} in Parenthesis any more.
+                Copies already downloaded can’t be recalled.
+              </p>
+              <div class="actions__row">
+                <button
+                  mat-flat-button
+                  type="button"
+                  [disabled]="busy()"
+                  (click)="share(shown.batch, false)"
+                >
+                  {{ busy() ? 'Stopping…' : 'Stop sharing' }}
+                </button>
+                <button
+                  mat-button
+                  type="button"
+                  [id]="'unshare-keep-' + shown.batch.id"
+                  [attr.aria-describedby]="'unshare-explain-' + shown.batch.id"
+                  [disabled]="busy()"
+                  (click)="keepSharing(shown.batch.id)"
+                >
+                  Keep sharing
+                </button>
+              </div>
+            </div>
+          }
+
+          <ul class="grid">
+            @for (photo of shown.batch.photos; track photo.id; let i = $index) {
+              <li>
+                <button
+                  type="button"
+                  class="tile"
+                  [id]="'photo-' + photo.id"
+                  [attr.aria-label]="photoLabel(photo, shown, i)"
+                  (click)="open(photo)"
+                >
+                  <img
+                    [src]="photo.thumbnailUrl"
+                    alt=""
+                    loading="lazy"
+                    [attr.width]="photo.width"
+                    [attr.height]="photo.height"
+                  />
+                </button>
+              </li>
+            }
+          </ul>
+          <p class="hint">
+            {{ shown.expiry }}
+            @if (!shown.batch.yours && !shown.batch.downloadsAllowed) {
+              · {{ coParent() ?? 'Your co-parent' }} hasn’t allowed downloads
+            }
+          </p>
+        </section>
+      }
+
+      @if (downloadAll(); as all) {
+        <div class="download-all">
+          <a
+            mat-stroked-button
+            [href]="all.url"
+            download
+            aria-describedby="photos-download-all-note"
+            ><app-icon name="download" [size]="18" /> {{ all.label }}</a
+          >
+          <p class="hint" id="photos-download-all-note">{{ all.note }}</p>
+        </div>
+      }
+
+      @if (openPhoto(); as photo) {
+        <section class="viewer" aria-labelledby="photo-viewer-heading">
+          <div class="viewer__head">
+            <p
+              class="subhead"
+              role="heading"
+              [attr.aria-level]="headingLevel() + 1"
+              id="photo-viewer-heading"
+              tabindex="-1"
+            >
+              {{ openLabel() }}
+            </p>
+            <button mat-icon-button type="button" (click)="closeViewer()" aria-label="Close photo">
+              <app-icon name="close" />
+            </button>
+          </div>
+          <img
+            class="viewer__image"
+            [src]="photo.url"
+            [alt]="openLabel() + ' from ' + v.title"
+            [attr.width]="photo.width"
+            [attr.height]="photo.height"
+          />
+          <p class="hint">{{ openExpiry() }}</p>
+          @if (!confirmingDelete()) {
+            <div class="actions__row">
+              @if (photo.downloadUrl; as url) {
+                <a mat-stroked-button [href]="url" download
+                  ><app-icon name="download" [size]="18" /> Download</a
+                >
+              }
+              @if (isYours(photo)) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="danger-outline"
+                  id="photo-delete"
+                  (click)="startDelete()"
+                >
+                  <app-icon name="trash" [size]="18" /> Delete photo…
+                </button>
+              }
+            </div>
+          } @else {
+            <p id="photo-delete-explain">
+              Deleting removes it{{ coParent() ? ' for both of you' : '' }} now and frees its spot
+              and storage. Copies already downloaded aren’t affected.
+            </p>
+            <div class="actions__row">
+              <button
+                mat-flat-button
+                type="button"
+                class="danger"
+                [disabled]="busy()"
+                (click)="deletePhoto()"
+              >
+                {{ busy() ? 'Deleting…' : 'Delete photo' }}
+              </button>
+              <button
+                mat-button
+                type="button"
+                id="photo-keep"
+                aria-describedby="photo-delete-explain"
+                [disabled]="busy()"
+                (click)="keepPhoto()"
+              >
+                Keep it
+              </button>
+            </div>
+          }
+        </section>
+      }
+
+      @if (linkToMemory() && total() > 0) {
+        <a mat-button class="memory-link" [routerLink]="['/memories', v.eventId]"
+          >Open in Family Memories</a
+        >
+      }
+    }
+  }
+</section>

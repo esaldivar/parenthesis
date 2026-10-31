@@ -6,6 +6,29 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Event photos and Family Memories (#403, M3, October 31, 2026).** Owner approved the rules and the delivery
+  plan (decisions comment on #403). Design: `docs/design/handoffs/EVENT_PHOTOS_403.md`, boards in
+  `docs/design/reviews/issue-403/`. Google Photos export is #404, separate.
+  - [x] Owner design review of the #403 boards: approved October 31, 2026, in the Claude app. The `design approved`
+    label is the owner's to apply.
+  - [x] Backend PR: Memories module, migrations, private blob storage, upload/read/delete endpoints, sharing and
+    download settings, per-parent quota and event spots, expiry worker, uploads behind a feature flag. PR opened
+    October 31, 2026 (branch `feat/403-event-photos-backend`); merged as #407 on October 31, 2026.
+  - [ ] Owner to verify on the development site once release 0.3.0 is promoted to `develop`: upload, share, unshare,
+    delete, download permission and Download all.
+  - [ ] Owner Azure step: private `event-photos` container in each environment's storage account, Container App
+    identity granted Storage Blob Data Contributor on it. Development done by the owner October 31, 2026 (uploads
+    on); production still to do, with uploads off until the iPhone HEIC check. Owner to confirm in Cost analysis
+    (Service name = Storage) that dev storage stays at $0 or cents.
+  - [x] Frontend PR: event Photos section, upload, sharing, Family Memories page, Settings, dashboard card. Merged as
+    #408 on October 31, 2026.
+  - [x] ZIP download PR (streamed, nothing stored, each photo re-checked before it's written). Merged as #409 on
+    October 31, 2026.
+  - [ ] Release PR #410 SonarCloud gate (C reliability on new code): fix the `reduce()` without an initial value in
+    the event Photos section (branch `feat/sonar-410-reliability`); tick when merged and #410's gate is green.
+  - [ ] Physical iPhone check that Safari converts HEIC to JPEG in the picker before uploads are enabled on
+    production (physical device checks are deferred to #112).
+  - [ ] Owner to reconsider 14-day retention later; existing uploads keep their period.
 - [ ] **Dependabot PR #384 dependency validation (#398, October 30, 2026).** Conflicts against `release/0.3.0`
   resolved while retaining current PR issue-link safeguards, DataProtection, cryptography pins and SkiaSharp packages.
   Six dependency upgrades remain; SwaggerUI was already current.

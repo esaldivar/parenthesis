@@ -28,11 +28,13 @@ gate. Draft work and release PRs don't run it; their gate fails. Converting back
 ## What it tests
 
 The release candidate as it would land: the API image built from the PR (GitHub tests the PR merged with its target release branch or `develop`),
-started with its own Postgres and Mailpit on the runner. Nothing touches the shared development environment, and no
+started with its own Postgres, Mailpit and Azurite (a local blob emulator for event photos) on the runner. Nothing touches the shared development environment, and no
 secrets or production settings are used.
 
 - **Data:** every test signs up its own synthetic parents (`…@example.test`) and family, so tests are independent
   and can run in parallel. Emails are read from Mailpit, like a real inbox.
+- **Photos:** event photos go to Azurite, started by `start-release-candidate.sh`, with uploads turned on. Test
+  photos are generated synthetic images, never real photos.
 - **HTTPS:** the app's cookies are `Secure` and `__Host-`, so the instance uses a throwaway self-signed certificate.
 - **Rate limits:** sign-in's limit is raised for the run (`Identity__AuthRateLimit__PermitLimit`). The child-PIN limit
   is fixed at 30 tries a minute per address. A full run uses about 11, or about 22 if every PIN test needs its

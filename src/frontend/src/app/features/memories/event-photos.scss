@@ -1,0 +1,212 @@
+:host {
+  display: block;
+}
+.photos {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+}
+.photos__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+h2,
+h3,
+.subhead {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+h2:focus,
+h3:focus,
+.subhead:focus {
+  outline: none;
+}
+p {
+  margin: 0;
+}
+.muted,
+.hint {
+  color: var(--color-text-secondary);
+}
+.hint {
+  font-size: 0.875rem;
+}
+.error {
+  color: var(--color-danger);
+}
+.warning {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-outline);
+  background: var(--color-status-pending-bg);
+  font-weight: 600;
+}
+.sheet,
+.viewer,
+.confirm {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+}
+.files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.files li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-2);
+  align-items: center;
+  overflow-wrap: anywhere;
+}
+.files__message {
+  grid-column: 1 / -1;
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+.files li[data-state='added'] .files__status {
+  color: var(--color-action);
+  font-weight: 600;
+}
+.files__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+.files button {
+  grid-column: 1 / -1;
+}
+.badge {
+  display: inline-block;
+  margin-right: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.badge--bad {
+  background: var(--color-status-rejected-bg);
+  color: var(--color-text);
+}
+.batch {
+  display: grid;
+  gap: var(--space-2);
+}
+.batch__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+.batch__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.chip {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--color-outline);
+  font-size: 0.8125rem;
+}
+.chip[data-shared='true'] {
+  border-style: solid;
+  background: var(--color-status-confirmed-bg);
+}
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: var(--space-2);
+}
+.tile {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: var(--target-min);
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+  overflow: hidden;
+  cursor: pointer;
+}
+.tile:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.viewer__head {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+.viewer__image {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  width: auto;
+  height: auto;
+  justify-self: center;
+  border-radius: 8px;
+  object-fit: contain;
+}
+.actions__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+a[mat-button],
+a[mat-stroked-button],
+button[mat-stroked-button],
+button[mat-flat-button],
+button[mat-button] {
+  min-height: var(--target-min);
+}
+.download-all {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.memory-link {
+  justify-self: start;
+}
+.danger {
+  --mat-button-filled-container-color: var(--color-danger);
+  --mat-button-filled-label-text-color: var(--color-surface);
+}
+.danger-outline {
+  --mat-button-outlined-label-text-color: var(--color-danger);
+  --mat-button-outlined-outline-color: var(--color-danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

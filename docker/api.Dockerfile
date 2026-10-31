@@ -25,6 +25,7 @@ COPY src/backend/Modules/CoParent.Modules.Identity/CoParent.Modules.Identity.csp
 COPY src/backend/Modules/CoParent.Modules.Families/CoParent.Modules.Families.csproj src/backend/Modules/CoParent.Modules.Families/
 COPY src/backend/Modules/CoParent.Modules.Approvals/CoParent.Modules.Approvals.csproj src/backend/Modules/CoParent.Modules.Approvals/
 COPY src/backend/Modules/CoParent.Modules.Calendar/CoParent.Modules.Calendar.csproj src/backend/Modules/CoParent.Modules.Calendar/
+COPY src/backend/Modules/CoParent.Modules.Memories/CoParent.Modules.Memories.csproj src/backend/Modules/CoParent.Modules.Memories/
 RUN dotnet restore src/backend/CoParent.Api/CoParent.Api.csproj
 
 COPY .editorconfig ./

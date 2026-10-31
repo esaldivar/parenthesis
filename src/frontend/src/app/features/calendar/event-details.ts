@@ -23,6 +23,7 @@ import { RouterLink } from '@angular/router';
 import { Api, CalendarEvent, ChangeRequest, EditScope, FamilyMember } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
+import { EventPhotosSection } from '../memories/event-photos';
 import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
 import { CalendarItem, FORMER_PARENT } from './calendar-items';
 import { canManageEvent } from './event-permissions';
@@ -38,7 +39,7 @@ import { lastDate, toFamilyLocal } from './time';
  * asks the co-parent first for parenting time and family events; requesting a swap of parenting time; and, while a
  * request waits, its details (original → proposed, the reason, where it stands) with Withdraw for the parent who
  * sent it, and Approve or Decline (with an optional comment) for the parent who can decide (#218). Those use the same
- * approvals API and rules as the inbox.
+ * approvals API and rules as the inbox. Confirmed events also show their photos (#403).
  */
 /** As in the approvals inbox. */
 export const COMMENT_MAX = 500;
@@ -46,7 +47,7 @@ export const COMMENT_MAX = 500;
 @Component({
   selector: 'app-event-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EventDecoration, CalendarPalette, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon],
+  imports: [EventDecoration, CalendarPalette, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './event-details.html',
   styleUrl: './event-details.scss',

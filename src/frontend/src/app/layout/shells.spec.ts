@@ -99,9 +99,9 @@ describe('application shells', () => {
     });
 
     it('says plainly that unbuilt features are not available', async () => {
-      const body = await open('/memories');
+      const body = await open('/messages');
 
-      expect(body.querySelector('main')!.textContent).toContain('Family memories aren’t available yet');
+      expect(body.querySelector('main')!.textContent).toContain('Messaging isn’t part of this version of Parenthesis');
     });
 
     it.each(['/', '/calendar', '/settings', '/more'])('has no automatically detectable accessibility issues at %s', async (url) => {
