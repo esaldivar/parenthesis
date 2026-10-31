@@ -229,6 +229,8 @@ describe('Profile photos (#388)', () => {
       choose(jpeg());
       button('Save photo').click();
       fixture.detectChanges();
+      expect(root().querySelectorAll('[role=status]')).toHaveLength(1);
+      expect(root().querySelector('[role=status]')!.textContent).toBe('Uploading photo…');
       expect(root().querySelector('app-loading-indicator svg')).not.toBeNull();
       button('Saving…').click();
       const request = http.expectOne('/api/families/f1/photos/children/kai');
@@ -246,6 +248,11 @@ describe('Profile photos (#388)', () => {
       await fixture.whenStable();
       fixture.detectChanges();
       expect(preview()).toBe('/api/families/f1/photos/retried');
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(root().querySelectorAll('[role=status]')).toHaveLength(1);
+        expect(root().querySelector('[role=status]')!.textContent).toBe('Photo saved.');
+      });
     });
 
     it('keeps the previous photo and explains a refused upload', async () => {

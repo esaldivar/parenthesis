@@ -5,7 +5,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
   selector: 'app-loading-indicator',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span class="status" role="status" aria-atomic="true">{{ active() ? label() : '' }}</span>
+    <span class="status" [class.visually-hidden]="!active()" role="status" aria-atomic="true">{{ active() ? label() : idleMessage() }}</span>
     @if (active()) {
       <svg aria-hidden="true" focusable="false" viewBox="0 0 188 188" width="48" height="48">
         <g transform="translate(19 25)">
@@ -36,6 +36,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 export class LoadingIndicator {
   readonly active = input(true);
   readonly label = input('Saving…');
+  /** Reuse this persistent live region for the owning operation’s result/preview messages. */
+  readonly idleMessage = input('');
   /** Null means the transport cannot measure bytes. Never invent a percentage. */
   readonly progress = input<number | null>(null);
   readonly percent = computed(() => {

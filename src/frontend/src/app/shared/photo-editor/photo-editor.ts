@@ -90,8 +90,7 @@ export function photoErrorMessage(error: unknown): string {
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
     }
-    <p class="visually-hidden" role="status">{{ announcement() }}</p>
-    <app-loading-indicator [active]="busy()" [label]="preview() ? 'Uploading photo…' : 'Removing photo…'" />
+    <app-loading-indicator [idleMessage]="announcement()" [active]="busy()" [label]="preview() ? 'Uploading photo…' : 'Removing photo…'" />
   `,
   styles: `
     :host {

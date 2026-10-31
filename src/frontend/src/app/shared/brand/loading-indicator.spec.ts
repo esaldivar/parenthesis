@@ -17,9 +17,11 @@ describe('branded operation status (#413)', () => {
     expect(el.querySelector('[role=progressbar]')!.hasAttribute('aria-live')).toBe(false);
     expect(el.querySelector('[role=status]')).toBe(status);
     expect(status.textContent).toBe('Uploading photo…');
+    fixture.componentRef.setInput('idleMessage', 'Photo saved.');
     fixture.componentRef.setInput('active', false);
     fixture.detectChanges();
-    expect(status.textContent).toBe('');
+    expect(status.textContent).toBe('Photo saved.');
+    expect(el.querySelectorAll('[role=status]')).toHaveLength(1);
     expect(el.querySelector('svg, [role=progressbar]')).toBeNull();
   });
 });
