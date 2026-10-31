@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -64,7 +65,7 @@ interface ShownBatch {
 @Component({
   selector: 'app-event-photos',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatSlideToggleModule, RouterLink, Icon],
+  imports: [MatButtonModule, MatSlideToggleModule, RouterLink, Icon, LoadingIndicator],
   // Escape closes an open photo first, before the event details around it.
   host: { '(keydown.escape)': 'escape($event)' },
   templateUrl: './event-photos.html',
@@ -105,6 +106,7 @@ export class EventPhotosSection {
   protected readonly sheet = signal<'closed' | 'review' | 'uploading' | 'done'>('closed');
   protected readonly picks = signal<readonly Pick[]>([]);
   protected readonly offline = signal(false);
+  protected readonly uploadPercent = signal<number | null>(null);
   /** The batch this upload adds to; a new one starts when it's missing. */
   private batchId: string | null = null;
   private nextKey = 1;
@@ -366,7 +368,7 @@ export class EventPhotosSection {
 
   /** Sends the checked files one at a time, into one batch, and reports each one's own result. */
   protected async upload(): Promise<void> {
-    if (this.tooMany() || this.ready().length === 0) {
+    if (this.sheet() === 'uploading' || this.tooMany() || this.ready().length === 0) {
       return;
     }
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -384,6 +386,9 @@ export class EventPhotosSection {
   }
 
   protected async retry(key: number): Promise<void> {
+    if (this.sheet() === 'uploading' || !this.picks().some((p) => p.key === key && p.state === 'failed' && p.retry)) {
+      return;
+    }
     this.sheet.set('uploading');
     await this.send(key);
     this.finish();
@@ -397,12 +402,14 @@ export class EventPhotosSection {
     this.update((p) =>
       p.key === key ? { ...p, state: 'uploading', message: null, retry: false } : p,
     );
+    this.uploadPercent.set(null);
     try {
       const result = await this.api.addEventPhoto(
         this.familyId(),
         this.eventId(),
         pick.file,
         this.batchId ?? undefined,
+        (percent) => this.uploadPercent.set(percent),
       );
       this.batchId = result.batchId;
       this.update((p) => (p.key === key ? { ...p, state: 'added' } : p));

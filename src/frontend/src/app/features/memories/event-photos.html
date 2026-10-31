@@ -68,6 +68,7 @@
                   : 'Photos added'
             }}
           </p>
+          <app-loading-indicator [active]="sheet() === 'uploading'" label="Uploading photo…" [progress]="uploadPercent()" />
           <ul class="files">
             @for (pick of picks(); track pick.key) {
               <li [attr.data-state]="pick.state">
@@ -142,7 +143,7 @@
               <button mat-button type="button" (click)="cancelSheet()">Cancel</button>
             </div>
           } @else {
-            <p class="visually-hidden" aria-live="polite">{{ progress() }}</p>
+            <p class="visually-hidden" aria-live="polite">{{ sheet() === 'done' ? progress() : '' }}</p>
             @if (sheet() === 'done') {
               <p>{{ progress() }}</p>
               <div class="actions__row">

@@ -118,6 +118,7 @@
     }
   </mat-form-field>
 
+  <app-loading-indicator [active]="busy()" label="Saving…" />
   <div class="actions">
     <button mat-flat-button type="submit" [disabled]="busy()">
       {{ busy() ? 'Saving…' : editing() ? 'Save changes' : 'Add to calendar' }}
