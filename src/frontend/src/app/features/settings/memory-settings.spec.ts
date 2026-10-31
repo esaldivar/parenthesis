@@ -24,7 +24,9 @@ describe('Settings → Memories (#403)', () => {
     toasts = [];
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
-    TestBed.inject(Toasts).show = (message: string) => void toasts.push(message);
+    TestBed.inject(Toasts).show = (message: string) => {
+      toasts.push(message);
+    };
     const fixture = TestBed.createComponent(MemorySettingsSection);
     fixture.componentRef.setInput('familyId', 'family-1');
     fixture.componentRef.setInput('coParent', 'Sam');

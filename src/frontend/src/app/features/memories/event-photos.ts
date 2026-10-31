@@ -174,7 +174,7 @@ export class EventPhotosSection {
     if (photos.length === 0) {
       return null;
     }
-    const soonest = photos.reduce((a, b) => (a.expiresAt < b.expiresAt ? a : b));
+    const soonest = photos.reduce((a, b) => (a.expiresAt < b.expiresAt ? a : b), photos[0]);
     const e = expiry(soonest.expiresAt, this.timeZone(), this.now());
     if (!e.soon) {
       return null;
