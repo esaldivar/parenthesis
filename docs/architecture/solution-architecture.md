@@ -155,6 +155,7 @@ Rules:
 
 ### Media
 - Private Blob containers only. The API returns **read SAS URLs valid for 5 minutes**, created with user-delegation keys (Managed Identity, no account keys).
+- Event photos (#403, owner decision October 31, 2026) are served **through the API** instead, rechecking access, download permission and expiry on every request with `Cache-Control: private, max-age=300`, so revocation applies within 5 minutes. No SAS URLs for them in M3. Images are processed with SkiaSharp (already used for profile photos), not ImageSharp. See [EVENT_PHOTOS_403.md](../design/handoffs/EVENT_PHOTOS_403.md).
 - MVP uploads go **through the API** so it can validate the content type by magic bytes, enforce size limits, strip EXIF/GPS (ImageSharp) and create thumbnails. Direct-to-blob upload is an optimization for later.
 - Blob paths: `families/{familyId}/memories/{memoryId}/{attachmentId}`.
 
