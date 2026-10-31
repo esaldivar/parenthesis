@@ -22,8 +22,10 @@ that points back here.
     (Service name = Storage) that dev storage stays at $0 or cents.
   - [x] Frontend PR: event Photos section, upload, sharing, Family Memories page, Settings, dashboard card. Merged as
     #408 on October 31, 2026.
-  - [ ] ZIP download PR (streamed, nothing stored, each photo re-checked before it's written). PR opened October 31,
-    2026 (branch `feat/403-event-photos-zip`); tick when merged.
+  - [x] ZIP download PR (streamed, nothing stored, each photo re-checked before it's written). Merged as #409 on
+    October 31, 2026.
+  - [ ] Release PR #410 SonarCloud gate (C reliability on new code): fix the `reduce()` without an initial value in
+    the event Photos section (branch `feat/sonar-410-reliability`); tick when merged and #410's gate is green.
   - [ ] Physical iPhone check that Safari converts HEIC to JPEG in the picker before uploads are enabled on
     production (physical device checks are deferred to #112).
   - [ ] Owner to reconsider 14-day retention later; existing uploads keep their period.
