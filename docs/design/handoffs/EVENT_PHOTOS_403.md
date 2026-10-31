@@ -147,8 +147,8 @@ erDiagram
   No SAS URLs in M3.
 - **Concurrency:** one transaction takes a per-parent PostgreSQL advisory lock, counts that parent's spots on the
   event and bytes in use, and reserves a row before the upload is processed, so parallel uploads can't both take the
-  last spot or the last bytes (each parent's spots are their own, so a per-parent lock covers both). Failed uploads delete written blobs and release
-  their reservation; a sweep clears reservations older than 15 minutes.
+  last spot or the last bytes (each parent's spots are their own, so a per-parent lock covers both). Failed uploads
+  delete written blobs and release their reservation; a sweep clears reservations older than 15 minutes.
 - **Expiry and cleanup:** every read path checks `expires_at`. An hourly worker deletes expired photo and thumbnail
   blobs, frees spots and reconciles usage. An Azure lifecycle rule scoped to `event-photos` only is a backstop; Azure
   deletes asynchronously, so the app never promises an exact deletion time. Soft-delete and backup retention are
