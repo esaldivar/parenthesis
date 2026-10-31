@@ -224,6 +224,30 @@ describe('Profile photos (#388)', () => {
       expect(root().querySelector('[role=status]')!.textContent).toContain('Photo saved.');
     });
 
+    it('keeps an unsaved photo for retry after connection failure (#413)', async () => {
+      await render();
+      choose(jpeg());
+      button('Save photo').click();
+      fixture.detectChanges();
+      expect(root().querySelector('app-loading-indicator svg')).not.toBeNull();
+      button('Saving…').click();
+      const request = http.expectOne('/api/families/f1/photos/children/kai');
+      request.error(new ProgressEvent('error'), { status: 0 });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(preview()).toBe('blob:preview-1');
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(root().querySelector('app-loading-indicator svg')).toBeNull();
+      });
+      button('Try again').click();
+      http.expectOne('/api/families/f1/photos/children/kai')
+        .flush({ kind: 'child', id: 'kai', url: '/api/families/f1/photos/retried' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(preview()).toBe('/api/families/f1/photos/retried');
+    });
+
     it('keeps the previous photo and explains a refused upload', async () => {
       await render();
       choose(jpeg());

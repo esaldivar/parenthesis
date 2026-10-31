@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { toProblem } from '../../core/api/problem';
@@ -42,7 +43,7 @@ export function photoErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-photo-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, Avatar],
+  imports: [MatButtonModule, Avatar, LoadingIndicator],
   template: `
     <div class="row">
       <app-avatar [name]="name()" [kind]="subject().kind" [size]="72" [src]="preview() ?? current()" />
@@ -71,7 +72,7 @@ export function photoErrorMessage(error: unknown): string {
     <div class="actions" role="group" [attr.aria-labelledby]="headingId">
       @if (preview()) {
         <button mat-flat-button type="button" [disabled]="busy()" (click)="save()">
-          {{ busy() ? 'Saving…' : 'Save photo' }}
+          {{ busy() ? 'Saving…' : error() ? 'Try again' : 'Save photo' }}
         </button>
         <button mat-button type="button" [disabled]="busy()" (click)="cancel()">Cancel</button>
       } @else {
@@ -90,6 +91,7 @@ export function photoErrorMessage(error: unknown): string {
       <p class="alert" role="alert">{{ error }}</p>
     }
     <p class="visually-hidden" role="status">{{ announcement() }}</p>
+    <app-loading-indicator [active]="busy()" [label]="preview() ? 'Uploading photo…' : 'Removing photo…'" />
   `,
   styles: `
     :host {
@@ -207,8 +209,11 @@ export class PhotoEditor {
       this.clearPreview();
       this.announcement.set('Photo saved.');
     } catch (error) {
-      // The previous photo stays; the preview is dropped so it can't be mistaken for the saved one.
-      this.clearPreview();
+      // Keep the selected file for retryable transport failures; the preview stays explicitly unsaved.
+      const status = toProblem(error).status;
+      if (status !== 0 && status < 500) {
+        this.clearPreview();
+      }
       this.error.set(photoErrorMessage(error));
     } finally {
       this.busy.set(false);

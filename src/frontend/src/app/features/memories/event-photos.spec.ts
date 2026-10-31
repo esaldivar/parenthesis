@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpEventType, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -227,6 +227,17 @@ describe('event photos (#403)', () => {
     const first = http.expectOne((r) => r.method === 'POST' && r.url === `${EVENT}/photos`);
     expect(first.request.params.has('batchId')).toBe(false);
     expect(first.request.headers.get('Content-Type')).toBe('image/jpeg');
+    expect(first.request.reportProgress).toBe(true);
+    expect(sheet.querySelector('app-loading-indicator svg')).not.toBeNull();
+    expect(sheet.querySelector('[role=status]')!.textContent).toBe('Uploading photo…');
+    expect(sheet.querySelector('[role=progressbar]')).toBeNull();
+    first.event({ type: HttpEventType.UploadProgress, loaded: 50, total: 100 });
+    await settle(fixture);
+    expect(sheet.querySelector('[role=progressbar]')!.getAttribute('aria-valuenow')).toBe('50');
+    first.event({ type: HttpEventType.UploadProgress, loaded: 75 });
+    await settle(fixture);
+    expect(sheet.querySelector('[role=progressbar]')).toBeNull();
+    expect(sheet.querySelector('[role=status]')!.textContent).toBe('Uploading photo…');
     first.flush({ batchId: 'b-new', photo: photo('n-1') }, { status: 201, statusText: 'Created' });
     await settle(fixture);
     const second = http.expectOne((r) => r.method === 'POST' && r.url === `${EVENT}/photos`);
@@ -243,6 +254,7 @@ describe('event photos (#403)', () => {
       );
     await settle(fixture);
 
+    expect(sheet.querySelector('app-loading-indicator svg')).toBeNull();
     // A failure is never shown as added, and can be tried again.
     const rows = [...el.querySelectorAll('.files li')].map(text);
     expect(rows[0]).toContain('IMG_2041.jpg');

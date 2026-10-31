@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, filter, tap } from 'rxjs';
 
 // Hand-written to match the API's OpenAPI document for the endpoints Milestones 1 and 2 use. Generating these from the
 // document is planned once the surface grows.
@@ -622,13 +622,23 @@ export class Api {
   eventPhotos = (familyId: string, eventId: string) =>
     this.call(this.http.get<EventPhotos>(`/api/families/${familyId}/memories/events/${eventId}`));
   /** Adds one photo (the raw file) to the viewer's batch, or starts a batch when `batchId` is missing. */
-  addEventPhoto = (familyId: string, eventId: string, file: Blob, batchId?: string) =>
+  addEventPhoto = (familyId: string, eventId: string, file: Blob, batchId?: string,
+    onProgress?: (percent: number | null) => void) =>
     this.call(
       this.http.post<{ batchId: string; photo: EventPhoto }>(`/api/families/${familyId}/memories/events/${eventId}/photos`, file, {
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         params: batchId ? { batchId } : {},
-      }),
-    );
+        observe: 'events',
+        reportProgress: true,
+      }).pipe(
+        tap((event) => {
+          if (event.type === HttpEventType.UploadProgress) {
+            onProgress?.(event.total ? Math.min(100, event.loaded / event.total * 100) : null);
+          }
+        }),
+        filter((event) => event.type === HttpEventType.Response),
+      ),
+    ).then((response) => response.body!);
   /** Turns "Visible to Co-Parent" on or off for one of the viewer's batches. */
   shareBatch = (familyId: string, batchId: string, visibleToCoParent: boolean) =>
     this.call(this.http.patch<void>(`/api/families/${familyId}/memories/batches/${batchId}`, { visibleToCoParent }));

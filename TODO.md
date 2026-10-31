@@ -6,6 +6,13 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Branded loading indicator (#413, M3, October 31, 2026).** Reusable approved icon animation is wired to
+  calendar event/task/reminder saves and event/profile photo uploads; reduced motion and measured/unknown upload
+  progress are supported. Retryable profile upload failures retain the explicitly unsaved preview.
+  - [ ] Verify the real device layout in light/dark mode and with reduced motion, plus spoken loading/completion/error
+    announcements with NVDA/VoiceOver. Unit tests do not certify real screen-reader acceptance.
+    Local browser checks were blocked: no installed executable and the Playwright browser download was truncated.
+  - [ ] Complete owner acceptance on development after release promotion.
 - [ ] **Event photos and Family Memories (#403, M3, October 31, 2026).** Owner approved the rules and the delivery
   plan (decisions comment on #403). Design: `docs/design/handoffs/EVENT_PHOTOS_403.md`, boards in
   `docs/design/reviews/issue-403/`. Google Photos export is #404, separate.

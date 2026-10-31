@@ -319,6 +319,7 @@
           </div>
         </section>
       }
+      <app-loading-indicator [active]="busy()" [label]="checkingAvailability() ? 'Checking availability…' : 'Saving…'" />
       <div class="actions">
         @if (!availabilityWarning()) {
         <button mat-flat-button type="submit" [disabled]="busy()">
