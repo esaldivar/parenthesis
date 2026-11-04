@@ -20,6 +20,17 @@ that points back here.
   - [ ] Before families outside the US: GDPR/UK GDPR wording, lawful bases and regulator contact.
   - [ ] Later, if wanted: self-service data export (today a copy is sent on request within 30 days).
   - [ ] Before public launch: a lawyer's review of the notice.
+- [ ] **Slow first calendar load (#415, M3, November 4, 2026).** Cause: cold starts after scaling to zero, not the
+  calendar queries. Owner decisions: keep scaling to zero; cache calendar periods in memory only. Timings and how to
+  measure: `docs/runbooks/calendar-load-timing.md`.
+  - [x] ReadyToRun, single-platform image (867 MB to 290 MB), compressed app files, warm-up after listening,
+    `Server-Timing`, parallel start-up calls, waking-up message, one quiet retry, in-memory cache (PR into
+    `release/0.3.0`, November 4, 2026).
+  - [ ] Owner to time the development site before and after the release promotion with
+    `scripts/measure-cold-start.sh` and the browser steps in the runbook (the sandbox can't reach it), and record the
+    numbers in the runbook.
+  - [ ] Owner acceptance on development: the waking-up message after a quiet spell, moving between weeks, and that an
+    edit or a co-parent's change shows after returning to the calendar.
 - [ ] **Branded loading indicator (#413, M3, October 31, 2026).** Reusable approved icon animation is wired to
   calendar event/task/reminder saves and event/profile photo uploads; reduced motion and measured/unknown upload
   progress are supported. Retryable profile upload failures retain the explicitly unsaved preview.
