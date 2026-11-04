@@ -50,7 +50,8 @@ Use the existing project `parenthesis-dev` for development. Production can use t
    - **Authorized domains:** `parenthesisfamily.com`.
    - **Data access → Add scopes:** add `.../auth/calendar.app.created` only ("Make secondary Google calendars, and
      see, create, change, and delete events on them").
-   - **Audience → Test users:** add each Google account that will try it (up to 100 while unverified). They'll see an
+   - **Audience → Test users:** add each Google account that will try it (up to 100 while unverified), **including
+     the owner's own account**: owning the Google Cloud project doesn't make an account a tester. They'll see an
      "unverified app" warning first; that's expected in Testing.
 3. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
    - Application type **Web application**, name e.g. `parenthesis-dev-calendar`.
@@ -91,6 +92,12 @@ Locally: `dotnet user-secrets set GoogleCalendar:ClientId "<id>"` and `GoogleCal
    two; the request appears only after the other parent approves it.
 6. **Disconnect…** → **Disconnect**: the calendar disappears from Google Calendar, and Parenthesis no longer appears
    under [Google Account → Third-party connections](https://myaccount.google.com/connections).
+
+### If Google says "Access blocked"
+**"Access blocked: … has not completed the Google verification process", Error 403 `access_denied`:** the Google
+account you picked isn't on the test-user list. In **Google Auth Platform → Audience → Test users**, add that exact
+address, then try **Connect Google Calendar** again (the change can take a few minutes). Check which account Google's
+screen shows: if the browser is signed in to several, pick the one you added.
 
 ## 4. Before public launch: Google verification
 The Calendar scopes are **sensitive**, so Google must verify the app before anyone outside the test-user list can
