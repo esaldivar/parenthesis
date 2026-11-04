@@ -88,7 +88,7 @@ export const STORED_ITEMS: readonly StoredItem[] = [
   template: `
     <article class="notice">
       <h1>Privacy notice</h1>
-      <p class="muted">Last updated October 31, 2026</p>
+      <p class="muted">Last updated November 4, 2026</p>
 
       <p>
         Parenthesis helps separated parents share a family calendar, make decisions together and
@@ -228,7 +228,9 @@ export const STORED_ITEMS: readonly StoredItem[] = [
           <li>
             <strong>Google Places</strong>, when address suggestions are switched on: the text you
             type in an event’s location field is sent from our server to Google to suggest
-            addresses. Your browser doesn’t contact Google.
+            addresses. If you press “Use my location”, your approximate position (rounded to about a
+            kilometre) goes with it so nearby places come first. We don’t save your position, and
+            your co-parent never sees it. Your browser doesn’t contact Google.
           </li>
           <li>
             <strong>Google Calendar</strong>, only if you connect it in Settings. We copy the

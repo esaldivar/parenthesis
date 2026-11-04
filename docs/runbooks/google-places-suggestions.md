@@ -11,6 +11,13 @@ under the 10,000 a month Google gives free); a **$1 budget alert**.
 ## What it sends and keeps
 - Sent to Google: the text typed so far (at least three characters) and a random session token. Nothing about the
   family, children or events.
+- Nearby places (#414): if the parent presses **Use my location**, the browser asks for permission and their position,
+  rounded to two decimal places (about 1 km), is sent as a 50 km `locationBias`. Nearby places come first; distant
+  ones can still appear. The position lives only in the open page, isn't stored or logged, and never reaches the
+  co-parent. Without it, suggestions are limited to the US (`includedRegionCodes: ["us"]`, owner decision November 4,
+  2026). Without either, Google guessed from our server's address, which is why a Texas search once found North Dakota.
+- When the field opens it asks our API (`GET …/calendar/place-suggestions`) whether suggestions are on, to decide
+  whether to offer **Use my location**. That check never reaches Google and doesn't count toward the daily cap.
 - Kept by Parenthesis: nothing. Request logs record only method, path, status and duration; Google errors are logged
   with their status code only.
 - Who can ask: signed-in parents of that family, 60 requests a minute each. Children never can.
@@ -64,5 +71,8 @@ separate key and budget for production and revisit the cap with real usage.
 
 ## 4. Check it works
 On the development site, add an activity and type part of a synthetic address (e.g. "100 Example"): up to three
-suggestions appear with "Google Maps" under them. Picking one fills the field. With the key removed or
+suggestions appear with "Google Maps" under them. Picking one fills the field. Press **Use my location**, allow it,
+and search a chain with branches near you (e.g. a restaurant chain): the nearby branch should come first. Block
+location for the site and press it again: the field explains that suggestions show places across the US and typing
+still works. With the key removed or
 `Places__Enabled=false`, the field is plain text and nothing else changes.

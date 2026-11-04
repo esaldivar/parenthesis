@@ -248,6 +248,12 @@ export interface PlaceSuggestions {
   available: boolean;
 }
 
+/** Where the parent is, from their browser, used only to favour nearby suggestions (#414). */
+export interface NearbyPosition {
+  latitude: number;
+  longitude: number;
+}
+
 // --- Milestone 3: event photos and Family Memories (#403) --------------------------------------------------------------
 
 /** One photo the viewer may see. `downloadUrl` is null when they may view it but not download it. */
@@ -677,11 +683,20 @@ export class Api {
   /**
    * Address suggestions for a location (#354). The server asks Google, so the key never reaches the browser.
    * `available: false` means off, used up for today, or Google didn't answer: stop asking for this field.
+   * `near` is the parent's own position, sent only after they pressed "Use my location" (#414); the server rounds it
+   * and never stores it.
    */
-  placeSuggestions = (familyId: string, input: string, sessionToken: string) =>
+  placeSuggestions = (familyId: string, input: string, sessionToken: string, near: NearbyPosition | null = null) =>
     this.call(
-      this.http.post<PlaceSuggestions>(`/api/families/${familyId}/calendar/place-suggestions`, { input, sessionToken }),
+      this.http.post<PlaceSuggestions>(`/api/families/${familyId}/calendar/place-suggestions`, {
+        input,
+        sessionToken,
+        ...(near ? { latitude: near.latitude, longitude: near.longitude } : {}),
+      }),
     );
+  /** Whether suggestions are on, without asking Google or using up the daily allowance (#414). */
+  placeSuggestionsStatus = (familyId: string) =>
+    this.call(this.http.get<PlaceSuggestions>(`/api/families/${familyId}/calendar/place-suggestions`));
   /** This parent's Google Calendar copy (#386). Parents only; it never changes the co-parent's or children's settings. */
   googleCalendar = (familyId: string) => this.call(this.http.get<GoogleCalendarStatus>(`/api/families/${familyId}/google-calendar`));
   /** Google's consent page for this parent, with a state that only works for them, for ten minutes. */
