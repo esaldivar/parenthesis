@@ -203,6 +203,7 @@ export class PhotoEditor {
     }
     this.busy.set(true);
     this.error.set(null);
+    this.announcement.set('');
     try {
       await this.photos.save(this.familyId(), this.childId(), this.pending);
       this.clearPreview();
@@ -210,7 +211,7 @@ export class PhotoEditor {
     } catch (error) {
       // Keep the selected file for retryable transport failures; the preview stays explicitly unsaved.
       const status = toProblem(error).status;
-      if (status !== 0 && status < 500) {
+      if (status !== 0 && status !== 429 && status < 500) {
         this.clearPreview();
       }
       this.error.set(photoErrorMessage(error));
@@ -225,6 +226,7 @@ export class PhotoEditor {
     }
     this.busy.set(true);
     this.error.set(null);
+    this.announcement.set('');
     try {
       await this.photos.remove(this.familyId(), this.subject(), this.childId());
       this.announcement.set(`Photo removed. The initial ${this.initial()} shows instead.`);

@@ -34,10 +34,16 @@ that points back here.
 - [ ] **Branded loading indicator (#413, M3, October 31, 2026).** Reusable approved icon animation is wired to
   calendar event/task/reminder saves and event/profile photo uploads; reduced motion and measured/unknown upload
   progress are supported. Retryable profile upload failures retain the explicitly unsaved preview.
-  - [ ] Verify the real device layout in light/dark mode and with reduced motion, plus spoken loading/completion/error
-    announcements with NVDA/VoiceOver. Unit tests do not certify real screen-reader acceptance.
-    Local browser checks were blocked: no installed executable and the Playwright browser download was truncated.
-  - [ ] Complete owner acceptance on development after release promotion.
+  - [x] Follow-up fixes (November 4, 2026): event upload loading/results use one persistent status region;
+    profile uploads retain the unsaved photo after rate limiting and clear old preview/success announcements
+    before another operation. Regression tests cover connection, rate-limit and server failures.
+  - [x] Browser emulation (November 4, 2026): 20 desktop/phone-width scenario combinations passed across runs,
+    covering both themes and motion preferences, save/upload recovery and axe scans. One synthetic-family setup
+    timeout passed on focused rerun. Evidence/limits: `docs/design/reviews/issue-413/README.md`.
+  - [ ] Verify physical phone/desktop layout and spoken loading/completion/error announcements with
+    NVDA/VoiceOver, including measured/unknown event upload progress. Browser emulation, axe and DOM assertions
+    do not certify real devices or spoken screen-reader acceptance.
+  - [ ] Complete owner acceptance on development after release promotion, including real upload persistence.
 - [ ] **Event photos and Family Memories (#403, M3, October 31, 2026).** Owner approved the rules and the delivery
   plan (decisions comment on #403). Design: `docs/design/handoffs/EVENT_PHOTOS_403.md`, boards in
   `docs/design/reviews/issue-403/`. Google Photos export is #404, separate.
