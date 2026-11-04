@@ -16,7 +16,7 @@ async function indicatorFits(indicator: Locator, reduced: boolean) {
 
 for (const theme of ['light', 'dark'] as const) {
   for (const reduced of [false, true]) {
-    test(`loading feedback survives save/upload failure and retry, ${theme}, reduced motion ${reduced} (#413)`, async ({ page, family }, info) => {
+    test(`loading feedback survives save/upload failure and retry, ${theme}, reduced motion ${reduced} (#413)`, { tag: '@m3' }, async ({ page, family }, info) => {
       test.setTimeout(90_000);
       await page.emulateMedia({ colorScheme: theme, reducedMotion: reduced ? 'reduce' : 'no-preference' });
       const path = `/api/families/${family.familyId}/calendar/events`;
