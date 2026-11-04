@@ -223,6 +223,7 @@ describe('event photos (#403)', () => {
 
     button(sheet, 'Add 2 photos').click();
     await settle(fixture);
+    const status = sheet.querySelector('[role=status]')!;
     // One batch: the first photo starts it, the next joins it.
     const first = http.expectOne((r) => r.method === 'POST' && r.url === `${EVENT}/photos`);
     expect(first.request.params.has('batchId')).toBe(false);
@@ -255,25 +256,28 @@ describe('event photos (#403)', () => {
     await settle(fixture);
 
     expect(sheet.querySelector('app-loading-indicator svg')).toBeNull();
+    expect(sheet.querySelector('[role=status]')).toBe(status);
+    expect(sheet.querySelectorAll('[role=status], [aria-live]')).toHaveLength(1);
     // A failure is never shown as added, and can be tried again.
     const rows = [...el.querySelectorAll('.files li')].map(text);
     expect(rows[0]).toContain('IMG_2041.jpg');
     expect(rows[0]).toContain('Added');
     expect(rows[1]).toContain('Not added IMG_2042.jpg');
     expect(rows[1]).toContain('Couldn’t upload. Check your connection and try again.');
-    expect(el.querySelector('[aria-live=polite]')!.textContent).toContain(
+    expect(sheet.querySelector('[role=status]')!.textContent).toContain(
       '1 of 2 photos added. 1 couldn’t be added.',
     );
 
     button(el, 'Try again IMG_2042.jpg').click();
     await settle(fixture);
+    expect(status.textContent).toBe('Uploading photo…');
     http
       .expectOne((r) => r.method === 'POST' && r.params.get('batchId') === 'b-new')
       .flush({ batchId: 'b-new', photo: photo('n-2') }, { status: 201, statusText: 'Created' });
     await settle(fixture);
     http.expectOne(EVENT).flush(view({ batches: [batch('b-new')] }));
     await settle(fixture);
-    expect(el.querySelector('[aria-live=polite]')!.textContent).toContain(
+    expect(sheet.querySelector('[role=status]')!.textContent).toContain(
       'All 2 photos were added.',
     );
 
@@ -307,7 +311,7 @@ describe('event photos (#403)', () => {
     await settle(fixture);
     http.expectOne(EVENT).flush(view());
     await settle(fixture);
-    expect(el.querySelector('[aria-live=polite]')!.textContent).toContain(
+    expect(el.querySelector('.sheet [role=status]')!.textContent).toContain(
       'All 2 photos were added.',
     );
   });
