@@ -18,6 +18,12 @@ internal sealed class MemoriesDbContext(DbContextOptions<MemoriesDbContext> opti
 
     public DbSet<MemorySettings> Settings => Set<MemorySettings>();
 
+    public DbSet<GooglePhotosConnection> GooglePhotosConnections => Set<GooglePhotosConnection>();
+
+    public DbSet<GooglePhotosAlbum> GooglePhotosAlbums => Set<GooglePhotosAlbum>();
+
+    public DbSet<PhotoExport> PhotoExports => Set<PhotoExport>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -53,6 +59,45 @@ internal sealed class MemoriesDbContext(DbContextOptions<MemoriesDbContext> opti
             settings.ToTable("memory_settings");
             settings.HasKey(s => s.MembershipId);
             settings.HasQueryFilter(TenantContext.QueryFilterName, s => s.FamilyId == CurrentFamilyId);
+        });
+
+        // Google Photos export (#404). Deleting a connection deletes its albums and exports; a photo row removed by the
+        // cleanup takes its export records with it.
+        modelBuilder.Entity<GooglePhotosConnection>(connection =>
+        {
+            connection.ToTable("google_photos_connections");
+            connection.Property(c => c.ProtectedRefreshToken).HasMaxLength(4096);
+            connection.Property(c => c.Status).HasConversion<string>().HasMaxLength(16);
+            connection.Property(c => c.Problem).HasConversion<string>().HasMaxLength(16);
+            connection.Property(c => c.Version).IsRowVersion();
+            connection.HasIndex(c => c.MembershipId).IsUnique();
+            connection.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<GooglePhotosAlbum>(album =>
+        {
+            album.ToTable("google_photos_albums");
+            album.HasKey(a => new { a.ConnectionId, a.EventId });
+            album.Property(a => a.GoogleAlbumId).HasMaxLength(512);
+            album.HasOne<GooglePhotosConnection>().WithMany().HasForeignKey(a => a.ConnectionId).OnDelete(DeleteBehavior.Cascade);
+            album.HasQueryFilter(TenantContext.QueryFilterName, a => a.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<PhotoExport>(export =>
+        {
+            export.ToTable("photo_exports");
+            export.Property(e => e.State).HasConversion<string>().HasMaxLength(16);
+            export.Property(e => e.Reason).HasConversion<string>().HasMaxLength(16);
+            export.Property(e => e.UploadToken).HasMaxLength(4096);
+            export.Property(e => e.GoogleMediaItemId).HasMaxLength(512);
+            export.Property(e => e.Version).IsRowVersion();
+            export.Ignore(e => e.Waiting);
+            export.HasOne<GooglePhotosConnection>().WithMany().HasForeignKey(e => e.ConnectionId).OnDelete(DeleteBehavior.Cascade);
+            export.HasOne<EventPhoto>().WithMany().HasForeignKey(e => e.PhotoId).OnDelete(DeleteBehavior.Cascade);
+            export.HasIndex(e => new { e.ConnectionId, e.PhotoId }).IsUnique();
+            export.HasIndex(e => new { e.ConnectionId, e.EventId });
+            export.HasIndex(e => new { e.State, e.NextAttemptAt });
+            export.HasQueryFilter(TenantContext.QueryFilterName, e => e.FamilyId == CurrentFamilyId);
         });
     }
 }

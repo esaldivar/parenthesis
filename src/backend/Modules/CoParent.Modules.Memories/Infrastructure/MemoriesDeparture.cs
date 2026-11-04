@@ -7,7 +7,7 @@ namespace CoParent.Modules.Memories.Infrastructure;
 /// <summary>
 /// When a parent deletes their account (A-12): their event photos are deleted for everyone (including batches they had
 /// shared) and their Memories settings go. The cleanup then removes the files. If the family is closing, every photo
-/// goes. The co-parent's own photos stay.
+/// goes. The co-parent's own photos stay. Their Google Photos connection goes too (#404).
 /// </summary>
 internal sealed class MemoriesDeparture(MemoriesDbContext db, TimeProvider clock) : IParentDepartureHandler
 {
@@ -29,6 +29,12 @@ internal sealed class MemoriesDeparture(MemoriesDbContext db, TimeProvider clock
 
         db.Settings.RemoveRange(await db.Settings
             .Where(s => departure.FamilyClosing || s.MembershipId == departure.MembershipId)
+            .ToListAsync(cancellationToken));
+
+        // Their Google Photos connection (#404) goes, with its encrypted token, albums and export records. What they
+        // already exported stays in their Google account, which Parenthesis can no longer reach.
+        db.GooglePhotosConnections.RemoveRange(await db.GooglePhotosConnections
+            .Where(c => departure.FamilyClosing || c.MembershipId == departure.MembershipId)
             .ToListAsync(cancellationToken));
         await db.SaveChangesAsync(cancellationToken);
     }

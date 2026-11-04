@@ -239,6 +239,14 @@ export const STORED_ITEMS: readonly StoredItem[] = [
             calendar and our access.
           </li>
           <li>
+            <strong>Google Photos</strong>, only if you connect it and choose to export photos. We
+            send the photos you choose, as stored in Parenthesis (location and other hidden details
+            already removed), into an album Parenthesis creates for each event in your Google
+            account. They use your Google storage. We can’t see or change anything else in your
+            Google Photos. Copies there stay yours after the photos expire here or you disconnect,
+            and we can’t recall them. Disconnecting removes our access.
+          </li>
+          <li>
             <strong>Google Maps</strong>, only when you open a map link on an event. That opens
             Google Maps with the event’s address.
           </li>
