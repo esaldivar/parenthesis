@@ -86,7 +86,7 @@ Our readiness and Google's are separate. Update both as they change; don't mark 
 | `appendonly` scope added; tier shown by console | Not started | |
 | OAuth client `parenthesis-dev-photos` created | Not started | |
 | Privacy Notice names Google Photos | Not started | |
-| | Our implementation (backend, frontend) | Design approved Nov 4, 2026; not built | |
+| Our implementation (backend, frontend) | Design approved Nov 4, 2026; not built | |
 | End-to-end test with test accounts | Not started | |
 | Google submission | Not submitted | |
 | Google project/app reference (no secrets) | | |
