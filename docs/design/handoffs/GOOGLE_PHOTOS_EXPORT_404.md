@@ -1,6 +1,7 @@
 # Google Photos export (#404)
 
-Status: **proposed design for owner review (November 4, 2026). Nothing here is built.** Product rules come from the
+Status: **design approved by the owner on November 4, 2026 (in the Claude app), including both open questions as
+proposed. Nothing here is built yet.** Product rules come from the
 #404 issue body (owner decisions of October 31, 2026) and the #403 rules it reuses. The owner chose on November 4,
 2026, in the Claude app: **one Google Photos album per event**, and **export a whole memory or a single photo**.
 Visual boards: [`docs/design/reviews/issue-404/`](../reviews/issue-404/README.md). Google Cloud setup and the
@@ -64,7 +65,7 @@ can't.
   in Parenthesis, the same text the Calendar copy already sends.
 - **Already exported:** a photo this connection has exported shows "In your Google Photos" and is skipped by a later
   whole-memory export. Parenthesis can't see whether the parent later deleted it in Google, so there's no
-  re-export in M3 (download is the fallback). Open question for the owner below.
+  re-export in M3 (download is the fallback; owner decision below).
 - **Exported copies are the parent's.** Turning off Visible to Co-Parent or the download setting later, deleting the
   photo in Parenthesis, or the 28-day expiry never removes a Google copy. The app says so before the first export.
 - **Expiry still applies in Parenthesis.** An export doesn't extend the 28 days, and an attempted or queued export is
@@ -202,13 +203,14 @@ erDiagram
 - **Privacy notice and data inventory** are updated in the implementation PR (new recipient: Google Photos; new
   stored data: the Photos refresh token and export records).
 
-## Open questions for the owner
+## Owner decisions (November 4, 2026)
 
-1. **Re-export:** allow "Export again" for a photo already marked "In your Google Photos" (for a parent who deleted
-   it in Google)? Proposed: not in M3; Download covers it.
-2. **Read-back scope:** add `photoslibrary.readonly.appcreateddata` so Parenthesis can confirm an album still exists
-   and verify ambiguous results? Proposed: no; `appendonly` alone is the smallest review and the "album gone" and
-   "Checking" handling above covers it. Revisit only if testing shows duplicates.
+Both questions were decided as proposed, in the Claude app:
+
+1. **No re-export in M3.** A photo already marked "In your Google Photos" isn't offered again; Download covers a
+   parent who deleted it in Google.
+2. **No read-back scope.** `photoslibrary.appendonly` only; the "album gone" and "Checking" handling above covers it.
+   Revisit `photoslibrary.readonly.appcreateddata` only if testing shows duplicates.
 
 ## Delivery
 

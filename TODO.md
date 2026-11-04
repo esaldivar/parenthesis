@@ -67,8 +67,9 @@ that points back here.
 - [ ] **Google Photos export (#404, M3, epic #61, November 4, 2026).** Owner chose one album per event and export of a
   whole memory or a single photo. Design: `docs/design/handoffs/GOOGLE_PHOTOS_EXPORT_404.md`, boards in
   `docs/design/reviews/issue-404/`, Google setup and verification tracker in `docs/runbooks/google-photos-export.md`.
-  - [ ] Owner design review of the #404 boards, including the two open questions in the handoff (re-export, read-back
-    scope). The `design approved` label is the owner's to apply.
+  - [x] Owner design review of the #404 boards: approved November 4, 2026, in the Claude app, with both open
+    questions as proposed (no re-export in M3; `appendonly` only). The `design approved` label is the owner's to
+    apply.
   - [ ] Owner Google Cloud steps (runbook section 1): enable Photos Library API, add `photoslibrary.appendonly`, record
     the tier the console shows, create OAuth client `parenthesis-dev-photos`. Record actual domain/brand status.
   - [ ] Backend PR: connection and OAuth, encrypted token, export queue and worker, status endpoints, feature flag,

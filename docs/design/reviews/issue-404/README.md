@@ -13,5 +13,7 @@ co-parent, Kai the child); photo tiles are drawn shapes, not photos. Styles and 
 | `phone320-light.png` | Every board at 320px (no horizontal scrolling) |
 | `desktop1280-light.png`, `desktop1280-dark.png` | Every board at 1280px |
 
-**Owner design review:** pending. Differences found during implementation will be listed in the implementation PR.
+**Owner design review (November 4, 2026, in the Claude app):** approved as shown, with both open questions decided
+as proposed (no re-export in M3; `appendonly` scope only). Differences found during implementation will be listed in
+the implementation PR.
 The `design approved` label is the owner's to apply.
