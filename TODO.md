@@ -158,6 +158,15 @@ that points back here.
   - [x] Owner: try suggestions on `develop` once #353 and #356 are released there. Confirmed working October 29,
     2026, after #360/#363 fixed the Pacific-day lookup in the chiseled image (release PR #362).
     ([runbook](docs/runbooks/google-places-suggestions.md), "Check it works").
+- [ ] **Nearby places first in location suggestions (#414, owner decisions November 4, 2026).**
+  - [x] "Use my location" toggle beside the Location field (Add and Edit), shown only when suggestions are on and the
+    browser supports location. Position rounded to about 1 km on the server and sent to Google as a 50 km bias; never
+    stored, logged, remembered between pages, or shown to the co-parent. Without it, suggestions are US only.
+  - [x] Denied, unavailable and timed-out location each explain the fallback; typing and suggestions keep working.
+  - [x] Integration tests (rounding, bias, US limit, bad coordinates ignored), Vitest and axe; Privacy Notice, data
+    inventory and Places runbook updated.
+  - [ ] Owner: on the dev site, search a chain with a nearby branch (e.g. "Texas Roadhouse" in Texas) with location
+    on and check the nearby branch comes first; then block location and check the fallback message.
   - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
     anywhere (`docs/design/reviews/issue-354/`).
   - [ ] Owner: before production, check the "Google Maps" text attribution against Google's current Places API (New)

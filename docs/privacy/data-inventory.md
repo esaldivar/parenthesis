@@ -37,7 +37,7 @@ cookies; review it for consent and add it here and to the notice before it ships
 |---|---|---|---|
 | Microsoft Azure (Central US) | Hosting, PostgreSQL, Key Vault, Blob storage (`event-photos`), Log Analytics | All app data | Always |
 | Brevo | SMTP relay | Recipient email; subject and body (parent names, family name, a child's first name in PIN safety notices, a link) | Account, invitation, deletion and PIN safety emails |
-| Google Places (New) | Address suggestions, called from the server | Text typed in an event's location field | Only when `Places` is configured (development only today) |
+| Google Places (New) | Address suggestions, called from the server | Text typed in an event's location field; the parent's position rounded to about 1 km, only after they press "Use my location" (#414), never stored or shown to the co-parent | Only when `Places` is configured (development only today) |
 | Google Calendar | One-way copy of confirmed events | Chosen event kinds, into a calendar the app created (`calendar.app.created` scope) | Only after a parent connects; disconnect revokes |
 | Google Maps | Map links | The event address in a link | Only when the person clicks |
 | Application Insights | Telemetry | Nothing yet (not wired) | n/a |

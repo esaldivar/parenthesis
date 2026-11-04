@@ -65,6 +65,24 @@ internal sealed class PlaceSuggestionQuota(TimeProvider clock, IOptions<PlacesOp
     }
 }
 
+/// <summary>
+/// A parent's position, rounded to two decimal places (about a kilometre) before it goes anywhere (#414). Only the
+/// parent who pressed "Use my location" sends it; it is never stored, logged, or shown to anyone.
+/// </summary>
+internal readonly record struct ApproximatePosition(double Latitude, double Longitude)
+{
+    private const int Decimals = 2;
+
+    /// <summary>The rounded position, or null unless both values are present and in range (NaN and infinity never are).</summary>
+    public static ApproximatePosition? From(double? latitude, double? longitude) =>
+        latitude is { } lat && longitude is { } lng
+        && lat is >= -90 and <= 90 && lng is >= -180 and <= 180
+            ? new ApproximatePosition(
+                Math.Round(lat, Decimals, MidpointRounding.AwayFromZero),
+                Math.Round(lng, Decimals, MidpointRounding.AwayFromZero))
+            : null;
+}
+
 /// <summary>Calls Google. Neither the typed text nor the results are logged or stored.</summary>
 internal sealed partial class GooglePlaceSuggestions(
     IHttpClientFactory clients,
@@ -82,12 +100,29 @@ internal sealed partial class GooglePlaceSuggestions(
     /// </summary>
     public const int MaxSuggestions = 3;
 
-    /// <summary>Up to <see cref="MaxSuggestions"/> suggestions, or null when Google couldn't answer (the app then just shows none).</summary>
-    public async Task<IReadOnlyList<string>?> SuggestAsync(string input, string? sessionToken, CancellationToken cancellationToken)
+    /// <summary>How far around the parent's position Google favours places (#414): Google's largest bias circle.</summary>
+    public const double NearbyRadiusMeters = 50_000;
+
+    /// <summary>Without a position, only US places are suggested (owner decision, November 4, 2026).</summary>
+    public static readonly IReadOnlyList<string> DefaultRegions = ["us"];
+
+    /// <summary>
+    /// Up to <see cref="MaxSuggestions"/> suggestions, or null when Google couldn't answer (the app then just shows none).
+    /// With <paramref name="near"/>, Google favours places around it but still offers distant ones; without it, only US
+    /// places. Google otherwise guesses from the caller's address, which is our server's, not the parent's.
+    /// </summary>
+    public async Task<IReadOnlyList<string>?> SuggestAsync(
+        string input,
+        string? sessionToken,
+        ApproximatePosition? near,
+        CancellationToken cancellationToken)
     {
+        var bias = near is { } position
+            ? new GoogleBias(new GoogleCircle(new GoogleLatLng(position.Latitude, position.Longitude), NearbyRadiusMeters))
+            : null;
         using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
         {
-            Content = JsonContent.Create(new GoogleRequest(input, sessionToken)),
+            Content = JsonContent.Create(new GoogleRequest(input, sessionToken, bias, bias is null ? DefaultRegions : null)),
         };
         request.Headers.Add("X-Goog-Api-Key", options.Value.ApiKey);
         request.Headers.Add("X-Goog-FieldMask", FieldMask);
@@ -132,7 +167,20 @@ internal sealed partial class GooglePlaceSuggestions(
 
     private sealed record GoogleRequest(
         [property: JsonPropertyName("input")] string Input,
-        [property: JsonPropertyName("sessionToken"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? SessionToken);
+        [property: JsonPropertyName("sessionToken"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? SessionToken,
+        [property: JsonPropertyName("locationBias"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] GoogleBias? LocationBias,
+        [property: JsonPropertyName("includedRegionCodes"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        IReadOnlyList<string>? IncludedRegionCodes);
+
+    private sealed record GoogleBias([property: JsonPropertyName("circle")] GoogleCircle Circle);
+
+    private sealed record GoogleCircle(
+        [property: JsonPropertyName("center")] GoogleLatLng Center,
+        [property: JsonPropertyName("radius")] double Radius);
+
+    private sealed record GoogleLatLng(
+        [property: JsonPropertyName("latitude")] double Latitude,
+        [property: JsonPropertyName("longitude")] double Longitude);
 
     private sealed record GoogleResponse([property: JsonPropertyName("suggestions")] List<GoogleSuggestion>? Suggestions);
 

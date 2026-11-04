@@ -76,10 +76,81 @@ public sealed class PlaceSuggestionTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(GoogleUrl, sent.Url);
         Assert.Equal(TestKey, sent.Key);
         Assert.Equal("suggestions.placePrediction.text.text", sent.FieldMask);
-        // Only the tidied text and the session token: nothing about the family, its children or its events.
-        Assert.Equal(["input", "sessionToken"], sent.Body.EnumerateObject().Select(p => p.Name).Order());
+        // Only the tidied text, the session token and the US limit: nothing about the family, its children or its events.
+        Assert.Equal(["includedRegionCodes", "input", "sessionToken"], sent.Body.EnumerateObject().Select(p => p.Name).Order());
         Assert.Equal("100 Example Ave", sent.Body.GetProperty("input").GetString());
         Assert.Equal(session, sent.Body.GetProperty("sessionToken").GetString());
+        // Without a position, only US places (owner decision, #414), and no location bias.
+        Assert.Equal(["us"], sent.Body.GetProperty("includedRegionCodes").EnumerateArray().Select(c => c.GetString()));
+        Assert.False(sent.Body.TryGetProperty("locationBias", out _));
+    }
+
+    [Fact]
+    public async Task A_shared_position_is_rounded_and_only_favours_nearby_places()
+    {
+        // #414: a chain search should find the branch near the parent. Synthetic coordinates near Austin, Texas.
+        var google = new FakeGoogle("Example Roadhouse, Austin, TX, USA");
+        using var host = Host(google);
+        using var dad = await ApiSession.SignedInAsync(host);
+        var familyId = await dad.CreateFamilyAsync();
+
+        var response = await dad.PostAsync(
+            Path(familyId), new { input = "Example Roadhouse", latitude = 30.267153, longitude = -97.743057 });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var sent = Assert.Single(google.Requests);
+        var circle = sent.Body.GetProperty("locationBias").GetProperty("circle");
+        // Rounded to about a kilometre before it leaves our server; never the exact position.
+        Assert.Equal(30.27, circle.GetProperty("center").GetProperty("latitude").GetDouble(), precision: 9);
+        Assert.Equal(-97.74, circle.GetProperty("center").GetProperty("longitude").GetDouble(), precision: 9);
+        Assert.Equal(50_000, circle.GetProperty("radius").GetDouble());
+        // A bias, not a restriction: distant places can still come back, and no region limit applies.
+        Assert.False(sent.Body.TryGetProperty("locationRestriction", out _));
+        Assert.False(sent.Body.TryGetProperty("includedRegionCodes", out _));
+    }
+
+    [Theory]
+    [InlineData(30.27, null)]
+    [InlineData(null, -97.74)]
+    [InlineData(91.0, -97.74)]
+    [InlineData(30.27, -181.0)]
+    public async Task A_missing_or_impossible_position_is_ignored(double? latitude, double? longitude)
+    {
+        var google = new FakeGoogle("Example Park");
+        using var host = Host(google);
+        using var dad = await ApiSession.SignedInAsync(host);
+        var familyId = await dad.CreateFamilyAsync();
+
+        var response = await dad.PostAsync(Path(familyId), new { input = "Example Park", latitude, longitude });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var sent = Assert.Single(google.Requests);
+        Assert.False(sent.Body.TryGetProperty("locationBias", out _));
+        Assert.True(sent.Body.TryGetProperty("includedRegionCodes", out _));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task The_field_can_ask_whether_suggestions_are_on_without_calling_Google(bool on)
+    {
+        var google = new FakeGoogle("Example Park");
+        using var host = Host(google, key: on ? TestKey : null, settings: ("Places:DailyLimit", "1"));
+        using var dad = await ApiSession.SignedInAsync(host);
+        var familyId = await dad.CreateFamilyAsync();
+
+        var first = await dad.GetAsync(Path(familyId));
+        var second = await dad.GetAsync(Path(familyId));
+
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        Assert.Equal(on, (await JsonAsync(first)).GetProperty("available").GetBoolean());
+        Assert.Equal(on, (await JsonAsync(second)).GetProperty("available").GetBoolean());
+        Assert.Empty(google.Requests);
+        if (on)
+        {
+            // The check took nothing from today's allowance of one.
+            Assert.True((await SuggestAsync(dad, familyId, "Example Park")).GetProperty("available").GetBoolean());
+        }
     }
 
     [Fact]
