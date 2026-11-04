@@ -16,6 +16,13 @@ RUN npm run build
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+# Precompiled (ReadyToRun) for the target platform, so a cold start after scaling to zero JIT-compiles far less (#415).
+# Publishing for one runtime also leaves out other platforms' native libraries: the app folder drops from about 490 MB
+# to about 70 MB, which the replica pulls on a cold start. BuildKit sets TARGETARCH (amd64 on Azure, arm64 on Apple
+# silicon).
+ARG TARGETARCH
+RUN case "$TARGETARCH" in arm64) echo linux-arm64 ;; *) echo linux-x64 ;; esac > /tmp/rid
+
 # Restore first so the layer is cached until a project or package version changes.
 COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/backend/CoParent.Api/CoParent.Api.csproj src/backend/CoParent.Api/
@@ -26,11 +33,12 @@ COPY src/backend/Modules/CoParent.Modules.Families/CoParent.Modules.Families.csp
 COPY src/backend/Modules/CoParent.Modules.Approvals/CoParent.Modules.Approvals.csproj src/backend/Modules/CoParent.Modules.Approvals/
 COPY src/backend/Modules/CoParent.Modules.Calendar/CoParent.Modules.Calendar.csproj src/backend/Modules/CoParent.Modules.Calendar/
 COPY src/backend/Modules/CoParent.Modules.Memories/CoParent.Modules.Memories.csproj src/backend/Modules/CoParent.Modules.Memories/
-RUN dotnet restore src/backend/CoParent.Api/CoParent.Api.csproj
+RUN dotnet restore src/backend/CoParent.Api/CoParent.Api.csproj -r "$(cat /tmp/rid)" -p:PublishReadyToRun=true
 
 COPY .editorconfig ./
 COPY src/backend/ src/backend/
-RUN dotnet publish src/backend/CoParent.Api/CoParent.Api.csproj -c Release --no-restore -o /app
+RUN dotnet publish src/backend/CoParent.Api/CoParent.Api.csproj -c Release --no-restore -o /app \
+    -r "$(cat /tmp/rid)" --self-contained false -p:PublishReadyToRun=true
 
 # 3. Runtime. Chiseled: no shell or package manager, runs as a non-root user by default.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime

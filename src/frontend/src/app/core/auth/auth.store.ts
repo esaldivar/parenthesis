@@ -1,3 +1,4 @@
+import { CalendarCache } from '../cache/calendar-cache';
 import { EventThemesService } from '../theme/event-themes.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
@@ -31,6 +32,7 @@ export class AuthStore {
   readonly device = signal<DeviceProfiles | null>(null);
 
   private readonly photos = inject(ProfilePhotos);
+  private readonly calendarCache = inject(CalendarCache);
   /** The family whose photos the viewer sees: the parent's current family, or the signed-in child's. */
   private readonly photoFamily = computed(() =>
     this.status() === 'child' ? (this.child()?.familyId ?? null) : this.status() === 'signed-in' ? (this.currentFamily()?.id ?? null) : null,
@@ -46,15 +48,21 @@ export class AuthStore {
 
   /** Runs before the first route: an antiforgery token, who (if anyone) is signed in, and this device's picker. */
   async initialize(): Promise<void> {
+    // These don't depend on each other, so they go together: after a cold start each round trip is slow (#415). The
+    // signed-in parent's families are fetched as soon as they're known, ready for the first page's guard.
+    // Without the picker, sign-in still works; the device is simply treated as unregistered.
+    const device = this.loadDevice().catch(() => this.device.set(null));
     try {
-      await this.api.antiforgery();
-      await this.loadSession();
+      await Promise.all([
+        this.api.antiforgery(),
+        this.loadSession().then(() => (this.status() === 'signed-in' ? this.loadFamilies().then(() => undefined, () => undefined) : undefined)),
+      ]);
     } catch {
       this.setUser(null); // API unreachable: treat as signed out; pages show their own errors.
+      await device;
       return;
     }
-    // Without the picker, sign-in still works; the device is simply treated as unregistered.
-    await this.loadDevice().catch(() => this.device.set(null));
+    await device;
   }
 
   /** A parent signs in with their full password. Throws the HTTP error on failure so the form can explain it. */
@@ -233,6 +241,7 @@ export class AuthStore {
     this.child.set(null);
     this.families.set(null);
     this.status.set(user ? 'signed-in' : 'anonymous');
+    this.calendarCache.useViewer(user ? `user:${user.id}` : null);
     // Each account has its own appearance; signed out, the app follows the system.
     this.appearance.useAccount(user?.id ?? null);
     this.eventThemes.useAccount(user?.id ?? null);
@@ -243,6 +252,7 @@ export class AuthStore {
     this.child.set(child);
     this.families.set(null);
     this.status.set('child');
+    this.calendarCache.useViewer(`child:${child.childId}`);
     // A child's appearance is their own, never a parent's (CLAUDE.md: appearance is personal).
     this.appearance.useAccount(`child:${child.childId}`);
     this.eventThemes.useAccount(`child:${child.childId}`);

@@ -5,6 +5,8 @@ import { Router, provideRouter, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
 import { CalendarEvent, Reminder } from '../../core/api/api';
+import { CalendarCache } from '../../core/cache/calendar-cache';
+import { COLD_START_RETRY_MS, SLOW_LOAD_MS } from './calendar-page';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, event, reminder } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
@@ -232,6 +234,134 @@ describe('the calendar page', () => {
     retry.flush([event()]);
     await settle(harness);
     expect(main().querySelector('app-calendar-week')).not.toBeNull();
+  });
+
+  describe('first load speed (#415)', () => {
+    afterEach(() => vi.useRealTimers());
+
+    const status = () => text(main().querySelector('.body [role="status"]'));
+    const press = (label: string) => main().querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!.click();
+
+    it('says it is loading, and after a few seconds explains that the app may be starting up', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      TestBed.configureTestingModule({
+        providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
+      });
+      const harness = await RouterTestingHarness.create('/calendar?date=2026-10-20');
+      http = TestBed.inject(HttpTestingController);
+      const request = await eventsRequest();
+      await settle(harness);
+      expect(status()).toBe('Loading your calendar…');
+      expect(main().querySelector('.body')!.getAttribute('aria-busy')).toBe('true');
+
+      await vi.advanceTimersByTimeAsync(SLOW_LOAD_MS);
+      await settle(harness);
+      expect(status()).toContain('Parenthesis may be starting up after a quiet spell');
+
+      for (const r of http.match(F)) r.flush(FAMILY);
+      for (const r of http.match(`${F}/children`)) r.flush(CHILDREN);
+      request.flush([event()]);
+      await settle(harness);
+      expect(main().querySelector('app-calendar-week')).not.toBeNull();
+      expect(main().querySelector('.body')!.getAttribute('aria-busy')).toBe('false');
+    });
+
+    it('retries once, quietly, when the app answers like it is still starting', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      TestBed.configureTestingModule({
+        providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
+      });
+      const harness = await RouterTestingHarness.create('/calendar?date=2026-10-20');
+      http = TestBed.inject(HttpTestingController);
+      const first = await eventsRequest();
+      for (const r of http.match(F)) r.flush(FAMILY);
+      for (const r of http.match(`${F}/children`)) r.flush(CHILDREN);
+      first.flush(null, { status: 503, statusText: 'Service Unavailable' });
+      await settle(harness);
+      expect(main().querySelector('[role="alert"]')).toBeNull();
+
+      await vi.advanceTimersByTimeAsync(COLD_START_RETRY_MS);
+      const second = await eventsRequest();
+      for (const r of http.match(F)) r.flush(FAMILY);
+      for (const r of http.match(`${F}/children`)) r.flush(CHILDREN);
+      second.flush([event()]);
+      await vi.waitFor(async () => {
+        await settle(harness);
+        expect(main().querySelector('app-calendar-week')).not.toBeNull();
+      });
+    });
+
+    it('shows the error and Try again when the retry fails too, and never retries other errors', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      TestBed.configureTestingModule({
+        providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
+      });
+      const harness = await RouterTestingHarness.create('/calendar?date=2026-10-20');
+      http = TestBed.inject(HttpTestingController);
+      (await eventsRequest()).flush(null, { status: 502, statusText: 'Bad Gateway' });
+      await vi.advanceTimersByTimeAsync(COLD_START_RETRY_MS);
+      (await eventsRequest()).flush(null, { status: 502, statusText: 'Bad Gateway' });
+      await vi.waitFor(async () => {
+        await settle(harness);
+        expect(text(main().querySelector('[role="alert"]'))).toContain('We couldn’t load your calendar.');
+      });
+      await vi.advanceTimersByTimeAsync(COLD_START_RETRY_MS * 2);
+      expect(http.match((r) => r.url === `${F}/calendar/events`)).toHaveLength(0);
+    });
+
+    it('shows a week seen earlier at once, marked as updating, then replaces it with the server’s answer', async () => {
+      const { harness } = await open('/calendar?date=2026-10-20', [event({ id: 'old', title: 'Old practice' })]);
+      // Signed in: the real store sets this as the profile changes.
+      TestBed.inject(CalendarCache).useViewer('user:user-1');
+      press('Next week');
+      await settle(harness);
+      (await eventsRequest()).flush([]);
+      await settle(harness);
+
+      press('Previous week');
+      await settle(harness);
+      // Nothing from the next week was cached under this week, and this week was seen before the viewer was set.
+      (await eventsRequest()).flush([event({ id: 'old', title: 'Old practice' })]);
+      await settle(harness);
+
+      press('Next week');
+      await settle(harness);
+      (await eventsRequest()).flush([]);
+      await settle(harness);
+      press('Previous week');
+      await settle(harness);
+
+      // Cached: on screen at once, with a single polite "Updating…", while the current version is fetched.
+      expect(text(main().querySelector('app-calendar-week'))).toContain('Old practice');
+      expect(status()).toBe('Updating…');
+      expect(main().querySelector('.body')!.getAttribute('aria-busy')).toBe('true');
+
+      (await eventsRequest()).flush([event({ id: 'new', title: 'Moved practice' })]);
+      await settle(harness);
+      expect(text(main().querySelector('app-calendar-week'))).toContain('Moved practice');
+      expect(text(main().querySelector('app-calendar-week'))).not.toContain('Old practice');
+      expect(status()).toBe('');
+      expect(main().querySelector('.body')!.getAttribute('aria-busy')).toBe('false');
+    });
+
+    it('never shows a week from before a change that was sent to the server', async () => {
+      const { harness } = await open('/calendar?date=2026-10-20', [event({ id: 'old', title: 'Old practice' })]);
+      const cache = TestBed.inject(CalendarCache);
+      cache.useViewer('user:user-1');
+      press('Next week');
+      await settle(harness);
+      (await eventsRequest()).flush([]);
+      await settle(harness);
+      expect(cache.size).toBe(1);
+
+      cache.clear(); // What any POST, PATCH, PUT or DELETE does (see calendar-cache.spec.ts).
+      press('Previous week');
+      await settle(harness);
+      expect(main().querySelector('app-calendar-week')).toBeNull();
+      expect(status()).toBe('Loading your calendar…');
+      (await eventsRequest()).flush([]);
+      await settle(harness);
+    });
   });
 
   it('says honestly that there’s nothing yet, with a way to add', async () => {
