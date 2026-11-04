@@ -24,7 +24,8 @@ builder.Services
     .AddPlatformProblemDetails()
     .AddPlatformOpenApi()
     .AddPlatformHealthChecks()
-    .AddPlatformAntiforgery();
+    .AddPlatformAntiforgery()
+    .AddPlatformPerformance();
 
 builder.Services
     .AddIdentityModule()
@@ -45,7 +46,9 @@ if (args is ["migrate"])
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseTraceIdHeader();
+app.UseServerTiming();
 app.UseHttpLogging();
+app.UseResponseCompression();
 app.UseSpaStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();

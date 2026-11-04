@@ -158,12 +158,43 @@ describe('AuthStore', () => {
     await respond(
       ['/api/antiforgery', 204],
       ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Alex' }],
+      ['/api/me/families', 200, []],
       ['/api/device/profiles', 404],
     );
     await init;
 
     expect(store.status()).toBe('signed-in');
     expect(accounts).toEqual(['u1']);
+  });
+
+  it('starts its first requests together, and has the parent’s families ready before the first page (#415)', async () => {
+    const init = store.initialize();
+    // All three are in flight before any answer arrives: no round trip waits for another.
+    const antiforgery = http.expectOne('/api/antiforgery');
+    const me = http.expectOne('/api/me');
+    const device = http.expectOne('/api/device/profiles');
+    antiforgery.flush(null, { status: 204, statusText: 'No content' });
+    me.flush({ id: 'u1', email: 'a@example.test', displayName: 'Alex' });
+    const families = await vi.waitFor(() => http.expectOne('/api/me/families'));
+    families.flush([{ id: 'f1', name: 'Rivera Family', timeZone: 'America/Chicago', role: 'Parent' }]);
+    device.flush(null, { status: 404, statusText: 'Not found' });
+    await init;
+
+    expect(store.currentFamily()?.id).toBe('f1');
+  });
+
+  it('still starts when the families can’t be loaded, leaving them for the first page to fetch', async () => {
+    const init = store.initialize();
+    await respond(
+      ['/api/antiforgery', 204],
+      ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Alex' }],
+      ['/api/me/families', 500],
+      ['/api/device/profiles', 404],
+    );
+    await init;
+
+    expect(store.status()).toBe('signed-in');
+    expect(store.families()).toBeNull();
   });
 
   it('gets a fresh antiforgery token after signing in, because tokens belong to the user', async () => {

@@ -157,6 +157,23 @@
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
+.loading {
+  margin-block-end: var(--space-3);
+}
+// Floats near the bottom, above the phone navigation, so nothing on the page moves or is hidden for long while the
+// current version of a period seen earlier loads (#415).
+.refreshing--on {
+  position: fixed;
+  z-index: 5;
+  bottom: calc(var(--bottom-nav-clearance, 0px) + var(--space-4));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border: 1px solid var(--color-outline);
+  border-radius: 999px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
 .skeleton {
   display: grid;
   gap: var(--space-2);
