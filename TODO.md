@@ -70,6 +70,19 @@ that points back here.
   - [ ] Physical iPhone check that Safari converts HEIC to JPEG in the picker before uploads are enabled on
     production (physical device checks are deferred to #112).
   - [ ] Owner to reconsider 14-day retention later; existing uploads keep their period.
+- [ ] **Google Photos export (#404, M3, epic #61, November 4, 2026).** Owner chose one album per event and export of a
+  whole memory or a single photo. Design: `docs/design/handoffs/GOOGLE_PHOTOS_EXPORT_404.md`, boards in
+  `docs/design/reviews/issue-404/`, Google setup and verification tracker in `docs/runbooks/google-photos-export.md`.
+  - [x] Owner design review of the #404 boards: approved November 4, 2026, in the Claude app, with both open
+    questions as proposed (no re-export in M3; `appendonly` only). The `design approved` label is the owner's to
+    apply.
+  - [ ] Owner Google Cloud steps (runbook section 1): enable Photos Library API, add `photoslibrary.appendonly`, record
+    the tier the console shows, create OAuth client `parenthesis-dev-photos`. Record actual domain/brand status.
+  - [ ] Backend PR: connection and OAuth, encrypted token, export queue and worker, status endpoints, feature flag,
+    tests with a fake Google client; Privacy Notice and data inventory name Google Photos.
+  - [ ] Frontend PR: Settings card, memory and photo export, status and error states.
+  - [ ] End-to-end with two test Google accounts in Testing mode; then the demo video and Google submission.
+  - [ ] Production only after Google approves the scope; keep the tracker's two readiness columns separate.
 - [ ] **Dependabot PR #384 dependency validation (#398, October 30, 2026).** Conflicts against `release/0.3.0`
   resolved while retaining current PR issue-link safeguards, DataProtection, cryptography pins and SkiaSharp packages.
   Six dependency upgrades remain; SwaggerUI was already current.
