@@ -7,6 +7,7 @@
   cdkTrapFocus
   [cdkTrapFocusAutoCapture]="true"
   [attr.data-kind]="item().kind"
+  [appPanelTint]="item().palette ?? item().kind"
 >
   <app-event-decoration [title]="item().title" [palette]="item().palette ?? item().kind" [allowed]="item().kind !== 'unavailable' || item().isMine" />
   <div class="panel__head">

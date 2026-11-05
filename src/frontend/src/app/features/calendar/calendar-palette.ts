@@ -41,3 +41,21 @@ export class CalendarPalette {
     ? 'repeating-linear-gradient(-45deg, transparent 0 7px, color-mix(in srgb, currentColor 12%, transparent) 7px 9px)'
     : null);
 }
+
+/**
+ * A details panel's surface in its item's category colour (#431). Only the background changes: the theme's own text,
+ * link, warning and outline colours keep WCAG AA contrast on every category fill, in both themes. Hidden items keep
+ * the plain surface.
+ */
+@Directive({
+  selector: '[appPanelTint]',
+  host: { '[attr.data-tint]': 'key()', '[style.--panel-tint]': 'tint()' },
+})
+export class PanelTint {
+  readonly appPanelTint = input<CalendarPaletteKey | undefined>();
+  protected readonly key = computed(() => {
+    const key = this.appPanelTint();
+    return key === 'event' ? 'family' : key === 'review' || key === 'concealed' || !key ? undefined : key;
+  });
+  protected readonly tint = computed(() => (this.key() ? `var(--color-calendar-${this.key()}-bg)` : null));
+}
