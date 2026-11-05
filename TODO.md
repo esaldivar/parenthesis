@@ -843,6 +843,13 @@ that points back here.
   documentation index prepared October 26, 2026; approved icon reused unchanged, planned features distinguished
   from current work. Verify rendered GitHub desktop/phone views in both themes before acceptance. Corrected
   horizontal wordmark remains pending below; add a gallery only when real synthetic screenshots are approved.
+  - [ ] November 5 acceptance review: update the statement that shared memories are planned for later milestones
+    against the event-photo/Family Memories functionality already on Development. Recheck the complete current
+    capability/status wording and rendered GitHub views before advancing #84.
+- [ ] **Architecture delivery-gate accuracy (#83, November 5 acceptance review).** Reconcile
+  `docs/architecture.md` with the current workflows. Its diagram/table still limits Playwright to release-to-develop
+  PRs and describes routine Sonar on main. Current Playwright also runs on work PRs into release branches, and
+  Sonar's primary analyzed branch is develop. Verify links and rendered Mermaid after correcting the documentation.
 - [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
   query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
   local selection. Router regressions cover both journeys.
