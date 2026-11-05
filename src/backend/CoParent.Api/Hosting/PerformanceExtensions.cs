@@ -93,8 +93,8 @@ internal sealed partial class StartupWarmUp(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var listening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        await using (lifetime.ApplicationStarted.Register(() => listening.TrySetResult()))
-        await using (stoppingToken.Register(() => listening.TrySetCanceled(stoppingToken)))
+        using (lifetime.ApplicationStarted.Register(() => listening.TrySetResult()))
+        using (stoppingToken.Register(() => listening.TrySetCanceled(stoppingToken)))
         {
             try
             {

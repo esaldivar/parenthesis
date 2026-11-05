@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http;
+using Npgsql;
 using SkiaSharp;
 
 namespace CoParent.IntegrationTests.Api;
@@ -141,6 +142,65 @@ public sealed class GooglePhotosExportTests(ApiFactory api) : IAsyncLifetime
         var settings = await JsonAsync(await f.Dad.GetAsync(f.Path("memories/google-photos")));
         Assert.Equal(3, settings.GetProperty("exportedCount").GetInt32());
         Assert.Equal(1, settings.GetProperty("albumCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Only_one_running_copy_of_the_app_exports_at_a_time()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var google = new FakeGoogle();
+        using var host = Host(google);
+        using var f = await FamilyAsync(host);
+        var eventId = await ActivityAsync(f);
+        await UploadAsync(f.Dad, f, eventId, Jpeg(SKColors.Red));
+        await ConnectAsync(f.Dad, f, google);
+        await ExportAsync(f.Dad, f, eventId);
+
+        // Another copy of the app is in the middle of a pass: this one sends nothing.
+        await using (var other = new NpgsqlConnection(api.ConnectionString))
+        {
+            await other.OpenAsync(ct);
+            await using (var take = new NpgsqlCommand("SELECT pg_advisory_lock(404, 1)", other))
+            {
+                await take.ExecuteScalarAsync(ct);
+            }
+
+            Assert.Equal(0, await ExportPassAsync(host));
+            Assert.Empty(google.Albums);
+            Assert.DoesNotContain(google.Requests, r => r.Url.EndsWith("/v1/uploads", StringComparison.Ordinal));
+
+            await using var release = new NpgsqlCommand("SELECT pg_advisory_unlock(404, 1)", other);
+            await release.ExecuteScalarAsync(ct);
+        }
+
+        Assert.Equal(1, await ExportPassAsync(host));
+        Assert.Single(Assert.Single(google.Albums.Values).Items);
+    }
+
+    [Fact]
+    public async Task The_daily_request_allowance_is_shared_by_every_running_copy_of_the_app()
+    {
+        var google = new FakeGoogle();
+        using var host = Host(google);
+        using var f = await FamilyAsync(host);
+        var eventId = await ActivityAsync(f);
+        await UploadAsync(f.Dad, f, eventId, Jpeg(SKColors.Red));
+        await ConnectAsync(f.Dad, f, google);
+        await ExportAsync(f.Dad, f, eventId);
+
+        // Other copies already used almost all of today's allowance (9,000 by default).
+        var today = DateOnly.FromDateTime(api.Clock.GetUtcNow().UtcDateTime);
+        await api.QueryScalarAsync<object>(
+            "INSERT INTO memories.google_photos_quota_days (day, requests) VALUES (@day, 8999)", ("day", today));
+
+        Assert.Equal(0, await ExportPassAsync(host));
+
+        Assert.DoesNotContain(google.Requests, r => r.Url.EndsWith("/v1/uploads", StringComparison.Ordinal));
+        var waiting = Assert.Single((await JsonAsync(await f.Dad.GetAsync(Exports(f, eventId)))).GetProperty("photos").EnumerateArray());
+        Assert.Equal("Queued", waiting.GetProperty("state").GetString());
+        Assert.Equal("RateLimited", waiting.GetProperty("reason").GetString());
+        Assert.Equal(8999, await api.QueryScalarAsync<int>(
+            "SELECT requests FROM memories.google_photos_quota_days WHERE day = @day", ("day", today)));
     }
 
     [Fact]
