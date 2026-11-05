@@ -87,7 +87,8 @@ that points back here.
     the fake: a full Google storage reports item status code 8 (RESOURCE_EXHAUSTED) in `batchCreate`, and a deleted
     album makes `batchCreate` answer 400/403/404 (the worker then makes a new album). Adjust the mapping if not.
   - [ ] The daily request guard counts per server instance; revisit if the app runs more than one replica.
-  - [ ] Frontend PR: Settings card, memory and photo export, status and error states.
+  - [ ] Frontend PR: Settings card, memory and photo export, status and error states. Opened November 5, 2026
+    (branch `feat/404-google-photos-frontend`); tick when merged.
   - [ ] End-to-end with two test Google accounts in Testing mode; then the demo video and Google submission.
   - [ ] Production only after Google approves the scope; keep the tracker's two readiness columns separate.
 - [ ] **Dependabot PR #384 dependency validation (#398, October 30, 2026).** Conflicts against `release/0.3.0`

@@ -1,7 +1,7 @@
 # Google Photos export (#404)
 
 Status: **design approved by the owner on November 4, 2026 (in the Claude app), including both open questions as
-proposed. Backend built (see "As built"); frontend not built yet.** Product rules come from the
+proposed. Backend and frontend built (see "As built"); not yet tested end to end with real Google accounts.** Product rules come from the
 #404 issue body (owner decisions of October 31, 2026) and the #403 rules it reuses. The owner chose on November 4,
 2026, in the Claude app: **one Google Photos album per event**, and **export a whole memory or a single photo**.
 Visual boards: [`docs/design/reviews/issue-404/`](../reviews/issue-404/README.md). Google Cloud setup and the
@@ -223,6 +223,27 @@ Both questions were decided as proposed, in the Claude app:
   connection; the parent retries after freeing space.
 - Reconnecting after access was removed keeps photos that were still waiting and sends them to the account connected
   now; albums and "In your Google Photos" marks are forgotten, as on disconnect.
+
+## As built (frontend, November 5, 2026)
+
+- **Settings → Google Photos** (`google-photos-settings.ts`) sits after Google Calendar: not available, not connected
+  (what's shared, before Google's page), connected with exported/album/waiting counts, needs reconnect, and the
+  disconnect question (C1, C2). Google sends parents back to `/settings/google-photos`
+  (`google-photos-callback.ts`), which returns them to the memory they started from, using the event id the server
+  read from its own encrypted state.
+- **On a Family Memory** (`event-photos` with `googlePhotos` on, set only by the memory page for a parent):
+  **Export to Google Photos** under Download all, "N photos here are in your Google Photos", a check mark on
+  exported tiles (and in their labels), and the viewer's **Export to Google Photos** or "In your Google Photos,
+  album …" (M1, P1). The event details on the calendar don't offer export.
+- **The export sheet** is an inline panel like the #403 upload sheet, not a Material dialog: focus moves to its
+  heading and returns to the Export button (or the photo) when it closes. It shows connect (M3), reconnect (S2),
+  "nothing can be exported", the confirmation with album, skipped and omitted photos and the storage note (M2), and
+  per-photo results with Try again for failures that retrying can fix (S1). The progress line is a polite live
+  region; reconnect is an alert. Reconnect is a button in the sheet that comes back to the memory, rather than a
+  link to Settings.
+- While photos are on their way, the memory asks the server every 4 seconds and stops when nothing is waiting or the
+  page closes. Only the server's `Exported` shows "In your Google Photos".
+- The final-week warning says "Download or export any you want to keep" where export is offered (X1).
 
 ## Delivery
 

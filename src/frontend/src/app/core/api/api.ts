@@ -243,6 +243,58 @@ export type GoogleCopyType =
   | 'MyUnavailable'
   | 'CoParentUnavailable';
 
+/** A parent's own Google Photos connection for exporting Family Memories photos (#404). */
+export interface GooglePhotosStatus {
+  /** False when the server isn't set up for it: the app says so and offers nothing. */
+  readonly available: boolean;
+  readonly state: GooglePhotosState;
+  /** Why a connection needs reconnecting. */
+  readonly problem: 'None' | 'AccessRevoked';
+  readonly connectedAt: string | null;
+  /** Photos this connection put in the parent's Google Photos. */
+  readonly exportedCount: number;
+  readonly albumCount: number;
+  /** Photos queued or being checked with Google. */
+  readonly waitingCount: number;
+  /** After connecting: the memory the parent started from. */
+  readonly returnEventId: string | null;
+}
+
+export type GooglePhotosState = 'NotConnected' | 'Connected' | 'NeedsReconnect';
+
+/** One photo's export to the viewer's own Google Photos. Only `Exported` means Google confirmed it. */
+export interface PhotoExport {
+  readonly photoId: string;
+  readonly state: 'Queued' | 'Checking' | 'Exported' | 'Failed' | 'Skipped';
+  readonly reason: PhotoExportReason;
+  readonly updatedAt: string;
+}
+
+export type PhotoExportReason =
+  | 'None'
+  | 'Reconnect'
+  | 'RateLimited'
+  | 'GoogleError'
+  | 'StorageFull'
+  | 'NotAllowed'
+  | 'Deleted'
+  | 'Expired';
+
+/**
+ * What exporting one memory would do and how far it got, for the viewer only. `exportable`: photos they may download
+ * that aren't exported or waiting. `omitted`: photos they can see but not download (never named).
+ */
+export interface EventExport {
+  readonly available: boolean;
+  readonly connection: GooglePhotosState;
+  readonly albumTitle: string;
+  readonly exportable: number;
+  readonly exported: number;
+  readonly waiting: number;
+  readonly omitted: number;
+  readonly photos: readonly PhotoExport[];
+}
+
 export interface PlaceSuggestions {
   suggestions: string[];
   available: boolean;
@@ -625,6 +677,31 @@ export class Api {
 
   // Event photos and Family Memories (#403). Parents only; every rule is checked on the server.
   memories = (familyId: string) => this.call(this.http.get<Memory[]>(`/api/families/${familyId}/memories`));
+  /** This parent's Google Photos connection (#404). Parents only; it never changes the co-parent's. */
+  googlePhotos = (familyId: string) =>
+    this.call(this.http.get<GooglePhotosStatus>(`/api/families/${familyId}/memories/google-photos`));
+  /** Google's consent page; `returnEventId` brings the parent back to that memory afterwards. */
+  googlePhotosAuthorize = (familyId: string, returnEventId?: string) =>
+    this.call(
+      this.http.post<{ url: string }>(`/api/families/${familyId}/memories/google-photos/authorize`, {
+        returnEventId: returnEventId ?? null,
+      }),
+    );
+  googlePhotosConnect = (familyId: string, code: string, state: string) =>
+    this.call(this.http.post<GooglePhotosStatus>(`/api/families/${familyId}/memories/google-photos/connect`, { code, state }));
+  /** Revokes access and forgets albums and export marks; what's already in Google stays there. */
+  googlePhotosDisconnect = (familyId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/memories/google-photos`));
+  /** What exporting this memory would include, and each photo's export so far. */
+  eventExport = (familyId: string, eventId: string) =>
+    this.call(this.http.get<EventExport>(`/api/families/${familyId}/memories/events/${eventId}/google-photos`));
+  /** Queues the named photos, or every photo the viewer may download; the server skips the rest. */
+  exportToGooglePhotos = (familyId: string, eventId: string, photoIds?: readonly string[]) =>
+    this.call(
+      this.http.post<EventExport>(`/api/families/${familyId}/memories/events/${eventId}/google-photos`, {
+        photoIds: photoIds ?? null,
+      }),
+    );
   eventPhotos = (familyId: string, eventId: string) =>
     this.call(this.http.get<EventPhotos>(`/api/families/${familyId}/memories/events/${eventId}`));
   /** Adds one photo (the raw file) to the viewer's batch, or starts a batch when `batchId` is missing. */

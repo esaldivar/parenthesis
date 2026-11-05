@@ -1,6 +1,6 @@
 # Google Photos export: Google Cloud setup and verification (#404)
 
-**Backend merged (API and export worker, #425); the screens come in the frontend PR.** The design is in
+**Backend merged (#425); frontend in the #404 frontend PR. Not yet tested end to end with real Google accounts.** The design is in
 [GOOGLE_PHOTOS_EXPORT_404.md](../design/handoffs/GOOGLE_PHOTOS_EXPORT_404.md). Start the Google Cloud setup and
 Google's review now: Google's review has no guaranteed duration.
 
@@ -86,7 +86,7 @@ Our readiness and Google's are separate. Update both as they change; don't mark 
 | `appendonly` scope added; tier shown by console | Done: **sensitive** (not restricted, so no CASA assessment); Calendar's `calendar.app.created` shows non-sensitive | November 5, 2026, Data access page |
 | OAuth client `parenthesis-dev-photos` created | Done, separate from Calendar's client; development site settings and Key Vault secret set (section 2) | November 5, 2026 |
 | Privacy Notice names Google Photos | Done in #425 (in `release/0.3.0`; public with that release) | November 4, 2026 |
-| Our implementation (backend, frontend) | Backend merged into `release/0.3.0` (#425); frontend not built | November 5, 2026 |
+| Our implementation (backend, frontend) | Backend merged into `release/0.3.0` (#425); frontend built with tests (#404 frontend PR, not merged) | November 5, 2026 |
 | End-to-end test with test accounts | Not started | |
 | Google submission | Not submitted | |
 | Google project/app reference (no secrets) | | |

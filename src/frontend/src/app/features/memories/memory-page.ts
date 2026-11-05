@@ -21,7 +21,8 @@ import { familyDate } from './photo-text';
 /**
  * One Family Memory (#403): an event's photos the viewer may see, with the same sharing, viewing, downloading and
  * deleting as in the event details. Downloading every photo as one ZIP comes in a later change; until then each
- * photo downloads on its own where that's allowed. The co-parent's photos they haven't allowed to be downloaded are
+ * photo downloads on its own where that's allowed. A parent can also export photos they may download to their own
+ * Google Photos (#404). The co-parent's photos they haven't allowed to be downloaded are
  * explained without revealing anything private.
  */
 @Component({
@@ -63,6 +64,7 @@ import { familyDate } from './photo-text';
             [timeZone]="timeZone()"
             [coParent]="coParent()"
             [linkToMemory]="false"
+            [googlePhotos]="isParent()"
             [headingLevel]="2"
             (loaded)="view.set($event)"
           />
@@ -115,6 +117,8 @@ export class MemoryPage {
   private readonly members = signal<readonly FamilyMember[]>([]);
 
   protected readonly familyId = computed(() => this.auth.currentFamily()?.id ?? null);
+  /** Export to Google Photos is for parents only (#404); the server refuses anyone else too. */
+  protected readonly isParent = computed(() => this.auth.currentFamily()?.role === 'Parent');
   protected readonly timeZone = computed(() => this.auth.currentFamily()?.timeZone ?? 'UTC');
   protected readonly coParent = computed(
     () => this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null,
