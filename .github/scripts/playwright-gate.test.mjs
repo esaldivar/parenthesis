@@ -59,7 +59,9 @@ test('browser job scope covers work PRs and preserves isolation and full matrix'
   assert.match(report, /needs: e2e/);
   assert.match(report, /pattern: playwright-shard-\*/);
   assert.match(report, /E2E_RUN_STARTED_AT=/);
-  assert.match(report, /merge-reports --config playwright.config.ts/);
+  assert.match(report, /npm run merge-reports -- --config playwright.config.ts/);
+  // Only the lockfile's Playwright, never an on-demand npx install (Sonar githubactions:S6505).
+  assert.doesNotMatch(workflow, /\bnpx\b/);
   assert.match(report, /E2E_TESTED_SHA: \$\{\{ github.sha \}\}/);
   assert.match(report, /run: node scripts\/summarize.mjs/);
 });

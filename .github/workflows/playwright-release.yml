@@ -190,7 +190,8 @@ jobs:
         run: |
           # The earliest shard start, so the summary still rejects stale results.
           echo "E2E_RUN_STARTED_AT=$(cat shards/started-at/*.txt | sort | head -n 1)" >> "$GITHUB_ENV"
-          npx playwright merge-reports --config playwright.config.ts --reporter list,html,json ./shards/blob-report
+          # The Playwright pinned in the lockfile, never a package fetched on demand.
+          npm run merge-reports -- --config playwright.config.ts --reporter list,html,json ./shards/blob-report
 
       # Totals, duration, per-milestone and regression results. Also fails if a milestone lost its tests.
       - name: Summarize
