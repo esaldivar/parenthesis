@@ -1,6 +1,7 @@
 :host {
   position: fixed;
-  inset: 0;
+  // On desktop the overlay starts after the side navigation, which stays clear and usable (#431).
+  inset: 0 0 0 var(--shell-sidebar-width, 0px);
   z-index: 20;
   display: flex;
   justify-content: flex-end;
@@ -9,6 +10,9 @@
   position: absolute;
   inset: 0;
   background: rgb(16 37 30 / 45%);
+  // Obscures the calendar behind the panel, not just dims it (#431).
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
 }
 .panel {
   position: relative;
@@ -16,7 +20,8 @@
   height: 100%;
   overflow-y: auto;
   padding: var(--space-4);
-  background: var(--color-surface);
+  // The item's category colour (#431), set by appPanelTint; the plain surface when it has none.
+  background: var(--panel-tint, var(--color-surface));
   color: var(--color-text);
   box-shadow: var(--shadow-card);
   display: grid;
@@ -36,6 +41,8 @@
   height: 44px;
   border-radius: 50%;
   background: var(--color-surface-soft);
+  // On a panel in the same category colour, a ring keeps the circle visible.
+  box-shadow: inset 0 0 0 2px currentColor;
 }
 .panel__titles h2 {
   margin: 0;
@@ -48,6 +55,11 @@
 .panel__type {
   margin: 0;
   color: var(--color-text-secondary);
+}
+// On a panel already in the category colour the label keeps only its text colour; its own fill would cover the
+// event's artwork as a band.
+.panel[data-tint] .panel__type {
+  --calendar-palette-fill: transparent;
 }
 .status {
   justify-self: start;
@@ -158,3 +170,24 @@ button[mat-button] {
 
 // Decoration never receives input or changes the reading/focus order.
 .panel > :not(app-event-decoration) { position: relative; z-index: 1; }
+
+// Slides in from the right after a short pause while the calendar fades behind it (#431). Without motion it just
+// appears.
+@media (prefers-reduced-motion: no-preference) {
+  .panel {
+    animation: panel-in 320ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+  }
+  .backdrop {
+    animation: backdrop-in 240ms ease-out both;
+  }
+}
+@keyframes panel-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}

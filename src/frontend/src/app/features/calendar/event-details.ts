@@ -1,5 +1,5 @@
 import { EventDecoration } from './event-decoration';
-import { CalendarPalette } from './calendar-palette';
+import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
@@ -47,7 +47,7 @@ export const COMMENT_MAX = 500;
 @Component({
   selector: 'app-event-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EventDecoration, CalendarPalette, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
+  imports: [EventDecoration, CalendarPalette, PanelTint, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './event-details.html',
   styleUrl: './event-details.scss',

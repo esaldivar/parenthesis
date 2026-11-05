@@ -184,7 +184,9 @@ a.is-active {
     grid-template-areas:
       'sidebar topbar'
       'sidebar main';
-    grid-template-columns: 19.5rem minmax(0, 1fr);
+    // Shared with overlays (event details) that leave the side navigation clear (#431).
+    --shell-sidebar-width: 19.5rem;
+    grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr);
     grid-template-rows: auto 1fr;
   }
 
