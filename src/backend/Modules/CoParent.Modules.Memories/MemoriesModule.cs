@@ -24,6 +24,18 @@ public static class MemoriesModule
         services.AddSingleton<IEventPhotoCleanup>(sp => sp.GetRequiredService<PhotoCleanup>());
         services.AddHostedService<PhotoCleanupWorker>();
 
+        // Google Photos export (#404): off unless GooglePhotos:ClientId and ClientSecret are set. No request logging:
+        // token requests and photo bytes must never reach logs or telemetry.
+        services.AddOptions<GooglePhotosOptions>().BindConfiguration(GooglePhotosOptions.Section);
+        services.AddHttpClient(GooglePhotosClient.ClientName, client => client.Timeout = TimeSpan.FromSeconds(60)).RemoveAllLoggers();
+        services.AddSingleton<GooglePhotosClient>();
+        services.AddSingleton<GooglePhotosTokens>();
+        services.AddSingleton<GooglePhotosQuota>();
+        services.AddSingleton<GooglePhotosExportSignal>();
+        services.AddSingleton<GooglePhotosExport>();
+        services.AddSingleton<IGooglePhotosExport>(sp => sp.GetRequiredService<GooglePhotosExport>());
+        services.AddHostedService<GooglePhotosExportWorker>();
+
         // Each upload decodes and re-encodes a photo, so each parent gets a generous but bounded hourly allowance.
         services.Configure<RateLimiterOptions>(options => options.AddPolicy(MemoryEndpoints.UploadRateLimitPolicy, context =>
             RateLimitPartition.GetFixedWindowLimiter(
@@ -36,6 +48,7 @@ public static class MemoriesModule
     public static IEndpointRouteBuilder MapMemoriesEndpoints(this IEndpointRouteBuilder family)
     {
         MemoryEndpoints.Map(family);
+        GooglePhotosEndpoints.Map(family);
         return family;
     }
 }

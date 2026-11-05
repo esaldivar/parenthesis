@@ -66,6 +66,14 @@ parent's calendar with what was last written instead of draining an outbox, whic
 covers every way an event changes without hooks in each one. Refresh tokens are encrypted with Data Protection. Off
 without `GoogleCalendar:ClientId` and `ClientSecret`. Setup: [the runbook](../runbooks/google-calendar-sync.md).
 
+**Google Photos export (#404):** a parent can connect their own Google Photos under Settings and export Family
+Memories photos they may download into one album per event (scope `photoslibrary.appendonly` only; nothing is read
+back). It lives in the **Memories** module, which owns the photos and the download rule (`memories.google_photos_*`,
+`memories.photo_exports`), with its own OAuth client so it never shares a grant with Calendar. A queue table and a
+background worker send each photo, checking access before the upload and again before adding it to the album; only
+Google's per-item answer marks a photo exported. Off without `GooglePhotos:ClientId` and `ClientSecret`. Setup:
+[the runbook](../runbooks/google-photos-export.md).
+
 **Why one container serving both API and SPA:** same origin means HttpOnly, `SameSite=Strict` cookies work without CORS, and hosting stays cheap. The SPA can be split out to Static Web Apps + Front Door later without code changes.
 
 ## 3. Modular monolith

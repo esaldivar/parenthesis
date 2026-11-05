@@ -72,6 +72,7 @@ describe('Privacy notice (#416)', () => {
       'Brevo',
       'Google Places',
       'Google Calendar',
+      'Google Photos',
       'Google Maps',
     ]) {
       expect(text(body)).toContain(service);

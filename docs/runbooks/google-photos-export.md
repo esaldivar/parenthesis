@@ -1,8 +1,8 @@
 # Google Photos export: Google Cloud setup and verification (#404)
 
-**Planned. The app doesn't use any of this yet.** The design is in
-[GOOGLE_PHOTOS_EXPORT_404.md](../design/handoffs/GOOGLE_PHOTOS_EXPORT_404.md). This runbook exists now so the Google
-Cloud setup and Google's review can start while the feature is built: Google's review has no guaranteed duration.
+**Backend built (API and export worker); the screens come in the frontend PR.** The design is in
+[GOOGLE_PHOTOS_EXPORT_404.md](../design/handoffs/GOOGLE_PHOTOS_EXPORT_404.md). Start the Google Cloud setup and
+Google's review now: Google's review has no guaranteed duration.
 
 Each parent will be able to connect their own Google Photos under **Settings → Google Photos** and export Family
 Memories photos they're allowed to download into one album per event. One way only: Parenthesis never reads their
@@ -40,7 +40,7 @@ Use the existing project `parenthesis-dev` (the one Google Calendar uses, see
    - No JavaScript origins: the browser never talks to Google's APIs.
    - Copy the client ID and secret. Never paste the secret into chat, issues or commits.
 
-## 2. Development site (owner, once the backend PR lands)
+## 2. Development site (owner, once the backend PR is merged)
 Same variables as [the Azure runbook](azure-environments.md) (`ENV=dev`, `$RG`, `$KV`).
 
 ```bash
@@ -58,7 +58,7 @@ az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars \
   GooglePhotos__ClientSecret=secretref:google-photos-client-secret
 ```
 
-The setting names are the planned ones; the backend PR confirms them.
+Optional settings: `GooglePhotos__Enabled=false` switches it off while keeping the client (production until Google approves); `GooglePhotos__DailyRequestLimit` (default 9000) stops below Google's 10,000 requests a day.
 
 ## 3. Google verification (start now)
 Domain ownership, brand verification and data-access review are three separate things. Calendar's progress on the
@@ -86,7 +86,7 @@ Our readiness and Google's are separate. Update both as they change; don't mark 
 | `appendonly` scope added; tier shown by console | Not started | |
 | OAuth client `parenthesis-dev-photos` created | Not started | |
 | Privacy Notice names Google Photos | Not started | |
-| Our implementation (backend, frontend) | Design approved Nov 4, 2026; not built | |
+| Our implementation (backend, frontend) | Backend built with tests (#404 backend PR); frontend not built | |
 | End-to-end test with test accounts | Not started | |
 | Google submission | Not submitted | |
 | Google project/app reference (no secrets) | | |

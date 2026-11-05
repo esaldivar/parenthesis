@@ -79,7 +79,12 @@ that points back here.
   - [ ] Owner Google Cloud steps (runbook section 1): enable Photos Library API, add `photoslibrary.appendonly`, record
     the tier the console shows, create OAuth client `parenthesis-dev-photos`. Record actual domain/brand status.
   - [ ] Backend PR: connection and OAuth, encrypted token, export queue and worker, status endpoints, feature flag,
-    tests with a fake Google client; Privacy Notice and data inventory name Google Photos.
+    tests with a fake Google client; Privacy Notice and data inventory name Google Photos. Opened November 4, 2026
+    (branch `feat/404-google-photos-backend`); tick when merged.
+  - [ ] Confirm with real Google test accounts what the backend assumes from Google's docs and couldn't check against
+    the fake: a full Google storage reports item status code 8 (RESOURCE_EXHAUSTED) in `batchCreate`, and a deleted
+    album makes `batchCreate` answer 400/403/404 (the worker then makes a new album). Adjust the mapping if not.
+  - [ ] The daily request guard counts per server instance; revisit if the app runs more than one replica.
   - [ ] Frontend PR: Settings card, memory and photo export, status and error states.
   - [ ] End-to-end with two test Google accounts in Testing mode; then the demo video and Google submission.
   - [ ] Production only after Google approves the scope; keep the tracker's two readiness columns separate.

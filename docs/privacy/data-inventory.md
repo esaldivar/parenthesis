@@ -39,6 +39,7 @@ cookies; review it for consent and add it here and to the notice before it ships
 | Brevo | SMTP relay | Recipient email; subject and body (parent names, family name, a child's first name in PIN safety notices, a link) | Account, invitation, deletion and PIN safety emails |
 | Google Places (New) | Address suggestions, called from the server | Text typed in an event's location field; the parent's position rounded to about 1 km, only after they press "Use my location" (#414), never stored or shown to the co-parent | Only when `Places` is configured (development only today) |
 | Google Calendar | One-way copy of confirmed events | Chosen event kinds, into a calendar the app created (`calendar.app.created` scope) | Only after a parent connects; disconnect revokes |
+| Google Photos (#404) | One-way export of chosen event photos | The stored photo (WebP, metadata removed), a file name with the event's date and title, and an album titled with the event's title and date (`photoslibrary.appendonly` scope) | Only after a parent connects and exports; off unless `GooglePhotos` is configured; disconnect revokes |
 | Google Maps | Map links | The event address in a link | Only when the person clicks |
 | Application Insights | Telemetry | Nothing yet (not wired) | n/a |
 | UptimeRobot, Discord | Uptime monitoring and alerts | Health endpoint status only | Always |
@@ -57,6 +58,7 @@ No analytics, advertising, third-party scripts or third-party fonts are loaded i
 | Event photos (re-encoded, metadata dropped) | Family | 28 days after upload |
 | Devices (name, kind, token hash, expiry) | Family | Until removed or expired |
 | Google refresh token (encrypted with data protection) | Parent | Until disconnect or account deletion |
+| Google Photos refresh token (encrypted), albums made and export records (photo id, state, Google's item id) | Parent | Until disconnect, reconnect or account deletion; an export record also goes with its photo's row |
 | Audit records (ids, action, time; no content) | Security | Indefinitely |
 | IP address | Rate limiting, in memory | Minutes; not stored |
 | Container logs (Log Analytics) | Operations | Workspace default, 30 days |

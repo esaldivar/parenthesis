@@ -1,7 +1,7 @@
 # Google Photos export (#404)
 
 Status: **design approved by the owner on November 4, 2026 (in the Claude app), including both open questions as
-proposed. Nothing here is built yet.** Product rules come from the
+proposed. Backend built (see "As built"); frontend not built yet.** Product rules come from the
 #404 issue body (owner decisions of October 31, 2026) and the #403 rules it reuses. The owner chose on November 4,
 2026, in the Claude app: **one Google Photos album per event**, and **export a whole memory or a single photo**.
 Visual boards: [`docs/design/reviews/issue-404/`](../reviews/issue-404/README.md). Google Cloud setup and the
@@ -211,6 +211,18 @@ Both questions were decided as proposed, in the Claude app:
    parent who deleted it in Google.
 2. **No read-back scope.** `photoslibrary.appendonly` only; the "album gone" and "Checking" handling above covers it.
    Revisit `photoslibrary.readonly.appcreateddata` only if testing shows duplicates.
+
+## As built (backend, November 4, 2026)
+
+- Endpoints: `GET/DELETE /memories/google-photos`, `POST /memories/google-photos/authorize` (optional
+  `returnEventId`) and `/connect`; `GET/POST /memories/events/{eventId}/google-photos` (status and plan; queue all or
+  `photoIds`). The status view's `exportable`, `exported`, `waiting` and `omitted` counts drive M1, M2 and S2.
+- States are Queued, Checking, Exported, Failed and Skipped; there's no separate "Sending" state (the screens show
+  "Exporting…" for queued photos while a pass runs).
+- A full Google storage fails only the affected photos ("Your Google storage is full") instead of pausing the whole
+  connection; the parent retries after freeing space.
+- Reconnecting after access was removed keeps photos that were still waiting and sends them to the account connected
+  now; albums and "In your Google Photos" marks are forgotten, as on disconnect.
 
 ## Delivery
 
