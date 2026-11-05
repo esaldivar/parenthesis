@@ -97,9 +97,14 @@ that points back here.
   - [ ] Confirm with real Google test accounts what the backend assumes from Google's docs and couldn't check against
     the fake: a full Google storage reports item status code 8 (RESOURCE_EXHAUSTED) in `batchCreate`, and a deleted
     album makes `batchCreate` answer 400/403/404 (the worker then makes a new album). Adjust the mapping if not.
-  - [ ] The daily request guard counts per server instance; revisit if the app runs more than one replica.
-  - [ ] Frontend PR: Settings card, memory and photo export, status and error states. Opened November 5, 2026
-    (branch `feat/404-google-photos-frontend`); tick when merged.
+  - [x] Running more than one copy of the app (development allows 2 replicas): one export pass at a time through a
+    Postgres advisory lock, and the daily request count kept in the database (Copilot on release PR #428, fixed
+    November 5, 2026).
+  - [x] Owner decision (Copilot on release PR #428): if Google creates an album but the answer times out, the next try
+    makes a second, empty album for that event. Accepted and documented in the design (November 5, 2026); revisit
+    with a read scope for app-made albums only if the end-to-end test shows it happening.
+  - [x] Frontend PR: Settings card, memory and photo export, status and error states. Merged into
+    `release/0.3.0` in #426 (November 5, 2026).
   - [ ] End-to-end with two test Google accounts in Testing mode; then the demo video and Google submission.
   - [ ] Production only after Google approves the scope; keep the tracker's two readiness columns separate.
 - [ ] **Dependabot PR #384 dependency validation (#398, October 30, 2026).** Conflicts against `release/0.3.0`

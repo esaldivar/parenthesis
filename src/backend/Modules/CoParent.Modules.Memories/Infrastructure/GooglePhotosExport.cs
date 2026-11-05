@@ -67,33 +67,28 @@ internal static class PhotoExportRules
 }
 
 /// <summary>
-/// Counts Library API requests per UTC day so Parenthesis stops below Google's 10,000-a-day project limit (per server
-/// instance; a guard, not an exact meter).
+/// Counts Library API requests per UTC day so Parenthesis stops below Google's 10,000-a-day project limit. The count is
+/// in the database, so every running copy of the app shares one allowance. A guard, not an exact meter.
 /// </summary>
 internal sealed class GooglePhotosQuota(IOptions<GooglePhotosOptions> options, TimeProvider clock)
 {
-    private readonly Lock _lock = new();
-    private DateOnly _day;
-    private int _used;
-
-    public bool TryTake(int requests)
+    /// <summary>Takes <paramref name="requests"/> from today's allowance in one statement, or nothing if they don't fit.</summary>
+    public async Task<bool> TryTakeAsync(MemoriesDbContext db, int requests, CancellationToken cancellationToken)
     {
-        var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-        lock (_lock)
+        var limit = options.Value.DailyRequestLimit;
+        if (requests > limit)
         {
-            if (today != _day)
-            {
-                (_day, _used) = (today, 0);
-            }
-
-            if (_used + requests > options.Value.DailyRequestLimit)
-            {
-                return false;
-            }
-
-            _used += requests;
-            return true;
+            return false;
         }
+
+        var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
+        var taken = await db.Database.SqlQuery<int>($"""
+            INSERT INTO memories.google_photos_quota_days (day, requests) VALUES ({today}, {requests})
+            ON CONFLICT (day) DO UPDATE SET requests = google_photos_quota_days.requests + EXCLUDED.requests
+            WHERE google_photos_quota_days.requests + EXCLUDED.requests <= {limit}
+            RETURNING requests AS "Value"
+            """).ToListAsync(cancellationToken);
+        return taken.Count > 0;
     }
 }
 
@@ -142,6 +137,11 @@ internal sealed partial class GooglePhotosExport(
 {
     private static readonly string[] _filter = [TenantContext.QueryFilterName];
 
+    // pg_try_advisory_lock(int, int): one export pass at a time across every running copy of the app, so two copies
+    // never send the same photo. The namespace is the issue number; Memories' upload lock uses 403.
+    private const int ExportLockNamespace = 404;
+    private const int ExportLockKey = 1;
+
     // google.rpc codes in a batchCreate item's status.
     private const int InvalidArgument = 3;
     private const int DeadlineExceeded = 4;
@@ -156,6 +156,40 @@ internal sealed partial class GooglePhotosExport(
             return 0;
         }
 
+        // A session-level lock held on its own connection for the whole pass. If this copy of the app stops, the
+        // connection closes and the lock goes with it.
+        using var lockScope = scopes.CreateScope();
+        var lockDb = lockScope.ServiceProvider.GetRequiredService<MemoriesDbContext>();
+        await lockDb.Database.OpenConnectionAsync(cancellationToken);
+        try
+        {
+            var mine = await lockDb.Database
+                .SqlQuery<bool>($"SELECT pg_try_advisory_lock({ExportLockNamespace}, {ExportLockKey}) AS \"Value\"")
+                .SingleAsync(cancellationToken);
+            if (!mine)
+            {
+                LogAnotherCopyExporting();
+                return 0;
+            }
+
+            try
+            {
+                return await ExportDueAsync(cancellationToken);
+            }
+            finally
+            {
+                await lockDb.Database.ExecuteSqlAsync(
+                    $"SELECT pg_advisory_unlock({ExportLockNamespace}, {ExportLockKey})", CancellationToken.None);
+            }
+        }
+        finally
+        {
+            await lockDb.Database.CloseConnectionAsync();
+        }
+    }
+
+    private async Task<int> ExportDueAsync(CancellationToken cancellationToken)
+    {
         var now = clock.GetUtcNow();
         List<(Guid Id, Guid FamilyId, Guid MembershipId)> due;
         using (var scope = scopes.CreateScope())
@@ -224,7 +258,7 @@ internal sealed partial class GooglePhotosExport(
         }
 
         // At most one upload per photo, plus an album and a batchCreate per event.
-        if (!quota.TryTake((exports.Count * 3) + 1))
+        if (!await quota.TryTakeAsync(db, (exports.Count * 3) + 1, cancellationToken))
         {
             var tomorrow = new DateTimeOffset(now.UtcDateTime.Date.AddDays(1), TimeSpan.Zero);
             foreach (var export in exports)
@@ -508,6 +542,9 @@ internal sealed partial class GooglePhotosExport(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Google Photos exports reached Parenthesis's daily request limit; waiting until tomorrow (UTC)")]
     private partial void LogDailyLimit();
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Another copy of the app is running the Google Photos export pass; skipping this one")]
+    private partial void LogAnotherCopyExporting();
 }
 
 /// <summary>Runs <see cref="GooglePhotosExport"/> every interval, or sooner when poked.</summary>

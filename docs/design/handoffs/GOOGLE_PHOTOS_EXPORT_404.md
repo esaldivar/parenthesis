@@ -205,12 +205,17 @@ erDiagram
 
 ## Owner decisions (November 4, 2026)
 
-Both questions were decided as proposed, in the Claude app:
+Both questions were decided as proposed, in the Claude app, and one later point was decided after release review:
 
 1. **No re-export in M3.** A photo already marked "In your Google Photos" isn't offered again; Download covers a
    parent who deleted it in Google.
 2. **No read-back scope.** `photoslibrary.appendonly` only; the "album gone" and "Checking" handling above covers it.
    Revisit `photoslibrary.readonly.appcreateddata` only if testing shows duplicates.
+3. **A possible extra album is accepted (November 5, 2026, after Copilot's review of release PR #428).** If Google
+   creates an event's album but its answer times out, Parenthesis can't tell (no read scope, and `albums.create`
+   has no idempotency key), so the next try makes another album with the same title. The parent may then see one
+   extra, empty album; each photo still goes in once. It needs a timeout right after Google made the album, so it
+   should be rare. Revisit with `photoslibrary.readonly.appcreateddata` if testing shows it happens.
 
 ## As built (backend, November 4, 2026)
 

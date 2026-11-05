@@ -187,6 +187,22 @@ namespace CoParent.Modules.Memories.Infrastructure.Migrations
                     b.ToTable("google_photos_connections", "memories");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Memories.Domain.GooglePhotosQuotaDay", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date")
+                        .HasColumnName("day");
+
+                    b.Property<int>("Requests")
+                        .HasColumnType("integer")
+                        .HasColumnName("requests");
+
+                    b.HasKey("Day")
+                        .HasName("pk_google_photos_quota_days");
+
+                    b.ToTable("google_photos_quota_days", "memories");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Memories.Domain.MemorySettings", b =>
                 {
                     b.Property<Guid>("MembershipId")
