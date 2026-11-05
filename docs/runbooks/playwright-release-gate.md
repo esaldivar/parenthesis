@@ -9,7 +9,7 @@ it**. A failure blocks the merge.
 | Workflow | [`.github/workflows/playwright-release.yml`](../../.github/workflows/playwright-release.yml) |
 | Tests | [`tests/e2e/`](../../tests/e2e/) (Playwright, desktop Chromium and mobile Chromium/WebKit) |
 | Required check | **Release E2E gate**, on `release/*` and `develop` |
-| Results | The run's summary page, the `playwright-report` artifact, and the Discord release notification |
+| Results | The run's summary page, the `playwright-report` artifact (all shards merged), and the Discord release notification |
 
 ## When it runs
 
@@ -40,6 +40,13 @@ secrets or production settings are used.
   is fixed at 30 tries a minute per address. A full run uses about 11, or about 22 if every PIN test needs its
   retry, so keep the PIN tests lean.
 
+**Three machines (shards).** The suite is split across three jobs, **Playwright (release candidate 1/3)** to
+**3/3**, that each start their own release candidate and run a share of every milestone's tests (`--shard=N/3`). Each
+uploads a blob report; **Playwright report** merges them into one HTML report and one summary, with the same checks
+as a single run (tested SHA, fresh results, every milestone and mobile profile present, accessibility scans). The gate
+passes only if all three shards and the merged summary pass. A shard that fails doesn't stop the others, so one run
+shows every failure.
+
 Tests are grouped and tagged by milestone, following the release map in
 [the backlog](../planning/mvp-backlog.md). [`milestones.json`](../../tests/e2e/milestones.json) lists every milestone
 with tests, and the summary reports each one:
@@ -65,7 +72,7 @@ add a browser journey for it. Screens that aren't built yet are tested for their
 ## When it fails
 1. The merge is blocked: **Release E2E gate** is red.
 2. The run's summary lists the failed tests and the results per milestone.
-3. Download `playwright-failures` for screenshots, traces (open them with `npm run trace -- <file>` in `tests/e2e`) and the API
+3. Download `playwright-failures-1`, `-2` or `-3` (one per shard that failed) for screenshots, traces (open them with `npm run trace -- <file>` in `tests/e2e`) and the API
    log. `playwright-report` has the full HTML report.
 4. Fix the underlying problem on the release branch (a `fix/*` PR into `release/*`, or a push to it).
 5. The new push re-runs the gate and cancels any run it supersedes.
@@ -77,12 +84,12 @@ before the next release.
 On `develop` and the `release/*` ruleset, under **Settings → Branches** (or the ruleset that protects it):
 1. Add **Release E2E gate** to the required status checks. Keep the existing ones (Backend, Frontend, API image,
    PR source).
-2. Don't add **Playwright (release candidate)** as a required check. On other PRs into `develop` that job is skipped, and GitHub
+2. Don't add **Playwright (release candidate N/3)** or **Playwright report** as required checks. On other PRs into `develop` that job is skipped, and GitHub
    counts a skipped required check as passed. The gate job always runs and checks the real result.
 3. **Approval:** GitHub doesn't let you approve your own PR, so no approval rule is added. **The owner merging the
    release PR is the approval.** Nobody else merges `release/*` into `develop`.
 
-PR retargeting triggers a fresh run via `edited`. If a gated PR has no **Release E2E gate** check, reopen it or push a commit. Require branches to be up to date before merging. Keep existing checks; the owner configures settings separately.
+PR retargeting triggers a fresh run via `edited`. If a gated PR has no **Release E2E gate** check, reopen it or push a commit. On the `release/*` ruleset, branches don't have to be up to date before merging (owner decision, November 5, 2026): the release PR into `develop`, which does require it, runs the full gate on the combined code. Keep existing checks; the owner configures settings separately.
 
 ## Running it locally
 You need the app running over HTTPS with Postgres and Mailpit. The CI script does this from a built image:
