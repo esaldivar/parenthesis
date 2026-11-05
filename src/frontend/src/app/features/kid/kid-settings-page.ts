@@ -92,7 +92,7 @@ export class KidSettingsPage {
   /** Ends this session and keeps the device's picker; Back can't return to the child's pages (#153). */
   protected async switchProfile(): Promise<void> {
     await this.auth.switchProfile();
-    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
+    await this.router.navigateByUrl(this.auth.pickerOffered() ? '/profiles' : '/sign-in', { replaceUrl: true });
   }
 
   protected choose(event: MatRadioChange<KidPresentation>): void {

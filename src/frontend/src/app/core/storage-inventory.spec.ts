@@ -23,6 +23,7 @@ const KEY_PREFIXES = [
   'parenthesis.sharedDevice.declined:',
   'parenthesis.pendingInvitation',
   'parenthesis.parentPinReset',
+  'parenthesis.pickerSetAside',
 ];
 
 const STORAGE_USE = /\b(localStorage|sessionStorage|indexedDB|document\.cookie|cookieStore)\b/;

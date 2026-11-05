@@ -277,6 +277,52 @@ public sealed class SharedDeviceTests(ApiFactory api) : IAsyncLifetime
         Assert.True(picker.GetProperty("isYours").GetBoolean());
     }
 
+    /// <summary>
+    /// #405: both parents sign in one after the other on the same browser, which is Dad's shared device. The picker
+    /// always answers for the device (Dad and the children), never for whoever signed in last; only Dad's PIN opens
+    /// Dad's tile, Mom's PIN never does, and Mom is never offered as a PIN profile there. Repeated both ways.
+    /// </summary>
+    [Fact]
+    public async Task Sequential_parent_sign_ins_on_one_browser_never_change_whose_shared_device_it_is()
+    {
+        var family = await FamilyAsync();
+        using var _ = family;
+        const string MomsPin = "740361";
+        var momsMembership = await MembershipIdAsync(family.Mom, family.FamilyId);
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await family.Mom.SendAsync(HttpMethod.Put, $"/api/families/{family.FamilyId}/parent-pin",
+                new { currentPassword = ApiSession.Password, pin = MomsPin })).StatusCode);
+        var browser = family.Dad;
+
+        for (var round = 0; round < 2; round++)
+        {
+            await SignOutAsync(browser);
+            Assert.Equal(HttpStatusCode.NoContent, (await browser.LoginAsync(family.MomEmail)).StatusCode);
+            var whileMom = await JsonAsync(await browser.GetAsync("/api/device/profiles"));
+            Assert.Equal(["parent:Dad:True", "child:Kai:True"], Tiles(whileMom));
+            Assert.False(whileMom.GetProperty("isYours").GetBoolean());
+
+            await SignOutAsync(browser);
+            var signedOut = await JsonAsync(await browser.GetAsync("/api/device/profiles"));
+            Assert.Equal(["parent:Dad:True", "child:Kai:True"], Tiles(signedOut));
+            Assert.False(signedOut.GetProperty("isYours").GetBoolean());
+
+            // Mom's PIN can't open Dad's tile, and Mom has no PIN profile on Dad's device.
+            Assert.Equal(HttpStatusCode.Unauthorized, (await ParentPinAsync(browser, family, MomsPin)).StatusCode);
+            Assert.Equal(
+                HttpStatusCode.Forbidden,
+                (await browser.PostAsync("/api/device/parent-session", new { membershipId = momsMembership, pin = MomsPin })).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await browser.GetAsync("/api/me")).StatusCode);
+
+            // Dad's own PIN still works after Mom's visit, and the session is his.
+            Assert.Equal(HttpStatusCode.NoContent, (await ParentPinAsync(browser, family, DadsPin)).StatusCode);
+            await browser.RefreshAntiforgeryAsync();
+            Assert.Equal("Dad", (await JsonAsync(await browser.GetAsync("/api/me"))).GetProperty("displayName").GetString());
+            Assert.True((await JsonAsync(await browser.GetAsync("/api/device/profiles"))).GetProperty("isYours").GetBoolean());
+        }
+    }
+
     [Fact]
     public async Task Revoking_a_device_ends_its_parent_and_child_sessions_at_once_and_leaves_other_devices_alone()
     {
@@ -533,6 +579,13 @@ public sealed class SharedDeviceTests(ApiFactory api) : IAsyncLifetime
     {
         await session.RefreshAntiforgeryAsync();
         Assert.Equal(HttpStatusCode.NoContent, (await session.PostAsync("/api/device/switch")).StatusCode);
+        await session.RefreshAntiforgeryAsync();
+    }
+
+    private static async Task SignOutAsync(ApiSession session)
+    {
+        await session.RefreshAntiforgeryAsync();
+        Assert.Equal(HttpStatusCode.NoContent, (await session.PostAsync("/api/auth/logout")).StatusCode);
         await session.RefreshAntiforgeryAsync();
     }
 

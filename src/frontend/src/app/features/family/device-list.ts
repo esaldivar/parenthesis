@@ -208,7 +208,7 @@ export class DeviceList implements OnInit {
   /** Ends this parent's session and keeps the picker, as the account menu's Switch profile does (#153, #372). */
   protected async switchProfile(): Promise<void> {
     await this.auth.switchProfile();
-    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
+    await this.router.navigateByUrl(this.auth.pickerOffered() ? '/profiles' : '/sign-in', { replaceUrl: true });
   }
 
   /** The server ends every session on this device, ours included, so sign out here and start from sign-in. */
