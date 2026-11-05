@@ -22,7 +22,7 @@ const POSITION: Record<EventTheme, string> = {
   styles: `
     :host { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
     .art {
-      position: absolute; inset: 0; opacity: .16;
+      position: absolute; inset: 0; opacity: var(--event-art-opacity, .16);
       mask-image: url('/art/event-themes/illustrations.png');
       mask-size: 400% 372%; mask-repeat: no-repeat;
     }

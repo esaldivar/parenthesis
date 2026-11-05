@@ -71,10 +71,15 @@
   --color-parenting-bg: #dfe9d8;
   // Minimal elevation for cards, as in the approved dashboard.
   --shadow-card: 0 1px 2px rgb(32 58 49 / 4%), 0 4px 16px rgb(32 58 49 / 6%);
+  // Event artwork on a details panel in its category colour (#431): faint enough that secondary text and links over
+  // its strokes keep 4.5:1 on every category fill (worst case 4.6:1).
+  --event-art-tinted-opacity: 0.06;
 }
 
 // Dark mode is a full forest-green surface system, not an inversion. Elevation comes from surface steps and borders.
 @mixin dark {
+  // See the light value; dark fills keep 4.5:1 up to 12% (worst case 5.2:1 at 10%).
+  --event-art-tinted-opacity: 0.1;
   // Owner-approved Calendar palette (#255); independent of brand/decorative category tokens.
   --color-calendar-parent-a-bg: #193d4a;
   --color-calendar-parent-a-fg: #c6eef7;

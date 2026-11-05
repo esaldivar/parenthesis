@@ -168,6 +168,11 @@ button[mat-button] {
   justify-self: start;
 }
 
+// On a tinted panel the artwork is fainter, so text over its strokes keeps AA contrast (#431).
+.panel[data-tint] app-event-decoration {
+  --event-art-opacity: var(--event-art-tinted-opacity, 0.06);
+}
+
 // Decoration never receives input or changes the reading/focus order.
 .panel > :not(app-event-decoration) { position: relative; z-index: 1; }
 
