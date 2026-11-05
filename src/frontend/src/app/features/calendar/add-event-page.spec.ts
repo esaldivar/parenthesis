@@ -137,13 +137,13 @@ describe('Add event', () => {
     await submit(harness);
 
     (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
-      { status: 400, errors: { caregiverUnavailable: ['The parent with the children is unavailable then.'] } },
+      { status: 400, errors: { caregiverUnavailable: ['The parent with the children is unavailable for the occurrence starting Wed, Nov 4, 2026 at 09:00 (America/Chicago). Choose another time.'] } },
       { status: 400, statusText: 'Bad Request' },
     );
     await settle(harness);
 
-    expect(text(page())).toContain('You marked yourself unavailable then. Choose another time, or change your unavailable time first.');
-    expect(text(page())).not.toContain('The parent with the children is unavailable then.');
+    expect(text(page())).toContain('Wed, Nov 4, 2026 at 09:00 (America/Chicago)');
+    expect(text(page())).not.toContain('another parent');
   });
 
   it('says you have parenting time then when your unavailable time is refused (#210)', async () => {
@@ -152,12 +152,12 @@ describe('Add event', () => {
     await submit(harness);
 
     (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'))).flush(
-      { status: 400, errors: { overlapsYourParentingTime: ['You have parenting time then.'] } },
+      { status: 400, errors: { overlapsYourParentingTime: ['You have parenting time during the occurrence starting Wed, Nov 4, 2026 at 09:00 (America/Chicago). Choose another time.'] } },
       { status: 400, statusText: 'Bad Request' },
     );
     await settle(harness);
 
-    expect(text(page())).toContain('You have parenting time then. Choose another time, or change that parenting time first.');
+    expect(text(page())).toContain('You have parenting time during the occurrence starting Wed, Nov 4, 2026 at 09:00 (America/Chicago). Choose another time.');
   });
 
   it('says why parenting time has no children to choose yet, instead of failing quietly', async () => {

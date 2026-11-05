@@ -521,7 +521,9 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
         var approved = await f.Mom.PostAsync($"/api/families/{f.FamilyId}/approvals/{first.GetProperty("changeRequestId").GetGuid()}/approve");
 
         Assert.Equal(HttpStatusCode.Conflict, approved.StatusCode);
-        Assert.Contains("unavailable", (await JsonAsync(approved)).GetProperty("detail").GetString());
+        var detail = (await JsonAsync(approved)).GetProperty("detail").GetString();
+        Assert.Contains("unavailable", detail);
+        Assert.Contains("Wed, Nov 4, 2026 at 09:00 (America/Chicago)", detail);
         Assert.All(await SeriesEventsAsync(f, first), e => Assert.Equal("PendingApproval", e.GetProperty("status").GetString()));
         // The request still waits for Mom's answer.
         Assert.Single((await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
@@ -548,13 +550,17 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
     {
         var f = await FamilyAsync();
         using var _ = f;
-        // Dad is unavailable on Wednesday, November 4, 9:00 AM to noon.
-        await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _wednesday.AddDays(7), endsAt = _wednesday.AddDays(7).AddHours(3) });
+        // Insert the later conflict first. The refusal must identify the first conflicting occurrence, not query order.
+        await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _wednesday.AddDays(14), endsAt = _wednesday.AddDays(14).AddHours(3) });
+        await f.Dad.PostAsync(Events(f), new { category = "Unavailable", startsAt = _wednesday.AddDays(7), endsAt = _wednesday.AddDays(7).AddHours(3), notes = "Private appointment" });
 
         // Dad can't have Kai then (#210): no date of the series is added and nothing goes to Mom.
         var refused = await f.Dad.PostAsync(Events(f), DadsWednesdays(f, count: 3));
         Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
-        Assert.True((await JsonAsync(refused)).GetProperty("errors").TryGetProperty("caregiverUnavailable", out var _));
+        var message = (await JsonAsync(refused)).GetProperty("errors").GetProperty("caregiverUnavailable")[0].GetString();
+        Assert.Contains("Wed, Nov 4, 2026 at 09:00 (America/Chicago)", message);
+        Assert.DoesNotContain("Private appointment", message);
+        Assert.DoesNotContain("another parent", message);
         Assert.Empty((await JsonAsync(await f.Mom.GetAsync($"/api/families/{f.FamilyId}/approvals"))).EnumerateArray());
         Assert.DoesNotContain(
             await RangeAsync(f.Dad, f, _wednesday.AddDays(-1), _wednesday.AddDays(30)),
@@ -574,6 +580,29 @@ public sealed class EventSeriesTests(ApiFactory api) : IAsyncLifetime
     }
 
     /// <summary>Dad's parenting time with Kai, Wednesdays 9:00 AM to 5:00 PM, weekly.</summary>
+    [Fact]
+    public async Task Unavailable_series_refusal_names_its_first_conflicting_occurrence_in_the_family_zone()
+    {
+        var f = await FamilyAsync();
+        using var _ = f;
+        await f.Dad.PostAsync(Events(f), DadsWednesdays(f, count: 3));
+        var monday = new DateTimeOffset(2026, 11, 2, 9, 0, 0, TimeSpan.FromHours(-6));
+
+        var refused = await f.Dad.PostAsync(Events(f), new
+        {
+            category = "Unavailable",
+            startsAt = monday,
+            endsAt = monday.AddHours(1),
+            repeat = new { frequency = "Daily", interval = 1, count = 5 },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        var message = (await JsonAsync(refused)).GetProperty("errors").GetProperty("overlapsYourParentingTime")[0].GetString();
+        Assert.Contains("Wed, Nov 4, 2026 at 09:00 (America/Chicago)", message);
+        Assert.DoesNotContain(await RangeAsync(f.Dad, f, monday, monday.AddDays(7)),
+            e => e.GetProperty("category").GetString() == "Unavailable");
+    }
+
     private static object DadsWednesdays(Family f, int count, int weeksLater = 0) => new
     {
         category = "ParentingTime",

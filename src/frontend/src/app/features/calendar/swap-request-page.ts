@@ -36,7 +36,7 @@ import { providePlainDates, typedValues } from './plain-dates';
 import { warningText } from './add-event-page';
 import { CalendarItem, toItems } from './calendar-items';
 import { whenText } from './item-text';
-import { CAREGIVER_UNAVAILABLE, caregiverUnavailableText } from './own-overlap';
+import { caregiverUnavailableText } from './own-overlap';
 import { fromFamilyLocal, lastDate } from './time';
 
 type Step = 'choose' | 'review' | 'sent';
@@ -347,9 +347,7 @@ export class SwapRequestPage {
       if (this.showServerDates(problem)) {
         return;
       }
-      const fields = Object.entries(problem.errors).flatMap(([key, messages]) =>
-        key === CAREGIVER_UNAVAILABLE ? [caregiverUnavailableText(this.caregiver(), true)] : messages,
-      );
+      const fields = Object.values(problem.errors).flat();
       this.error.set(
         fields.length > 0
           ? fields.join(' ')

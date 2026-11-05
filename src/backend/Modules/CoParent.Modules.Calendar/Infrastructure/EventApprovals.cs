@@ -1,12 +1,13 @@
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Calendar.Domain;
 using CoParent.Modules.Calendar.Endpoints;
+using CoParent.Modules.Families.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Calendar.Infrastructure;
 
 /// <summary>Confirms or rejects a proposed event once the parents decide (ADR-0003, AP-03).</summary>
-internal abstract class EventCreateHandler(CalendarDbContext db) : IApprovalTargetHandler
+internal abstract class EventCreateHandler(CalendarDbContext db, IFamilyRoster roster) : IApprovalTargetHandler
 {
     public abstract string Type { get; }
 
@@ -51,7 +52,7 @@ internal abstract class EventCreateHandler(CalendarDbContext db) : IApprovalTarg
             .GroupBy(e => e.CaregiverMembershipId))
         {
             var refused = await CalendarEndpoints.RefusedUnderLockAsync(
-                db, EventCategory.ParentingTime, dates.Key, dates.Select(e => (e.StartsAt, e.EndsAt)).ToList(), cancellationToken);
+                db, roster, EventCategory.ParentingTime, dates.Key, dates.Select(e => (e.StartsAt, e.EndsAt)).ToList(), cancellationToken);
             if (refused is not null)
             {
                 throw new ApprovalRefusedException(refused.Values.First()[0]);
@@ -60,14 +61,14 @@ internal abstract class EventCreateHandler(CalendarDbContext db) : IApprovalTarg
     }
 }
 
-internal sealed class CalendarCreateHandler(CalendarDbContext db) : EventCreateHandler(db)
+internal sealed class CalendarCreateHandler(CalendarDbContext db, IFamilyRoster roster) : EventCreateHandler(db, roster)
 {
     public override string Type => ChangeRequestTypes.CalendarCreate;
 
     public override int MinimumApprovals => 1;
 }
 
-internal sealed class JointEventCreateHandler(CalendarDbContext db) : EventCreateHandler(db)
+internal sealed class JointEventCreateHandler(CalendarDbContext db, IFamilyRoster roster) : EventCreateHandler(db, roster)
 {
     public override string Type => ChangeRequestTypes.JointEventCreate;
 
