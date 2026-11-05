@@ -253,8 +253,7 @@ export class EventEditPage implements OnInit {
       const problem = toProblem(error);
       const serverErrors = Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v.join(' ')]));
       if (problem.status === 400 && Object.keys(serverErrors).length > 0) {
-        const caregiver = this.parents().find((p) => p.membershipId === this.form.getRawValue().caregiver);
-        this.fieldErrors.set(withOwnOverlap(serverErrors, caregiver));
+        this.fieldErrors.set(withOwnOverlap(serverErrors));
         this.dateCheck.fromServer(serverErrors);
       } else {
         this.error.set(problem.detail ? `${problem.title ?? ''} ${problem.detail}`.trim() : generalMessage(problem));
