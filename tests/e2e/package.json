@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
+    "merge-reports": "playwright merge-reports",
     "browser:install": "playwright install --with-deps --only-shell chromium webkit",
     "browser:deps": "playwright install-deps chromium webkit",
     "typecheck": "tsc --noEmit",
