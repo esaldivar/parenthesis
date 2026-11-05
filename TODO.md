@@ -76,11 +76,13 @@ that points back here.
   - [x] Owner design review of the #404 boards: approved November 4, 2026, in the Claude app, with both open
     questions as proposed (no re-export in M3; `appendonly` only). The `design approved` label is the owner's to
     apply.
-  - [ ] Owner Google Cloud steps (runbook section 1): enable Photos Library API, add `photoslibrary.appendonly`, record
-    the tier the console shows, create OAuth client `parenthesis-dev-photos`. Record actual domain/brand status.
-  - [ ] Backend PR: connection and OAuth, encrypted token, export queue and worker, status endpoints, feature flag,
-    tests with a fake Google client; Privacy Notice and data inventory name Google Photos. Opened November 4, 2026
-    (branch `feat/404-google-photos-backend`); tick when merged.
+  - [x] Owner Google Cloud steps (runbook section 1): Photos Library API enabled, `photoslibrary.appendonly` added
+    (console shows it as sensitive), separate OAuth client `parenthesis-dev-photos` created, development site
+    settings set (November 5, 2026).
+  - [ ] Record the actual domain ownership, brand verification and publishing status in the runbook tracker.
+  - [x] Backend PR: connection and OAuth, encrypted token, export queue and worker, status endpoints, feature flag,
+    tests with a fake Google client; Privacy Notice and data inventory name Google Photos. Merged into
+    `release/0.3.0` in #425 (November 5, 2026).
   - [ ] Confirm with real Google test accounts what the backend assumes from Google's docs and couldn't check against
     the fake: a full Google storage reports item status code 8 (RESOURCE_EXHAUSTED) in `batchCreate`, and a deleted
     album makes `batchCreate` answer 400/403/404 (the worker then makes a new album). Adjust the mapping if not.
