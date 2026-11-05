@@ -61,6 +61,17 @@ internal sealed class GooglePhotosAlbum : IFamilyScoped
     public required string GoogleAlbumId { get; set; }
 }
 
+/// <summary>
+/// Library API requests the app made on one UTC day, shared by every running copy of the app so together they stay
+/// under Google's project limit. Not family data: it holds only a date and a count.
+/// </summary>
+internal sealed class GooglePhotosQuotaDay
+{
+    public DateOnly Day { get; init; }
+
+    public int Requests { get; set; }
+}
+
 /// <summary>Where one photo's export is. Only <see cref="Exported"/> means Google confirmed the copy.</summary>
 internal enum PhotoExportState
 {

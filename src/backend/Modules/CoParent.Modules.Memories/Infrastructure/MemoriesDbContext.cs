@@ -24,6 +24,8 @@ internal sealed class MemoriesDbContext(DbContextOptions<MemoriesDbContext> opti
 
     public DbSet<PhotoExport> PhotoExports => Set<PhotoExport>();
 
+    public DbSet<GooglePhotosQuotaDay> GooglePhotosQuotaDays => Set<GooglePhotosQuotaDay>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -98,6 +100,11 @@ internal sealed class MemoriesDbContext(DbContextOptions<MemoriesDbContext> opti
             export.HasIndex(e => new { e.ConnectionId, e.EventId });
             export.HasIndex(e => new { e.State, e.NextAttemptAt });
             export.HasQueryFilter(TenantContext.QueryFilterName, e => e.FamilyId == CurrentFamilyId);
+        });
+        modelBuilder.Entity<GooglePhotosQuotaDay>(day =>
+        {
+            day.ToTable("google_photos_quota_days");
+            day.HasKey(d => d.Day);
         });
     }
 }
