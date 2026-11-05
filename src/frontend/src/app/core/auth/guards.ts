@@ -8,7 +8,7 @@ import { AuthStore } from './auth.store';
  * they were heading afterwards).
  */
 function signedOutRedirect(auth: AuthStore, router: Router, segments: UrlSegment[]): UrlTree {
-  if (auth.device()) {
+  if (auth.pickerOffered()) {
     return router.createUrlTree(['/profiles']);
   }
   const returnUrl = '/' + segments.map((s) => s.path).join('/');
@@ -60,7 +60,10 @@ export const registerPage: CanMatchFn = () => {
   return router.createUrlTree(['/']);
 };
 
-/** "Who's using Parenthesis?" needs a registered device and nobody signed in (switching profiles signs out first). */
+/**
+ * "Who's using Parenthesis?" needs a registered device and nobody signed in (switching profiles signs out first). After
+ * another parent signs out of someone else's shared device, this tab goes to sign-in instead (#405).
+ */
 export const pickerAvailable: CanMatchFn = () => {
   const auth = inject(AuthStore);
   const router = inject(Router);
@@ -70,7 +73,7 @@ export const pickerAvailable: CanMatchFn = () => {
     case 'child':
       return router.createUrlTree(['/kid']);
     default:
-      return auth.device() !== null || router.createUrlTree(['/sign-in']);
+      return auth.pickerOffered() || router.createUrlTree(['/sign-in']);
   }
 };
 

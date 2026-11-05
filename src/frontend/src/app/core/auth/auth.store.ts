@@ -6,6 +6,16 @@ import { Api, ChildSession, DeviceProfiles, FamilySummary, Me } from '../api/api
 import { AppearanceService } from '../theme/appearance.service';
 import { ProfilePhotos } from '../profile-photos/profile-photos';
 
+const PICKER_SET_ASIDE_KEY = 'parenthesis.pickerSetAside';
+
+function readSetAside(): boolean {
+  try {
+    return sessionStorage.getItem(PICKER_SET_ASIDE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 /** `signed-in` is a parent's account; `child` is a child signed in with their PIN on a registered device. */
 export type AuthStatus = 'unknown' | 'anonymous' | 'signed-in' | 'child';
 
@@ -30,6 +40,19 @@ export class AuthStore {
   readonly currentFamily = computed(() => this.families()?.[0] ?? null);
   /** "Who's using Parenthesis?" for this browser, when it's a registered device; null otherwise. */
   readonly device = signal<DeviceProfiles | null>(null);
+  /**
+   * Set when a parent signs out of a browser that is another parent's shared device (#405): this tab then goes to
+   * sign-in and doesn't show that device's picker (with the other parent's name and photo) until someone signs in
+   * again. The device itself stays registered (owner decision, November 5, 2026). Kept for the tab, so a reload or
+   * Back doesn't bring the picker back. Not a security boundary: the API still decides who the picker lists and who
+   * can sign in.
+   */
+  private readonly pickerSetAside = signal(readSetAside());
+
+  /** Whether a signed-out visitor is shown this device's picker ("Who's using Parenthesis?") or sign-in. */
+  pickerOffered(): boolean {
+    return this.device() !== null && !this.pickerSetAside();
+  }
 
   private readonly photos = inject(ProfilePhotos);
   private readonly calendarCache = inject(CalendarCache);
@@ -140,6 +163,7 @@ export class AuthStore {
   /** "Yes, this is a shared family device." The parent stays signed in: no second password prompt (#153). */
   async setUpSharedDevice(familyId: string, name: string, pin: string | null): Promise<void> {
     await this.api.setUpSharedDevice(familyId, name, pin);
+    this.setPickerAside(false);
     const key = this.declinedKey();
     try {
       if (key) {
@@ -157,10 +181,12 @@ export class AuthStore {
    * is cleared even if the request fails, so nothing from the previous profile stays on screen.
    */
   async switchProfile(): Promise<void> {
+    const leaving = this.leavingAnotherParentsDevice();
     try {
       await this.api.switchProfile();
     } finally {
       this.setUser(null);
+      this.setPickerAside(leaving);
       await this.api.antiforgery().catch(() => undefined);
       await this.loadDevice().catch(() => this.device.set(null));
     }
@@ -170,6 +196,7 @@ export class AuthStore {
   async pairDevice(code: string, deviceName: string): Promise<{ childId: string; childFirstName: string }> {
     const paired = await this.api.pairDevice(code, deviceName);
     this.setUser(null);
+    this.setPickerAside(false);
     await this.api.antiforgery();
     await this.loadDevice();
     return paired;
@@ -177,10 +204,12 @@ export class AuthStore {
 
   /** Sign out. A shared device keeps its picker; Settings → "Stop sharing this device" removes it (ADR-0007). */
   async signOut(): Promise<void> {
+    const leaving = this.leavingAnotherParentsDevice();
     try {
       await this.api.logout();
     } finally {
       this.setUser(null);
+      this.setPickerAside(leaving);
       await this.api.antiforgery().catch(() => undefined);
       await this.loadDevice().catch(() => this.device.set(null));
     }
@@ -188,8 +217,10 @@ export class AuthStore {
 
   /** Deletes the parent's account (A-12). The API ends the session; throws the HTTP error so the form can explain it. */
   async deleteAccount(password: string): Promise<void> {
+    const leaving = this.leavingAnotherParentsDevice();
     await this.api.deleteAccount(password);
     this.setUser(null);
+    this.setPickerAside(leaving);
     await this.api.antiforgery().catch(() => undefined);
     await this.loadDevice().catch(() => undefined);
   }
@@ -236,7 +267,34 @@ export class AuthStore {
     }
   }
 
+  /**
+   * A parent is leaving a session on a browser that may hold a shared device they didn't set up (#405). Decided from
+   * the picker loaded while they were signed in, whose "isYours" the server works out for that session. Only the
+   * parent who set the device up goes back to its picker; if that's unknown (the picker didn't load), sign-in is the
+   * safe answer. A child's paired tablet keeps its picker: it only ever shows that child.
+   */
+  private leavingAnotherParentsDevice(): boolean {
+    const device = this.device();
+    return this.status() === 'signed-in' && device?.deviceKind !== 'ChildPaired' && device?.isYours !== true;
+  }
+
+  private setPickerAside(aside: boolean): void {
+    this.pickerSetAside.set(aside);
+    try {
+      if (aside) {
+        sessionStorage.setItem(PICKER_SET_ASIDE_KEY, '1');
+      } else {
+        sessionStorage.removeItem(PICKER_SET_ASIDE_KEY);
+      }
+    } catch {
+      // Storage unavailable: the in-memory flag still covers this page until a reload.
+    }
+  }
+
   private setUser(user: Me | null): void {
+    if (user) {
+      this.setPickerAside(false); // Someone signed in again: the next sign-out decides afresh.
+    }
     this.user.set(user);
     this.child.set(null);
     this.families.set(null);
@@ -248,6 +306,7 @@ export class AuthStore {
   }
 
   private setChild(child: ChildSession): void {
+    this.setPickerAside(false);
     this.user.set(null);
     this.child.set(child);
     this.families.set(null);

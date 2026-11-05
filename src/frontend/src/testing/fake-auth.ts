@@ -14,16 +14,22 @@ export function fakeAuth(
   const families = signal<readonly FamilySummary[] | null>(
     options.families ?? [{ id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', role: 'Parent' }],
   );
+  // Mirrors AuthStore (#405): a parent leaving a browser that isn't their own shared device goes to sign-in.
+  const pickerSetAside = signal(false);
+  const leaving = () =>
+    fake.status() === 'signed-in' && device()?.deviceKind !== 'ChildPaired' && device()?.isYours !== true;
   const fake = {
     user,
     child,
     device,
+    pickerOffered: () => device() !== null && !pickerSetAside(),
     status: signal<AuthStatus>(user() ? 'signed-in' : child() ? 'child' : 'anonymous'),
     loadDevice: async () => device(),
     families,
     currentFamily: computed(() => families()?.[0] ?? null),
     loadFamilies: async () => families() ?? [],
     signOut: async () => {
+      pickerSetAside.set(leaving());
       user.set(null);
       child.set(null);
       fake.status.set('anonymous');
@@ -46,6 +52,7 @@ export function fakeAuth(
       fake.status.set('signed-in');
     },
     switchProfile: async () => {
+      pickerSetAside.set(leaving());
       user.set(null);
       child.set(null);
       fake.status.set('anonymous');

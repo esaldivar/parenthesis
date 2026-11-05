@@ -170,6 +170,39 @@ describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #
       await vi.waitFor(() => expect(router.url).toBe('/profiles'));
     });
 
+    async function signOutFromMenu(harness: RouterTestingHarness, body: HTMLElement) {
+      body.querySelector<HTMLButtonElement>('header button.account')!.click();
+      await settle(harness);
+      [...document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button')]
+        .find((b) => b.textContent!.trim() === 'Sign out')!
+        .click();
+      await settle(harness);
+    }
+
+    it('returns the parent who set up this shared device to its picker on sign-out', async () => {
+      const { harness, body, router } = await open('/settings', fakeAuth({ device: { ...PICKER, isYours: true } }));
+
+      await signOutFromMenu(harness, body);
+
+      await vi.waitFor(() => expect(router.url).toBe('/profiles'));
+    });
+
+    it('sends the other parent to sign-in, never to the device owner’s picker, and keeps it there on Back (#405)', async () => {
+      const { harness, body, router } = await open('/settings', fakeAuth({ device: { ...PICKER, isYours: false } }));
+
+      await signOutFromMenu(harness, body);
+      await vi.waitFor(() => expect(router.url).toBe('/sign-in'));
+      expect(text(body)).not.toContain('Dad');
+
+      // Back, a bookmark or a typed address can't reopen the picker in this tab.
+      for (const url of ['/settings', '/', '/profiles', '/profiles/parent/dad']) {
+        await harness.navigateByUrl(url);
+        await settle(harness);
+        expect(router.url).toMatch(/^\/sign-in/);
+      }
+      expect(text(body)).not.toContain('Dad');
+    });
+
     it('offers no Switch profile anywhere in the top bar or account menu on a personal device', async () => {
       const { harness, body } = await open('/settings', fakeAuth());
 

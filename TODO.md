@@ -20,6 +20,17 @@ that points back here.
   - [ ] Before families outside the US: GDPR/UK GDPR wording, lawful bases and regulator contact.
   - [ ] Later, if wanted: self-service data export (today a copy is sent on request within 30 days).
   - [ ] Before public launch: a lawyer's review of the notice.
+- [ ] **Switch Profiles showed the other parent after account switching (#405, M3, November 5, 2026).** Cause:
+  the phone was still Parent A's shared device, and Parent B's sign-out went to that device's picker. Owner decision:
+  B goes to sign-in and the device stays A's; the tab keeps showing sign-in until someone signs in again. Server
+  rules unchanged (only A's PIN opens A's tile).
+  - [x] Sign-out/Switch profile routing, regression tests for sequential parent sign-ins (PR into `release/0.3.0`,
+    November 5, 2026).
+  - [ ] Owner retest on the development site after the release promotion: A sets up a phone, signs out, B signs in
+    with a password and signs out (lands on sign-in, no A tile, also after reload and Back), then A's PIN still works;
+    repeat B to A.
+  - [ ] Owner: which message showed when the PIN on the wrong tile was rejected (wrong PIN, try later, or "can't sign
+    in on this device"), to close out the PIN observation.
 - [ ] **Slow first calendar load (#415, M3, November 4, 2026).** Cause: cold starts after scaling to zero, not the
   calendar queries. Owner decisions: keep scaling to zero; cache calendar periods in memory only. Timings and how to
   measure: `docs/runbooks/calendar-load-timing.md`.

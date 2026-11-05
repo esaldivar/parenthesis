@@ -47,6 +47,9 @@ rules below are server-side; hiding things in the app is never the boundary.
   sharing on the device in front of them, a parent uses **Stop sharing this device** in Settings (the device list marks
   "this device"): it removes the device, signs everyone on it out and goes to sign-in. Signing in alone never restores
   it.
+- **Another parent signing out** of someone else's shared device goes to **sign-in, not the picker** (#405, owner
+  decision November 5, 2026), so they're never shown the other parent as a profile. The device stays registered for
+  the parent who set it up; that browser tab shows sign-in until someone signs in again.
 - **One parent per shared device.** If the other parent signs in there and chooses to set it up, their setup replaces
   the earlier one: the picker then shows them and the children, and the earlier parent's PIN no longer works there.
 - **No expiry reminder** for now: Settings shows when each device's sharing ends. **Switch profile** (`POST /api/device/switch`), shown as a

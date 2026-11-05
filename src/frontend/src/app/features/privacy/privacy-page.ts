@@ -76,6 +76,13 @@ export const STORED_ITEMS: readonly StoredItem[] = [
     purpose: 'Keeps a parent PIN reset link while you choose a new PIN.',
     lasts: 'Until it’s used or you close the tab.',
   },
+  {
+    name: 'parenthesis.pickerSetAside',
+    kind: 'Tab storage',
+    purpose:
+      'After a parent signs out of another parent’s shared device, keeps this tab on sign-in instead of that device’s profiles.',
+    lasts: 'Until someone signs in again or you close the tab.',
+  },
 ];
 
 /**
