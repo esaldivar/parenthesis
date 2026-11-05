@@ -73,6 +73,23 @@ its changed files, never from labels. See [the PR risk audit](runbooks/pr-risk-a
 5. Resolve blocking issues.
 6. The owner merges it (squash).
 
+### Keeping PRs moving
+Owner request, November 5, 2026: make PRs into a release branch faster without dropping any check.
+
+- **Playwright runs on three machines at once.** Each runs a share of every milestone's tests; one report job merges
+  them and applies the same summary checks, and **Release E2E gate** passes only if every share and the merged
+  summary pass. Nothing is skipped or moved to later.
+- **`release/*` PRs don't have to be up to date before merging.** Each PR is still fully tested, against the release
+  branch as it was when its checks ran. Merging one PR no longer makes every other open PR rerun everything. What
+  the PRs do together is tested by the full gate on the `release/x.y.z` → `develop` PR, which must pass before
+  anything reaches the development site. `develop` and `main` still require branches to be up to date.
+- **Work in draft.** Playwright doesn't run on a draft PR (its gate fails, so it can't merge). Mark the PR ready once
+  the work is done, so the browser suite runs once instead of after every push.
+- **Merge in batches.** When several PRs are ready, merge them together, then let the release PR test the combination.
+- If two PRs that each passed break each other, the release PR's gate catches it. Fix it with a `fix/*` PR into the
+  release branch, as for any other failure. Turn "Require branches to be up to date" back on if that starts happening
+  often.
+
 ### Milestones
 
 Each milestone is one release. The backlog's items are mapped to them in [the backlog](planning/mvp-backlog.md).
@@ -182,7 +199,7 @@ in [the Azure runbook](runbooks/azure-environments.md#github-settings).
 |---|---|
 | `main` | Existing protection (PRs only, required checks up to date, no force pushes or deletion, admins included). Required checks include **PR source** and the SonarCloud quality gate. |
 | `develop` | Existing protection, plus **PR source** and **Release E2E gate** as required checks. |
-| `release/*` | A ruleset: PRs only, required checks (Backend, Frontend, API image, PR source, **Release E2E gate**) up to date, no force pushes, no deletion. Admins included. |
+| `release/*` | A ruleset: PRs only, required checks (Backend, Frontend, API image, PR source, Tracking issue links, **Release E2E gate**, NVDA accessibility gate), no force pushes, no deletion. Admins included. Branches **don't** have to be up to date before merging (owner decision, November 5, 2026; see [Keeping PRs moving](#keeping-prs-moving)). |
 | Environments | `production`: required reviewer = the owner, deployments from `main` only. `development`: deployments from `develop` only. |
 
 - GitHub can't restrict a PR's source branch, which is why **PR source** is a check; it only blocks merging once it's

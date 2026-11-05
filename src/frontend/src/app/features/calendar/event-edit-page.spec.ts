@@ -96,6 +96,10 @@ describe('Edit an event', () => {
     await submit();
     const patch = await vi.waitFor(() => http.expectOne((r) => r.method === 'PATCH'));
     expect(patch.request.body.notes).toBe('Bring the school bag');
+    expect(page().querySelector('app-loading-indicator [role=status]')!.textContent).toBe('Saving…');
+    expect(submitButton().disabled).toBe(true);
+    await submit();
+    http.expectNone((r) => r.method === 'PATCH');
     patch.flush(weekend({ notes: 'Bring the school bag' }));
     await settle();
   });

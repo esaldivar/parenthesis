@@ -4,6 +4,8 @@ name: Playwright release gate
 # The always-running Release E2E gate checks the real job result, including skipped/cancelled jobs.
 # Other PRs into develop retain their existing no-E2E behavior. Runbook:
 # docs/runbooks/playwright-release-gate.md. Owner decision October 28, 2026; refs #341.
+# The suite is split across three machines (shards) that each run a share of every milestone's tests; the report job merges
+# their results and the gate needs every shard and the merged summary (owner request, November 5, 2026).
 on:
   pull_request:
     branches: [develop, 'release/**']
@@ -19,7 +21,7 @@ concurrency:
 
 jobs:
   e2e:
-    name: Playwright (release candidate)
+    name: Playwright (release candidate ${{ matrix.shard }}/3)
     # Test work entering a release branch and release promotions, from this repository when ready.
     if: >-
       (startsWith(github.base_ref, 'release/') ||
@@ -28,6 +30,11 @@ jobs:
       !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Every shard runs even if another fails, so one run shows every failure.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     services:
       postgres:
         image: postgres:17.11-alpine
@@ -56,6 +63,7 @@ jobs:
       E2E_BASE_URL: https://localhost:8443
       MAILPIT_URL: http://localhost:8025
       E2E_TESTED_SHA: ${{ github.sha }}
+      E2E_SHARD: ${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v7
 
@@ -105,15 +113,22 @@ jobs:
         if: steps.browser-cache.outputs.cache-hit == 'true'
         run: npm run browser:deps
 
-      - name: Run the release gate (every milestone)
+      # This shard's share of every milestone's tests. The report job merges all shards and summarizes them.
+      - name: Run the release gate (every milestone, this shard)
         run: |
-          echo "E2E_RUN_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
-          npm test
+          mkdir -p started-at
+          date -u +%Y-%m-%dT%H:%M:%SZ > "started-at/$E2E_SHARD.txt"
+          npm test -- --shard="$E2E_SHARD/3"
 
-      # Totals, duration, per-milestone and regression results. Also fails if a milestone lost its tests.
-      - name: Summarize
+      - name: Upload this shard's results
         if: ${{ !cancelled() }}
-        run: node scripts/summarize.mjs
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-shard-${{ matrix.shard }}
+          path: |
+            tests/e2e/blob-report/
+            tests/e2e/started-at/
+          retention-days: 14
 
       - name: API logs
         if: failure()
@@ -122,25 +137,73 @@ jobs:
           docker logs api > api.log 2>&1 || true
           docker logs azurite > azurite.log 2>&1 || true
 
+      - name: Upload failure screenshots, traces and API logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-failures-${{ matrix.shard }}
+          path: |
+            tests/e2e/test-results/
+            api.log
+            azurite.log
+          retention-days: 14
+
+  # Merges every shard into one HTML report and one summary, with the same checks as a single run: the tested SHA,
+  # fresh results, every milestone and mobile profile present, and accessibility scans.
+  report:
+    name: Playwright report
+    needs: e2e
+    if: ${{ !cancelled() && needs.e2e.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tests/e2e
+    env:
+      CI: "true"
+      E2E_TESTED_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      # No dependency install scripts (issue #65).
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Download every shard's results
+        uses: actions/download-artifact@v8
+        with:
+          pattern: playwright-shard-*
+          merge-multiple: true
+          path: tests/e2e/shards
+
+      - name: Merge the shard reports
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: results/results.json
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report
+          PLAYWRIGHT_HTML_OPEN: never
+        run: |
+          # The earliest shard start, so the summary still rejects stale results.
+          echo "E2E_RUN_STARTED_AT=$(cat shards/started-at/*.txt | sort | head -n 1)" >> "$GITHUB_ENV"
+          # The Playwright pinned in the lockfile, never a package fetched on demand.
+          npm run merge-reports -- --config playwright.config.ts --reporter list,html,json ./shards/blob-report
+
+      # Totals, duration, per-milestone and regression results. Also fails if a milestone lost its tests.
+      - name: Summarize
+        if: ${{ !cancelled() }}
+        run: node scripts/summarize.mjs
+
       - name: Upload the HTML report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
-          path: |
-            tests/e2e/playwright-report/
-            tests/e2e/test-results/
-          retention-days: 14
-
-      - name: Upload failure screenshots, traces and API logs
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-failures
-          path: |
-            tests/e2e/test-results/
-            api.log
-            azurite.log
+          path: tests/e2e/playwright-report/
           retention-days: 14
 
       # Read by the Discord job, which runs no PR code.
@@ -154,7 +217,7 @@ jobs:
 
   gate:
     name: Release E2E gate
-    needs: e2e
+    needs: [e2e, report]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -163,7 +226,8 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
-          E2E_RESULT: ${{ needs.e2e.result }}
+          # Every shard and the merged summary must succeed; otherwise the first failing result.
+          E2E_RESULT: ${{ needs.e2e.result == 'success' && needs.report.result || needs.e2e.result }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
           FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
@@ -187,7 +251,7 @@ jobs:
 
   notify:
     name: Discord release notification
-    needs: [e2e, gate]
+    needs: [e2e, report, gate]
     if: >-
       always() &&
       github.base_ref == 'develop' &&

@@ -38,18 +38,45 @@ test('workflow triggers include release targets, retargeting and draft transitio
   }
   assert.match(gate, /if: always\(\)/);
   assert.match(gate, /BASE_REF: \$\{\{ github.base_ref \}\}/);
-  assert.match(gate, /E2E_RESULT: \$\{\{ needs.e2e.result \}\}/);
+  assert.match(gate, /needs: \[e2e, report\]/);
+  assert.match(gate, /E2E_RESULT: \$\{\{ needs.e2e.result == 'success' && needs.report.result \|\| needs.e2e.result \}\}/);
 });
 
 test('browser job scope covers work PRs and preserves isolation and full matrix', () => {
-  const e2e = workflow.split('  e2e:\n')[1].split('\n  gate:')[0];
+  const e2e = workflow.split('  e2e:\n')[1].split('\n  report:')[0];
+  const report = workflow.split('  report:\n')[1].split('\n  gate:')[0];
   assert.match(e2e, /startsWith\(github.base_ref, 'release\/'\) \|\|/);
   assert.match(e2e, /github.base_ref == 'develop' && startsWith\(github.head_ref, 'release\/'\)/);
   assert.match(e2e, /head.repo.full_name == github.repository/);
   assert.match(e2e, /!github.event.pull_request.draft/);
   assert.match(e2e, /E2E_TESTED_SHA: \$\{\{ github.sha \}\}/);
-  assert.match(e2e, /\n          npm test\n/);
-  assert.match(e2e, /run: node scripts\/summarize.mjs/);
+  // Every shard runs a share of the whole suite (every milestone), and one failing shard doesn't stop the others.
+  assert.match(e2e, /fail-fast: false/);
+  assert.match(e2e, /shard: \[1, 2, 3\]/);
+  assert.match(e2e, /\n          npm test -- --shard="\$E2E_SHARD\/3"\n/);
+  assert.doesNotMatch(e2e, /--grep|--project|testMatch/);
+  // The merged report keeps the summary's checks, including stale-result detection.
+  assert.match(report, /needs: e2e/);
+  assert.match(report, /pattern: playwright-shard-\*/);
+  assert.match(report, /E2E_RUN_STARTED_AT=/);
+  assert.match(report, /npm run merge-reports -- --config playwright.config.ts/);
+  // Only the lockfile's Playwright, never an on-demand npx install (Sonar githubactions:S6505).
+  assert.doesNotMatch(workflow, /\bnpx\b/);
+  assert.match(report, /E2E_TESTED_SHA: \$\{\{ github.sha \}\}/);
+  assert.match(report, /run: node scripts\/summarize.mjs/);
+});
+
+test('the gate fails unless every shard and the merged summary pass', () => {
+  const result = (e2e, report) => {
+    // GitHub's `a && b || c`: b when a is true and b is non-empty, otherwise c.
+    const value = e2e === 'success' && report ? report : e2e;
+    return run('release/0.3.0', 'feat/example', value).status;
+  };
+  assert.equal(result('success', 'success'), 0);
+  assert.equal(result('success', 'failure'), 1);
+  assert.equal(result('success', 'cancelled'), 1);
+  assert.equal(result('failure', 'success'), 1);
+  assert.equal(result('failure', 'failure'), 1);
 });
 
 test('webhook notifications remain restricted to release promotions', () => {

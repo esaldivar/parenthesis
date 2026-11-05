@@ -74,7 +74,7 @@ export class ParentShell {
   /** Ends the parent's session and keeps the picker. Back can't return to the parent's pages: the session is gone. */
   protected async switchProfile(): Promise<void> {
     await this.auth.switchProfile();
-    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
+    await this.router.navigateByUrl(this.auth.pickerOffered() ? '/profiles' : '/sign-in', { replaceUrl: true });
   }
 
   /**
@@ -83,6 +83,6 @@ export class ParentShell {
    */
   protected async signOut(): Promise<void> {
     await this.auth.signOut();
-    await this.router.navigateByUrl(this.auth.device() ? '/profiles' : '/sign-in', { replaceUrl: true });
+    await this.router.navigateByUrl(this.auth.pickerOffered() ? '/profiles' : '/sign-in', { replaceUrl: true });
   }
 }

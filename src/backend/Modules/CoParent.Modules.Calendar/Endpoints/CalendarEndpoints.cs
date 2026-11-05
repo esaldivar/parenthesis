@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using NodaTime;
 
 namespace CoParent.Modules.Calendar.Endpoints;
 
@@ -314,7 +315,7 @@ internal static class CalendarEndpoints
 
         var (starts, ends) = (request.StartsAt!.Value.ToUniversalTime(), request.EndsAt!.Value.ToUniversalTime());
         var person = category == EventCategory.ParentingTime ? request.CaregiverMembershipId : tenant.MembershipId;
-        var clash = await OwnOverlapErrorsAsync(db, category, person, [(starts, ends)], cancellationToken);
+        var clash = await OwnOverlapErrorsAsync(db, roster, category, person, [(starts, ends)], cancellationToken);
         if (clash.Count > 0)
         {
             return TypedResults.ValidationProblem(clash);
@@ -355,7 +356,7 @@ internal static class CalendarEndpoints
         Guid? changeRequestId = null;
         var refused = await unitOfWork.ExecuteAsync<Dictionary<string, string[]>?>(async ct =>
         {
-            if (await RefusedUnderLockAsync(db, category, person, [(starts, ends)], ct) is { } refusedUnderLock)
+            if (await RefusedUnderLockAsync(db, roster, category, person, [(starts, ends)], ct) is { } refusedUnderLock)
             {
                 return refusedUnderLock;
             }
@@ -635,7 +636,7 @@ internal static class CalendarEndpoints
         var person = e.Category == EventCategory.ParentingTime ? change.CaregiverMembershipId : e.OwnerMembershipId;
         if (errors.Count == 0 && moved)
         {
-            errors = await OwnOverlapErrorsAsync(db, e.Category, person, [(change.StartsAt, change.EndsAt)], cancellationToken);
+            errors = await OwnOverlapErrorsAsync(db, roster, e.Category, person, [(change.StartsAt, change.EndsAt)], cancellationToken);
         }
 
         if (errors.Count > 0)
@@ -653,7 +654,7 @@ internal static class CalendarEndpoints
         Guid? changeRequestId = null;
         var refused = await unitOfWork.ExecuteAsync<Dictionary<string, string[]>?>(async ct =>
         {
-            if (moved && await RefusedUnderLockAsync(db, e.Category, person, [(change.StartsAt, change.EndsAt)], ct) is { } refusedUnderLock)
+            if (moved && await RefusedUnderLockAsync(db, roster, e.Category, person, [(change.StartsAt, change.EndsAt)], ct) is { } refusedUnderLock)
             {
                 return refusedUnderLock;
             }
@@ -871,7 +872,7 @@ internal static class CalendarEndpoints
         if (errors.Count == 0)
         {
             // Every date is checked before any is written: a series is added whole or not at all.
-            errors = await OwnOverlapErrorsAsync(db, category, person, dates, cancellationToken);
+            errors = await OwnOverlapErrorsAsync(db, roster, category, person, dates, cancellationToken);
         }
 
         if (errors.Count > 0)
@@ -928,7 +929,7 @@ internal static class CalendarEndpoints
         Guid? changeRequestId = null;
         var refused = await unitOfWork.ExecuteAsync<Dictionary<string, string[]>?>(async ct =>
         {
-            if (await RefusedUnderLockAsync(db, category, person, dates, ct) is { } refusedUnderLock)
+            if (await RefusedUnderLockAsync(db, roster, category, person, dates, ct) is { } refusedUnderLock)
             {
                 return refusedUnderLock;
             }
@@ -1088,7 +1089,7 @@ internal static class CalendarEndpoints
         if (retime)
         {
             // Checked for every date before saving, so no date of the series changes unless all of them can.
-            var clash = await OwnOverlapErrorsAsync(db, e.Category, e.OwnerMembershipId, dates, cancellationToken);
+            var clash = await OwnOverlapErrorsAsync(db, roster, e.Category, e.OwnerMembershipId, dates, cancellationToken);
             if (clash.Count > 0)
             {
                 return TypedResults.ValidationProblem(clash);
@@ -1100,7 +1101,7 @@ internal static class CalendarEndpoints
         var userId = http.User.GetUserId()!.Value;
         var refused = await unitOfWork.ExecuteAsync<Dictionary<string, string[]>?>(async ct =>
         {
-            if (retime && await RefusedUnderLockAsync(db, e.Category, e.OwnerMembershipId, dates, ct) is { } refusedUnderLock)
+            if (retime && await RefusedUnderLockAsync(db, roster, e.Category, e.OwnerMembershipId, dates, ct) is { } refusedUnderLock)
             {
                 return refusedUnderLock;
             }
@@ -1192,6 +1193,7 @@ internal static class CalendarEndpoints
     /// </summary>
     private static async Task<Dictionary<string, string[]>> OwnOverlapErrorsAsync(
         CalendarDbContext db,
+        IFamilyRoster roster,
         EventCategory category,
         Guid? person,
         IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> dates,
@@ -1205,7 +1207,6 @@ internal static class CalendarEndpoints
         }
 
         var (first, last) = (dates.Min(d => d.Start), dates.Max(d => d.End));
-        bool Overlaps(DateTimeOffset start, DateTimeOffset end) => dates.Any(d => d.Start < end && d.End > start);
 
         if (category == EventCategory.ParentingTime)
         {
@@ -1214,10 +1215,13 @@ internal static class CalendarEndpoints
                     && x.OwnerMembershipId == who && x.StartsAt < last && x.EndsAt > first)
                 .Select(x => new { x.StartsAt, x.EndsAt })
                 .ToListAsync(cancellationToken);
-            if (unavailable.Any(u => Overlaps(u.StartsAt, u.EndsAt)))
+            var conflict = dates.Where(d => unavailable.Any(u => d.Start < u.EndsAt && d.End > u.StartsAt))
+                .OrderBy(d => d.Start).Select(d => (DateTimeOffset?)d.Start).FirstOrDefault();
+            if (conflict is { } startsAt)
             {
+                var occurrence = await ConflictOccurrenceAsync(startsAt, roster, cancellationToken);
                 errors[CaregiverUnavailableError] =
-                    ["The parent with the children is unavailable then. Choose another time, or another parent."];
+                    [$"The parent with the children is unavailable for the occurrence starting {occurrence}. Choose another time."];
             }
 
             return errors;
@@ -1240,15 +1244,27 @@ internal static class CalendarEndpoints
                 ProposedEndsAt = (DateTimeOffset?)x.Proposed.EndsAt,
             })
             .ToListAsync(cancellationToken);
-        if (parenting.Any(p => (p.CaregiverMembershipId == who && Overlaps(p.StartsAt, p.EndsAt))
+        var firstConflict = dates.Where(d => parenting.Any(p =>
+            (p.CaregiverMembershipId == who && d.Start < p.EndsAt && d.End > p.StartsAt)
             || (p.Modify && p.ProposedCaregiver == who && p.ProposedStartsAt is { } start && p.ProposedEndsAt is { } end
-                && Overlaps(start, end))))
+                && d.Start < end && d.End > start)))
+            .OrderBy(d => d.Start).Select(d => (DateTimeOffset?)d.Start).FirstOrDefault();
+        if (firstConflict is { } conflictingStart)
         {
+            var occurrence = await ConflictOccurrenceAsync(conflictingStart, roster, cancellationToken);
             errors[OverlapsYourParentingTimeError] =
-                ["You have parenting time then. Choose another time, or change that parenting time first."];
+                [$"You have parenting time during the occurrence starting {occurrence}. Choose another time, or change that parenting time first."];
         }
 
         return errors;
+    }
+
+    private static async Task<string> ConflictOccurrenceAsync(
+        DateTimeOffset startsAt, IFamilyRoster roster, CancellationToken cancellationToken)
+    {
+        var timeZone = await roster.TimeZoneAsync(cancellationToken);
+        var local = Instant.FromDateTimeOffset(startsAt).InZone(DateTimeZoneProviders.Tzdb[timeZone]).LocalDateTime;
+        return $"{local.ToString("ddd, MMM d, yyyy 'at' HH:mm", CultureInfo.InvariantCulture)} ({timeZone})";
     }
 
     /// <summary>
@@ -1259,6 +1275,7 @@ internal static class CalendarEndpoints
     /// </summary>
     internal static async Task<Dictionary<string, string[]>?> RefusedUnderLockAsync(
         CalendarDbContext db,
+        IFamilyRoster roster,
         EventCategory category,
         Guid? person,
         IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> dates,
@@ -1272,7 +1289,7 @@ internal static class CalendarEndpoints
         var key = OverlapLockKey(who);
         await db.Database.SqlQuery<int>($"SELECT 1 AS \"Value\" FROM pg_advisory_xact_lock({OverlapLockClass}, {key})")
             .ToListAsync(cancellationToken);
-        var errors = await OwnOverlapErrorsAsync(db, category, who, dates, cancellationToken);
+        var errors = await OwnOverlapErrorsAsync(db, roster, category, who, dates, cancellationToken);
         return errors.Count > 0 ? errors : null;
     }
 

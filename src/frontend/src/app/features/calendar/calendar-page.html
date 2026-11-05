@@ -69,10 +69,13 @@
   </div>
 }
 
-<div class="body" [attr.aria-busy]="state() === 'loading'">
+<div class="body" [attr.aria-busy]="state() === 'loading' || refreshing()">
   @switch (state()) {
     @case ('loading') {
-      <p class="visually-hidden">Loading the calendar…</p>
+      <app-loading-indicator
+        class="loading"
+        [label]="slow() ? 'Still loading. Parenthesis may be starting up after a quiet spell, which can take a few seconds.' : 'Loading your calendar…'"
+      />
       <div class="skeleton" aria-hidden="true">
         @for (n of [1, 2, 3, 4, 5, 6]; track n) {
           <span class="skeleton__bar"></span>
@@ -90,6 +93,8 @@
       </div>
     }
     @default {
+      <!-- A period seen earlier in this tab is shown while its current version loads (#415). -->
+      <app-loading-indicator class="refreshing" [class.refreshing--on]="refreshing()" [active]="refreshing()" label="Updating…" />
       @if (items().length === 0) {
         <app-empty-state
           icon="calendar"

@@ -158,12 +158,43 @@ describe('AuthStore', () => {
     await respond(
       ['/api/antiforgery', 204],
       ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Alex' }],
+      ['/api/me/families', 200, []],
       ['/api/device/profiles', 404],
     );
     await init;
 
     expect(store.status()).toBe('signed-in');
     expect(accounts).toEqual(['u1']);
+  });
+
+  it('starts its first requests together, and has the parent’s families ready before the first page (#415)', async () => {
+    const init = store.initialize();
+    // All three are in flight before any answer arrives: no round trip waits for another.
+    const antiforgery = http.expectOne('/api/antiforgery');
+    const me = http.expectOne('/api/me');
+    const device = http.expectOne('/api/device/profiles');
+    antiforgery.flush(null, { status: 204, statusText: 'No content' });
+    me.flush({ id: 'u1', email: 'a@example.test', displayName: 'Alex' });
+    const families = await vi.waitFor(() => http.expectOne('/api/me/families'));
+    families.flush([{ id: 'f1', name: 'Rivera Family', timeZone: 'America/Chicago', role: 'Parent' }]);
+    device.flush(null, { status: 404, statusText: 'Not found' });
+    await init;
+
+    expect(store.currentFamily()?.id).toBe('f1');
+  });
+
+  it('still starts when the families can’t be loaded, leaving them for the first page to fetch', async () => {
+    const init = store.initialize();
+    await respond(
+      ['/api/antiforgery', 204],
+      ['/api/me', 200, { id: 'u1', email: 'a@example.test', displayName: 'Alex' }],
+      ['/api/me/families', 500],
+      ['/api/device/profiles', 404],
+    );
+    await init;
+
+    expect(store.status()).toBe('signed-in');
+    expect(store.families()).toBeNull();
   });
 
   it('gets a fresh antiforgery token after signing in, because tokens belong to the user', async () => {
@@ -242,6 +273,89 @@ describe('AuthStore', () => {
       expect(await offered()).toBe(false);
       expect(localStorage.getItem('parenthesis.sharedDevice.declined:user-1')).toBe('1');
       expect(localStorage.getItem('parenthesis.sharedDevice.declined:user-2')).toBeNull();
+    });
+  });
+
+  describe('signing out of another parent’s shared device (#405)', () => {
+    // Synthetic Parent A (Dad) set this browser up as a shared device; Parent B (Mom) signs in with a password.
+    const PARENT_A_DEVICE = { ...PICKER, isYours: false };
+    const PARENT_A_OWN = { ...PICKER, isYours: true };
+    const PARENT_A = { id: 'user-a', email: 'dad@example.test', displayName: 'Dad' };
+    const PARENT_B = { id: 'user-b', email: 'mom@example.test', displayName: 'Mom' };
+
+    beforeEach(() => sessionStorage.clear());
+    afterEach(() => sessionStorage.clear());
+
+    async function passwordSignIn(me: typeof PARENT_A, picker: unknown) {
+      const signIn = store.signIn(me.email, 'correct horse battery staple');
+      await respond(['/api/auth/login', 204], ['/api/antiforgery', 204], ['/api/me', 200, me], ['/api/device/profiles', 200, picker]);
+      await signIn;
+    }
+
+    async function signOut() {
+      const done = store.signOut();
+      // The device stays Parent A's: the server still lists Parent A to a signed-out browser.
+      await respond(['/api/auth/logout', 204], ['/api/antiforgery', 204], ['/api/device/profiles', 200, PARENT_A_DEVICE]);
+      await done;
+    }
+
+    it('sends the other parent to sign-in, not to the device owner’s picker', async () => {
+      await passwordSignIn(PARENT_B, PARENT_A_DEVICE);
+      await signOut();
+
+      expect(store.status()).toBe('anonymous');
+      expect(store.device()?.familyName).toBe('Rivera Family'); // The device is still registered for Parent A.
+      expect(store.pickerOffered()).toBe(false);
+    });
+
+    it('keeps the picker set aside after a reload of the same tab', async () => {
+      await passwordSignIn(PARENT_B, PARENT_A_DEVICE);
+      await signOut();
+
+      const reloaded = TestBed.inject(AuthStore).constructor as new () => AuthStore;
+      const fresh = TestBed.runInInjectionContext(() => new reloaded());
+      fresh.device.set(PARENT_A_DEVICE as never);
+      expect(fresh.pickerOffered()).toBe(false);
+    });
+
+    it('still returns the device owner to their own picker', async () => {
+      await passwordSignIn(PARENT_A, PARENT_A_OWN);
+      await signOut();
+
+      expect(store.pickerOffered()).toBe(true);
+    });
+
+    it('decides afresh for each parent in repeated A → B → A sign-ins', async () => {
+      await passwordSignIn(PARENT_A, PARENT_A_OWN);
+      await signOut();
+      expect(store.pickerOffered()).toBe(true);
+
+      await passwordSignIn(PARENT_B, PARENT_A_DEVICE);
+      await signOut();
+      expect(store.pickerOffered()).toBe(false);
+
+      await passwordSignIn(PARENT_A, PARENT_A_OWN);
+      expect(store.pickerOffered()).toBe(true);
+      await signOut();
+      expect(store.pickerOffered()).toBe(true);
+    });
+
+    it('goes to sign-in when it isn’t known whose device this is', async () => {
+      const signIn = store.signIn(PARENT_B.email, 'correct horse battery staple');
+      await respond(['/api/auth/login', 204], ['/api/antiforgery', 204], ['/api/me', 200, PARENT_B], ['/api/device/profiles', 500]);
+      await signIn;
+      await signOut();
+
+      expect(store.pickerOffered()).toBe(false);
+    });
+
+    it('sets the picker aside after Switch profile too', async () => {
+      await passwordSignIn(PARENT_B, PARENT_A_DEVICE);
+      const done = store.switchProfile();
+      await respond(['/api/device/switch', 204], ['/api/antiforgery', 204], ['/api/device/profiles', 200, PARENT_A_DEVICE]);
+      await done;
+
+      expect(store.pickerOffered()).toBe(false);
     });
   });
 });

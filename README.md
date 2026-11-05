@@ -21,6 +21,8 @@ what still needs a decision. Both parents have an equal say.
 - **Changes you can agree on.** Propose parenting time or a swap, review the details, and approve or decline.
   Pending requests stay clearly separate from confirmed plans.
 - **Everyday things, together.** Share reminders and tasks, with repeating reminders and optional checklists.
+- **Photos tied to family plans.** Parents can upload event photos, choose which batches to share, and download
+  eligible photos from temporary Family Memories.
 - **A useful view of the week.** Find upcoming plans and filter the calendar by child, parent, event type
   or approval status.
 
@@ -33,7 +35,9 @@ Parents have equal authority, and each family's information belongs within that 
 separate experience that keeps adult approvals and disagreements out of their view. Light, dark and system
 appearance settings are personal to each user.
 
-Messaging, shared memories, artwork and a private child diary are planned for later milestones. See the
+Event photos and temporary Family Memories are being tested on Development. Google Photos export is in the
+current release candidate and still needs its provider acceptance and verification work. Messaging, children's
+artwork and a private child diary are planned for later milestones. See the
 [roadmap](docs/planning/mvp-backlog.md#release-map-owner-decision-october-18-2026) for scope and sequencing.
 
 ## Where the project stands

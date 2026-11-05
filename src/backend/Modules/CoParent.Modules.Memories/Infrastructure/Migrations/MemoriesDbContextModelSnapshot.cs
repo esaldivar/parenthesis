@@ -108,6 +108,101 @@ namespace CoParent.Modules.Memories.Infrastructure.Migrations
                     b.ToTable("event_photos", "memories");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Memories.Domain.GooglePhotosAlbum", b =>
+                {
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connection_id");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("GoogleAlbumId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("google_album_id");
+
+                    b.HasKey("ConnectionId", "EventId")
+                        .HasName("pk_google_photos_albums");
+
+                    b.ToTable("google_photos_albums", "memories");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Memories.Domain.GooglePhotosConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ConnectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("connected_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<string>("Problem")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("problem");
+
+                    b.Property<string>("ProtectedRefreshToken")
+                        .IsRequired()
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)")
+                        .HasColumnName("protected_refresh_token");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_google_photos_connections");
+
+                    b.HasIndex("MembershipId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_google_photos_connections_membership_id");
+
+                    b.ToTable("google_photos_connections", "memories");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Memories.Domain.GooglePhotosQuotaDay", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date")
+                        .HasColumnName("day");
+
+                    b.Property<int>("Requests")
+                        .HasColumnType("integer")
+                        .HasColumnName("requests");
+
+                    b.HasKey("Day")
+                        .HasName("pk_google_photos_quota_days");
+
+                    b.ToTable("google_photos_quota_days", "memories");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Memories.Domain.MemorySettings", b =>
                 {
                     b.Property<Guid>("MembershipId")
@@ -175,6 +270,96 @@ namespace CoParent.Modules.Memories.Infrastructure.Migrations
                     b.ToTable("photo_batches", "memories");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Memories.Domain.PhotoExport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connection_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("GoogleMediaItemId")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("google_media_item_id");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<Guid>("PhotoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("photo_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("state");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UploadToken")
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)")
+                        .HasColumnName("upload_token");
+
+                    b.Property<DateTimeOffset?>("UploadTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("upload_token_expires_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_photo_exports");
+
+                    b.HasIndex("PhotoId")
+                        .HasDatabaseName("ix_photo_exports_photo_id");
+
+                    b.HasIndex("ConnectionId", "EventId")
+                        .HasDatabaseName("ix_photo_exports_connection_id_event_id");
+
+                    b.HasIndex("ConnectionId", "PhotoId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_photo_exports_connection_id_photo_id");
+
+                    b.HasIndex("State", "NextAttemptAt")
+                        .HasDatabaseName("ix_photo_exports_state_next_attempt_at");
+
+                    b.ToTable("photo_exports", "memories");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Memories.Domain.EventPhoto", b =>
                 {
                     b.HasOne("CoParent.Modules.Memories.Domain.PhotoBatch", null)
@@ -183,6 +368,33 @@ namespace CoParent.Modules.Memories.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_photos_photo_batches_batch_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Memories.Domain.GooglePhotosAlbum", b =>
+                {
+                    b.HasOne("CoParent.Modules.Memories.Domain.GooglePhotosConnection", null)
+                        .WithMany()
+                        .HasForeignKey("ConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_google_photos_albums_google_photos_connections_connection_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Memories.Domain.PhotoExport", b =>
+                {
+                    b.HasOne("CoParent.Modules.Memories.Domain.GooglePhotosConnection", null)
+                        .WithMany()
+                        .HasForeignKey("ConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_photo_exports_google_photos_connections_connection_id");
+
+                    b.HasOne("CoParent.Modules.Memories.Domain.EventPhoto", null)
+                        .WithMany()
+                        .HasForeignKey("PhotoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_photo_exports_event_photos_photo_id");
                 });
 #pragma warning restore 612, 618
         }

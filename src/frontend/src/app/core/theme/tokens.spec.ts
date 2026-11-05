@@ -112,4 +112,29 @@ describe.each(['light', 'dark'] as const)('%s theme tokens', (mixin) => {
   it.each(pairs)('%s on %s meets %s:1', (foreground, background, minimum) => {
     expect(contrast(tokens[foreground], tokens[background])).toBeGreaterThanOrEqual(minimum);
   });
+
+  // A details panel in its category colour (#431): text, links and warnings keep 4.5:1 on the plain fill and where
+  // the event artwork's strokes (the category's text colour at --event-art-tinted-opacity) run under them. Outlines
+  // keep 3:1 on the fill; over a stroke they may dip, which WCAG 1.4.11 allows for buttons identified by their label.
+  it('keeps details panels readable on every category fill, over the event artwork too (#431)', () => {
+    const block = new RegExp(`@mixin ${mixin} \\{([\\s\\S]*?)\\n\\}`).exec(tokensScss)?.[1] ?? '';
+    const opacity = Number(/--event-art-tinted-opacity:\s*([\d.]+);/.exec(block)?.[1]);
+    expect(opacity).toBeGreaterThan(0);
+    const mix = (bg: string, fg: string) =>
+      '#' + [1, 3, 5].map((i) => {
+        const value = Math.round(parseInt(bg.slice(i, i + 2), 16) * (1 - opacity) + parseInt(fg.slice(i, i + 2), 16) * opacity);
+        return value.toString(16).padStart(2, '0');
+      }).join('');
+    const failures: string[] = [];
+    for (const key of ['parent-a', 'parent-b', 'parenting', 'activity', 'family', 'task', 'reminder', 'unavailable']) {
+      const fill = tokens[`color-calendar-${key}-bg`];
+      for (const background of [fill, mix(fill, tokens[`color-calendar-${key}-fg`])]) {
+        for (const text of ['color-text', 'color-text-secondary', 'color-action', 'color-danger']) {
+          if (contrast(tokens[text], background) < TEXT) failures.push(`${text} on ${key} (${background})`);
+        }
+      }
+      if (contrast(tokens['color-outline'], fill) < NON_TEXT) failures.push(`color-outline on ${key} (${fill})`);
+    }
+    expect(failures).toEqual([]);
+  });
 });

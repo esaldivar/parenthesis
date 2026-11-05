@@ -1,36 +1,26 @@
 import { MEMBERS } from '../../../testing/calendar-fixtures';
 import { caregiverUnavailableText, withOwnOverlap } from './own-overlap';
 
-describe('own overlaps (#210)', () => {
-  const [you, sam] = MEMBERS;
-
-  it('names the caregiver who is unavailable, and shows it with the time', () => {
-    expect(withOwnOverlap({ caregiverUnavailable: 'server text' }, sam)).toEqual({
-      when: 'Sam is unavailable then. Choose another time, or another parent.',
-    });
-    expect(withOwnOverlap({ caregiverUnavailable: 'server text' }, you)).toEqual({
-      when:
-        'You marked yourself unavailable then. Choose another time, or change your unavailable time first.',
-    });
+describe('own overlaps (#210, #259)', () => {
+  it('retains the server occurrence date and family time zone in the date error', () => {
+    const message = 'The parent with the children is unavailable for the occurrence starting Wed, Nov 4, 2026 at 09:00 (America/Chicago). Choose another time.';
+    expect(withOwnOverlap({ caregiverUnavailable: message })).toEqual({ when: message });
   });
 
-  it('says when your unavailable time overlaps your own parenting time', () => {
-    expect(
-      withOwnOverlap({ overlapsYourParentingTime: 'server text', notes: 'Too long' }, undefined),
-    ).toEqual({
-      notes: 'Too long',
-      when:
-        'You have parenting time then. Choose another time, or change that parenting time first.',
+  it('retains the conflicting occurrence for unavailable time without losing other field errors', () => {
+    const message = 'You have parenting time during the occurrence starting Wed, Nov 4, 2026 at 09:00 (America/Chicago). Choose another time.';
+    expect(withOwnOverlap({ overlapsYourParentingTime: message, notes: 'Too long' })).toEqual({
+      notes: 'Too long', when: message,
     });
   });
 
   it('leaves other errors as they are', () => {
     const errors = { title: 'Enter a title.' };
-    expect(withOwnOverlap(errors, sam)).toBe(errors);
+    expect(withOwnOverlap(errors)).toBe(errors);
   });
 
   it('asks a swap for different dates, since it keeps the same parent', () => {
-    expect(caregiverUnavailableText(sam, true)).toBe(
+    expect(caregiverUnavailableText(MEMBERS[1], true)).toBe(
       'Sam is unavailable then. Choose different dates.',
     );
   });

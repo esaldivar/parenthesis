@@ -6,6 +6,55 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
+  `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
+  Settings. Owner decisions: operator Eric Saldivar (individual), US families only, contact
+  `privacy@parenthesisfamily.com`. No consent banner: all storage is essential or a user's own choice, and
+  `storage-inventory.spec.ts` flags new storage.
+  - [x] Inventory, findings, notice, links and tests (PR into `release/0.3.0`, October 31, 2026).
+  - [ ] **Owner:** create `privacy@parenthesisfamily.com` (or a forward to you) before production.
+  - [ ] Owner to check the notice on the development site, signed out and signed in, on a phone and desktop.
+  - [ ] Decide a retention period for audit records (kept indefinitely today).
+  - [ ] Before a significant notice change: a way to tell parents first (the notice promises this).
+  - [ ] Before v0.5.0 child diary/artwork: revisit COPPA notice and consent, since children will add content.
+  - [ ] Before families outside the US: GDPR/UK GDPR wording, lawful bases and regulator contact.
+  - [ ] Later, if wanted: self-service data export (today a copy is sent on request within 30 days).
+  - [ ] Before public launch: a lawyer's review of the notice.
+- [ ] **Switch Profiles showed the other parent after account switching (#405, M3, November 5, 2026).** Cause:
+  the phone was still Parent A's shared device, and Parent B's sign-out went to that device's picker. Owner decision:
+  B goes to sign-in and the device stays A's; the tab keeps showing sign-in until someone signs in again. Server
+  rules unchanged (only A's PIN opens A's tile).
+  - [x] Sign-out/Switch profile routing, regression tests for sequential parent sign-ins (PR into `release/0.3.0`,
+    November 5, 2026).
+  - [ ] Owner retest on the development site after the release promotion: A sets up a phone, signs out, B signs in
+    with a password and signs out (lands on sign-in, no A tile, also after reload and Back), then A's PIN still works;
+    repeat B to A.
+  - [ ] Owner: which message showed when the PIN on the wrong tile was rejected (wrong PIN, try later, or "can't sign
+    in on this device"), to close out the PIN observation.
+- [ ] **Slow first calendar load (#415, M3, November 4, 2026).** Cause: cold starts after scaling to zero, not the
+  calendar queries. Owner decisions: keep scaling to zero; cache calendar periods in memory only. Timings and how to
+  measure: `docs/runbooks/calendar-load-timing.md`.
+  - [x] ReadyToRun, single-platform image (867 MB to 290 MB), compressed app files, warm-up after listening,
+    `Server-Timing`, parallel start-up calls, waking-up message, one quiet retry, in-memory cache (PR into
+    `release/0.3.0`, November 4, 2026).
+  - [ ] Owner to time the development site before and after the release promotion with
+    `scripts/measure-cold-start.sh` and the browser steps in the runbook (the sandbox can't reach it), and record the
+    numbers in the runbook.
+  - [ ] Owner acceptance on development: the waking-up message after a quiet spell, moving between weeks, and that an
+    edit or a co-parent's change shows after returning to the calendar.
+- [ ] **Branded loading indicator (#413, M3, October 31, 2026).** Reusable approved icon animation is wired to
+  calendar event/task/reminder saves and event/profile photo uploads; reduced motion and measured/unknown upload
+  progress are supported. Retryable profile upload failures retain the explicitly unsaved preview.
+  - [x] Follow-up fixes (November 4, 2026): event upload loading/results use one persistent status region;
+    profile uploads retain the unsaved photo after rate limiting and clear old preview/success announcements
+    before another operation. Regression tests cover connection, rate-limit and server failures.
+  - [x] Browser emulation (November 4, 2026): 20 desktop/phone-width scenario combinations passed across runs,
+    covering both themes and motion preferences, save/upload recovery and axe scans. One synthetic-family setup
+    timeout passed on focused rerun. Evidence/limits: `docs/design/reviews/issue-413/README.md`.
+  - [ ] Verify physical phone/desktop layout and spoken loading/completion/error announcements with
+    NVDA/VoiceOver, including measured/unknown event upload progress. Browser emulation, axe and DOM assertions
+    do not certify real devices or spoken screen-reader acceptance.
+  - [ ] Complete owner acceptance on development after release promotion, including real upload persistence.
 - [ ] **Event photos and Family Memories (#403, M3, October 31, 2026).** Owner approved the rules and the delivery
   plan (decisions comment on #403). Design: `docs/design/handoffs/EVENT_PHOTOS_403.md`, boards in
   `docs/design/reviews/issue-403/`. Google Photos export is #404, separate.
@@ -24,11 +73,46 @@ that points back here.
     #408 on October 31, 2026.
   - [x] ZIP download PR (streamed, nothing stored, each photo re-checked before it's written). Merged as #409 on
     October 31, 2026.
-  - [ ] Release PR #410 SonarCloud gate (C reliability on new code): fix the `reduce()` without an initial value in
-    the event Photos section (branch `feat/sonar-410-reliability`); tick when merged and #410's gate is green.
+  - [ ] Release PR #410 SonarCloud gate (C reliability on new code). Fixed the `reduce()` without an initial value
+    (#411, merged October 31, 2026). Two more reliability findings had been marked Accepted in SonarCloud: the
+    hidden photo file input with no label (Web:InputWithoutLabelCheck) and a synchronous `Write` in the upload
+    reader (S6966); fixed on branch `feat/sonar-410-reliability-2`. Tick when merged, the two Accepted findings
+    show as Fixed and #410's Release security gate is green.
   - [ ] Physical iPhone check that Safari converts HEIC to JPEG in the picker before uploads are enabled on
     production (physical device checks are deferred to #112).
   - [ ] Owner to reconsider 14-day retention later; existing uploads keep their period.
+- [ ] **Google Photos export (#404, M3, epic #61, November 4, 2026).** Owner chose one album per event and export of a
+  whole memory or a single photo. Design: `docs/design/handoffs/GOOGLE_PHOTOS_EXPORT_404.md`, boards in
+  `docs/design/reviews/issue-404/`, Google setup and verification tracker in `docs/runbooks/google-photos-export.md`.
+  - [x] Owner design review of the #404 boards: approved November 4, 2026, in the Claude app, with both open
+    questions as proposed (no re-export in M3; `appendonly` only). The `design approved` label is the owner's to
+    apply.
+  - [x] Owner Google Cloud steps (runbook section 1): Photos Library API enabled, `photoslibrary.appendonly` added
+    (console shows it as sensitive), separate OAuth client `parenthesis-dev-photos` created, development site
+    settings set (November 5, 2026).
+  - [ ] Record the actual domain ownership, brand verification and publishing status in the runbook tracker.
+  - [x] Backend PR: connection and OAuth, encrypted token, export queue and worker, status endpoints, feature flag,
+    tests with a fake Google client; Privacy Notice and data inventory name Google Photos. Merged into
+    `release/0.3.0` in #425 (November 5, 2026).
+  - [ ] Confirm with real Google test accounts what the backend assumes from Google's docs and couldn't check against
+    the fake: a full Google storage reports item status code 8 (RESOURCE_EXHAUSTED) in `batchCreate`, and a deleted
+    album makes `batchCreate` answer 400/403/404 (the worker then makes a new album). Adjust the mapping if not.
+  - [x] Running more than one copy of the app (development allows 2 replicas): one export pass at a time through a
+    Postgres advisory lock, and the daily request count kept in the database (Copilot on release PR #428, fixed
+    November 5, 2026).
+  - [x] Owner decision (Copilot on release PR #428): if Google creates an album but the answer times out, the next try
+    makes a second, empty album for that event. Accepted and documented in the design (November 5, 2026); revisit
+    with a read scope for app-made albums only if the end-to-end test shows it happening.
+  - [x] Frontend PR: Settings card, memory and photo export, status and error states. Merged into
+    `release/0.3.0` in #426 (November 5, 2026).
+  - [ ] End-to-end with two test Google accounts in Testing mode; then the demo video and Google submission.
+  - [ ] Production only after Google approves the scope; keep the tracker's two readiness columns separate.
+- [ ] **Faster PR checks (owner request, November 5, 2026).** Playwright is split across three machines in the
+  `chore/faster-pr-checks` PR; the docs describe the rest ([Keeping PRs moving](docs/development-workflow.md#keeping-prs-moving)).
+  - [ ] Owner, after that PR merges: turn off **Require branches to be up to date before merging** on the
+    **release branches** ruleset (Settings → Rules → Rulesets → release branches → Require status checks to pass).
+    Keep every required check. `develop` and `main` stay as they are.
+  - [ ] Compare a few sharded runs with the single-machine time (about 13 minutes) and adjust the number of shards.
 - [ ] **Dependabot PR #384 dependency validation (#398, October 30, 2026).** Conflicts against `release/0.3.0`
   resolved while retaining current PR issue-link safeguards, DataProtection, cryptography pins and SkiaSharp packages.
   Six dependency upgrades remain; SwaggerUI was already current.
@@ -134,11 +218,20 @@ that points back here.
   - [x] Owner: try suggestions on `develop` once #353 and #356 are released there. Confirmed working October 29,
     2026, after #360/#363 fixed the Pacific-day lookup in the chiseled image (release PR #362).
     ([runbook](docs/runbooks/google-places-suggestions.md), "Check it works").
+- [ ] **Nearby places first in location suggestions (#414, owner decisions November 4, 2026).**
+  - [x] "Use my location" toggle beside the Location field (Add and Edit), shown only when suggestions are on and the
+    browser supports location. Position rounded to about 1 km on the server and sent to Google as a 50 km bias; never
+    stored, logged, remembered between pages, or shown to the co-parent. Without it, suggestions are US only.
+  - [x] Denied, unavailable and timed-out location each explain the fallback; typing and suggestions keep working.
+  - [x] Integration tests (rounding, bias, US limit, bad coordinates ignored), Vitest and axe; Privacy Notice, data
+    inventory and Places runbook updated.
+  - [ ] Owner: on the dev site, search a chain with a nearby branch (e.g. "Texas Roadhouse" in Texas) with location
+    on and check the nearby branch comes first; then block location and check the fallback message.
   - [x] Owner approved the suggestion list (October 29, 2026) with at most three suggestions and no embedded maps
     anywhere (`docs/design/reviews/issue-354/`).
   - [ ] Owner: before production, check the "Google Maps" text attribution against Google's current Places API (New)
-    policies (owner decision: keep the text for the development site). Mention Google suggestions in the privacy
-    notice once one exists.
+    policies (owner decision: keep the text for the development site). Google suggestions are in the privacy notice
+    (#416, October 31, 2026).
   - [ ] Production stays off until the owner decides; revisit the cap and cost with real usage.
 - [ ] **Copy family events to parents' Google Calendars, one way (#386, owner decisions October 30, 2026).** Under
   Settings, not on the calendar; Parenthesis never reads Google. Scope `calendar.app.created` only; a "Parenthesis
@@ -157,7 +250,8 @@ that points back here.
   - [ ] **Owner:** client ID and secret in the dev Key Vault and app settings (runbook step 2), then "Check it works".
   - [x] Owner approved the "Events to copy" dropdown design as shown in the screenshots (October 30, 2026).
   - [ ] Before public launch: Google verification of the sensitive scope (privacy policy page, verified
-    `parenthesisfamily.com`, demo video); runbook step 4. Mention Google Calendar in the privacy notice.
+    `parenthesisfamily.com`, demo video); runbook step 4. The privacy notice at `/privacy` covers Google Calendar and
+    the Limited Use statement (#416, October 31, 2026).
   - [ ] Before production: encrypt the data-protection key ring with Key Vault (Platform hardening below), so the
     stored tokens are protected from a full database leak, not just a leak of their table.
   - [ ] Later, if wanted: tidy up a departing parent's Google calendar (today their token is deleted and the calendar
@@ -291,8 +385,9 @@ that points back here.
   - [ ] **Release security gate** (requested October 18, 2026): `release-gate` job in `sonar.yml`, policy and
     troubleshooting in `docs/runbooks/sonar-release-gate.md`.
     - [x] Gate, tests with a fake SonarQube Cloud API, docs and CLAUDE.md rules (October 18, 2026).
-    - [ ] **Owner:** once it has run on a release PR, add **Release security gate** to `main`'s required status
-      checks (steps in the runbook). Keep every existing protection.
+    - [x] **Owner-approved, November 5, 2026:** added **Release security gate** to `main`'s required checks with
+      GitHub Actions binding. API verification preserved every existing check/binding, strict mode and other
+      protection fields. Exact-candidate production analysis/deployment evidence remains separately required.
     - [ ] Check the first real run: the scanner's task id is picked up and the API answers match the gate's
       expectations (it was tested against a fake API only).
     - [ ] Issue #65: the seven vulnerabilities on `main` block the next release until each is fixed or accepted in
@@ -335,7 +430,8 @@ that points back here.
       address to confirm delivery.
     - [ ] **Owner:** production Brevo SMTP key in the production Key Vault, same settings.
     - [ ] **Owner:** the development SMTP key (`brevo-smtp`) expires in October 2027; rotate it before then.
-    - [ ] Before production: check what Brevo stores (recipients, subjects, bodies) and add it to the privacy notes.
+    - [ ] Before production: check what Brevo stores (recipients, subjects, bodies) and add it to the privacy notes
+      (`docs/privacy/data-inventory.md` and the notice, #416).
       Emails carry first names, family names and links only, never diary, message or approval content.
     - Not built: a "forgot username" email. Sign-in uses the email address as the username, so there is no separate
       username to forget; "forgot password" covers it.
@@ -755,10 +851,16 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
-- [ ] **Product README and documentation navigation (#84).** Product landing page, local setup/API guides and
-  documentation index prepared October 26, 2026; approved icon reused unchanged, planned features distinguished
-  from current work. Verify rendered GitHub desktop/phone views in both themes before acceptance. Corrected
-  horizontal wordmark remains pending below; add a gallery only when real synthetic screenshots are approved.
+- [x] **Product README and documentation navigation (#84, November 5, 2026).** Product landing page, local setup/API
+  guides and documentation index use the approved icon unchanged and distinguish current capabilities from
+  candidate/future work. Eric confirmed rendered GitHub desktop/phone views in both themes passed on PR #430.
+  The separate corrected horizontal wordmark remains pending below; a gallery needs approved synthetic screenshots.
+  - [x] November 5: corrected shared-memory capability/status wording to distinguish Development event photos
+    from the Google Photos export candidate. Owner-rendered GitHub checks passed.
+- [x] **Architecture delivery-gate accuracy (#83, November 5 acceptance review).** Diagram/table now describe
+  work-PR Playwright, the Windows/NVDA gate, develop-based Sonar analysis, main's identical-tree verification and
+  the owner-approved required main security check (#66). Runtime storage now reflects the Memories module and private
+  photo/avatar blobs. Eric confirmed both Mermaid diagrams render correctly in PR #430.
 - [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
   query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
   local selection. Router regressions cover both journeys.
@@ -841,11 +943,12 @@ that points back here.
   one date at a time for now: each change goes to the co-parent as usual. "This and following" and "All events" are
   hidden for it, and the server refuses them (`OneDateAtATime` in `CalendarEndpoints`), because applying them at
   once would skip the co-parent. Build one approval request covering every date it changes, as for creating.
-- [ ] **Name the clashing date in own-overlap refusals (#259 follow-up, October 23, 2026).** A repeating series that
-  can't be added because the parent is unavailable (or has parenting time) on one of its dates is refused whole, with
-  a general sentence. Say which date clashes first ("Wed, Nov 4"), from authorized information only, never the
-  unavailable time's private details. The server's caregiver message also still says "or another parent", which
-  #246 made impossible; the form shows its own wording, so only API clients see it.
+- [x] **Name the clashing date in own-overlap refusals (#259 follow-up, November 5, 2026).** The API identifies the
+  first conflicting occurrence's start in the family's named time zone, including on approval revalidation under
+  the existing parent lock. Add/Edit/Swap retain the server message. Private unavailable-time details remain
+  excluded, and the API no longer suggests choosing another caregiver. Backend recurrence/DST/privacy/rollback
+  and frontend message-preservation regressions pass.
+  - [ ] After merge/promotion, retest the dated conflict feedback on Development before closing #259.
 
 ## Backend features the dashboard is waiting on
 - [ ] Calendar and parenting-time endpoints, including change requests and approvals.

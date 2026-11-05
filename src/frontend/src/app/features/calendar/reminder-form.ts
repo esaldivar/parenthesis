@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -50,6 +51,7 @@ const REPEATS: readonly { id: RepeatFrequency; label: string }[] = [
   selector: 'app-reminder-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    LoadingIndicator,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,

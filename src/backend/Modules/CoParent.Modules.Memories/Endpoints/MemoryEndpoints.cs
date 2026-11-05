@@ -620,7 +620,7 @@ internal static partial class MemoryEndpoints
     /// The event's photos the viewer may download now (or just <paramref name="photoId"/>): their own, and the
     /// co-parent's shared ones while the co-parent allows downloads. In batch order, then by position.
     /// </summary>
-    private static async Task<List<EventPhoto>> DownloadableAsync(
+    internal static async Task<List<EventPhoto>> DownloadableAsync(
         MemoriesDbContext db, Guid viewer, Guid eventId, Guid? photoId, DateTimeOffset now, CancellationToken cancellationToken)
     {
         var visible = await Visible(db, viewer, now)
@@ -754,7 +754,7 @@ internal static partial class MemoryEndpoints
     /// <summary>
     /// Active, unexpired photos the viewer may see: their own, and the co-parent's while that batch is shared.
     /// </summary>
-    private static IQueryable<VisiblePhoto> Visible(MemoriesDbContext db, Guid viewer, DateTimeOffset now) =>
+    internal static IQueryable<VisiblePhoto> Visible(MemoriesDbContext db, Guid viewer, DateTimeOffset now) =>
         db.Photos
             .Where(p => p.State == PhotoState.Active && p.ExpiresAt > now)
             .Join(db.Batches, p => p.BatchId, b => b.Id, (p, b) => new VisiblePhoto { Photo = p, Batch = b })
@@ -924,7 +924,7 @@ internal static partial class MemoryEndpoints
                 return null;
             }
 
-            buffer.Write(chunk, 0, read);
+            await buffer.WriteAsync(chunk.AsMemory(0, read), cancellationToken);
         }
 
         return buffer.ToArray();

@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, filter, tap } from 'rxjs';
 
 // Hand-written to match the API's OpenAPI document for the endpoints Milestones 1 and 2 use. Generating these from the
 // document is planned once the surface grows.
@@ -243,9 +243,67 @@ export type GoogleCopyType =
   | 'MyUnavailable'
   | 'CoParentUnavailable';
 
+/** A parent's own Google Photos connection for exporting Family Memories photos (#404). */
+export interface GooglePhotosStatus {
+  /** False when the server isn't set up for it: the app says so and offers nothing. */
+  readonly available: boolean;
+  readonly state: GooglePhotosState;
+  /** Why a connection needs reconnecting. */
+  readonly problem: 'None' | 'AccessRevoked';
+  readonly connectedAt: string | null;
+  /** Photos this connection put in the parent's Google Photos. */
+  readonly exportedCount: number;
+  readonly albumCount: number;
+  /** Photos queued or being checked with Google. */
+  readonly waitingCount: number;
+  /** After connecting: the memory the parent started from. */
+  readonly returnEventId: string | null;
+}
+
+export type GooglePhotosState = 'NotConnected' | 'Connected' | 'NeedsReconnect';
+
+/** One photo's export to the viewer's own Google Photos. Only `Exported` means Google confirmed it. */
+export interface PhotoExport {
+  readonly photoId: string;
+  readonly state: 'Queued' | 'Checking' | 'Exported' | 'Failed' | 'Skipped';
+  readonly reason: PhotoExportReason;
+  readonly updatedAt: string;
+}
+
+export type PhotoExportReason =
+  | 'None'
+  | 'Reconnect'
+  | 'RateLimited'
+  | 'GoogleError'
+  | 'StorageFull'
+  | 'NotAllowed'
+  | 'Deleted'
+  | 'Expired';
+
+/**
+ * What exporting one memory would do and how far it got, for the viewer only. `exportable`: photos they may download
+ * that aren't exported or waiting. `omitted`: photos they can see but not download (never named).
+ */
+export interface EventExport {
+  readonly available: boolean;
+  readonly connection: GooglePhotosState;
+  readonly albumTitle: string;
+  readonly exportable: number;
+  readonly exported: number;
+  readonly waiting: number;
+  readonly omitted: number;
+  readonly photos: readonly PhotoExport[];
+}
+
 export interface PlaceSuggestions {
   suggestions: string[];
   available: boolean;
+}
+
+/** Where the parent is, from their browser, used only to favour nearby suggestions (#414). */
+export interface NearbyPosition {
+  latitude: number;
+  longitude: number;
 }
 
 // --- Milestone 3: event photos and Family Memories (#403) --------------------------------------------------------------
@@ -619,16 +677,51 @@ export class Api {
 
   // Event photos and Family Memories (#403). Parents only; every rule is checked on the server.
   memories = (familyId: string) => this.call(this.http.get<Memory[]>(`/api/families/${familyId}/memories`));
+  /** This parent's Google Photos connection (#404). Parents only; it never changes the co-parent's. */
+  googlePhotos = (familyId: string) =>
+    this.call(this.http.get<GooglePhotosStatus>(`/api/families/${familyId}/memories/google-photos`));
+  /** Google's consent page; `returnEventId` brings the parent back to that memory afterwards. */
+  googlePhotosAuthorize = (familyId: string, returnEventId?: string) =>
+    this.call(
+      this.http.post<{ url: string }>(`/api/families/${familyId}/memories/google-photos/authorize`, {
+        returnEventId: returnEventId ?? null,
+      }),
+    );
+  googlePhotosConnect = (familyId: string, code: string, state: string) =>
+    this.call(this.http.post<GooglePhotosStatus>(`/api/families/${familyId}/memories/google-photos/connect`, { code, state }));
+  /** Revokes access and forgets albums and export marks; what's already in Google stays there. */
+  googlePhotosDisconnect = (familyId: string) =>
+    this.call(this.http.delete<void>(`/api/families/${familyId}/memories/google-photos`));
+  /** What exporting this memory would include, and each photo's export so far. */
+  eventExport = (familyId: string, eventId: string) =>
+    this.call(this.http.get<EventExport>(`/api/families/${familyId}/memories/events/${eventId}/google-photos`));
+  /** Queues the named photos, or every photo the viewer may download; the server skips the rest. */
+  exportToGooglePhotos = (familyId: string, eventId: string, photoIds?: readonly string[]) =>
+    this.call(
+      this.http.post<EventExport>(`/api/families/${familyId}/memories/events/${eventId}/google-photos`, {
+        photoIds: photoIds ?? null,
+      }),
+    );
   eventPhotos = (familyId: string, eventId: string) =>
     this.call(this.http.get<EventPhotos>(`/api/families/${familyId}/memories/events/${eventId}`));
   /** Adds one photo (the raw file) to the viewer's batch, or starts a batch when `batchId` is missing. */
-  addEventPhoto = (familyId: string, eventId: string, file: Blob, batchId?: string) =>
+  addEventPhoto = (familyId: string, eventId: string, file: Blob, batchId?: string,
+    onProgress?: (percent: number | null) => void) =>
     this.call(
       this.http.post<{ batchId: string; photo: EventPhoto }>(`/api/families/${familyId}/memories/events/${eventId}/photos`, file, {
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         params: batchId ? { batchId } : {},
-      }),
-    );
+        observe: 'events',
+        reportProgress: true,
+      }).pipe(
+        tap((event) => {
+          if (event.type === HttpEventType.UploadProgress) {
+            onProgress?.(event.total ? Math.min(100, event.loaded / event.total * 100) : null);
+          }
+        }),
+        filter((event) => event.type === HttpEventType.Response),
+      ),
+    ).then((response) => response.body!);
   /** Turns "Visible to Co-Parent" on or off for one of the viewer's batches. */
   shareBatch = (familyId: string, batchId: string, visibleToCoParent: boolean) =>
     this.call(this.http.patch<void>(`/api/families/${familyId}/memories/batches/${batchId}`, { visibleToCoParent }));
@@ -667,11 +760,20 @@ export class Api {
   /**
    * Address suggestions for a location (#354). The server asks Google, so the key never reaches the browser.
    * `available: false` means off, used up for today, or Google didn't answer: stop asking for this field.
+   * `near` is the parent's own position, sent only after they pressed "Use my location" (#414); the server rounds it
+   * and never stores it.
    */
-  placeSuggestions = (familyId: string, input: string, sessionToken: string) =>
+  placeSuggestions = (familyId: string, input: string, sessionToken: string, near: NearbyPosition | null = null) =>
     this.call(
-      this.http.post<PlaceSuggestions>(`/api/families/${familyId}/calendar/place-suggestions`, { input, sessionToken }),
+      this.http.post<PlaceSuggestions>(`/api/families/${familyId}/calendar/place-suggestions`, {
+        input,
+        sessionToken,
+        ...(near ? { latitude: near.latitude, longitude: near.longitude } : {}),
+      }),
     );
+  /** Whether suggestions are on, without asking Google or using up the daily allowance (#414). */
+  placeSuggestionsStatus = (familyId: string) =>
+    this.call(this.http.get<PlaceSuggestions>(`/api/families/${familyId}/calendar/place-suggestions`));
   /** This parent's Google Calendar copy (#386). Parents only; it never changes the co-parent's or children's settings. */
   googleCalendar = (familyId: string) => this.call(this.http.get<GoogleCalendarStatus>(`/api/families/${familyId}/google-calendar`));
   /** Google's consent page for this parent, with a state that only works for them, for ten minutes. */

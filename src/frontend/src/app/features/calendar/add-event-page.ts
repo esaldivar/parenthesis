@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -93,7 +94,9 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
 @Component({
   selector: 'app-add-event-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, LocationField,
+  imports: [
+    LoadingIndicator,
+    CalendarPalette, LocationField,
     DateField,
     ReactiveFormsModule,
     RouterLink,
@@ -445,8 +448,7 @@ export class AddEventPage implements OnInit {
       const problem = toProblem(error);
       const serverErrors = Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v.join(' ')]));
       if (problem.status === 400 && Object.keys(serverErrors).length > 0) {
-        const caregiver = this.parents().find((p) => p.membershipId === this.form.getRawValue().caregiver);
-        this.fieldErrors.set(withOwnOverlap(serverErrors, caregiver));
+        this.fieldErrors.set(withOwnOverlap(serverErrors));
         this.dateCheck.fromServer(serverErrors);
       } else {
         this.error.set(generalMessage(problem));

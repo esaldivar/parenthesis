@@ -2,6 +2,7 @@ import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -14,11 +15,14 @@ import {
   viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarEvent, Child, FamilyMember, Reminder, SharedTask } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
+import { CachedPeriod, CalendarCache } from '../../core/cache/calendar-cache';
+import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Icon } from '../../shared/icon/icon';
 import { PlainDate } from '../dashboard/model';
@@ -51,6 +55,15 @@ import { Toasts } from '../../shared/toast/toasts';
 
 export type CalendarView = 'week' | 'month' | 'list';
 type LoadState = 'loading' | 'error' | 'ready';
+
+/** After this long, the loading state explains that the app may be starting up after a quiet spell (#415). */
+export const SLOW_LOAD_MS = 4000;
+/** How long to wait before the one automatic retry of a load that failed while the app was starting. */
+export const COLD_START_RETRY_MS = 1500;
+/** Statuses a starting replica or its ingress can return for a moment: worth one quiet retry, never more. */
+const TRANSIENT_STATUSES = new Set([0, 502, 503, 504]);
+const isTransient = (error: unknown) => error instanceof HttpErrorResponse && TRANSIENT_STATUSES.has(error.status);
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const VIEWS: readonly { id: CalendarView; label: string }[] = [
   { id: 'week', label: 'Week' },
@@ -95,6 +108,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
     TaskDetails,
     CalendarFilterPanel,
     CalendarSearch,
+    LoadingIndicator,
   ],
   templateUrl: './calendar-page.html',
   styleUrl: './calendar-page.scss',
@@ -105,6 +119,7 @@ export class CalendarPage {
   private readonly router = inject(Router);
   private readonly toasts = inject(Toasts);
   private readonly injector = inject(Injector);
+  private readonly cache = inject(CalendarCache);
   private readonly calendarHeading = viewChild.required<ElementRef<HTMLHeadingElement>>('calendarHeading');
 
   /** `?view=week|month|list` */
@@ -160,6 +175,10 @@ export class CalendarPage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly loadError = signal<string | null>(null);
+  /** A period seen earlier in this tab is on screen while the server's current answer is fetched. */
+  protected readonly refreshing = signal(false);
+  /** Loading has taken longer than {@link SLOW_LOAD_MS}. */
+  protected readonly slow = signal(false);
   private readonly events = signal<readonly CalendarEvent[]>([]);
   private readonly reminders = signal<readonly Reminder[]>([]);
   private readonly tasks = signal<readonly SharedTask[]>([]);
@@ -223,6 +242,7 @@ export class CalendarPage {
   });
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.slowTimer));
     // A message handed over by the Add, Edit, Swap, Reminder and Task pages: shown as a toast (#226).
     const handed = this.router.currentNavigation()?.extras.state?.['calendarNotice'];
     if (typeof handed === 'string') {
@@ -259,21 +279,48 @@ export class CalendarPage {
   private linked: string | undefined;
 
   private loadToken = 0;
+  private slowTimer: ReturnType<typeof setTimeout> | undefined;
 
+  /**
+   * Shows a period at once when it was seen earlier in this tab (memory only, #415), and always fetches the server's
+   * current answer, which replaces it. Without a cached copy the loading state shows, and after a few seconds it
+   * explains a likely cold start. A load that fails the way a starting app does is retried once, quietly.
+   */
   private async load(familyId: string, from: PlainDate, to: PlainDate): Promise<void> {
     const token = ++this.loadToken;
-    this.state.set('loading');
+    const stamp = this.cache.stamp();
+    const cached = this.cache.get(familyId, from, to);
+    this.markStart(token);
+    this.slow.set(false);
+    clearTimeout(this.slowTimer);
+    if (cached) {
+      this.show(cached);
+      this.state.set('ready');
+      this.refreshing.set(true);
+    } else {
+      this.state.set('loading');
+      this.refreshing.set(false);
+      this.slowTimer = setTimeout(() => this.slow.set(token === this.loadToken && this.state() === 'loading'), SLOW_LOAD_MS);
+    }
     try {
       const zone = this.timeZone();
       const needsFamily = this.members().length === 0;
       const [fromInstant, toInstant] = [fromFamilyLocal(`${from}T00:00`, zone), fromFamilyLocal(`${to}T00:00`, zone)];
-      const [events, reminders, tasks, details, children] = await Promise.all([
-        this.api.calendarEvents(familyId, fromInstant, toInstant),
-        this.api.reminders(familyId, fromInstant, toInstant),
-        this.api.tasks(familyId, from, to),
-        needsFamily ? this.api.family(familyId) : Promise.resolve(null),
-        needsFamily ? this.api.children(familyId) : Promise.resolve(null),
-      ]);
+      const fetchAll = () =>
+        Promise.all([
+          this.api.calendarEvents(familyId, fromInstant, toInstant),
+          this.api.reminders(familyId, fromInstant, toInstant),
+          this.api.tasks(familyId, from, to),
+          needsFamily ? this.api.family(familyId) : Promise.resolve(null),
+          needsFamily ? this.api.children(familyId) : Promise.resolve(null),
+        ]);
+      const [events, reminders, tasks, details, children] = await fetchAll().catch(async (error: unknown) => {
+        if (!isTransient(error) || token !== this.loadToken) {
+          throw error;
+        }
+        await delay(COLD_START_RETRY_MS);
+        return fetchAll();
+      });
       if (token !== this.loadToken) {
         return;
       }
@@ -283,10 +330,11 @@ export class CalendarPage {
       if (children) {
         this.children.set(children);
       }
-      this.events.set(events);
-      this.reminders.set(reminders);
-      this.tasks.set(tasks);
-      this.state.set('ready');
+      this.markData(token);
+      const period = { events, reminders, tasks };
+      this.cache.set(familyId, from, to, period, stamp);
+      this.show(period);
+      this.finish(token, 'ready');
       const open = this.selected();
       if (open && !this.items().some((i) => i.id === open.id)) {
         this.selected.set(null);
@@ -294,8 +342,51 @@ export class CalendarPage {
     } catch (error) {
       if (token === this.loadToken) {
         this.loadError.set(generalMessage(toProblem(error)));
-        this.state.set('error');
+        this.finish(token, 'error');
       }
+    }
+  }
+
+  private show(period: CachedPeriod): void {
+    this.events.set(period.events);
+    this.reminders.set(period.reminders);
+    this.tasks.set(period.tasks);
+  }
+
+  private finish(token: number, state: LoadState): void {
+    clearTimeout(this.slowTimer);
+    this.slow.set(false);
+    this.refreshing.set(false);
+    this.state.set(state);
+    if (state === 'ready') {
+      afterNextRender(() => this.markRendered(token), { injector: this.injector });
+    }
+  }
+
+  // Timings for #415, visible in the browser's Performance panel and readable with
+  // performance.getEntriesByName('parenthesis:calendar-data' | 'parenthesis:calendar-render'). Durations only.
+  private markStart(token: number): void {
+    globalThis.performance?.mark?.(`parenthesis:calendar-start:${token}`);
+  }
+
+  private markData(token: number): void {
+    this.measure('parenthesis:calendar-data', token);
+  }
+
+  private markRendered(token: number): void {
+    if (token === this.loadToken) {
+      this.measure('parenthesis:calendar-render', token);
+    }
+    globalThis.performance?.clearMarks?.(`parenthesis:calendar-start:${token}`);
+  }
+
+  private measure(name: string, token: number): void {
+    const timing = globalThis.performance;
+    try {
+      timing?.clearMeasures?.(name);
+      timing?.measure?.(name, `parenthesis:calendar-start:${token}`);
+    } catch {
+      // The start mark was cleared or never made (an older browser): nothing to report.
     }
   }
 

@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { eventPalette } from '../dashboard/model';
 import { FamilyMember } from '../../core/api/api';
-import { CalendarPalette, CalendarPaletteKey, parentPalette } from './calendar-palette';
+import { CalendarPalette, CalendarPaletteKey, PanelTint, parentPalette } from './calendar-palette';
 
 const createdAt = '2026-10-01T12:00:00Z';
 const founder: FamilyMember = { membershipId: 'founder', displayName: 'Alex', role: 'Parent', joinedAt: createdAt, paletteSlot: 0, isYou: true };
@@ -66,5 +66,35 @@ describe('Shared category surfaces', () => {
     fixture.componentInstance.kind.set('concealed');
     fixture.detectChanges();
     expect(button.style.getPropertyValue('--calendar-palette-bg')).toBe('transparent');
+  });
+});
+
+@Component({ imports: [PanelTint], template: '<section class="panel" [appPanelTint]="kind()">Synthetic details</section>' })
+class TintHost { kind = signal<CalendarPaletteKey | undefined>('family'); }
+
+describe('Details panel tint (#431)', () => {
+  function render(kind: CalendarPaletteKey | undefined) {
+    const fixture = TestBed.createComponent(TintHost);
+    fixture.componentInstance.kind.set(kind);
+    fixture.detectChanges();
+    return fixture.nativeElement.querySelector('.panel') as HTMLElement;
+  }
+
+  it('gives the whole panel its category colour and leaves text colours to the theme', () => {
+    for (const kind of ['parent-a', 'parent-b', 'parenting', 'activity', 'family', 'task', 'reminder', 'unavailable'] as const) {
+      const panel = render(kind);
+      expect(panel.style.getPropertyValue('--panel-tint')).toBe(`var(--color-calendar-${kind}-bg)`);
+      expect(panel.getAttribute('data-tint')).toBe(kind);
+      expect(panel.style.color).toBe('');
+    }
+    expect(render('event').style.getPropertyValue('--panel-tint')).toBe('var(--color-calendar-family-bg)');
+  });
+
+  it('keeps the plain surface for hidden items and anything without a category', () => {
+    for (const kind of ['concealed', 'review', undefined] as const) {
+      const panel = render(kind);
+      expect(panel.style.getPropertyValue('--panel-tint')).toBe('');
+      expect(panel.hasAttribute('data-tint')).toBe(false);
+    }
   });
 });

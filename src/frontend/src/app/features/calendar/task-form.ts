@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { FormArray, FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -38,6 +39,7 @@ type ItemGroup = FormGroup<{ id: FormControl<string>; text: FormControl<string>;
   selector: 'app-task-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    LoadingIndicator,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,

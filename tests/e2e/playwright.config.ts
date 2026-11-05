@@ -19,11 +19,14 @@ export default defineConfig({
   // Leave time within the 60-minute CI job to emit reports and upload diagnostics.
   globalTimeout: ci ? 48 * 60_000 : undefined,
   expect: { timeout: 10_000 },
-  reporter: [
-    ['list'],
-    ['html', { open: 'never', outputFolder: 'playwright-report' }],
-    ['json', { outputFile: 'results/results.json' }],
-  ],
+  // A CI shard writes a blob for the report job to merge; that job produces the HTML report and the JSON summary.
+  reporter: process.env['E2E_SHARD']
+    ? [['list'], ['blob', { outputDir: 'blob-report', fileName: `report-${process.env['E2E_SHARD']}.zip` }]]
+    : [
+        ['list'],
+        ['html', { open: 'never', outputFolder: 'playwright-report' }],
+        ['json', { outputFile: 'results/results.json' }],
+      ],
   outputDir: 'test-results',
   use: {
     baseURL: process.env['E2E_BASE_URL'] ?? 'https://localhost:8443',
