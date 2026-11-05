@@ -16,7 +16,7 @@ flowchart LR
   subgraph ACA["Azure Container Apps: one container"]
     SPA[Angular SPA<br/>parent and kid shells<br/>served as static files]
     API[ASP.NET Core .NET 10 API<br/>cookie auth + antiforgery<br/>tenant gate on /api/families/…]
-    MOD[Modules<br/>Identity · Families<br/>Approvals · Calendar]
+    MOD[Modules<br/>Identity · Families<br/>Approvals · Calendar · Memories]
   end
 
   PG[(Azure Database for PostgreSQL<br/>one schema per module)]
@@ -33,7 +33,7 @@ flowchart LR
   MOD -- notices and invitations --> MAIL
   KV -. "connection string<br/>(Key Vault reference)" .-> ACA
   API -. "telemetry (not yet<br/>instrumented, #160)" .-> AI
-  MOD -. "media (Memories)" .-> BLOB
+  MOD -- "private event photos and avatars" --> BLOB
   MOD -- "one-way copy to each parent's own<br/>calendar, when set up (#386)" --> GCAL
 ```
 
@@ -64,13 +64,16 @@ flowchart TB
   MAIN -- "deploy the image tested on develop,<br/>after owner approval" --> PROD
 
   G1{{"Every PR: CI (backend, frontend, API image,<br/>security tests), PR source, tracking issue links"}}
-  G2{{"Into develop: Playwright release gate<br/>(release/* PRs only)"}}
-  G3{{"Into main: SonarQube Cloud analysis<br/>and release security gate"}}
+  G2{{"Into release/* and release/* into develop:<br/>Playwright release gate"}}
+  G3{{"Into develop: Sonar analysis and security gate<br/>Into main: identical-tree analysis verification"}}
   G4{{"Each deploy: migrations, smoke and health<br/>checks, automatic rollback on failure"}}
+  G5{{"Into release/*:<br/>real Windows/NVDA website gate"}}
 
   G1 -.- WB
   G2 -.- REL
+  G2 -.- WB
   G3 -.- DEV
+  G5 -.- WB
   G4 -.- DEVSITE
   G4 -.- PROD
 ```
@@ -80,11 +83,17 @@ flowchart TB
 | CI: backend build, format and tests; frontend lint, Vitest and build; API image smoke test; release security tests | Every PR, and pushes to `main`, `develop` and `release/**` | [`ci.yml`](../.github/workflows/ci.yml) |
 | PR source: which branch may merge into which | Every PR | [`pr-branch-policy.yml`](../.github/workflows/pr-branch-policy.yml) |
 | Tracking issue links | Every PR | [`pr-issue-links.yml`](../.github/workflows/pr-issue-links.yml) |
-| Playwright release candidate | PRs from `release/*` into `develop`, not drafts | [`playwright-release.yml`](../.github/workflows/playwright-release.yml) ([runbook](runbooks/playwright-release-gate.md)) |
-| SonarQube Cloud and release security gate | PRs into `main`, and pushes to `main` | [`sonar.yml`](../.github/workflows/sonar.yml) ([runbook](runbooks/sonar-release-gate.md)) |
+| Playwright release candidate | Ready, same-repository work PRs into `release/*`, and `release/*` PRs into `develop`; the gate rejects missing, skipped or failed required runs | [`playwright-release.yml`](../.github/workflows/playwright-release.yml) ([runbook](runbooks/playwright-release-gate.md)) |
+| Windows/NVDA website gate | Same-repository PRs into `release/*`, against the exact merge candidate | [`nvda-runner-probe.yml`](../.github/workflows/nvda-runner-probe.yml) ([runbook](runbooks/nvda-website-ci.md)) |
+| SonarQube Cloud and release security gate | PRs into and pushes to `develop` receive analysis. PRs into and pushes to `main` require an identical source tree bound to the current develop analysis; missing or mismatched evidence fails | [`sonar.yml`](../.github/workflows/sonar.yml) ([runbook](runbooks/sonar-release-gate.md)) |
 | Deploy, migrate, smoke test, roll back | Pushes to `develop` and `main`; manual rollback | [`deploy.yml`](../.github/workflows/deploy.yml) |
 
 Branch rules, release windows and approvals are described in the [development workflow](development-workflow.md).
+On November 5, 2026, API inspection confirmed required Playwright and NVDA gates on the release branch. With the
+owner's explicit approval, `Release security gate` was added to main's required checks with its GitHub Actions
+binding. Verification confirmed the existing checks, bindings, strict mode and other protection fields were
+preserved. The remaining exact-candidate production evidence is tracked in
+[#66](https://github.com/esaldivar/parenthesis/issues/66).
 
 ## Keeping this page current
 

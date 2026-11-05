@@ -385,8 +385,9 @@ that points back here.
   - [ ] **Release security gate** (requested October 18, 2026): `release-gate` job in `sonar.yml`, policy and
     troubleshooting in `docs/runbooks/sonar-release-gate.md`.
     - [x] Gate, tests with a fake SonarQube Cloud API, docs and CLAUDE.md rules (October 18, 2026).
-    - [ ] **Owner:** once it has run on a release PR, add **Release security gate** to `main`'s required status
-      checks (steps in the runbook). Keep every existing protection.
+    - [x] **Owner-approved, November 5, 2026:** added **Release security gate** to `main`'s required checks with
+      GitHub Actions binding. API verification preserved every existing check/binding, strict mode and other
+      protection fields. Exact-candidate production analysis/deployment evidence remains separately required.
     - [ ] Check the first real run: the scanner's task id is picked up and the API answers match the gate's
       expectations (it was tested against a fake API only).
     - [ ] Issue #65: the seven vulnerabilities on `main` block the next release until each is fixed or accepted in
@@ -850,10 +851,16 @@ that points back here.
   - [ ] Infrastructure as code (S-03): the runbook's commands as Bicep, once the environments exist.
 
 ## Dashboard and design
-- [ ] **Product README and documentation navigation (#84).** Product landing page, local setup/API guides and
-  documentation index prepared October 26, 2026; approved icon reused unchanged, planned features distinguished
-  from current work. Verify rendered GitHub desktop/phone views in both themes before acceptance. Corrected
-  horizontal wordmark remains pending below; add a gallery only when real synthetic screenshots are approved.
+- [x] **Product README and documentation navigation (#84, November 5, 2026).** Product landing page, local setup/API
+  guides and documentation index use the approved icon unchanged and distinguish current capabilities from
+  candidate/future work. Eric confirmed rendered GitHub desktop/phone views in both themes passed on PR #430.
+  The separate corrected horizontal wordmark remains pending below; a gallery needs approved synthetic screenshots.
+  - [x] November 5: corrected shared-memory capability/status wording to distinguish Development event photos
+    from the Google Photos export candidate. Owner-rendered GitHub checks passed.
+- [x] **Architecture delivery-gate accuracy (#83, November 5 acceptance review).** Diagram/table now describe
+  work-PR Playwright, the Windows/NVDA gate, develop-based Sonar analysis, main's identical-tree verification and
+  the owner-approved required main security check (#66). Runtime storage now reflects the Memories module and private
+  photo/avatar blobs. Eric confirmed both Mermaid diagrams render correctly in PR #430.
 - [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
   query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
   local selection. Router regressions cover both journeys.
