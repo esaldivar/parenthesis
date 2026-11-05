@@ -35,7 +35,8 @@ internal sealed class GooglePhotosOptions
 
     /// <summary>
     /// Google allows 10,000 Library API requests per project per day. Parenthesis stops below that and says Google is
-    /// limiting exports, rather than spending the whole allowance. Counted per server instance.
+    /// limiting exports, rather than spending the whole allowance. Counted in the database, across every running copy
+    /// of the app.
     /// </summary>
     public int DailyRequestLimit { get; set; } = 9000;
 
