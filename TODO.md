@@ -100,9 +100,9 @@ that points back here.
   - [x] Running more than one copy of the app (development allows 2 replicas): one export pass at a time through a
     Postgres advisory lock, and the daily request count kept in the database (Copilot on release PR #428, fixed
     November 5, 2026).
-  - [ ] Owner decision (Copilot on release PR #428): if Google creates an album but the answer times out, the next try
-    makes a second album for that event. With only `photoslibrary.appendonly`, Parenthesis can't look albums up to
-    check. Accept and document it, or add a read scope for app-made albums.
+  - [x] Owner decision (Copilot on release PR #428): if Google creates an album but the answer times out, the next try
+    makes a second, empty album for that event. Accepted and documented in the design (November 5, 2026); revisit
+    with a read scope for app-made albums only if the end-to-end test shows it happening.
   - [x] Frontend PR: Settings card, memory and photo export, status and error states. Merged into
     `release/0.3.0` in #426 (November 5, 2026).
   - [ ] End-to-end with two test Google accounts in Testing mode; then the demo video and Google submission.
