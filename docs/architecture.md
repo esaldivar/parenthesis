@@ -89,10 +89,11 @@ flowchart TB
 | Deploy, migrate, smoke test, roll back | Pushes to `develop` and `main`; manual rollback | [`deploy.yml`](../.github/workflows/deploy.yml) |
 
 Branch rules, release windows and approvals are described in the [development workflow](development-workflow.md).
-On November 5, 2026, read-only inspection confirmed required Playwright and NVDA gates on the release branch.
-`Release security gate` was absent from main's required checks. The owner configuration follow-up is tracked in
-[#66](https://github.com/esaldivar/parenthesis/issues/66). Workflow execution and required-check enforcement each need
-their own evidence.
+On November 5, 2026, API inspection confirmed required Playwright and NVDA gates on the release branch. With the
+owner's explicit approval, `Release security gate` was added to main's required checks with its GitHub Actions
+binding. Verification confirmed the existing checks, bindings, strict mode and other protection fields were
+preserved. The remaining exact-candidate production evidence is tracked in
+[#66](https://github.com/esaldivar/parenthesis/issues/66).
 
 ## Keeping this page current
 

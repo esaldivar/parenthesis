@@ -374,8 +374,9 @@ that points back here.
   - [ ] **Release security gate** (requested October 18, 2026): `release-gate` job in `sonar.yml`, policy and
     troubleshooting in `docs/runbooks/sonar-release-gate.md`.
     - [x] Gate, tests with a fake SonarQube Cloud API, docs and CLAUDE.md rules (October 18, 2026).
-    - [ ] **Owner:** once it has run on a release PR, add **Release security gate** to `main`'s required status
-      checks (steps in the runbook). Keep every existing protection.
+    - [x] **Owner-approved, November 5, 2026:** added **Release security gate** to `main`'s required checks with
+      GitHub Actions binding. API verification preserved every existing check/binding, strict mode and other
+      protection fields. Exact-candidate production analysis/deployment evidence remains separately required.
     - [ ] Check the first real run: the scanner's task id is picked up and the API answers match the gate's
       expectations (it was tested against a fake API only).
     - [ ] Issue #65: the seven vulnerabilities on `main` block the next release until each is fixed or accepted in
@@ -847,7 +848,7 @@ that points back here.
     from the Google Photos export candidate. Rendered GitHub views remain an acceptance check for #84.
 - [ ] **Architecture delivery-gate accuracy (#83, November 5 acceptance review).** Diagram/table now describe
   work-PR Playwright, the Windows/NVDA gate, develop-based Sonar analysis, main's identical-tree verification and
-  the missing required main security check (#66). Runtime storage now reflects the Memories module and private
+  the owner-approved required main security check (#66). Runtime storage now reflects the Memories module and private
   photo/avatar blobs. Verify rendered Mermaid before accepting #83.
 - [x] **Home week navigation (#208).** Previous/Next/Today preserve the shown week in the URL, including existing
   query parameters; Settings followed by Back restores that week. Linked-week navigation replaces an earlier
