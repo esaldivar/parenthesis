@@ -107,6 +107,12 @@ that points back here.
     `release/0.3.0` in #426 (November 5, 2026).
   - [ ] End-to-end with two test Google accounts in Testing mode; then the demo video and Google submission.
   - [ ] Production only after Google approves the scope; keep the tracker's two readiness columns separate.
+- [ ] **Faster PR checks (owner request, November 5, 2026).** Playwright is split across three machines in the
+  `chore/faster-pr-checks` PR; the docs describe the rest ([Keeping PRs moving](docs/development-workflow.md#keeping-prs-moving)).
+  - [ ] Owner, after that PR merges: turn off **Require branches to be up to date before merging** on the
+    **release branches** ruleset (Settings → Rules → Rulesets → release branches → Require status checks to pass).
+    Keep every required check. `develop` and `main` stay as they are.
+  - [ ] Compare a few sharded runs with the single-machine time (about 13 minutes) and adjust the number of shards.
 - [ ] **Dependabot PR #384 dependency validation (#398, October 30, 2026).** Conflicts against `release/0.3.0`
   resolved while retaining current PR issue-link safeguards, DataProtection, cryptography pins and SkiaSharp packages.
   Six dependency upgrades remain; SwaggerUI was already current.
