@@ -68,8 +68,12 @@
                   : 'Photos added'
             }}
           </p>
-          <app-loading-indicator [active]="sheet() === 'uploading'" label="Uploading photo…" [progress]="uploadPercent()"
-            [idleMessage]="sheet() === 'done' ? progress() : ''" />
+          <app-loading-indicator
+            [active]="sheet() === 'uploading'"
+            label="Uploading photo…"
+            [progress]="uploadPercent()"
+            [idleMessage]="sheet() === 'done' ? progress() : ''"
+          />
           <ul class="files">
             @for (pick of picks(); track pick.key) {
               <li [attr.data-state]="pick.state">
@@ -227,7 +231,10 @@
                   type="button"
                   class="tile"
                   [id]="'photo-' + photo.id"
-                  [attr.aria-label]="photoLabel(photo, shown, i)"
+                  [attr.aria-label]="
+                    photoLabel(photo, shown, i) +
+                    (photoExport(photo)?.kind === 'done' ? ', in your Google Photos' : '')
+                  "
                   (click)="open(photo)"
                 >
                   <img
@@ -237,6 +244,9 @@
                     [attr.width]="photo.width"
                     [attr.height]="photo.height"
                   />
+                  @if (photoExport(photo)?.kind === 'done') {
+                    <span class="tile__mark"><app-icon name="check" [size]="14" /></span>
+                  }
                 </button>
               </li>
             }
@@ -263,6 +273,180 @@
         </div>
       }
 
+      @if (exportOffered()) {
+        <div class="export">
+          @if (exportedText(); as done) {
+            <p class="hint export__done"><app-icon name="check" [size]="16" /> {{ done }}</p>
+          }
+          @if (!exportAvailable()) {
+            <p class="hint">Exporting to Google Photos isn’t available yet.</p>
+          } @else if (!exportSheet()) {
+            <button mat-stroked-button type="button" id="export-open" (click)="openExport()">
+              <app-icon name="cloud-upload" [size]="18" /> Export to Google Photos
+            </button>
+          }
+        </div>
+      }
+
+      @if (sheetMode(); as mode) {
+        <section class="sheet export-sheet" aria-labelledby="export-sheet-heading">
+          <div class="viewer__head">
+            <p
+              class="subhead"
+              role="heading"
+              [attr.aria-level]="headingLevel() + 1"
+              id="export-sheet-heading"
+              tabindex="-1"
+            >
+              {{ mode === 'progress' ? 'Exporting to Google Photos' : 'Export to Google Photos' }}
+            </p>
+            <button mat-icon-button type="button" (click)="closeExport()" aria-label="Close export">
+              <app-icon name="close" />
+            </button>
+          </div>
+
+          @if (exports.error(); as error) {
+            <p class="error" role="alert">{{ error }}</p>
+          }
+
+          @switch (mode) {
+            @case ('unavailable') {
+              <p>Exporting to Google Photos isn’t available yet.</p>
+            }
+            @case ('connect') {
+              <p>Connect your Google Photos first. You’ll come back here to export.</p>
+              <p class="hint">
+                Parenthesis can add photos and make albums, and can’t see anything else in your
+                Google Photos. Copies use your Google storage.
+              </p>
+              <div class="actions__row">
+                <button
+                  mat-flat-button
+                  type="button"
+                  [disabled]="exports.busy()"
+                  (click)="exports.connect()"
+                >
+                  <app-icon name="cloud-upload" [size]="18" />
+                  {{ exports.busy() ? 'Opening Google…' : 'Connect Google Photos' }}
+                </button>
+                <button mat-stroked-button type="button" (click)="closeExport()">Cancel</button>
+              </div>
+              @if (downloadAll()) {
+                <p class="hint">Or use Download all to save them to this device.</p>
+              }
+            }
+            @case ('reconnect') {
+              <p class="error" role="alert">
+                <strong>Google Photos needs you to reconnect.</strong>
+                @if (exports.view()?.waiting; as waiting) {
+                  {{ waiting === 1 ? '1 photo is' : waiting + ' photos are' }} waiting.
+                }
+              </p>
+              <div class="actions__row">
+                <button
+                  mat-flat-button
+                  type="button"
+                  [disabled]="exports.busy()"
+                  (click)="exports.connect()"
+                >
+                  {{ exports.busy() ? 'Opening Google…' : 'Reconnect Google Photos' }}
+                </button>
+                <button mat-stroked-button type="button" (click)="closeExport()">Cancel</button>
+              </div>
+            }
+            @case ('nothing') {
+              <p class="note">
+                <strong>No photos here can be exported.</strong>
+                {{ exportSkipped() ?? 'There are no photos you can download here.' }}
+              </p>
+              <div class="actions__row">
+                <button mat-stroked-button type="button" (click)="closeExport()">Close</button>
+              </div>
+            }
+            @case ('confirm') {
+              <p>
+                <strong>{{
+                  exportCount() === 1
+                    ? exportSheet()?.photoId
+                      ? 'This photo'
+                      : '1 photo'
+                    : exportCount() + ' photos'
+                }}</strong>
+                will go to the album <strong>“{{ exports.view()?.albumTitle }}”</strong> in your
+                Google Photos.
+              </p>
+              @if (exportSkipped(); as skipped) {
+                <p class="note">{{ skipped }}</p>
+              }
+              <p class="hint">{{ exportNote() }}</p>
+              <div class="actions__row">
+                <button
+                  mat-flat-button
+                  type="button"
+                  [disabled]="exports.busy()"
+                  (click)="startExport()"
+                >
+                  {{
+                    exports.busy()
+                      ? 'Starting…'
+                      : exportCount() === 1
+                        ? 'Export 1 photo'
+                        : 'Export ' + exportCount() + ' photos'
+                  }}
+                </button>
+                <button mat-stroked-button type="button" (click)="closeExport()">Cancel</button>
+              </div>
+            }
+            @case ('progress') {
+              <p role="status">{{ exportProgress() }}</p>
+              <ul class="files export-list">
+                @for (record of sheetPhotos(); track record.photoId) {
+                  @let shown = line(record);
+                  <li [attr.data-state]="shown.kind">
+                    @if (thumbnail(record.photoId); as src) {
+                      <img [src]="src" alt="" width="48" height="48" />
+                    } @else {
+                      <span class="export-list__gone" aria-hidden="true"></span>
+                    }
+                    <span class="files__name">
+                      @if (shown.kind === 'failed' || shown.kind === 'skipped') {
+                        <span class="badge badge--bad">Not exported</span>
+                      }
+                      {{ photoName(record.photoId) }}
+                    </span>
+                    <span
+                      class="files__status"
+                      [class.files__message]="shown.kind === 'failed' || shown.kind === 'skipped'"
+                    >
+                      @if (shown.kind === 'done') {
+                        <app-icon name="check" [size]="16" />
+                      }
+                      {{ shown.text }}
+                    </span>
+                  </li>
+                }
+              </ul>
+              <div class="actions__row">
+                @if (sheetRetryable().length > 0) {
+                  <button
+                    mat-flat-button
+                    type="button"
+                    [disabled]="exports.busy()"
+                    (click)="retryExport()"
+                  >
+                    Try again ({{ sheetRetryable().length }})
+                  </button>
+                }
+                <button mat-stroked-button type="button" (click)="closeExport()">Close</button>
+              </div>
+              <p class="hint">
+                You can close this. Exporting continues, and the memory shows each photo’s result.
+              </p>
+            }
+          }
+        </section>
+      }
+
       @if (openPhoto(); as photo) {
         <section class="viewer" aria-labelledby="photo-viewer-heading">
           <div class="viewer__head">
@@ -287,12 +471,28 @@
             [attr.height]="photo.height"
           />
           <p class="hint">{{ openExpiry() }}</p>
+          @if (photoExport(photo); as mark) {
+            <p class="hint" [class.error]="mark.kind === 'failed' || mark.kind === 'skipped'">
+              @if (mark.kind === 'done') {
+                <app-icon name="check" [size]="16" /> In your Google Photos, album “{{
+                  exports.view()?.albumTitle
+                }}”
+              } @else {
+                {{ mark.text }}
+              }
+            </p>
+          }
           @if (!confirmingDelete()) {
             <div class="actions__row">
               @if (photo.downloadUrl; as url) {
                 <a mat-stroked-button [href]="url" download
                   ><app-icon name="download" [size]="18" /> Download</a
                 >
+              }
+              @if (canExport(photo)) {
+                <button mat-stroked-button type="button" (click)="openExport(photo.id)">
+                  <app-icon name="cloud-upload" [size]="18" /> Export to Google Photos
+                </button>
               }
               @if (isYours(photo)) {
                 <button

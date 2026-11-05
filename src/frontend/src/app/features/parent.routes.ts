@@ -90,5 +90,11 @@ export const PARENT_ROUTES: Routes = [
     title: 'Google Calendar',
     loadComponent: () => import('./settings/google-calendar-callback').then((m) => m.GoogleCalendarCallback),
   },
+  // Google sends parents back here after connecting Google Photos (#404); the server registers this exact address.
+  {
+    path: 'settings/google-photos',
+    title: 'Google Photos',
+    loadComponent: () => import('./settings/google-photos-callback').then((m) => m.GooglePhotosCallback),
+  },
   { path: 'more', title: 'More', loadComponent: () => import('./more/more-page').then((m) => m.MorePage) },
 ];

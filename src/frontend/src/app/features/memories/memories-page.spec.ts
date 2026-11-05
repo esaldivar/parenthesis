@@ -223,6 +223,17 @@ describe('Family Memories (#403)', () => {
       await settle(fixture);
       // The photos section loads its own copy, so it stays current after changes.
       http.expectOne(`${F}/memories/events/soccer`).flush(photos());
+      // A parent can also export what they may download to their own Google Photos (#404).
+      http.expectOne(`${F}/memories/events/soccer/google-photos`).flush({
+        available: true,
+        connection: 'Connected',
+        albumTitle: 'Soccer final · Oct 12, 2026',
+        exportable: 1,
+        exported: 0,
+        waiting: 0,
+        omitted: 2,
+        photos: [],
+      });
       await settle(fixture);
 
       expect(text(el.querySelector('h1'))).toBe('Soccer final');
@@ -231,8 +242,9 @@ describe('Family Memories (#403)', () => {
         'Sam hasn’t allowed downloads of their photos, so you can view them here but not download them.',
       );
       expect(text(el)).toContain(
-        'These photos are deleted in 3 days, on Nov 9. Download any you want to keep.',
+        'These photos are deleted in 3 days, on Nov 9. Download or export any you want to keep.',
       );
+      expect(text(el.querySelector('#export-open'))).toBe('Export to Google Photos');
       expect(text(el.querySelector('.download-all a'))).toBe(
         'Download all (1 photo, about 3.1 MB)',
       );

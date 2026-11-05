@@ -194,6 +194,56 @@ button[mat-button] {
   gap: var(--space-2);
   justify-items: start;
 }
+.export {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.export__done {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.note {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-outline);
+  background: var(--color-status-confirmed-bg);
+}
+.tile {
+  position: relative;
+}
+.tile__mark {
+  position: absolute;
+  inset-inline-start: 4px;
+  inset-block-end: 4px;
+  display: inline-flex;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-text);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.export-list li {
+  grid-template-columns: 48px 1fr;
+}
+.export-list img,
+.export-list__gone {
+  grid-row: span 2;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--color-surface-soft);
+}
+.export-list .files__status,
+.export-list .files__message {
+  grid-column: 2;
+}
+.export-list li[data-state='done'] .files__status {
+  color: var(--color-action);
+  font-weight: 600;
+}
 .memory-link {
   justify-self: start;
 }

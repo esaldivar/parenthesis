@@ -12,6 +12,7 @@ import { ParentPinSettings } from '../family/parent-pin-settings';
 import { InviteCoParent } from '../family/invite-co-parent';
 import { DeleteAccount } from './delete-account';
 import { GoogleCalendarSettings } from './google-calendar-settings';
+import { GooglePhotosSettings } from './google-photos-settings';
 import { ProfilePhotoSettings } from './profile-photo-settings';
 import { MemorySettingsSection } from './memory-settings';
 
@@ -26,6 +27,7 @@ import { MemorySettingsSection } from './memory-settings';
     DeviceList,
     ParentPinSettings,
     GoogleCalendarSettings,
+    GooglePhotosSettings,
     DeleteAccount,
     ProfilePhotoSettings,
     MemorySettingsSection,
@@ -80,6 +82,11 @@ import { MemorySettingsSection } from './memory-settings';
         <section class="card" aria-labelledby="google-calendar-heading">
           <h2 id="google-calendar-heading">Google Calendar</h2>
           <app-google-calendar-settings [familyId]="current.id" />
+        </section>
+
+        <section class="card" aria-labelledby="google-photos-heading">
+          <h2 id="google-photos-heading">Google Photos</h2>
+          <app-google-photos-settings [familyId]="current.id" [coParent]="details() ? coParent(details()!) : null" />
         </section>
 
         <section class="card" aria-labelledby="devices-heading">

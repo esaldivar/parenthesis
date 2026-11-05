@@ -17,7 +17,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { RouterLink } from '@angular/router';
-import { Api, EventPhoto, EventPhotos, PhotoBatch } from '../../core/api/api';
+import { Api, EventPhoto, EventPhotos, PhotoBatch, PhotoExport } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { Toasts } from '../../shared/toast/toasts';
@@ -36,6 +36,7 @@ import {
   sizeText,
   uploadMessage,
 } from './photo-text';
+import { ExportLine, MemoryExport, exportLine, progressText } from './google-photos-export';
 
 /** One chosen file, from checking it to its upload's result. */
 interface Pick {
@@ -66,6 +67,7 @@ interface ShownBatch {
   selector: 'app-event-photos',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatButtonModule, MatSlideToggleModule, RouterLink, Icon, LoadingIndicator],
+  providers: [MemoryExport],
   // Escape closes an open photo first, before the event details around it.
   host: { '(keydown.escape)': 'escape($event)' },
   templateUrl: './event-photos.html',
@@ -77,6 +79,7 @@ export class EventPhotosSection {
   private readonly now = inject(PHOTOS_NOW);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  protected readonly exports = inject(MemoryExport);
 
   readonly familyId = input.required<string>();
   readonly eventId = input.required<string>();
@@ -89,6 +92,8 @@ export class EventPhotosSection {
   readonly eventStatus = input<string>('confirmed');
   /** In the event details: offers the link to its Family Memory. */
   readonly linkToMemory = input(true);
+  /** On a Family Memory's page, for a parent: offers export to their own Google Photos (#404). */
+  readonly googlePhotos = input(false);
   /** Heading level inside the page or panel. */
   readonly headingLevel = input<2 | 3>(3);
   /** Each time the photos load, so a page can keep its summary current. */
@@ -187,7 +192,8 @@ export class EventPhotosSection {
         : e.days === 1
           ? `tomorrow, ${e.on}`
           : `in ${e.days} days, on ${e.on}`;
-    return `${photos.length === 1 ? 'This photo is' : 'These photos are'} deleted ${when}. Download any you want to keep.`;
+    const keep = this.exportOffered() ? 'Download or export any you want to keep.' : 'Download any you want to keep.';
+    return `${photos.length === 1 ? 'This photo is' : 'These photos are'} deleted ${when}. ${keep}`;
   });
 
   protected readonly deletedOn = computed(() => {
@@ -271,10 +277,14 @@ export class EventPhotosSection {
       const familyId = this.familyId();
       const eventId = this.eventId();
       const blocked = this.notConfirmed();
+      const googlePhotos = this.googlePhotos();
       untracked(() => {
         this.reset();
         if (!blocked) {
           void this.load(familyId, eventId);
+          if (googlePhotos) {
+            void this.exports.start(familyId, eventId);
+          }
         }
       });
     });
@@ -289,6 +299,7 @@ export class EventPhotosSection {
     this.confirmingDelete.set(false);
     this.confirmingUnshare.set(null);
     this.actionError.set(null);
+    this.exportSheet.set(null);
   }
 
   protected async load(familyId = this.familyId(), eventId = this.eventId()): Promise<void> {
@@ -578,6 +589,181 @@ export class EventPhotosSection {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  // --- Exporting to Google Photos (#404) ----------------------------------------------------------------------------
+
+  /** The export sheet: closed (null), or open for the whole memory or one photo, before or after starting. */
+  protected readonly exportSheet = signal<{ readonly photoId: string | null; readonly started: boolean } | null>(
+    null,
+  );
+
+  /** Export is offered here: a parent's memory page with photos, once the server's status has loaded. */
+  protected readonly exportOffered = computed(
+    () => this.googlePhotos() && this.total() > 0 && !!this.exports.view(),
+  );
+  protected readonly exportAvailable = computed(() => this.exports.view()?.available ?? false);
+
+  /** When the first photo here is deleted, for "they stay after these photos are deleted here on Nov 9". */
+  protected readonly firstDeletedOn = computed(() => {
+    const photos = this.allPhotos();
+    if (photos.length === 0) {
+      return null;
+    }
+    const soonest = photos.reduce((a, b) => (a.expiresAt < b.expiresAt ? a : b));
+    return expiry(soonest.expiresAt, this.timeZone(), this.now()).on;
+  });
+
+  /** "2 photos here are in your Google Photos." */
+  protected readonly exportedText = computed(() => {
+    const n = this.exports.view()?.exported ?? 0;
+    return n === 0 ? null : `${n === 1 ? '1 photo here is' : `${n} photos here are`} in your Google Photos.`;
+  });
+
+  /** The export records the open sheet is about. */
+  protected readonly sheetPhotos = computed<readonly PhotoExport[]>(() => {
+    const sheet = this.exportSheet();
+    const photos = this.exports.view()?.photos ?? [];
+    return sheet?.photoId ? photos.filter((p) => p.photoId === sheet.photoId) : photos;
+  });
+
+  /** What the open sheet shows, from the server's status. */
+  protected readonly sheetMode = computed(() => {
+    const sheet = this.exportSheet();
+    const v = this.exports.view();
+    if (!sheet || !v) {
+      return null;
+    }
+    if (!v.available) {
+      return 'unavailable';
+    }
+    if (v.connection === 'NotConnected') {
+      return 'connect';
+    }
+    if (v.connection === 'NeedsReconnect') {
+      return 'reconnect';
+    }
+    if (sheet.started) {
+      return 'progress';
+    }
+    if (sheet.photoId) {
+      const record = this.exports.byPhoto().get(sheet.photoId);
+      return !record || record.state === 'Failed' || record.state === 'Skipped' ? 'confirm' : 'progress';
+    }
+    return v.exportable > 0 ? 'confirm' : v.waiting > 0 ? 'progress' : 'nothing';
+  });
+
+  /** How many photos "Export" would send now. */
+  protected readonly exportCount = computed(() =>
+    this.exportSheet()?.photoId ? 1 : (this.exports.view()?.exportable ?? 0),
+  );
+
+  /** What isn't included, without naming anything private. */
+  protected readonly exportSkipped = computed(() => {
+    const v = this.exports.view();
+    if (!v || this.exportSheet()?.photoId) {
+      return null;
+    }
+    const parts: string[] = [];
+    if (v.exported > 0) {
+      parts.push(
+        v.exported === 1
+          ? '1 photo is already in your Google Photos and is skipped.'
+          : `${v.exported} photos are already in your Google Photos and are skipped.`,
+      );
+    }
+    if (v.waiting > 0) {
+      parts.push(`${v.waiting === 1 ? '1 photo is' : `${v.waiting} photos are`} already on the way.`);
+    }
+    if (v.omitted > 0) {
+      const who = this.coParent() ?? 'Your co-parent';
+      parts.push(
+        `${who} hasn’t allowed downloads of ${v.omitted === 1 ? '1 of their photos, so it' : `${v.omitted} of their photos, so they`} can’t be exported.`,
+      );
+    }
+    return parts.length ? parts.join(' ') : null;
+  });
+
+  /** Storage, and that copies outlive the photos here and can't be recalled. */
+  protected readonly exportNote = computed(() => {
+    const one = this.exportCount() === 1;
+    const on = this.firstDeletedOn();
+    return `Copies use your Google storage. ${one ? 'It stays' : 'They stay'} in your Google Photos after ${
+      one ? 'this photo is' : 'these photos are'
+    } deleted here${on ? ` on ${on}` : ''}; Parenthesis can’t recall ${one ? 'it' : 'them'}.`;
+  });
+
+  protected readonly exportProgress = computed(() => progressText(this.sheetPhotos()));
+  protected readonly sheetRetryable = computed(() =>
+    this.sheetPhotos().filter((p) => this.line(p).retry),
+  );
+
+  protected line(photo: PhotoExport): ExportLine {
+    return exportLine(photo, this.coParent(), this.firstDeletedOn());
+  }
+
+  /** A photo's mark on its tile and in the viewer, if it has an export record. */
+  protected photoExport(photo: EventPhoto): ExportLine | null {
+    if (!this.googlePhotos()) {
+      return null;
+    }
+    const record = this.exports.byPhoto().get(photo.id);
+    return record ? this.line(record) : null;
+  }
+
+  /** "Photo 3", by its place among the photos here; a deleted photo has none. */
+  protected photoName(photoId: string): string {
+    const index = this.allPhotos().findIndex((p) => p.id === photoId);
+    return index < 0 ? 'A photo no longer here' : `Photo ${index + 1}`;
+  }
+
+  protected thumbnail(photoId: string): string | null {
+    return this.allPhotos().find((p) => p.id === photoId)?.thumbnailUrl ?? null;
+  }
+
+  /** The viewer offers export for a photo the parent may download that isn't exported or on its way. */
+  protected canExport(photo: EventPhoto): boolean {
+    if (!this.exportOffered() || !this.exportAvailable() || !photo.downloadUrl) {
+      return false;
+    }
+    const record = this.exports.byPhoto().get(photo.id);
+    return !record || record.state === 'Failed' || record.state === 'Skipped';
+  }
+
+  protected openExport(photoId: string | null = null): void {
+    if (photoId) {
+      this.openPhoto.set(null);
+      this.confirmingDelete.set(false);
+    }
+    this.exports.error.set(null);
+    this.exportSheet.set({ photoId, started: false });
+    void this.exports.refresh();
+    this.focus('#export-sheet-heading');
+  }
+
+  protected async startExport(): Promise<void> {
+    const sheet = this.exportSheet();
+    if (!sheet || this.exports.busy()) {
+      return;
+    }
+    const ok = await this.exports.export(sheet.photoId ? [sheet.photoId] : undefined);
+    if (ok) {
+      this.exportSheet.set({ ...sheet, started: true });
+      this.focus('#export-sheet-heading');
+    }
+  }
+
+  protected async retryExport(): Promise<void> {
+    const ids = this.sheetRetryable().map((p) => p.photoId);
+    if (ids.length > 0) {
+      await this.exports.export(ids);
+    }
+  }
+
+  protected closeExport(): void {
+    const sheet = this.exportSheet();
+    this.exportSheet.set(null);
+    this.focus(sheet?.photoId ? `#photo-${sheet.photoId}` : '#export-open');
   }
 
   private focus(selector: string): void {
