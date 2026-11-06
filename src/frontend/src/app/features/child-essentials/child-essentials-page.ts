@@ -4,11 +4,12 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { Avatar } from '../../shared/avatar/avatar';
 
 import { ClothingSection } from './clothing-section';
+import { WhatHelpsSection } from './what-helps-section';
 
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, ClothingSection],
+  imports: [Avatar, ClothingSection, WhatHelpsSection],
   template: `
     <h1>Child Essentials</h1>
     @if (loading()) {
@@ -31,6 +32,7 @@ import { ClothingSection } from './clothing-section';
           @if (familyId(); as family) {
             @for (profile of [child]; track profile.id) {
               <app-clothing-section [familyId]="family" [childId]="profile.id" />
+              <app-what-helps-section [familyId]="family" [childId]="profile.id" />
             }
           }
         </section>
@@ -42,6 +44,7 @@ import { ClothingSection } from './clothing-section';
   styles: `
     :host { display: block; }
     .layout, .children { display: grid; gap: 1rem; align-content: start; }
+    app-what-helps-section { margin-block-start: 1rem; }
     button {
       display: flex;
       align-items: center;

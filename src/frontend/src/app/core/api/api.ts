@@ -636,6 +636,27 @@ export interface ClothingHistoryPage {
   readonly beforeRevision: number | null;
 }
 
+export interface WhatHelpsValues {
+  readonly comfortItems: string | null;
+  readonly calmingStrategies: string | null;
+}
+
+export interface WhatHelpsView {
+  readonly revision: number;
+  readonly values: WhatHelpsValues;
+}
+
+export interface WhatHelpsHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: WhatHelpsValues;
+    readonly current: WhatHelpsValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -689,6 +710,19 @@ export class Api {
 
   private clothingUrl(familyId: string, childId: string): string {
     return `/api/families/${familyId}/children/${childId}/essentials/clothing`;
+  }
+
+  whatHelps = (familyId: string, childId: string) =>
+    this.call(this.http.get<WhatHelpsView>(this.whatHelpsUrl(familyId, childId)));
+  saveWhatHelps = (familyId: string, childId: string, body: WhatHelpsView) =>
+    this.call(this.http.put<WhatHelpsView>(this.whatHelpsUrl(familyId, childId), body));
+  whatHelpsHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<WhatHelpsHistoryPage>(this.whatHelpsUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  private whatHelpsUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/what-helps`;
   }
 
   // Approvals inbox (ADR-0003).
