@@ -237,9 +237,11 @@ keys aren't encrypted.
 
 **Development holds synthetic data only.** Never copy production data into it.
 
-### Application Insights (prepared now, wired up later)
+### Application Insights
 `appi-parenthesis-$ENV` (created above) sits on the environment's Log Analytics workspace, and its connection string
-is already in Key Vault as `appinsights`. The app doesn't send telemetry yet; that's planned work. Cap log ingestion
+is already in Key Vault as `appinsights`. The API sends telemetry once its container app has the
+`APPLICATIONINSIGHTS_CONNECTION_STRING` setting; alerts and availability tests are in `infra/monitoring/main.bicep`.
+Both are owner-approved steps in [Application Insights monitoring](application-insights-monitoring.md). Cap log ingestion
 so telemetry can't run up the bill (GB per day; 0.5 is plenty for one environment):
 
 ```bash
@@ -251,6 +253,7 @@ Telemetry must not carry personal data: no names, emails, children's details, di
 bodies. Production telemetry is real family activity, so only the production readers below see it.
 
 Outage alerts come from free external checks, not Azure Monitor: see [uptime monitoring](uptime-monitoring.md).
+Azure Monitor alerts are defined but not deployed; they need the owner to change that $0 rule first.
 
 ## 3. Sign-in for GitHub Actions (OpenID Connect, no passwords)
 One identity per environment, each allowed to change only its own resource group.

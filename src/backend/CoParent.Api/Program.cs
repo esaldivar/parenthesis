@@ -16,6 +16,7 @@ var postgresConnectionString = builder.Configuration.GetConnectionString("Postgr
         "Connection string 'Postgres' is not configured. For local development, set it with dotnet user-secrets (see README).");
 
 builder.AddPlatformLogging();
+builder.AddPlatformTelemetry();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services
     .AddPersistence(postgresConnectionString)

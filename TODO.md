@@ -832,8 +832,8 @@ that points back here.
     everyday account, keeping the Owner account for emergencies.
   - [x] **Owner:** Application Insights prep for development (runbook step 2): 0.5 GB daily ingestion cap and the
     `appinsights` Key Vault secret (October 19, 2026). Production gets the same with `ENV=prod`.
-  - [ ] Wire up Application Insights in the API (owner plans this soon): read `APPLICATIONINSIGHTS_CONNECTION_STRING`
-    from `secretref:appinsights`, no personal data in telemetry, then add the app setting in each environment.
+  - [x] Wire up Application Insights in the API: reads `APPLICATIONINSIGHTS_CONNECTION_STRING`, drops query strings
+    and info logs (#86, November 5, 2026). The app setting per environment is tracked under #86 below.
   - [x] Invite-only sign-up on the development site: an allow-list of tester emails, configured per environment
     (application change in Identity, v0.2.0). `Identity:SignUp:InviteOnly` and `AllowedEmails`; off by default, so
     production stays open (October 19, 2026).
@@ -1022,6 +1022,24 @@ that points back here.
 ### #66 — Production artifact security evidence
 - Implemented: production Deploy verifies immutable image provenance/source-tree equivalence and latest exact-candidate main Sonar analysis plus Release security gate before Azure access. Hotfixes and manual released-version redeploys use the same fail-closed checks; development stays independent. Added synthetic guard regressions and agent release instructions.
 - Still required: reviewed rollout through normal releases, live main required-check/no-bypass ruleset evidence, exact-candidate Sonar/API and GHCR evidence for normal/hotfix/manual redeploy paths, and owner environment approval verification. No settings, production deployment or Sonar findings were changed; #65 is not accepted as resolved by these tests.
+
+### #86 — Application Insights monitoring and alerts (code done, not live)
+API telemetry and `infra/monitoring/main.bicep` (two availability tests, frontend/database/error-rate alerts, email
+action group) are in the PR into `release/0.3.0` (November 5, 2026). Nothing was deployed or changed in Azure. Steps
+and checks: `docs/runbooks/application-insights-monitoring.md`.
+- [ ] **Owner decision:** change the $0/month monitoring rule (uptime runbook, October 28, 2026) or keep alerts on
+  UptimeRobot only. Check current Azure Monitor prices first; the runbook's estimate (about $3.50/month per
+  environment, plus extra compute from keeping the app awake) comes from third-party price copies.
+- [ ] **Owner:** after release to development, add the `appinsights` secret reference and the
+  `APPLICATIONINSIGHTS_CONNECTION_STRING` setting to `ca-parenthesis-dev` (runbook step 1).
+- [ ] Live check: a request's `trace-id` shows up in `requests` with its PostgreSQL dependency, and a `?probe=` query
+  string is absent.
+- [ ] Live check: ingestion stays under the 0.5 GB/day cap over a week.
+- [ ] **Owner, if approved:** deploy `infra/monitoring/main.bicep` to development (`what-if` first, runbook step 2).
+- [ ] Live check: action-group test email arrives; frontend, database and error-rate alerts each send an alert and a
+  "Resolved" email (runbook verification table).
+- [ ] Production: the same steps with `ENV=prod` before or with the first production deployment.
+- [ ] Bicep has only been built and linted in CI; it has never been run against Azure (`what-if` is the first test).
 
 ### #160 — Development Application Insights verification (not passed)
 - Inspected active revision/image, telemetry variable names, Application Insights and linked workspace usage/cap/retention. Sent three anonymous synthetic GETs (200/200/401) with trace IDs. Detailed sanitized evidence is in `docs/runbooks/application-insights-verification-2026-10-25.md`.
