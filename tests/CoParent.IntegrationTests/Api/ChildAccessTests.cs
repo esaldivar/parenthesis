@@ -312,54 +312,58 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
             })
             .ToList();
 
-    [Fact]
-    public async Task Clothing_edits_are_shared_versioned_and_record_before_and_after_values()
+    [Theory]
+    [InlineData("clothing", "shoeSize")]
+    [InlineData("what-helps", "calmingStrategies")]
+    public async Task Shared_essentials_edits_are_shared_versioned_and_record_before_and_after_values(string section, string field)
     {
         using var family = await FamilyWithKaiAsync();
-        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/clothing";
+        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/{section}";
         var empty = await JsonAsync(await family.Dad.GetAsync(path));
         Assert.Equal(0, empty.GetProperty("revision").GetInt32());
-        Assert.Equal(JsonValueKind.Null, empty.GetProperty("values").GetProperty("shoeSize").ValueKind);
+        Assert.Equal(JsonValueKind.Null, empty.GetProperty("values").GetProperty(field).ValueKind);
 
         var dadSave = family.Dad.SendAsync(HttpMethod.Put, path,
-            new { revision = 0, values = new { shoeSize = "  4  ", topSize = "Small", bottomSize = "8", fitNotes = "Wide fit" } });
+            new { revision = 0, values = new Dictionary<string, string> { [field] = "  First entry  " } });
         var momSave = family.Mom.SendAsync(HttpMethod.Put, path,
-            new { revision = 0, values = new { shoeSize = "5" } });
+            new { revision = 0, values = new Dictionary<string, string> { [field] = "Second entry" } });
         var responses = await Task.WhenAll(dadSave, momSave);
         var first = await JsonAsync(Assert.Single(responses, r => r.StatusCode == HttpStatusCode.OK));
         var conflict = await JsonAsync(Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Conflict));
         Assert.Equal(1, first.GetProperty("revision").GetInt32());
         Assert.Equal(first.GetRawText(), conflict.GetRawText());
-        var firstSize = first.GetProperty("values").GetProperty("shoeSize").GetString();
-        Assert.Equal(responses[0].IsSuccessStatusCode ? "4" : "5", firstSize);
+        var firstValue = first.GetProperty("values").GetProperty(field).GetString();
+        Assert.Equal(responses[0].IsSuccessStatusCode ? "First entry" : "Second entry", firstValue);
 
         var secondParent = responses[0].IsSuccessStatusCode ? family.Mom : family.Dad;
         var second = await secondParent.SendAsync(HttpMethod.Put, path,
-            new { revision = 1, values = new { shoeSize = "  " } });
+            new { revision = 1, values = new Dictionary<string, string> { [field] = "  " } });
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
         var saved = await JsonAsync(await family.Dad.GetAsync(path));
         Assert.Equal(2, saved.GetProperty("revision").GetInt32());
-        Assert.Equal(JsonValueKind.Null, saved.GetProperty("values").GetProperty("shoeSize").ValueKind);
+        Assert.Equal(JsonValueKind.Null, saved.GetProperty("values").GetProperty(field).ValueKind);
 
         var history = await JsonAsync(await family.Mom.GetAsync(path + "/history"));
         var entries = history.GetProperty("entries");
         Assert.Equal(2, entries.GetArrayLength());
         Assert.Equal(responses[0].IsSuccessStatusCode ? "Mom" : "Dad", entries[0].GetProperty("editedBy").GetString());
         Assert.True(entries[0].GetProperty("editedAt").TryGetDateTimeOffset(out _));
-        Assert.Equal(firstSize, entries[0].GetProperty("previous").GetProperty("shoeSize").GetString());
-        Assert.Equal(JsonValueKind.Null, entries[0].GetProperty("current").GetProperty("shoeSize").ValueKind);
-        Assert.Equal(JsonValueKind.Null, entries[1].GetProperty("previous").GetProperty("shoeSize").ValueKind);
+        Assert.Equal(firstValue, entries[0].GetProperty("previous").GetProperty(field).GetString());
+        Assert.Equal(JsonValueKind.Null, entries[0].GetProperty("current").GetProperty(field).ValueKind);
+        Assert.Equal(JsonValueKind.Null, entries[1].GetProperty("previous").GetProperty(field).ValueKind);
     }
 
-    [Fact]
-    public async Task Clothing_current_values_writes_and_history_are_parent_and_family_scoped()
+    [Theory]
+    [InlineData("clothing", "shoeSize")]
+    [InlineData("what-helps", "calmingStrategies")]
+    public async Task Shared_essentials_current_values_writes_and_history_are_parent_and_family_scoped(string section, string field)
     {
         using var family = await FamilyWithKaiAsync();
         using var outsider = await ApiSession.SignedInAsync(api);
         var outsideFamilyId = await outsider.CreateFamilyAsync("Other family");
-        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/clothing";
-        var guessedChild = $"/api/families/{outsideFamilyId}/children/{family.KaiId}/essentials/clothing";
-        var body = new { revision = 0, values = new { shoeSize = "4" } };
+        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/{section}";
+        var guessedChild = $"/api/families/{outsideFamilyId}/children/{family.KaiId}/essentials/{section}";
+        var body = new { revision = 0, values = new Dictionary<string, string> { [field] = "Synthetic entry" } };
         Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, path, body)).StatusCode);
         foreach (var outsidePath in new[] { path, guessedChild })
         {

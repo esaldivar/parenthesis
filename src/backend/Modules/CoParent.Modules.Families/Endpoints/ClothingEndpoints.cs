@@ -50,7 +50,7 @@ internal static class ClothingEndpoints
             return TypedResults.Forbid();
         }
 
-        if (!await IsActiveChildAsync(db, childId, cancellationToken))
+        if (!await ChildEssentialsAccess.IsActiveChildAsync(db, childId, cancellationToken))
         {
             return TypedResults.NotFound();
         }
@@ -75,10 +75,10 @@ internal static class ClothingEndpoints
 
         var errors = new Dictionary<string, string[]>();
         var values = new ClothingValues(
-            Normalize(request.Values.TopSize, "topSize", ClothingRevision.SizeLimit, errors),
-            Normalize(request.Values.BottomSize, "bottomSize", ClothingRevision.SizeLimit, errors),
-            Normalize(request.Values.ShoeSize, "shoeSize", ClothingRevision.SizeLimit, errors),
-            Normalize(request.Values.FitNotes, "fitNotes", ClothingRevision.NotesLimit, errors));
+            ChildEssentialsAccess.Normalize(request.Values.TopSize, "topSize", ClothingRevision.SizeLimit, errors),
+            ChildEssentialsAccess.Normalize(request.Values.BottomSize, "bottomSize", ClothingRevision.SizeLimit, errors),
+            ChildEssentialsAccess.Normalize(request.Values.ShoeSize, "shoeSize", ClothingRevision.SizeLimit, errors),
+            ChildEssentialsAccess.Normalize(request.Values.FitNotes, "fitNotes", ClothingRevision.NotesLimit, errors));
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -87,14 +87,8 @@ internal static class ClothingEndpoints
         var userId = http.User.GetUserId()!.Value;
         return await unitOfWork.ExecuteAsync<IResult>(async ct =>
         {
-            // Share the Families lock with invitation acceptance and account deletion. Recheck eligibility and
-            // read the latest revision under the lock, including for the first save when no revision exists.
-            var locked = await db.Database.SqlQuery<int>(
-                $"SELECT 1 AS \"Value\" FROM families.families WHERE id = {tenant.FamilyId} FOR UPDATE").ToListAsync(ct);
-            if (locked.Count == 0 || !await db.Memberships.AnyAsync(m =>
-                    m.Id == tenant.MembershipId && m.UserId == userId &&
-                    m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active, ct) ||
-                !await IsActiveChildAsync(db, childId, ct))
+            if (!await ChildEssentialsAccess.LockActiveParentAsync(db, tenant, userId, ct) ||
+                !await ChildEssentialsAccess.IsActiveChildAsync(db, childId, ct))
             {
                 return TypedResults.NotFound();
             }
@@ -138,7 +132,7 @@ internal static class ClothingEndpoints
             return TypedResults.Forbid();
         }
 
-        if (!await IsActiveChildAsync(db, childId, cancellationToken))
+        if (!await ChildEssentialsAccess.IsActiveChildAsync(db, childId, cancellationToken))
         {
             return TypedResults.NotFound();
         }
@@ -163,23 +157,4 @@ internal static class ClothingEndpoints
     private static IQueryable<ClothingRevision> Revisions(FamiliesDbContext db, Guid childId) =>
         db.ClothingRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId)
             .OrderByDescending(row => row.Revision);
-
-    private static Task<bool> IsActiveChildAsync(FamiliesDbContext db, Guid childId, CancellationToken cancellationToken) =>
-        db.Children.AnyAsync(child => child.Id == childId && child.Status == ChildStatus.Active, cancellationToken);
-
-    private static string? Normalize(string? value, string field, int limit, Dictionary<string, string[]> errors)
-    {
-        value = value?.Trim();
-        if (value is null or "")
-        {
-            return null;
-        }
-
-        if (value.Length > limit || value.Contains('\0'))
-        {
-            errors[field] = [$"Enter valid text up to {limit} characters."];
-        }
-
-        return value;
-    }
 }
