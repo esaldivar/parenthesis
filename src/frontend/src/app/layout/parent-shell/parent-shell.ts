@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, isDevMode, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, isDevMode, untracked, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
@@ -16,6 +16,7 @@ import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
 import { SAMPLE_NOTIFICATIONS, SAMPLE_UNREAD } from '../sample-counts';
 import { ToastHost } from '../../shared/toast/toast-host';
 import { BottomNav } from '../../shared/overlay/bottom-nav-clearance';
+import { ChatDock } from '../../features/messages/chat-dock';
 
 const IGNORE_QUERY = { queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' } as const;
 const HOME_ACTIVE: IsActiveMatchOptions = { paths: 'exact', ...IGNORE_QUERY };
@@ -28,7 +29,7 @@ const SECTION_ACTIVE: IsActiveMatchOptions = { paths: 'subset', ...IGNORE_QUERY 
 @Component({
   selector: 'app-parent-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule, Icon, Logo, Leaves, Avatar, ToastHost, BottomNav],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule, Icon, Logo, Leaves, Avatar, ToastHost, BottomNav, ChatDock],
   templateUrl: './parent-shell.html',
   styleUrl: './parent-shell.scss',
 })
@@ -73,6 +74,18 @@ export class ParentShell {
 
   constructor() {
     focusMainOnNavigation(() => this.main());
+    // The compact chat (#125): Minimize on Messages returns to the last other page; opening Messages closes the
+    // compact chat, which is the same conversation.
+    effect(() => {
+      const url = this.url();
+      untracked(() => {
+        if (this.fullScreen()) {
+          this.chat.dock.set('closed');
+        } else {
+          this.chat.returnUrl.set(url);
+        }
+      });
+    });
   }
 
   /** This browser is the signed-in parent's own shared family device (#153). */
