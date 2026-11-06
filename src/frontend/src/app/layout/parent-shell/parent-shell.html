@@ -26,7 +26,7 @@
   </p>
 </mat-menu>
 
-<div class="shell">
+<div class="shell" [class.shell--full-screen]="fullScreen()">
   <aside class="sidebar">
     <a class="brand" routerLink="/" aria-label="Parenthesis home">
       <app-logo [decorative]="true" />
@@ -44,6 +44,10 @@
             >
               <app-icon [name]="item.icon" [size]="28" />
               <span>{{ item.label }}</span>
+              @if (item.path === '/messages' && chat.hasUnread()) {
+                <span class="dot" aria-hidden="true"></span>
+                <span class="visually-hidden">, unread messages</span>
+              }
               @if (unread(item.path); as count) {
                 <span class="badge" aria-hidden="true">{{ count }}</span>
                 <span class="visually-hidden">, {{ count }} unread (sample data)</span>
@@ -101,8 +105,16 @@
             [routerLinkActiveOptions]="activeOptions(item.path)"
             ariaCurrentWhenActive="page"
           >
-            <app-icon [name]="item.icon" />
+            <span class="bottomnav__icon">
+              <app-icon [name]="item.icon" />
+              @if (item.path === '/messages' && chat.hasUnread()) {
+                <span class="dot dot--icon" aria-hidden="true"></span>
+              }
+            </span>
             <span>{{ item.label }}</span>
+            @if (item.path === '/messages' && chat.hasUnread()) {
+              <span class="visually-hidden">, unread messages</span>
+            }
           </a>
         </li>
       }

@@ -55,8 +55,8 @@ interface UpcomingItem {
  * weekly calendar as the centrepiece, Upcoming and Quick Add, then From Your Kids, Recent Messages and Family
  * Memories.
  *
- * The week, Upcoming and Quick Add use the real calendar, approvals, reminders and tasks (#196). Messages, memories and
- * children's shares keep honest "not available yet" states until those features exist. In development builds,
+ * The week, Upcoming and Quick Add use the real calendar, approvals, reminders and tasks (#196), and Recent Messages the
+ * parents' conversation (#125). Children's shares keep an honest "not available yet" state until that feature exists. In development builds,
  * `?sample=1` previews the layout with clearly labelled synthetic data.
  */
 @Component({
@@ -206,12 +206,12 @@ export class DashboardPage {
   protected readonly currentMemory = computed(() => this.memories()[this.memoryIndex()] ?? null);
 
   /**
-   * As in the approved design. Event and Note open Add to calendar (a note is a shared reminder); messages and
-   * memories don't exist yet, so those stay marked unavailable (owner decision, October 22, 2026).
+   * As in the approved design. Event and Note open Add to calendar (a note is a shared reminder) and Message opens
+   * Messages (#125); Memory stays marked unavailable (owner decision, October 22, 2026).
    */
-  protected readonly quickActions: readonly { label: string; icon: IconName; kind?: 'event' | 'reminder' }[] = [
+  protected readonly quickActions: readonly { label: string; icon: IconName; kind?: 'event' | 'reminder'; link?: string }[] = [
     { label: 'Event', icon: 'calendar', kind: 'event' },
-    { label: 'Message', icon: 'messages' },
+    { label: 'Message', icon: 'messages', link: '/messages' },
     { label: 'Memory', icon: 'image' },
     { label: 'Note', icon: 'plus', kind: 'reminder' },
   ];

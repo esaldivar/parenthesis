@@ -563,6 +563,33 @@ export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'c
   readonly reason?: string;
 };
 
+// --- Milestone 4 (#125, ADR-0008): the parents' conversation ---------------------------------------------------------
+
+/** A message as both parents see it. `yours`: the viewer sent it. `clientMessageId` matches the sender's pending copy. */
+export interface ChatMessage {
+  readonly id: string;
+  readonly clientMessageId: string;
+  readonly senderMembershipId: string;
+  readonly yours: boolean;
+  readonly text: string;
+  readonly sentAt: string;
+}
+
+/** A page of the conversation, oldest first, with each parent's latest read message (null when none). */
+export interface ChatConversation {
+  readonly yourMembershipId: string;
+  readonly messages: readonly ChatMessage[];
+  readonly hasOlder: boolean;
+  readonly yourReadThrough: string | null;
+  readonly coParentReadThrough: string | null;
+}
+
+/** `count` stops at 99. */
+export interface ChatUnread {
+  readonly count: number;
+  readonly hasUnread: boolean;
+}
+
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -855,6 +882,19 @@ export class Api {
   /** Deletes the reminder (every repeat of it) for both parents, at once. */
   deleteReminder = (familyId: string, reminderId: string) =>
     this.call(this.http.delete<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}`));
+
+  // The parents' conversation (#125). Children never reach it.
+  /** The latest page, or the page before `before` (a message id). */
+  conversation = (familyId: string, before?: string) =>
+    this.call(this.http.get<ChatConversation>(`/api/families/${familyId}/chat`, { params: before ? { before } : {} }));
+  /** Idempotent per `clientMessageId`: retrying returns the stored message instead of a second copy. */
+  sendMessage = (familyId: string, clientMessageId: string, text: string) =>
+    this.call(this.http.post<ChatMessage>(`/api/families/${familyId}/chat/messages`, { clientMessageId, text }));
+  /** Only for a message seen in an open, visible conversation. Moving back changes nothing. */
+  markRead = (familyId: string, messageId: string) =>
+    this.call(this.http.put<void>(`/api/families/${familyId}/chat/read`, { messageId }));
+  chatUnread = (familyId: string) => this.call(this.http.get<ChatUnread>(`/api/families/${familyId}/chat/unread`));
+  typing = (familyId: string) => this.call(this.http.post<void>(`/api/families/${familyId}/chat/typing`, {}));
 
   private call<T>(request: import('rxjs').Observable<T>): Promise<T> {
     return firstValueFrom(request);

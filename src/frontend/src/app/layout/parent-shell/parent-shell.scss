@@ -117,6 +117,27 @@ ul {
   font-size: 0.75rem;
 }
 
+// Unread messages (#125): a dot, as in the M4 mockups, with the words for assistive technology next to it.
+.dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-inline-start: auto;
+  border-radius: 50%;
+  background: var(--color-action);
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+.bottomnav__icon {
+  position: relative;
+  display: inline-grid;
+}
+
+.dot--icon {
+  position: absolute;
+  top: -2px;
+  inset-inline-end: -4px;
+}
+
 .menu-note {
   margin: 0;
   padding: var(--space-3) var(--space-4);
@@ -272,5 +293,19 @@ a.is-active {
 
   .bottomnav {
     display: none;
+  }
+}
+
+// Messages on phones and tablets: the conversation has its own header with Back, so the bars step aside.
+@media (max-width: 1023.98px) {
+  .shell--full-screen {
+    .topbar,
+    .bottomnav {
+      display: none;
+    }
+
+    main {
+      padding: 0;
+    }
   }
 }

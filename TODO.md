@@ -1167,7 +1167,11 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 - [ ] **M4 messaging (#125), slice 1 backend.** Messaging module (one conversation per family, immutable messages,
   idempotent sends, forward-only read positions, typing) and the first SignalR hub, `/hubs/chat` (listen-only, parent
   membership and same-site checks). ADR-0008 is Proposed. 10 integration tests; full suite 410/410.
-  - [ ] Frontend slice 1: chat page, unread dot, "New messages" divider, Read receipt, typing, Not sent/Retry.
+  - [x] Frontend slice 1: chat page, unread dot, "New messages" divider, Read receipt, typing, Not sent/Retry
+    (Home's Recent Messages and Quick Add Message now open it too).
+  - [ ] Owner decision: dictation relies on the phone keyboard's own microphone (no in-app mic button, which would
+    send audio to a browser speech service); the mockups' mic is replaced by Send.
+  - [x] Verify the phone layouts on WebKit (CI's `mobile-webkit-*` profiles passed on PR #449).
   - [ ] Owner decisions: keep a deleted parent's messages for the co-parent (ADR-0008 decision 8); nav label
     **Messages** or **Chat**; accept ADR-0008.
   - [ ] Slices 2 and 3 of `docs/design/m4-chat.md`: calendar event cards and compact desktop chat; PDF transcripts.

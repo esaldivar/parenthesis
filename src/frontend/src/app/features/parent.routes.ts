@@ -40,14 +40,11 @@ export const PARENT_ROUTES: Routes = [
     title: 'Calendar',
     loadComponent: () => import('./calendar/calendar-page').then((m) => m.CalendarPage),
   },
+  // The parents' conversation (#125, ADR-0008). Children never reach it.
   {
     path: 'messages',
-    ...comingSoon('Messages', {
-      icon: 'messages',
-      intro: 'Private messages between parents.',
-      emptyTitle: 'Planned for a later release',
-      emptyBody: 'Messaging isn’t part of this version of Parenthesis.',
-    }),
+    title: 'Messages',
+    loadComponent: () => import('./messages/messages-page').then((m) => m.MessagesPage),
   },
   {
     path: 'from-your-kids',

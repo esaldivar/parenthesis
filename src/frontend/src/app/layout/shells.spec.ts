@@ -2,12 +2,20 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../app.routes';
+import { CHAT_CONNECTION, ChatStore } from '../core/chat/chat.store';
 import { axeViolations } from '../../testing/axe';
 import { fakeAuth } from '../../testing/fake-auth';
 
 describe('application shells', () => {
   async function open(url: string) {
-    TestBed.configureTestingModule({ providers: [provideRouter(routes, withComponentInputBinding()), fakeAuth()] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        fakeAuth(),
+        // No live chat connection in these tests: it never opens.
+        { provide: CHAT_CONNECTION, useValue: () => new Promise(() => undefined) },
+      ],
+    });
     const harness = await RouterTestingHarness.create(url);
     return harness.routeNativeElement!.ownerDocument.body;
   }
@@ -74,8 +82,8 @@ describe('application shells', () => {
       const body = await open('/?sample=1');
       const sidenav = body.querySelector('nav.sidenav')!;
 
-      expect(sidenav.textContent).toContain('3 unread (sample data)'); // Messages
       expect(sidenav.textContent).toContain('2 unread (sample data)'); // From Your Kids
+      expect(sidenav.textContent).not.toContain('3 unread'); // Messages have real unread state (#125)
       expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications, 3 unread (sample data)');
     });
 
@@ -99,12 +107,32 @@ describe('application shells', () => {
     });
 
     it('says plainly that unbuilt features are not available', async () => {
-      const body = await open('/messages');
+      const body = await open('/from-your-kids');
 
-      expect(body.querySelector('main')!.textContent).toContain('Messaging isn’t part of this version of Parenthesis');
+      expect(body.querySelector('main')!.textContent).toContain('Sharing from your children’s space isn’t available yet');
     });
 
-    it.each(['/', '/calendar', '/settings', '/more'])('has no automatically detectable accessibility issues at %s', async (url) => {
+    it('opens Messages full screen on phones, with its own way back', async () => {
+      const body = await open('/messages');
+
+      expect(body.querySelector('.shell')!.classList).toContain('shell--full-screen');
+      expect(body.querySelector('main a[aria-label="Back to Home"]')!.getAttribute('href')).toBe('/');
+    });
+
+    it('shows a dot on Messages, with words for assistive technology, when the co-parent wrote something unread', async () => {
+      const body = await open('/');
+      expect(body.querySelector('.dot')).toBeNull();
+
+      TestBed.inject(ChatStore).unread.set(2);
+      TestBed.tick();
+
+      expect(body.querySelectorAll('nav.sidenav .dot, nav.bottomnav .dot')).toHaveLength(2);
+      const messages = [...body.querySelectorAll('nav a')].filter((a) => a.getAttribute('href') === '/messages');
+      expect(messages).toHaveLength(2);
+      expect(messages.every((a) => a.querySelector('.visually-hidden')!.textContent === ', unread messages')).toBe(true);
+    });
+
+    it.each(['/', '/calendar', '/settings', '/more', '/messages'])('has no automatically detectable accessibility issues at %s', async (url) => {
       const body = await open(url);
 
       expect(await axeViolations(body)).toEqual([]);

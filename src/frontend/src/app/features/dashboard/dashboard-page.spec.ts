@@ -142,18 +142,19 @@ describe('DashboardPage (approved design)', () => {
 
       expect(el.querySelector('.sample-banner')).toBeNull();
       expect(text(el.querySelector('.area-upcoming'))).toContain('Nothing else this week');
-      expect(text(el.querySelector('.area-messages'))).toContain('Messaging between parents isn’t available yet');
+      expect(text(el.querySelector('.area-messages'))).toContain('No messages yet');
     });
 
-    it('opens Add to calendar from Event and Note, and keeps Message and Memory marked unavailable', async () => {
+    it('opens Add to calendar from Event and Note, Messages from Message, and keeps Memory marked unavailable', async () => {
       const { el } = await render();
       const actions = [...el.querySelectorAll<HTMLElement>('.quick__btn')];
 
       expect(actions.map(text)).toEqual(['Event', 'Message', 'Memory', 'Note']);
       expect(actions[0].getAttribute('href')).toBe('/calendar/new?date=2026-10-14');
       expect(actions[3].getAttribute('href')).toBe('/calendar/new?date=2026-10-14&kind=reminder');
-      expect([actions[1], actions[2]].every((b) => b.getAttribute('aria-disabled') === 'true')).toBe(true);
-      expect(text(el.querySelector('#quick-note'))).toBe('Messages and memories open here when they’re ready.');
+      expect(actions[1].getAttribute('href')).toBe('/messages');
+      expect(actions[2].getAttribute('aria-disabled')).toBe('true');
+      expect(text(el.querySelector('#quick-note'))).toBe('Memories open here when they’re ready.');
     });
 
     it('lists approvals first, then the week’s events, reminders and tasks in time order', async () => {
