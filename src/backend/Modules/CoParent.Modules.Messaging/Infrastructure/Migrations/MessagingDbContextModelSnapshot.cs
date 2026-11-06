@@ -34,6 +34,10 @@ namespace CoParent.Modules.Messaging.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("client_message_id");
 
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
                     b.Property<Guid>("FamilyId")
                         .HasColumnType("uuid")
                         .HasColumnName("family_id");

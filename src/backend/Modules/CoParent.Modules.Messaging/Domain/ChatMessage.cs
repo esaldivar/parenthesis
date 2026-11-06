@@ -15,13 +15,14 @@ internal sealed class ChatMessage : Entity, IFamilyScoped
     {
     }
 
-    public ChatMessage(Guid familyId, Guid senderMembershipId, Guid clientMessageId, string text, DateTimeOffset sentAt)
+    public ChatMessage(Guid familyId, Guid senderMembershipId, Guid clientMessageId, string text, DateTimeOffset sentAt, Guid? eventId = null)
     {
         FamilyId = familyId;
         SenderMembershipId = senderMembershipId;
         ClientMessageId = clientMessageId;
         Text = text;
         SentAt = sentAt;
+        EventId = eventId;
     }
 
     public Guid FamilyId { get; private init; }
@@ -37,7 +38,14 @@ internal sealed class ChatMessage : Entity, IFamilyScoped
     /// </summary>
     public Guid ClientMessageId { get; private init; }
 
+    /// <summary>The text; empty when the message only shares an event.</summary>
     public string Text { get; private init; } = "";
+
+    /// <summary>
+    /// A calendar event shared with the message (slice 2 of docs/design/m4-chat.md). Only its id is kept: each parent's
+    /// card is read from the Calendar with their own permissions, so a cancelled or hidden event shows as unavailable.
+    /// </summary>
+    public Guid? EventId { get; private init; }
 
     public DateTimeOffset SentAt { get; private init; }
 
