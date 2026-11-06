@@ -203,6 +203,8 @@ test.describe('Calendar accessibility acceptance', { tag: ['@m3', '@a11y'] }, ()
         const start = page.locator(`#${form}-start-date`), end = page.locator(`#${form}-end-date`);
         await start.press('Enter');
         await expect(page.locator('mat-calendar')).toBeVisible();
+        // Scan the picker once it has finished opening: mid-animation, axe can measure half-faded colours (WebKit).
+        await page.locator('mat-datepicker-content').evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished)));
         await scan(page, info, `${theme}-${form}-picker`);
         await chooseWithKeyboard(page, label(5));
         await expect(page.locator('mat-calendar')).toHaveCount(0);
