@@ -105,13 +105,17 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-mobile-v1-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
+      # A stuck download once used the whole 60-minute job before any test ran (PRs #448 and #450). Each try now stops
+      # after 10 minutes and is tried once more; a second failure fails the job, so no test is skipped.
       - name: Install Chromium and WebKit
         if: steps.browser-cache.outputs.cache-hit != 'true'
-        run: npm run browser:install
+        timeout-minutes: 22
+        run: timeout 10m npm run browser:install || timeout 10m npm run browser:install
 
       - name: Install browser system libraries
         if: steps.browser-cache.outputs.cache-hit == 'true'
-        run: npm run browser:deps
+        timeout-minutes: 22
+        run: timeout 10m npm run browser:deps || timeout 10m npm run browser:deps
 
       # This shard's share of every milestone's tests. The report job merges all shards and summarizes them.
       - name: Run the release gate (every milestone, this shard)
