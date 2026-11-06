@@ -5,6 +5,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthStore } from '../../core/auth/auth.store';
+import { ChatStore } from '../../core/chat/chat.store';
 import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Logo } from '../../shared/brand/logo';
@@ -56,6 +57,12 @@ export class ParentShell {
     () => isDevMode() && new URLSearchParams(this.url().split('?')[1] ?? '').get('sample') === '1',
   );
   protected readonly notifications = computed(() => (this.sample() ? SAMPLE_NOTIFICATIONS : 0));
+
+  /** The parents' conversation: its connection lives as long as the shell, for the unread dot (#125). */
+  protected readonly chat = inject(ChatStore);
+
+  /** Messages fill the screen on phones, as in the M4 mockups: no top bar or bottom navigation there. */
+  protected readonly fullScreen = computed(() => this.url().split(/[?#]/)[0] === '/messages');
 
   /** PLACEHOLDER: sample-only unread count for a navigation item; always 0 for real data (no unread API yet). */
   protected unread(path: string): number {
