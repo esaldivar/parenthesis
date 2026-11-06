@@ -108,17 +108,18 @@ jobs:
           # v2: browsers cached on Ubuntu 26.04 must not be restored on the pinned 24.04 runner.
           key: playwright-mobile-v2-ubuntu-24.04-${{ steps.playwright.outputs.version }}
 
-      # A stuck download once used the whole 60-minute job before any test ran (PRs #448 and #450). Each try now stops
-      # after 10 minutes and is tried once more; a second failure fails the job, so no test is skipped.
+      # A stuck download once used the whole 60-minute job before any test ran (PRs #448 and #450). The step now stops
+      # after 25 minutes, failing the job with the step named, instead of using up the job. No retry: the package
+      # installer the step starts can outlive a stopped try and hold its lock, so a second try fails anyway.
       - name: Install Chromium and WebKit
         if: steps.browser-cache.outputs.cache-hit != 'true'
-        timeout-minutes: 22
-        run: timeout 10m npm run browser:install || timeout 10m npm run browser:install
+        timeout-minutes: 25
+        run: npm run browser:install
 
       - name: Install browser system libraries
         if: steps.browser-cache.outputs.cache-hit == 'true'
-        timeout-minutes: 22
-        run: timeout 10m npm run browser:deps || timeout 10m npm run browser:deps
+        timeout-minutes: 25
+        run: npm run browser:deps
 
       # This shard's share of every milestone's tests. The report job merges all shards and summarizes them.
       - name: Run the release gate (every milestone, this shard)
