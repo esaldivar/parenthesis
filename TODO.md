@@ -1169,7 +1169,7 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
     (Home's Recent Messages and Quick Add Message now open it too).
   - [ ] Owner decision: dictation relies on the phone keyboard's own microphone (no in-app mic button, which would
     send audio to a browser speech service); the mockups' mic is replaced by Send.
-  - [ ] Verify the phone layouts on WebKit (the local sandbox can't download it; CI runs `mobile-webkit-*`).
+  - [x] Verify the phone layouts on WebKit (CI's `mobile-webkit-*` profiles passed on PR #449).
   - [ ] Owner decisions: keep a deleted parent's messages for the co-parent (ADR-0008 decision 8); nav label
     **Messages** or **Chat**; accept ADR-0008.
   - [ ] Slices 2 and 3 of `docs/design/m4-chat.md`: calendar event cards and compact desktop chat; PDF transcripts.
