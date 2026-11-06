@@ -8,6 +8,7 @@ using CoParent.Modules.Calendar;
 using CoParent.Modules.Families;
 using CoParent.Modules.Identity;
 using CoParent.Modules.Memories;
+using CoParent.Modules.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +34,8 @@ builder.Services
     .AddApprovalsModule()
     .AddFamiliesModule()
     .AddCalendarModule()
-    .AddMemoriesModule();
+    .AddMemoriesModule()
+    .AddMessagingModule();
 
 var app = builder.Build();
 
@@ -51,6 +53,7 @@ app.UseServerTiming();
 app.UseHttpLogging();
 app.UseResponseCompression();
 app.UseSpaStaticFiles();
+app.UseMessagingHubOriginCheck();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseTenantGate();
@@ -76,6 +79,10 @@ api.MapFamiliesEndpoints(family);
 family.MapApprovalsEndpoints();
 family.MapCalendarEndpoints();
 family.MapMemoriesEndpoints();
+family.MapMessagingEndpoints();
+
+// Live chat updates (#125). Signed-in parents only; the hub checks family membership itself.
+app.MapMessagingHub();
 
 // Everything else that looks like a client-side route gets the Angular app.
 app.MapSpaFallback();

@@ -87,7 +87,7 @@ Each module is **one .NET project** with internal folders (`Domain`, `Applicatio
 | **Approvals** | ChangeRequest, ApprovalDecision, the PR-style workflow engine | `approvals` |
 | **Calendar** | CalendarEvent, attendees (children), reminders, each parent's one-way Google Calendar copy (#386) | `calendar` |
 | **Memories** | M3 event photos: PhotoBatch, EventPhoto, MemorySettings, 28-day expiry (#403). Later: Memory, MemoryAttachment, MemoryShare, soft delete & purge | `memories` |
-| **Messaging** (post-MVP) | Conversation, Message, MessageAttachment | `messaging` |
+| **Messaging** | M4 parent-to-parent chat (#125, [ADR-0008](../adr/0008-parent-messaging.md)): one conversation per family, immutable messages, read positions; live updates on the `/hubs/chat` SignalR hub | `messaging` |
 | **Notifications** | Notification inbox, SignalR push, email digests | `notifications` |
 | **Integrations** (post-MVP) | Other external calendars, if ever needed (Google's one-way copy is in Calendar, #386) | `integrations` |
 
@@ -239,7 +239,7 @@ coparent/
 │  │     ├─ CoParent.Modules.Calendar/
 │  │     ├─ CoParent.Modules.Memories/
 │  │     ├─ CoParent.Modules.Notifications/
-│  │     ├─ CoParent.Modules.Messaging/       (post-MVP)
+│  │     ├─ CoParent.Modules.Messaging/       (M4 chat, #125)
 │  │     └─ CoParent.Modules.Integrations/    (post-MVP)
 │  └─ frontend/                   Angular workspace (see §6)
 ├─ tests/
