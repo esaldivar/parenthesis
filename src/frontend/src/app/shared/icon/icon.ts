@@ -25,6 +25,8 @@ const PATHS = {
   swap: 'M5 8h13 M15 5l3 3-3 3 M19 16H6 M9 13l-3 3 3 3',
   alert: 'M12 3.5l9 16H3z M12 10v4 M12 16.8v.4',
   minus: 'M5 12h14',
+  // Two arrows pointing out: open the compact chat as the full page.
+  expand: 'M14 4h6v6 M20 4l-7 7 M10 20H4v-6 M4 20l7-7',
   send: 'M21 3 3 10.5l7 3 3 7.5z M21 3 10 13.5',
   // A box with an arrow leaving it: the link opens outside Parenthesis.
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',

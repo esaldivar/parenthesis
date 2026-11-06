@@ -255,7 +255,111 @@ public sealed class ChatTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, (await f.Dad.Client.SendAsync(sameSite, Ct)).StatusCode);
     }
 
+    [Fact]
+    public async Task A_shared_event_shows_each_parent_its_card_as_their_own_calendar_does()
+    {
+        using var f = await FamilyAsync();
+        var start = DateTimeOffset.UtcNow.AddDays(3).Date.AddHours(15);
+        var game = await EventAsync(f.Dad, f, new { category = "Activity", title = "Soccer game", startsAt = start, endsAt = start.AddHours(2) });
+        var play = await EventAsync(f.Dad, f, new { category = "Joint", title = "School play", startsAt = start.AddDays(1), endsAt = start.AddDays(1).AddHours(1) });
+        var away = await EventAsync(f.Dad, f, new { category = "Unavailable", startsAt = start.AddDays(2), endsAt = start.AddDays(2).AddHours(3), notes = "Dentist appointment" });
+
+        var withText = await SendEventAsync(f.Dad, f, "Here's the game info.", game);
+        var onlyEvent = await SendEventAsync(f.Dad, f, null, play);
+        var unavailable = await SendEventAsync(f.Dad, f, "I'm away that afternoon.", away);
+
+        // The sender's own copy carries the card.
+        var card = withText.GetProperty("event");
+        Assert.True(card.GetProperty("available").GetBoolean());
+        Assert.Equal("Soccer game", card.GetProperty("title").GetString());
+        Assert.Equal("Confirmed", card.GetProperty("status").GetString());
+        Assert.Equal("", onlyEvent.GetProperty("text").GetString());
+
+        // Mom's conversation: the same cards, read with her calendar's rules. A proposal never reads as confirmed, and
+        // unavailable time keeps its private reason to its owner.
+        var moms = (await ConversationAsync(f.Mom, f)).GetProperty("messages").EnumerateArray().Select(m => m.GetProperty("event")).ToList();
+        Assert.Equal(["Soccer game", "School play", "Unavailable"], moms.Select(c => c.GetProperty("title").GetString()));
+        Assert.Equal(["Confirmed", "Proposed", "Confirmed"], moms.Select(c => c.GetProperty("status").GetString()));
+        Assert.DoesNotContain("Dentist", (await ConversationAsync(f.Mom, f)).GetRawText(), StringComparison.Ordinal);
+
+        // One message, as a live push's reader gets it.
+        var single = await JsonAsync(await f.Mom.GetAsync(f.Path($"chat/messages/{withText.GetProperty("id").GetGuid()}")));
+        Assert.False(single.GetProperty("yours").GetBoolean());
+        Assert.Equal("Soccer game", single.GetProperty("event").GetProperty("title").GetString());
+
+        // Cancelled: both parents' cards say it's no longer available, and give nothing else away.
+        Assert.Equal(HttpStatusCode.NoContent, (await f.Dad.SendAsync(HttpMethod.Delete, f.Path($"calendar/events/{away}"))).StatusCode);
+        foreach (var parent in new[] { f.Dad, f.Mom })
+        {
+            var gone = (await ConversationAsync(parent, f)).GetProperty("messages")[2].GetProperty("event");
+            Assert.False(gone.GetProperty("available").GetBoolean());
+            Assert.Equal(away, gone.GetProperty("id").GetGuid());
+            Assert.Equal(JsonValueKind.Null, gone.GetProperty("title").ValueKind);
+            Assert.Equal(JsonValueKind.Null, gone.GetProperty("startsAt").ValueKind);
+        }
+
+        // The message itself stays: messages are never edited or deleted.
+        Assert.Equal("I'm away that afternoon.", (await ConversationAsync(f.Mom, f)).GetProperty("messages")[2].GetProperty("text").GetString());
+    }
+
+    [Fact]
+    public async Task Only_an_event_on_the_senders_own_calendar_can_be_shared()
+    {
+        using var f = await FamilyAsync();
+        using var stranger = await ApiSession.SignedInAsync(api, displayName: "Stranger");
+        var otherFamily = await stranger.CreateFamilyAsync("Other Family");
+        var start = DateTimeOffset.UtcNow.AddDays(3);
+        var theirs = await JsonAsync(await stranger.PostAsync($"/api/families/{otherFamily}/calendar/events", new
+        {
+            category = "Activity",
+            title = "Secret soccer",
+            startsAt = start,
+            endsAt = start.AddHours(1),
+        }));
+        var cancelled = await EventAsync(f.Dad, f, new { category = "Activity", title = "Swim", startsAt = start, endsAt = start.AddHours(1) });
+        Assert.Equal(HttpStatusCode.NoContent, (await f.Dad.SendAsync(HttpMethod.Delete, f.Path($"calendar/events/{cancelled}"))).StatusCode);
+
+        foreach (var eventId in new[] { theirs.GetProperty("id").GetGuid(), cancelled, Guid.CreateVersion7() })
+        {
+            var response = await f.Dad.PostAsync(f.Path("chat/messages"), new { clientMessageId = Guid.NewGuid(), text = "Look", eventId });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.True((await JsonAsync(response)).GetProperty("errors").TryGetProperty("eventId", out _));
+        }
+
+        Assert.Equal(0, (await ConversationAsync(f.Mom, f)).GetProperty("messages").GetArrayLength());
+        Assert.DoesNotContain("Secret", (await ConversationAsync(f.Dad, f)).GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task One_message_is_only_for_the_familys_parents()
+    {
+        using var f = await FamilyAsync();
+        var message = await SendAsync(f.Dad, f, "Hi");
+        var path = f.Path($"chat/messages/{message.GetProperty("id").GetGuid()}");
+        using var kitchen = await KitchenAsync(f);
+        using var other = await ApiSession.SignedInAsync(api, displayName: "Stranger");
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await kitchen.GetAsync(path)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync(path)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.GetAsync(f.Path($"chat/messages/{Guid.CreateVersion7()}"))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await f.Mom.GetAsync(path)).StatusCode);
+    }
+
     // ---------- Helpers ----------
+
+    private static async Task<Guid> EventAsync(ApiSession parent, TestFamily f, object body)
+    {
+        var response = await parent.PostAsync(f.Path("calendar/events"), body);
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync(Ct));
+        return (await JsonAsync(response)).GetProperty("id").GetGuid();
+    }
+
+    private static async Task<JsonElement> SendEventAsync(ApiSession parent, TestFamily f, string? text, Guid eventId)
+    {
+        var response = await parent.PostAsync(f.Path("chat/messages"), new { clientMessageId = Guid.NewGuid(), text, eventId });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return await JsonAsync(response);
+    }
 
     private static async Task<JsonElement> SendAsync(ApiSession parent, TestFamily f, string text)
     {

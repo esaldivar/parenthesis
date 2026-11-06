@@ -1,5 +1,6 @@
 import { Injectable, InjectionToken, computed, effect, inject, signal, untracked } from '@angular/core';
-import { Api, ChatMessage } from '../api/api';
+import { Api, ChatEventCard, ChatMessage, FamilyMember } from '../api/api';
+import { toProblem } from '../api/problem';
 import { AuthStore } from '../auth/auth.store';
 
 /** The parts of a SignalR hub connection the store uses, so tests can stand in for the server. */
@@ -28,12 +29,20 @@ export const CHAT_CONNECTION = new InjectionToken<() => Promise<ChatConnection>>
   },
 });
 
-/** A message this device is sending, or failed to send. Retrying reuses its `clientMessageId`, so it can't duplicate. */
+/**
+ * A message this device is sending, or failed to send. Retrying reuses its `clientMessageId`, so it can't duplicate.
+ * `eventGone`: it failed because its event is no longer on the sender's calendar, so retrying as is can't work.
+ */
 export interface PendingMessage {
   readonly clientMessageId: string;
   readonly text: string;
   readonly state: 'sending' | 'failed';
+  readonly event?: ChatEventCard | null;
+  readonly eventGone?: boolean;
 }
+
+/** The desktop pop-up (slice 2): docked over the page, minimized to a bar, or closed. */
+export type ChatDockState = 'closed' | 'open' | 'minimized';
 
 /** How long the co-parent's "typing" lasts without another signal. */
 export const TYPING_SHOWN_MS = 6000;
@@ -72,6 +81,14 @@ export class ChatStore {
   readonly unread = signal(0);
   /** The composer's text, kept while the parent moves around the app (cleared on sign-out). */
   readonly draft = signal('');
+  /** The calendar event chosen to share with the next message, kept with the draft. */
+  readonly draftEvent = signal<ChatEventCard | null>(null);
+  /** The desktop pop-up. The full page and the pop-up show the same conversation, draft and chosen event. */
+  readonly dock = signal<ChatDockState>('closed');
+  /** Where Minimize on the full page returns to: the last page before Messages (the shell keeps it). */
+  readonly returnUrl = signal<string | null>(null);
+  /** The family's members, kept so switching between the page and the pop-up shows the conversation at once. */
+  readonly members = signal<readonly FamilyMember[]>([]);
   /** Bumped when a reconnect reloads the conversation, so the page can recheck what's on screen. */
   readonly reloaded = signal(0);
 
@@ -123,13 +140,16 @@ export class ChatStore {
     this.hasOlder.set(page.hasOlder);
   }
 
-  /** Sends the text as a new message. It shows at once as "sending", and stays as "Not sent" if it fails. */
-  async send(text: string): Promise<void> {
+  /**
+   * Sends the text, and the chosen event if any, as a new message. It shows at once as "sending", and stays as
+   * "Not sent" if it fails.
+   */
+  async send(text: string, event: ChatEventCard | null = null): Promise<void> {
     const trimmed = text.trim();
-    if (!trimmed) {
+    if (!trimmed && !event) {
       return;
     }
-    const message: PendingMessage = { clientMessageId: crypto.randomUUID(), text: trimmed, state: 'sending' };
+    const message: PendingMessage = { clientMessageId: crypto.randomUUID(), text: trimmed, state: 'sending', event };
     this.pending.update((list) => [...list, message]);
     await this.deliver(message);
   }
@@ -137,10 +157,26 @@ export class ChatStore {
   /** Sends a failed message again with the same id: the server returns the stored copy if the first try got through. */
   async retry(clientMessageId: string): Promise<void> {
     const message = this.pending().find((p) => p.clientMessageId === clientMessageId);
-    if (!message || message.state === 'sending') {
+    if (!message || message.state === 'sending' || message.eventGone) {
       return;
     }
     await this.deliver(message);
+  }
+
+  /** A message whose event is gone: send its text alone. The server never stored it, so the same id is safe. */
+  async sendWithoutEvent(clientMessageId: string): Promise<void> {
+    const message = this.pending().find((p) => p.clientMessageId === clientMessageId);
+    if (!message?.eventGone || !message.text) {
+      return;
+    }
+    const plain: PendingMessage = { ...message, event: null, eventGone: false };
+    this.pending.update((list) => list.map((p) => (p.clientMessageId === clientMessageId ? plain : p)));
+    await this.deliver(plain);
+  }
+
+  /** Drops a message that wasn't sent. */
+  discard(clientMessageId: string): void {
+    this.pending.update((list) => list.filter((p) => p.clientMessageId !== clientMessageId || p.state === 'sending'));
   }
 
   /**
@@ -197,15 +233,18 @@ export class ChatStore {
     }
     this.setPending(message.clientMessageId, 'sending');
     try {
-      const sent = await this.api.sendMessage(familyId, message.clientMessageId, message.text);
+      const sent = await this.api.sendMessage(familyId, message.clientMessageId, message.text, message.event?.id);
       if (familyId !== this.familyId()) {
         return;
       }
       this.pending.update((list) => list.filter((p) => p.clientMessageId !== message.clientMessageId));
       this.receive(sent);
       this.advanceYours(sent.id);
-    } catch {
-      this.setPending(message.clientMessageId, 'failed');
+    } catch (error) {
+      const eventGone = toProblem(error).errors['eventId'] !== undefined;
+      this.pending.update((list) =>
+        list.map((p) => (p.clientMessageId === message.clientMessageId ? { ...p, state: 'failed', eventGone } : p)),
+      );
     }
   }
 
@@ -217,7 +256,7 @@ export class ChatStore {
   private receive(message: ChatMessage): void {
     const me = this.membershipId();
     const own = { ...message, yours: me !== null ? message.senderMembershipId === me : message.yours };
-    this.messages.update((current) => (current === null ? current : merge(current, [own])));
+    this.messages.update((current) => (current === null ? current : upsert(current, own)));
     if (own.yours) {
       this.pending.update((list) => list.filter((p) => p.clientMessageId !== own.clientMessageId));
     } else {
@@ -260,6 +299,9 @@ export class ChatStore {
     this.coParentReadThrough.set(null);
     this.unread.set(0);
     this.draft.set('');
+    this.draftEvent.set(null);
+    this.dock.set('closed');
+    this.members.set([]);
     this.stopTyping();
     await this.disconnect();
     if (familyId) {
@@ -305,6 +347,13 @@ export class ChatStore {
       }
       this.receive(message);
       void this.refreshUnread();
+      // A pushed copy carries only the event's id: read the card this parent's own calendar gives.
+      if (message.eventId && !message.event) {
+        void this.api
+          .chatMessage(familyId, message.id)
+          .then((full) => current() && this.receive(full))
+          .catch(() => undefined);
+      }
     });
     connection.on('read', (read: { membershipId: string; messageId: string }) => {
       if (!current()) {
@@ -388,6 +437,15 @@ export class ChatStore {
       await connection.stop().catch(() => undefined);
     }
   }
+}
+
+/** Adds a message once; a copy with its event card replaces one without (a live push arrives without it). */
+function upsert(list: readonly ChatMessage[], message: ChatMessage): readonly ChatMessage[] {
+  const at = list.findIndex((m) => m.id === message.id);
+  if (at === -1) {
+    return [...list, message];
+  }
+  return message.event && !list[at].event ? list.map((m, i) => (i === at ? { ...m, event: message.event } : m)) : list;
 }
 
 /** Joins two runs of messages in conversation order, once each. `before` comes first. */

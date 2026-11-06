@@ -122,5 +122,10 @@
   </nav>
 </div>
 
+<!-- The compact chat (#125): desktop only, docked bottom right, not modal. Not over Messages itself. -->
+@if (!fullScreen()) {
+  <app-chat-dock />
+}
+
 <!-- Confirmations (#226): bottom right on desktop, above the bottom navigation on phones. -->
 <app-toast-host />

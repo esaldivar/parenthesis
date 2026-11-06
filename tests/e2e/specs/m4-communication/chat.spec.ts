@@ -52,8 +52,9 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(composer).toHaveValue('');
     const reply = page.locator('.message--yours').last();
     await expect(reply).toContainText('Yes, I can be there at 11:45.');
+    // The bubble shows while sending; wait until the server has stored it before Mom reads it.
+    await expect.poll(async () => (await mom.json<{ messages: Sent[] }>(mom.get(chat))).messages.at(-1)?.text).toBe('Yes, I can be there at 11:45.');
     const latest = (await mom.json<{ messages: Sent[] }>(mom.get(chat))).messages.at(-1)!;
-    expect(latest.text).toBe('Yes, I can be there at 11:45.');
     expect((await mom.put(`${chat}/read`, { messageId: latest.id })).status()).toBe(204);
     await expect(reply.locator('.status')).toHaveText('Read');
     await scan(page, info, `${theme}-read`);
@@ -77,8 +78,9 @@ for (const theme of ['light', 'dark'] as const) {
     await activate(failed.getByRole('button', { name: /^Retry/ }), info);
     await expect(failed).toHaveCount(0);
     await expect(page.locator('.message--yours').last()).toContainText('I’ll bring the water bottles.');
-    const all = (await mom.json<{ messages: Sent[] }>(mom.get(chat))).messages;
-    expect(all.filter((m) => m.text === 'I’ll bring the water bottles.')).toHaveLength(1);
+    // Exactly one copy once the retried send is stored (the bubble shows while it's still sending).
+    await expect.poll(async () => (await mom.json<{ messages: Sent[] }>(mom.get(chat))).messages
+      .filter((m) => m.text === 'I’ll bring the water bottles.').length).toBe(1);
     await fitsPage(page);
 
     // Back leaves the conversation for Home.

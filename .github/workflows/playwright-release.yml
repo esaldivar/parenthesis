@@ -28,7 +28,9 @@ jobs:
        (github.base_ref == 'develop' && startsWith(github.head_ref, 'release/'))) &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       !github.event.pull_request.draft
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to Ubuntu 26.04 on 2026-11-06 and WebKit behaved differently there (download
+    # names, colour contrast); the release gate is validated on 24.04. Moving to 26.04 is its own change (TODO.md).
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     # Every shard runs even if another fails, so one run shows every failure.
     strategy:
@@ -103,14 +105,20 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-mobile-v1-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+          # v2: browsers cached on Ubuntu 26.04 must not be restored on the pinned 24.04 runner.
+          key: playwright-mobile-v2-ubuntu-24.04-${{ steps.playwright.outputs.version }}
 
+      # A stuck download once used the whole 60-minute job before any test ran (PRs #448 and #450). The step now stops
+      # after 25 minutes, failing the job with the step named, instead of using up the job. No retry: the package
+      # installer the step starts can outlive a stopped try and hold its lock, so a second try fails anyway.
       - name: Install Chromium and WebKit
         if: steps.browser-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 25
         run: npm run browser:install
 
       - name: Install browser system libraries
         if: steps.browser-cache.outputs.cache-hit == 'true'
+        timeout-minutes: 25
         run: npm run browser:deps
 
       # This shard's share of every milestone's tests. The report job merges all shards and summarizes them.

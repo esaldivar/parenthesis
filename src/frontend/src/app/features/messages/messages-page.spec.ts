@@ -62,14 +62,20 @@ describe('Messages page (#125)', () => {
   let page: ChatConversation;
   let members: FamilyMember[];
   let connection: FakeConnection;
+  /** Conversation loads that fail before one succeeds. */
+  let failLoads = 0;
 
   async function render() {
     connection = new FakeConnection();
     const api = {
       family: vi.fn(async () => ({ id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '', members })),
-      conversation: vi.fn(async (_family: string, before?: string) =>
-        before ? conversation({ messages: [message('0', 'An older message')], hasOlder: false }) : page,
-      ),
+      conversation: vi.fn(async (_family: string, before?: string) => {
+        if (failLoads > 0) {
+          failLoads--;
+          throw new Error('offline');
+        }
+        return before ? conversation({ messages: [message('0', 'An older message')], hasOlder: false }) : page;
+      }),
       sendMessage: vi.fn(async (_family: string, clientMessageId: string, text: string) => ({
         ...message('5', text, true),
         clientMessageId,
@@ -109,6 +115,7 @@ describe('Messages page (#125)', () => {
   }
 
   beforeEach(() => {
+    failLoads = 0;
     page = conversation();
     members = [ALEX, JAMIE];
   });
@@ -122,7 +129,7 @@ describe('Messages page (#125)', () => {
 
     expect(text(el.querySelector('h1'))).toBe('Messages with Jamie Rivera');
     expect(bubbles(el).map((b) => b.classList.contains('message--yours'))).toEqual([false, true, false, false]);
-    expect(text(el.querySelector('label[for="chat-draft"]'))).toBe('Message Jamie');
+    expect(text(el.querySelector('label[for$="-draft"]'))).toBe('Message Jamie');
     expect(composer(el).getAttribute('placeholder')).toBe('Type a message');
     // Each bubble says who wrote it for screen readers.
     expect(text(bubbles(el)[1].querySelector('.bubble'))).toMatch(/^You, Nov 6, \d+:00 (AM|PM): Yes, I can/);
@@ -172,7 +179,7 @@ describe('Messages page (#125)', () => {
     composer(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await settle(fixture);
 
-    expect(api.sendMessage).toHaveBeenCalledWith('family-1', expect.any(String), 'I’ll bring the water bottles.');
+    expect(api.sendMessage).toHaveBeenCalledWith('family-1', expect.any(String), 'I’ll bring the water bottles.', undefined);
     expect(composer(el).value).toBe('');
     expect(text(bubbles(el).at(-1)!.querySelector('.bubble'))).toContain('I’ll bring the water bottles.');
     expect(document.activeElement).toBe(composer(el));
@@ -255,10 +262,8 @@ describe('Messages page (#125)', () => {
   });
 
   it('says plainly when the conversation can’t load, and can try again', async () => {
-    const { fixture, api, el } = await render();
-    api.conversation.mockRejectedValueOnce(new Error('offline'));
-    fixture.componentInstance['load']();
-    await settle(fixture);
+    failLoads = 1;
+    const { fixture, el } = await render();
 
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
     el.querySelector<HTMLButtonElement>('.note button')!.click();

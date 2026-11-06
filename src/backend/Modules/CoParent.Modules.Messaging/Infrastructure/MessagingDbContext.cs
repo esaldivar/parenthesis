@@ -32,6 +32,7 @@ internal sealed class MessagingDbContext(DbContextOptions<MessagingDbContext> op
             message.Property(m => m.Sequence).UseIdentityAlwaysColumn();
             message.HasIndex(m => m.Sequence).IsUnique();
             message.HasIndex(m => new { m.FamilyId, m.Sequence });
+            message.Property(m => m.EventId);
             message.HasQueryFilter(TenantContext.QueryFilterName, m => m.FamilyId == CurrentFamilyId);
         });
 

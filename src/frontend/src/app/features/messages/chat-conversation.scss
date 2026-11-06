@@ -1,25 +1,12 @@
-// The conversation fills the space under the top bar; on phones the shell hides its bars and it fills the screen.
+// Fills whatever holds it: the Messages page or the compact desktop chat set its size.
 :host {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto auto;
-  height: calc(100dvh - 6.5rem);
-  min-height: 20rem;
-  max-width: 56rem;
-  margin-inline: auto;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-card);
+  height: 100%;
+  min-height: 0;
   background: var(--color-canvas);
   overflow: hidden;
-}
-
-@media (max-width: 1023.98px) {
-  :host {
-    height: 100dvh;
-    max-width: none;
-    border: 0;
-    border-radius: 0;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
 }
 
 p {
@@ -39,7 +26,8 @@ p {
   border-bottom: 1px solid var(--color-divider);
   background: var(--color-surface);
 
-  h1 {
+  h1,
+  h2 {
     margin: 0;
     min-width: 0;
     font-size: 1.375rem;
@@ -47,17 +35,41 @@ p {
   }
 }
 
-.back {
+.spacer {
+  flex: 1;
+}
+
+.icon-button {
   display: inline-grid;
   place-items: center;
   flex: none;
   width: var(--target-min);
   height: var(--target-min);
+  border: 0;
   border-radius: 50%;
+  background: transparent;
   color: var(--color-text);
+  cursor: pointer;
 
   &:hover {
     background: var(--color-surface-soft);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+.draft-event {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  app-chat-event-card {
+    flex: 1;
+    min-width: 0;
   }
 }
 
@@ -128,13 +140,19 @@ p {
 }
 
 .bubble {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 100%;
   padding: var(--space-2) var(--space-3);
   border-radius: 1.125rem;
   background: var(--color-surface-soft);
   color: var(--color-text);
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.4;
+}
+
+.bubble .text {
+  white-space: pre-wrap;
 }
 
 .message--yours .bubble {
