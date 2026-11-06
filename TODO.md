@@ -1169,15 +1169,15 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   membership and same-site checks). ADR-0008 is Proposed. 10 integration tests; full suite 410/410.
   - [x] Frontend slice 1: chat page, unread dot, "New messages" divider, Read receipt, typing, Not sent/Retry
     (Home's Recent Messages and Quick Add Message now open it too).
-  - [ ] Owner decision: dictation relies on the phone keyboard's own microphone (no in-app mic button, which would
+  - [x] Owner decision: dictation relies on the phone keyboard's own microphone (no in-app mic button, which would
     send audio to a browser speech service); the mockups' mic is replaced by Send.
   - [x] Verify the phone layouts on WebKit (CI's `mobile-webkit-*` profiles passed on PR #449).
-  - [ ] Owner decisions: keep a deleted parent's messages for the co-parent (ADR-0008 decision 8); nav label
-    **Messages** or **Chat**; accept ADR-0008.
+  - [x] Owner decisions (2026-11-06): keep a deleted parent's messages for the co-parent; nav label stays
+    **Messages**; ADR-0008 accepted.
   - [x] Slice 2 of `docs/design/m4-chat.md`: calendar event cards (search by title or date, draft preview, cards read
     with each parent's calendar rules, unavailable events) and the compact desktop chat (Minimize, Expand, Close).
-  - [ ] Owner: the compact chat opens from Minimize on the full Messages page; decide whether it also needs its own
-    launcher (for example from the Messages navigation item on desktop).
+  - [x] Owner decision: the compact chat opens from Minimize on the full Messages page; no separate launcher for now
+    (revisit after trying it on develop).
   - [ ] Slice 3 of `docs/design/m4-chat.md`: PDF transcripts.
   - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
 

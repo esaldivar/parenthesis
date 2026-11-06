@@ -1,6 +1,6 @@
 # ADR-0008: Parent-to-parent messaging and the first live connection
 
-- **Status:** Proposed (2026-11-06). Accept once the owner reviews the backend PR for #125.
+- **Status:** Accepted (owner decision, 2026-11-06).
 - **Date:** 2026-11-06
 - **Source:** [issue #125](https://github.com/esaldivar/parenthesis/issues/125) and the owner's M4 Chat handoff
   ([`docs/design/m4-chat.md`](../design/m4-chat.md), PR #447). The handoff is the later owner decision where they
@@ -50,6 +50,9 @@ architecture already planned a `Messaging` module and SignalR, but no hub existe
 - Slices 2 and 3 of the handoff (calendar cards, compact desktop chat, PDF transcripts) build on these tables and
   endpoints.
 
-## Open owner decisions
-- Keeping a deleted parent's messages for the co-parent (decision 8).
-- The navigation label: **Messages** (current) or **Chat** (mockups).
+## Owner decisions (2026-11-06)
+- A deleted parent's messages stay for the co-parent, shown from a former parent (decision 8).
+- The navigation label stays **Messages**.
+- Dictation is the phone keyboard's own: there is no in-app microphone button, so no audio goes to a browser speech
+  service. The text it fills in is sent with the separate Send button.
+- The compact desktop chat opens from Minimize on the Messages page; no separate launcher for now.
