@@ -78,8 +78,9 @@ for (const theme of ['light', 'dark'] as const) {
     await activate(failed.getByRole('button', { name: /^Retry/ }), info);
     await expect(failed).toHaveCount(0);
     await expect(page.locator('.message--yours').last()).toContainText('I’ll bring the water bottles.');
-    const all = (await mom.json<{ messages: Sent[] }>(mom.get(chat))).messages;
-    expect(all.filter((m) => m.text === 'I’ll bring the water bottles.')).toHaveLength(1);
+    // Exactly one copy once the retried send is stored (the bubble shows while it's still sending).
+    await expect.poll(async () => (await mom.json<{ messages: Sent[] }>(mom.get(chat))).messages
+      .filter((m) => m.text === 'I’ll bring the water bottles.').length).toBe(1);
     await fitsPage(page);
 
     // Back leaves the conversation for Home.
