@@ -1,32 +1,11 @@
-import { expect, type Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { activate, evidence, fitsPage, signIn, test } from '../../support/mobile';
 import { scan } from '../../support/accessibility';
 import { soloParent } from '../../support/family';
+import { type Created, nextSaturday, shareFromPicker } from '../../support/chat';
 
 // Slice 2 of docs/design/m4-chat.md (#125): calendar event cards and the compact desktop chat. Synthetic family only:
 // Dad uses the browser; Mom acts through the API, as her own device would.
-
-interface Created {
-  id: string;
-}
-
-/** Saturday a week or more from now, 10:30 to 12:00 Chicago time (16:30 UTC in standard time, 15:30 in daylight time). */
-function nextSaturday(): Date {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() + 7 + ((6 - date.getUTCDay() + 7) % 7));
-  date.setUTCHours(17, 0, 0, 0);
-  return date;
-}
-
-async function shareFromPicker(page: Page, info: Parameters<typeof activate>[1], search: string, title: string) {
-  await activate(page.getByRole('button', { name: 'Share a calendar event' }), info);
-  const dialog = page.getByRole('dialog', { name: 'Find a calendar event' });
-  await expect(dialog.getByRole('searchbox')).toBeFocused();
-  await dialog.getByRole('searchbox').fill(search);
-  await expect(dialog.getByRole('status')).toHaveText(/event(s)? found/);
-  await activate(dialog.getByRole('button', { name: new RegExp(title) }), info);
-  await expect(dialog).toHaveCount(0);
-}
 
 for (const theme of ['light', 'dark'] as const) {
   test(`parents share calendar events as cards that follow the calendar (${theme}) @m4 @mobile @regression`, async ({ page, family }, info) => {
@@ -109,58 +88,3 @@ test('a parent from another family can’t share or read their events in this ch
     await stranger.dispose();
   }
 });
-
-for (const theme of ['light', 'dark'] as const) {
-  test(`the compact desktop chat keeps the conversation and draft over any page (${theme}) @m4 @regression`, async ({ page, family }, info) => {
-    test.skip(info.project.name !== 'chromium', 'The compact chat is desktop only; phones use the full-screen page.');
-    await page.emulateMedia({ colorScheme: theme });
-    const { dad, familyId } = family;
-    const start = nextSaturday();
-    await dad.json(dad.post(`/api/families/${familyId}/calendar/events`, {
-      category: 'Activity', title: 'Soccer game', startsAt: start.toISOString(), endsAt: new Date(start.getTime() + 90 * 60_000).toISOString(),
-    }));
-    await signIn(page, dad.email);
-    await page.goto('/calendar');
-    await activate(page.locator('nav.sidenav').getByRole('link', { name: /^Messages/ }), info);
-
-    // Draft text and a chosen event, then Minimize docks them over the page the parent came from.
-    await page.getByLabel('Message Mom').fill('I’ll bring the water bottles.');
-    await shareFromPicker(page, info, 'soccer', 'Soccer game');
-    await page.getByRole('button', { name: 'Minimize to compact chat' }).click();
-    await expect(page).toHaveURL(/\/calendar/);
-    const dock = page.getByRole('region', { name: 'Compact chat' });
-    await expect(dock.getByRole('heading', { level: 2 })).toHaveText('Messages with Mom');
-    await expect(dock.getByLabel('Message Mom')).toHaveValue('I’ll bring the water bottles.');
-    await expect(dock.locator('.draft-event')).toContainText('Soccer game');
-    await evidence(page, info, `${theme}-compact-chat`);
-    await scan(page, info, `${theme}-compact-chat`);
-
-    // The page around it still works: the calendar's own controls respond while the chat stays open.
-    await page.getByRole('main').getByRole('button', { name: /Next/ }).first().click();
-    await expect(dock).toBeVisible();
-
-    // Minimize folds it to a bar with focus on it; opening it again brings the same draft back.
-    await dock.getByRole('button', { name: 'Minimize chat' }).click();
-    const bar = page.getByRole('region', { name: 'Compact chat, minimized' });
-    await expect(bar.getByRole('button', { name: /Open the compact chat/ })).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(dock.getByLabel('Message Mom')).toBeFocused();
-    await expect(dock.getByLabel('Message Mom')).toHaveValue('I’ll bring the water bottles.');
-
-    // Expand opens the full page with the same draft and event; sending there clears both everywhere.
-    await dock.getByRole('button', { name: 'Expand to full chat' }).click();
-    await expect(page).toHaveURL(/\/messages$/);
-    await expect(page.getByLabel('Message Mom')).toHaveValue('I’ll bring the water bottles.');
-    await expect(page.locator('.draft-event')).toContainText('Soccer game');
-    await expect(page.getByRole('region', { name: 'Compact chat' })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Send', exact: true }).click();
-    await expect(page.locator('.message--yours').last()).toContainText('I’ll bring the water bottles.');
-    await expect(page.locator('.message--yours').last().getByRole('link', { name: /Soccer game/ })).toBeVisible();
-
-    // Close puts it away.
-    await page.getByRole('button', { name: 'Minimize to compact chat' }).click();
-    await page.getByRole('region', { name: 'Compact chat' }).getByRole('button', { name: 'Close chat' }).click();
-    await expect(page.getByRole('region', { name: /Compact chat/ })).toHaveCount(0);
-    await fitsPage(page);
-  });
-}
