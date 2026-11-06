@@ -571,8 +571,31 @@ export interface ChatMessage {
   readonly clientMessageId: string;
   readonly senderMembershipId: string;
   readonly yours: boolean;
+  /** Empty when the message only shares an event. */
   readonly text: string;
   readonly sentAt: string;
+  /** A calendar event shared with the message (slice 2). */
+  readonly eventId?: string | null;
+  /** Its card as this parent's calendar shows it. Live pushes leave it out: read the message to get it. */
+  readonly event?: ChatEventCard | null;
+}
+
+/** Confirmed, or still a proposal or declined: a card never makes a proposal look confirmed. */
+export type SharedEventStatus = 'Confirmed' | 'Proposed' | 'Declined';
+
+/**
+ * A shared event's card. `available` is false once this parent's calendar no longer shows it (cancelled, or a
+ * declined request they removed); then only its id is known.
+ */
+export interface ChatEventCard {
+  readonly id: string;
+  readonly available: boolean;
+  readonly title?: string | null;
+  readonly startsAt?: string | null;
+  readonly endsAt?: string | null;
+  readonly allDay?: boolean;
+  readonly status?: SharedEventStatus | null;
+  readonly changePending?: boolean;
 }
 
 /** A page of the conversation, oldest first, with each parent's latest read message (null when none). */
@@ -888,8 +911,14 @@ export class Api {
   conversation = (familyId: string, before?: string) =>
     this.call(this.http.get<ChatConversation>(`/api/families/${familyId}/chat`, { params: before ? { before } : {} }));
   /** Idempotent per `clientMessageId`: retrying returns the stored message instead of a second copy. */
-  sendMessage = (familyId: string, clientMessageId: string, text: string) =>
-    this.call(this.http.post<ChatMessage>(`/api/families/${familyId}/chat/messages`, { clientMessageId, text }));
+  /** `eventId` shares an event from the sender's calendar; then `text` may be empty. */
+  sendMessage = (familyId: string, clientMessageId: string, text: string, eventId?: string | null) =>
+    this.call(
+      this.http.post<ChatMessage>(`/api/families/${familyId}/chat/messages`, { clientMessageId, text, eventId: eventId ?? null }),
+    );
+  /** One message as this parent sees it, with its event card. */
+  chatMessage = (familyId: string, messageId: string) =>
+    this.call(this.http.get<ChatMessage>(`/api/families/${familyId}/chat/messages/${messageId}`));
   /** Only for a message seen in an open, visible conversation. Moving back changes nothing. */
   markRead = (familyId: string, messageId: string) =>
     this.call(this.http.put<void>(`/api/families/${familyId}/chat/read`, { messageId }));

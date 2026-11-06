@@ -1174,7 +1174,11 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   - [x] Verify the phone layouts on WebKit (CI's `mobile-webkit-*` profiles passed on PR #449).
   - [ ] Owner decisions: keep a deleted parent's messages for the co-parent (ADR-0008 decision 8); nav label
     **Messages** or **Chat**; accept ADR-0008.
-  - [ ] Slices 2 and 3 of `docs/design/m4-chat.md`: calendar event cards and compact desktop chat; PDF transcripts.
+  - [x] Slice 2 of `docs/design/m4-chat.md`: calendar event cards (search by title or date, draft preview, cards read
+    with each parent's calendar rules, unavailable events) and the compact desktop chat (Minimize, Expand, Close).
+  - [ ] Owner: the compact chat opens from Minimize on the full Messages page; decide whether it also needs its own
+    launcher (for example from the Messages navigation item on desktop).
+  - [ ] Slice 3 of `docs/design/m4-chat.md`: PDF transcripts.
   - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
 
 ## Earlier Playwright feedback (#341)

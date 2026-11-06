@@ -36,6 +36,12 @@ architecture already planned a `Messaging` module and SignalR, but no hub existe
    co-parent's record and can't be edited or deleted; the sender shows as a former parent. When the whole family
    closes, every message goes.
 
+9. **Shared calendar events (slice 2).** A message may carry one event id. Each parent's card is read through the
+   Calendar's own rules for them (`ISharedEventCards`): the same events their calendar and event details show, another
+   parent's unavailable time only as "Unavailable", and a proposal marked as pending. A cancelled event, or a declined
+   request the parent removed, shows as no longer available with nothing else about it. Only an event on the sender's
+   own calendar can be shared. Live pushes carry just the id; each device reads its own card.
+
 ## Consequences
 - Group membership in the hub lasts until the connection closes. A parent who loses membership mid-connection stops
   receiving updates at their next reconnect; their REST access ends at once. Their session also ends with account
