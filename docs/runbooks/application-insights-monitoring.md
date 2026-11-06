@@ -108,7 +108,10 @@ az deployment group what-if -g $RG -f infra/monitoring/main.bicep -p env=$ENV ap
 az deployment group create -g $RG -f infra/monitoring/main.bicep -p env=$ENV appUrl=$APP_URL alertEmail=<owner email>
 ```
 
-Azure emails the address to say it was added to the action group.
+Azure emails the address to say it was added to the action group. The deployment also gives the error-rate rule its
+own managed identity with **Reader** on the Application Insights resource (so its query runs as that identity, not
+as whoever deployed it). Creating that role assignment needs Owner or User Access Administrator on the resource group.
+The `what-if` preview then lists 7 new items: the action group, 2 tests, 3 alert rules and this role assignment.
 
 ## Verifying each piece
 

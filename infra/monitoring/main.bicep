@@ -151,6 +151,10 @@ resource availabilityAlerts 'Microsoft.Insights/metricAlerts@2018-03-01' = [
 resource errorRateAlert 'Microsoft.Insights/scheduledQueryRules@2023-12-01' = {
   name: 'alert-parenthesis-${env}-api-error-rate'
   location: location
+  // The rule queries telemetry as its own identity, with read-only access granted below.
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     displayName: '${toUpper(env)} · Parenthesis · API error rate'
     description: 'At least ${errorRatePercent}% of API requests returned 5xx in 15 minutes (minimum ${errorRateMinRequests} requests; health checks excluded).'
@@ -189,6 +193,19 @@ requests
         actionGroup.id
       ]
     }
+  }
+}
+
+// Reader on the Application Insights resource only: enough for the alert rule to run its query, nothing else.
+var readerRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')
+
+resource errorRateAlertReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(appInsights.id, errorRateAlert.id, readerRoleId)
+  scope: appInsights
+  properties: {
+    roleDefinitionId: readerRoleId
+    principalId: errorRateAlert.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
