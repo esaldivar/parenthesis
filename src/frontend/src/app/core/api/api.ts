@@ -657,6 +657,28 @@ export interface WhatHelpsHistoryPage {
   readonly beforeRevision: number | null;
 }
 
+export interface SchoolValues {
+  readonly homeroomTeacher: string | null;
+  readonly grade: string | null;
+  readonly parentConcerns: string | null;
+}
+
+export interface SchoolView {
+  readonly revision: number;
+  readonly values: SchoolValues;
+}
+
+export interface SchoolHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: SchoolValues;
+    readonly current: SchoolValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -723,6 +745,19 @@ export class Api {
 
   private whatHelpsUrl(familyId: string, childId: string): string {
     return `/api/families/${familyId}/children/${childId}/essentials/what-helps`;
+  }
+
+  school = (familyId: string, childId: string) =>
+    this.call(this.http.get<SchoolView>(this.schoolUrl(familyId, childId)));
+  saveSchool = (familyId: string, childId: string, body: SchoolView) =>
+    this.call(this.http.put<SchoolView>(this.schoolUrl(familyId, childId), body));
+  schoolHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<SchoolHistoryPage>(this.schoolUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  private schoolUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/school`;
   }
 
   // Approvals inbox (ADR-0003).

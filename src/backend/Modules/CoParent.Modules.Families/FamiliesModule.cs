@@ -77,6 +77,7 @@ public static class FamiliesModule
         ChildEndpoints.Map(family);
         ClothingEndpoints.Map(family);
         WhatHelpsEndpoints.Map(family);
+        SchoolEndpoints.Map(family);
         ChildAccessEndpoints.Map(api, family);
         SharedDeviceEndpoints.Map(api, family);
         PhotoEndpoints.Map(api, family);
