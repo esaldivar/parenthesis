@@ -70,11 +70,8 @@ export const PARENT_ROUTES: Routes = [
   },
   {
     path: 'child-essentials',
-    ...comingSoon('Child Essentials', {
-      icon: 'children',
-      intro: 'Each child’s profile and the details both parents need to know.',
-      emptyBody: 'Child profiles aren’t available yet.',
-    }),
+    title: 'Child Essentials',
+    loadComponent: () => import('./child-essentials/child-essentials-page').then((m) => m.ChildEssentialsPage),
   },
   // Older links to /children land on its replacement.
   { path: 'children', redirectTo: 'child-essentials' },
