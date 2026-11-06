@@ -52,8 +52,9 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(composer).toHaveValue('');
     const reply = page.locator('.message--yours').last();
     await expect(reply).toContainText('Yes, I can be there at 11:45.');
+    // The bubble shows while sending; wait until the server has stored it before Mom reads it.
+    await expect.poll(async () => (await mom.json<{ messages: Sent[] }>(mom.get(chat))).messages.at(-1)?.text).toBe('Yes, I can be there at 11:45.');
     const latest = (await mom.json<{ messages: Sent[] }>(mom.get(chat))).messages.at(-1)!;
-    expect(latest.text).toBe('Yes, I can be there at 11:45.');
     expect((await mom.put(`${chat}/read`, { messageId: latest.id })).status()).toBe(204);
     await expect(reply.locator('.status')).toHaveText('Read');
     await scan(page, info, `${theme}-read`);
