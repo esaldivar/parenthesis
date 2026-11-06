@@ -1040,6 +1040,8 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   "Resolved" email (runbook verification table).
 - [ ] Production: the same steps with `ENV=prod` before or with the first production deployment.
 - [ ] Bicep has only been built and linted in CI; it has never been run against Azure (`what-if` is the first test).
+- [ ] Before telemetry is on in production: add Application Insights to the public Privacy Notice (what is sent,
+  Microsoft as provider, retention). Raised in the release PR #445 review.
 
 ### #160 — Development Application Insights verification (not passed)
 - Inspected active revision/image, telemetry variable names, Application Insights and linked workspace usage/cap/retention. Sent three anonymous synthetic GETs (200/200/401) with trace IDs. Detailed sanitized evidence is in `docs/runbooks/application-insights-verification-2026-10-25.md`.

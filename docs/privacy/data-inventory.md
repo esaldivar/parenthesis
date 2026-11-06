@@ -42,7 +42,7 @@ cookies; review it for consent and add it here and to the notice before it ships
 | Google Calendar | One-way copy of confirmed events | Chosen event kinds, into a calendar the app created (`calendar.app.created` scope) | Only after a parent connects; disconnect revokes |
 | Google Photos (#404) | One-way export of chosen event photos | The stored photo (WebP, metadata removed), a file name with the event's date and title, and an album titled with the event's title and date (`photoslibrary.appendonly` scope) | Only after a parent connects and exports; off unless `GooglePhotos` is configured; disconnect revokes |
 | Google Maps | Map links | The event address in a link | Only when the person clicks |
-| Application Insights | Telemetry (#86) | Request method, path (record ids, no query string), status, duration and trace id; database command text without values; warning and error logs and exceptions. No bodies, headers or cookies; IP addresses aren't stored | Only when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set (no environment yet) |
+| Application Insights | Telemetry (#86) | Request method, path (record ids, no query string), status, duration and trace id; database command text without values; warning and error logs and exceptions; aggregate request and dependency metrics. No bodies, headers or cookies; IP addresses aren't stored | Only when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set (no environment yet) |
 | UptimeRobot, Discord | Uptime monitoring and alerts | Health endpoint status only | Always |
 
 No analytics, advertising, third-party scripts or third-party fonts are loaded in the browser.

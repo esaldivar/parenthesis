@@ -83,9 +83,9 @@ jobs:
           # Without this, a "new Bicep release is available" notice would count as a lint warning.
           az config set bicep.check_version=false --only-show-errors
           az bicep install --only-show-errors
+          # `az bicep build` reports linter diagnostics too; it fails on errors, and any warning fails the step.
           for f in infra/*/main.bicep; do
-            az bicep build --file "$f" --stdout > /dev/null
-            out="$(az bicep lint --file "$f" 2>&1)"
+            out="$(az bicep build --file "$f" --stdout 2>&1 >/dev/null)" || { echo "$out"; exit 1; }
             echo "$out"
             if grep -qiE "warning|error" <<<"$out"; then exit 1; fi
           done
