@@ -69,6 +69,27 @@ jobs:
       # Discovery only; browser journeys retain release/* -> develop execution policy.
       - run: npm test -- --list
 
+  infrastructure:
+    name: Infrastructure (Bicep build and lint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # Compiles and lints only: no Azure sign-in, no deployment.
+      - name: Build and lint Bicep (warnings fail)
+        run: |
+          # Without this, a "new Bicep release is available" notice would count as a lint warning.
+          az config set bicep.check_version=false --only-show-errors
+          az bicep install --only-show-errors
+          # `az bicep build` reports linter diagnostics too; it fails on errors, and any warning fails the step.
+          for f in infra/*/main.bicep; do
+            out="$(az bicep build --file "$f" --stdout 2>&1 >/dev/null)" || { echo "$out"; exit 1; }
+            echo "$out"
+            if grep -qiE "warning|error" <<<"$out"; then exit 1; fi
+          done
+
   backend:
     name: Backend (build, format, tests)
     runs-on: ubuntu-latest

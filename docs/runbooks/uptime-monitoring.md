@@ -6,6 +6,9 @@ Free external checks that post outage and recovery alerts in the Discord channel
 payment method, upgrade, or turn on paid Azure monitoring (alert rules, availability tests, Logic Apps, SMS) for this.
 Application Insights is for manual diagnosis only.
 
+Azure Monitor alerts and availability tests are now defined as code for #86 but **not deployed**. Deploying them
+would change this rule; see the cost section of [Application Insights monitoring](application-insights-monitoring.md).
+
 ## Free plan, as checked on October 28, 2026
 
 Check these again before setup and once a year; plans change.

@@ -32,7 +32,7 @@ flowchart LR
   MOD -- EF Core --> PG
   MOD -- notices and invitations --> MAIL
   KV -. "connection string<br/>(Key Vault reference)" .-> ACA
-  API -. "telemetry (not yet<br/>instrumented, #160)" .-> AI
+  API -. "telemetry when the connection<br/>string is set (#86)" .-> AI
   MOD -- "private event photos and avatars" --> BLOB
   MOD -- "one-way copy to each parent's own<br/>calendar, when set up (#386)" --> GCAL
 ```
@@ -43,8 +43,9 @@ flowchart LR
   runs; hiding something in the UI is never the boundary ([ADR-0002](adr/0002-tenant-isolation.md)).
 - **Secrets** reach the container app as Key Vault references through its managed identity
   ([Azure runbook](runbooks/azure-environments.md)).
-- **Telemetry:** the Application Insights resource exists, but request and dependency telemetry is not yet
-  established ([verification, #160](runbooks/application-insights-verification-2026-10-25.md)).
+- **Telemetry:** the API sends requests, dependencies and warning logs to Application Insights when
+  `APPLICATIONINSIGHTS_CONNECTION_STRING` is set; no environment has it yet
+  ([monitoring runbook, #86](runbooks/application-insights-monitoring.md)).
 
 ## Delivery: from a work branch to production
 
