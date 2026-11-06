@@ -36,6 +36,7 @@ Not re-checked live for this change (no Azure access from the work machine): the
 | PostgreSQL dependency: duration, success, parameterized SQL text | Parameter values, request or response bodies, headers, cookies |
 | Outgoing HTTP calls (Google APIs, Blob storage): host, path, status, duration | Information-level logs (one per request; they stay in the container logs) |
 | Warning and error logs, exceptions with stack traces | Live Metrics (turned off) |
+| Standard metrics (request and dependency counts, durations, failure rates), pre-aggregated by the distro; small and counted in the same ingestion cap | |
 
 Paths contain record ids (GUIDs), never names. Application Insights stores client IPs as `0.0.0.0` by default.
 Exception messages are the main risk: code must not put personal data in exception messages or warning logs, the
@@ -98,14 +99,19 @@ az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars APPLICATIONI
 
 ### 2. Alerts and availability tests
 
-Preview first, then deploy. `alertEmail` is typed at the command line, never committed.
+Preview first, then deploy. Set `APP_URL` to **this environment's** address (no trailing slash), so the tests probe
+the right site. `alertEmail` is typed at the command line, never committed.
 
 ```bash
-az deployment group what-if -g $RG -f infra/monitoring/main.bicep -p env=$ENV appUrl=https://dev.parenthesisfamily.com alertEmail=<owner email>
-az deployment group create -g $RG -f infra/monitoring/main.bicep -p env=$ENV appUrl=https://dev.parenthesisfamily.com alertEmail=<owner email>
+APP_URL=https://dev.parenthesisfamily.com   # development; use production's address with ENV=prod
+az deployment group what-if -g $RG -f infra/monitoring/main.bicep -p env=$ENV appUrl=$APP_URL alertEmail=<owner email>
+az deployment group create -g $RG -f infra/monitoring/main.bicep -p env=$ENV appUrl=$APP_URL alertEmail=<owner email>
 ```
 
-Azure emails the address to say it was added to the action group.
+Azure emails the address to say it was added to the action group. The deployment also gives the error-rate rule its
+own managed identity with **Reader** on the Application Insights resource (so its query runs as that identity, not
+as whoever deployed it). Creating that role assignment needs Owner or User Access Administrator on the resource group.
+The `what-if` preview then lists 7 new items: the action group, 2 tests, 3 alert rules and this role assignment.
 
 ## Verifying each piece
 

@@ -32,7 +32,7 @@ flowchart LR
   MOD -- EF Core --> PG
   MOD -- notices and invitations --> MAIL
   KV -. "connection string<br/>(Key Vault reference)" .-> ACA
-  API -. "telemetry (not yet<br/>instrumented, #160)" .-> AI
+  API -. "telemetry when the connection<br/>string is set (#86)" .-> AI
   MOD -- "private event photos and avatars" --> BLOB
   MOD -- "one-way copy to each parent's own<br/>calendar, when set up (#386)" --> GCAL
 ```
