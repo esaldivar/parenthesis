@@ -1181,5 +1181,8 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
 
 ## Earlier Playwright feedback (#341)
+- [ ] Move the Playwright release gate to Ubuntu 26.04. `ubuntu-latest` switched on 2026-11-06, and there WebKit saved
+  "Download all" ZIPs with underscores and axe reported colour contrast in the swap date picker. The gate is pinned to
+  `ubuntu-24.04` until those are understood (real issue or WebKit difference) and fixed.
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
