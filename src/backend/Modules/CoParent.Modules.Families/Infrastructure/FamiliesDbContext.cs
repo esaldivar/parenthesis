@@ -35,6 +35,8 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<ProfilePhoto> ProfilePhotos => Set<ProfilePhoto>();
 
+    public DbSet<ClothingRevision> ClothingRevisions => Set<ClothingRevision>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -81,6 +83,18 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             child.HasOne<Family>().WithMany().HasForeignKey(c => c.FamilyId);
             child.HasIndex(c => new { c.FamilyId, c.Status });
             child.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ClothingRevision>(revision =>
+        {
+            revision.ToTable("child_clothing_revisions");
+            revision.Property(row => row.TopSize).HasMaxLength(ClothingRevision.SizeLimit);
+            revision.Property(row => row.BottomSize).HasMaxLength(ClothingRevision.SizeLimit);
+            revision.Property(row => row.ShoeSize).HasMaxLength(ClothingRevision.SizeLimit);
+            revision.Property(row => row.FitNotes).HasMaxLength(ClothingRevision.NotesLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<Device>(device =>

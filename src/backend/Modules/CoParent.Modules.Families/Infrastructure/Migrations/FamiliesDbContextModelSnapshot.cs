@@ -18,7 +18,7 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("families")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -123,6 +123,63 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .HasDatabaseName("ix_child_profiles_family_id_status");
 
                     b.ToTable("child_profiles", "families");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ClothingRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BottomSize")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("bottom_size");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<DateTimeOffset>("EditedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("edited_at");
+
+                    b.Property<Guid>("EditedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("edited_by_user_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("FitNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("fit_notes");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision");
+
+                    b.Property<string>("ShoeSize")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("shoe_size");
+
+                    b.Property<string>("TopSize")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("top_size");
+
+                    b.HasKey("Id")
+                        .HasName("pk_child_clothing_revisions");
+
+                    b.HasIndex("ChildProfileId", "Revision")
+                        .IsUnique()
+                        .HasDatabaseName("ix_child_clothing_revisions_child_profile_id_revision");
+
+                    b.ToTable("child_clothing_revisions", "families");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.Device", b =>
@@ -568,6 +625,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_child_profiles_families_family_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.ClothingRevision", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_child_clothing_revisions_child_profiles_child_profile_id");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.Device", b =>

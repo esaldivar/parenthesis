@@ -75,6 +75,7 @@ public static class FamiliesModule
         FamilyEndpoints.Map(api, family);
         InvitationEndpoints.Map(api, family);
         ChildEndpoints.Map(family);
+        ClothingEndpoints.Map(family);
         ChildAccessEndpoints.Map(api, family);
         SharedDeviceEndpoints.Map(api, family);
         PhotoEndpoints.Map(api, family);

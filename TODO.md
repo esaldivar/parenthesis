@@ -7,7 +7,10 @@ that points back here.
 
 ## Big projects
 - [ ] **Child Essentials (#126, M4).** Complete section editing and protected history, concurrent edit handling,
-  and in-page update indicators. The parent page and active child picker are the first slice.
+  and in-page update indicators.
+  - [ ] Add section editing, protected history and concurrent edit review for the remaining Child Essentials sections.
+  - [ ] Implement the full #128 in-page update flow (navigation dot, first-visit banners, section dots and row highlights).
+  - [ ] Complete visual polish with the handoff illustrations and verify the Clothing & Shoes flow on the development site in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
   Settings. Owner decisions: operator Eric Saldivar (individual), US families only, contact
