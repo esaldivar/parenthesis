@@ -590,6 +590,29 @@ export interface ChatUnread {
   readonly hasUnread: boolean;
 }
 
+export interface ClothingValues {
+  readonly topSize: string | null;
+  readonly bottomSize: string | null;
+  readonly shoeSize: string | null;
+  readonly fitNotes: string | null;
+}
+
+export interface ClothingView {
+  readonly revision: number;
+  readonly values: ClothingValues;
+}
+
+export interface ClothingHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: ClothingValues;
+    readonly current: ClothingValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -631,6 +654,19 @@ export class Api {
   children = (familyId: string) => this.call(this.http.get<Child[]>(`/api/families/${familyId}/children`));
   addChild = (familyId: string, firstName: string) =>
     this.call(this.http.post<Child>(`/api/families/${familyId}/children`, { firstName }));
+
+  clothing = (familyId: string, childId: string) =>
+    this.call(this.http.get<ClothingView>(this.clothingUrl(familyId, childId)));
+  saveClothing = (familyId: string, childId: string, body: ClothingView) =>
+    this.call(this.http.put<ClothingView>(this.clothingUrl(familyId, childId), body));
+  clothingHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<ClothingHistoryPage>(this.clothingUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  private clothingUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/clothing`;
+  }
 
   // Approvals inbox (ADR-0003).
   /** Pending requests, or the 50 most recently decided with `history`. */

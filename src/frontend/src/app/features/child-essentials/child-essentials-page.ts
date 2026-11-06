@@ -3,10 +3,12 @@ import { Api, Child } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Avatar } from '../../shared/avatar/avatar';
 
+import { ClothingSection } from './clothing-section';
+
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar],
+  imports: [Avatar, ClothingSection],
   template: `
     <h1>Child Essentials</h1>
     @if (loading()) {
@@ -26,7 +28,11 @@ import { Avatar } from '../../shared/avatar/avatar';
         </div>
         <section aria-labelledby="essentials-heading">
           <h2 id="essentials-heading">{{ child.firstName }}’s essentials</h2>
-          <p>Reference sections are coming soon.</p>
+          @if (familyId(); as family) {
+            @for (profile of [child]; track profile.id) {
+              <app-clothing-section [familyId]="family" [childId]="profile.id" />
+            }
+          }
         </section>
       </div>
     } @else {
@@ -62,6 +68,7 @@ import { Avatar } from '../../shared/avatar/avatar';
 export class ChildEssentialsPage {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
+  protected readonly familyId = computed(() => this.auth.currentFamily()?.id);
   protected readonly children = signal<readonly Child[]>([]);
   protected readonly selectedId = signal<string | null>(null);
   protected readonly loading = signal(true);
@@ -77,7 +84,7 @@ export class ChildEssentialsPage {
 
   constructor() {
     effect((onCleanup) => {
-      const familyId = this.auth.currentFamily()?.id;
+      const familyId = this.familyId();
       this.retry();
       this.children.set([]);
       this.selectedId.set(null);
