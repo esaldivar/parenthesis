@@ -48,8 +48,8 @@ test('PR events route only the event PR; API failures propagate', async () => {
   await assert.rejects(routeUpdates(api, 'owner/repo', { pull_request: pr(7) }), /permission denied/);
   assert.deepEqual(paths, ['branches?per_page=100', 'milestones?state=open&per_page=100', 'pulls/7']);
 });
-test('every configured ecosystem targets release/0.3.0', () => {
+test('every configured ecosystem targets the active release, release/0.4.0', () => {
   const config = readFileSync(new URL('../dependabot.yml', import.meta.url), 'utf8');
   assert.equal((config.match(/package-ecosystem:/g) || []).length, 5);
-  assert.equal((config.match(/target-branch: release\/0\.3\.0/g) || []).length, 5);
+  assert.equal((config.match(/target-branch: release\/0\.4\.0/g) || []).length, 5);
 });

@@ -29,7 +29,7 @@ hotfix/…                  from main, for urgent production bugs
   PR automatically.
 - **Dependabot updates** from same-repository `dependabot/*` branches may PR into a valid active `release/x.y.z`.
   They retain normal review and required checks; they cannot target `main` or `develop` directly, or originate from a fork.
-  Version-update configuration targets `release/0.3.0`. The **Dependabot release target** workflow routes open bot
+  Version-update configuration targets `release/0.4.0`. The **Dependabot release target** workflow routes open bot
   PRs to the highest numeric existing release branch matching an open milestone: `M3 — Calendar` matches
   `release/0.3.0`; exact version titles such as `v1.0.0` (or `v1.0` for patch zero) also match. Creating a future
   release branch with an open matching milestone moves the target, so do not create future branches ahead of time.
