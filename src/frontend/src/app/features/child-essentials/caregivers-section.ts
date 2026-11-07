@@ -17,11 +17,8 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
     .filled { position: absolute; inset-inline-start: 0; overflow: hidden; }
   `,
   template: `
-    <section aria-labelledby="caregivers-heading" (appOnScreen)="marks.sectionOnScreen()">
+    <section aria-labelledby="caregivers-heading">
       <h3 id="caregivers-heading">Shared Caregivers
-        @if (marks.dot()) {
-          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
-        }
       </h3>
       @if (error()) { <p role="alert">{{ error() }}</p> }
       <p role="status">{{ notice() }}</p>

@@ -12,11 +12,8 @@ import { Api, AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../c
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section aria-labelledby="allergies-food-heading" (appOnScreen)="marks.sectionOnScreen()">
+    <section aria-labelledby="allergies-food-heading">
       <h3 id="allergies-food-heading">Allergies & Food
-        @if (marks.dot()) {
-          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
-        }
       </h3>
       <button type="button" [attr.aria-expanded]="exportOpen()" aria-controls="allergy-pdf-options"
         (click)="exportOpen.set(!exportOpen())">Download allergy PDF</button>

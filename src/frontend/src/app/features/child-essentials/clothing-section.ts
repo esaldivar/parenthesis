@@ -12,11 +12,8 @@ import { Api, ClothingHistoryPage, ClothingView } from '../../core/api/api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section class="clothing" aria-labelledby="clothing-heading" (appOnScreen)="marks.sectionOnScreen()">
+    <section class="clothing" aria-labelledby="clothing-heading">
       <h3 id="clothing-heading">Clothing &amp; Shoes
-        @if (marks.dot()) {
-          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
-        }
       </h3>
       @if (error()) {
         <p role="alert">{{ error() }}</p>

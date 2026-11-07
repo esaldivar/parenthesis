@@ -12,11 +12,8 @@ import { Api, SchoolHistoryPage, SchoolView } from '../../core/api/api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section aria-labelledby="school-heading" (appOnScreen)="marks.sectionOnScreen()">
+    <section aria-labelledby="school-heading">
       <h3 id="school-heading">School
-        @if (marks.dot()) {
-          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
-        }
       </h3>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
