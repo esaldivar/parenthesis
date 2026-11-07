@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Families.Contracts;
+using CoParent.SharedKernel.Accounts;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Security;
 using CoParent.SharedKernel.Tenancy;
@@ -19,6 +20,7 @@ public static class SharedRecordsModule
     {
         services.AddModuleDbContext<SharedRecordsDbContext>();
         services.AddScoped<IApprovalTargetHandler, FundApproval>();
+        services.AddScoped<IParentDepartureHandler, SharedRecordsDeparture>();
         return services;
     }
 

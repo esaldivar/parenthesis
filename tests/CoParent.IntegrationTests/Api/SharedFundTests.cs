@@ -73,6 +73,32 @@ public sealed class SharedFundTests(ApiFactory api) : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task A_fund_stays_when_one_parent_leaves_and_goes_when_the_family_closes()
+    {
+        using var dad = await ApiSession.SignedInAsync(api);
+        var familyId = await dad.CreateFamilyAsync();
+        var root = $"/api/families/{familyId}";
+        var email = ApiSession.NewEmail();
+        await dad.PostAsync($"{root}/invitations", new { email });
+        var token = QueryHelpers.ParseQuery(dad.Emails.LatestLink(email, "invited").Query)["token"].ToString();
+        using var mom = await ApiSession.SignedInAsync(api, email: email);
+        Assert.Equal(HttpStatusCode.OK, (await mom.PostAsync("/api/invitations/accept", new { token })).StatusCode);
+        var proposal = new { title = "Braces", currency = "USD", proposerShareMinor = 5000, coParentShareMinor = 5000 };
+        var record = await JsonAsync(await dad.PostAsync($"{root}/shared-funds", proposal));
+        Assert.Equal(HttpStatusCode.OK,
+            (await mom.PostAsync($"{root}/approvals/{record.GetProperty("approvalId").GetGuid()}/approve")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await dad.PostAsync("/api/me/delete", new { password = ApiSession.Password })).StatusCode);
+        Assert.Equal(1L, await FundCountAsync(familyId));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await mom.PostAsync("/api/me/delete", new { password = ApiSession.Password })).StatusCode);
+        Assert.Equal(0L, await FundCountAsync(familyId));
+    }
+
+    private Task<long> FundCountAsync(Guid familyId) =>
+        api.QueryScalarAsync<long>("select count(*) from shared_records.funds where family_id = @v", ("v", familyId));
+
     private static async Task<JsonElement> JsonAsync(HttpResponseMessage response) =>
         await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
 }
