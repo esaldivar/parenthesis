@@ -133,7 +133,7 @@
 </div>
 
 <!-- The compact chat (#125): desktop only, docked bottom right, not modal. Not over Messages itself. -->
-@if (!fullScreen()) {
+@if (!onMessages()) {
   <app-chat-dock />
 }
 

@@ -122,17 +122,19 @@ import { ChatConversation } from './chat-conversation';
       width: 0.625rem;
       height: 0.625rem;
       border-radius: 50%;
-      background: var(--color-action);
+      background: var(--color-notify);
     }
-    /* A new message: the dot pulses (a steady dot with reduced motion; words for screen readers either way). */
+    /* A new message: the same green "new" dot as the rest of the app. It pulses twice and then stays still, so nothing
+       keeps moving for more than five seconds (WCAG 2.2.2); a steady dot with reduced motion; words for screen readers
+       either way. */
     @media (prefers-reduced-motion: no-preference) {
       .dot {
-        animation: unread-pulse 1.6s ease-in-out infinite;
+        animation: unread-pulse 1.6s ease-in-out 2;
       }
     }
     @keyframes unread-pulse {
       50% {
-        box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-action) 30%, transparent);
+        box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-notify) 30%, transparent);
       }
     }
     @media (max-width: 1023.98px) {

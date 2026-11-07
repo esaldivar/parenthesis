@@ -67,7 +67,8 @@ export class ParentShell {
   protected readonly essentials = inject(EssentialsUpdatesStore);
 
   /** Messages fill the screen on phones, as in the M4 mockups: no top bar or bottom navigation there. */
-  private readonly onMessages = computed(() => /^\/messages(\/|$)/.test(this.url().split(/[?#]/)[0]));
+  protected readonly onMessages = computed(() => /^\/messages(\/|$)/.test(this.url().split(/[?#]/)[0]));
+  /** Shared records fill the screen on phones too; on desktop they keep the top bar and the chat bar. */
   protected readonly fullScreen = computed(() => this.onMessages() || this.url().split(/[?#]/)[0] === '/shared-records');
 
   /** PLACEHOLDER: sample-only unread count for a navigation item; always 0 for real data (no unread API yet). */
