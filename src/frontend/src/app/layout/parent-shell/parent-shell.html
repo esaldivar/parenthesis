@@ -26,7 +26,7 @@
   </p>
 </mat-menu>
 
-<div class="shell">
+<div class="shell" [class.shell--full-screen]="fullScreen()">
   <aside class="sidebar">
     <a class="brand" routerLink="/" aria-label="Parenthesis home">
       <app-logo [decorative]="true" />
@@ -44,6 +44,14 @@
             >
               <app-icon [name]="item.icon" [size]="28" />
               <span>{{ item.label }}</span>
+              @if (item.path === '/messages' && chat.hasUnread()) {
+                <span class="dot" aria-hidden="true"></span>
+                <span class="visually-hidden">, unread messages</span>
+              }
+              @if (item.path === '/child-essentials' && essentials.newUpdates()) {
+                <span class="dot" aria-hidden="true"></span>
+                <span class="visually-hidden">, updated by your co-parent</span>
+              }
               @if (unread(item.path); as count) {
                 <span class="badge" aria-hidden="true">{{ count }}</span>
                 <span class="visually-hidden">, {{ count }} unread (sample data)</span>
@@ -101,14 +109,33 @@
             [routerLinkActiveOptions]="activeOptions(item.path)"
             ariaCurrentWhenActive="page"
           >
-            <app-icon [name]="item.icon" />
+            <span class="bottomnav__icon">
+              <app-icon [name]="item.icon" />
+              @if (item.path === '/messages' && chat.hasUnread()) {
+                <span class="dot dot--icon" aria-hidden="true"></span>
+              }
+              @if (item.path === '/more' && essentials.newUpdates()) {
+                <span class="dot dot--icon" aria-hidden="true"></span>
+              }
+            </span>
             <span>{{ item.label }}</span>
+            @if (item.path === '/messages' && chat.hasUnread()) {
+              <span class="visually-hidden">, unread messages</span>
+            }
+            @if (item.path === '/more' && essentials.newUpdates()) {
+              <span class="visually-hidden">, Child Essentials updated</span>
+            }
           </a>
         </li>
       }
     </ul>
   </nav>
 </div>
+
+<!-- The compact chat (#125): desktop only, docked bottom right, not modal. Not over Messages itself. -->
+@if (!fullScreen()) {
+  <app-chat-dock />
+}
 
 <!-- Confirmations (#226): bottom right on desktop, above the bottom navigation on phones. -->
 <app-toast-host />

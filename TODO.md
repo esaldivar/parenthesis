@@ -6,6 +6,20 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Child Essentials (#126, M4).** Complete section editing and protected history, concurrent edit handling,
+  and in-page update indicators.
+  - [ ] Verify shared and household Routines in both themes, including protected history, revision acceptance, and stop sharing. Coordinate household update indicators with #128.
+  - [x] Verify the allergy PDF renderer with one child, multiple children, empty allergy states and long notes.
+    Correct fractional-height pagination; keep API scope and page-count regression checks in CI.
+  - [x] Routines draft-preservation and allergy PDF regression checks passed in CI (#465).
+  - [x] #128 in-page update flow for School, Allergies & Food, Clothing & Shoes and What Helps: navigation dot,
+    first-visit banners, child and section dots, row highlights (November 7, 2026).
+  - [x] #128 update notices for Routines (shared rows, and a dot on the co-parent's tab until opened), Emergency
+    Contacts and Shared Caregivers (November 7, 2026). Ratings, accepting a routine and stopping sharing make none.
+  - [ ] Extend #128 update notices to Medication (values stay in the protected record) when it ships.
+  - [x] Put update dots on the section tiles and clear them on open. Keep row highlights tied to visibility and household routine notices tied to the co-parent tab.
+  - [ ] Complete visual polish with the handoff illustrations and verify the Clothing & Shoes, What Helps, School, and Allergies & Food flows on the development site in both themes.
+- [ ] **Shared Caregivers (#130, M4).** Verify caregiver details, duplicate-number confirmation, and independent ratings on mobile and desktop in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
   Settings. Owner decisions: operator Eric Saldivar (individual), US families only, contact
@@ -1162,6 +1176,29 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   - [ ] Owner decision: a hotfix path (hotfix PRs straight into `main` are now blocked by the gate until the fix is on `develop`).
   - [ ] Relate fresh `develop` findings to #65, #56 and #294; don't close those just because a scan ran.
 
+- [ ] **M4 messaging (#125), slice 1 backend.** Messaging module (one conversation per family, immutable messages,
+  idempotent sends, forward-only read positions, typing) and the first SignalR hub, `/hubs/chat` (listen-only, parent
+  membership and same-site checks). ADR-0008 is Proposed. 10 integration tests; full suite 410/410.
+  - [x] Frontend slice 1: chat page, unread dot, "New messages" divider, Read receipt, typing, Not sent/Retry
+    (Home's Recent Messages and Quick Add Message now open it too).
+  - [x] Owner decision: dictation relies on the phone keyboard's own microphone (no in-app mic button, which would
+    send audio to a browser speech service); the mockups' mic is replaced by Send.
+  - [x] Verify the phone layouts on WebKit (CI's `mobile-webkit-*` profiles passed on PR #449).
+  - [x] Owner decisions (2026-11-06): keep a deleted parent's messages for the co-parent; nav label stays
+    **Messages**; ADR-0008 accepted.
+  - [x] Slice 2 of `docs/design/m4-chat.md`: calendar event cards (search by title or date, draft preview, cards read
+    with each parent's calendar rules, unavailable events) and the compact desktop chat (Minimize, Expand, Close).
+  - [x] Owner decision: the compact chat opens from Minimize on the full Messages page; no separate launcher for now
+    (revisit after trying it on develop).
+  - [x] Slice 3 of `docs/design/m4-chat.md`: PDF transcripts (preview, Save, Download, saved list; ADR-0008
+    decision 10).
+  - [ ] Transcript PDFs embed Noto Sans for Latin, Greek and Cyrillic only; add fonts if parents write in other
+    scripts (for example Chinese, Arabic or emoji).
+  - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
+
 ## Earlier Playwright feedback (#341)
+- [ ] Move the Playwright release gate to Ubuntu 26.04. `ubuntu-latest` switched on 2026-11-06, and there WebKit saved
+  "Download all" ZIPs with underscores and axe reported colour contrast in the swap date picker. The gate is pinned to
+  `ubuntu-24.04` until those are understood (real issue or WebKit difference) and fixed.
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.

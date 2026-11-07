@@ -100,7 +100,12 @@
     <h2 id="quick-heading">Quick Add</h2>
     <div class="quick">
       @for (action of quickActions; track action.label) {
-        @if (action.kind; as kind) {
+        @if (action.link; as link) {
+          <a class="quick__btn" [routerLink]="link">
+            <app-icon [name]="action.icon" [size]="26" />
+            <span>{{ action.label }}</span>
+          </a>
+        } @else if (action.kind; as kind) {
           <a
             class="quick__btn"
             routerLink="/calendar/new"
@@ -117,7 +122,7 @@
         }
       }
     </div>
-    <p id="quick-note" class="muted">Messages and memories open here when they’re ready.</p>
+    <p id="quick-note" class="muted">Memories open here when they’re ready.</p>
   </section>
 
   <section class="card area-kids" aria-labelledby="kids-heading">
@@ -170,7 +175,7 @@
         }
       </ul>
     } @else {
-      <app-empty-state icon="messages" title="No messages yet" body="Messaging between parents isn’t available yet." />
+      <app-empty-state icon="messages" title="No messages yet" body="Messages between you and your co-parent show here." />
     }
   </section>
 

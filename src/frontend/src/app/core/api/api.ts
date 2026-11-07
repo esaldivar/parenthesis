@@ -60,6 +60,41 @@ export interface Child {
   readonly signIn: ChildSignIn;
 }
 
+export interface CaregiverDetails {
+  readonly name: string;
+  readonly phone: string;
+  readonly city: string | null;
+  readonly hourlyRate: number | null;
+  readonly schoolPickup: boolean;
+}
+
+export interface Caregiver {
+  readonly id: string;
+  readonly details: CaregiverDetails;
+  readonly averageRating: number | null;
+  readonly myRating: number | null;
+  readonly addedBy: string;
+}
+
+export interface CaregiverList {
+  readonly version: number;
+  readonly caregivers: readonly Caregiver[];
+}
+
+export interface EmergencyContact {
+  readonly id?: string | null;
+  readonly name: string;
+  readonly relationship: string;
+  readonly phone: string;
+  readonly address: string | null;
+  readonly callFirst: boolean;
+}
+
+export interface EmergencyContactsView {
+  readonly version: number;
+  readonly contacts: readonly EmergencyContact[];
+}
+
 export interface ChildSignIn {
   readonly enabled: boolean;
   /** Needs a parent to choose a new PIN. */
@@ -563,6 +598,247 @@ export type CalendarEventChange = Partial<Omit<NewCalendarEvent, 'category' | 'c
   readonly reason?: string;
 };
 
+// --- Milestone 4 (#125, ADR-0008): the parents' conversation ---------------------------------------------------------
+
+/** A message as both parents see it. `yours`: the viewer sent it. `clientMessageId` matches the sender's pending copy. */
+export interface ChatMessage {
+  readonly id: string;
+  readonly clientMessageId: string;
+  readonly senderMembershipId: string;
+  readonly yours: boolean;
+  /** Empty when the message only shares an event. */
+  readonly text: string;
+  readonly sentAt: string;
+  /** A calendar event shared with the message (slice 2). */
+  readonly eventId?: string | null;
+  /** Its card as this parent's calendar shows it. Live pushes leave it out: read the message to get it. */
+  readonly event?: ChatEventCard | null;
+}
+
+/** Confirmed, or still a proposal or declined: a card never makes a proposal look confirmed. */
+export type SharedEventStatus = 'Confirmed' | 'Proposed' | 'Declined';
+
+/**
+ * A shared event's card. `available` is false once this parent's calendar no longer shows it (cancelled, or a
+ * declined request they removed); then only its id is known.
+ */
+export interface ChatEventCard {
+  readonly id: string;
+  readonly available: boolean;
+  readonly title?: string | null;
+  readonly startsAt?: string | null;
+  readonly endsAt?: string | null;
+  readonly allDay?: boolean;
+  readonly status?: SharedEventStatus | null;
+  readonly changePending?: boolean;
+}
+
+/** A transcript's dates: both null for all messages, otherwise family-local `YYYY-MM-DD`, both included. */
+export interface TranscriptRange {
+  readonly from: string | null;
+  readonly to: string | null;
+}
+
+/** One message as the transcript shows it: family-local time, sender's name, and a shared event's description. */
+export interface TranscriptMessage {
+  readonly time: string;
+  readonly sender: string;
+  readonly yours: boolean;
+  readonly text: string;
+  readonly event: string | null;
+}
+
+/** Exactly what the PDF holds, for the preview. An empty range has no days. */
+export interface TranscriptPreview {
+  readonly fileName: string;
+  readonly title: string;
+  readonly rangeLabel: string;
+  readonly timeZone: string;
+  readonly preparedLabel: string;
+  readonly from: string | null;
+  readonly to: string | null;
+  readonly messageCount: number;
+  readonly days: readonly { readonly date: string; readonly label: string; readonly messages: readonly TranscriptMessage[] }[];
+}
+
+/** A transcript this parent saved: only they can see or open it. */
+export interface SavedTranscript {
+  readonly id: string;
+  readonly fileName: string;
+  readonly from: string | null;
+  readonly to: string | null;
+  readonly rangeLabel: string;
+  readonly messageCount: number;
+  readonly createdAt: string;
+}
+
+/** A page of the conversation, oldest first, with each parent's latest read message (null when none). */
+export interface ChatConversation {
+  readonly yourMembershipId: string;
+  readonly messages: readonly ChatMessage[];
+  readonly hasOlder: boolean;
+  readonly yourReadThrough: string | null;
+  readonly coParentReadThrough: string | null;
+}
+
+/** `count` stops at 99. */
+/** A shared Child Essentials section, as the update notices (#128) name it. */
+export type EssentialsSectionId =
+  | 'school'
+  | 'allergiesFood'
+  | 'clothing'
+  | 'whatHelps'
+  | 'routines'
+  | 'householdRoutines'
+  | 'emergencyContacts'
+  | 'caregivers';
+
+/** A child's section with an update this parent hasn't looked at: its dot, and the changed rows not yet seen. */
+export interface EssentialsSectionUpdates {
+  readonly childId: string;
+  readonly section: EssentialsSectionId;
+  readonly unopened: boolean;
+  readonly rows: readonly string[];
+}
+
+/** This parent's Child Essentials indicators: the navigation dot, then each section's dot and rows. */
+export interface EssentialsUpdates {
+  readonly newUpdates: boolean;
+  readonly sections: readonly EssentialsSectionUpdates[];
+}
+
+/** One banner: a child's section, and the fields changed there since the parent last opened Child Essentials. */
+export interface EssentialsBanner {
+  readonly childId: string;
+  readonly section: EssentialsSectionId;
+  readonly fields: readonly string[];
+}
+
+export interface ChatUnread {
+  readonly count: number;
+  readonly hasUnread: boolean;
+}
+
+export interface ClothingValues {
+  readonly topSize: string | null;
+  readonly bottomSize: string | null;
+  readonly shoeSize: string | null;
+  readonly fitNotes: string | null;
+}
+
+export interface ClothingView {
+  readonly revision: number;
+  readonly values: ClothingValues;
+}
+
+export interface ClothingHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: ClothingValues;
+    readonly current: ClothingValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
+export interface WhatHelpsValues {
+  readonly comfortItems: string | null;
+  readonly calmingStrategies: string | null;
+}
+
+export interface WhatHelpsView {
+  readonly revision: number;
+  readonly values: WhatHelpsValues;
+}
+
+export interface WhatHelpsHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: WhatHelpsValues;
+    readonly current: WhatHelpsValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
+export interface HouseholdRoutine {
+  readonly ownerId: string;
+  readonly ownerName: string;
+  readonly isMine: boolean;
+  readonly latest: RoutinesView;
+  readonly shared: RoutinesView | null;
+  readonly canAccept: boolean;
+}
+
+export interface RoutinesValues {
+  readonly bedtime: string | null;
+  readonly naps: string | null;
+}
+
+export interface RoutinesView {
+  readonly revision: number;
+  readonly values: RoutinesValues;
+}
+
+export interface RoutinesHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: RoutinesValues;
+    readonly current: RoutinesValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
+export interface AllergiesFoodValues {
+  readonly noKnownAllergies: boolean;
+  readonly allergies: string | null;
+  readonly foodPreferences: string | null;
+}
+
+export interface AllergiesFoodView {
+  readonly revision: number;
+  readonly values: AllergiesFoodValues;
+  readonly recordedBy?: string | null;
+  readonly recordedAt?: string | null;
+}
+
+export interface AllergiesFoodHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: AllergiesFoodValues;
+    readonly current: AllergiesFoodValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
+export interface SchoolValues {
+  readonly homeroomTeacher: string | null;
+  readonly grade: string | null;
+  readonly parentConcerns: string | null;
+}
+
+export interface SchoolView {
+  readonly revision: number;
+  readonly values: SchoolValues;
+}
+
+export interface SchoolHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: SchoolValues;
+    readonly current: SchoolValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -604,6 +880,113 @@ export class Api {
   children = (familyId: string) => this.call(this.http.get<Child[]>(`/api/families/${familyId}/children`));
   addChild = (familyId: string, firstName: string) =>
     this.call(this.http.post<Child>(`/api/families/${familyId}/children`, { firstName }));
+
+  clothing = (familyId: string, childId: string) =>
+    this.call(this.http.get<ClothingView>(this.clothingUrl(familyId, childId)));
+  saveClothing = (familyId: string, childId: string, body: ClothingView) =>
+    this.call(this.http.put<ClothingView>(this.clothingUrl(familyId, childId), body));
+  clothingHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<ClothingHistoryPage>(this.clothingUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  private clothingUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/clothing`;
+  }
+
+  whatHelps = (familyId: string, childId: string) =>
+    this.call(this.http.get<WhatHelpsView>(this.whatHelpsUrl(familyId, childId)));
+  saveWhatHelps = (familyId: string, childId: string, body: WhatHelpsView) =>
+    this.call(this.http.put<WhatHelpsView>(this.whatHelpsUrl(familyId, childId), body));
+  whatHelpsHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<WhatHelpsHistoryPage>(this.whatHelpsUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  private whatHelpsUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/what-helps`;
+  }
+
+  routines = (familyId: string, childId: string) =>
+    this.call(this.http.get<RoutinesView>(this.routinesUrl(familyId, childId)));
+  saveRoutines = (familyId: string, childId: string, body: RoutinesView) =>
+    this.call(this.http.put<RoutinesView>(this.routinesUrl(familyId, childId), body));
+  routinesHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<RoutinesHistoryPage>(this.routinesUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  householdRoutines = (familyId: string, childId: string) =>
+    this.call(this.http.get<readonly HouseholdRoutine[]>(this.routinesUrl(familyId, childId) + '/households'));
+  updateHouseholdRoutine = (familyId: string, childId: string, ownerId: string,
+    body: { revision: number; action: 'save' | 'accept' | 'stop'; values?: RoutinesValues }) =>
+    this.call(this.http.put<RoutinesView>(this.routinesUrl(familyId, childId) + '/households/' + encodeURIComponent(ownerId), body));
+
+  private routinesUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/routines`;
+  }
+
+  caregivers = (familyId: string, childId: string) =>
+    this.call(this.http.get<CaregiverList>(this.caregiversUrl(familyId, childId)));
+  saveCaregiver = (familyId: string, childId: string, id: string | null,
+    body: { version: number; details: CaregiverDetails; allowDuplicate: boolean }) =>
+    this.call(id ? this.http.put<void>(this.caregiversUrl(familyId, childId) + '/' + encodeURIComponent(id), body)
+      : this.http.post<void>(this.caregiversUrl(familyId, childId), body));
+  removeCaregiver = (familyId: string, childId: string, id: string, version: number) =>
+    this.call(this.http.delete<void>(this.caregiversUrl(familyId, childId) + '/' + encodeURIComponent(id), { params: { version } }));
+  rateCaregiver = (familyId: string, childId: string, id: string, rating: number | null) =>
+    this.call(this.http.put<void>(this.caregiversUrl(familyId, childId) + '/' + encodeURIComponent(id) + '/rating', { rating }));
+
+  private caregiversUrl(familyId: string, childId: string): string {
+    return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/caregivers`;
+  }
+
+  emergencyContacts = (familyId: string, childId: string) =>
+    this.call(this.http.get<EmergencyContactsView>(this.emergencyContactsUrl(familyId, childId)));
+  saveEmergencyContacts = (familyId: string, childId: string, body: EmergencyContactsView) =>
+    this.call(this.http.put<EmergencyContactsView>(this.emergencyContactsUrl(familyId, childId), body));
+
+  private emergencyContactsUrl(familyId: string, childId: string): string {
+    return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/emergency-contacts`;
+  }
+
+  /** The allergy PDF and the dated file name the server gave it ("allergies-2026-11-07.pdf"). */
+  downloadAllergyPdf = async (familyId: string, childId: string | null) => {
+    const response = await this.call(
+      this.http.get(`/api/families/${encodeURIComponent(familyId)}/child-essentials/allergies/pdf`, {
+        responseType: 'blob',
+        observe: 'response',
+        params: childId ? { childId } : {},
+      }),
+    );
+    return { pdf: response.body ?? new Blob(), fileName: attachmentName(response.headers.get('Content-Disposition')) ?? 'allergies.pdf' };
+  };
+
+  allergiesFood = (familyId: string, childId: string) =>
+    this.call(this.http.get<AllergiesFoodView>(this.allergiesFoodUrl(familyId, childId)));
+  saveAllergiesFood = (familyId: string, childId: string, body: AllergiesFoodView) =>
+    this.call(this.http.put<AllergiesFoodView>(this.allergiesFoodUrl(familyId, childId), body));
+  allergiesFoodHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<AllergiesFoodHistoryPage>(this.allergiesFoodUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  private allergiesFoodUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/allergies-food`;
+  }
+
+  school = (familyId: string, childId: string) =>
+    this.call(this.http.get<SchoolView>(this.schoolUrl(familyId, childId)));
+  saveSchool = (familyId: string, childId: string, body: SchoolView) =>
+    this.call(this.http.put<SchoolView>(this.schoolUrl(familyId, childId), body));
+  schoolHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<SchoolHistoryPage>(this.schoolUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  private schoolUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/school`;
+  }
 
   // Approvals inbox (ADR-0003).
   /** Pending requests, or the 50 most recently decided with `history`. */
@@ -856,7 +1239,70 @@ export class Api {
   deleteReminder = (familyId: string, reminderId: string) =>
     this.call(this.http.delete<void>(`/api/families/${familyId}/calendar/reminders/${reminderId}`));
 
+  // The parents' conversation (#125). Children never reach it.
+  /** The latest page, or the page before `before` (a message id). */
+  conversation = (familyId: string, before?: string) =>
+    this.call(this.http.get<ChatConversation>(`/api/families/${familyId}/chat`, { params: before ? { before } : {} }));
+  /** Idempotent per `clientMessageId`: retrying returns the stored message instead of a second copy. */
+  /** `eventId` shares an event from the sender's calendar; then `text` may be empty. */
+  sendMessage = (familyId: string, clientMessageId: string, text: string, eventId?: string | null) =>
+    this.call(
+      this.http.post<ChatMessage>(`/api/families/${familyId}/chat/messages`, { clientMessageId, text, eventId: eventId ?? null }),
+    );
+  /** One message as this parent sees it, with its event card. */
+  chatMessage = (familyId: string, messageId: string) =>
+    this.call(this.http.get<ChatMessage>(`/api/families/${familyId}/chat/messages/${messageId}`));
+  /** Only for a message seen in an open, visible conversation. Moving back changes nothing. */
+  markRead = (familyId: string, messageId: string) =>
+    this.call(this.http.put<void>(`/api/families/${familyId}/chat/read`, { messageId }));
+  // Transcripts (slice 3): previews and downloads are made on request; saved ones are this parent's alone.
+  transcriptPreview = (familyId: string, range: TranscriptRange) =>
+    this.call(this.http.get<TranscriptPreview>(`/api/families/${familyId}/chat/transcripts/preview`, { params: rangeParams(range) }));
+  saveTranscript = (familyId: string, range: TranscriptRange) =>
+    this.call(this.http.post<SavedTranscript>(`/api/families/${familyId}/chat/transcripts`, range));
+  transcripts = (familyId: string) => this.call(this.http.get<SavedTranscript[]>(`/api/families/${familyId}/chat/transcripts`));
+  /** The range as a PDF (opened in the browser, or saved to the device with `download`). Same-origin, so the session cookie applies. */
+  transcriptPdfUrl = (familyId: string, range: TranscriptRange, download: boolean) => {
+    const params = new URLSearchParams(rangeParams(range));
+    if (download) params.set('download', 'true');
+    const query = params.toString();
+    return `/api/families/${familyId}/chat/transcripts/pdf${query ? `?${query}` : ''}`;
+  };
+  savedTranscriptUrl = (familyId: string, transcriptId: string, download = false) =>
+    `/api/families/${familyId}/chat/transcripts/${transcriptId}/pdf${download ? '?download=true' : ''}`;
+  // Child Essentials update indicators (#128): identifiers only, never values.
+  essentialsUpdates = (familyId: string) =>
+    this.call(this.http.get<EssentialsUpdates>(`/api/families/${familyId}/essentials/updates`));
+  essentialsOpened = (familyId: string) =>
+    this.call(this.http.post<EssentialsBanner[]>(`/api/families/${familyId}/essentials/updates/opened`, {}));
+  essentialsSectionOpened = (familyId: string, childId: string, section: EssentialsSectionId) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/essentials/updates/sections`, { childId, section }));
+  essentialsRowsSeen = (familyId: string, childId: string, section: EssentialsSectionId, fields: readonly string[]) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/essentials/updates/rows`, { childId, section, fields }));
+  chatUnread = (familyId: string) => this.call(this.http.get<ChatUnread>(`/api/families/${familyId}/chat/unread`));
+  typing = (familyId: string) => this.call(this.http.post<void>(`/api/families/${familyId}/chat/typing`, {}));
+
   private call<T>(request: import('rxjs').Observable<T>): Promise<T> {
     return firstValueFrom(request);
   }
+}
+
+/** The file name in a Content-Disposition header (the RFC 5987 `filename*` form first), or null. */
+export function attachmentName(header: string | null): string | null {
+  if (!header) return null;
+  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header);
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[1].trim());
+    } catch {
+      /* fall back to the plain form */
+    }
+  }
+  const plain = /filename\s*=\s*("([^"]*)"|[^;]+)/i.exec(header);
+  const name = (plain?.[2] ?? plain?.[1])?.trim();
+  return name ? name : null;
+}
+
+function rangeParams(range: TranscriptRange): Record<string, string> {
+  return range.from && range.to ? { from: range.from, to: range.to } : {};
 }

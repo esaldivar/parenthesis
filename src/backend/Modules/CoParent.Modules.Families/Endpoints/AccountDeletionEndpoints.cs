@@ -156,6 +156,10 @@ internal static class AccountDeletionEndpoints
             // The invitation they accepted holds their email address; it isn't needed once they've gone.
             db.Invitations.RemoveRange(await db.Invitations.Where(i => i.AcceptedByUserId == userId).ToListAsync(ct));
 
+            // Their Child Essentials notices (#128) were only for them.
+            db.EssentialsUpdates.RemoveRange(await db.EssentialsUpdates
+                .Where(u => u.RecipientMembershipId == membershipId).ToListAsync(ct));
+
             await db.SaveChangesAsync(ct);
             foreach (var handler in handlers)
             {
@@ -171,6 +175,7 @@ internal static class AccountDeletionEndpoints
     /// <summary>Everything the Families module keeps for this family (the tenant filter scopes every query to it).</summary>
     private static async Task DeleteFamilyAsync(FamiliesDbContext db, CancellationToken cancellationToken)
     {
+        db.EssentialsUpdates.RemoveRange(await db.EssentialsUpdates.ToListAsync(cancellationToken));
         db.ProfilePhotos.RemoveRange(await db.ProfilePhotos.ToListAsync(cancellationToken));
         db.PairingCodes.RemoveRange(await db.PairingCodes.ToListAsync(cancellationToken));
         db.ChildCredentials.RemoveRange(await db.ChildCredentials.ToListAsync(cancellationToken));

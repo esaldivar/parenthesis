@@ -40,14 +40,17 @@ export const PARENT_ROUTES: Routes = [
     title: 'Calendar',
     loadComponent: () => import('./calendar/calendar-page').then((m) => m.CalendarPage),
   },
+  // The parents' conversation (#125, ADR-0008). Children never reach it.
   {
     path: 'messages',
-    ...comingSoon('Messages', {
-      icon: 'messages',
-      intro: 'Private messages between parents.',
-      emptyTitle: 'Planned for a later release',
-      emptyBody: 'Messaging isn’t part of this version of Parenthesis.',
-    }),
+    title: 'Messages',
+    loadComponent: () => import('./messages/messages-page').then((m) => m.MessagesPage),
+  },
+  // Transcripts (slice 3): the phone's screen for Save transcript and Saved transcripts.
+  {
+    path: 'messages/transcripts',
+    title: 'Transcripts',
+    loadComponent: () => import('./messages/transcripts-page').then((m) => m.TranscriptsPage),
   },
   {
     path: 'from-your-kids',
@@ -70,11 +73,8 @@ export const PARENT_ROUTES: Routes = [
   },
   {
     path: 'child-essentials',
-    ...comingSoon('Child Essentials', {
-      icon: 'children',
-      intro: 'Each child’s profile and the details both parents need to know.',
-      emptyBody: 'Child profiles aren’t available yet.',
-    }),
+    title: 'Child Essentials',
+    loadComponent: () => import('./child-essentials/child-essentials-page').then((m) => m.ChildEssentialsPage),
   },
   // Older links to /children land on its replacement.
   { path: 'children', redirectTo: 'child-essentials' },

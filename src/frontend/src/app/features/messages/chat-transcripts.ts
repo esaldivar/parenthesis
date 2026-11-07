@@ -1,0 +1,436 @@
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  OnInit,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { Api, SavedTranscript, TranscriptPreview, TranscriptRange } from '../../core/api/api';
+import { generalMessage, toProblem } from '../../core/api/problem';
+import { AuthStore } from '../../core/auth/auth.store';
+import { Icon } from '../../shared/icon/icon';
+import { Toasts } from '../../shared/toast/toasts';
+import { DateField } from '../calendar/date-field';
+import { providePlainDates } from '../calendar/plain-dates';
+
+/** Field messages, matching the server's (TranscriptRange.Validate). */
+export const HALF_RANGE = 'Choose a start and an end date, or All messages.';
+export const REVERSED_RANGE = 'The end date can’t be before the start date.';
+export const EMPTY_RANGE = 'No messages in this date range.';
+
+type Step = 'choose' | 'preview';
+
+/**
+ * PDF transcripts of the parents' conversation (#125, slice 3 of docs/design/m4-chat.md): Save transcript and this
+ * parent's Saved transcripts. The left column of the desktop Messages page, and the phone's Transcripts screen.
+ *
+ * Save transcript opens a dialog: All messages or a date range (both dates included, in the family's time zone), then a
+ * preview of exactly what the PDF holds. From the preview, Save transcript keeps a copy in Parenthesis and Download PDF
+ * saves one to the device; they are separate. An empty range keeps its dates and offers no export. A saved entry
+ * reopens its PDF, exactly as saved. Saved transcripts are this parent's alone.
+ */
+@Component({
+  selector: 'app-chat-transcripts',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CdkTrapFocus, ReactiveFormsModule, MatButtonModule, Icon, DateField],
+  providers: [providePlainDates()],
+  template: `
+    <header class="head">
+      <ng-content select="[transcriptsLead]" />
+      @if (level() === 1) {
+        <h1>Transcripts</h1>
+      } @else {
+        <h2>Transcripts</h2>
+      }
+    </header>
+
+    <button
+      mat-flat-button
+      type="button"
+      class="save"
+      aria-haspopup="dialog"
+      #opener
+      (click)="open()"
+    >
+      <app-icon name="download" [size]="20" />
+      Save transcript
+    </button>
+
+    <section class="saved" [attr.aria-labelledby]="id + '-saved'">
+      @if (level() === 1) {
+        <h2 [id]="id + '-saved'">Saved transcripts</h2>
+      } @else {
+        <h3 [id]="id + '-saved'">Saved transcripts</h3>
+      }
+      @switch (listState()) {
+        @case ('loading') {
+          <p class="muted" role="status">Loading saved transcripts…</p>
+        }
+        @case ('error') {
+          <p class="alert" role="alert">{{ listError() }}</p>
+          <button mat-stroked-button type="button" (click)="loadSaved()">Try again</button>
+        }
+        @default {
+          @if (saved().length === 0) {
+            <p class="muted">No saved transcripts yet.</p>
+          } @else {
+            <ul class="saved-list">
+              @for (transcript of saved(); track transcript.id) {
+                <li>
+                  <!-- Opens the PDF exactly as saved, in a new tab: the browser's own viewer can print or save it. -->
+                  <a
+                    class="saved-item"
+                    [href]="savedUrl(transcript)"
+                    target="_blank"
+                    rel="noopener"
+                    [attr.data-id]="transcript.id"
+                  >
+                    <app-icon name="note" [size]="22" />
+                    <span class="saved-text">
+                      <span class="file">{{ transcript.fileName }}</span>
+                      <span class="range">{{ transcript.rangeLabel }}</span>
+                      <span class="visually-hidden">(opens in a new tab)</span>
+                    </span>
+                    <app-icon name="chevron-right" [size]="20" />
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+    </section>
+
+    @if (step(); as current) {
+      <div class="scrim"></div>
+      <div
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-labelledby]="id + '-dialog-title'"
+        cdkTrapFocus
+        (keydown.escape)="close()"
+      >
+        <div class="dialog-head">
+          <h2 [id]="id + '-dialog-title'" tabindex="-1" #dialogTitle>
+            {{ current === 'choose' ? 'Save transcript' : 'Transcript preview' }}
+          </h2>
+          <button class="icon-button" type="button" aria-label="Close" (click)="close()">
+            <app-icon name="close" [size]="22" />
+          </button>
+        </div>
+
+        @if (current === 'choose') {
+          <form class="choose" novalidate (submit)="$event.preventDefault(); preview()">
+            <fieldset>
+              <legend class="visually-hidden">Messages to include</legend>
+              <label class="radio">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="all"
+                  [checked]="scope() === 'all'"
+                  (change)="setScope('all')"
+                />
+                All messages
+              </label>
+              <label class="radio">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="range"
+                  [checked]="scope() === 'range'"
+                  (change)="setScope('range')"
+                />
+                Date range
+              </label>
+            </fieldset>
+
+            @if (scope() === 'range') {
+              <div class="dates">
+                <app-date-field
+                  label="Start date"
+                  name="from"
+                  [inputId]="id + '-from'"
+                  [control]="from"
+                  [dateFilter]="anyDay"
+                  [issue]="fromError()"
+                />
+                @if (fromError(); as message) {
+                  <p class="field-error" [id]="id + '-from-error'">{{ message }}</p>
+                }
+                <app-date-field
+                  label="End date"
+                  name="to"
+                  [inputId]="id + '-to'"
+                  [control]="to"
+                  [dateFilter]="anyDay"
+                  [startAt]="from.value || null"
+                  [issue]="toError()"
+                />
+                @if (toError(); as message) {
+                  <p class="field-error" [id]="id + '-to-error'">{{ message }}</p>
+                }
+              </div>
+            }
+
+            @if (empty()) {
+              <p class="notice" role="status">{{ emptyText }}</p>
+            }
+            @if (dialogError(); as message) {
+              <p class="alert" role="alert">{{ message }}</p>
+            }
+
+            <div class="actions">
+              <button mat-stroked-button type="button" (click)="close()">Cancel</button>
+              <button mat-flat-button type="submit" [disabled]="busy()">Preview PDF</button>
+            </div>
+          </form>
+        } @else if (document(); as doc) {
+          <article class="paper" [attr.aria-label]="'Preview of ' + doc.fileName" tabindex="0">
+            <h3>{{ doc.title }}</h3>
+            <p class="paper-range">{{ doc.rangeLabel }}</p>
+            <p class="paper-meta">{{ doc.preparedLabel }}</p>
+            <p class="paper-meta">
+              {{ doc.messageCount === 1 ? '1 message' : doc.messageCount + ' messages' }}
+            </p>
+            @for (day of doc.days; track day.date) {
+              <h4>{{ day.label }}</h4>
+              <ol class="paper-messages">
+                @for (message of day.messages; track $index) {
+                  <li>
+                    <span class="time">{{ message.time }}</span>
+                    <span class="body">
+                      <strong>{{ message.sender }}:</strong>
+                      @if (message.text) {
+                        <span class="text"> {{ message.text }}</span>
+                      }
+                      @if (message.event; as event) {
+                        <span class="event">{{ event }}</span>
+                      }
+                    </span>
+                  </li>
+                }
+              </ol>
+            }
+          </article>
+
+          <p class="file-name"><app-icon name="note" [size]="20" />{{ doc.fileName }}</p>
+
+          @if (dialogError(); as message) {
+            <p class="alert" role="alert">{{ message }}</p>
+          }
+
+          <div class="actions">
+            <button mat-flat-button type="button" [disabled]="busy()" (click)="save()">
+              <app-icon name="download" [size]="20" />
+              Save transcript
+            </button>
+            <a mat-stroked-button [href]="downloadUrl()" [attr.download]="doc.fileName">
+              <app-icon name="note" [size]="20" />
+              Download PDF
+            </a>
+          </div>
+          <button class="link-button" type="button" (click)="backToDates()">Change dates</button>
+        }
+      </div>
+    }
+  `,
+  styleUrl: './chat-transcripts.scss',
+})
+export class ChatTranscripts implements OnInit {
+  private static next = 0;
+  private readonly api = inject(Api);
+  private readonly auth = inject(AuthStore);
+  private readonly toasts = inject(Toasts);
+  private readonly injector = inject(Injector);
+
+  /** The page's heading level for "Transcripts": 1 on the phone's Transcripts screen, 2 beside the conversation. */
+  readonly level = input<1 | 2>(2);
+
+  protected readonly id = `transcripts-${ChatTranscripts.next++}`;
+  protected readonly emptyText = EMPTY_RANGE;
+  protected readonly anyDay = () => true;
+
+  protected readonly saved = signal<readonly SavedTranscript[]>([]);
+  protected readonly listState = signal<'loading' | 'ready' | 'error'>('loading');
+  protected readonly listError = signal('');
+
+  protected readonly step = signal<Step | null>(null);
+  protected readonly scope = signal<'all' | 'range'>('all');
+  protected readonly from = new FormControl('', { nonNullable: true });
+  protected readonly to = new FormControl('', { nonNullable: true });
+  protected readonly fromError = signal<string | null>(null);
+  protected readonly toError = signal<string | null>(null);
+  protected readonly empty = signal(false);
+  protected readonly dialogError = signal<string | null>(null);
+  protected readonly busy = signal(false);
+  protected readonly document = signal<TranscriptPreview | null>(null);
+
+  private readonly opener = viewChild.required('opener', { read: ElementRef<HTMLButtonElement> });
+  private readonly dialogTitle = viewChild<ElementRef<HTMLElement>>('dialogTitle');
+
+  private readonly familyId = computed(() => this.auth.currentFamily()?.id ?? '');
+  /** The range that was previewed: Save and Download use exactly this one. */
+  private readonly previewed = signal<TranscriptRange>({ from: null, to: null });
+  protected readonly downloadUrl = computed(() =>
+    this.api.transcriptPdfUrl(this.familyId(), this.previewed(), true),
+  );
+
+  ngOnInit(): void {
+    void this.loadSaved();
+  }
+
+  protected savedUrl(transcript: SavedTranscript): string {
+    return this.api.savedTranscriptUrl(this.familyId(), transcript.id);
+  }
+
+  protected async loadSaved(): Promise<void> {
+    const familyId = this.familyId();
+    if (!familyId) {
+      this.listError.set('We couldn’t find your family.');
+      this.listState.set('error');
+      return;
+    }
+    this.listState.set('loading');
+    try {
+      this.saved.set(await this.api.transcripts(familyId));
+      this.listState.set('ready');
+    } catch (error) {
+      this.listError.set(generalMessage(toProblem(error)));
+      this.listState.set('error');
+    }
+  }
+
+  protected open(): void {
+    this.clearMessages();
+    this.document.set(null);
+    this.step.set('choose');
+    this.focusTitle();
+  }
+
+  /** Closes the dialog and returns focus to Save transcript. */
+  protected close(): void {
+    if (!this.step()) {
+      return;
+    }
+    this.step.set(null);
+    this.opener().nativeElement.focus();
+  }
+
+  protected setScope(scope: 'all' | 'range'): void {
+    this.scope.set(scope);
+    this.clearMessages();
+  }
+
+  protected backToDates(): void {
+    this.clearMessages();
+    this.step.set('choose');
+    this.focusTitle();
+  }
+
+  /** Checks the dates, then shows exactly what the PDF will hold. An empty range stays on its dates. */
+  protected async preview(): Promise<void> {
+    if (this.busy()) {
+      return;
+    }
+    this.clearMessages();
+    const range = this.range();
+    if (!range) {
+      return;
+    }
+    this.busy.set(true);
+    try {
+      const doc = await this.api.transcriptPreview(this.familyId(), range);
+      if (doc.messageCount === 0) {
+        this.empty.set(true);
+        return;
+      }
+      this.previewed.set(range);
+      this.document.set(doc);
+      this.step.set('preview');
+      this.focusTitle();
+    } catch (error) {
+      this.showProblem(error);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Keeps an unchanging copy of the previewed range in Parenthesis, for this parent only. */
+  protected async save(): Promise<void> {
+    if (this.busy()) {
+      return;
+    }
+    this.dialogError.set(null);
+    this.busy.set(true);
+    try {
+      const saved = await this.api.saveTranscript(this.familyId(), this.previewed());
+      this.saved.update((list) => [saved, ...list.filter((t) => t.id !== saved.id)]);
+      this.listState.set('ready');
+      this.toasts.show(`Saved ${saved.fileName}.`);
+      this.close();
+    } catch (error) {
+      this.showProblem(error);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** The chosen range, or null (with the reason beside its field) when it can't be used. */
+  private range(): TranscriptRange | null {
+    if (this.scope() === 'all') {
+      return { from: null, to: null };
+    }
+    const from = this.from.value;
+    const to = this.to.value;
+    if (!from || !to) {
+      (from ? this.toError : this.fromError).set(HALF_RANGE);
+      return null;
+    }
+    if (from > to) {
+      this.toError.set(REVERSED_RANGE);
+      return null;
+    }
+    return { from, to };
+  }
+
+  private showProblem(error: unknown): void {
+    const problem = toProblem(error);
+    const field = (name: string) => problem.errors[name]?.[0] ?? null;
+    const fromMessage = field('from');
+    const toMessage = field('to');
+    if (problem.status === 400 && fromMessage === EMPTY_RANGE) {
+      this.step.set('choose');
+      this.empty.set(true);
+      return;
+    }
+    if (problem.status === 400 && (fromMessage || toMessage) && this.scope() === 'range') {
+      this.step.set('choose');
+      this.fromError.set(fromMessage);
+      this.toError.set(toMessage);
+      return;
+    }
+    this.dialogError.set(fromMessage ?? toMessage ?? generalMessage(problem));
+  }
+
+  private clearMessages(): void {
+    this.fromError.set(null);
+    this.toError.set(null);
+    this.empty.set(false);
+    this.dialogError.set(null);
+  }
+
+  private focusTitle(): void {
+    afterNextRender(() => this.dialogTitle()?.nativeElement.focus(), { injector: this.injector });
+  }
+}

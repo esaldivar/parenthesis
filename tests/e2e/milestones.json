@@ -12,6 +12,10 @@
     {
       "tag": "@m3",
       "name": "v0.3.0 Calendar and approvals (events, proposals, approvals, declined requests, repeats, filters, reminders, tasks, home page)"
+    },
+    {
+      "tag": "@m4",
+      "name": "v0.4.0 Communication (messages between parents)"
     }
   ],
   "regressionTag": "@regression"

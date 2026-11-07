@@ -35,6 +35,17 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<ProfilePhoto> ProfilePhotos => Set<ProfilePhoto>();
 
+    public DbSet<ClothingRevision> ClothingRevisions => Set<ClothingRevision>();
+    public DbSet<WhatHelpsRevision> WhatHelpsRevisions => Set<WhatHelpsRevision>();
+    public DbSet<RoutinesRevision> RoutinesRevisions => Set<RoutinesRevision>();
+    public DbSet<AllergiesFoodRevision> AllergiesFoodRevisions => Set<AllergiesFoodRevision>();
+    public DbSet<EmergencyContacts> EmergencyContacts => Set<EmergencyContacts>();
+    public DbSet<SharedCaregivers> SharedCaregivers => Set<SharedCaregivers>();
+    public DbSet<SchoolRevision> SchoolRevisions => Set<SchoolRevision>();
+
+    /// <summary>Each parent's notices of the other parent's Child Essentials saves (#128).</summary>
+    public DbSet<EssentialsUpdate> EssentialsUpdates => Set<EssentialsUpdate>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -81,6 +92,87 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             child.HasOne<Family>().WithMany().HasForeignKey(c => c.FamilyId);
             child.HasIndex(c => new { c.FamilyId, c.Status });
             child.HasQueryFilter(TenantContext.QueryFilterName, c => c.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ClothingRevision>(revision =>
+        {
+            revision.ToTable("child_clothing_revisions");
+            revision.Property(row => row.TopSize).HasMaxLength(ClothingRevision.SizeLimit);
+            revision.Property(row => row.BottomSize).HasMaxLength(ClothingRevision.SizeLimit);
+            revision.Property(row => row.ShoeSize).HasMaxLength(ClothingRevision.SizeLimit);
+            revision.Property(row => row.FitNotes).HasMaxLength(ClothingRevision.NotesLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<WhatHelpsRevision>(revision =>
+        {
+            revision.ToTable("child_what_helps_revisions");
+            revision.Property(row => row.ComfortItems).HasMaxLength(WhatHelpsRevision.TextLimit);
+            revision.Property(row => row.CalmingStrategies).HasMaxLength(WhatHelpsRevision.TextLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<RoutinesRevision>(revision =>
+        {
+            revision.ToTable("child_routines_revisions");
+            revision.Property(row => row.Bedtime).HasMaxLength(RoutinesRevision.TextLimit);
+            revision.Property(row => row.Naps).HasMaxLength(RoutinesRevision.TextLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            revision.HasIndex(row => new { row.ChildProfileId, row.OwnerMembershipId, row.Revision }).IsUnique()
+                .HasDatabaseName("ix_child_routines_revisions_child_owner_revision");
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<AllergiesFoodRevision>(revision =>
+        {
+            revision.ToTable("child_allergies_food_revisions");
+            revision.Property(row => row.Allergies).HasMaxLength(AllergiesFoodRevision.TextLimit);
+            revision.Property(row => row.FoodPreferences).HasMaxLength(AllergiesFoodRevision.TextLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId)
+                .HasConstraintName("fk_child_allergies_food_revisions_child_profiles");
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<EmergencyContacts>(contacts =>
+        {
+            contacts.ToTable("child_emergency_contacts");
+            contacts.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            contacts.HasIndex(row => row.ChildProfileId).IsUnique();
+            contacts.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+        modelBuilder.Entity<SharedCaregivers>(contacts =>
+        {
+            contacts.ToTable("child_shared_caregivers");
+            contacts.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            contacts.HasIndex(row => row.ChildProfileId).IsUnique();
+            contacts.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<SchoolRevision>(revision =>
+        {
+            revision.ToTable("child_school_revisions");
+            revision.Property(row => row.HomeroomTeacher).HasMaxLength(SchoolRevision.TextLimit);
+            revision.Property(row => row.Grade).HasMaxLength(SchoolRevision.TextLimit);
+            revision.Property(row => row.ParentConcerns).HasMaxLength(SchoolRevision.TextLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<EssentialsUpdate>(update =>
+        {
+            update.ToTable("essentials_updates");
+            update.Property(u => u.Section).HasMaxLength(EssentialsUpdate.SectionMaxLength);
+            update.HasOne<ChildProfile>().WithMany().HasForeignKey(u => u.ChildProfileId);
+            update.HasOne<FamilyMembership>().WithMany().HasForeignKey(u => u.RecipientMembershipId);
+            // One notice per recipient and saved revision: a retried or replayed save can't add another.
+            update.HasIndex(u => new { u.RecipientMembershipId, u.ChildProfileId, u.Section, u.Revision }).IsUnique();
+            update.HasQueryFilter(TenantContext.QueryFilterName, u => u.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<Device>(device =>

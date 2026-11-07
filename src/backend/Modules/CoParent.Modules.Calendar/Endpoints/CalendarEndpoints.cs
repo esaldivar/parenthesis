@@ -396,7 +396,7 @@ internal static class CalendarEndpoints
     /// A parent's list: pending and confirmed events, plus declined requests (owner decisions, October 22, 2026) that
     /// haven't ended yet and that this parent hasn't removed from their calendar.
     /// </summary>
-    private static IQueryable<CalendarEvent> DeclinedStillShown(
+    internal static IQueryable<CalendarEvent> DeclinedStillShown(
         IQueryable<CalendarEvent> query, CalendarDbContext db, Guid membershipId, DateTimeOffset now) =>
         query.Where(e => e.Status == EventStatus.Confirmed
             || e.Status == EventStatus.PendingApproval
@@ -1496,7 +1496,7 @@ internal static class CalendarEndpoints
     private static string Summary(CalendarEvent e) =>
         $"{(e.Category == EventCategory.Joint ? "Family event" : "Add")}: {e.Title}, {e.StartsAt:MMM d}";
 
-    private const string UnavailableTitle = "Unavailable";
+    internal const string UnavailableTitle = "Unavailable";
 
     /// <summary>
     /// Unavailable time is shared only as "Unavailable": its private reason belongs in the owner-only notes. So it's

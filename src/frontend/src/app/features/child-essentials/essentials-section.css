@@ -1,0 +1,84 @@
+section {
+  border: 1px solid var(--color-outline);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+h3 {
+  margin: -1rem -1rem 1rem;
+  border-radius: 1rem 1rem 0 0;
+  padding: 0.75rem 1rem;
+  background: var(--essentials-tile-bg, var(--essentials-section-bg));
+  color: var(--essentials-tile-fg, var(--essentials-section-fg));
+}
+dl { display: grid; gap: 0.25rem; }
+/* One row per field, so a changed row can be highlighted (#128). */
+.row {
+  display: grid;
+  grid-template-columns: minmax(5rem, 12rem) minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+  margin-inline: -0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+}
+dt { font-weight: 600; }
+/* A listed contact or caregiver, highlighted as a whole when it changed. */
+.entry { border: 2px solid transparent; border-radius: 0.5rem; padding: 0 0.5rem; }
+/* A changed row: its section's tint, a border and the word Updated, so it doesn't rely on color. */
+.row--updated {
+  border-color: var(--essentials-tile-fg, var(--essentials-section-fg, var(--color-text)));
+  background: var(--essentials-tile-bg, var(--essentials-section-bg, var(--color-surface-soft)));
+  color: var(--essentials-tile-fg, var(--essentials-section-fg, var(--color-text)));
+}
+h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.updated-badge, .updated-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-inline-start: 0.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.updated-badge { margin-inline-start: auto; }
+.tab-dot { display: inline-block; margin-inline-start: 0.375rem; }
+.updated-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .updated-dot { animation: updated-glow 2s ease-in-out infinite; }
+}
+@keyframes updated-glow {
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 25%, transparent); }
+}
+@media (max-width: 30rem) {
+  .row { grid-template-columns: minmax(0, 1fr); }
+}
+dd { margin: 0; white-space: pre-wrap; }
+fieldset { display: grid; min-inline-size: 0; gap: 0.75rem; padding: 0; border: 0; }
+label { display: grid; gap: 0.25rem; }
+input, select, textarea, button {
+  box-sizing: border-box;
+  min-height: 44px;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  padding: 0.5rem 0.75rem;
+}
+textarea { resize: vertical; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.latest, article { border-block-start: 1px solid var(--color-outline); margin-block: 1rem; }
+.comparison { display: grid; gap: 0.5rem 1rem; }
+@media (min-width: 960px) {
+  .comparison { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

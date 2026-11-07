@@ -35,6 +35,19 @@ function png(r: number, g: number, b: number, width = 120, height = 90): Buffer 
 /** The family-local date of an instant, for the calendar's `?date=`. */
 const localDate = (instant: Date) => instant.toLocaleDateString('en-CA', { timeZone: TIME_ZONE });
 
+/**
+ * An event that has already started today: three hours ago, or the start of the family's day if that's later. The API
+ * refuses events that start before today, so runs just after midnight (Chicago) need the later of the two.
+ */
+function startedToday(now = new Date()): Date {
+  const [h = 0, m = 0, sec = 0] = now
+    .toLocaleTimeString('en-GB', { timeZone: TIME_ZONE, hour12: false })
+    .split(':')
+    .map(Number);
+  const midnight = new Date(now.getTime() - ((h % 24) * 3600 + m * 60 + sec) * 1000 - now.getMilliseconds());
+  return new Date(Math.max(addHours(now, -3).getTime(), midnight.getTime()));
+}
+
 async function memories(session: ApiSession, familyId: string) {
   return session.json<{ eventId: string; photoCount: number }[]>(session.get(`/api/families/${familyId}/memories`));
 }
@@ -50,8 +63,8 @@ test.describe('Event photos and Family Memories', { tag: ['@m3', '@mobile'] }, (
   for (const theme of ['light', 'dark'] as const) {
     test(`a parent adds private photos to a confirmed event, shares them, and finds them in Family Memories, ${theme} (#403)`, async ({ page, family }, info) => {
       await page.emulateMedia({ colorScheme: theme });
-      // An activity that has already started: photos open from its start.
-      const start = addHours(new Date(), -3);
+      // An activity that has already started today: photos open from its start.
+      const start = startedToday();
       const event = await family.dad.json<{ id: string; status: string }>(
         family.dad.post(`/api/families/${family.familyId}/calendar/events`, {
           category: 'Activity', title: 'Soccer final', childIds: [family.kaiId],
@@ -161,7 +174,7 @@ test.describe('Event photos and Family Memories', { tag: ['@m3', '@mobile'] }, (
   test('pending events never offer photos, so a proposal can’t look confirmed (#403)', async ({ page, family }) => {
     const members = await family.dad.json<{ members: { membershipId: string; displayName: string }[] }>(family.dad.get(`/api/families/${family.familyId}`));
     const dadId = members.members.find((m) => m.displayName === 'Dad')!.membershipId;
-    const start = addHours(new Date(), -3);
+    const start = startedToday();
     const proposed = await family.dad.json<{ id: string; status: string }>(
       family.dad.post(`/api/families/${family.familyId}/calendar/events`, {
         category: 'ParentingTime', title: 'Soccer final', childIds: [family.kaiId], caregiverMembershipId: dadId,

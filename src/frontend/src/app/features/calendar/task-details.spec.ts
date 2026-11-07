@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
+import { CHAT_CONNECTION } from '../../core/chat/chat.store';
 import { SharedTask } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, checklistItem, task } from '../../../testing/calendar-fixtures';
@@ -54,11 +55,26 @@ describe('tasks on the calendar', () => {
 
   async function open(tasks: SharedTask[], url = '/calendar?date=2026-10-20') {
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), fakeAuth()],
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        fakeAuth(),
+        // The shell's chat connection (#125) isn't under test here: it never opens.
+        { provide: CHAT_CONNECTION, useValue: () => new Promise(() => undefined) },
+      ],
     });
     harness = await RouterTestingHarness.create(url);
     http = TestBed.inject(HttpTestingController);
+    // The shell asks for the Messages unread dot; nothing unread.
+    http.match((r) => r.url.endsWith('/chat/unread')).forEach((r) => r.flush({ count: 0, hasUnread: false }));
+    // And for the Child Essentials dot (#128); nothing new.
+    flushEssentialsDot();
     return answerLoad(tasks);
+  }
+
+  function flushEssentialsDot() {
+    http.match((r) => r.url.endsWith('/essentials/updates')).forEach((r) => r.flush({ newUpdates: false, sections: [] }));
   }
 
   const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -287,6 +303,7 @@ describe('tasks on the calendar', () => {
       await settle();
       expect(box.checked).toBe(false);
     }
+    flushEssentialsDot();
     expect(http.match(() => true)).toHaveLength(0);
     expect(await axeViolations(document.body)).toEqual([]);
   });

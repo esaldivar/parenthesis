@@ -3,10 +3,9 @@
  *
  * There is no notifications or unread-count API yet, so real parents never see these numbers: the bell shows no
  * badge and says notifications aren't available, and the navigation shows no counts. Replace with real data when the
- * notifications/messages/kid-shares endpoints exist; delete this file then.
+ * notifications/kid-shares endpoints exist (messages have real unread state, #125); delete this file then.
  */
 export const SAMPLE_UNREAD: Readonly<Record<string, number>> = {
-  '/messages': 3,
   '/from-your-kids': 2,
 };
 

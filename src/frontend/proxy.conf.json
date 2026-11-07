@@ -3,5 +3,11 @@
     "target": "https://localhost:7180",
     "secure": false,
     "logLevel": "warn"
+  },
+  "/hubs": {
+    "target": "https://localhost:7180",
+    "secure": false,
+    "ws": true,
+    "logLevel": "warn"
   }
 }
