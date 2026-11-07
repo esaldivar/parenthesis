@@ -438,7 +438,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
             Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
             Assert.Equal("attachment", pdf.Content.Headers.ContentDisposition?.DispositionType);
             Assert.True(pdf.Headers.CacheControl?.NoStore == true);
-            var bytes = await pdf.Content.ReadAsByteArrayAsync();
+            var bytes = await pdf.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
             Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(bytes[..4]), StringComparison.Ordinal);
         }
 
