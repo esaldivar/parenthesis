@@ -80,12 +80,15 @@ describe('SharedRecordsPage', () => {
   it('shows the viewer’s share and agrees to the exact request as the other parent', async () => {
     const { api, button, fixture, page } = await render([fund]);
     expect(page.textContent).toContain('You $120.00');
+    api.sharedRecordsAttention.mockClear();
     button('Agree to proposal')!.click();
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(api.approve).toHaveBeenCalledWith('family', 'approval-1');
+    // The navigation dot is read again at once: this proposal no longer waits on this parent.
+    await vi.waitFor(() => expect(api.sharedRecordsAttention).toHaveBeenCalled());
     expect(page.textContent).toContain('Agreed split');
     expect(button('Agree to proposal')).toBeUndefined();
   });
@@ -129,6 +132,8 @@ describe('SharedRecordsPage', () => {
     expect(history).toHaveLength(2);
     expect(history[0].textContent).toContain('Awaiting acknowledgment');
     expect(history[1].textContent).toContain('Acknowledged');
+    // The response keeps its time, so two answers on the same day stay distinct.
+    expect(history[1].textContent!.replace(/\s+/g, ' ')).toMatch(/Acknowledged Nov \d+, \d{1,2}:\d{2}\s?[AP]M/);
     expect(history[0].querySelector('a')!.getAttribute('href')).toBe('/api/families/family/shared-records/entries/mine/attachment');
     // The reporter can't answer their own report.
     expect(page.textContent).not.toContain('Acknowledge contribution');

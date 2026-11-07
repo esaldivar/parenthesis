@@ -203,6 +203,8 @@ export class SharedRecordsPage {
       }));
       this.announcement.set(approve ? 'Shared Fund agreed.' : 'Changes requested. This proposal ended.');
       this.focus(this.recordHeading);
+      // The proposal no longer waits on this parent: clear the navigation dot now, not at the next navigation.
+      void this.attention?.refresh();
     });
   }
 

@@ -2,7 +2,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using CoParent.Modules.SharedRecords.Contracts;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoParent.IntegrationTests.Api;
 
@@ -117,12 +119,20 @@ public sealed class SharedRecordReportTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(15000, seen.GetProperty("totals").GetProperty("pendingMinor").GetInt64());
         Assert.Equal(3, seen.GetProperty("entries").GetArrayLength());
 
-        // When the family closes, every record, report and attachment goes.
+        // When the family closes, every record, report and attachment goes. Closing only marks the reports removed, in
+        // its own transaction; the cleanup then deletes each file and its row.
         Assert.Equal(HttpStatusCode.NoContent, (await dad.PostAsync("/api/me/delete", new { password = ApiSession.Password })).StatusCode);
         Assert.Equal(3L, await CountAsync("entries", root));
+        var cleanup = api.Services.GetRequiredService<ISharedRecordsCleanup>();
+        Assert.Equal(0, await cleanup.CleanUpAsync(TestContext.Current.CancellationToken));
         Assert.Equal(HttpStatusCode.NoContent, (await mom.PostAsync("/api/me/delete", new { password = ApiSession.Password })).StatusCode);
-        Assert.Equal(0L, await CountAsync("entries", root));
         Assert.Equal(0L, await CountAsync("support_records", root));
+        Assert.Equal(3L, await api.QueryScalarAsync<long>(
+            "select count(*) from shared_records.entries where family_id = @v and removed_at is not null",
+            ("v", Guid.Parse(root["/api/families/".Length..]))));
+        Assert.Equal(3, await cleanup.CleanUpAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(0L, await CountAsync("entries", root));
+        Assert.Equal(0, await cleanup.CleanUpAsync(TestContext.Current.CancellationToken));
     }
 
     private async Task<(ApiSession Dad, ApiSession Mom, string Root)> FamilyAsync()

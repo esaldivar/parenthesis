@@ -18,6 +18,9 @@ internal sealed class AttachmentOptions
     public string? ConnectionString { get; set; }
 
     public string ContainerName { get; set; } = "shared-records";
+
+    /// <summary>How often files of removed reports are deleted.</summary>
+    public TimeSpan CleanupInterval { get; set; } = TimeSpan.FromHours(1);
 }
 
 /// <summary>Private storage for payment attachments. Nothing in it is public; the API serves every read.</summary>
