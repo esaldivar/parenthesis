@@ -9,8 +9,8 @@ namespace CoParent.IntegrationTests.Api;
 [Collection(ApiCollectionDefinition.Name)]
 public sealed class EssentialsUpdatesTests(ApiFactory api) : IAsyncLifetime
 {
-    private static readonly string[] ShoeRow = ["shoeSize"];
-    private static readonly string[] TopRow = ["topSize"];
+    private static readonly string[] _shoeRow = ["shoeSize"];
+    private static readonly string[] _topRow = ["topSize"];
 
     public async ValueTask InitializeAsync() => await api.ResetDatabaseAsync();
 
@@ -93,11 +93,11 @@ public sealed class EssentialsUpdatesTests(ApiFactory api) : IAsyncLifetime
 
         // Seeing the Shoes row clears that row alone; seeing Tops clears the section.
         Assert.Equal(HttpStatusCode.NoContent,
-            (await dad.PostAsync($"/api/families/{familyId}/essentials/updates/rows", new { childId = kaiId, section = "clothing", fields = ShoeRow })).StatusCode);
+            (await dad.PostAsync($"/api/families/{familyId}/essentials/updates/rows", new { childId = kaiId, section = "clothing", fields = _shoeRow })).StatusCode);
         clothingNotice = (await UpdatesAsync(dad, familyId)).GetProperty("sections").EnumerateArray()
             .Single(s => s.GetProperty("section").GetString() == "clothing");
         Assert.Equal(["topSize"], Strings(clothingNotice.GetProperty("rows")));
-        await dad.PostAsync($"/api/families/{familyId}/essentials/updates/rows", new { childId = kaiId, section = "clothing", fields = TopRow });
+        await dad.PostAsync($"/api/families/{familyId}/essentials/updates/rows", new { childId = kaiId, section = "clothing", fields = _topRow });
         Assert.DoesNotContain((await UpdatesAsync(dad, familyId)).GetProperty("sections").EnumerateArray(),
             s => s.GetProperty("section").GetString() == "clothing");
 
