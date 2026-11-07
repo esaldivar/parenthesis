@@ -14,8 +14,9 @@ that points back here.
   - [ ] Run the Routines draft-preservation and allergy PDF regression checks in CI before accepting the verification follow-up.
   - [x] #128 in-page update flow for School, Allergies & Food, Clothing & Shoes and What Helps: navigation dot,
     first-visit banners, child and section dots, row highlights (November 7, 2026).
-  - [ ] Extend #128 update notices to Routines, Medication (values stay in the protected record), Shared Caregivers
-    and Emergency Contacts as each section's revision flow ships.
+  - [x] #128 update notices for Routines (shared rows, and a dot on the co-parent's tab until opened), Emergency
+    Contacts and Shared Caregivers (November 7, 2026). Ratings, accepting a routine and stopping sharing make none.
+  - [ ] Extend #128 update notices to Medication (values stay in the protected record) when it ships.
   - [ ] When the overview becomes section tiles (handoff mockup), move each section's dot to its tile and clear it on
     opening the tile; today the dot clears when the section comes on screen.
   - [ ] Complete visual polish with the handoff illustrations and verify the Clothing & Shoes, What Helps, School, and Allergies & Food flows on the development site in both themes.

@@ -140,6 +140,17 @@ internal static class HouseholdRoutinesEndpoints
                 EditedAt = clock.GetUtcNow(),
             };
             db.RoutinesRevisions.Add(row);
+            if (request.Action == "save")
+            {
+                // The owner revised their own routine: the co-parent's tab for it gets a dot (#128). Accepting it into
+                // Shared or stopping sharing changes no routine text, so it makes no notice.
+                await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.HouseholdRoutines, row.Revision,
+                    EssentialsUpdateEndpoints.Changed(
+                    ("bedtime", view.Values.Bedtime, values.Bedtime),
+                    ("naps", view.Values.Naps, values.Naps)),
+                    row.EditedAt, ct);
+            }
+
             await db.SaveChangesAsync(ct);
             return TypedResults.Ok(RoutinesView.From(row));
         }, cancellationToken);

@@ -33,6 +33,32 @@ export const ESSENTIALS_SECTIONS: Record<
     fg: 'var(--color-calendar-family-fg)',
     fields: { comfortItems: 'comfort items', calmingStrategies: 'calming strategies' },
   },
+  routines: {
+    name: 'Routines',
+    bg: 'var(--color-calendar-family-bg)',
+    fg: 'var(--color-calendar-family-fg)',
+    fields: { bedtime: 'shared bedtime', naps: 'shared naps' },
+  },
+  // The co-parent's own routines at their home: their Routines tab.
+  householdRoutines: {
+    name: 'routines at your co-parent’s home',
+    bg: 'var(--color-calendar-family-bg)',
+    fg: 'var(--color-calendar-family-fg)',
+    fields: { bedtime: 'bedtime at your co-parent’s home', naps: 'naps at your co-parent’s home' },
+  },
+  // Entries are named by position or id, never by their details, so the banner names the section.
+  emergencyContacts: {
+    name: 'Emergency Contacts',
+    bg: 'var(--color-surface-soft)',
+    fg: 'var(--color-text)',
+    fields: {},
+  },
+  caregivers: {
+    name: 'Shared Caregivers',
+    bg: 'var(--color-surface-soft)',
+    fg: 'var(--color-text)',
+    fields: {},
+  },
 };
 
 /** "Kai’s shoe size updated" for one field, otherwise "Kai’s Clothing & Shoes updated". Never a value. */

@@ -2,12 +2,13 @@ import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { OnScreen, sectionUpdates } from './essentials-updates';
 import { Api, Caregiver, CaregiverList } from '../../core/api/api';
 
 @Component({
   selector: 'app-caregivers-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, ReactiveFormsModule],
+  imports: [CurrencyPipe, ReactiveFormsModule, OnScreen],
   styleUrl: './essentials-section.css',
   styles: `
     :host { display: block; margin-block-start: 1rem; }
@@ -16,15 +17,20 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
     .filled { position: absolute; inset-inline-start: 0; overflow: hidden; }
   `,
   template: `
-    <section aria-labelledby="caregivers-heading">
-      <h3 id="caregivers-heading">Shared Caregivers</h3>
+    <section aria-labelledby="caregivers-heading" (appOnScreen)="marks.sectionOnScreen()">
+      <h3 id="caregivers-heading">Shared Caregivers
+        @if (marks.dot()) {
+          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
+        }
+      </h3>
       @if (error()) { <p role="alert">{{ error() }}</p> }
       <p role="status">{{ notice() }}</p>
       @if (list(); as current) {
         @if (!current.caregivers.length) { <p>No shared caregivers yet.</p> }
         @for (caregiver of current.caregivers; track caregiver.id) {
-          <article>
-            <h4>{{ caregiver.details.name }}</h4>
+          <article class="entry" [class.row--updated]="marks.updated(caregiver.id)" (appOnScreen)="marks.rowOnScreen(caregiver.id)">
+            <h4>{{ caregiver.details.name }}
+              @if (marks.updated(caregiver.id)) { <span class="updated-pill">Updated</span> }</h4>
             @if (caregiver.details.schoolPickup) { <p>School pickup</p> }
             <p>{{ caregiver.details.phone }}
               <a [href]="phoneLink(caregiver.details.phone)" [attr.aria-label]="'Call ' + caregiver.details.name">Call</a>
@@ -102,6 +108,7 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
 export class CaregiversSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
+  protected readonly marks = sectionUpdates('caregivers', this.childId);
   private readonly api = inject(Api);
   protected readonly list = signal<CaregiverList | null>(null);
   protected readonly error = signal('');
