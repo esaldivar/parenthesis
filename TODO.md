@@ -1181,7 +1181,10 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
     with each parent's calendar rules, unavailable events) and the compact desktop chat (Minimize, Expand, Close).
   - [x] Owner decision: the compact chat opens from Minimize on the full Messages page; no separate launcher for now
     (revisit after trying it on develop).
-  - [ ] Slice 3 of `docs/design/m4-chat.md`: PDF transcripts.
+  - [x] Slice 3 of `docs/design/m4-chat.md`: PDF transcripts (preview, Save, Download, saved list; ADR-0008
+    decision 10).
+  - [ ] Transcript PDFs embed Noto Sans for Latin, Greek and Cyrillic only; add fonts if parents write in other
+    scripts (for example Chinese, Arabic or emoji).
   - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
 
 ## Earlier Playwright feedback (#341)

@@ -83,6 +83,9 @@ describe('Messages page (#125)', () => {
       markRead: vi.fn(async () => undefined),
       chatUnread: vi.fn(async () => ({ count: 0, hasUnread: false })),
       typing: vi.fn(async () => undefined),
+      transcripts: vi.fn(async () => []),
+      savedTranscriptUrl: (family: string, id: string) => `/api/families/${family}/chat/transcripts/${id}/pdf`,
+      transcriptPdfUrl: () => '',
     };
     TestBed.configureTestingModule({
       providers: [

@@ -9,6 +9,12 @@ public interface IFamilyRoster
     /// <summary>Membership ids of the family's active parents.</summary>
     Task<IReadOnlySet<Guid>> ActiveParentMembershipIdsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Display names of the family's active parents, by membership id. A parent who has left isn't included: callers
+    /// show them as a former parent.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> ActiveParentNamesAsync(CancellationToken cancellationToken = default);
+
     /// <summary>The family's IANA time zone (e.g. "America/Chicago"), for anything that repeats on local dates.</summary>
     Task<string> TimeZoneAsync(CancellationToken cancellationToken = default);
 }

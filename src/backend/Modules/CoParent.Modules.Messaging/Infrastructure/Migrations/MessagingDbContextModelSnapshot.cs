@@ -80,6 +80,63 @@ namespace CoParent.Modules.Messaging.Infrastructure.Migrations
                     b.ToTable("messages", "messaging");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Messaging.Domain.ChatTranscript", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("file_name");
+
+                    b.Property<int>("MessageCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("message_count");
+
+                    b.Property<Guid>("OwnerMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_membership_id");
+
+                    b.Property<byte[]>("Pdf")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("pdf");
+
+                    b.Property<DateOnly?>("RangeFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("range_from");
+
+                    b.Property<string>("RangeLabel")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("range_label");
+
+                    b.Property<DateOnly?>("RangeTo")
+                        .HasColumnType("date")
+                        .HasColumnName("range_to");
+
+                    b.HasKey("Id")
+                        .HasName("pk_transcripts");
+
+                    b.HasIndex("FamilyId", "OwnerMembershipId", "CreatedAt")
+                        .HasDatabaseName("ix_transcripts_family_id_owner_membership_id_created_at");
+
+                    b.ToTable("transcripts", "messaging");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Messaging.Domain.ReadPosition", b =>
                 {
                     b.Property<Guid>("MembershipId")
