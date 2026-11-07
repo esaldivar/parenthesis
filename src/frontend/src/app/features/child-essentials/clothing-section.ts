@@ -4,15 +4,20 @@ import {
   ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { OnScreen, sectionUpdates } from './essentials-updates';
 import { Api, ClothingHistoryPage, ClothingView } from '../../core/api/api';
 
 @Component({
   selector: 'app-clothing-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule],
+  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section class="clothing" aria-labelledby="clothing-heading">
-      <h3 id="clothing-heading">Clothing &amp; Shoes</h3>
+    <section class="clothing" aria-labelledby="clothing-heading" (appOnScreen)="marks.sectionOnScreen()">
+      <h3 id="clothing-heading">Clothing &amp; Shoes
+        @if (marks.dot()) {
+          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
+        }
+      </h3>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
       }
@@ -42,7 +47,7 @@ import { Api, ClothingHistoryPage, ClothingView } from '../../core/api/api';
             </fieldset>
           </form>
         } @else {
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values }" />
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           <div class="actions">
             <button type="button" (click)="edit(saved)">Edit clothing and shoes</button>
             <button type="button" [attr.aria-expanded]="historyOpen()" aria-controls="clothing-history"
@@ -83,12 +88,20 @@ import { Api, ClothingHistoryPage, ClothingView } from '../../core/api/api';
         <p role="status">Loading clothing and shoes…</p>
       }
     </section>
-    <ng-template #values let-entry>
+    <ng-template #values let-entry let-current="current">
       <dl>
-        <dt>Top size</dt><dd>{{ entry.topSize ?? 'Not set' }}</dd>
-        <dt>Bottom size</dt><dd>{{ entry.bottomSize ?? 'Not set' }}</dd>
-        <dt>Shoe size</dt><dd>{{ entry.shoeSize ?? 'Not set' }}</dd>
-        <dt>Fit notes</dt><dd>{{ entry.fitNotes ?? 'Not set' }}</dd>
+        <div class="row" [class.row--updated]="current && marks.updated('topSize')" (appOnScreen)="current && marks.rowOnScreen('topSize')">
+          <dt>Top size@if (current && marks.updated('topSize')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.topSize ?? 'Not set' }}</dd>
+        </div>
+        <div class="row" [class.row--updated]="current && marks.updated('bottomSize')" (appOnScreen)="current && marks.rowOnScreen('bottomSize')">
+          <dt>Bottom size@if (current && marks.updated('bottomSize')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.bottomSize ?? 'Not set' }}</dd>
+        </div>
+        <div class="row" [class.row--updated]="current && marks.updated('shoeSize')" (appOnScreen)="current && marks.rowOnScreen('shoeSize')">
+          <dt>Shoe size@if (current && marks.updated('shoeSize')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.shoeSize ?? 'Not set' }}</dd>
+        </div>
+        <div class="row" [class.row--updated]="current && marks.updated('fitNotes')" (appOnScreen)="current && marks.rowOnScreen('fitNotes')">
+          <dt>Fit notes@if (current && marks.updated('fitNotes')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.fitNotes ?? 'Not set' }}</dd>
+        </div>
       </dl>
     </ng-template>
   `,
@@ -104,6 +117,7 @@ import { Api, ClothingHistoryPage, ClothingView } from '../../core/api/api';
 export class ClothingSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
+  protected readonly marks = sectionUpdates('clothing', this.childId);
   private readonly api = inject(Api);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly current = signal<ClothingView | null>(null);

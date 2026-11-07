@@ -13,6 +13,7 @@ import { Leaves } from '../../shared/decor/leaves';
 import { Icon } from '../../shared/icon/icon';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
+import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { SAMPLE_NOTIFICATIONS, SAMPLE_UNREAD } from '../sample-counts';
 import { ToastHost } from '../../shared/toast/toast-host';
 import { BottomNav } from '../../shared/overlay/bottom-nav-clearance';
@@ -61,6 +62,9 @@ export class ParentShell {
 
   /** The parents' conversation: its connection lives as long as the shell, for the unread dot (#125). */
   protected readonly chat = inject(ChatStore);
+
+  /** The co-parent's Child Essentials saves this parent hasn't opened yet (#128). */
+  protected readonly essentials = inject(EssentialsUpdatesStore);
 
   /** Messages fill the screen on phones, as in the M4 mockups: no top bar or bottom navigation there. */
   protected readonly fullScreen = computed(() => /^\/messages(\/|$)/.test(this.url().split(/[?#]/)[0]));

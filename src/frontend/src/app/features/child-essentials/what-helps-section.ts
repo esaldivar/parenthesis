@@ -4,15 +4,20 @@ import {
   ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { OnScreen, sectionUpdates } from './essentials-updates';
 import { Api, WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
 
 @Component({
   selector: 'app-what-helps-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule],
+  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section aria-labelledby="what-helps-heading">
-      <h3 id="what-helps-heading">What Helps</h3>
+    <section aria-labelledby="what-helps-heading" (appOnScreen)="marks.sectionOnScreen()">
+      <h3 id="what-helps-heading">What Helps
+        @if (marks.dot()) {
+          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
+        }
+      </h3>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
       }
@@ -40,7 +45,7 @@ import { Api, WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
             </fieldset>
           </form>
         } @else {
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values }" />
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           <div class="actions">
             <button type="button" (click)="edit(saved)">Edit What Helps</button>
             <button type="button" [attr.aria-expanded]="historyOpen()" aria-controls="what-helps-history"
@@ -81,10 +86,14 @@ import { Api, WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
         <p role="status">Loading What Helps…</p>
       }
     </section>
-    <ng-template #values let-entry>
+    <ng-template #values let-entry let-current="current">
       <dl>
-        <dt>Comfort items</dt><dd>{{ entry.comfortItems ?? 'Not set' }}</dd>
-        <dt>Calming strategies</dt><dd>{{ entry.calmingStrategies ?? 'Not set' }}</dd>
+        <div class="row" [class.row--updated]="current && marks.updated('comfortItems')" (appOnScreen)="current && marks.rowOnScreen('comfortItems')">
+          <dt>Comfort items@if (current && marks.updated('comfortItems')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.comfortItems ?? 'Not set' }}</dd>
+        </div>
+        <div class="row" [class.row--updated]="current && marks.updated('calmingStrategies')" (appOnScreen)="current && marks.rowOnScreen('calmingStrategies')">
+          <dt>Calming strategies@if (current && marks.updated('calmingStrategies')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.calmingStrategies ?? 'Not set' }}</dd>
+        </div>
       </dl>
     </ng-template>
   `,
@@ -100,6 +109,7 @@ import { Api, WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
 export class WhatHelpsSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
+  protected readonly marks = sectionUpdates('whatHelps', this.childId);
   private readonly api = inject(Api);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly current = signal<WhatHelpsView | null>(null);

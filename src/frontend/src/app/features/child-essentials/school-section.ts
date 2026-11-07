@@ -4,15 +4,20 @@ import {
   ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { OnScreen, sectionUpdates } from './essentials-updates';
 import { Api, SchoolHistoryPage, SchoolView } from '../../core/api/api';
 
 @Component({
   selector: 'app-school-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule],
+  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section aria-labelledby="school-heading">
-      <h3 id="school-heading">School</h3>
+    <section aria-labelledby="school-heading" (appOnScreen)="marks.sectionOnScreen()">
+      <h3 id="school-heading">School
+        @if (marks.dot()) {
+          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
+        }
+      </h3>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
       }
@@ -50,7 +55,7 @@ import { Api, SchoolHistoryPage, SchoolView } from '../../core/api/api';
             </fieldset>
           </form>
         } @else {
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values }" />
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           <div class="actions">
             <button type="button" (click)="edit(saved)">Edit School</button>
             <button type="button" [attr.aria-expanded]="historyOpen()" aria-controls="school-history"
@@ -91,11 +96,17 @@ import { Api, SchoolHistoryPage, SchoolView } from '../../core/api/api';
         <p role="status">Loading School…</p>
       }
     </section>
-    <ng-template #values let-entry>
+    <ng-template #values let-entry let-current="current">
       <dl>
-        <dt>Grade</dt><dd>{{ entry.grade ?? 'Not set' }}</dd>
-        <dt>Homeroom teacher</dt><dd>{{ entry.homeroomTeacher ?? 'Not set' }}</dd>
-        <dt>Parent concerns</dt><dd>{{ entry.parentConcerns ?? 'Not set' }}</dd>
+        <div class="row" [class.row--updated]="current && marks.updated('grade')" (appOnScreen)="current && marks.rowOnScreen('grade')">
+          <dt>Grade@if (current && marks.updated('grade')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.grade ?? 'Not set' }}</dd>
+        </div>
+        <div class="row" [class.row--updated]="current && marks.updated('homeroomTeacher')" (appOnScreen)="current && marks.rowOnScreen('homeroomTeacher')">
+          <dt>Homeroom teacher@if (current && marks.updated('homeroomTeacher')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.homeroomTeacher ?? 'Not set' }}</dd>
+        </div>
+        <div class="row" [class.row--updated]="current && marks.updated('parentConcerns')" (appOnScreen)="current && marks.rowOnScreen('parentConcerns')">
+          <dt>Parent concerns@if (current && marks.updated('parentConcerns')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.parentConcerns ?? 'Not set' }}</dd>
+        </div>
       </dl>
     </ng-template>
   `,
@@ -111,6 +122,7 @@ import { Api, SchoolHistoryPage, SchoolView } from '../../core/api/api';
 export class SchoolSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
+  protected readonly marks = sectionUpdates('school', this.childId);
   private readonly api = inject(Api);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly current = signal<SchoolView | null>(null);

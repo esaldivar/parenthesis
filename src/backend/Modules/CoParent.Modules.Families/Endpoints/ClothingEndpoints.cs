@@ -117,6 +117,13 @@ internal static class ClothingEndpoints
                 FitNotes = values.FitNotes,
             };
             db.ClothingRevisions.Add(next);
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.Clothing, next.Revision,
+                EssentialsUpdateEndpoints.Changed(
+                ("topSize", current.Values.TopSize, values.TopSize),
+                ("bottomSize", current.Values.BottomSize, values.BottomSize),
+                ("shoeSize", current.Values.ShoeSize, values.ShoeSize),
+                ("fitNotes", current.Values.FitNotes, values.FitNotes)),
+                next.EditedAt, ct);
             await db.SaveChangesAsync(ct);
             return TypedResults.Ok(ClothingView.From(next));
         }, cancellationToken);

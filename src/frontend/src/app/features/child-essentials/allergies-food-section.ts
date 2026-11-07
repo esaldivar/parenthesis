@@ -4,15 +4,20 @@ import {
   ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { OnScreen, sectionUpdates } from './essentials-updates';
 import { Api, AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/api/api';
 
 @Component({
   selector: 'app-allergies-food-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule],
+  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section aria-labelledby="allergies-food-heading">
-      <h3 id="allergies-food-heading">Allergies & Food</h3>
+    <section aria-labelledby="allergies-food-heading" (appOnScreen)="marks.sectionOnScreen()">
+      <h3 id="allergies-food-heading">Allergies & Food
+        @if (marks.dot()) {
+          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
+        }
+      </h3>
       <button type="button" [attr.aria-expanded]="exportOpen()" aria-controls="allergy-pdf-options"
         (click)="exportOpen.set(!exportOpen())">Download allergy PDF</button>
       <div id="allergy-pdf-options" [hidden]="!exportOpen()">
@@ -64,7 +69,7 @@ import { Api, AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../c
             </fieldset>
           </form>
         } @else {
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values }" />
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           @if (saved.recordedAt; as recordedAt) {
             <p>Recorded by {{ saved.recordedBy }} · <time [attr.datetime]="recordedAt">{{ recordedAt | date: 'medium' }}</time></p>
           }
@@ -108,10 +113,14 @@ import { Api, AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../c
         <p role="status">Loading Allergies & Food…</p>
       }
     </section>
-    <ng-template #values let-entry>
+    <ng-template #values let-entry let-current="current">
       <dl>
-        <dt>Allergies and notes</dt><dd>{{ entry.allergies ?? (entry.noKnownAllergies ? 'No known allergies' : 'No allergies listed') }}</dd>
-        <dt>Dietary restrictions and food preferences</dt><dd>{{ entry.foodPreferences ?? 'Not set' }}</dd>
+        <div class="row" [class.row--updated]="current && marks.updated('allergies', 'noKnownAllergies')" (appOnScreen)="current && marks.rowOnScreen('allergies', 'noKnownAllergies')">
+          <dt>Allergies and notes@if (current && marks.updated('allergies', 'noKnownAllergies')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.allergies ?? (entry.noKnownAllergies ? 'No known allergies' : 'No allergies listed') }}</dd>
+        </div>
+        <div class="row" [class.row--updated]="current && marks.updated('foodPreferences')" (appOnScreen)="current && marks.rowOnScreen('foodPreferences')">
+          <dt>Dietary restrictions and food preferences@if (current && marks.updated('foodPreferences')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.foodPreferences ?? 'Not set' }}</dd>
+        </div>
       </dl>
     </ng-template>
   `,
@@ -128,6 +137,7 @@ export class AllergiesFoodSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
   readonly children = input<readonly Child[]>([]);
+  protected readonly marks = sectionUpdates('allergiesFood', this.childId);
   private readonly api = inject(Api);
   private readonly document = inject(DOCUMENT);
   protected readonly exportOpen = signal(false);

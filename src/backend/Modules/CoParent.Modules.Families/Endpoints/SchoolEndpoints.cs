@@ -129,6 +129,12 @@ internal static class SchoolEndpoints
                 ParentConcerns = values.ParentConcerns,
             };
             db.SchoolRevisions.Add(next);
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.School, next.Revision,
+                EssentialsUpdateEndpoints.Changed(
+                ("grade", current.Values.Grade, values.Grade),
+                ("homeroomTeacher", current.Values.HomeroomTeacher, values.HomeroomTeacher),
+                ("parentConcerns", current.Values.ParentConcerns, values.ParentConcerns)),
+                next.EditedAt, ct);
             await db.SaveChangesAsync(ct);
             return TypedResults.Ok(SchoolView.From(next));
         }, cancellationToken);

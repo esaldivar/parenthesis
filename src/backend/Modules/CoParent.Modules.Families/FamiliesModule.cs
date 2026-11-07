@@ -78,6 +78,7 @@ public static class FamiliesModule
         ClothingEndpoints.Map(family);
         WhatHelpsEndpoints.Map(family);
         RoutinesEndpoints.Map(family);
+        EssentialsUpdateEndpoints.Map(family);
         AllergiesFoodEndpoints.Map(family);
         SchoolEndpoints.Map(family);
         EmergencyContactsEndpoints.Map(family);

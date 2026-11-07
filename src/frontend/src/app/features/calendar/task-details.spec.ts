@@ -68,7 +68,13 @@ describe('tasks on the calendar', () => {
     http = TestBed.inject(HttpTestingController);
     // The shell asks for the Messages unread dot; nothing unread.
     http.match((r) => r.url.endsWith('/chat/unread')).forEach((r) => r.flush({ count: 0, hasUnread: false }));
+    // And for the Child Essentials dot (#128); nothing new.
+    flushEssentialsDot();
     return answerLoad(tasks);
+  }
+
+  function flushEssentialsDot() {
+    http.match((r) => r.url.endsWith('/essentials/updates')).forEach((r) => r.flush({ newUpdates: false, sections: [] }));
   }
 
   const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -297,6 +303,7 @@ describe('tasks on the calendar', () => {
       await settle();
       expect(box.checked).toBe(false);
     }
+    flushEssentialsDot();
     expect(http.match(() => true)).toHaveLength(0);
     expect(await axeViolations(document.body)).toEqual([]);
   });
