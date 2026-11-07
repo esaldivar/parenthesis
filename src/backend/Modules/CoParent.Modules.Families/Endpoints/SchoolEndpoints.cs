@@ -24,14 +24,8 @@ internal sealed record SchoolView(int Revision, SchoolValues Values)
 
 internal sealed record SaveSchoolRequest(int? Revision, SchoolValues? Values);
 
-internal sealed record SchoolHistoryEntry(
-    int Revision, string EditedBy, DateTimeOffset EditedAt, SchoolValues Previous, SchoolValues Current);
-
-internal sealed record SchoolHistoryPage(IReadOnlyList<SchoolHistoryEntry> Entries, int? BeforeRevision);
-
 internal static class SchoolEndpoints
 {
-    private const int HistoryPageSize = 20;
     private static readonly HashSet<string> _homeroomGrades = ["Pre-K", "Kindergarten", "1", "2", "3", "4", "5"];
     private static readonly HashSet<string> _grades = [.. _homeroomGrades, "6", "7", "8", "9", "10", "11", "12"];
 
@@ -140,37 +134,10 @@ internal static class SchoolEndpoints
         }, cancellationToken);
     }
 
-    private static async Task<IResult> HistoryAsync(
+    private static Task<IResult> HistoryAsync(
         Guid childId, int? beforeRevision, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
-        IUserDirectory directory, CancellationToken cancellationToken)
-    {
-        http.Response.Headers.CacheControl = "no-store";
-        if (tenant.Role != FamilyRole.Parent)
-        {
-            return TypedResults.Forbid();
-        }
-
-        if (!await ChildEssentialsAccess.IsActiveChildAsync(db, childId, cancellationToken))
-        {
-            return TypedResults.NotFound();
-        }
-
-        var revisions = Revisions(db, childId);
-        if (beforeRevision is int before)
-        {
-            revisions = revisions.Where(row => row.Revision < before);
-        }
-
-        // The extra row supplies the previous values for the oldest displayed entry.
-        var rows = await revisions.Take(HistoryPageSize + 1).ToListAsync(cancellationToken);
-        var visible = rows.Take(HistoryPageSize).ToList();
-        var names = await directory.GetDisplayNamesAsync(
-            visible.Select(row => row.EditedByUserId).Distinct().ToList(), cancellationToken);
-        var entries = visible.Select((row, i) => new SchoolHistoryEntry(
-            row.Revision, names.GetValueOrDefault(row.EditedByUserId, "A parent"), row.EditedAt,
-            SchoolValues.From(i + 1 < rows.Count ? rows[i + 1] : null), SchoolValues.From(row))).ToList();
-        return TypedResults.Ok(new SchoolHistoryPage(entries, rows.Count > HistoryPageSize ? visible[^1].Revision : null));
-    }
+        IUserDirectory directory, CancellationToken cancellationToken) =>
+        EssentialsHistory.PageAsync(childId, beforeRevision, http, tenant, db, directory, Revisions(db, childId), SchoolValues.From, cancellationToken);
 
     private static IQueryable<SchoolRevision> Revisions(FamiliesDbContext db, Guid childId) =>
         db.SchoolRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId)

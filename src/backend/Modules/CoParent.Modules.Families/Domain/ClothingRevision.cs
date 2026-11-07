@@ -3,7 +3,7 @@ using CoParent.SharedKernel.Domain;
 namespace CoParent.Modules.Families.Domain;
 
 /// <summary>The newest revision is the current section. Saving one row also records its history.</summary>
-internal sealed class ClothingRevision : Entity, IFamilyScoped
+internal sealed class ClothingRevision : Entity, IFamilyScoped, IEssentialsRevision
 {
     public const int SizeLimit = 64;
     public const int NotesLimit = 1000;

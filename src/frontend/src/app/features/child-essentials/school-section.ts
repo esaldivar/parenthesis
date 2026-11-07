@@ -1,11 +1,9 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
-import {
-  ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OnScreen, sectionUpdates } from './essentials-updates';
-import { Api, SchoolHistoryPage, SchoolView } from '../../core/api/api';
+import { RevisionedSection } from './revisioned-section';
+import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
 
 @Component({
   selector: 'app-school-section',
@@ -116,23 +114,9 @@ import { Api, SchoolHistoryPage, SchoolView } from '../../core/api/api';
     }
   `,
 })
-export class SchoolSection {
-  readonly familyId = input.required<string>();
-  readonly childId = input.required<string>();
+export class SchoolSection extends RevisionedSection<SchoolView, SchoolView['values'], SchoolHistoryPage['entries'][number]> {
   protected readonly marks = sectionUpdates('school', this.childId);
-  private readonly api = inject(Api);
-  private readonly destroyRef = inject(DestroyRef);
-  protected readonly current = signal<SchoolView | null>(null);
-  protected readonly conflict = signal<SchoolView | null>(null);
-  protected readonly editing = signal(false);
-  protected readonly saving = signal(false);
-  protected readonly error = signal('');
-  protected readonly notice = signal('');
-  protected readonly historyOpen = signal(false);
-  protected readonly historyLoading = signal(false);
-  protected readonly historyError = signal(false);
-  protected readonly history = signal<SchoolHistoryPage['entries']>([]);
-  protected readonly nextRevision = signal<number | null>(null);
+  protected readonly savedNotice = 'School saved.';
   protected readonly grades = ['Pre-K', 'Kindergarten', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
   protected readonly form = new FormGroup({
     homeroomTeacher: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
@@ -141,6 +125,7 @@ export class SchoolSection {
   });
 
   constructor() {
+    super();
     effect(() => { void this.load(); });
   }
 
@@ -168,63 +153,17 @@ export class SchoolSection {
     this.editing.set(true);
   }
 
-  protected cancel(): void {
-    if (this.conflict() !== null) {
-      this.current.set(this.conflict());
-    }
-    this.conflict.set(null);
-    this.error.set('');
-    this.editing.set(false);
+  protected store(revision: number, values: SchoolView['values']): Promise<SchoolView> {
+    return this.api.saveSchool(this.familyId(), this.childId(), { revision, values });
   }
 
-  protected async save(): Promise<void> {
-    const base = this.conflict() ?? this.current();
-    if (!base || this.saving() || this.form.invalid) return;
+  protected historyPage(beforeRevision: number | null) {
+    return this.api.schoolHistory(this.familyId(), this.childId(), beforeRevision);
+  }
+
+  /** A homeroom teacher only goes with pre-K through fifth grade. */
+  protected override valuesToSave(): SchoolView['values'] {
     const values = this.form.getRawValue();
-    this.saving.set(true);
-    this.error.set('');
-    try {
-      const saved = await this.api.saveSchool(this.familyId(), this.childId(), {
-        revision: base.revision, values: { ...values, homeroomTeacher: this.canSetHomeroom() ? values.homeroomTeacher : null },
-      });
-      if (this.destroyRef.destroyed) return;
-      this.current.set(saved);
-      this.conflict.set(null);
-      this.editing.set(false);
-      this.notice.set('School saved.');
-    } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 409) {
-        this.conflict.set(error.error as SchoolView);
-      } else {
-        this.error.set('Changes couldn’t be saved. Your draft is still here.');
-      }
-    } finally {
-      this.saving.set(false);
-    }
-  }
-
-  protected toggleHistory(): void {
-    const open = !this.historyOpen();
-    this.historyOpen.set(open);
-    if (open) void this.loadHistory(null);
-  }
-
-  protected async loadHistory(beforeRevision: number | null): Promise<void> {
-    if (this.historyLoading()) return;
-    this.historyLoading.set(true);
-    this.historyError.set(false);
-    if (beforeRevision === null) {
-      this.history.set([]);
-      this.nextRevision.set(null);
-    }
-    try {
-      const page = await this.api.schoolHistory(this.familyId(), this.childId(), beforeRevision);
-      this.history.update((entries) => [...entries, ...page.entries]);
-      this.nextRevision.set(page.beforeRevision);
-    } catch {
-      this.historyError.set(true);
-    } finally {
-      this.historyLoading.set(false);
-    }
+    return { ...values, homeroomTeacher: this.canSetHomeroom() ? values.homeroomTeacher : null };
   }
 }

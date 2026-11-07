@@ -24,15 +24,8 @@ internal sealed record ClothingView(int Revision, ClothingValues Values)
 
 internal sealed record SaveClothingRequest(int? Revision, ClothingValues? Values);
 
-internal sealed record ClothingHistoryEntry(
-    int Revision, string EditedBy, DateTimeOffset EditedAt, ClothingValues Previous, ClothingValues Current);
-
-internal sealed record ClothingHistoryPage(IReadOnlyList<ClothingHistoryEntry> Entries, int? BeforeRevision);
-
 internal static class ClothingEndpoints
 {
-    private const int HistoryPageSize = 20;
-
     public static void Map(IEndpointRouteBuilder family)
     {
         var clothing = family.MapGroup("/children/{childId:guid}/essentials/clothing").WithTags("Child Essentials");
@@ -129,37 +122,10 @@ internal static class ClothingEndpoints
         }, cancellationToken);
     }
 
-    private static async Task<IResult> HistoryAsync(
+    private static Task<IResult> HistoryAsync(
         Guid childId, int? beforeRevision, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
-        IUserDirectory directory, CancellationToken cancellationToken)
-    {
-        http.Response.Headers.CacheControl = "no-store";
-        if (tenant.Role != FamilyRole.Parent)
-        {
-            return TypedResults.Forbid();
-        }
-
-        if (!await ChildEssentialsAccess.IsActiveChildAsync(db, childId, cancellationToken))
-        {
-            return TypedResults.NotFound();
-        }
-
-        var revisions = Revisions(db, childId);
-        if (beforeRevision is int before)
-        {
-            revisions = revisions.Where(row => row.Revision < before);
-        }
-
-        // The extra row supplies the previous values for the oldest displayed entry.
-        var rows = await revisions.Take(HistoryPageSize + 1).ToListAsync(cancellationToken);
-        var visible = rows.Take(HistoryPageSize).ToList();
-        var names = await directory.GetDisplayNamesAsync(
-            visible.Select(row => row.EditedByUserId).Distinct().ToList(), cancellationToken);
-        var entries = visible.Select((row, i) => new ClothingHistoryEntry(
-            row.Revision, names.GetValueOrDefault(row.EditedByUserId, "A parent"), row.EditedAt,
-            ClothingValues.From(i + 1 < rows.Count ? rows[i + 1] : null), ClothingValues.From(row))).ToList();
-        return TypedResults.Ok(new ClothingHistoryPage(entries, rows.Count > HistoryPageSize ? visible[^1].Revision : null));
-    }
+        IUserDirectory directory, CancellationToken cancellationToken) =>
+        EssentialsHistory.PageAsync(childId, beforeRevision, http, tenant, db, directory, Revisions(db, childId), ClothingValues.From, cancellationToken);
 
     private static IQueryable<ClothingRevision> Revisions(FamiliesDbContext db, Guid childId) =>
         db.ClothingRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId)

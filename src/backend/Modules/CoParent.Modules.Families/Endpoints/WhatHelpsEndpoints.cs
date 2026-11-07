@@ -24,15 +24,8 @@ internal sealed record WhatHelpsView(int Revision, WhatHelpsValues Values)
 
 internal sealed record SaveWhatHelpsRequest(int? Revision, WhatHelpsValues? Values);
 
-internal sealed record WhatHelpsHistoryEntry(
-    int Revision, string EditedBy, DateTimeOffset EditedAt, WhatHelpsValues Previous, WhatHelpsValues Current);
-
-internal sealed record WhatHelpsHistoryPage(IReadOnlyList<WhatHelpsHistoryEntry> Entries, int? BeforeRevision);
-
 internal static class WhatHelpsEndpoints
 {
-    private const int HistoryPageSize = 20;
-
     public static void Map(IEndpointRouteBuilder family)
     {
         var whatHelps = family.MapGroup("/children/{childId:guid}/essentials/what-helps").WithTags("Child Essentials");
@@ -123,37 +116,10 @@ internal static class WhatHelpsEndpoints
         }, cancellationToken);
     }
 
-    private static async Task<IResult> HistoryAsync(
+    private static Task<IResult> HistoryAsync(
         Guid childId, int? beforeRevision, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
-        IUserDirectory directory, CancellationToken cancellationToken)
-    {
-        http.Response.Headers.CacheControl = "no-store";
-        if (tenant.Role != FamilyRole.Parent)
-        {
-            return TypedResults.Forbid();
-        }
-
-        if (!await ChildEssentialsAccess.IsActiveChildAsync(db, childId, cancellationToken))
-        {
-            return TypedResults.NotFound();
-        }
-
-        var revisions = Revisions(db, childId);
-        if (beforeRevision is int before)
-        {
-            revisions = revisions.Where(row => row.Revision < before);
-        }
-
-        // The extra row supplies the previous values for the oldest displayed entry.
-        var rows = await revisions.Take(HistoryPageSize + 1).ToListAsync(cancellationToken);
-        var visible = rows.Take(HistoryPageSize).ToList();
-        var names = await directory.GetDisplayNamesAsync(
-            visible.Select(row => row.EditedByUserId).Distinct().ToList(), cancellationToken);
-        var entries = visible.Select((row, i) => new WhatHelpsHistoryEntry(
-            row.Revision, names.GetValueOrDefault(row.EditedByUserId, "A parent"), row.EditedAt,
-            WhatHelpsValues.From(i + 1 < rows.Count ? rows[i + 1] : null), WhatHelpsValues.From(row))).ToList();
-        return TypedResults.Ok(new WhatHelpsHistoryPage(entries, rows.Count > HistoryPageSize ? visible[^1].Revision : null));
-    }
+        IUserDirectory directory, CancellationToken cancellationToken) =>
+        EssentialsHistory.PageAsync(childId, beforeRevision, http, tenant, db, directory, Revisions(db, childId), WhatHelpsValues.From, cancellationToken);
 
     private static IQueryable<WhatHelpsRevision> Revisions(FamiliesDbContext db, Guid childId) =>
         db.WhatHelpsRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId)
