@@ -148,7 +148,7 @@ that points back here.
     conflict resolution alone is not acceptance or deployment.
 
 - [ ] **Dependabot milestone routing (#394, October 30, 2026).** All five version-update entries target
-  `release/0.3.0`; trusted-default-branch automation routes same-repository bot PRs to the latest existing release
+  `release/0.4.0` (moved from `release/0.3.0` on November 7, 2026); trusted-default-branch automation routes same-repository bot PRs to the latest existing release
   matching an open milestone, with no main/develop fallback.
   - [ ] Promote through the normal release route to `main`; configuration and routing are inactive until then.
   - [ ] Verify live bot-token permissions, scheduled/manual routing, next-milestone rollover, conflicts/review
