@@ -208,8 +208,25 @@ h3 {
     order: -1;
   }
 
-  .composing .records {
+  /* A phone shows the form on its own screen. The page heading stays for screen readers (one h1 per page). */
+  .composing .records > :not(.heading),
+  .composing .records .heading > :not(div),
+  .composing .records .privacy {
     display: none;
+  }
+
+  .composing .records > .heading {
+    padding: 0;
+    border: 0;
+  }
+
+  .composing .records h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 
