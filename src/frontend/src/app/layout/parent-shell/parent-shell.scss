@@ -92,44 +92,74 @@ ul {
   }
 }
 
-// PLACEHOLDER counts (sample preview only). The number is also given in text for assistive technology.
-.badge {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 0.35rem;
-  margin-inline-start: auto;
-  border-radius: var(--radius-pill);
-  background: var(--color-danger);
-  color: var(--color-on-action);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.badge--bell {
-  position: absolute;
-  top: 2px;
-  inset-inline-end: 0;
-  min-width: 1.25rem;
-  height: 1.25rem;
-  font-size: 0.75rem;
-}
-
-// Unread messages (#125): a dot, as in the M4 mockups, with the words for assistive technology next to it.
+// Something new (owner request, November 7, 2026): unread messages (#125), Child Essentials updates, the sample
+// counts and the bell all use one green dot. Counts and meaning are in the visually hidden text beside each dot.
 .dot {
-  width: 0.625rem;
-  height: 0.625rem;
+  position: relative;
+  flex: none;
   margin-inline-start: auto;
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: 50%;
-  background: var(--color-action);
+  background: var(--color-notify);
   box-shadow: 0 0 0 2px var(--color-surface);
+
+  // The ripple: a ring that grows out of the dot and fades.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--color-notify);
+    opacity: 0;
+  }
+}
+
+// It pulses twice and then stays still, so nothing keeps moving beside the page for more than five seconds (WCAG
+// 2.2.2). Reduced motion: a still dot.
+@media (prefers-reduced-motion: no-preference) {
+  .dot {
+    animation: pulse-dot 2s ease-in-out 2;
+
+    &::after {
+      animation: pulse-ring 2s ease-out 2;
+    }
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
 }
 
 .bottomnav__icon {
   position: relative;
   display: inline-grid;
+}
+
+.dot--bell {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  box-shadow: 0 0 0 2px var(--color-canvas);
 }
 
 .dot--icon {
@@ -288,7 +318,8 @@ a.is-active {
   }
 
   main {
-    padding: 0 var(--space-6) var(--space-6);
+    /* Room at the bottom so the chat bar never covers the end of a page. */
+    padding: 0 var(--space-6) 5rem;
   }
 
   .bottomnav {

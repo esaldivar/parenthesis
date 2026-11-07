@@ -126,7 +126,7 @@ p {
   display: grid;
   justify-items: start;
   gap: var(--space-1);
-  max-width: min(36rem, 85%);
+  max-width: min(28rem, 80%);
 }
 
 .message--yours {
@@ -143,9 +143,10 @@ p {
   display: grid;
   gap: var(--space-2);
   max-width: 100%;
-  padding: var(--space-2) var(--space-3);
+  padding: 0.625rem 1rem;
   border-radius: 1.125rem;
   background: var(--color-surface-soft);
+  font-size: 1.0625rem;
   color: var(--color-text);
   overflow-wrap: anywhere;
   line-height: 1.4;

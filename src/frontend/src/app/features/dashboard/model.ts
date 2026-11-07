@@ -91,14 +91,6 @@ export interface KidShare {
   readonly sharedAt: string;
 }
 
-/** A message between the parents (messaging is parent-to-parent in the architecture). */
-export interface RecentMessage {
-  readonly id: string;
-  readonly from: string;
-  readonly preview: string;
-  readonly sentAt: string;
-}
-
 export interface SharedMemory {
   readonly id: string;
   readonly title: string;
@@ -129,7 +121,6 @@ export interface DashboardWeek {
   readonly events: readonly FamilyEvent[];
   readonly pendingReviews: readonly PendingReview[];
   readonly kidShares: readonly KidShare[];
-  readonly recentMessages: readonly RecentMessage[];
   readonly recentMemories: readonly SharedMemory[];
   /** This week's reminders and tasks due, for Upcoming only (owner decision, October 22, 2026). */
   readonly notes?: readonly DashboardNote[];

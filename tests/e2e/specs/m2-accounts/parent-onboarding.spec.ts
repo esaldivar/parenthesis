@@ -61,7 +61,7 @@ test.describe('Parent onboarding', { tag: '@m2' }, () => {
       await expect(page).toHaveURL(/\/$/);
       await expect(page.getByRole('navigation').first()).toBeVisible();
       // Unbuilt features show honest empty states, never sample data.
-      await expect(page.getByText('No messages yet')).toBeVisible();
+      await expect(page.getByText('No memories yet')).toBeVisible();
       await expect(page.getByText(/sample data/i)).toHaveCount(0);
     });
   });

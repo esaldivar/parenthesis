@@ -12,7 +12,7 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
   styleUrl: './essentials-section.css',
   styles: `
     :host { display: block; margin-block-start: 1rem; }
-    .stars { display: inline-flex; }
+    .stars { display: inline-flex; color: light-dark(#9a6b00, #f2c14e); font-size: 1.25rem; }
     .star { position: relative; }
     .filled { position: absolute; inset-inline-start: 0; overflow: hidden; }
   `,
@@ -28,9 +28,9 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
           <article class="entry" [class.row--updated]="marks.updated(caregiver.id)" (appOnScreen)="marks.rowOnScreen(caregiver.id)">
             <h4>{{ caregiver.details.name }}
               @if (marks.updated(caregiver.id)) { <span class="updated-pill">Updated</span> }</h4>
-            @if (caregiver.details.schoolPickup) { <p>School pickup</p> }
+            @if (caregiver.details.schoolPickup) { <p><span class="tag">School pickup</span></p> }
             <p>{{ caregiver.details.phone }}
-              <a [href]="phoneLink(caregiver.details.phone)" [attr.aria-label]="'Call ' + caregiver.details.name">Call</a>
+              <a class="call" [href]="phoneLink(caregiver.details.phone)" [attr.aria-label]="'Call ' + caregiver.details.name">Call</a>
             </p>
             <p>
               <span class="stars" aria-hidden="true">

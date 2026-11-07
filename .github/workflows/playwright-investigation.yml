@@ -26,7 +26,7 @@ jobs:
           --health-cmd "pg_isready -U e2e -d coparent"
           --health-interval 5s --health-timeout 3s --health-retries 10
       mailpit:
-        image: axllent/mailpit:v1.31.6
+        image: axllent/mailpit:v1.33.0
         env:
           MP_SMTP_AUTH_ACCEPT_ANY: "1"
           MP_SMTP_AUTH_ALLOW_INSECURE: "1"
@@ -62,7 +62,7 @@ jobs:
       - name: Start the release candidate
         run: ./scripts/start-release-candidate.sh parenthesis-api:rc
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: src/frontend/.nvmrc
           cache: npm

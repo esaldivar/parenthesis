@@ -1,5 +1,6 @@
 // Toasts (#226). Phones: along the bottom, above the bottom navigation (56px plus its border) and the safe area, full
-// width within the page gutters. Desktop (1024px and up, where the sidebar replaces that navigation): bottom right.
+// width within the page gutters. Desktop (1024px and up, where the sidebar replaces that navigation): bottom right,
+// above the chat bar.
 :host {
   display: block;
   position: fixed;
@@ -13,7 +14,8 @@
 @media (min-width: 1024px) {
   :host {
     inset-inline: auto var(--space-6);
-    bottom: var(--space-6);
+    /* Above the chat bar that sits along the bottom edge (#125). */
+    bottom: calc(3.25rem + var(--space-4));
     width: min(24rem, calc(100vw - 2 * var(--space-6)));
   }
 }

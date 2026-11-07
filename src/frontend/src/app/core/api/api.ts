@@ -39,6 +39,26 @@ export interface FamilyDetails {
   readonly members: readonly FamilyMember[];
 }
 
+export type FundCurrency = 'USD' | 'CAD' | 'MXN';
+
+export interface SharedFundDraft {
+  readonly title: string;
+  readonly childIds: readonly string[];
+  readonly currency: FundCurrency;
+  readonly proposerShareMinor: number;
+  readonly coParentShareMinor: number;
+}
+
+export interface SharedFundCreated {
+  readonly id: string;
+  readonly approvalId: string;
+  readonly status: 'AwaitingAgreement' | 'Open' | 'ProposalEnded';
+}
+
+export interface SharedFund extends SharedFundCreated, SharedFundDraft {
+  readonly proposerId: string;
+}
+
 // --- Milestone 2 (ADR-0006): invitations, children, approvals, devices, the profile picker -----------------------------
 
 export interface InvitationSummary {
@@ -987,6 +1007,11 @@ export class Api {
   private schoolUrl(familyId: string, childId: string): string {
     return `/api/families/${familyId}/children/${childId}/essentials/school`;
   }
+
+  sharedFunds = (familyId: string) =>
+    this.call(this.http.get<SharedFund[]>(`/api/families/${familyId}/shared-funds`));
+  proposeSharedFund = (familyId: string, proposal: SharedFundDraft) =>
+    this.call(this.http.post<SharedFundCreated>(`/api/families/${familyId}/shared-funds`, proposal));
 
   // Approvals inbox (ADR-0003).
   /** Pending requests, or the 50 most recently decided with `history`. */

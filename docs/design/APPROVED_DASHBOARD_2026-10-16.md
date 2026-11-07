@@ -30,7 +30,7 @@ Do not revert these decisions based on older notes.
 - Independent timed activities (school drop-off, dentist, soccer, piano, art) appear in their correct day/time slots **below the all-day parenting-time span**; each shows relevant child avatar(s). Do not make an activity alter parenting time.
 - Use visually differentiated category icons/colors, accessible text and tooltips/details; overlapping activities must remain understandable.
 - Example only: a week-long “Time with Dad” all-day block with Dad and both children; a dentist appointment showing relevant child avatars; soccer practice with one child. Synthetic people/photos only.
-- Upcoming panel echoes real event labels and avatars; Quick Add presents actual authorized workflows or honest non-functional placeholders. Lower cards include From Your Kids with artwork/photo previews, Recent Messages and Family Memories.
+- Upcoming panel echoes real event labels and avatars; Quick Add presents actual authorized workflows or honest non-functional placeholders. Lower cards include From Your Kids with artwork/photo previews, Recent Messages and Family Memories. *Amended November 7, 2026 (owner decision): Recent Messages is removed from Home and Family Memories fills its space, so the lower row is From Your Kids and a wider Family Memories.*
 - Do not present proposed parenting-time changes as confirmed. Approval rules remain authoritative.
 
 ## Implementation and review

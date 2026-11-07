@@ -111,13 +111,27 @@ describe('the compact desktop chat (#125, slice 2)', () => {
     document.body.innerHTML = '';
   });
 
-  it('shows nothing until it’s opened', async () => {
-    const { el } = await render();
+  it('is always there on desktop, minimized to a bar at the bottom, until the parent opens it', async () => {
+    const { el, chat } = await render();
+
+    expect(chat.dock()).toBe('minimized');
+    const bar = el.querySelector('section.bar')!;
+    expect(bar.getAttribute('aria-label')).toBe('Compact chat, minimized');
+    expect(text(bar.querySelector('.restore'))).toBe('Messages. Open the compact chat');
+    // Nothing closes it all the way.
+    expect(bar.querySelector('button[aria-label="Close chat"]')).toBeNull();
+    expect(await axeViolations(el)).toEqual([]);
+  });
+
+  it('shows nothing without a family', async () => {
+    const { fixture, el, chat } = await render();
+    chat.dock.set('closed');
+    await settle(fixture);
 
     expect(el.querySelector('app-chat-dock')!.children).toHaveLength(0);
   });
 
-  it('docks the conversation with Expand, Minimize and Close, without blocking the page behind it', async () => {
+  it('docks the conversation with Expand and Minimize, without blocking the page behind it', async () => {
     const { fixture, chat, el } = await render();
     chat.dock.set('open');
     await settle(fixture);
@@ -129,7 +143,6 @@ describe('the compact desktop chat (#125, slice 2)', () => {
       'Share a calendar event',
       'Expand to full chat',
       'Minimize chat',
-      'Close chat',
     ]);
     // Not a modal: no dialog role, no backdrop; the page's own controls still work.
     expect(el.querySelector('[aria-modal]')).toBeNull();
@@ -175,10 +188,11 @@ describe('the compact desktop chat (#125, slice 2)', () => {
     await vi.waitFor(() => {
       fixture.detectChanges();
       expect(text(el.querySelector('.restore'))).toContain('unread messages');
+      expect(el.querySelector('.bar .dot')).not.toBeNull();
     });
   });
 
-  it('expands to the full Messages page, and Close puts it away with focus on the page', async () => {
+  it('expands to the full Messages page, folding back to its bar for when the parent leaves it', async () => {
     const { fixture, chat, el } = await render();
     chat.dock.set('open');
     await settle(fixture);
@@ -186,14 +200,7 @@ describe('the compact desktop chat (#125, slice 2)', () => {
     button(el, 'Expand to full chat').click();
     await settle(fixture);
     expect(TestBed.inject(Router).url).toBe('/messages');
-    expect(chat.dock()).toBe('closed');
-
-    chat.dock.set('open');
-    await settle(fixture);
-    button(el, 'Close chat').click();
-    await settle(fixture);
-    expect(el.querySelector('section')).toBeNull();
-    await vi.waitFor(() => expect(document.activeElement).toBe(el.querySelector('#main-content')));
+    expect(chat.dock()).toBe('minimized');
   });
 
   it('Minimize on the full page docks the same conversation over the page the parent came from', async () => {

@@ -156,29 +156,6 @@
     }
   </section>
 
-  <section class="card area-messages" aria-labelledby="messages-heading">
-    <header class="card__header">
-      <h2 id="messages-heading"><app-icon name="messages" [size]="26" /> Recent Messages</h2>
-      <a class="see-all" routerLink="/messages">See all<span class="visually-hidden"> messages</span></a>
-    </header>
-    @if (state() === 'ready' && data()!.recentMessages.length > 0) {
-      <ul class="messages">
-        @for (message of data()!.recentMessages; track message.id) {
-          <li>
-            <app-avatar [name]="message.from" kind="parent" [size]="44" />
-            <span class="messages__text">
-              <span class="messages__from">{{ message.from }}</span>
-              <span class="messages__preview">{{ message.preview }}</span>
-            </span>
-            <span class="muted messages__time">{{ message.sentAt }}</span>
-          </li>
-        }
-      </ul>
-    } @else {
-      <app-empty-state icon="messages" title="No messages yet" body="Messages between you and your co-parent show here." />
-    }
-  </section>
-
   <section class="card area-memories" aria-labelledby="memories-heading">
     <header class="card__header">
       <h2 id="memories-heading"><app-icon name="album" [size]="26" /> Family Memories</h2>

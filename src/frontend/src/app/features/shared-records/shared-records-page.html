@@ -1,0 +1,91 @@
+@if (isParent()) {
+  <div class="workspace" [class.composing]="creating()">
+    <section class="records" aria-labelledby="shared-records-title">
+      <header class="heading">
+        <div>
+          <h1 id="shared-records-title"><a class="mobile-back" routerLink="/more" aria-label="Back to More"><app-icon name="chevron-left" /></a> Shared records</h1>
+          <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
+        </div>
+        <button #newRequest type="button" class="primary" [disabled]="!workspace()?.hasCoParent || creating()" (click)="start()">
+          <app-icon name="plus" /> New request
+        </button>
+      </header>
+      @if (workspace(); as data) {
+        @if (!data.hasCoParent) {
+          <p class="muted">Your co-parent must join before you can propose a Shared Fund.</p>
+        }
+        @if (selected(); as fund) {
+          @if (data.funds.length > 1) {
+            <ul class="fund-list" aria-label="Shared Funds">
+              @for (item of data.funds; track item.id) {
+                <li>
+                  <button type="button" class="fund-link" [attr.aria-pressed]="item.id === fund.id" (click)="select(item)">
+                    <span>Shared Fund</span> {{ item.title }}
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          <article aria-labelledby="fund-title">
+            <div class="badges">
+              <span class="badge">Shared Fund</span>
+              <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] }}</span>
+            </div>
+            <h2 #fundHeading id="fund-title" tabindex="-1">{{ fund.title }}</h2>
+            <p class="muted">@if (childrenOf(fund); as names) { {{ names }} · }{{ fund.currency }}</p>
+            @let mine = fund.proposerId === data.membershipId;
+            <p class="split">
+              <strong>{{ fund.status === 'Open' ? 'Agreed split' : 'Proposed split' }}</strong>
+              <span>You {{ (mine ? fund.proposerShareMinor : fund.coParentShareMinor) / 100 | currency: fund.currency : 'symbol' }}</span>
+              <span>Co-parent {{ (mine ? fund.coParentShareMinor : fund.proposerShareMinor) / 100 | currency: fund.currency : 'symbol' }}</span>
+            </p>
+            <div class="panel target">
+              <strong>{{ fund.status === 'Open' ? 'Agreed target' : 'Proposed target' }}</strong>
+              <strong>{{ (fund.proposerShareMinor + fund.coParentShareMinor) / 100 | currency: fund.currency : 'symbol' }}</strong>
+            </div>
+            @if (fund.status === 'AwaitingAgreement') {
+              @if (mine) {
+                <p class="muted">Waiting for your co-parent to agree.</p>
+              } @else {
+                <div class="actions">
+                  <button class="primary" type="button" [disabled]="busy()" (click)="decide(fund, true)">Agree to proposal</button>
+                  <button class="secondary" type="button" [disabled]="busy()" (click)="decide(fund, false)">Request changes</button>
+                </div>
+              }
+            }
+          </article>
+        } @else {
+          <p class="muted">No shared records yet.</p>
+        }
+      } @else if (!error()) {
+        <p class="muted" role="status">Loading shared records…</p>
+      }
+    </section>
+    @if (creating() && workspace(); as data) {
+      <section class="panel composer" aria-labelledby="proposal-title">
+        <header class="heading">
+          <div>
+            <h2 #proposalHeading id="proposal-title" tabindex="-1">New request</h2>
+            <p class="muted mobile-subtitle">Shared records</p>
+          </div>
+          <button class="secondary back" type="button" [disabled]="busy()" (click)="close()" aria-label="Back to shared records">
+            <app-icon name="chevron-left" />
+          </button>
+        </header>
+        <h3>Choose a request type</h3>
+        <div class="request-types">
+          <div class="request-type selected"><strong>Shared Fund</strong><span>Agree on a goal</span></div>
+          <div class="request-type support"><strong>Child Support</strong><span>Coming later</span></div>
+        </div>
+        <app-shared-fund-proposal-form [children]="data.children" [submitting]="busy()" (proposal)="propose($event)" />
+      </section>
+    }
+  </div>
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+    @if (!workspace()) {
+      <button class="secondary" type="button" (click)="retry()">Try again</button>
+    }
+  }
+  <p class="visually-hidden" role="status">{{ announcement() }}</p>
+}

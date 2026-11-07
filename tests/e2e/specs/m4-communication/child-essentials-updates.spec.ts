@@ -107,6 +107,11 @@ test('the co-parent’s Routines tab shows a dot until opened, and a changed car
   await expect(routines.getByRole('button', { name: 'Mom’s routines', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(routines.locator('.row').filter({ hasText: 'Bedtime' })).toHaveClass(/row--updated/);
 
+  // Phones show one section at a time: back to them all first.
+  if (page.viewportSize()!.width < 768) {
+    await activate(page.getByRole('button', { name: 'All of Kai’s essentials' }), info);
+    await expect(routinesTile).toBeFocused();
+  }
   await activate(page.locator('[data-section=caregivers] > summary'), info);
   const ava = page.locator('app-caregivers-section article').filter({ hasText: 'Ava Park' });
   await ava.scrollIntoViewIfNeeded();

@@ -16,7 +16,7 @@ flowchart LR
   subgraph ACA["Azure Container Apps: one container"]
     SPA[Angular SPA<br/>parent and kid shells<br/>served as static files]
     API[ASP.NET Core .NET 10 API<br/>cookie auth + antiforgery<br/>tenant gate on /api/families/…]
-    MOD[Modules<br/>Identity · Families<br/>Approvals · Calendar · Memories]
+    MOD[Modules<br/>Identity · Families<br/>Approvals · Calendar · Memories<br/>Messaging · Shared Records]
   end
 
   PG[(Azure Database for PostgreSQL<br/>one schema per module)]

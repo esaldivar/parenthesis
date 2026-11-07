@@ -4,6 +4,7 @@ Read in order:
 1. [Existing UI design system](../design-system.md) — semantic themes, layout, accessibility, parent/child experience.
 2. [Approved branding direction](BRANDING.md) — logo symbolism, inclusive child icon, two-tone wordmark.
 3. [Page design index](PAGE_DESIGNS.md) — screen planning; individual wireframes pending approval.
+4. [Shared records design handoff](shared-records-issue-477.md) — approved mobile and desktop mockups for Shared Funds and Child Support.
 
 The existing [Claude Code instructions](../../CLAUDE.md) already direct Claude to the design system. For frontend work, consult this directory as well. Do not introduce a new styling framework or override existing Angular Material/CDK conventions merely to reproduce concept art.
 
