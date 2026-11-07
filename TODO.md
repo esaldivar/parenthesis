@@ -17,6 +17,7 @@ that points back here.
   - [ ] When the overview becomes section tiles (handoff mockup), move each section's dot to its tile and clear it on
     opening the tile; today the dot clears when the section comes on screen.
   - [ ] Complete visual polish with the handoff illustrations and verify the Clothing & Shoes, What Helps, School, and Allergies & Food flows on the development site in both themes.
+- [ ] **Shared Caregivers (#130, M4).** Verify caregiver details, duplicate-number confirmation, and independent ratings on mobile and desktop in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
   Settings. Owner decisions: operator Eric Saldivar (individual), US families only, contact

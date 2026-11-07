@@ -60,6 +60,27 @@ export interface Child {
   readonly signIn: ChildSignIn;
 }
 
+export interface CaregiverDetails {
+  readonly name: string;
+  readonly phone: string;
+  readonly city: string | null;
+  readonly hourlyRate: number | null;
+  readonly schoolPickup: boolean;
+}
+
+export interface Caregiver {
+  readonly id: string;
+  readonly details: CaregiverDetails;
+  readonly averageRating: number | null;
+  readonly myRating: number | null;
+  readonly addedBy: string;
+}
+
+export interface CaregiverList {
+  readonly version: number;
+  readonly caregivers: readonly Caregiver[];
+}
+
 export interface EmergencyContact {
   readonly name: string;
   readonly relationship: string;
@@ -894,6 +915,21 @@ export class Api {
 
   private routinesUrl(familyId: string, childId: string): string {
     return `/api/families/${familyId}/children/${childId}/essentials/routines`;
+  }
+
+  caregivers = (familyId: string, childId: string) =>
+    this.call(this.http.get<CaregiverList>(this.caregiversUrl(familyId, childId)));
+  saveCaregiver = (familyId: string, childId: string, id: string | null,
+    body: { version: number; details: CaregiverDetails; allowDuplicate: boolean }) =>
+    this.call(id ? this.http.put<void>(this.caregiversUrl(familyId, childId) + '/' + encodeURIComponent(id), body)
+      : this.http.post<void>(this.caregiversUrl(familyId, childId), body));
+  removeCaregiver = (familyId: string, childId: string, id: string, version: number) =>
+    this.call(this.http.delete<void>(this.caregiversUrl(familyId, childId) + '/' + encodeURIComponent(id), { params: { version } }));
+  rateCaregiver = (familyId: string, childId: string, id: string, rating: number | null) =>
+    this.call(this.http.put<void>(this.caregiversUrl(familyId, childId) + '/' + encodeURIComponent(id) + '/rating', { rating }));
+
+  private caregiversUrl(familyId: string, childId: string): string {
+    return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/caregivers`;
   }
 
   emergencyContacts = (familyId: string, childId: string) =>

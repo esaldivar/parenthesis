@@ -19,6 +19,7 @@ interface ShownBanner {
 }
 
 import { AllergiesFoodSection } from './allergies-food-section';
+import { CaregiversSection } from './caregivers-section';
 import { ClothingSection } from './clothing-section';
 import { EmergencyContactsSection } from './emergency-contacts-section';
 import { RoutinesSection } from './routines-section';
@@ -28,7 +29,7 @@ import { WhatHelpsSection } from './what-helps-section';
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Icon, AllergiesFoodSection, ClothingSection, EmergencyContactsSection, RoutinesSection, SchoolSection, WhatHelpsSection],
+  imports: [Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, RoutinesSection, SchoolSection, WhatHelpsSection],
   template: `
     <h1 tabindex="-1" #heading>Child Essentials</h1>
     <!-- The other parent's saves since the last visit (#128): shown once, then gone after about ten seconds or on X. -->
@@ -72,6 +73,7 @@ import { WhatHelpsSection } from './what-helps-section';
               <app-routines-section [familyId]="family" [childId]="profile.id" />
               <app-clothing-section [familyId]="family" [childId]="profile.id" />
               <app-what-helps-section [familyId]="family" [childId]="profile.id" />
+              <app-caregivers-section [familyId]="family" [childId]="profile.id" />
               <app-emergency-contacts-section [familyId]="family" [childId]="profile.id" [children]="children()" />
             }
           }

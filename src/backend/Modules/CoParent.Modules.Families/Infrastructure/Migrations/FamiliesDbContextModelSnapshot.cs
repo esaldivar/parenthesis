@@ -387,6 +387,40 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.ToTable("child_emergency_contacts", "families");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.SharedCaregivers", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<string>("CaregiversJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("caregivers_json");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_child_shared_caregivers");
+
+                    b.HasIndex("ChildProfileId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_child_shared_caregivers_child_profile_id");
+
+                    b.ToTable("child_shared_caregivers", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.EssentialsUpdate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -984,6 +1018,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_child_emergency_contacts_child_profiles_child_profile_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.SharedCaregivers", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_child_shared_caregivers_child_profiles_child_profile_id");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.EssentialsUpdate", b =>
