@@ -8,6 +8,33 @@ describe('Allergies & Food', () => {
   const url = '/api/families/family-1/children/child-1/essentials/allergies-food';
   const empty: AllergiesFoodValues = { allergies: null, noKnownAllergies: false, foodPreferences: null };
 
+  it('requests an export for all children and reports download failure', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const fixture = TestBed.createComponent(AllergiesFoodSection);
+    fixture.componentRef.setInput('familyId', 'family-1');
+    fixture.componentRef.setInput('childId', 'child-1');
+    fixture.detectChanges();
+
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne({ method: 'GET', url }).flush({ revision: 0, values: empty });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    [...host.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Download allergy PDF')!.click();
+    fixture.detectChanges();
+    const picker = host.querySelector('select')!;
+    expect(picker.value).toBe('child-1');
+    picker.value = '';
+    [...host.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Download PDF')!.click();
+    const request = http.expectOne('/api/families/family-1/child-essentials/allergies/pdf');
+    expect(request.request.responseType).toBe('blob');
+    request.flush(new Blob(), { status: 403, statusText: 'Forbidden' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(host.querySelector('#allergy-pdf-options')?.textContent).toContain('couldn’t be downloaded');
+    http.verify();
+  });
+
   it('keeps the draft after a conflicting save and retries against the reviewed revision', async () => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(AllergiesFoodSection);
