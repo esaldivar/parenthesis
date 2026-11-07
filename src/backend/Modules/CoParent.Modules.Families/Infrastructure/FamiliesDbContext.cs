@@ -37,6 +37,7 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<ClothingRevision> ClothingRevisions => Set<ClothingRevision>();
     public DbSet<WhatHelpsRevision> WhatHelpsRevisions => Set<WhatHelpsRevision>();
+    public DbSet<RoutinesRevision> RoutinesRevisions => Set<RoutinesRevision>();
     public DbSet<AllergiesFoodRevision> AllergiesFoodRevisions => Set<AllergiesFoodRevision>();
     public DbSet<SchoolRevision> SchoolRevisions => Set<SchoolRevision>();
 
@@ -105,6 +106,16 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             revision.ToTable("child_what_helps_revisions");
             revision.Property(row => row.ComfortItems).HasMaxLength(WhatHelpsRevision.TextLimit);
             revision.Property(row => row.CalmingStrategies).HasMaxLength(WhatHelpsRevision.TextLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<RoutinesRevision>(revision =>
+        {
+            revision.ToTable("child_routines_revisions");
+            revision.Property(row => row.Bedtime).HasMaxLength(RoutinesRevision.TextLimit);
+            revision.Property(row => row.Naps).HasMaxLength(RoutinesRevision.TextLimit);
             revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
             revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
             revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
