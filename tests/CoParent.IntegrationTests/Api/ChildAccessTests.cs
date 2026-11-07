@@ -455,6 +455,40 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Allergy_pdf_keeps_exactly_fitting_child_sections_together()
+    {
+        using var family = await FamilyWithKaiAsync();
+        var childIds = new List<Guid> { family.KaiId };
+        for (var i = 2; i <= 5; i++)
+        {
+            var added = await JsonAsync(await family.Dad.PostAsync($"/api/families/{family.FamilyId}/children",
+                new { firstName = $"Child {i}" }));
+            Assert.Equal(HttpStatusCode.OK, (await family.Mom.PostAsync(
+                $"/api/families/{family.FamilyId}/approvals/{added.GetProperty("changeRequestId").GetGuid()}/approve")).StatusCode);
+            childIds.Add(added.GetProperty("id").GetGuid());
+        }
+
+        var notes = string.Join("\n", Enumerable.Repeat("Synthetic allergy note", 12));
+        foreach (var childId in childIds)
+        {
+            Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put,
+                $"/api/families/{family.FamilyId}/children/{childId}/essentials/allergies-food",
+                new { revision = 0, values = new { allergies = notes } })).StatusCode);
+        }
+
+        var path = $"/api/families/{family.FamilyId}/child-essentials/allergies/pdf";
+        using var single = await family.Mom.GetAsync($"{path}?childId={family.KaiId}");
+        using var all = await family.Mom.GetAsync(path);
+        Assert.Equal(HttpStatusCode.OK, single.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, all.StatusCode);
+        var token = TestContext.Current.CancellationToken;
+        var singlePdf = System.Text.Encoding.ASCII.GetString(await single.Content.ReadAsByteArrayAsync(token));
+        var allPdf = System.Text.Encoding.ASCII.GetString(await all.Content.ReadAsByteArrayAsync(token));
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Count(singlePdf, @"/Type /Page\b"));
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Count(allPdf, @"/Type /Page\b"));
+    }
+
+    [Fact]
     public async Task Emergency_contacts_are_shared_ordered_and_reject_duplicate_numbers()
     {
         using var family = await FamilyWithKaiAsync();
