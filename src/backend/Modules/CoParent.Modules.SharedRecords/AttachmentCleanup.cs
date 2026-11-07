@@ -1,3 +1,4 @@
+using CoParent.Infrastructure.Hosting;
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.SharedRecords.Contracts;
 using CoParent.SharedKernel.Tenancy;
@@ -96,23 +97,8 @@ internal sealed partial class AttachmentCleanupWorker(
     ISharedRecordsCleanup cleanup, IOptions<AttachmentOptions> options, TimeProvider clock, ILogger<AttachmentCleanupWorker> logger)
     : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        using var timer = new PeriodicTimer(options.Value.CleanupInterval, clock);
-        while (await timer.WaitForNextTickAsync(stoppingToken))
-        {
-            try
-            {
-                await cleanup.CleanUpAsync(stoppingToken);
-            }
-#pragma warning disable CA1031 // The worker must keep running; the next tick retries.
-            catch (Exception exception) when (exception is not OperationCanceledException)
-#pragma warning restore CA1031
-            {
-                LogFailed(exception);
-            }
-        }
-    }
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) =>
+        PeriodicWork.RunAsync(options.Value.CleanupInterval, clock, cleanup.CleanUpAsync, LogFailed, stoppingToken);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The shared record attachment cleanup failed")]
     private partial void LogFailed(Exception exception);

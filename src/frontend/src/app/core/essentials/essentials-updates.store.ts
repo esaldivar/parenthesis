@@ -1,8 +1,6 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Api, EssentialsBanner, EssentialsSectionId, EssentialsUpdates } from '../api/api';
-import { AuthStore } from '../auth/auth.store';
+import { parentFamilyRefresh } from '../auth/parent-family-refresh';
 
 const EMPTY: EssentialsUpdates = { newUpdates: false, sections: [] };
 
@@ -15,33 +13,11 @@ const EMPTY: EssentialsUpdates = { newUpdates: false, sections: [] };
 @Injectable({ providedIn: 'root' })
 export class EssentialsUpdatesStore {
   private readonly api = inject(Api);
-  private readonly auth = inject(AuthStore);
-  private readonly router = inject(Router, { optional: true });
-
-  private readonly familyId = computed(() => {
-    const family = this.auth.currentFamily();
-    return this.auth.status() === 'signed-in' && family?.role === 'Parent' ? family.id : null;
-  });
 
   readonly view = signal<EssentialsUpdates>(EMPTY);
   /** The navigation dot by Child Essentials. */
   readonly newUpdates = computed(() => this.view().newUpdates);
-
-  constructor() {
-    effect(() => {
-      const familyId = this.familyId();
-      untracked(() => {
-        this.view.set(EMPTY);
-        if (familyId) void this.refresh();
-      });
-    });
-    this.router?.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => void this.refresh());
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') void this.refresh();
-      });
-    }
-  }
+  private readonly familyId = parentFamilyRefresh(() => this.view.set(EMPTY), () => this.refresh());
 
   /** Reads the indicators again. A failure keeps what's shown: an indicator is a hint, not the record. */
   async refresh(): Promise<void> {
