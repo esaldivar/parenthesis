@@ -1,5 +1,5 @@
 // The approved dashboard layout. Wide: calendar centrepiece (two columns) with Upcoming and Quick Add beside it,
-// then From Your Kids and a wider Family Memories (Recent Messages removed, owner decision, November 7, 2026).
+// then From Your Kids and Family Memories (Recent Messages removed, owner decision, November 7, 2026).
 // Medium: two columns. Phones: one column, with Upcoming straight after the calendar so the next handoff and pending
 // reviews are easy to find.
 :host {
@@ -413,7 +413,8 @@ a.quick__btn {
       'calendar calendar upcoming'
       'calendar calendar quick'
       'calendar calendar .'
-      'kids memories memories';
+      // Family Memories keeps the middle column, under the calendar (owner decision, November 7, 2026).
+      'kids memories .';
     align-items: start;
   }
 

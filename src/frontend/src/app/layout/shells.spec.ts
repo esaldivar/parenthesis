@@ -75,7 +75,7 @@ describe('application shells', () => {
     it('never shows unread counts for real data: the bell says notifications are not available yet', async () => {
       const body = await open('/');
 
-      expect(body.querySelector('.badge')).toBeNull();
+      expect(body.querySelector('.dot')).toBeNull();
       expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications');
     });
 
@@ -86,6 +86,10 @@ describe('application shells', () => {
       expect(sidenav.textContent).toContain('2 unread (sample data)'); // From Your Kids
       expect(sidenav.textContent).not.toContain('3 unread'); // Messages have real unread state (#125)
       expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications, 3 unread (sample data)');
+      // Counts show as the green "something new" dot; the number is only in the words for assistive technology.
+      expect(body.querySelector('button.bell .dot.dot--bell')).not.toBeNull();
+      expect(body.querySelector('button.bell')!.textContent).not.toContain('3');
+      expect(sidenav.querySelectorAll('.dot')).toHaveLength(1);
     });
 
     it('keeps Home current when the dashboard URL carries a query, and only Home', async () => {
