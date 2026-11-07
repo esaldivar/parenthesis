@@ -60,6 +60,19 @@ export interface Child {
   readonly signIn: ChildSignIn;
 }
 
+export interface EmergencyContact {
+  readonly name: string;
+  readonly relationship: string;
+  readonly phone: string;
+  readonly address: string | null;
+  readonly callFirst: boolean;
+}
+
+export interface EmergencyContactsView {
+  readonly version: number;
+  readonly contacts: readonly EmergencyContact[];
+}
+
 export interface ChildSignIn {
   readonly enabled: boolean;
   /** Needs a parent to choose a new PIN. */
@@ -857,6 +870,15 @@ export class Api {
 
   private routinesUrl(familyId: string, childId: string): string {
     return `/api/families/${familyId}/children/${childId}/essentials/routines`;
+  }
+
+  emergencyContacts = (familyId: string, childId: string) =>
+    this.call(this.http.get<EmergencyContactsView>(this.emergencyContactsUrl(familyId, childId)));
+  saveEmergencyContacts = (familyId: string, childId: string, body: EmergencyContactsView) =>
+    this.call(this.http.put<EmergencyContactsView>(this.emergencyContactsUrl(familyId, childId), body));
+
+  private emergencyContactsUrl(familyId: string, childId: string): string {
+    return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/emergency-contacts`;
   }
 
   downloadAllergyPdf = (familyId: string, childId: string | null) =>

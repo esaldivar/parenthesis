@@ -454,6 +454,31 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(selected)).StatusCode);
     }
 
+    [Fact]
+    public async Task Emergency_contacts_are_shared_ordered_and_reject_duplicate_numbers()
+    {
+        using var family = await FamilyWithKaiAsync();
+        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/emergency-contacts";
+        var extra = new { name = "Family Friend", relationship = "Friend", phone = "214-555-0101", callFirst = false };
+        var first = new { name = "Emergency Contact", relationship = "Relative", phone = "214-555-0102", callFirst = true };
+        var payload = new { version = 0, contacts = new[] { extra, first } };
+        Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, path, payload)).StatusCode);
+        var response = await JsonAsync(await family.Mom.GetAsync(path));
+        Assert.Equal("Emergency Contact", response.GetProperty("contacts")[0].GetProperty("name").GetString());
+        Assert.True(response.GetProperty("contacts")[0].GetProperty("callFirst").GetBoolean());
+        Assert.Equal(HttpStatusCode.Conflict, (await family.Mom.SendAsync(HttpMethod.Put, path, payload)).StatusCode);
+        var duplicate = new { name = "Duplicate", relationship = "Friend", phone = "(214) 555-0102", callFirst = false };
+        Assert.Equal(HttpStatusCode.BadRequest, (await family.Mom.SendAsync(HttpMethod.Put, path,
+            new { version = 1, contacts = new[] { first, duplicate } })).StatusCode);
+
+        using var outsider = await ApiSession.SignedInAsync(api);
+        Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync(path)).StatusCode);
+        using var tablet = await PairedTabletAsync(family);
+        Assert.Equal(HttpStatusCode.NoContent, (await tablet.PostAsync("/api/device/child-session",
+            new { childId = family.KaiId, pin = KaisPin })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path)).StatusCode);
+    }
+
     private async Task<ApiSession> PairedTabletAsync(TestFamily family)
     {
         var tablet = await ApiSession.StartAsync(api);
