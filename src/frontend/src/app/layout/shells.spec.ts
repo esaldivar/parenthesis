@@ -36,6 +36,7 @@ describe('application shells', () => {
         'From Your Kids',
         'Family Memories',
         'Child Essentials',
+        'Shared records',
         'Settings',
       ]);
       expect(linkTexts(body.querySelector('nav.bottomnav')!)).toEqual(['Home', 'Calendar', 'Messages', 'Memories', 'More']);
@@ -44,7 +45,7 @@ describe('application shells', () => {
     it('lists the remaining destinations under More on phones, in the same order', async () => {
       const body = await open('/more');
 
-      expect(linkTexts(body.querySelector('main ul')!)).toEqual(['From Your Kids', 'Child Essentials', 'Settings']);
+      expect(linkTexts(body.querySelector('main ul')!)).toEqual(['From Your Kids', 'Child Essentials', 'Shared records', 'Settings']);
     });
 
     it('sends old /children links to Child Essentials', async () => {
