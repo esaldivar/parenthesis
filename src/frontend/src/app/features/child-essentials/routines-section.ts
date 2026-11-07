@@ -172,13 +172,26 @@ export class RoutinesSection {
   protected readonly householdSaving = signal(false);
   protected readonly householdError = signal('');
   protected readonly householdConflict = signal(false);
+  private readonly householdDrafts = new Map<string, {
+    bedtime: string; naps: string; revision: number; conflict: boolean;
+  }>();
+  private householdDraftRevision = 0;
 
   protected openHousehold(home: HouseholdRoutine | null): void {
     if (this.householdSaving() || this.selectedOwner() === (home?.ownerId ?? null)) return;
+    const previous = this.selectedHousehold();
+    if (previous?.isMine) {
+      this.householdDrafts.set(previous.ownerId, {
+        bedtime: this.householdBedtime(), naps: this.householdNaps(),
+        revision: this.householdDraftRevision, conflict: this.householdConflict(),
+      });
+    }
+    const draft = home ? this.householdDrafts.get(home.ownerId) : undefined;
     this.selectedOwner.set(home?.ownerId ?? null);
-    this.householdBedtime.set(home?.latest.values.bedtime ?? '');
-    this.householdNaps.set(home?.latest.values.naps ?? '');
-    this.householdConflict.set(false);
+    this.householdDraftRevision = draft?.revision ?? home?.latest.revision ?? 0;
+    this.householdBedtime.set(draft?.bedtime ?? home?.latest.values.bedtime ?? '');
+    this.householdNaps.set(draft?.naps ?? home?.latest.values.naps ?? '');
+    this.householdConflict.set(draft?.conflict ?? false);
   }
 
   protected async loadHouseholds(): Promise<void> {
@@ -196,18 +209,24 @@ export class RoutinesSection {
     this.householdError.set('');
     try {
       const saved = await this.api.updateHouseholdRoutine(this.familyId(), this.childId(), home.ownerId, {
-        revision: home.latest.revision, action,
+        revision: action === 'save' ? this.householdDraftRevision : home.latest.revision, action,
         ...(action === 'save' ? { values: { bedtime: this.householdBedtime(), naps: this.householdNaps() } } : {}),
       });
       if (action === 'save') {
         this.householdBedtime.set(saved.values.bedtime ?? '');
         this.householdNaps.set(saved.values.naps ?? '');
+        this.householdDraftRevision = saved.revision;
+        this.householdDrafts.delete(home.ownerId);
       }
       this.householdConflict.set(false);
       await this.loadHouseholds();
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 409) {
         await this.loadHouseholds();
+        if (action === 'save') {
+          const latest = this.households().find((household) => household.ownerId === home.ownerId);
+          this.householdDraftRevision = latest?.latest.revision ?? this.householdDraftRevision;
+        }
         this.householdConflict.set(action === 'save');
         this.householdError.set('The routine was updated. Review the latest values before trying again.');
       } else {

@@ -62,12 +62,14 @@ internal static class AllergyPdf
     private static List<List<Line>> Paginate(List<List<Line>> blocks)
     {
         const float available = PageHeight - (2 * Margin) - FooterSpace;
+        // Accumulating fractional line heights must not split a block that fits exactly.
+        const float tolerance = 0.01f;
         var pages = new List<List<Line>> { new() };
         var used = 0f;
         foreach (var block in blocks)
         {
             var height = block.Sum(l => l.Height);
-            if (used > 0 && used + height > available && height <= available)
+            if (used > 0 && used + height > available + tolerance && height <= available + tolerance)
             {
                 pages.Add([]);
                 used = 0;
@@ -75,7 +77,7 @@ internal static class AllergyPdf
 
             foreach (var line in block)
             {
-                if (used > 0 && used + line.Height > available)
+                if (used > 0 && used + line.Height > available + tolerance)
                 {
                     pages.Add([]);
                     used = 0;
