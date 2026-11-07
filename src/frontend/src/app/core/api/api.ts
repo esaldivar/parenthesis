@@ -657,6 +657,30 @@ export interface WhatHelpsHistoryPage {
   readonly beforeRevision: number | null;
 }
 
+export interface AllergiesFoodValues {
+  readonly noKnownAllergies: boolean;
+  readonly allergies: string | null;
+  readonly foodPreferences: string | null;
+}
+
+export interface AllergiesFoodView {
+  readonly revision: number;
+  readonly values: AllergiesFoodValues;
+  readonly recordedBy?: string | null;
+  readonly recordedAt?: string | null;
+}
+
+export interface AllergiesFoodHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: AllergiesFoodValues;
+    readonly current: AllergiesFoodValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
 export interface SchoolValues {
   readonly homeroomTeacher: string | null;
   readonly grade: string | null;
@@ -745,6 +769,19 @@ export class Api {
 
   private whatHelpsUrl(familyId: string, childId: string): string {
     return `/api/families/${familyId}/children/${childId}/essentials/what-helps`;
+  }
+
+  allergiesFood = (familyId: string, childId: string) =>
+    this.call(this.http.get<AllergiesFoodView>(this.allergiesFoodUrl(familyId, childId)));
+  saveAllergiesFood = (familyId: string, childId: string, body: AllergiesFoodView) =>
+    this.call(this.http.put<AllergiesFoodView>(this.allergiesFoodUrl(familyId, childId), body));
+  allergiesFoodHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<AllergiesFoodHistoryPage>(this.allergiesFoodUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  private allergiesFoodUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/allergies-food`;
   }
 
   school = (familyId: string, childId: string) =>
