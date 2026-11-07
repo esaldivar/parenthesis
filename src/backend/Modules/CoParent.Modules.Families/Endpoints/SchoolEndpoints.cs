@@ -32,8 +32,8 @@ internal sealed record SchoolHistoryPage(IReadOnlyList<SchoolHistoryEntry> Entri
 internal static class SchoolEndpoints
 {
     private const int HistoryPageSize = 20;
-    private static readonly HashSet<string> HomeroomGrades = ["Pre-K", "Kindergarten", "1", "2", "3", "4", "5"];
-    private static readonly HashSet<string> Grades = [.. HomeroomGrades, "6", "7", "8", "9", "10", "11", "12"];
+    private static readonly HashSet<string> _homeroomGrades = ["Pre-K", "Kindergarten", "1", "2", "3", "4", "5"];
+    private static readonly HashSet<string> _grades = [.. _homeroomGrades, "6", "7", "8", "9", "10", "11", "12"];
 
     public static void Map(IEndpointRouteBuilder family)
     {
@@ -79,12 +79,12 @@ internal static class SchoolEndpoints
         var grade = ChildEssentialsAccess.Normalize(request.Values.Grade, "grade", SchoolRevision.TextLimit, errors);
         var teacher = ChildEssentialsAccess.Normalize(
             request.Values.HomeroomTeacher, "homeroomTeacher", SchoolRevision.TextLimit, errors);
-        if (grade is not null && !Grades.Contains(grade))
+        if (grade is not null && !_grades.Contains(grade))
         {
             errors["grade"] = ["Select a supported school grade."];
         }
 
-        if (teacher is not null && (grade is null || !HomeroomGrades.Contains(grade)))
+        if (teacher is not null && (grade is null || !_homeroomGrades.Contains(grade)))
         {
             errors["homeroomTeacher"] = ["Homeroom teacher is available for pre-K through fifth grade."];
         }
