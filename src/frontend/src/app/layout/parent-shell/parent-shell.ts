@@ -78,13 +78,13 @@ export class ParentShell {
 
   constructor() {
     focusMainOnNavigation(() => this.main());
-    // The compact chat (#125): Minimize on Messages returns to the last other page; opening Messages closes the
-    // compact chat, which is the same conversation.
+    // The compact chat (#125): Minimize on Messages returns to the last other page; opening Messages folds the
+    // compact chat back to its bar, since it's the same conversation.
     effect(() => {
       const url = this.url();
       untracked(() => {
         if (this.fullScreen()) {
-          this.chat.dock.set('closed');
+          if (this.chat.dock() === 'open') this.chat.dock.set('minimized');
         } else {
           this.chat.returnUrl.set(url);
         }

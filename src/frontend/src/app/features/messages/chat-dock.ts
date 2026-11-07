@@ -13,8 +13,9 @@ import { ChatConversation } from './chat-conversation';
 
 /**
  * The compact desktop chat (slice 2 of docs/design/m4-chat.md): the same conversation, draft and chosen event as the
- * Messages page, docked bottom right over the current page. It isn't modal: the page around it stays usable. Minimize
- * folds it to a bar (and stops marking messages read), Expand opens the full Messages page, Close puts it away.
+ * Messages page, docked bottom right over the current page. It isn't modal: the page around it stays usable. Like a
+ * messaging tray it's always there: minimized to a bar at the bottom right (which marks nothing read, and pulses a dot
+ * when a message is unread), opened over the page, or expanded to the full Messages page.
  * Desktop only (1024px and wider); phones and tablets use the full-screen page.
  */
 @Component({
@@ -32,9 +33,6 @@ import { ChatConversation } from './chat-conversation';
             <button chatActions class="round" type="button" aria-label="Minimize chat" (click)="minimize()">
               <app-icon name="minus" [size]="22" />
             </button>
-            <button chatActions class="round" type="button" aria-label="Close chat" (click)="close()">
-              <app-icon name="close" [size]="22" />
-            </button>
           </app-chat-conversation>
         </section>
       }
@@ -48,9 +46,7 @@ import { ChatConversation } from './chat-conversation';
               <span class="visually-hidden">, unread messages</span>
             }
             <span class="visually-hidden">. Open the compact chat</span>
-          </button>
-          <button class="round" type="button" aria-label="Close chat" (click)="close()">
-            <app-icon name="close" [size]="22" />
+            <app-icon class="chevron" name="chevron-up" [size]="20" />
           </button>
         </section>
       }
@@ -60,36 +56,37 @@ import { ChatConversation } from './chat-conversation';
     :host {
       position: fixed;
       inset-inline-end: var(--space-6);
-      bottom: var(--space-4);
+      bottom: 0;
       /* Over page content and the calendar's bars; below dimmed sheets (20) and toasts (30). */
       z-index: 15;
     }
     .dock {
       width: min(24rem, calc(100vw - 2 * var(--space-6)));
-      height: min(36rem, calc(100dvh - 7rem));
+      height: min(36rem, calc(100dvh - 6rem));
       border: 1px solid var(--color-outline);
-      border-radius: var(--radius-card);
+      border-bottom: 0;
+      border-radius: var(--radius-card) var(--radius-card) 0 0;
       overflow: hidden;
       box-shadow: 0 8px 28px rgb(0 0 0 / 22%);
     }
+    /* A tab along the bottom edge, like a messaging tray. */
     .bar {
-      display: flex;
-      align-items: center;
-      gap: var(--space-1);
-      padding: var(--space-1);
+      width: 18rem;
       border: 1px solid var(--color-outline);
-      border-radius: var(--radius-pill);
+      border-bottom: 0;
+      border-radius: var(--radius-card) var(--radius-card) 0 0;
       background: var(--color-surface);
-      box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+      box-shadow: 0 -2px 16px rgb(0 0 0 / 16%);
     }
     .restore {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: var(--space-2);
-      min-height: var(--target-min);
+      width: 100%;
+      min-height: 3.25rem;
       padding: 0 var(--space-4);
       border: 0;
-      border-radius: var(--radius-pill);
+      border-radius: var(--radius-card) var(--radius-card) 0 0;
       background: transparent;
       color: var(--color-text);
       font: inherit;
@@ -118,11 +115,25 @@ import { ChatConversation } from './chat-conversation';
       outline: 3px solid var(--color-focus);
       outline-offset: 2px;
     }
+    .chevron {
+      margin-inline-start: auto;
+    }
     .dot {
       width: 0.625rem;
       height: 0.625rem;
       border-radius: 50%;
       background: var(--color-action);
+    }
+    /* A new message: the dot pulses (a steady dot with reduced motion; words for screen readers either way). */
+    @media (prefers-reduced-motion: no-preference) {
+      .dot {
+        animation: unread-pulse 1.6s ease-in-out infinite;
+      }
+    }
+    @keyframes unread-pulse {
+      50% {
+        box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-action) 30%, transparent);
+      }
     }
     @media (max-width: 1023.98px) {
       :host {
@@ -138,7 +149,7 @@ export class ChatDock {
   private readonly injector = inject(Injector);
 
   protected async expand(): Promise<void> {
-    this.chat.dock.set('closed');
+    this.chat.dock.set('minimized');
     await this.router.navigateByUrl('/messages');
   }
 
@@ -151,12 +162,6 @@ export class ChatDock {
   /** Opens again, with focus in the message box (focusOnReady): the draft and chosen event are still there. */
   protected restore(): void {
     this.chat.dock.set('open');
-  }
-
-  /** Puts the chat away; focus returns to the page's main content. */
-  protected close(): void {
-    this.chat.dock.set('closed');
-    afterNextRender(() => document.getElementById('main-content')?.focus(), { injector: this.injector });
   }
 
   private focusAfterRender(selector: string): void {

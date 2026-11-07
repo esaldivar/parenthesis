@@ -288,7 +288,8 @@ a.is-active {
   }
 
   main {
-    padding: 0 var(--space-6) var(--space-6);
+    /* Room at the bottom so the chat bar never covers the end of a page. */
+    padding: 0 var(--space-6) 5rem;
   }
 
   .bottomnav {

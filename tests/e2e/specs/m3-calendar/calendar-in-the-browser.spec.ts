@@ -494,7 +494,10 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
           const box = (await toast.boundingBox())!;
           if (size.width > 600) {
             expect(box.x + box.width).toBeGreaterThan(size.width - 60);
-            expect(box.y + box.height).toBeGreaterThan(size.height - 60);
+            // Just above the chat bar along the bottom edge (#125), never over it.
+            const chatBar = (await page.getByRole('region', { name: 'Compact chat, minimized' }).boundingBox())!;
+            expect(box.y + box.height).toBeLessThanOrEqual(chatBar.y);
+            expect(box.y + box.height).toBeGreaterThan(chatBar.y - 60);
           } else {
             const nav = (await page.locator('nav.bottomnav').boundingBox())!;
             expect(box.y + box.height).toBeLessThanOrEqual(nav.y);

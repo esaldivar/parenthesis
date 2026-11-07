@@ -41,7 +41,10 @@ export interface PendingMessage {
   readonly eventGone?: boolean;
 }
 
-/** The desktop pop-up (slice 2): docked over the page, minimized to a bar, or closed. */
+/**
+ * The desktop pop-up (slice 2): docked over the page, or minimized to a bar at the bottom right, which is always there
+ * on desktop, like a messaging tray. Closed only without a family (the full Messages page hides it).
+ */
 export type ChatDockState = 'closed' | 'open' | 'minimized';
 
 /** How long the co-parent's "typing" lasts without another signal. */
@@ -300,7 +303,7 @@ export class ChatStore {
     this.unread.set(0);
     this.draft.set('');
     this.draftEvent.set(null);
-    this.dock.set('closed');
+    this.dock.set(familyId ? 'minimized' : 'closed');
     this.members.set([]);
     this.stopTyping();
     await this.disconnect();
@@ -336,6 +339,9 @@ export class ChatStore {
     }
     if (attempt > 0) {
       await this.caughtUp(generation);
+    } else {
+      // A message sent while this device was still connecting wasn't pushed to it: count it now.
+      await this.refreshUnread();
     }
   }
 
