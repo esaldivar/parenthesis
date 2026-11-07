@@ -810,6 +810,12 @@ export class Api {
     return `/api/families/${familyId}/children/${childId}/essentials/what-helps`;
   }
 
+  downloadAllergyPdf = (familyId: string, childId: string | null) =>
+    this.call(this.http.get(`/api/families/${encodeURIComponent(familyId)}/child-essentials/allergies/pdf`, {
+      responseType: 'blob',
+      params: childId ? { childId } : {},
+    }));
+
   allergiesFood = (familyId: string, childId: string) =>
     this.call(this.http.get<AllergiesFoodView>(this.allergiesFoodUrl(familyId, childId)));
   saveAllergiesFood = (familyId: string, childId: string, body: AllergiesFoodView) =>

@@ -1,10 +1,10 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { DatePipe, DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Api, AllergiesFoodHistoryPage, AllergiesFoodView } from '../../core/api/api';
+import { Api, AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/api/api';
 
 @Component({
   selector: 'app-allergies-food-section',
@@ -13,6 +13,25 @@ import { Api, AllergiesFoodHistoryPage, AllergiesFoodView } from '../../core/api
   template: `
     <section aria-labelledby="allergies-food-heading">
       <h3 id="allergies-food-heading">Allergies & Food</h3>
+      <button type="button" [attr.aria-expanded]="exportOpen()" aria-controls="allergy-pdf-options"
+        (click)="exportOpen.set(!exportOpen())">Download allergy PDF</button>
+      <div id="allergy-pdf-options" [hidden]="!exportOpen()">
+        <label>Include in the allergy PDF
+          <select #exportChild [disabled]="exporting()">
+            <option [value]="childId()">Current child</option>
+            @for (child of children(); track child.id) {
+              @if (child.id !== childId()) {
+                <option [value]="child.id">{{ child.firstName }}</option>
+              }
+            }
+            <option value="">All children</option>
+          </select>
+        </label>
+        <button type="button" [disabled]="exporting()" (click)="downloadPdf(exportChild.value)">
+          {{ exporting() ? 'Preparing PDF…' : 'Download PDF' }}
+        </button>
+        <p role="status">{{ exportNotice() }}</p>
+      </div>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
       }
@@ -108,7 +127,12 @@ import { Api, AllergiesFoodHistoryPage, AllergiesFoodView } from '../../core/api
 export class AllergiesFoodSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
+  readonly children = input<readonly Child[]>([]);
   private readonly api = inject(Api);
+  private readonly document = inject(DOCUMENT);
+  protected readonly exportOpen = signal(false);
+  protected readonly exporting = signal(false);
+  protected readonly exportNotice = signal('');
   private readonly destroyRef = inject(DestroyRef);
   protected readonly current = signal<AllergiesFoodView | null>(null);
   protected readonly conflict = signal<AllergiesFoodView | null>(null);
@@ -129,6 +153,31 @@ export class AllergiesFoodSection {
 
   constructor() {
     effect(() => { void this.load(); });
+  }
+
+  protected async downloadPdf(childId: string): Promise<void> {
+    if (this.exporting()) return;
+    this.exporting.set(true);
+    this.exportNotice.set('');
+    try {
+      const pdf = await this.api.downloadAllergyPdf(this.familyId(), childId || null);
+      if (this.destroyRef.destroyed) return;
+
+      const url = URL.createObjectURL(pdf);
+      const link = this.document.createElement('a');
+      link.href = url;
+      link.download = 'allergies.pdf';
+      try {
+        link.click();
+        this.exportNotice.set('Allergy PDF ready.');
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch {
+      this.exportNotice.set('The allergy PDF couldn’t be downloaded. Try again.');
+    } finally {
+      this.exporting.set(false);
+    }
   }
 
   protected async load(): Promise<void> {
