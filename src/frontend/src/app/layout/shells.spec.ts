@@ -3,6 +3,7 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../app.routes';
 import { CHAT_CONNECTION, ChatStore } from '../core/chat/chat.store';
+import { EssentialsUpdatesStore } from '../core/essentials/essentials-updates.store';
 import { axeViolations } from '../../testing/axe';
 import { fakeAuth } from '../../testing/fake-auth';
 
@@ -130,6 +131,22 @@ describe('application shells', () => {
       const messages = [...body.querySelectorAll('nav a')].filter((a) => a.getAttribute('href') === '/messages');
       expect(messages).toHaveLength(2);
       expect(messages.every((a) => a.querySelector('.visually-hidden')!.textContent === ', unread messages')).toBe(true);
+    });
+
+    it('shows a dot on Child Essentials (More on phones) when the co-parent updated a shared detail', async () => {
+      const body = await open('/');
+      expect(body.querySelector('.dot')).toBeNull();
+
+      TestBed.inject(EssentialsUpdatesStore).view.set({ newUpdates: true, sections: [] });
+      TestBed.tick();
+
+      const essentials = body.querySelector('nav.sidenav a[href="/child-essentials"]')!;
+      expect(essentials.querySelector('.dot')).not.toBeNull();
+      expect(essentials.querySelector('.visually-hidden')!.textContent).toBe(', updated by your co-parent');
+      const more = body.querySelector('nav.bottomnav a[href="/more"]')!;
+      expect(more.querySelector('.dot')).not.toBeNull();
+      expect(more.querySelector('.visually-hidden')!.textContent).toBe(', Child Essentials updated');
+      expect(await axeViolations(body)).toEqual([]);
     });
 
     it.each(['/', '/calendar', '/settings', '/more', '/messages'])('has no automatically detectable accessibility issues at %s', async (url) => {

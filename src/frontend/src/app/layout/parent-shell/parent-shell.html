@@ -48,6 +48,10 @@
                 <span class="dot" aria-hidden="true"></span>
                 <span class="visually-hidden">, unread messages</span>
               }
+              @if (item.path === '/child-essentials' && essentials.newUpdates()) {
+                <span class="dot" aria-hidden="true"></span>
+                <span class="visually-hidden">, updated by your co-parent</span>
+              }
               @if (unread(item.path); as count) {
                 <span class="badge" aria-hidden="true">{{ count }}</span>
                 <span class="visually-hidden">, {{ count }} unread (sample data)</span>
@@ -110,10 +114,16 @@
               @if (item.path === '/messages' && chat.hasUnread()) {
                 <span class="dot dot--icon" aria-hidden="true"></span>
               }
+              @if (item.path === '/more' && essentials.newUpdates()) {
+                <span class="dot dot--icon" aria-hidden="true"></span>
+              }
             </span>
             <span>{{ item.label }}</span>
             @if (item.path === '/messages' && chat.hasUnread()) {
               <span class="visually-hidden">, unread messages</span>
+            }
+            @if (item.path === '/more' && essentials.newUpdates()) {
+              <span class="visually-hidden">, Child Essentials updated</span>
             }
           </a>
         </li>
