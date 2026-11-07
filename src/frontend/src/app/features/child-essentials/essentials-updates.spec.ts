@@ -229,18 +229,18 @@ describe('Child Essentials updates (#128)', () => {
     expect(api.essentialsRowsSeen).toHaveBeenCalledWith('family-1', 'kai', 'caregivers', ['cg-ava']);
   });
 
-  it('counts a section taller than the screen as opened once it fills half the screen', async () => {
-    const { fixture, api } = await render();
-    const clothing = (element: Element) => element.querySelector('#clothing-heading') !== null;
+  it('counts a row taller than the screen as seen once it fills half the screen', async () => {
+    const { fixture, el, api } = await render();
+    const shoes = (element: Element) => element === shoeRow(el);
     const screen = { height: 800 } as DOMRectReadOnly;
 
-    FakeObserver.show(clothing, { intersectionRatio: 0.1, rootBounds: screen, intersectionRect: { height: 120 } as DOMRectReadOnly });
+    FakeObserver.show(shoes, { intersectionRatio: 0.1, rootBounds: screen, intersectionRect: { height: 120 } as DOMRectReadOnly });
     await settle(fixture);
-    expect(api.essentialsSectionOpened).not.toHaveBeenCalled();
+    expect(api.essentialsRowsSeen).not.toHaveBeenCalled();
 
-    FakeObserver.show(clothing, { intersectionRatio: 0.3, rootBounds: screen, intersectionRect: { height: 640 } as DOMRectReadOnly });
+    FakeObserver.show(shoes, { intersectionRatio: 0.3, rootBounds: screen, intersectionRect: { height: 640 } as DOMRectReadOnly });
     await settle(fixture);
-    expect(api.essentialsSectionOpened).toHaveBeenCalledWith('family-1', 'kai', 'clothing');
+    expect(api.essentialsRowsSeen).toHaveBeenCalledWith('family-1', 'kai', 'clothing', ['shoeSize']);
   });
 
   it('shows nothing when there’s nothing new', async () => {
