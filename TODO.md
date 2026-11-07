@@ -9,7 +9,7 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
-- [ ] **Shared records (#477, M4).** Connect the Shared Fund proposal form to parent-scoped storage and the approval engine. Verify same-version approval, revision, change requests, and child-session isolation before exposing navigation.
+- [ ] **Shared records (#477, M4).** Add proposal revisions and private notifications. The parent-only preview connects the proposal form to the Shared Funds API. Verify shared-device switching, screen reader use and all four approved layouts before exposing navigation. Contribution reporting and Child Support remain separate slices.
   - [ ] Add contribution reporting, private attachments, acknowledgment history, accessible progress, and privacy-safe notifications.
   - [ ] Review the Child Support record's terminology, access, retention, and official payment-channel guidance before implementing it.
 - [ ] **Child Essentials (#126, M4).** Complete section editing and protected history, concurrent edit handling,

@@ -88,6 +88,7 @@ Each module is **one .NET project** with internal folders (`Domain`, `Applicatio
 | **Calendar** | CalendarEvent, attendees (children), reminders, each parent's one-way Google Calendar copy (#386) | `calendar` |
 | **Memories** | M3 event photos: PhotoBatch, EventPhoto, MemorySettings, 28-day expiry (#403). Later: Memory, MemoryAttachment, MemoryShare, soft delete & purge | `memories` |
 | **Messaging** | M4 parent-to-parent chat (#125, [ADR-0008](../adr/0008-parent-messaging.md)): one conversation per family, immutable messages, read positions; live updates on the `/hubs/chat` SignalR hub | `messaging` |
+| **Shared Records** | Parent-only Shared Fund proposals (#477). Each proposal is tied to one approval request and opens only after both named parents agree. | `shared_records` |
 | **Notifications** | Notification inbox, SignalR push, email digests | `notifications` |
 | **Integrations** (post-MVP) | Other external calendars, if ever needed (Google's one-way copy is in Calendar, #386) | `integrations` |
 

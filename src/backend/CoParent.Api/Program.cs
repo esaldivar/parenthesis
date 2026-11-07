@@ -9,6 +9,7 @@ using CoParent.Modules.Families;
 using CoParent.Modules.Identity;
 using CoParent.Modules.Memories;
 using CoParent.Modules.Messaging;
+using CoParent.Modules.SharedRecords;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +36,8 @@ builder.Services
     .AddFamiliesModule()
     .AddCalendarModule()
     .AddMemoriesModule()
-    .AddMessagingModule();
+    .AddMessagingModule()
+    .AddSharedRecordsModule();
 
 var app = builder.Build();
 
@@ -80,6 +82,7 @@ family.MapApprovalsEndpoints();
 family.MapCalendarEndpoints();
 family.MapMemoriesEndpoints();
 family.MapMessagingEndpoints();
+family.MapSharedRecordsEndpoints();
 
 // Live chat updates (#125). Signed-in parents only; the hub checks family membership itself.
 app.MapMessagingHub();

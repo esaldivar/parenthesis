@@ -34,6 +34,7 @@ COPY src/backend/Modules/CoParent.Modules.Approvals/CoParent.Modules.Approvals.c
 COPY src/backend/Modules/CoParent.Modules.Calendar/CoParent.Modules.Calendar.csproj src/backend/Modules/CoParent.Modules.Calendar/
 COPY src/backend/Modules/CoParent.Modules.Memories/CoParent.Modules.Memories.csproj src/backend/Modules/CoParent.Modules.Memories/
 COPY src/backend/Modules/CoParent.Modules.Messaging/CoParent.Modules.Messaging.csproj src/backend/Modules/CoParent.Modules.Messaging/
+COPY src/backend/Modules/CoParent.Modules.SharedRecords/CoParent.Modules.SharedRecords.csproj src/backend/Modules/CoParent.Modules.SharedRecords/
 RUN dotnet restore src/backend/CoParent.Api/CoParent.Api.csproj -r "$(cat /tmp/rid)" -p:PublishReadyToRun=true
 
 COPY .editorconfig ./

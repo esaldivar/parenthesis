@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { SharedFundProposalDraft, SharedFundProposalForm } from './shared-fund-proposal-form';
+import { SharedFundDraft } from '../../core/api/api';
+import { SharedFundProposalForm } from './shared-fund-proposal-form';
 
 describe('SharedFundProposalForm', () => {
   async function render() {
     const fixture = TestBed.createComponent(SharedFundProposalForm);
     fixture.componentRef.setInput('children', [{ id: 'child-1', displayName: 'Jordan' }]);
-    const proposals: SharedFundProposalDraft[] = [];
+    const proposals: SharedFundDraft[] = [];
     fixture.componentInstance.proposal.subscribe(draft => proposals.push(draft));
     await fixture.whenStable();
 
