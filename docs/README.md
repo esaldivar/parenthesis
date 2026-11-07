@@ -53,7 +53,7 @@ verification; do not substitute the provisional concept or treat design mockups 
 - [PR issue-link requirements](runbooks/pr-issue-links.md).
 - [Local queue](runbooks/claude-local-queue.md) and [owner-testing rollout](runbooks/claude-owner-testing.md).
 - [Screen-reader prerequisites](runbooks/screen-reader-prerequisites.md).
-- Release notes: [v0.2.0](releases/v0.2.0.md) and [v0.3.0 draft](releases/v0.3.0.md).
+- Release notes: [v0.2.0](releases/v0.2.0.md), [v0.3.0 draft](releases/v0.3.0.md) and [v0.4.0 draft](releases/v0.4.0.md).
 
 ## Where code lives
 
