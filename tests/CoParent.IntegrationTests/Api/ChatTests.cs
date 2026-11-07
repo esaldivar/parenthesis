@@ -96,6 +96,24 @@ public sealed class ChatTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Reads_at_the_same_time_never_fail_or_move_the_position_back()
+    {
+        using var f = await FamilyAsync();
+        var messages = new List<Guid>();
+        for (var i = 0; i < 6; i++)
+        {
+            messages.Add((await SendAsync(f.Mom, f, $"Message {i}")).GetProperty("id").GetGuid());
+        }
+
+        // Dad's first reads arrive together from several tabs, newest and oldest mixed: none fails on the first
+        // insert, and the position ends on the newest whatever order they commit in.
+        var reads = await Task.WhenAll(messages.Concat(messages.AsEnumerable().Reverse()).Select(id => ReadAsync(f.Dad, f, id)));
+        Assert.All(reads, response => Assert.Equal(HttpStatusCode.NoContent, response.StatusCode));
+        Assert.Equal(messages[^1], (await ConversationAsync(f.Dad, f)).GetProperty("yourReadThrough").GetGuid());
+        Assert.Equal(0, (await UnreadAsync(f.Dad, f)).GetProperty("count").GetInt32());
+    }
+
+    [Fact]
     public async Task History_comes_in_pages_of_fifty_oldest_first()
     {
         using var f = await FamilyAsync();

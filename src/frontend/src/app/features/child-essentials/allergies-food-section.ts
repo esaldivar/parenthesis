@@ -47,7 +47,7 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
               </div>
             }
             <fieldset [disabled]="saving()">
-              <legend>Allergies and notes and calming strategies</legend>
+              <legend>Allergies and food</legend>
               <label>Allergies and notes <textarea formControlName="allergies" maxlength="1000"></textarea></label>
               <label>
                 <input type="checkbox" formControlName="noKnownAllergies" />
@@ -152,13 +152,14 @@ export class AllergiesFoodSection extends RevisionedSection<AllergiesFoodView, A
     this.exporting.set(true);
     this.exportNotice.set('');
     try {
-      const pdf = await this.api.downloadAllergyPdf(this.familyId(), childId || null);
+      const { pdf, fileName } = await this.api.downloadAllergyPdf(this.familyId(), childId || null);
       if (this.destroyRef.destroyed) return;
 
       const url = URL.createObjectURL(pdf);
       const link = this.document.createElement('a');
       link.href = url;
-      link.download = 'allergies.pdf';
+      // The server's dated name, so each saved copy says when it was made.
+      link.download = fileName;
       try {
         link.click();
         this.exportNotice.set('Allergy PDF ready.');

@@ -81,12 +81,12 @@ internal sealed class TranscriptBuilder(MessagingDbContext db, IFamilyRoster ros
             query = query.Where(m => m.SentAt >= start && m.SentAt < end);
         }
 
-        if (await query.CountAsync(ct) > MaxMessages)
+        // One read, one more than the cap: a message sent meanwhile can't push a transcript past it.
+        var messages = await query.OrderBy(m => m.Sequence).Take(MaxMessages + 1).ToListAsync(ct);
+        if (messages.Count > MaxMessages)
         {
             return null;
         }
-
-        var messages = await query.OrderBy(m => m.Sequence).ToListAsync(ct);
         var names = await roster.ActiveParentNamesAsync(ct);
         var eventIds = messages.Where(m => m.EventId is not null).Select(m => m.EventId!.Value).Distinct().ToList();
         var events = eventIds.Count == 0 ? new Dictionary<Guid, SharedEvent>() : await cards.VisibleToAsync(tenant.MembershipId, eventIds, ct);
