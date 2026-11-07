@@ -479,6 +479,43 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path)).StatusCode);
     }
 
+    [Fact]
+    public async Task Caregiver_ratings_are_independent_and_concurrent_parent_updates_are_preserved()
+    {
+        using var family = await FamilyWithKaiAsync();
+        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/caregivers";
+        var details = new { name = "Family Friend", phone = "214-555-0101", schoolPickup = true };
+        Assert.Equal(HttpStatusCode.NoContent, (await family.Dad.PostAsync(path, new { version = 0, details })).StatusCode);
+        var list = await JsonAsync(await family.Mom.GetAsync(path));
+        var caregiver = list.GetProperty("caregivers")[0];
+        var ratingPath = $"{path}/{caregiver.GetProperty("id").GetGuid()}/rating";
+        Assert.Equal(JsonValueKind.Null, caregiver.GetProperty("averageRating").ValueKind);
+
+        var ratings = await Task.WhenAll(
+            family.Dad.SendAsync(HttpMethod.Put, ratingPath, new { rating = 1 }),
+            family.Mom.SendAsync(HttpMethod.Put, ratingPath, new { rating = 3 }));
+        Assert.All(ratings, response => Assert.Equal(HttpStatusCode.NoContent, response.StatusCode));
+        var dad = (await JsonAsync(await family.Dad.GetAsync(path))).GetProperty("caregivers")[0];
+        var mom = (await JsonAsync(await family.Mom.GetAsync(path))).GetProperty("caregivers")[0];
+        Assert.Equal(2m, dad.GetProperty("averageRating").GetDecimal());
+        Assert.Equal(2m, mom.GetProperty("averageRating").GetDecimal());
+        Assert.Equal(1, dad.GetProperty("myRating").GetInt32());
+        Assert.Equal(3, mom.GetProperty("myRating").GetInt32());
+        Assert.False(dad.TryGetProperty("ratings", out _));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await family.Dad.SendAsync(HttpMethod.Put, ratingPath,
+            new { rating = (int?)null })).StatusCode);
+        var remaining = (await JsonAsync(await family.Mom.GetAsync(path))).GetProperty("caregivers")[0];
+        Assert.Equal(3m, remaining.GetProperty("averageRating").GetDecimal());
+
+        using var outsider = await ApiSession.SignedInAsync(api);
+        Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync(path)).StatusCode);
+        using var tablet = await PairedTabletAsync(family);
+        Assert.Equal(HttpStatusCode.NoContent, (await tablet.PostAsync("/api/device/child-session",
+            new { childId = family.KaiId, pin = KaisPin })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path)).StatusCode);
+    }
+
     private async Task<ApiSession> PairedTabletAsync(TestFamily family)
     {
         var tablet = await ApiSession.StartAsync(api);
