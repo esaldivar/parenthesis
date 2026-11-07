@@ -201,8 +201,10 @@ az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars SharedRecord
 
 - `container create --auth-mode login` needs your own data role on the account (the first role assignment under Event
   photos). The app's role is scoped to this container only; allow up to 10 minutes for it to apply.
-- Attachments are kept for as long as the record: they're removed only when the family closes. Don't add a lifecycle
-  rule to this container. Leave soft delete off, as for event photos.
+- Attachments are kept for as long as the record: they're removed only when the family closes. Closing marks the
+  reports removed; an hourly cleanup then deletes each file and its row, and retries anything it couldn't delete (or
+  waits, if storage isn't configured yet). Don't add a lifecycle rule to this container. Leave soft delete off, as for
+  event photos.
 - Local development and the integration tests use Azurite with `SharedRecords:ConnectionString=UseDevelopmentStorage=true`.
 
 ### Custom domain

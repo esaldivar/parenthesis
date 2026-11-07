@@ -326,7 +326,8 @@ erDiagram
   optional reference amount) and `entries` (each reported contribution or payment: amount, payment date, who was paid,
   status and response time, and its attachment's blob path, type and size; never the file name). `entries` is unique
   on (record, reporter, client request id), so a retried report is recorded once. Attachments live in the private
-  `shared-records` blob container. Everything goes when the family closes.
+  `shared-records` blob container. Everything goes when the family closes: closing sets `entries.removed_at`, and an
+  hourly cleanup deletes each file after the closure commits, then the row.
 
 ## M2 additions (ADR-0006, accepted 2026-10-17)
 The new tables for profile picker sign-in, child PINs, paired child devices, and children that need both parents'

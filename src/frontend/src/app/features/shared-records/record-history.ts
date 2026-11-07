@@ -122,7 +122,7 @@ export class RecordProgress {
             <p class="meta">
               Paid {{ entry.paidOn | date: 'MMM d' : 'UTC' }}@if (kind() === 'fund') { {{ entry.paidTo === 'Vendor' ? ' to a vendor' : ' to co-parent' }}}
               · Submitted {{ entry.submittedAt | date: 'MMM d, h:mm a' }}
-              @if (entry.respondedAt) { · {{ responded(entry) }} {{ entry.respondedAt | date: 'MMM d' }} }
+              @if (entry.respondedAt) { · {{ responded(entry) }} {{ entry.respondedAt | date: 'MMM d, h:mm a' }} }
             </p>
             <div class="row">
               <a class="file" [href]="attachmentUrl()(entry.id)" download>

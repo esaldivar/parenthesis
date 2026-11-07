@@ -1,8 +1,6 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Api } from '../api/api';
-import { AuthStore } from '../auth/auth.store';
+import { parentFamilyRefresh } from '../auth/parent-family-refresh';
 
 /**
  * Whether Shared records waits on this parent (#477): a proposal to agree to, or a report to acknowledge. It drives a
@@ -12,32 +10,10 @@ import { AuthStore } from '../auth/auth.store';
 @Injectable({ providedIn: 'root' })
 export class SharedRecordsAttentionStore {
   private readonly api = inject(Api);
-  private readonly auth = inject(AuthStore);
-  private readonly router = inject(Router, { optional: true });
-
-  private readonly familyId = computed(() => {
-    const family = this.auth.currentFamily();
-    return this.auth.status() === 'signed-in' && family?.role === 'Parent' ? family.id : null;
-  });
 
   readonly count = signal(0);
   readonly needsYou = computed(() => this.count() > 0);
-
-  constructor() {
-    effect(() => {
-      const familyId = this.familyId();
-      untracked(() => {
-        this.count.set(0);
-        if (familyId) void this.refresh();
-      });
-    });
-    this.router?.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => void this.refresh());
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') void this.refresh();
-      });
-    }
-  }
+  private readonly familyId = parentFamilyRefresh(() => this.count.set(0), () => this.refresh());
 
   /** Reads the count again. A failure keeps what's shown: the dot is a hint, not the record. */
   async refresh(): Promise<void> {

@@ -98,6 +98,8 @@ internal sealed class Entry : IFamilyScoped
     public required int AttachmentBytes { get; init; }
     public EntryStatus Status { get; set; }
     public DateTimeOffset? RespondedAt { get; set; }
+    /// <summary>Set when the family closes; the cleanup then deletes the file and this row.</summary>
+    public DateTimeOffset? RemovedAt { get; set; }
 }
 
 internal sealed class SharedRecordsDbContext(DbContextOptions<SharedRecordsDbContext> options, ITenantContext tenant)
@@ -139,7 +141,8 @@ internal sealed class SharedRecordsDbContext(DbContextOptions<SharedRecordsDbCon
             entry.Property(e => e.AttachmentType).HasMaxLength(32);
             entry.HasIndex(e => new { e.FamilyId, e.RecordId, e.SubmittedAt });
             entry.HasIndex(e => new { e.RecordId, e.ReporterId, e.ClientRequestId }).IsUnique();
-            entry.HasQueryFilter(TenantContext.QueryFilterName, e => e.FamilyId == CurrentFamilyId);
+            // Removed reports (a closed family) are invisible everywhere; only the cleanup reads them.
+            entry.HasQueryFilter(TenantContext.QueryFilterName, e => e.FamilyId == CurrentFamilyId && e.RemovedAt == null);
         });
     }
 }

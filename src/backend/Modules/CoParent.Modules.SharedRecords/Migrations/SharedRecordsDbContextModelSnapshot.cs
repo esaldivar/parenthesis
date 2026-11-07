@@ -78,6 +78,10 @@ namespace CoParent.Modules.SharedRecords.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("record_kind");
 
+                    b.Property<DateTimeOffset?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("removed_at");
+
                     b.Property<Guid>("ReporterId")
                         .HasColumnType("uuid")
                         .HasColumnName("reporter_id");

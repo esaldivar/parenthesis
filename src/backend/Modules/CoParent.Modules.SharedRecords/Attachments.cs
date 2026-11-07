@@ -1,7 +1,4 @@
-using Azure;
-using Azure.Identity;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
+using CoParent.Infrastructure.Storage;
 using Microsoft.Extensions.Options;
 
 namespace CoParent.Modules.SharedRecords;
@@ -18,6 +15,9 @@ internal sealed class AttachmentOptions
     public string? ConnectionString { get; set; }
 
     public string ContainerName { get; set; } = "shared-records";
+
+    /// <summary>How often files of removed reports are deleted.</summary>
+    public TimeSpan CleanupInterval { get; set; } = TimeSpan.FromHours(1);
 }
 
 /// <summary>Private storage for payment attachments. Nothing in it is public; the API serves every read.</summary>
@@ -33,88 +33,22 @@ internal interface IAttachmentStore
     Task DeleteAsync(string path, CancellationToken cancellationToken);
 }
 
-/// <summary>
-/// One private Azure Blob container. In Azure the app signs in with its managed identity and the container already
-/// exists (Azure runbook). Locally and in tests a connection string points at Azurite and the container is created on
-/// first use, with no public access.
-/// </summary>
-internal sealed class AzureBlobAttachmentStore : IAttachmentStore, IDisposable
+/// <summary>The Shared records container (<see cref="PrivateBlobContainer"/>).</summary>
+internal sealed class AzureBlobAttachmentStore(IOptions<AttachmentOptions> options) : IAttachmentStore, IDisposable
 {
-    private readonly BlobContainerClient? _container;
-    private readonly SemaphoreSlim _ensure = new(1, 1);
-    private volatile bool _ensured;
+    private readonly PrivateBlobContainer _container = new(
+        options.Value.ConnectionString, options.Value.BlobServiceUri, options.Value.ContainerName);
 
-    public AzureBlobAttachmentStore(IOptions<AttachmentOptions> options)
-    {
-        var settings = options.Value;
-        if (!string.IsNullOrWhiteSpace(settings.ConnectionString))
-        {
-            _container = new BlobContainerClient(settings.ConnectionString, settings.ContainerName);
-        }
-        else if (settings.BlobServiceUri is { } endpoint)
-        {
-            _container = new BlobServiceClient(endpoint, new DefaultAzureCredential()).GetBlobContainerClient(settings.ContainerName);
-            _ensured = true;
-        }
-    }
+    public bool IsConfigured => _container.IsConfigured;
 
-    public bool IsConfigured => _container is not null;
+    public void Dispose() => _container.Dispose();
 
-    public void Dispose() => _ensure.Dispose();
+    public Task PutAsync(string path, byte[] content, string contentType, CancellationToken cancellationToken) =>
+        _container.PutAsync(path, content, contentType, cancellationToken);
 
-    public async Task PutAsync(string path, byte[] content, string contentType, CancellationToken cancellationToken)
-    {
-        var container = await ContainerAsync(cancellationToken);
-        await container.GetBlobClient(path).UploadAsync(
-            new BinaryData(content),
-            new BlobUploadOptions { HttpHeaders = new BlobHttpHeaders { ContentType = contentType } },
-            cancellationToken);
-    }
+    public Task<Stream?> OpenAsync(string path, CancellationToken cancellationToken) => _container.OpenAsync(path, cancellationToken);
 
-    public async Task<Stream?> OpenAsync(string path, CancellationToken cancellationToken)
-    {
-        var container = await ContainerAsync(cancellationToken);
-        try
-        {
-            var download = await container.GetBlobClient(path).DownloadStreamingAsync(cancellationToken: cancellationToken);
-            return download.Value.Content;
-        }
-        catch (RequestFailedException failure) when (failure.Status == 404)
-        {
-            return null;
-        }
-    }
-
-    public async Task DeleteAsync(string path, CancellationToken cancellationToken)
-    {
-        var container = await ContainerAsync(cancellationToken);
-        await container.GetBlobClient(path).DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots, cancellationToken: cancellationToken);
-    }
-
-    private async Task<BlobContainerClient> ContainerAsync(CancellationToken cancellationToken)
-    {
-        var container = _container ?? throw new InvalidOperationException("Shared records storage isn't configured.");
-        if (_ensured)
-        {
-            return container;
-        }
-
-        await _ensure.WaitAsync(cancellationToken);
-        try
-        {
-            if (!_ensured)
-            {
-                await container.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
-                _ensured = true;
-            }
-        }
-        finally
-        {
-            _ensure.Release();
-        }
-
-        return container;
-    }
+    public Task DeleteAsync(string path, CancellationToken cancellationToken) => _container.DeleteAsync(path, cancellationToken);
 }
 
 /// <summary>The file types a payment attachment may be, told apart by their content, never by name or browser label.</summary>

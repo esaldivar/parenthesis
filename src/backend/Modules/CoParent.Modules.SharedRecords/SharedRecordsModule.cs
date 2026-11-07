@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Families.Contracts;
+using CoParent.Modules.SharedRecords.Contracts;
 using CoParent.SharedKernel.Accounts;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Security;
@@ -25,6 +26,8 @@ public static class SharedRecordsModule
         services.AddScoped<IParentDepartureHandler, SharedRecordsDeparture>();
         services.AddOptions<AttachmentOptions>().BindConfiguration(AttachmentOptions.Section);
         services.AddSingleton<IAttachmentStore, AzureBlobAttachmentStore>();
+        services.AddSingleton<ISharedRecordsCleanup, AttachmentCleanup>();
+        services.AddHostedService<AttachmentCleanupWorker>();
         // Each report uploads a file of up to 10 MB, so each parent gets a bounded hourly allowance.
         services.Configure<RateLimiterOptions>(options => options.AddPolicy(RecordEndpoints.UploadRateLimitPolicy, context =>
             RateLimitPartition.GetFixedWindowLimiter(
