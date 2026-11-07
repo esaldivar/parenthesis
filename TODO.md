@@ -10,7 +10,12 @@ that points back here.
   and in-page update indicators.
   - [ ] Verify shared and household Routines in both themes, including protected history, revision acceptance, and stop sharing. Coordinate household update indicators with #128.
   - [ ] Verify the allergy PDF with one child and all children, including authorization, pagination and printable output.
-  - [ ] Implement the full #128 in-page update flow (navigation dot, first-visit banners, section dots and row highlights).
+  - [x] #128 in-page update flow for School, Allergies & Food, Clothing & Shoes and What Helps: navigation dot,
+    first-visit banners, child and section dots, row highlights (November 7, 2026).
+  - [ ] Extend #128 update notices to Routines, Medication (values stay in the protected record), Shared Caregivers
+    and Emergency Contacts as each section's revision flow ships.
+  - [ ] When the overview becomes section tiles (handoff mockup), move each section's dot to its tile and clear it on
+    opening the tile; today the dot clears when the section comes on screen.
   - [ ] Complete visual polish with the handoff illustrations and verify the Clothing & Shoes, What Helps, School, and Allergies & Food flows on the development site in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'

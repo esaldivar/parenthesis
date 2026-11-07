@@ -660,6 +660,30 @@ export interface ChatConversation {
 }
 
 /** `count` stops at 99. */
+/** A shared Child Essentials section, as the update notices (#128) name it. */
+export type EssentialsSectionId = 'school' | 'allergiesFood' | 'clothing' | 'whatHelps';
+
+/** A child's section with an update this parent hasn't looked at: its dot, and the changed rows not yet seen. */
+export interface EssentialsSectionUpdates {
+  readonly childId: string;
+  readonly section: EssentialsSectionId;
+  readonly unopened: boolean;
+  readonly rows: readonly string[];
+}
+
+/** This parent's Child Essentials indicators: the navigation dot, then each section's dot and rows. */
+export interface EssentialsUpdates {
+  readonly newUpdates: boolean;
+  readonly sections: readonly EssentialsSectionUpdates[];
+}
+
+/** One banner: a child's section, and the fields changed there since the parent last opened Child Essentials. */
+export interface EssentialsBanner {
+  readonly childId: string;
+  readonly section: EssentialsSectionId;
+  readonly fields: readonly string[];
+}
+
 export interface ChatUnread {
   readonly count: number;
   readonly hasUnread: boolean;
@@ -1195,6 +1219,15 @@ export class Api {
   };
   savedTranscriptUrl = (familyId: string, transcriptId: string, download = false) =>
     `/api/families/${familyId}/chat/transcripts/${transcriptId}/pdf${download ? '?download=true' : ''}`;
+  // Child Essentials update indicators (#128): identifiers only, never values.
+  essentialsUpdates = (familyId: string) =>
+    this.call(this.http.get<EssentialsUpdates>(`/api/families/${familyId}/essentials/updates`));
+  essentialsOpened = (familyId: string) =>
+    this.call(this.http.post<EssentialsBanner[]>(`/api/families/${familyId}/essentials/updates/opened`, {}));
+  essentialsSectionOpened = (familyId: string, childId: string, section: EssentialsSectionId) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/essentials/updates/sections`, { childId, section }));
+  essentialsRowsSeen = (familyId: string, childId: string, section: EssentialsSectionId, fields: readonly string[]) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/essentials/updates/rows`, { childId, section, fields }));
   chatUnread = (familyId: string) => this.call(this.http.get<ChatUnread>(`/api/families/${familyId}/chat/unread`));
   typing = (familyId: string) => this.call(this.http.post<void>(`/api/families/${familyId}/chat/typing`, {}));
 

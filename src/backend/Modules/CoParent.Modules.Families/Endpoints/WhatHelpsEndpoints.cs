@@ -113,6 +113,11 @@ internal static class WhatHelpsEndpoints
                 CalmingStrategies = values.CalmingStrategies,
             };
             db.WhatHelpsRevisions.Add(next);
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.WhatHelps, next.Revision,
+                EssentialsUpdateEndpoints.Changed(
+                ("comfortItems", current.Values.ComfortItems, values.ComfortItems),
+                ("calmingStrategies", current.Values.CalmingStrategies, values.CalmingStrategies)),
+                next.EditedAt, ct);
             await db.SaveChangesAsync(ct);
             return TypedResults.Ok(WhatHelpsView.From(next));
         }, cancellationToken);
