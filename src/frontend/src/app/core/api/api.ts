@@ -82,6 +82,7 @@ export interface CaregiverList {
 }
 
 export interface EmergencyContact {
+  readonly id?: string | null;
   readonly name: string;
   readonly relationship: string;
   readonly phone: string;

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Families.Endpoints;
 
-internal sealed record EmergencyContact(string Name, string Relationship, string Phone, string? Address, bool CallFirst);
+internal sealed record EmergencyContact(string Name, string Relationship, string Phone, string? Address, bool CallFirst, Guid? Id = null);
 internal sealed record EmergencyContactsView(int Version, IReadOnlyList<EmergencyContact> Contacts);
 internal sealed record SaveEmergencyContactsRequest(int? Version, IReadOnlyList<EmergencyContact?>? Contacts);
 
@@ -71,7 +71,7 @@ internal static class EmergencyContactsEndpoints
                 continue;
             }
 
-            var digits = new string(phone.Where(char.IsAsciiDigit).ToArray());
+            var digits = PhoneDigits(phone);
             if (digits.Length is < 7 or > 15 || phone.Any(c => !char.IsAsciiDigit(c) && c is not ('+' or ' ' or '-' or '(' or ')' or '.')))
             {
                 errors["phone"] = ["Enter a phone number with 7 to 15 digits."];
@@ -81,7 +81,7 @@ internal static class EmergencyContactsEndpoints
                 errors["phone"] = ["That phone number is already on this child’s emergency contact list."];
             }
 
-            contacts.Add(new(name, relationship, phone, address, contact.CallFirst));
+            contacts.Add(new(name, relationship, phone, address, contact.CallFirst, contact.Id));
         }
 
         if (contacts.Count(contact => contact.CallFirst) > 1)
@@ -110,8 +110,43 @@ internal static class EmergencyContactsEndpoints
                 return TypedResults.Conflict(current);
             }
 
-            contacts = contacts.OrderByDescending(contact => contact.CallFirst).ToList();
-            if (contacts.SequenceEqual(current.Contacts))
+            var savedContacts = contacts.OrderByDescending(contact => contact.CallFirst).ToList();
+            if (savedContacts.SequenceEqual(current.Contacts))
+            {
+                return TypedResults.Ok(current);
+            }
+
+            var previousById = current.Contacts.Where(contact => contact.Id.HasValue)
+                .ToDictionary(contact => contact.Id!.Value);
+            var previousByPhone = current.Contacts.ToDictionary(contact => PhoneDigits(contact.Phone), StringComparer.Ordinal);
+            var retained = new Dictionary<EmergencyContact, string>();
+            var changed = new List<string>();
+            var ids = new HashSet<Guid>();
+            for (var index = 0; index < savedContacts.Count; index++)
+            {
+                var contact = savedContacts[index];
+                var previous = contact.Id is Guid requestedId
+                    ? previousById.GetValueOrDefault(requestedId)
+                    : previousByPhone.GetValueOrDefault(PhoneDigits(contact.Phone));
+                if (contact.Id.HasValue && previous is null)
+                {
+                    return TypedResults.BadRequest();
+                }
+
+                var id = previous?.Id ?? Guid.NewGuid();
+                if (!ids.Add(id) || (previous is not null && !retained.TryAdd(previous, id.ToString())))
+                {
+                    return TypedResults.BadRequest();
+                }
+
+                savedContacts[index] = contact with { Id = id };
+                if (previous is null || (previous with { Id = id }) != savedContacts[index])
+                {
+                    changed.Add(id.ToString());
+                }
+            }
+
+            if (savedContacts.SequenceEqual(current.Contacts))
             {
                 return TypedResults.Ok(current);
             }
@@ -123,23 +158,34 @@ internal static class EmergencyContactsEndpoints
             }
 
             row.Version++;
-            row.ContactsJson = JsonSerializer.Serialize(contacts);
-            // Contacts have no ids, and a notice never holds values: a changed contact is named by its place in the list.
-            var changed = contacts.Select((contact, index) => (contact, index))
-                .Where(item => !current.Contacts.Contains(item.contact))
-                .Select(item => $"contact-{item.index}").ToList();
-            var removed = current.Contacts.Any(contact => !contacts.Contains(contact));
-            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.EmergencyContacts, row.Version,
-                removed ? [.. changed, "removed"] : changed, clock.GetUtcNow(), ct, rows: changed);
-            for (var gone = contacts.Count; gone < current.Contacts.Count; gone++)
+            row.ContactsJson = JsonSerializer.Serialize(savedContacts);
+            // Convert outstanding positional markers on the first write of a legacy list.
+            // Removed contacts no longer have a row to highlight.
+            var previousKeys = current.Contacts.Select((contact, index) => (contact, index))
+                .ToDictionary(item => item.contact.Id?.ToString() ?? $"contact-{item.index}", item => item.contact);
+            var removed = retained.Count != current.Contacts.Count;
+            if (removed || current.Contacts.Any(contact => !contact.Id.HasValue))
             {
-                await EssentialsUpdateEndpoints.ForgetRowAsync(db, childId, EssentialsSections.EmergencyContacts, $"contact-{gone}", ct);
+                var pending = await db.EssentialsUpdates.Where(update =>
+                    update.ChildProfileId == childId && update.Section == EssentialsSections.EmergencyContacts &&
+                    update.PendingFields.Count > 0).ToListAsync(ct);
+                foreach (var update in pending)
+                {
+                    update.PendingFields = update.PendingFields
+                        .Where(key => previousKeys.TryGetValue(key, out var contact) && retained.ContainsKey(contact))
+                        .Select(key => retained[previousKeys[key]]).ToList();
+                }
             }
 
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.EmergencyContacts, row.Version,
+                removed ? [.. changed, "removed"] : changed, clock.GetUtcNow(), ct, rows: changed);
+
             await db.SaveChangesAsync(ct);
-            return TypedResults.Ok(new EmergencyContactsView(row.Version, contacts));
+            return TypedResults.Ok(new EmergencyContactsView(row.Version, savedContacts));
         }, cancellationToken);
     }
+
+    private static string PhoneDigits(string phone) => new(phone.Where(char.IsAsciiDigit).ToArray());
 
     private static EmergencyContactsView View(EmergencyContacts? row) =>
         row is null ? new(0, []) : new(row.Version, JsonSerializer.Deserialize<EmergencyContact[]>(row.ContactsJson) ?? []);
