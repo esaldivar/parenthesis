@@ -1,6 +1,7 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Icon } from '../../shared/icon/icon';
 import { OnScreen, sectionUpdates } from './essentials-updates';
 import { RevisionedSection } from './revisioned-section';
 import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
@@ -8,7 +9,7 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
 @Component({
   selector: 'app-school-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
+  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
   template: `
     <section aria-labelledby="school-heading">
       <h3 id="school-heading">School
@@ -52,9 +53,9 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
         } @else {
           <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           <div class="actions">
-            <button type="button" (click)="edit(saved)">Edit School</button>
-            <button type="button" [attr.aria-expanded]="historyOpen()" aria-controls="school-history"
-              (click)="toggleHistory()">History</button>
+            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />Edit<span class="visually-hidden"> School</span></button>
+            <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="school-history"
+              (click)="toggleHistory()"><app-icon name="history" [size]="18" />History</button>
           </div>
           <p role="status">{{ notice() }}</p>
         }

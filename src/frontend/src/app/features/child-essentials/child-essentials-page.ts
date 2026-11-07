@@ -1,5 +1,6 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, signal, untracked, viewChild,
+  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal,
+  untracked, viewChild, viewChildren,
 } from '@angular/core';
 import { Api, Child, EssentialsBanner, EssentialsSectionId } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -16,6 +17,7 @@ interface ShownBanner {
   readonly text: string;
   readonly bg: string;
   readonly fg: string;
+  readonly art: string;
 }
 
 import { AllergiesFoodSection } from './allergies-food-section';
@@ -37,7 +39,8 @@ import { WhatHelpsSection } from './what-helps-section';
       (focusout)="resume()">
       @for (banner of banners(); track banner.key) {
         <div class="banner" [style.--banner-bg]="banner.bg" [style.--banner-fg]="banner.fg">
-          <span class="banner-dot" aria-hidden="true"></span>
+          <svg class="banner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="banner.art" /></svg>
           <p>{{ banner.text }}</p>
           <button type="button" class="dismiss" [attr.aria-label]="'Dismiss: ' + banner.text" (click)="dismiss(banner.key)">
             <app-icon name="close" [size]="20" />
@@ -51,21 +54,31 @@ import { WhatHelpsSection } from './what-helps-section';
       <p role="alert">Child profiles couldn’t be loaded.</p>
       <button type="button" (click)="retryLoad()">Try again</button>
     } @else if (selectedChild(); as child) {
-      <div class="layout">
+      <div class="layout" [class.focused]="openSection() !== null">
         <div class="children" role="group" aria-label="Choose a child">
           @for (item of children(); track item.id) {
-            <button type="button" [attr.aria-pressed]="child.id === item.id" (click)="selectedId.set(item.id)">
+            <button type="button" [attr.aria-pressed]="child.id === item.id" (click)="selectChild(item.id)">
               <app-avatar [name]="item.firstName" [personId]="item.id" />
-              {{ item.firstName }}
+              <span class="child-name">{{ item.firstName }}</span>
               @if (updates.unopened(item.id)) {
                 <span class="child-dot" aria-hidden="true"></span>
                 <span class="visually-hidden">, has updates</span>
+              }
+              @if (child.id === item.id) {
+                <app-icon class="child-check" name="check" [size]="20" />
               }
             </button>
           }
         </div>
         <section aria-labelledby="essentials-heading">
           <h2 id="essentials-heading">{{ child.firstName }}’s essentials</h2>
+          <!-- Phones show one section at a time (docs/design/child-essentials-handoff.md); this goes back to them all. -->
+          @if (openSection() !== null) {
+            <button type="button" class="back" (click)="closeSection()">
+              <app-icon name="chevron-left" [size]="20" />
+              All of {{ child.firstName }}’s essentials
+            </button>
+          }
           @if (familyId(); as family) {
             @for (profile of [child]; track profile.id) {
               <div class="section-tiles">
@@ -74,16 +87,16 @@ import { WhatHelpsSection } from './what-helps-section';
                     [style.--tile-bg]="tile.bg" [style.--tile-fg]="tile.fg"
                     [style.--tile-dark-bg]="tile.darkBg" [style.--tile-dark-fg]="tile.darkFg">
                     <summary>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path [attr.d]="tile.art" />
-                      </svg>
-                      <span>{{ tile.name }}</span>
+                      <img class="tile-art" [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
+                      <span class="tile-text">
+                        <span class="tile-name">{{ tile.name }}</span><span class="visually-hidden">, </span>
+                        <span class="tile-about">{{ tile.about }}</span>
+                      </span>
                       @if (!disclosure.open && tileHasUpdate(child.id, tile.section)) {
                         <span class="child-dot" aria-hidden="true"></span>
                         <span class="visually-hidden">, updated</span>
                       }
-                      <app-icon class="tile-chevron" name="chevron-down" [size]="18" />
+                      <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
                     </summary>
                     <div class="tile-content">
                       @switch (tile.section) {
@@ -109,82 +122,139 @@ import { WhatHelpsSection } from './what-helps-section';
   `,
   styles: `
     :host { display: block; }
-    .layout, .children { display: grid; gap: 1rem; align-content: start; }
-    .section-tiles { display: grid; gap: 0.75rem; }
+    h1:focus { outline: none; }
+    .layout { display: grid; gap: 1rem; align-content: start; }
+    .layout > section { display: grid; gap: 0.75rem; align-content: start; min-width: 0; }
+    h2 { margin: 0; }
+
+    /* Children: side by side on phones, a column of cards beside the sections on wider screens. */
+    .children { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .children button {
+      flex: 1 1 8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: 52px;
+      padding: 0.5rem 0.875rem;
+      border: 1px solid var(--color-outline);
+      border-radius: 1rem;
+      background: var(--color-surface);
+      color: var(--color-text);
+      font: inherit;
+      font-size: 1.0625rem;
+      text-align: start;
+      cursor: pointer;
+    }
+    .children button[aria-pressed='true'] {
+      border-color: transparent;
+      background: var(--color-selected, var(--color-surface-soft));
+      font-weight: 700;
+    }
+    .child-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .child-check { color: var(--color-text); }
+
+    /* Section tiles: tinted, with a title, what it holds, its illustration and a chevron. */
+    .section-tiles { display: grid; gap: 0.75rem; align-items: start; }
     .section-tiles > details {
       min-width: 0;
+      border-radius: 1rem;
       --essentials-tile-bg: light-dark(var(--tile-bg), var(--tile-dark-bg));
       --essentials-tile-fg: light-dark(var(--tile-fg), var(--tile-dark-fg));
+      background: var(--essentials-tile-bg);
+      color: var(--essentials-tile-fg);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
     }
     .section-tiles summary {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      min-height: 56px;
-      padding: 0.65rem 0.85rem;
-      border: 1px solid currentColor;
-      border-radius: 0.75rem;
-      background: var(--essentials-tile-bg);
-      color: var(--essentials-tile-fg);
-      font-weight: 700;
+      min-height: 5.25rem;
+      padding: 0.5rem 0.75rem 0.5rem 1rem;
+      border-radius: 1rem;
       cursor: pointer;
       list-style: none;
     }
     summary::-webkit-details-marker { display: none; }
     summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
-    summary svg { width: 1.75rem; height: 1.75rem; flex: none; }
-    .tile-chevron { margin-inline-start: auto; flex: none; }
-    summary .child-dot { margin-inline-start: auto; background: currentColor; }
-    summary .child-dot ~ .tile-chevron { margin-inline-start: 0; }
-    details[open] .tile-chevron { transform: rotate(180deg); }
-    .tile-content { padding-block-start: 0.5rem; }
-    button {
-      display: flex;
+    .tile-text { display: grid; gap: 0.125rem; flex: 1; min-width: 0; }
+    .tile-name { font-size: 1.25rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+    .tile-about { font-size: 0.875rem; line-height: 1.35; }
+    .tile-art { order: 1; flex: none; width: 5.5rem; height: 4.25rem; object-fit: contain; }
+    .tile-chevron { order: 2; flex: none; }
+    summary .child-dot { order: 1; margin-inline-start: 0; background: currentColor; }
+    details[open] .tile-chevron { transform: rotate(90deg); }
+    .tile-content { padding: 0 0.75rem 0.75rem; }
+
+    .back {
+      display: inline-flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.25rem;
+      justify-self: start;
       min-height: 44px;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid var(--color-outline);
-      border-radius: 0.75rem;
-      background: var(--color-surface);
+      padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+      border: 0;
+      border-radius: 0.5rem;
+      background: transparent;
       color: var(--color-text);
       font: inherit;
-      text-align: start;
+      font-weight: 600;
       cursor: pointer;
     }
-    h1:focus { outline: none; }
+
     .banners { display: grid; gap: 0.5rem; }
     .banner:last-child { margin-block-end: 1rem; }
     .banner {
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      min-height: 3.25rem;
       padding: 0.25rem 0.25rem 0.25rem 1rem;
-      border: 1px solid var(--banner-fg);
-      border-radius: 0.75rem;
+      border: 1px solid color-mix(in srgb, var(--banner-fg) 35%, transparent);
+      border-radius: 1rem;
       background: var(--banner-bg);
       color: var(--banner-fg);
     }
-    .banner p { flex: 1; margin: 0; font-weight: 600; overflow-wrap: anywhere; }
-    .banner-dot, .child-dot { flex: none; width: 0.625rem; height: 0.625rem; border-radius: 50%; background: currentColor; }
-    .child-dot { margin-inline-start: auto; background: var(--color-action); }
+    .banner p { flex: 1; margin: 0; font-size: 1.0625rem; font-weight: 600; overflow-wrap: anywhere; }
+    .banner-icon { flex: none; width: 1.75rem; height: 1.75rem; }
+    .child-dot { flex: none; width: 0.625rem; height: 0.625rem; border-radius: 50%; background: var(--color-action); }
     .banner .dismiss {
       display: inline-grid;
       place-items: center;
       flex: none;
       width: 44px;
+      min-height: 44px;
       padding: 0;
       border: 0;
+      border-radius: 0.75rem;
       background: transparent;
       color: inherit;
+      cursor: pointer;
     }
-    .banner .dismiss:focus-visible, button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
-    button[aria-pressed='true'] {
-      background: var(--color-surface-soft);
-      font-weight: 700;
+    button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+
+    /* Phones: one section at a time, as its own screen, with a way back. */
+    @media (max-width: 47.99rem) {
+      .focused .children, .focused details:not([open]) { display: none; }
+      .focused h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     }
-    @media (min-width: 768px) {
-      .layout { grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr); }
+    @media (min-width: 48rem) {
+      .back { display: none; }
+      .layout { grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr); }
+      .children { flex-direction: column; flex-wrap: nowrap; }
+      .children button { flex: none; min-height: 64px; }
+      h2 { font-size: 1.75rem; }
+    }
+    /* Wide enough for two columns of tiles; an open one takes the whole row. */
+    .layout > section { container-type: inline-size; }
+    @container (min-width: 46rem) {
+      .section-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section-tiles > details[open] { grid-column: 1 / -1; }
+      .section-tiles summary { min-height: 6rem; gap: 1rem; padding-inline-start: 0.75rem; }
+      .tile-art { order: -1; width: 7rem; height: 5rem; }
+      .tile-name { font-size: 1.375rem; }
+    }
+    @media (forced-colors: active) {
+      .section-tiles > details, .banner { border: 1px solid CanvasText; }
     }
   `,
 })
@@ -192,7 +262,11 @@ export class ChildEssentialsPage {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   protected readonly updates = inject(EssentialsUpdatesStore);
+  private readonly injector = inject(Injector);
   private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
+  private readonly disclosures = viewChildren<ElementRef<HTMLDetailsElement>>('disclosure');
+  /** The section shown on its own on a phone. */
+  protected readonly openSection = signal<EssentialsSectionId | null>(null);
   private readonly opened = signal<readonly EssentialsBanner[] | null>(null);
   private readonly dismissed = signal<ReadonlySet<string>>(new Set());
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -219,27 +293,28 @@ export class ChildEssentialsPage {
   );
 
   protected readonly tiles = [
-    { section: 'school', name: ESSENTIALS_SECTIONS.school.name, art: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6M12 7v3',
+    { section: 'school', name: ESSENTIALS_SECTIONS.school.name, image: 'school', about: 'Grade, teacher, parent concerns', art: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6M12 7v3',
       bg: '#e1edf9', fg: '#233f63', darkBg: '#263b54', darkFg: '#dbeaff' },
-    { section: 'allergiesFood', name: ESSENTIALS_SECTIONS.allergiesFood.name, art: 'M3 13h18c-1 5-4 7-9 7s-8-2-9-7zM12 12c0-5 3-8 8-8-1 5-4 8-8 8z',
+    { section: 'allergiesFood', name: ESSENTIALS_SECTIONS.allergiesFood.name, image: 'allergies', about: 'Allergies and food preferences', art: 'M3 13h18c-1 5-4 7-9 7s-8-2-9-7zM12 12c0-5 3-8 8-8-1 5-4 8-8 8z',
       bg: '#faedc5', fg: '#614718', darkBg: '#493b24', darkFg: '#fff0c7' },
-    { section: 'routines', name: ESSENTIALS_SECTIONS.routines.name, art: 'M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5zM17 4v6m-3-3h6',
+    { section: 'routines', name: ESSENTIALS_SECTIONS.routines.name, image: 'routines', about: 'Bedtime and naps, shared and at each home', art: 'M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5zM17 4v6m-3-3h6',
       bg: '#e0ebdb', fg: '#344f36', darkBg: '#2c4230', darkFg: '#dfefd9' },
-    { section: 'clothing', name: ESSENTIALS_SECTIONS.clothing.name, art: 'M9 4 4 6l-2 5 4 2 2-3v10h8V10l2 3 4-2-2-5-5-2c-1 4-5 4-6 0z',
+    { section: 'clothing', name: ESSENTIALS_SECTIONS.clothing.name, image: 'clothing', about: 'Sizes and fit notes', art: 'M9 4 4 6l-2 5 4 2 2-3v10h8V10l2 3 4-2-2-5-5-2c-1 4-5 4-6 0z',
       bg: '#ebe3fa', fg: '#4f386d', darkBg: '#403451', darkFg: '#f1e5ff' },
-    { section: 'whatHelps', name: ESSENTIALS_SECTIONS.whatHelps.name, art: 'M12 20S3 15 3 9a4 4 0 0 1 9-1 4 4 0 0 1 9 1c0 6-9 11-9 11z',
+    { section: 'whatHelps', name: ESSENTIALS_SECTIONS.whatHelps.name, image: 'what-helps', about: 'Comfort items and calming strategies', art: 'M12 20S3 15 3 9a4 4 0 0 1 9-1 4 4 0 0 1 9 1c0 6-9 11-9 11z',
       bg: '#f8e2d4', fg: '#643d2b', darkBg: '#50382f', darkFg: '#ffe9de' },
-    { section: 'caregivers', name: ESSENTIALS_SECTIONS.caregivers.name, art: 'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8 1a3 3 0 1 0 0-6M2 20v-2a6 6 0 0 1 12 0v2m2-6a5 5 0 0 1 6 5v1',
+    { section: 'caregivers', name: ESSENTIALS_SECTIONS.caregivers.name, image: 'caregivers', about: 'Sitters and helpers, school pickup', art: 'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8 1a3 3 0 1 0 0-6M2 20v-2a6 6 0 0 1 12 0v2m2-6a5 5 0 0 1 6 5v1',
       bg: '#dcefeb', fg: '#24534c', darkBg: '#254542', darkFg: '#def7f1' },
-    { section: 'emergencyContacts', name: ESSENTIALS_SECTIONS.emergencyContacts.name, art: 'M5 3h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 2-2 3-4 2C9 19 5 15 3 7c-1-2 0-4 2-4z',
+    { section: 'emergencyContacts', name: ESSENTIALS_SECTIONS.emergencyContacts.name, image: 'emergency', about: 'Who to call, and who first', art: 'M5 3h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 2-2 3-4 2C9 19 5 15 3 7c-1-2 0-4 2-4z',
       bg: '#f7e0e8', fg: '#66384a', darkBg: '#503342', darkFg: '#ffe6ef' },
   ] as const;
 
-  private bannerTint(section: EssentialsSectionId): Pick<ShownBanner, 'bg' | 'fg'> {
+  private bannerTint(section: EssentialsSectionId): Pick<ShownBanner, 'bg' | 'fg' | 'art'> {
     const tile = this.tiles.find((item) => item.section === (section === 'householdRoutines' ? 'routines' : section))!;
     return {
       bg: `light-dark(${tile.bg}, ${tile.darkBg})`,
       fg: `light-dark(${tile.fg}, ${tile.darkFg})`,
+      art: tile.art,
     };
   }
 
@@ -249,9 +324,39 @@ export class ChildEssentialsPage {
   }
 
   protected tileToggled(event: Event, childId: string, section: EssentialsSectionId): void {
-    if ((event.currentTarget as HTMLDetailsElement).open) {
+    const tile = event.currentTarget as HTMLDetailsElement;
+    if (tile.open) {
       this.updates.sectionOpened(childId, section);
+      if (this.oneAtATime()) {
+        // A phone shows the open section as its own screen, so only one is open.
+        for (const other of this.disclosures()) {
+          if (other.nativeElement !== tile) other.nativeElement.open = false;
+        }
+        this.openSection.set(section);
+        tile.scrollIntoView?.({ block: 'start' });
+      }
+    } else if (this.openSection() === section) {
+      this.openSection.set(null);
     }
+  }
+
+  /** Back to all of the child's sections; focus returns to the one that was open. */
+  protected closeSection(): void {
+    const open = this.disclosures().find((tile) => tile.nativeElement.open)?.nativeElement;
+    this.openSection.set(null);
+    if (!open) return;
+    open.open = false;
+    // After the page shows every section again: a hidden summary can't take focus.
+    afterNextRender({ read: () => open.querySelector('summary')?.focus() }, { injector: this.injector });
+  }
+
+  private oneAtATime(): boolean {
+    return typeof matchMedia === 'function' && matchMedia('(max-width: 47.99rem)').matches;
+  }
+
+  protected selectChild(id: string): void {
+    this.openSection.set(null);
+    this.selectedId.set(id);
   }
 
   protected retryLoad(): void {
