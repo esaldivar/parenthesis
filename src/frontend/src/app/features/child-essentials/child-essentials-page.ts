@@ -35,7 +35,7 @@ import { WhatHelpsSection } from './what-helps-section';
           @if (familyId(); as family) {
             @for (profile of [child]; track profile.id) {
               <app-school-section [familyId]="family" [childId]="profile.id" />
-              <app-allergies-food-section [familyId]="family" [childId]="profile.id" />
+              <app-allergies-food-section [familyId]="family" [childId]="profile.id" [children]="children()" />
               <app-routines-section [familyId]="family" [childId]="profile.id" />
               <app-clothing-section [familyId]="family" [childId]="profile.id" />
               <app-what-helps-section [familyId]="family" [childId]="profile.id" />
