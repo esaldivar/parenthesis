@@ -6,6 +6,8 @@
     <ProjectReference Include="..\CoParent.SharedKernel\CoParent.SharedKernel.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="MailKit" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />

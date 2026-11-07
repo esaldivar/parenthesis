@@ -52,6 +52,10 @@
                 <span class="dot" aria-hidden="true"></span>
                 <span class="visually-hidden">, updated by your co-parent</span>
               }
+              @if (item.path === '/shared-records' && records.needsYou()) {
+                <span class="dot" aria-hidden="true"></span>
+                <span class="visually-hidden">, waiting on your response</span>
+              }
               @if (unread(item.path); as count) {
                 <span class="dot" aria-hidden="true"></span>
                 <span class="visually-hidden">, {{ count }} unread (sample data)</span>
@@ -114,7 +118,7 @@
               @if (item.path === '/messages' && chat.hasUnread()) {
                 <span class="dot dot--icon" aria-hidden="true"></span>
               }
-              @if (item.path === '/more' && essentials.newUpdates()) {
+              @if (item.path === '/more' && (essentials.newUpdates() || records.needsYou())) {
                 <span class="dot dot--icon" aria-hidden="true"></span>
               }
             </span>
@@ -124,6 +128,9 @@
             }
             @if (item.path === '/more' && essentials.newUpdates()) {
               <span class="visually-hidden">, Child Essentials updated</span>
+            }
+            @if (item.path === '/more' && records.needsYou()) {
+              <span class="visually-hidden">, Shared records waiting on your response</span>
             }
           </a>
         </li>

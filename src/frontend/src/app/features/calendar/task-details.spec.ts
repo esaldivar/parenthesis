@@ -75,6 +75,8 @@ describe('tasks on the calendar', () => {
 
   function flushEssentialsDot() {
     http.match((r) => r.url.endsWith('/essentials/updates')).forEach((r) => r.flush({ newUpdates: false, sections: [] }));
+    // And for the Shared records dot (#477); nothing waiting.
+    http.match((r) => r.url.endsWith('/shared-records/attention')).forEach((r) => r.flush({ count: 0 }));
   }
 
   const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();

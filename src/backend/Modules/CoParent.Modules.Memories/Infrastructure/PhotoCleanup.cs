@@ -1,3 +1,4 @@
+using CoParent.Infrastructure.Hosting;
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Memories.Contracts;
 using CoParent.Modules.Memories.Domain;
@@ -136,23 +137,8 @@ internal sealed partial class PhotoCleanup(IServiceScopeFactory scopes, IPhotoSt
 internal sealed partial class PhotoCleanupWorker(
     IEventPhotoCleanup cleanup, IOptions<EventPhotoOptions> options, TimeProvider clock, ILogger<PhotoCleanupWorker> logger) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        using var timer = new PeriodicTimer(options.Value.CleanupInterval, clock);
-        while (await timer.WaitForNextTickAsync(stoppingToken))
-        {
-            try
-            {
-                await cleanup.CleanUpAsync(stoppingToken);
-            }
-#pragma warning disable CA1031 // The worker must keep running; the next tick retries.
-            catch (Exception exception) when (exception is not OperationCanceledException)
-#pragma warning restore CA1031
-            {
-                LogFailed(exception);
-            }
-        }
-    }
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) =>
+        PeriodicWork.RunAsync(options.Value.CleanupInterval, clock, cleanup.CleanUpAsync, LogFailed, stoppingToken);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The event photo cleanup failed")]
     private partial void LogFailed(Exception exception);

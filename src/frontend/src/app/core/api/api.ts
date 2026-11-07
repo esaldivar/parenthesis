@@ -57,6 +57,64 @@ export interface SharedFundCreated {
 
 export interface SharedFund extends SharedFundCreated, SharedFundDraft {
   readonly proposerId: string;
+  /** Reported contributions, newest first (#477). Absent on a proposal that was just sent. */
+  readonly entries?: readonly RecordEntry[];
+  readonly totals?: RecordTotals;
+}
+
+/** Who received a reported payment: a vendor (acknowledged) or the other parent (receipt confirmed). */
+export type PaidTo = 'Vendor' | 'CoParent';
+
+/** One reported contribution or Child Support payment, with its attachment kept privately on the server. */
+export interface RecordEntry {
+  readonly id: string;
+  readonly yours: boolean;
+  readonly amountMinor: number;
+  /** The date the money moved, `YYYY-MM-DD`. */
+  readonly paidOn: string;
+  readonly paidTo: PaidTo;
+  readonly submittedAt: string;
+  readonly status: 'Pending' | 'Acknowledged' | 'Disputed';
+  readonly respondedAt: string | null;
+  readonly attachmentType: string;
+  /** This parent is the one who acknowledges it or flags a mismatch. */
+  readonly canRespond: boolean;
+}
+
+/** Disputed reports never count toward what was acknowledged. */
+export interface RecordTotals {
+  readonly acknowledgedMinor: number;
+  readonly pendingMinor: number;
+  readonly disputedMinor: number;
+}
+
+/** A one-time Child Support record: a shared copy of payments made through the official channel. */
+export interface SupportRecord {
+  readonly id: string;
+  readonly title: string;
+  readonly currency: FundCurrency;
+  readonly youPay: boolean;
+  readonly referenceMinor: number | null;
+  readonly createdAt: string;
+  readonly createdByYou: boolean;
+  readonly entries: readonly RecordEntry[];
+  readonly totals: RecordTotals;
+}
+
+export interface SupportDraft {
+  readonly title: string;
+  readonly currency: FundCurrency;
+  readonly youPay: boolean;
+  readonly referenceMinor: number | null;
+}
+
+/** A report and its required attachment. The request id stays the same on a retry, so it's recorded once. */
+export interface ReportDraft {
+  readonly amountMinor: number;
+  readonly paidOn: string;
+  readonly paidTo: PaidTo;
+  readonly requestId: string;
+  readonly file: File;
 }
 
 // --- Milestone 2 (ADR-0006): invitations, children, approvals, devices, the profile picker -----------------------------
@@ -1012,6 +1070,31 @@ export class Api {
     this.call(this.http.get<SharedFund[]>(`/api/families/${familyId}/shared-funds`));
   proposeSharedFund = (familyId: string, proposal: SharedFundDraft) =>
     this.call(this.http.post<SharedFundCreated>(`/api/families/${familyId}/shared-funds`, proposal));
+  childSupport = (familyId: string) =>
+    this.call(this.http.get<SupportRecord[]>(`/api/families/${familyId}/child-support`));
+  createChildSupport = (familyId: string, draft: SupportDraft) =>
+    this.call(this.http.post<SupportRecord>(`/api/families/${familyId}/child-support`, draft));
+  reportContribution = (familyId: string, fundId: string, report: ReportDraft) =>
+    this.sendReport(`/api/families/${familyId}/shared-funds/${fundId}/contributions`, report);
+  reportSupportPayment = (familyId: string, recordId: string, report: ReportDraft) =>
+    this.sendReport(`/api/families/${familyId}/child-support/${recordId}/payments`, report);
+  respondToEntry = (familyId: string, entryId: string, response: 'acknowledge' | 'dispute') =>
+    this.call(this.http.post<RecordEntry>(`/api/families/${familyId}/shared-records/entries/${entryId}/${response}`, {}));
+  sharedRecordsAttention = (familyId: string) =>
+    this.call(this.http.get<{ count: number }>(`/api/families/${familyId}/shared-records/attention`));
+  /** Same-origin link to a report's attachment; the server checks the parent's access on every read. */
+  entryAttachmentUrl = (familyId: string, entryId: string) =>
+    `/api/families/${familyId}/shared-records/entries/${entryId}/attachment`;
+
+  /** The file is the request body; the report's details travel in the query, so nothing is recorded without it. */
+  private sendReport(path: string, report: ReportDraft) {
+    const params: Record<string, string> = {
+      amountMinor: String(report.amountMinor), paidOn: report.paidOn, paidTo: report.paidTo, requestId: report.requestId,
+    };
+    return this.call(this.http.post<RecordEntry>(path, report.file, {
+      params, headers: { 'Content-Type': report.file.type || 'application/octet-stream' },
+    }));
+  }
 
   // Approvals inbox (ADR-0003).
   /** Pending requests, or the 50 most recently decided with `history`. */
