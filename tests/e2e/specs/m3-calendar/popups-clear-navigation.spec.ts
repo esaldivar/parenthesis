@@ -36,6 +36,8 @@ async function lowDateField(page: Page, info: TestInfo) {
   await end.scrollIntoViewIfNeeded();
   const popup = await openPicker(page, end, info);
   const height = (await popup.boundingBox())!.height;
+  // Material ignores Escape while the picker is still animating open.
+  await popup.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished)));
   await page.keyboard.press('Escape');
   await expect(popup).toHaveCount(0);
   // Moving the page by (wanted - current) leaves exactly the picker's height plus 10px below the field.
