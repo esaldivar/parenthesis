@@ -16,6 +16,8 @@ for (const theme of ['light', 'dark'] as const) {
     }));
     await signIn(page, dad.email);
     await page.goto('/calendar');
+    // Always there on desktop, minimized to a bar at the bottom right, like a messaging tray.
+    await expect(page.getByRole('region', { name: 'Compact chat, minimized' })).toBeVisible();
     await activate(page.locator('nav.sidenav').getByRole('link', { name: /^Messages/ }), info);
 
     // Draft text and a chosen event, then Minimize docks them over the page the parent came from.
@@ -52,10 +54,32 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(page.locator('.message--yours').last()).toContainText('I’ll bring the water bottles.');
     await expect(page.locator('.message--yours').last().getByRole('link', { name: /Soccer game/ })).toBeVisible();
 
-    // Close puts it away.
+    // Nothing puts it away completely: minimized again, it's a bar at the bottom.
     await page.getByRole('button', { name: 'Minimize to compact chat' }).click();
-    await page.getByRole('region', { name: 'Compact chat' }).getByRole('button', { name: 'Close chat' }).click();
-    await expect(page.getByRole('region', { name: /Compact chat/ })).toHaveCount(0);
+    await page.getByRole('region', { name: 'Compact chat' }).getByRole('button', { name: 'Minimize chat' }).click();
+    await expect(page.getByRole('region', { name: 'Compact chat, minimized' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Close chat' })).toHaveCount(0);
     await fitsPage(page);
   });
 }
+
+test('a new message pulses a dot on the minimized chat bar, and opening it reads the message @m4 @regression', async ({ page, family }) => {
+  const { dad, mom, familyId } = family;
+  await signIn(page, dad.email);
+  await page.goto('/calendar');
+  const bar = page.getByRole('region', { name: 'Compact chat, minimized' });
+  await expect(bar.getByRole('button', { name: /^Messages.*Open the compact chat$/ })).toBeVisible();
+  await expect(bar.locator('.dot')).toHaveCount(0);
+
+  await mom.json(mom.post(`/api/families/${familyId}/chat/messages`, { clientMessageId: crypto.randomUUID(), text: 'Can you do the soccer pickup on Saturday?' }));
+  const restore = bar.getByRole('button', { name: /unread messages/ });
+  await expect(restore).toBeVisible();
+  await expect(bar.locator('.dot')).toBeVisible();
+
+  await restore.click();
+  const dock = page.getByRole('region', { name: 'Compact chat' });
+  await expect(dock.getByText('Can you do the soccer pickup on Saturday?')).toBeVisible();
+  await dock.getByRole('button', { name: 'Minimize chat' }).click();
+  await expect(bar.locator('.dot')).toHaveCount(0);
+  expect((await dad.json<{ hasUnread: boolean }>(dad.get(`/api/families/${familyId}/chat/unread`))).hasUnread).toBe(false);
+});

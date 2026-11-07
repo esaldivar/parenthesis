@@ -22,7 +22,7 @@ Use Parenthesis theme tokens in both modes. Mobile opens directly into the conve
 ## 2. Calendar sharing and compact desktop chat
 
 - The magnifier opens a calendar picker. Search by event title or date, select an event, review it in the draft, and send it as a tappable card with title, date and time. Event details use existing Calendar permissions.
-- Dock the compact desktop window in the bottom right over the current page. Provide Minimize and Expand. Use the same conversation and draft when expanding to the full Chat page, including any selected event.
+- Dock the compact desktop window in the bottom right over the current page. Provide Minimize and Expand. Like a messaging tray (owner, November 7, 2026), it's always there on desktop: minimized, it's a bar along the bottom right edge with a dot that pulses (steady with reduced motion) while a message is unread; there's no Close. Use the same conversation and draft when expanding to the full Chat page, including any selected event.
 - Verify the underlying page remains interactive outside the pop-up, the draft survives minimize and expand, and the linked card opens the correct event. Cover no results and an event that becomes unavailable.
 
 ## 3. PDF transcripts

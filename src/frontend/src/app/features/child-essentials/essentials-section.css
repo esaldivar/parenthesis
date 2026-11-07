@@ -134,6 +134,9 @@ input, select, textarea, button {
   padding: 0.5rem 0.75rem;
 }
 textarea { resize: vertical; }
+/* A checkbox sits beside its words (Call first, School pickup). */
+label:has(> input[type='checkbox']) { display: flex; align-items: center; gap: 0.625rem; min-height: 44px; }
+input[type='checkbox'] { width: 1.25rem; height: 1.25rem; min-height: 0; margin: 0; padding: 0; accent-color: var(--color-action); }
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 /* Edit and History: outlined pills with icons, side by side; on a phone they share the row. */
 .actions:has(> .pill) { justify-content: flex-end; }
