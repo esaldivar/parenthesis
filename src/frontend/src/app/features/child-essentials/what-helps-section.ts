@@ -1,11 +1,9 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
-import {
-  ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OnScreen, sectionUpdates } from './essentials-updates';
-import { Api, WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
+import { RevisionedSection } from './revisioned-section';
+import { WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
 
 @Component({
   selector: 'app-what-helps-section',
@@ -103,29 +101,16 @@ import { Api, WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
     }
   `,
 })
-export class WhatHelpsSection {
-  readonly familyId = input.required<string>();
-  readonly childId = input.required<string>();
+export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelpsView['values'], WhatHelpsHistoryPage['entries'][number]> {
   protected readonly marks = sectionUpdates('whatHelps', this.childId);
-  private readonly api = inject(Api);
-  private readonly destroyRef = inject(DestroyRef);
-  protected readonly current = signal<WhatHelpsView | null>(null);
-  protected readonly conflict = signal<WhatHelpsView | null>(null);
-  protected readonly editing = signal(false);
-  protected readonly saving = signal(false);
-  protected readonly error = signal('');
-  protected readonly notice = signal('');
-  protected readonly historyOpen = signal(false);
-  protected readonly historyLoading = signal(false);
-  protected readonly historyError = signal(false);
-  protected readonly history = signal<WhatHelpsHistoryPage['entries']>([]);
-  protected readonly nextRevision = signal<number | null>(null);
+  protected readonly savedNotice = 'What Helps saved.';
   protected readonly form = new FormGroup({
     comfortItems: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
     calmingStrategies: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
   });
 
   constructor() {
+    super();
     effect(() => { void this.load(); });
   }
 
@@ -148,62 +133,11 @@ export class WhatHelpsSection {
     this.editing.set(true);
   }
 
-  protected cancel(): void {
-    if (this.conflict() !== null) {
-      this.current.set(this.conflict());
-    }
-    this.conflict.set(null);
-    this.error.set('');
-    this.editing.set(false);
+  protected store(revision: number, values: WhatHelpsView['values']): Promise<WhatHelpsView> {
+    return this.api.saveWhatHelps(this.familyId(), this.childId(), { revision, values });
   }
 
-  protected async save(): Promise<void> {
-    const base = this.conflict() ?? this.current();
-    if (!base || this.saving() || this.form.invalid) return;
-    this.saving.set(true);
-    this.error.set('');
-    try {
-      const saved = await this.api.saveWhatHelps(this.familyId(), this.childId(), {
-        revision: base.revision, values: this.form.getRawValue(),
-      });
-      if (this.destroyRef.destroyed) return;
-      this.current.set(saved);
-      this.conflict.set(null);
-      this.editing.set(false);
-      this.notice.set('What Helps saved.');
-    } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 409) {
-        this.conflict.set(error.error as WhatHelpsView);
-      } else {
-        this.error.set('Changes couldn’t be saved. Your draft is still here.');
-      }
-    } finally {
-      this.saving.set(false);
-    }
-  }
-
-  protected toggleHistory(): void {
-    const open = !this.historyOpen();
-    this.historyOpen.set(open);
-    if (open) void this.loadHistory(null);
-  }
-
-  protected async loadHistory(beforeRevision: number | null): Promise<void> {
-    if (this.historyLoading()) return;
-    this.historyLoading.set(true);
-    this.historyError.set(false);
-    if (beforeRevision === null) {
-      this.history.set([]);
-      this.nextRevision.set(null);
-    }
-    try {
-      const page = await this.api.whatHelpsHistory(this.familyId(), this.childId(), beforeRevision);
-      this.history.update((entries) => [...entries, ...page.entries]);
-      this.nextRevision.set(page.beforeRevision);
-    } catch {
-      this.historyError.set(true);
-    } finally {
-      this.historyLoading.set(false);
-    }
+  protected historyPage(beforeRevision: number | null) {
+    return this.api.whatHelpsHistory(this.familyId(), this.childId(), beforeRevision);
   }
 }

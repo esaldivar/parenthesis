@@ -1,12 +1,11 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { OnScreen, sectionUpdates } from './essentials-updates';
-import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/api/api';
+import { RevisionedSection } from './revisioned-section';
+import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/api/api';
 
 @Component({
   selector: 'app-routines-section',
@@ -152,26 +151,12 @@ import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../
     }
   `,
 })
-export class RoutinesSection {
-  readonly familyId = input.required<string>();
-  readonly childId = input.required<string>();
+export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesView['values'], RoutinesHistoryPage['entries'][number]> {
   protected readonly updates = inject(EssentialsUpdatesStore);
   /** The shared routine's changes, and the co-parent's own routine's changes shown in their tab (#128). */
   protected readonly marks = sectionUpdates('routines', this.childId);
+  protected readonly savedNotice = 'Routines saved.';
   protected readonly homeMarks = sectionUpdates('householdRoutines', this.childId);
-  private readonly api = inject(Api);
-  private readonly destroyRef = inject(DestroyRef);
-  protected readonly current = signal<RoutinesView | null>(null);
-  protected readonly conflict = signal<RoutinesView | null>(null);
-  protected readonly editing = signal(false);
-  protected readonly saving = signal(false);
-  protected readonly error = signal('');
-  protected readonly notice = signal('');
-  protected readonly historyOpen = signal(false);
-  protected readonly historyLoading = signal(false);
-  protected readonly historyError = signal(false);
-  protected readonly history = signal<RoutinesHistoryPage['entries']>([]);
-  protected readonly nextRevision = signal<number | null>(null);
   protected readonly form = new FormGroup({
     bedtime: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
     naps: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
@@ -253,6 +238,7 @@ export class RoutinesSection {
   }
 
   constructor() {
+    super();
     effect(() => { void this.load(); void this.loadHouseholds(); });
   }
 
@@ -275,62 +261,11 @@ export class RoutinesSection {
     this.editing.set(true);
   }
 
-  protected cancel(): void {
-    if (this.conflict() !== null) {
-      this.current.set(this.conflict());
-    }
-    this.conflict.set(null);
-    this.error.set('');
-    this.editing.set(false);
+  protected store(revision: number, values: RoutinesView['values']): Promise<RoutinesView> {
+    return this.api.saveRoutines(this.familyId(), this.childId(), { revision, values });
   }
 
-  protected async save(): Promise<void> {
-    const base = this.conflict() ?? this.current();
-    if (!base || this.saving() || this.form.invalid) return;
-    this.saving.set(true);
-    this.error.set('');
-    try {
-      const saved = await this.api.saveRoutines(this.familyId(), this.childId(), {
-        revision: base.revision, values: this.form.getRawValue(),
-      });
-      if (this.destroyRef.destroyed) return;
-      this.current.set(saved);
-      this.conflict.set(null);
-      this.editing.set(false);
-      this.notice.set('Routines saved.');
-    } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 409) {
-        this.conflict.set(error.error as RoutinesView);
-      } else {
-        this.error.set('Changes couldn’t be saved. Your draft is still here.');
-      }
-    } finally {
-      this.saving.set(false);
-    }
-  }
-
-  protected toggleHistory(): void {
-    const open = !this.historyOpen();
-    this.historyOpen.set(open);
-    if (open) void this.loadHistory(null);
-  }
-
-  protected async loadHistory(beforeRevision: number | null): Promise<void> {
-    if (this.historyLoading()) return;
-    this.historyLoading.set(true);
-    this.historyError.set(false);
-    if (beforeRevision === null) {
-      this.history.set([]);
-      this.nextRevision.set(null);
-    }
-    try {
-      const page = await this.api.routinesHistory(this.familyId(), this.childId(), beforeRevision);
-      this.history.update((entries) => [...entries, ...page.entries]);
-      this.nextRevision.set(page.beforeRevision);
-    } catch {
-      this.historyError.set(true);
-    } finally {
-      this.historyLoading.set(false);
-    }
+  protected historyPage(beforeRevision: number | null) {
+    return this.api.routinesHistory(this.familyId(), this.childId(), beforeRevision);
   }
 }

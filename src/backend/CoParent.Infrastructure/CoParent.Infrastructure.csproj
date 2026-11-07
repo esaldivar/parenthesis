@@ -15,9 +15,13 @@
     </PackageReference>
     <PackageReference Include="Npgsql.DependencyInjection" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
   <ItemGroup>
     <!-- Unchanged copy of the approved icon export, embedded inline in emails (Email/Brand/README.md). -->
     <EmbeddedResource Include="Email\Brand\parenthesis-icon-transparent-376.png" LogicalName="CoParent.Infrastructure.Email.parenthesis-icon.png" />
+    <!-- Noto Sans for every PDF the API makes (Pdf/Fonts/README.md). -->
+    <EmbeddedResource Include="Pdf\Fonts\*.ttf" LogicalName="CoParent.Infrastructure.Pdf.Fonts.%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

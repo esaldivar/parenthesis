@@ -24,15 +24,8 @@ internal sealed record RoutinesView(int Revision, RoutinesValues Values)
 
 internal sealed record SaveRoutinesRequest(int? Revision, RoutinesValues? Values);
 
-internal sealed record RoutinesHistoryEntry(
-    int Revision, string EditedBy, DateTimeOffset EditedAt, RoutinesValues Previous, RoutinesValues Current);
-
-internal sealed record RoutinesHistoryPage(IReadOnlyList<RoutinesHistoryEntry> Entries, int? BeforeRevision);
-
 internal static class RoutinesEndpoints
 {
-    private const int HistoryPageSize = 20;
-
     public static void Map(IEndpointRouteBuilder family)
     {
         var routines = family.MapGroup("/children/{childId:guid}/essentials/routines").WithTags("Child Essentials");
@@ -124,37 +117,10 @@ internal static class RoutinesEndpoints
         }, cancellationToken);
     }
 
-    private static async Task<IResult> HistoryAsync(
+    private static Task<IResult> HistoryAsync(
         Guid childId, int? beforeRevision, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
-        IUserDirectory directory, CancellationToken cancellationToken)
-    {
-        http.Response.Headers.CacheControl = "no-store";
-        if (tenant.Role != FamilyRole.Parent)
-        {
-            return TypedResults.Forbid();
-        }
-
-        if (!await ChildEssentialsAccess.IsActiveChildAsync(db, childId, cancellationToken))
-        {
-            return TypedResults.NotFound();
-        }
-
-        var revisions = Revisions(db, childId);
-        if (beforeRevision is int before)
-        {
-            revisions = revisions.Where(row => row.Revision < before);
-        }
-
-        // The extra row supplies the previous values for the oldest displayed entry.
-        var rows = await revisions.Take(HistoryPageSize + 1).ToListAsync(cancellationToken);
-        var visible = rows.Take(HistoryPageSize).ToList();
-        var names = await directory.GetDisplayNamesAsync(
-            visible.Select(row => row.EditedByUserId).Distinct().ToList(), cancellationToken);
-        var entries = visible.Select((row, i) => new RoutinesHistoryEntry(
-            row.Revision, names.GetValueOrDefault(row.EditedByUserId, "A parent"), row.EditedAt,
-            RoutinesValues.From(i + 1 < rows.Count ? rows[i + 1] : null), RoutinesValues.From(row))).ToList();
-        return TypedResults.Ok(new RoutinesHistoryPage(entries, rows.Count > HistoryPageSize ? visible[^1].Revision : null));
-    }
+        IUserDirectory directory, CancellationToken cancellationToken) =>
+        EssentialsHistory.PageAsync(childId, beforeRevision, http, tenant, db, directory, Revisions(db, childId), RoutinesValues.From, cancellationToken);
 
     private static IQueryable<RoutinesRevision> Revisions(FamiliesDbContext db, Guid childId) =>
         db.RoutinesRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId && row.OwnerMembershipId == Guid.Empty)
