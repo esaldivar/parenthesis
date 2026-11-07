@@ -21,11 +21,11 @@ import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../core/
         @for (contact of saved.contacts; track contact.id ?? contact.phone; let index = $index) {
           <article class="entry" [class.row--updated]="marks.updated(contact.id ?? 'contact-' + index)"
             (appOnScreen)="marks.rowOnScreen(contact.id ?? 'contact-' + index)">
-            <h4>{{ contact.name }} @if (contact.callFirst) { <span>· Call first</span> }
+            <h4>@if (contact.callFirst) { <span class="call-first">Call first</span> }{{ contact.name }}
               @if (marks.updated(contact.id ?? 'contact-' + index)) { <span class="updated-pill">Updated</span> }</h4>
             <p>{{ contact.relationship }} · {{ contact.phone }}</p>
             <div class="actions">
-              <a [href]="phoneLink(contact.phone)" [attr.aria-label]="'Call ' + contact.name">Call</a>
+              <a class="call" [href]="phoneLink(contact.phone)" [attr.aria-label]="'Call ' + contact.name">Call</a>
               @if (contact.address; as address) {
                 <a [href]="mapLink(address)" target="_blank" rel="noopener noreferrer">Open in Maps</a>
               }

@@ -133,7 +133,7 @@ describe('Child Essentials updates (#128)', () => {
     expect(text(kai)).toContain(', has updates');
     const aurora = [...el.querySelectorAll<HTMLButtonElement>('.children button')].find((b) => text(b).includes('Aurora'))!;
     expect(text(aurora)).not.toContain('has updates');
-    expect(text(el.querySelector('[data-section=clothing] summary'))).toBe('Clothing & Shoes, updated');
+    expect(text(el.querySelector('[data-section=clothing] summary'))).toBe('Clothing & Shoes, Sizes and fit notes, updated');
     expect(shoeRow(el).classList).toContain('row--updated');
     expect(text(shoeRow(el))).toContain('Updated');
     const top = [...el.querySelectorAll('.row')].find((row) => text(row).startsWith('Top size'))!;
@@ -162,7 +162,7 @@ describe('Child Essentials updates (#128)', () => {
     await settle(fixture);
     expect(api.essentialsSectionOpened).toHaveBeenCalledWith('family-1', 'kai', 'clothing');
     expect(api.essentialsRowsSeen).not.toHaveBeenCalled();
-    expect(text(tile.querySelector('summary'))).toBe('Clothing & Shoes');
+    expect(text(tile.querySelector('summary'))).toBe('Clothing & Shoes, Sizes and fit notes');
 
     FakeObserver.show((element) => element === shoeRow(el));
     await settle(fixture);

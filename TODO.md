@@ -18,7 +18,15 @@ that points back here.
     Contacts and Shared Caregivers (November 7, 2026). Ratings, accepting a routine and stopping sharing make none.
   - [ ] Extend #128 update notices to Medication (values stay in the protected record) when it ships.
   - [x] Put update dots on the section tiles and clear them on open. Keep row highlights tied to visibility and household routine notices tied to the co-parent tab.
-  - [ ] Complete visual polish with the handoff illustrations and verify the Clothing & Shoes, What Helps, School, and Allergies & Food flows on the development site in both themes.
+  - [x] Match the approved mockups (November 7, 2026): illustrated section tiles with what each holds, two columns on
+    wide screens, one section at a time on phones with a way back, value rows in a card, Edit and History pills,
+    segmented Routines tabs, caregiver and contact cards with Call buttons, banner icons.
+  - [ ] Replace the section illustrations cut from the mockup (`src/frontend/public/art/child-essentials/`) with the
+    original illustration exports (about 400px wide, transparent) when the owner has them.
+  - [ ] Verify the Clothing & Shoes, What Helps, School, Allergies & Food, Routines, Caregivers and Emergency Contacts
+    screens on the development site in both themes, on a phone and a desktop.
+  - [ ] Still missing from the mockups: the Medication tile (#127), the Download PDF bottom sheet with the child
+    picker, and star icons for caregiver ratings in place of text stars.
 - [ ] **Shared Caregivers (#130, M4).** Verify caregiver details, duplicate-number confirmation, and independent ratings on mobile and desktop in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'

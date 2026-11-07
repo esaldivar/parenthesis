@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
+import { Icon } from '../../shared/icon/icon';
 import { OnScreen, sectionUpdates } from './essentials-updates';
 import { RevisionedSection } from './revisioned-section';
 import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/api/api';
@@ -10,7 +11,7 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
 @Component({
   selector: 'app-routines-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
+  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
   template: `
     <section aria-labelledby="routines-heading">
       <h3 id="routines-heading">Routines
@@ -91,9 +92,9 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
         } @else {
           <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, rowMarks: marks }" />
           <div class="actions">
-            <button type="button" (click)="edit(saved)">Edit Routines</button>
-            <button type="button" [attr.aria-expanded]="historyOpen()" aria-controls="routines-history"
-              (click)="toggleHistory()">History</button>
+            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />Edit<span class="visually-hidden"> Routines</span></button>
+            <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="routines-history"
+              (click)="toggleHistory()"><app-icon name="history" [size]="18" />History</button>
           </div>
           <p role="status">{{ notice() }}</p>
         }

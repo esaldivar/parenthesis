@@ -1,6 +1,7 @@
 import { DatePipe, DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Icon } from '../../shared/icon/icon';
 import { OnScreen, sectionUpdates } from './essentials-updates';
 import { RevisionedSection } from './revisioned-section';
 import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/api/api';
@@ -8,7 +9,7 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
 @Component({
   selector: 'app-allergies-food-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
+  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
   template: `
     <section aria-labelledby="allergies-food-heading">
       <h3 id="allergies-food-heading">Allergies & Food
@@ -69,9 +70,9 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
             <p>Recorded by {{ saved.recordedBy }} · <time [attr.datetime]="recordedAt">{{ recordedAt | date: 'medium' }}</time></p>
           }
           <div class="actions">
-            <button type="button" (click)="edit(saved)">Edit Allergies & Food</button>
-            <button type="button" [attr.aria-expanded]="historyOpen()" aria-controls="allergies-food-history"
-              (click)="toggleHistory()">History</button>
+            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />Edit<span class="visually-hidden"> Allergies & Food</span></button>
+            <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="allergies-food-history"
+              (click)="toggleHistory()"><app-icon name="history" [size]="18" />History</button>
           </div>
           <p role="status">{{ notice() }}</p>
         }
