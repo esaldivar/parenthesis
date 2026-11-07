@@ -54,7 +54,7 @@ for (const theme of ['light', 'dark'] as const) {
 
     // 4. Mom acknowledges it on her device; Dad sees only acknowledged money fill the meter.
     const funds = await mom.json<{ entries: { id: string }[] }[]>(mom.get(`${root}/shared-funds`));
-    expect((await mom.post(`${root}/shared-records/entries/${funds[0].entries[0].id}/acknowledge`, {})).status()).toBe(200);
+    expect((await mom.post(`${root}/shared-records/entries/${funds[0]!.entries[0]!.id}/acknowledge`, {})).status()).toBe(200);
     await page.reload();
     await expect(page.locator('app-record-progress')).toContainText('Acknowledged');
     await expect(page.locator('app-record-progress')).toContainText('$260.00 to reach target');
@@ -83,8 +83,8 @@ for (const theme of ['light', 'dark'] as const) {
 
     // 6. Mom confirms receipt from her side; the record shows progress toward the reference amount.
     const records = await mom.json<{ id: string; entries: { id: string; canRespond: boolean }[] }[]>(mom.get(`${root}/child-support`));
-    expect(records[0].entries[0].canRespond).toBe(true);
-    expect((await mom.post(`${root}/shared-records/entries/${records[0].entries[0].id}/acknowledge`, {})).status()).toBe(200);
+    expect(records[0]!.entries[0]!.canRespond).toBe(true);
+    expect((await mom.post(`${root}/shared-records/entries/${records[0]!.entries[0]!.id}/acknowledge`, {})).status()).toBe(200);
     await page.reload();
     await activate(page.getByRole('button', { name: /Child Support November 2026/ }), info);
     await expect(page.locator('app-record-progress')).toContainText('of $500.00 reference amount');
