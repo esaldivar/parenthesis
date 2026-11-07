@@ -37,6 +37,8 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
 
     public DbSet<ClothingRevision> ClothingRevisions => Set<ClothingRevision>();
     public DbSet<WhatHelpsRevision> WhatHelpsRevisions => Set<WhatHelpsRevision>();
+    public DbSet<AllergiesFoodRevision> AllergiesFoodRevisions => Set<AllergiesFoodRevision>();
+    public DbSet<SchoolRevision> SchoolRevisions => Set<SchoolRevision>();
 
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
@@ -103,6 +105,28 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             revision.ToTable("child_what_helps_revisions");
             revision.Property(row => row.ComfortItems).HasMaxLength(WhatHelpsRevision.TextLimit);
             revision.Property(row => row.CalmingStrategies).HasMaxLength(WhatHelpsRevision.TextLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<AllergiesFoodRevision>(revision =>
+        {
+            revision.ToTable("child_allergies_food_revisions");
+            revision.Property(row => row.Allergies).HasMaxLength(AllergiesFoodRevision.TextLimit);
+            revision.Property(row => row.FoodPreferences).HasMaxLength(AllergiesFoodRevision.TextLimit);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId)
+                .HasConstraintName("fk_child_allergies_food_revisions_child_profiles");
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<SchoolRevision>(revision =>
+        {
+            revision.ToTable("child_school_revisions");
+            revision.Property(row => row.HomeroomTeacher).HasMaxLength(SchoolRevision.TextLimit);
+            revision.Property(row => row.Grade).HasMaxLength(SchoolRevision.TextLimit);
+            revision.Property(row => row.ParentConcerns).HasMaxLength(SchoolRevision.TextLimit);
             revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
             revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
             revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
