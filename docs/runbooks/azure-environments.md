@@ -184,6 +184,27 @@ The management policy replaces any existing policy on the account; if other rule
 instead. Local development and the integration tests use Azurite (`docker compose up azurite`) with
 `EventPhotos:ConnectionString=UseDevelopmentStorage=true`.
 
+### Shared records attachments (#477)
+Payment attachments on Shared Funds and Child Support records (PDF, PNG or JPEG, up to 10 MB) live in their own
+private container, `shared-records`, in the same storage account, read and written only by the API's managed identity.
+Until `SharedRecords__BlobServiceUri` is set, parents can still propose funds and create records, but reporting a
+contribution or payment answers "Attachments can't be saved yet."
+
+```bash
+ST=stparenthesis$ENV$SUFFIX
+ST_ID="$(az storage account show -g $RG -n $ST --query id -o tsv)"
+az storage container create --account-name $ST -n shared-records --public-access off --auth-mode login
+APP_ID="$(az containerapp show -g $RG -n ca-parenthesis-$ENV --query identity.principalId -o tsv)" && echo "$APP_ID"
+az role assignment create --assignee-object-id "$APP_ID" --assignee-principal-type ServicePrincipal --role "Storage Blob Data Contributor" --scope "$ST_ID/blobServices/default/containers/shared-records"
+az containerapp update -g $RG -n ca-parenthesis-$ENV --set-env-vars SharedRecords__BlobServiceUri=https://$ST.blob.core.windows.net
+```
+
+- `container create --auth-mode login` needs your own data role on the account (the first role assignment under Event
+  photos). The app's role is scoped to this container only; allow up to 10 minutes for it to apply.
+- Attachments are kept for as long as the record: they're removed only when the family closes. Don't add a lifecycle
+  rule to this container. Leave soft delete off, as for event photos.
+- Local development and the integration tests use Azurite with `SharedRecords:ConnectionString=UseDevelopmentStorage=true`.
+
 ### Custom domain
 Development uses `dev.parenthesisfamily.com` with Azure's free managed certificate (October 20, 2026):
 

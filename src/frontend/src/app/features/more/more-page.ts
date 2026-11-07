@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { RouterLink } from '@angular/router';
+import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
 import { Icon } from '../../shared/icon/icon';
 import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation';
 
@@ -20,6 +21,10 @@ import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation'
             @if (item.path === '/child-essentials' && essentials.newUpdates()) {
               <span class="dot" aria-hidden="true"></span>
               <span class="visually-hidden">, updated by your co-parent</span>
+            }
+            @if (item.path === '/shared-records' && records.needsYou()) {
+              <span class="dot" aria-hidden="true"></span>
+              <span class="visually-hidden">, waiting on your response</span>
             }
             @if (item.note) {
               <span class="note"><span class="visually-hidden">, </span>{{ item.note }}</span>
@@ -69,6 +74,7 @@ import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation'
 })
 export class MorePage {
   protected readonly essentials = inject(EssentialsUpdatesStore);
+  protected readonly records = inject(SharedRecordsAttentionStore);
   private readonly inBottomNav = new Set(PARENT_MOBILE_NAV.map((item) => item.path));
   protected readonly items: NavItem[] = PARENT_NAV.filter((item) => !this.inBottomNav.has(item.path));
 }

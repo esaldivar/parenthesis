@@ -20,6 +20,8 @@ export const PARENT_NAV: readonly NavItem[] = [
   { label: 'From Your Kids', path: '/from-your-kids', icon: 'pencil' },
   { label: 'Family Memories', path: '/memories', icon: 'album' },
   { label: 'Child Essentials', path: '/child-essentials', icon: 'children' },
+  // Parent-only Shared Funds and Child Support (#477), as in the approved desktop mockup.
+  { label: 'Shared records', path: '/shared-records', icon: 'receipt' },
   { label: 'Settings', path: '/settings', icon: 'settings' },
 ];
 

@@ -23,6 +23,96 @@ namespace CoParent.Modules.SharedRecords.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CoParent.Modules.SharedRecords.Entry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("AmountMinor")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_minor");
+
+                    b.Property<int>("AttachmentBytes")
+                        .HasColumnType("integer")
+                        .HasColumnName("attachment_bytes");
+
+                    b.Property<string>("AttachmentPath")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("attachment_path");
+
+                    b.Property<string>("AttachmentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("attachment_type");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<DateOnly>("PaidOn")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_on");
+
+                    b.Property<string>("PaidTo")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("paid_to");
+
+                    b.Property<Guid>("RecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("record_id");
+
+                    b.Property<string>("RecordKind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("record_kind");
+
+                    b.Property<Guid>("ReporterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporter_id");
+
+                    b.Property<DateTimeOffset?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("responded_at");
+
+                    b.Property<Guid>("ResponderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("responder_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_entries");
+
+                    b.HasIndex("FamilyId", "RecordId", "SubmittedAt")
+                        .HasDatabaseName("ix_entries_family_id_record_id_submitted_at");
+
+                    b.HasIndex("RecordId", "ReporterId", "ClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_entries_record_id_reporter_id_client_request_id");
+
+                    b.ToTable("entries", "shared_records");
+                });
+
             modelBuilder.Entity("CoParent.Modules.SharedRecords.Fund", b =>
                 {
                     b.Property<Guid>("Id")
@@ -88,6 +178,58 @@ namespace CoParent.Modules.SharedRecords.Migrations
                         .HasDatabaseName("ix_funds_family_id_created_at");
 
                     b.ToTable("funds", "shared_records");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.SharedRecords.SupportRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<Guid>("PayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payer_id");
+
+                    b.Property<Guid>("RecipientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipient_id");
+
+                    b.Property<long?>("ReferenceMinor")
+                        .HasColumnType("bigint")
+                        .HasColumnName("reference_minor");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_support_records");
+
+                    b.HasIndex("FamilyId", "CreatedAt")
+                        .HasDatabaseName("ix_support_records_family_id_created_at");
+
+                    b.ToTable("support_records", "shared_records");
                 });
 #pragma warning restore 612, 618
         }

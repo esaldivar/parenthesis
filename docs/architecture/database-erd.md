@@ -321,6 +321,12 @@ erDiagram
   their owner's membership id and the agreed revision). `child_emergency_contacts` and `child_shared_caregivers` hold
   each child's list as JSON with a version for concurrent edits. `essentials_updates` holds each parent's notices of
   the other parent's saves (#128): ids and field names only, never values.
+- **Shared records** (`shared_records` schema, #477): `funds` (a proposed Shared Fund with each parent's share; it opens
+  once both agree through the approval engine), `support_records` (one-time Child Support records: payer, recipient,
+  optional reference amount) and `entries` (each reported contribution or payment: amount, payment date, who was paid,
+  status and response time, and its attachment's blob path, type and size; never the file name). `entries` is unique
+  on (record, reporter, client request id), so a retried report is recorded once. Attachments live in the private
+  `shared-records` blob container. Everything goes when the family closes.
 
 ## M2 additions (ADR-0006, accepted 2026-10-17)
 The new tables for profile picker sign-in, child PINs, paired child devices, and children that need both parents'

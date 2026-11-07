@@ -4,6 +4,8 @@
     <ProjectReference Include="..\..\CoParent.Infrastructure\CoParent.Infrastructure.csproj" />
     <ProjectReference Include="..\CoParent.Modules.Families\CoParent.Modules.Families.csproj" />
     <ProjectReference Include="..\CoParent.Modules.Approvals\CoParent.Modules.Approvals.csproj" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>
 </Project>
