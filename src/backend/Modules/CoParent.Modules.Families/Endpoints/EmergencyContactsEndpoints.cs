@@ -43,7 +43,7 @@ internal static class EmergencyContactsEndpoints
 
     private static async Task<IResult> SaveAsync(
         Guid childId, SaveEmergencyContactsRequest request, HttpContext http,
-        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, CancellationToken cancellationToken)
+        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, TimeProvider clock, CancellationToken cancellationToken)
     {
         http.Response.Headers.CacheControl = "no-store";
         if (tenant.Role != FamilyRole.Parent)
@@ -124,6 +124,18 @@ internal static class EmergencyContactsEndpoints
 
             row.Version++;
             row.ContactsJson = JsonSerializer.Serialize(contacts);
+            // Contacts have no ids, and a notice never holds values: a changed contact is named by its place in the list.
+            var changed = contacts.Select((contact, index) => (contact, index))
+                .Where(item => !current.Contacts.Contains(item.contact))
+                .Select(item => $"contact-{item.index}").ToList();
+            var removed = current.Contacts.Any(contact => !contacts.Contains(contact));
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.EmergencyContacts, row.Version,
+                removed ? [.. changed, "removed"] : changed, clock.GetUtcNow(), ct, rows: changed);
+            for (var gone = contacts.Count; gone < current.Contacts.Count; gone++)
+            {
+                await EssentialsUpdateEndpoints.ForgetRowAsync(db, childId, EssentialsSections.EmergencyContacts, $"contact-{gone}", ct);
+            }
+
             await db.SaveChangesAsync(ct);
             return TypedResults.Ok(new EmergencyContactsView(row.Version, contacts));
         }, cancellationToken);

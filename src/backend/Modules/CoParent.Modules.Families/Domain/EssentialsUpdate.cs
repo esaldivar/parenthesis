@@ -47,9 +47,15 @@ internal static class EssentialsSections
     public const string AllergiesFood = "allergiesFood";
     public const string Clothing = "clothing";
     public const string WhatHelps = "whatHelps";
+    public const string Routines = "routines";
+
+    /// <summary>The co-parent's own routines at their home (their Routines tab); only its owner saves it.</summary>
+    public const string HouseholdRoutines = "householdRoutines";
+    public const string EmergencyContacts = "emergencyContacts";
+    public const string Caregivers = "caregivers";
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
-        School, AllergiesFood, Clothing, WhatHelps,
+        School, AllergiesFood, Clothing, WhatHelps, Routines, HouseholdRoutines, EmergencyContacts, Caregivers,
     };
 }

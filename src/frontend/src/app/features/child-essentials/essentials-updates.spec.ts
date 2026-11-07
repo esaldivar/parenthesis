@@ -52,6 +52,30 @@ describe('Child Essentials updates (#128)', () => {
         revision: 0,
         values: { allergies: null, foodPreferences: null, noKnownAllergies: false },
       })),
+      routines: vi.fn(async () => ({ revision: 1, values: { bedtime: '8:00 PM', naps: null } })),
+      householdRoutines: vi.fn(async () => [
+        {
+          ownerId: 'm-jamie',
+          ownerName: 'Jamie',
+          isMine: false,
+          latest: { revision: 2, values: { bedtime: '8:30 PM', naps: '1 PM' } },
+          shared: null,
+          canAccept: true,
+        },
+      ]),
+      caregivers: vi.fn(async () => ({
+        version: 1,
+        caregivers: [
+          {
+            id: 'cg-ava',
+            details: { name: 'Ava Park', phone: '555-010-4000', city: null, hourlyRate: null, schoolPickup: true },
+            averageRating: null,
+            myRating: null,
+            addedBy: 'Jamie',
+          },
+        ],
+      })),
+      emergencyContacts: vi.fn(async () => ({ version: 0, contacts: [] })),
       essentialsUpdates: vi.fn(async () => updates),
       essentialsOpened: vi.fn(async () => banners),
       essentialsSectionOpened: vi.fn(async () => undefined),
@@ -162,6 +186,43 @@ describe('Child Essentials updates (#128)', () => {
     vi.advanceTimersByTime(1000);
     fixture.detectChanges();
     expect(el.querySelector('.banner')).toBeNull();
+  });
+
+  it('marks the co-parent’s Routines tab until opened, and a changed caregiver until seen', async () => {
+    banners = [
+      { childId: 'kai', section: 'householdRoutines', fields: ['bedtime'] },
+      { childId: 'kai', section: 'caregivers', fields: ['cg-ava'] },
+    ];
+    updates = {
+      newUpdates: true,
+      sections: [
+        { childId: 'kai', section: 'householdRoutines', unopened: true, rows: ['bedtime'] },
+        { childId: 'kai', section: 'caregivers', unopened: true, rows: ['cg-ava'] },
+      ],
+    };
+    const { fixture, el, api } = await render();
+
+    expect([...el.querySelectorAll('.banner')].map(text)).toEqual([
+      'Kai’s bedtime at your co-parent’s home updated',
+      'Kai’s Shared Caregivers updated',
+    ]);
+    const tab = [...el.querySelectorAll<HTMLButtonElement>('app-routines-section button')].find((b) => text(b).startsWith('Jamie’s routines'))!;
+    expect(text(tab)).toBe('Jamie’s routines, updated');
+    const ava = el.querySelector('app-caregivers-section article')!;
+    expect(ava.classList).toContain('row--updated');
+    expect(text(ava.querySelector('h4'))).toBe('Ava Park Updated');
+
+    tab.click();
+    await settle(fixture);
+    expect(api.essentialsSectionOpened).toHaveBeenCalledWith('family-1', 'kai', 'householdRoutines');
+    expect(text(tab)).toBe('Jamie’s routines');
+    const bedtime = [...el.querySelectorAll('app-routines-section .row')].find((row) => text(row).startsWith('Bedtime'))!;
+    expect(bedtime.classList).toContain('row--updated');
+    expect(await axeViolations(el)).toEqual([]);
+
+    FakeObserver.show((element) => element === ava);
+    await settle(fixture);
+    expect(api.essentialsRowsSeen).toHaveBeenCalledWith('family-1', 'kai', 'caregivers', ['cg-ava']);
   });
 
   it('shows nothing when there’s nothing new', async () => {

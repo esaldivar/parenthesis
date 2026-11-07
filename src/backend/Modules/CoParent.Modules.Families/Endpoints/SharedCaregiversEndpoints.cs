@@ -18,6 +18,14 @@ internal sealed record CaregiverListView(int Version, IReadOnlyList<CaregiverVie
 internal sealed record SaveCaregiverRequest(int? Version, CaregiverDetails? Details, bool AllowDuplicate = false);
 internal sealed record CaregiverRatingRequest(int? Rating);
 
+/// <summary>What a caregiver change tells the other parent (#128): the caregivers added or edited, or a removal.</summary>
+internal sealed class CaregiverNotice
+{
+    public List<string> Rows { get; } = [];
+
+    public Guid? Removed { get; set; }
+}
+
 internal static class SharedCaregiversEndpoints
 {
     public static void Map(IEndpointRouteBuilder family)
@@ -62,16 +70,16 @@ internal static class SharedCaregiversEndpoints
     }
 
     private static Task<IResult> AddAsync(Guid childId, SaveCaregiverRequest request, HttpContext http,
-        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, CancellationToken ct) =>
-        SaveAsync(childId, null, request, http, tenant, db, work, ct);
+        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, TimeProvider clock, CancellationToken ct) =>
+        SaveAsync(childId, null, request, http, tenant, db, work, clock, ct);
 
     private static Task<IResult> EditAsync(Guid childId, Guid caregiverId, SaveCaregiverRequest request, HttpContext http,
-        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, CancellationToken ct) =>
-        SaveAsync(childId, caregiverId, request, http, tenant, db, work, ct);
+        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, TimeProvider clock, CancellationToken ct) =>
+        SaveAsync(childId, caregiverId, request, http, tenant, db, work, clock, ct);
 
     private static Task<IResult> SaveAsync(Guid childId, Guid? caregiverId, SaveCaregiverRequest request, HttpContext http,
-        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, CancellationToken ct) =>
-        MutateAsync(childId, http, tenant, db, work, (row, entries) =>
+        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, TimeProvider clock, CancellationToken ct) =>
+        MutateAsync(childId, http, tenant, db, work, clock, (row, entries, notice) =>
         {
             if (request.Version is null or < 0 || request.Details is not { } input)
             {
@@ -124,6 +132,11 @@ internal static class SharedCaregiversEndpoints
                     return TypedResults.NotFound();
                 }
 
+                if (entries[index].Details != details)
+                {
+                    notice.Rows.Add(id.ToString());
+                }
+
                 entries[index] = entries[index] with { Details = details };
             }
             else
@@ -133,7 +146,9 @@ internal static class SharedCaregiversEndpoints
                     return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["caregivers"] = ["This list can hold up to 30 caregivers."] });
                 }
 
-                entries.Add(new(Guid.NewGuid(), details, http.User.GetUserId()!.Value, []));
+                var added = Guid.NewGuid();
+                entries.Add(new(added, details, http.User.GetUserId()!.Value, []));
+                notice.Rows.Add(added.ToString());
             }
 
             row.Version++;
@@ -141,8 +156,8 @@ internal static class SharedCaregiversEndpoints
         }, ct);
 
     private static Task<IResult> RemoveAsync(Guid childId, Guid caregiverId, int version, HttpContext http,
-        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, CancellationToken ct) =>
-        MutateAsync(childId, http, tenant, db, work, (row, entries) =>
+        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, TimeProvider clock, CancellationToken ct) =>
+        MutateAsync(childId, http, tenant, db, work, clock, (row, entries, notice) =>
         {
             if (version != row.Version)
             {
@@ -154,13 +169,15 @@ internal static class SharedCaregiversEndpoints
                 return TypedResults.NotFound();
             }
 
+            notice.Removed = caregiverId;
+
             row.Version++;
             return null;
         }, ct);
 
     private static Task<IResult> RateAsync(Guid childId, Guid caregiverId, CaregiverRatingRequest request, HttpContext http,
-        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, CancellationToken ct) =>
-        MutateAsync(childId, http, tenant, db, work, (_, entries) =>
+        ITenantContext tenant, FamiliesDbContext db, IUnitOfWork work, TimeProvider clock, CancellationToken ct) =>
+        MutateAsync(childId, http, tenant, db, work, clock, (_, entries, _) =>
         {
             if (request.Rating is < 1 or > 3)
             {
@@ -186,7 +203,8 @@ internal static class SharedCaregiversEndpoints
         }, ct);
 
     private static async Task<IResult> MutateAsync(Guid childId, HttpContext http, ITenantContext tenant,
-        FamiliesDbContext db, IUnitOfWork work, Func<SharedCaregivers, List<StoredCaregiver>, IResult?> mutate, CancellationToken ct)
+        FamiliesDbContext db, IUnitOfWork work, TimeProvider clock,
+        Func<SharedCaregivers, List<StoredCaregiver>, CaregiverNotice, IResult?> mutate, CancellationToken ct)
     {
         http.Response.Headers.CacheControl = "no-store";
         if (tenant.Role != FamilyRole.Parent)
@@ -206,10 +224,20 @@ internal static class SharedCaregiversEndpoints
             var existing = await db.SharedCaregivers.SingleOrDefaultAsync(item => item.ChildProfileId == childId, token);
             var row = existing ?? new SharedCaregivers { FamilyId = tenant.FamilyId, ChildProfileId = childId };
             var entries = Read(row);
-            if (mutate(row, entries) is { } rejected)
+            var notice = new CaregiverNotice();
+            if (mutate(row, entries, notice) is { } rejected)
             {
                 return rejected;
             }
+
+            // A rating is each parent's own, so only details, additions and removals tell the other parent.
+            if (notice.Removed is Guid removed)
+            {
+                await EssentialsUpdateEndpoints.ForgetRowAsync(db, childId, EssentialsSections.Caregivers, removed.ToString(), token);
+            }
+
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.Caregivers, row.Version,
+                notice.Removed is null ? notice.Rows : [.. notice.Rows, "removed"], clock.GetUtcNow(), token, rows: notice.Rows);
 
             if (existing is null)
             {

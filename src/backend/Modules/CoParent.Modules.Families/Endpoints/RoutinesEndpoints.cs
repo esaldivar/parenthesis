@@ -114,6 +114,11 @@ internal static class RoutinesEndpoints
                 Naps = values.Naps,
             };
             db.RoutinesRevisions.Add(next);
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.Routines, next.Revision,
+                EssentialsUpdateEndpoints.Changed(
+                ("bedtime", current.Values.Bedtime, values.Bedtime),
+                ("naps", current.Values.Naps, values.Naps)),
+                next.EditedAt, ct);
             await db.SaveChangesAsync(ct);
             return TypedResults.Ok(RoutinesView.From(next));
         }, cancellationToken);

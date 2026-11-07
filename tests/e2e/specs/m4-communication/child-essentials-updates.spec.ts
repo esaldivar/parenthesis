@@ -80,3 +80,37 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(clothing.locator('#clothing-history article').first()).toContainText('Mom');
   });
 }
+
+test('the co-parent’s Routines tab shows a dot until opened, and a changed caregiver is highlighted @m4 @mobile @regression', async ({ page, family }, info) => {
+  const { dad, mom, familyId, kaiId } = family;
+  const child = `/api/families/${familyId}/children/${kaiId}/essentials`;
+  const homes = await mom.json<{ ownerId: string; isMine: boolean }[]>(mom.get(`${child}/routines/households`));
+  const momsId = homes.find((home) => home.isMine)!.ownerId;
+  await mom.json(mom.put(`${child}/routines/households/${momsId}`, { revision: 0, action: 'save', values: { bedtime: '8:30 PM' } }));
+  expect((await mom.post(`${child}/caregivers`, { version: 0, details: { name: 'Ava Park', phone: '555-010-4000', schoolPickup: true } })).status()).toBe(204);
+
+  await signIn(page, dad.email);
+  await page.goto('/child-essentials');
+  await expect(page.locator('.banner')).toHaveText(['Kai’s bedtime at your co-parent’s home updated', 'Kai’s Shared Caregivers updated']);
+
+  const routines = page.locator('app-routines-section');
+  const momsTab = routines.getByRole('button', { name: /Mom’s routines.*updated/ });
+  await momsTab.scrollIntoViewIfNeeded();
+  await expect(momsTab).toBeVisible();
+  await activate(momsTab, info);
+  await expect(routines.getByRole('button', { name: 'Mom’s routines', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(routines.locator('.row').filter({ hasText: 'Bedtime' })).toHaveClass(/row--updated/);
+
+  const ava = page.locator('app-caregivers-section article').filter({ hasText: 'Ava Park' });
+  await ava.scrollIntoViewIfNeeded();
+  await expect(ava).toHaveClass(/row--updated/);
+  await expect(ava.locator('h4')).toContainText('Updated');
+  await fitsPage(page);
+  await scan(page, info, 'routines-caregiver-update');
+
+  // Opened and seen: the next visit shows none of it.
+  await expect.poll(async () => (await dad.json<Updates>(dad.get(`/api/families/${familyId}/essentials/updates`))).sections).toEqual([]);
+  await page.reload();
+  await expect(routines.getByRole('button', { name: 'Mom’s routines', exact: true })).toBeVisible();
+  await expect(page.locator('.row--updated')).toHaveCount(0);
+});

@@ -46,11 +46,12 @@ internal static class EssentialsUpdateEndpoints
 
     /// <summary>
     /// Records a notice for every other active parent, when <paramref name="fields"/> isn't empty. Call inside the save's
-    /// transaction, after the family row is locked, and before SaveChanges.
+    /// transaction, after the family row is locked, and before SaveChanges. <paramref name="rows"/> are the changed rows
+    /// still on the page to highlight (all of <paramref name="fields"/> unless given; a removed entry has no row).
     /// </summary>
     public static async Task RecordAsync(
         FamiliesDbContext db, ITenantContext tenant, Guid childId, string section, int revision,
-        IReadOnlyList<string> fields, DateTimeOffset now, CancellationToken ct)
+        IReadOnlyList<string> fields, DateTimeOffset now, CancellationToken ct, IReadOnlyList<string>? rows = null)
     {
         if (fields.Count == 0)
         {
@@ -71,9 +72,21 @@ internal static class EssentialsUpdateEndpoints
                 Section = section,
                 Revision = revision,
                 Fields = [.. fields],
-                PendingFields = [.. fields],
+                PendingFields = [.. rows ?? fields],
                 CreatedAt = now,
             });
+        }
+    }
+
+    /// <summary>A row that's gone from the page (a removed entry) can't come on screen, so it stops being highlighted.</summary>
+    public static async Task ForgetRowAsync(FamiliesDbContext db, Guid childId, string section, string row, CancellationToken ct)
+    {
+        var updates = await db.EssentialsUpdates
+            .Where(u => u.ChildProfileId == childId && u.Section == section && u.PendingFields.Contains(row))
+            .ToListAsync(ct);
+        foreach (var update in updates)
+        {
+            update.PendingFields = update.PendingFields.Where(f => f != row).ToList();
         }
     }
 

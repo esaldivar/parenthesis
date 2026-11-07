@@ -682,7 +682,15 @@ export interface ChatConversation {
 
 /** `count` stops at 99. */
 /** A shared Child Essentials section, as the update notices (#128) name it. */
-export type EssentialsSectionId = 'school' | 'allergiesFood' | 'clothing' | 'whatHelps';
+export type EssentialsSectionId =
+  | 'school'
+  | 'allergiesFood'
+  | 'clothing'
+  | 'whatHelps'
+  | 'routines'
+  | 'householdRoutines'
+  | 'emergencyContacts'
+  | 'caregivers';
 
 /** A child's section with an update this parent hasn't looked at: its dot, and the changed rows not yet seen. */
 export interface EssentialsSectionUpdates {

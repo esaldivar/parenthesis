@@ -129,6 +129,75 @@ public sealed class EssentialsUpdatesTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Routines_record_shared_changes_and_the_co_parents_own_routine_but_not_accepting_or_stopping()
+    {
+        var (dad, mom, familyId, kaiId) = await FamilyAsync();
+        using var _ = dad;
+        using var __ = mom;
+        var routines = $"/api/families/{familyId}/children/{kaiId}/essentials/routines";
+        await mom.SendAsync(HttpMethod.Put, routines, new { revision = 0, values = new { bedtime = "8:00 PM" } });
+
+        var homes = await JsonAsync(await mom.GetAsync(routines + "/households"));
+        var momsId = homes.EnumerateArray().Single(h => h.GetProperty("isMine").GetBoolean()).GetProperty("ownerId").GetGuid();
+        Assert.Equal(HttpStatusCode.OK, (await mom.SendAsync(HttpMethod.Put, $"{routines}/households/{momsId}",
+            new { revision = 0, action = "save", values = new { bedtime = "8:30 PM", naps = "1 PM" } })).StatusCode);
+        // Dad accepting Mom's routine into Shared changes no text, so Mom gets no notice for it.
+        Assert.Equal(HttpStatusCode.OK, (await dad.SendAsync(HttpMethod.Put, $"{routines}/households/{momsId}",
+            new { revision = 1, action = "accept" })).StatusCode);
+
+        var banners = await JsonAsync(await dad.PostAsync($"/api/families/{familyId}/essentials/updates/opened"));
+        Assert.Equal(["routines", "householdRoutines"], banners.EnumerateArray().Select(b => b.GetProperty("section").GetString()!).ToList());
+        Assert.Equal(["bedtime"], Strings(banners[0].GetProperty("fields")));
+        Assert.Equal(["bedtime", "naps"], Strings(banners[1].GetProperty("fields")));
+        Assert.Empty((await UpdatesAsync(mom, familyId)).GetProperty("sections").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Emergency_contacts_and_caregivers_name_changed_entries_without_their_details()
+    {
+        var (dad, mom, familyId, kaiId) = await FamilyAsync();
+        using var _ = dad;
+        using var __ = mom;
+        var child = $"/api/families/{familyId}/children/{kaiId}/essentials";
+        var grandma = new { name = "Rosa Diaz", relationship = "Grandmother", phone = "555-010-2000", callFirst = true };
+        var neighbor = new { name = "Sam Lee", relationship = "Neighbor", phone = "555-010-3000", callFirst = false };
+        Assert.Equal(HttpStatusCode.OK, (await mom.SendAsync(HttpMethod.Put, $"{child}/emergency-contacts",
+            new { version = 0, contacts = new object[] { grandma } })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await mom.SendAsync(HttpMethod.Put, $"{child}/emergency-contacts",
+            new { version = 1, contacts = new object[] { grandma, neighbor } })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await mom.PostAsync($"{child}/caregivers",
+            new { version = 0, details = new { name = "Ava Park", phone = "555-010-4000", schoolPickup = true } })).StatusCode);
+        var caregiverId = (await JsonAsync(await mom.GetAsync($"{child}/caregivers"))).GetProperty("caregivers")[0].GetProperty("id").GetString()!;
+        // A rating is Mom's own: no notice.
+        Assert.Equal(HttpStatusCode.NoContent, (await mom.SendAsync(HttpMethod.Put, $"{child}/caregivers/{caregiverId}/rating", new { rating = 3 })).StatusCode);
+
+        var view = await UpdatesAsync(dad, familyId);
+        var contacts = view.GetProperty("sections").EnumerateArray().Single(s => s.GetProperty("section").GetString() == "emergencyContacts");
+        Assert.Equal(["contact-0", "contact-1"], Strings(contacts.GetProperty("rows")));
+        var caregivers = view.GetProperty("sections").EnumerateArray().Single(s => s.GetProperty("section").GetString() == "caregivers");
+        Assert.Equal([caregiverId], Strings(caregivers.GetProperty("rows")));
+        Assert.Equal(3L, await NoticeCountAsync(familyId));
+        foreach (var value in new[] { "Rosa", "555", "Ava", "Grandmother" })
+        {
+            Assert.DoesNotContain(value, view.GetRawText(), StringComparison.Ordinal);
+        }
+
+        // Removing the caregiver: its row can't come on screen, so it stops being highlighted; the removal still shows.
+        Assert.Equal(HttpStatusCode.NoContent, (await mom.SendAsync(HttpMethod.Delete, $"{child}/caregivers/{caregiverId}?version=1")).StatusCode);
+        // Removing the second contact leaves only the first position changed.
+        Assert.Equal(HttpStatusCode.OK, (await mom.SendAsync(HttpMethod.Put, $"{child}/emergency-contacts",
+            new { version = 2, contacts = new object[] { grandma } })).StatusCode);
+        view = await UpdatesAsync(dad, familyId);
+        Assert.Equal(["contact-0"], Strings(view.GetProperty("sections").EnumerateArray()
+            .Single(s => s.GetProperty("section").GetString() == "emergencyContacts").GetProperty("rows")));
+        Assert.Empty(view.GetProperty("sections").EnumerateArray()
+            .Single(s => s.GetProperty("section").GetString() == "caregivers").GetProperty("rows").EnumerateArray());
+        var banners = await JsonAsync(await dad.PostAsync($"/api/families/{familyId}/essentials/updates/opened"));
+        Assert.Contains("removed", Strings(banners.EnumerateArray().Single(b => b.GetProperty("section").GetString() == "caregivers").GetProperty("fields")));
+    }
+
+    [Fact]
     public async Task Indicators_are_for_this_familys_parents_only_and_go_when_the_parent_leaves()
     {
         var (dad, mom, familyId, kaiId) = await FamilyAsync();

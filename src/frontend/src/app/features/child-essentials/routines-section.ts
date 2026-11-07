@@ -4,20 +4,28 @@ import {
   ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
+import { OnScreen, sectionUpdates } from './essentials-updates';
 import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/api/api';
 
 @Component({
   selector: 'app-routines-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule],
+  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section aria-labelledby="routines-heading">
-      <h3 id="routines-heading">Routines</h3>
+    <section aria-labelledby="routines-heading" (appOnScreen)="marks.sectionOnScreen()">
+      <h3 id="routines-heading">Routines
+        @if (marks.dot()) {
+          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
+        }
+      </h3>
       <div class="actions" role="group" aria-label="Routine views">
         <button type="button" [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">Shared</button>
         @for (home of households(); track home.ownerId) {
           <button type="button" [attr.aria-pressed]="selectedOwner() === home.ownerId"
-            (click)="openHousehold(home)">{{ home.isMine ? 'My routines' : home.ownerName + '’s routines' }}</button>
+            (click)="openHousehold(home)">{{ home.isMine ? 'My routines' : home.ownerName + '’s routines' }}@if (
+              !home.isMine && updates.unopened(childId(), 'householdRoutines')
+            ) {<span class="visually-hidden">, updated</span><span class="updated-dot tab-dot" aria-hidden="true"></span>}</button>
         }
       </div>
       @if (householdError()) {
@@ -41,7 +49,7 @@ import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../
             <ng-container *ngTemplateOutlet="values; context: { $implicit: home.latest.values }" />
           }
         } @else {
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: home.latest.values }" />
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: home.latest.values, rowMarks: homeMarks }" />
           @if (home.canAccept) {
             <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'accept')">Use in both homes</button>
           }
@@ -85,7 +93,7 @@ import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../
             </fieldset>
           </form>
         } @else {
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values }" />
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, rowMarks: marks }" />
           <div class="actions">
             <button type="button" (click)="edit(saved)">Edit Routines</button>
             <button type="button" [attr.aria-expanded]="historyOpen()" aria-controls="routines-history"
@@ -127,10 +135,14 @@ import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../
       }
       }
     </section>
-    <ng-template #values let-entry>
+    <ng-template #values let-entry let-rowMarks="rowMarks">
       <dl>
-        <dt>Bedtime</dt><dd>{{ entry.bedtime ?? 'Not set' }}</dd>
-        <dt>Naps</dt><dd>{{ entry.naps ?? 'Not set' }}</dd>
+        <div class="row" [class.row--updated]="rowMarks?.updated('bedtime')" (appOnScreen)="rowMarks?.rowOnScreen('bedtime')">
+          <dt>Bedtime@if (rowMarks?.updated('bedtime')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.bedtime ?? 'Not set' }}</dd>
+        </div>
+        <div class="row" [class.row--updated]="rowMarks?.updated('naps')" (appOnScreen)="rowMarks?.rowOnScreen('naps')">
+          <dt>Naps@if (rowMarks?.updated('naps')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.naps ?? 'Not set' }}</dd>
+        </div>
       </dl>
     </ng-template>
   `,
@@ -146,6 +158,10 @@ import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../
 export class RoutinesSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
+  protected readonly updates = inject(EssentialsUpdatesStore);
+  /** The shared routine's changes, and the co-parent's own routine's changes shown in their tab (#128). */
+  protected readonly marks = sectionUpdates('routines', this.childId);
+  protected readonly homeMarks = sectionUpdates('householdRoutines', this.childId);
   private readonly api = inject(Api);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly current = signal<RoutinesView | null>(null);
@@ -176,6 +192,8 @@ export class RoutinesSection {
   protected openHousehold(home: HouseholdRoutine | null): void {
     if (this.householdSaving() || this.selectedOwner() === (home?.ownerId ?? null)) return;
     this.selectedOwner.set(home?.ownerId ?? null);
+    // Opening the co-parent's tab clears its dot; its changed rows stay highlighted until on screen (#128).
+    if (home && !home.isMine) this.updates.sectionOpened(this.childId(), 'householdRoutines');
     this.householdBedtime.set(home?.latest.values.bedtime ?? '');
     this.householdNaps.set(home?.latest.values.naps ?? '');
     this.householdConflict.set(false);

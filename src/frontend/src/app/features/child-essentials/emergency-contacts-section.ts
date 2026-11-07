@@ -1,24 +1,31 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { OnScreen, sectionUpdates } from './essentials-updates';
 import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../core/api/api';
 
 @Component({
   selector: 'app-emergency-contacts-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, OnScreen],
   styleUrl: './essentials-section.css',
   styles: ':host { display: block; margin-block-start: 1rem; }',
   template: `
-    <section aria-labelledby="emergency-contacts-heading">
-      <h3 id="emergency-contacts-heading">Emergency Contacts</h3>
+    <section aria-labelledby="emergency-contacts-heading" (appOnScreen)="marks.sectionOnScreen()">
+      <h3 id="emergency-contacts-heading">Emergency Contacts
+        @if (marks.dot()) {
+          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
+        }
+      </h3>
       @if (error()) { <p role="alert">{{ error() }}</p> }
       <p role="status">{{ notice() }}</p>
       @if (view(); as saved) {
         @if (!saved.contacts.length) { <p>No emergency contacts yet.</p> }
         @for (contact of saved.contacts; track contact.phone; let index = $index) {
-          <article>
-            <h4>{{ contact.name }} @if (contact.callFirst) { <span>· Call first</span> }</h4>
+          <article class="entry" [class.row--updated]="marks.updated('contact-' + index)"
+            (appOnScreen)="marks.rowOnScreen('contact-' + index)">
+            <h4>{{ contact.name }} @if (contact.callFirst) { <span>· Call first</span> }
+              @if (marks.updated('contact-' + index)) { <span class="updated-pill">Updated</span> }</h4>
             <p>{{ contact.relationship }} · {{ contact.phone }}</p>
             <div class="actions">
               <a [href]="phoneLink(contact.phone)" [attr.aria-label]="'Call ' + contact.name">Call</a>
@@ -74,6 +81,7 @@ import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../core/
 export class EmergencyContactsSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
+  protected readonly marks = sectionUpdates('emergencyContacts', this.childId);
   readonly children = input<readonly Child[]>([]);
   private readonly api = inject(Api);
   protected readonly view = signal<EmergencyContactsView | null>(null);
