@@ -696,6 +696,36 @@ export interface WhatHelpsHistoryPage {
   readonly beforeRevision: number | null;
 }
 
+export interface HouseholdRoutine {
+  readonly ownerId: string;
+  readonly ownerName: string;
+  readonly isMine: boolean;
+  readonly latest: RoutinesView;
+  readonly shared: RoutinesView | null;
+  readonly canAccept: boolean;
+}
+
+export interface RoutinesValues {
+  readonly bedtime: string | null;
+  readonly naps: string | null;
+}
+
+export interface RoutinesView {
+  readonly revision: number;
+  readonly values: RoutinesValues;
+}
+
+export interface RoutinesHistoryPage {
+  readonly entries: readonly {
+    readonly revision: number;
+    readonly editedBy: string;
+    readonly editedAt: string;
+    readonly previous: RoutinesValues;
+    readonly current: RoutinesValues;
+  }[];
+  readonly beforeRevision: number | null;
+}
+
 export interface AllergiesFoodValues {
   readonly noKnownAllergies: boolean;
   readonly allergies: string | null;
@@ -808,6 +838,25 @@ export class Api {
 
   private whatHelpsUrl(familyId: string, childId: string): string {
     return `/api/families/${familyId}/children/${childId}/essentials/what-helps`;
+  }
+
+  routines = (familyId: string, childId: string) =>
+    this.call(this.http.get<RoutinesView>(this.routinesUrl(familyId, childId)));
+  saveRoutines = (familyId: string, childId: string, body: RoutinesView) =>
+    this.call(this.http.put<RoutinesView>(this.routinesUrl(familyId, childId), body));
+  routinesHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<RoutinesHistoryPage>(this.routinesUrl(familyId, childId) + '/history', {
+      params: beforeRevision === null ? {} : { beforeRevision },
+    }));
+
+  householdRoutines = (familyId: string, childId: string) =>
+    this.call(this.http.get<readonly HouseholdRoutine[]>(this.routinesUrl(familyId, childId) + '/households'));
+  updateHouseholdRoutine = (familyId: string, childId: string, ownerId: string,
+    body: { revision: number; action: 'save' | 'accept' | 'stop'; values?: RoutinesValues }) =>
+    this.call(this.http.put<RoutinesView>(this.routinesUrl(familyId, childId) + '/households/' + encodeURIComponent(ownerId), body));
+
+  private routinesUrl(familyId: string, childId: string): string {
+    return `/api/families/${familyId}/children/${childId}/essentials/routines`;
   }
 
   downloadAllergyPdf = (familyId: string, childId: string | null) =>
