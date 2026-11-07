@@ -17,4 +17,7 @@
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../CoParent.Modules.Messaging/Transcripts/Fonts/*.ttf" LogicalName="AllergyPdf.Fonts.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

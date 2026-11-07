@@ -8,7 +8,8 @@ that points back here.
 ## Big projects
 - [ ] **Child Essentials (#126, M4).** Complete section editing and protected history, concurrent edit handling,
   and in-page update indicators.
-  - [ ] Add the allergy PDF and complete Routines editing, protected history, concurrent edit review and household routine sharing.
+  - [ ] Verify shared and household Routines in both themes, including protected history, revision acceptance, and stop sharing. Coordinate household update indicators with #128.
+  - [ ] Verify the allergy PDF with one child and all children, including authorization, pagination and printable output.
   - [x] #128 in-page update flow for School, Allergies & Food, Clothing & Shoes and What Helps: navigation dot,
     first-visit banners, child and section dots, row highlights (November 7, 2026).
   - [ ] Extend #128 update notices to Routines, Medication (values stay in the protected record), Shared Caregivers

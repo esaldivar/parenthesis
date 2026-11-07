@@ -20,13 +20,14 @@ interface ShownBanner {
 
 import { AllergiesFoodSection } from './allergies-food-section';
 import { ClothingSection } from './clothing-section';
+import { RoutinesSection } from './routines-section';
 import { SchoolSection } from './school-section';
 import { WhatHelpsSection } from './what-helps-section';
 
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Icon, AllergiesFoodSection, ClothingSection, SchoolSection, WhatHelpsSection],
+  imports: [Avatar, Icon, AllergiesFoodSection, ClothingSection, RoutinesSection, SchoolSection, WhatHelpsSection],
   template: `
     <h1 tabindex="-1" #heading>Child Essentials</h1>
     <!-- The other parent's saves since the last visit (#128): shown once, then gone after about ten seconds or on X. -->
@@ -66,7 +67,8 @@ import { WhatHelpsSection } from './what-helps-section';
           @if (familyId(); as family) {
             @for (profile of [child]; track profile.id) {
               <app-school-section [familyId]="family" [childId]="profile.id" />
-              <app-allergies-food-section [familyId]="family" [childId]="profile.id" />
+              <app-allergies-food-section [familyId]="family" [childId]="profile.id" [children]="children()" />
+              <app-routines-section [familyId]="family" [childId]="profile.id" />
               <app-clothing-section [familyId]="family" [childId]="profile.id" />
               <app-what-helps-section [familyId]="family" [childId]="profile.id" />
             }
@@ -80,7 +82,7 @@ import { WhatHelpsSection } from './what-helps-section';
   styles: `
     :host { display: block; }
     .layout, .children { display: grid; gap: 1rem; align-content: start; }
-    app-allergies-food-section, app-clothing-section, app-what-helps-section { margin-block-start: 1rem; }
+    app-allergies-food-section, app-routines-section, app-clothing-section, app-what-helps-section { margin-block-start: 1rem; }
     button {
       display: flex;
       align-items: center;

@@ -315,6 +315,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     [Theory]
     [InlineData("clothing", "shoeSize")]
     [InlineData("what-helps", "calmingStrategies")]
+    [InlineData("routines", "bedtime")]
     public async Task Shared_essentials_edits_are_shared_versioned_and_record_before_and_after_values(string section, string field)
     {
         using var family = await FamilyWithKaiAsync();
@@ -356,6 +357,7 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     [Theory]
     [InlineData("clothing", "shoeSize")]
     [InlineData("what-helps", "calmingStrategies")]
+    [InlineData("routines", "bedtime")]
     public async Task Shared_essentials_current_values_writes_and_history_are_parent_and_family_scoped(string section, string field)
     {
         using var family = await FamilyWithKaiAsync();
@@ -379,6 +381,77 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await tablet.SendAsync(HttpMethod.Put, path, body)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path + "/history")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Household_routine_keeps_the_agreed_revision_until_the_other_parent_accepts()
+    {
+        using var family = await FamilyWithKaiAsync();
+        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/routines/households";
+        var households = await JsonAsync(await family.Dad.GetAsync(path));
+        var ownerId = Assert.Single(households.EnumerateArray(), row => row.GetProperty("isMine").GetBoolean())
+            .GetProperty("ownerId").GetGuid();
+        var ownerPath = $"{path}/{ownerId}";
+
+        async Task<JsonElement> MomsViewAsync()
+        {
+            var rows = await JsonAsync(await family.Mom.GetAsync(path));
+            return Assert.Single(rows.EnumerateArray(), row => row.GetProperty("ownerId").GetGuid() == ownerId);
+        }
+
+        var first = new { revision = 0, action = "save", values = new { bedtime = "Lights out at eight" } };
+        Assert.Equal(HttpStatusCode.Forbidden, (await family.Mom.SendAsync(HttpMethod.Put, ownerPath, first)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, ownerPath, first)).StatusCode);
+        Assert.True((await MomsViewAsync()).GetProperty("canAccept").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, (await family.Mom.SendAsync(HttpMethod.Put, ownerPath,
+            new { revision = 1, action = "accept" })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, ownerPath,
+            new { revision = 2, action = "save", values = new { bedtime = "Lights out at nine" } })).StatusCode);
+        var pending = await MomsViewAsync();
+        Assert.Equal("Lights out at eight", pending.GetProperty("shared").GetProperty("values").GetProperty("bedtime").GetString());
+        Assert.Equal("Lights out at nine", pending.GetProperty("latest").GetProperty("values").GetProperty("bedtime").GetString());
+        Assert.Equal(HttpStatusCode.Conflict, (await family.Mom.SendAsync(HttpMethod.Put, ownerPath,
+            new { revision = 2, action = "accept" })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await family.Mom.SendAsync(HttpMethod.Put, ownerPath,
+            new { revision = 3, action = "accept" })).StatusCode);
+        Assert.Equal("Lights out at nine", (await MomsViewAsync()).GetProperty("shared")
+            .GetProperty("values").GetProperty("bedtime").GetString());
+
+        Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, ownerPath,
+            new { revision = 4, action = "stop" })).StatusCode);
+        var stopped = await MomsViewAsync();
+        Assert.Equal(JsonValueKind.Null, stopped.GetProperty("shared").ValueKind);
+        Assert.Equal("Lights out at nine", stopped.GetProperty("latest").GetProperty("values").GetProperty("bedtime").GetString());
+    }
+
+    [Fact]
+    public async Task Allergy_pdf_download_is_private_and_supports_single_child_and_family_exports()
+    {
+        using var family = await FamilyWithKaiAsync();
+        var path = $"/api/families/{family.FamilyId}/child-essentials/allergies/pdf";
+        var selected = $"{path}?childId={family.KaiId}";
+        foreach (var url in new[] { selected, path })
+        {
+            using var pdf = await family.Mom.GetAsync(url);
+            Assert.Equal(HttpStatusCode.OK, pdf.StatusCode);
+            Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+            Assert.Equal("attachment", pdf.Content.Headers.ContentDisposition?.DispositionType);
+            Assert.True(pdf.Headers.CacheControl?.NoStore == true);
+            var bytes = await pdf.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
+            Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(bytes[..4]), StringComparison.Ordinal);
+        }
+
+        Assert.Equal(HttpStatusCode.NotFound, (await family.Mom.GetAsync($"{path}?childId={Guid.NewGuid()}")).StatusCode);
+        using var outsider = await ApiSession.SignedInAsync(api);
+        var outsideFamilyId = await outsider.CreateFamilyAsync("Other family");
+        Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync(selected)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync(
+            $"/api/families/{outsideFamilyId}/child-essentials/allergies/pdf?childId={family.KaiId}")).StatusCode);
+        using var tablet = await PairedTabletAsync(family);
+        Assert.Equal(HttpStatusCode.NoContent, (await tablet.PostAsync("/api/device/child-session",
+            new { childId = family.KaiId, pin = KaisPin })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(selected)).StatusCode);
     }
 
     private async Task<ApiSession> PairedTabletAsync(TestFamily family)

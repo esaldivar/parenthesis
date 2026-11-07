@@ -723,6 +723,61 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.ToTable("profile_photos", "families");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.RoutinesRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Bedtime")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bedtime");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<DateTimeOffset>("EditedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("edited_at");
+
+                    b.Property<Guid>("EditedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("edited_by_user_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("Naps")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("naps");
+
+                    b.Property<Guid>("OwnerMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_membership_id");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision");
+
+                    b.Property<int?>("SharedRevision")
+                        .HasColumnType("integer")
+                        .HasColumnName("shared_revision");
+
+                    b.HasKey("Id")
+                        .HasName("pk_child_routines_revisions");
+
+                    b.HasIndex("ChildProfileId", "OwnerMembershipId", "Revision")
+                        .IsUnique()
+                        .HasDatabaseName("ix_child_routines_revisions_child_owner_revision");
+
+                    b.ToTable("child_routines_revisions", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.SchoolRevision", b =>
                 {
                     b.Property<Guid>("Id")
@@ -952,6 +1007,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_profile_photos_families_family_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.RoutinesRevision", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_child_routines_revisions_child_profiles_child_profile_id");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.SchoolRevision", b =>

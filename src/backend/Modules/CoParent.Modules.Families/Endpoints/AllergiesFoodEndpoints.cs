@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Net.Mime;
 using CoParent.Modules.Families.Domain;
 using CoParent.Modules.Families.Infrastructure;
 using CoParent.Modules.Identity.Contracts;
@@ -35,10 +37,42 @@ internal static class AllergiesFoodEndpoints
 
     public static void Map(IEndpointRouteBuilder family)
     {
+        family.MapGet("/child-essentials/allergies/pdf", DownloadPdfAsync).WithTags("Child Essentials");
         var allergiesFood = family.MapGroup("/children/{childId:guid}/essentials/allergies-food").WithTags("Child Essentials");
         allergiesFood.MapGet("", GetAsync);
         allergiesFood.MapPut("", SaveAsync);
         allergiesFood.MapGet("/history", HistoryAsync);
+    }
+
+    private static async Task<IResult> DownloadPdfAsync(
+        Guid? childId, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
+        TimeProvider clock, CancellationToken cancellationToken)
+    {
+        http.Response.Headers.CacheControl = "no-store";
+        http.Response.Headers.XContentTypeOptions = "nosniff";
+        if (tenant.Role != FamilyRole.Parent)
+        {
+            return TypedResults.Forbid();
+        }
+
+        var children = await db.Children.AsNoTracking()
+            .Where(child => child.Status == ChildStatus.Active && (childId == null || child.Id == childId))
+            .OrderBy(child => child.FirstName).ThenBy(child => child.Id)
+            .Select(child => new AllergyPdfSection(
+                child.FirstName,
+                db.AllergiesFoodRevisions.Where(row => row.ChildProfileId == child.Id)
+                    .OrderByDescending(row => row.Revision)
+                    .Select(row => row.Allergies ?? (row.NoKnownAllergies ? "No known allergies" : "No allergies listed"))
+                    .FirstOrDefault() ?? "No allergies listed"))
+            .ToListAsync(cancellationToken);
+        if (children.Count == 0)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var generatedAt = clock.GetUtcNow();
+        var date = generatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return TypedResults.File(AllergyPdf.Render(children, generatedAt, date), MediaTypeNames.Application.Pdf, $"allergies-{date}.pdf");
     }
 
     private static async Task<IResult> GetAsync(
