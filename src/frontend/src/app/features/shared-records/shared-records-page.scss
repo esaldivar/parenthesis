@@ -163,12 +163,15 @@ button:focus-visible, [tabindex]:focus-visible {
   .composer {
     border: 0;
     border-radius: 0;
-    padding: 0 var(--space-4) var(--space-5);
+    padding: 0 0 var(--space-5);
     background: transparent;
   }
 
+  .composer > :not(.heading) {
+    margin-inline: var(--space-4);
+  }
+
   .composer > .heading {
-    margin-inline: calc(-1 * var(--space-4));
     padding: var(--space-3) var(--space-4);
     justify-content: flex-start;
     background: var(--color-surface);
