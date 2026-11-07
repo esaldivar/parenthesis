@@ -40,6 +40,9 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
     public DbSet<AllergiesFoodRevision> AllergiesFoodRevisions => Set<AllergiesFoodRevision>();
     public DbSet<SchoolRevision> SchoolRevisions => Set<SchoolRevision>();
 
+    /// <summary>Each parent's notices of the other parent's Child Essentials saves (#128).</summary>
+    public DbSet<EssentialsUpdate> EssentialsUpdates => Set<EssentialsUpdate>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -130,6 +133,17 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
             revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
             revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<EssentialsUpdate>(update =>
+        {
+            update.ToTable("essentials_updates");
+            update.Property(u => u.Section).HasMaxLength(EssentialsUpdate.SectionMaxLength);
+            update.HasOne<ChildProfile>().WithMany().HasForeignKey(u => u.ChildProfileId);
+            update.HasOne<FamilyMembership>().WithMany().HasForeignKey(u => u.RecipientMembershipId);
+            // One notice per recipient and saved revision: a retried or replayed save can't add another.
+            update.HasIndex(u => new { u.RecipientMembershipId, u.ChildProfileId, u.Section, u.Revision }).IsUnique();
+            update.HasQueryFilter(TenantContext.QueryFilterName, u => u.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<Device>(device =>

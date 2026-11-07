@@ -117,6 +117,12 @@ internal static class AllergiesFoodEndpoints
                 FoodPreferences = values.FoodPreferences,
             };
             db.AllergiesFoodRevisions.Add(next);
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.AllergiesFood, next.Revision,
+                EssentialsUpdateEndpoints.Changed(
+                ("allergies", current.Values.Allergies, values.Allergies),
+                ("foodPreferences", current.Values.FoodPreferences, values.FoodPreferences),
+                ("noKnownAllergies", current.Values.NoKnownAllergies, values.NoKnownAllergies)),
+                next.EditedAt, ct);
             await db.SaveChangesAsync(ct);
             return TypedResults.Ok(await CurrentAsync(db, childId, directory, ct));
         }, cancellationToken);
