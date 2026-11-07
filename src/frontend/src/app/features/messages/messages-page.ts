@@ -3,22 +3,30 @@ import { Router, RouterLink } from '@angular/router';
 import { ChatStore } from '../../core/chat/chat.store';
 import { Icon } from '../../shared/icon/icon';
 import { ChatConversation } from './chat-conversation';
+import { ChatTranscripts } from './chat-transcripts';
 
 /** The server's limit (ADR-0008). */
 export { MESSAGE_MAX_LENGTH } from './chat-conversation';
 
 /**
  * Messages (#125, docs/design/m4-chat.md): the parents' conversation as a full page. On phones it fills the screen, as in
- * the mockups, with Back to Home. On desktop, Minimize docks the same conversation, draft and chosen event as the
- * compact chat over the page the parent came from.
+ * the mockups, with Back to Home and Transcripts (the document icon). On desktop, Save transcript and Saved transcripts
+ * sit in a left column, and Minimize docks the same conversation, draft and chosen event as the compact chat over the
+ * page the parent came from.
  */
 @Component({
   selector: 'app-messages-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, ChatConversation],
+  imports: [RouterLink, Icon, ChatConversation, ChatTranscripts],
   template: `
-    <app-chat-conversation [level]="1">
+    <aside class="transcripts" aria-label="Transcripts">
+      <app-chat-transcripts [level]="2" />
+    </aside>
+    <app-chat-conversation class="conversation" [level]="1">
       <a chatLead class="round" routerLink="/" aria-label="Back to Home"><app-icon name="chevron-left" [size]="26" /></a>
+      <a chatActions class="round transcripts-link" routerLink="/messages/transcripts" aria-label="Transcripts">
+        <app-icon name="note" [size]="24" />
+      </a>
       <button chatActions class="round minimize" type="button" aria-label="Minimize to compact chat" (click)="minimize()">
         <app-icon name="minus" [size]="24" />
       </button>
@@ -26,14 +34,20 @@ export { MESSAGE_MAX_LENGTH } from './chat-conversation';
   `,
   styles: `
     :host {
-      display: block;
+      display: grid;
+      grid-template-columns: 18rem minmax(0, 1fr);
       height: calc(100dvh - 6.5rem);
       min-height: 20rem;
-      max-width: 56rem;
+      max-width: 76rem;
       margin-inline: auto;
       border: 1px solid var(--color-divider);
       border-radius: var(--radius-card);
       overflow: hidden;
+    }
+    .transcripts {
+      overflow-y: auto;
+      border-inline-end: 1px solid var(--color-divider);
+      background: var(--color-canvas);
     }
     .round {
       display: inline-grid;
@@ -55,17 +69,26 @@ export { MESSAGE_MAX_LENGTH } from './chat-conversation';
       outline: 3px solid var(--color-focus);
       outline-offset: 2px;
     }
-    /* The compact chat is for desktop; phones and tablets keep the full screen. */
+    /* Desktop has the left column, so the header link is for phones and tablets. */
+    .transcripts-link {
+      display: none;
+    }
+    /* The compact chat and the left column are for desktop; phones and tablets keep the full screen. */
     @media (max-width: 1023.98px) {
       :host {
+        display: block;
         height: 100dvh;
         max-width: none;
         border: 0;
         border-radius: 0;
         padding-bottom: env(safe-area-inset-bottom);
       }
+      .transcripts,
       .minimize {
         display: none;
+      }
+      .transcripts-link {
+        display: inline-grid;
       }
     }
   `,

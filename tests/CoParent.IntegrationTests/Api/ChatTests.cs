@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -343,6 +344,112 @@ public sealed class ChatTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync(path)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.GetAsync(f.Path($"chat/messages/{Guid.CreateVersion7()}"))).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await f.Mom.GetAsync(path)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Transcripts_include_both_end_dates_in_the_familys_time_zone()
+    {
+        using var f = await FamilyAsync();
+        // Chicago is UTC-6 in November 2026. One message a minute before midnight, one just after, one the next day.
+        api.Clock.SetUtcNow(DateTimeOffset.Parse("2026-11-04T05:58:30Z", CultureInfo.InvariantCulture));
+        await SendAsync(f.Mom, f, "Late on the 3rd");
+        api.Clock.SetUtcNow(DateTimeOffset.Parse("2026-11-04T06:00:30Z", CultureInfo.InvariantCulture));
+        await SendAsync(f.Dad, f, "Early on the 4th");
+        api.Clock.SetUtcNow(DateTimeOffset.Parse("2026-11-05T18:00:00Z", CultureInfo.InvariantCulture));
+        await SendAsync(f.Mom, f, "Noon on the 5th");
+
+        async Task<string[]> Texts(string query) =>
+            (await JsonAsync(await f.Dad.GetAsync(f.Path($"chat/transcripts/preview{query}")))).GetProperty("days").EnumerateArray()
+                .SelectMany(d => d.GetProperty("messages").EnumerateArray()).Select(m => m.GetProperty("text").GetString()!).ToArray();
+
+        Assert.Equal(["Late on the 3rd"], await Texts("?from=2026-11-03&to=2026-11-03"));
+        Assert.Equal(["Early on the 4th"], await Texts("?from=2026-11-04&to=2026-11-04"));
+        Assert.Equal(["Late on the 3rd", "Early on the 4th"], await Texts("?from=2026-11-03&to=2026-11-04"));
+        Assert.Equal(["Early on the 4th", "Noon on the 5th"], await Texts("?from=2026-11-04&to=2026-11-05"));
+        Assert.Equal(["Late on the 3rd", "Early on the 4th", "Noon on the 5th"], await Texts(""));
+
+        // Names and family-local times, and a file name with both dates.
+        var preview = await JsonAsync(await f.Dad.GetAsync(f.Path("chat/transcripts/preview?from=2026-11-03&to=2026-11-04")));
+        Assert.Equal("Chat_2026-11-03_to_2026-11-04.pdf", preview.GetProperty("fileName").GetString());
+        Assert.Equal("Chat with Mom", preview.GetProperty("title").GetString());
+        Assert.Equal("Nov 3–4, 2026", preview.GetProperty("rangeLabel").GetString());
+        var first = preview.GetProperty("days")[0];
+        Assert.Equal("Tuesday, November 3, 2026", first.GetProperty("label").GetString());
+        Assert.Equal("11:58 PM", first.GetProperty("messages")[0].GetProperty("time").GetString());
+        Assert.Equal("Mom", first.GetProperty("messages")[0].GetProperty("sender").GetString());
+        Assert.Equal("Dad", preview.GetProperty("days")[1].GetProperty("messages")[0].GetProperty("sender").GetString());
+    }
+
+    [Fact]
+    public async Task Transcript_ranges_must_be_whole_and_in_order_and_empty_ones_export_nothing()
+    {
+        using var f = await FamilyAsync();
+        await SendAsync(f.Mom, f, "Hi");
+
+        var reversed = await f.Dad.GetAsync(f.Path("chat/transcripts/preview?from=2026-11-06&to=2026-11-01"));
+        var half = await f.Dad.GetAsync(f.Path("chat/transcripts/preview?from=2026-11-06"));
+        Assert.Equal(HttpStatusCode.BadRequest, reversed.StatusCode);
+        Assert.True((await JsonAsync(reversed)).GetProperty("errors").TryGetProperty("to", out _));
+        Assert.Equal(HttpStatusCode.BadRequest, half.StatusCode);
+
+        // An empty range previews as empty, but there's nothing to download or save.
+        var emptyResponse = await f.Dad.GetAsync(f.Path("chat/transcripts/preview?from=2020-01-01&to=2020-01-31"));
+        Assert.True(emptyResponse.IsSuccessStatusCode, $"{emptyResponse.StatusCode}: {await emptyResponse.Content.ReadAsStringAsync(Ct)}");
+        var empty = await JsonAsync(emptyResponse);
+        Assert.Equal(0, empty.GetProperty("messageCount").GetInt32());
+        Assert.Equal(HttpStatusCode.BadRequest, (await f.Dad.GetAsync(f.Path("chat/transcripts/pdf?from=2020-01-01&to=2020-01-31"))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await f.Dad.PostAsync(f.Path("chat/transcripts"), new { from = "2020-01-01", to = "2020-01-31" })).StatusCode);
+        Assert.Empty((await JsonAsync(await f.Dad.GetAsync(f.Path("chat/transcripts")))).EnumerateArray());
+    }
+
+    [Fact]
+    public async Task A_saved_transcript_is_an_unchanging_pdf_only_its_parent_can_open()
+    {
+        using var f = await FamilyAsync();
+        await SendAsync(f.Mom, f, "Can you do the soccer pickup on Saturday?");
+        await SendAsync(f.Dad, f, "Yes, I can.");
+        var start = DateTimeOffset.UtcNow.AddDays(3);
+        var play = await EventAsync(f.Dad, f, new { category = "Joint", title = "School play", startsAt = start, endsAt = start.AddHours(1) });
+        await SendEventAsync(f.Dad, f, "And this?", play);
+
+        // A shared proposal reads as one.
+        var preview = await JsonAsync(await f.Mom.GetAsync(f.Path("chat/transcripts/preview")));
+        var shared = preview.GetProperty("days").EnumerateArray().SelectMany(d => d.GetProperty("messages").EnumerateArray()).Last();
+        Assert.Contains("School play", shared.GetProperty("event").GetString(), StringComparison.Ordinal);
+        Assert.Contains("(pending approval)", shared.GetProperty("event").GetString(), StringComparison.Ordinal);
+
+        // Download: a real PDF, never cached, named for the range.
+        var download = await f.Mom.GetAsync(f.Path("chat/transcripts/pdf?download=true"));
+        Assert.Equal("application/pdf", download.Content.Headers.ContentType?.MediaType);
+        Assert.StartsWith("attachment", download.Content.Headers.ContentDisposition?.ToString(), StringComparison.Ordinal);
+        Assert.Contains("no-store", download.Headers.CacheControl?.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString((await download.Content.ReadAsByteArrayAsync(Ct))[..4]), StringComparison.Ordinal);
+
+        // Save: an entry for Mom only, whose PDF doesn't change when the conversation does.
+        var saved = await JsonAsync(await f.Mom.PostAsync(f.Path("chat/transcripts"), new { from = (string?)null, to = (string?)null }));
+        var id = saved.GetProperty("id").GetGuid();
+        Assert.Equal(3, saved.GetProperty("messageCount").GetInt32());
+        Assert.StartsWith("Chat_all_messages_", saved.GetProperty("fileName").GetString(), StringComparison.Ordinal);
+        var pdfPath = f.Path($"chat/transcripts/{id}/pdf");
+        var before = await (await f.Mom.GetAsync(pdfPath)).Content.ReadAsByteArrayAsync(Ct);
+        await SendAsync(f.Mom, f, "One more thing");
+        var again = await f.Mom.GetAsync(pdfPath);
+        Assert.Equal(HttpStatusCode.OK, again.StatusCode);
+        Assert.StartsWith("inline", again.Content.Headers.ContentDisposition?.ToString(), StringComparison.Ordinal);
+        Assert.Equal(before, await again.Content.ReadAsByteArrayAsync(Ct));
+        Assert.Single((await JsonAsync(await f.Mom.GetAsync(f.Path("chat/transcripts")))).EnumerateArray());
+
+        // Nobody else gets it: not the co-parent, not a child session, not another family.
+        Assert.Empty((await JsonAsync(await f.Dad.GetAsync(f.Path("chat/transcripts")))).EnumerateArray());
+        Assert.Equal(HttpStatusCode.NotFound, (await f.Dad.GetAsync(pdfPath)).StatusCode);
+        using var kitchen = await KitchenAsync(f);
+        Assert.Equal(HttpStatusCode.Forbidden, (await kitchen.GetAsync(pdfPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await kitchen.GetAsync(f.Path("chat/transcripts/preview"))).StatusCode);
+        using var stranger = await ApiSession.SignedInAsync(api, displayName: "Stranger");
+        Assert.Equal(HttpStatusCode.NotFound, (await stranger.GetAsync(pdfPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await stranger.GetAsync(f.Path("chat/transcripts/pdf"))).StatusCode);
+        // Saving changes data, so it needs the antiforgery token.
+        Assert.Equal(HttpStatusCode.BadRequest, (await f.Mom.PostAsync(f.Path("chat/transcripts"), new { }, withAntiforgery: false)).StatusCode);
     }
 
     // ---------- Helpers ----------

@@ -33,14 +33,26 @@ architecture already planned a `Messaging` module and SignalR, but no hub existe
    host comparison (cross-site WebSocket hijacking). Pushes are best effort: the REST endpoints stay the source of
    truth, and clients reload after reconnecting.
 8. **Account deletion (A-12).** The departing parent's read position goes. Their messages stay, because they are the
-   co-parent's record and can't be edited or deleted; the sender shows as a former parent. When the whole family
-   closes, every message goes.
+   co-parent's record and can't be edited or deleted; the sender shows as a former parent. Their saved transcripts
+   (decision 10) go with them. When the whole family closes, every message and transcript goes.
 
 9. **Shared calendar events (slice 2).** A message may carry one event id. Each parent's card is read through the
    Calendar's own rules for them (`ISharedEventCards`): the same events their calendar and event details show, another
    parent's unavailable time only as "Unavailable", and a proposal marked as pending. A cancelled event, or a declined
    request the parent removed, shows as no longer available with nothing else about it. Only an event on the sender's
    own calendar can be shared. Live pushes carry just the id; each device reads its own card.
+
+10. **PDF transcripts (slice 3).** A parent previews the conversation for all messages or a range of family-local
+    dates (from local midnight on the start date up to local midnight after the end date, both included), then
+    downloads a copy or saves one. The preview is built from the same model as the PDF, so it shows exactly what the
+    PDF holds. Downloads are made on request and not kept. A saved transcript is an unchanging snapshot belonging to the
+    parent who saved it: only they can list or open it (another parent's, or another family's, reads as not found).
+    Its PDF is stored in the Messaging schema (`messaging.transcripts`), goes when its parent leaves or the family
+    closes, and is always sent with `Cache-Control: no-store`. Shared events are described as that parent's calendar
+    shows them, so a proposal never reads as confirmed. Only sent messages are included; drafts and failed sends
+    never reach the server. A transcript holds at most 5,000 messages, and saving and rendering are rate limited. The
+    PDF is drawn with SkiaSharp and embedded Noto Sans (SIL Open Font License), whose Latin, Greek and Cyrillic glyphs
+    cover the app's text today; other scripts would need more fonts.
 
 ## Consequences
 - Group membership in the hub lasts until the connection closes. A parent who loses membership mid-connection stops

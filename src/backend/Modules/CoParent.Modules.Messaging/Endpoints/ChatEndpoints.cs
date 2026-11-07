@@ -83,6 +83,7 @@ internal static class ChatEndpoints
         chat.MapPut("/read", ReadAsync);
         chat.MapGet("/unread", UnreadAsync);
         chat.MapPost("/typing", TypingAsync).RequireRateLimiting(TypingRateLimitPolicy);
+        TranscriptEndpoints.Map(chat);
     }
 
     /// <summary>The latest page, or the page before <paramref name="before"/> (a message id) when loading older ones.</summary>

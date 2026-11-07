@@ -16,6 +16,8 @@ internal sealed class MessagingDbContext(DbContextOptions<MessagingDbContext> op
 
     public DbSet<ReadPosition> ReadPositions => Set<ReadPosition>();
 
+    public DbSet<ChatTranscript> Transcripts => Set<ChatTranscript>();
+
     // Read per query, so each request's filters use its own tenant.
     private Guid CurrentFamilyId => tenant.FamilyId;
 
@@ -34,6 +36,15 @@ internal sealed class MessagingDbContext(DbContextOptions<MessagingDbContext> op
             message.HasIndex(m => new { m.FamilyId, m.Sequence });
             message.Property(m => m.EventId);
             message.HasQueryFilter(TenantContext.QueryFilterName, m => m.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<ChatTranscript>(transcript =>
+        {
+            transcript.ToTable("transcripts");
+            transcript.Property(t => t.FileName).HasMaxLength(ChatTranscript.FileNameMaxLength);
+            transcript.Property(t => t.RangeLabel).HasMaxLength(ChatTranscript.RangeLabelMaxLength);
+            transcript.HasIndex(t => new { t.FamilyId, t.OwnerMembershipId, t.CreatedAt });
+            transcript.HasQueryFilter(TenantContext.QueryFilterName, t => t.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<ReadPosition>(position =>

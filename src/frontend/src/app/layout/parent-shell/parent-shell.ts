@@ -63,7 +63,7 @@ export class ParentShell {
   protected readonly chat = inject(ChatStore);
 
   /** Messages fill the screen on phones, as in the M4 mockups: no top bar or bottom navigation there. */
-  protected readonly fullScreen = computed(() => this.url().split(/[?#]/)[0] === '/messages');
+  protected readonly fullScreen = computed(() => /^\/messages(\/|$)/.test(this.url().split(/[?#]/)[0]));
 
   /** PLACEHOLDER: sample-only unread count for a navigation item; always 0 for real data (no unread API yet). */
   protected unread(path: string): number {

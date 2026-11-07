@@ -46,6 +46,12 @@ export const PARENT_ROUTES: Routes = [
     title: 'Messages',
     loadComponent: () => import('./messages/messages-page').then((m) => m.MessagesPage),
   },
+  // Transcripts (slice 3): the phone's screen for Save transcript and Saved transcripts.
+  {
+    path: 'messages/transcripts',
+    title: 'Transcripts',
+    loadComponent: () => import('./messages/transcripts-page').then((m) => m.TranscriptsPage),
+  },
   {
     path: 'from-your-kids',
     ...comingSoon('From Your Kids', {

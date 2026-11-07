@@ -598,6 +598,45 @@ export interface ChatEventCard {
   readonly changePending?: boolean;
 }
 
+/** A transcript's dates: both null for all messages, otherwise family-local `YYYY-MM-DD`, both included. */
+export interface TranscriptRange {
+  readonly from: string | null;
+  readonly to: string | null;
+}
+
+/** One message as the transcript shows it: family-local time, sender's name, and a shared event's description. */
+export interface TranscriptMessage {
+  readonly time: string;
+  readonly sender: string;
+  readonly yours: boolean;
+  readonly text: string;
+  readonly event: string | null;
+}
+
+/** Exactly what the PDF holds, for the preview. An empty range has no days. */
+export interface TranscriptPreview {
+  readonly fileName: string;
+  readonly title: string;
+  readonly rangeLabel: string;
+  readonly timeZone: string;
+  readonly preparedLabel: string;
+  readonly from: string | null;
+  readonly to: string | null;
+  readonly messageCount: number;
+  readonly days: readonly { readonly date: string; readonly label: string; readonly messages: readonly TranscriptMessage[] }[];
+}
+
+/** A transcript this parent saved: only they can see or open it. */
+export interface SavedTranscript {
+  readonly id: string;
+  readonly fileName: string;
+  readonly from: string | null;
+  readonly to: string | null;
+  readonly rangeLabel: string;
+  readonly messageCount: number;
+  readonly createdAt: string;
+}
+
 /** A page of the conversation, oldest first, with each parent's latest read message (null when none). */
 export interface ChatConversation {
   readonly yourMembershipId: string;
@@ -992,10 +1031,29 @@ export class Api {
   /** Only for a message seen in an open, visible conversation. Moving back changes nothing. */
   markRead = (familyId: string, messageId: string) =>
     this.call(this.http.put<void>(`/api/families/${familyId}/chat/read`, { messageId }));
+  // Transcripts (slice 3): previews and downloads are made on request; saved ones are this parent's alone.
+  transcriptPreview = (familyId: string, range: TranscriptRange) =>
+    this.call(this.http.get<TranscriptPreview>(`/api/families/${familyId}/chat/transcripts/preview`, { params: rangeParams(range) }));
+  saveTranscript = (familyId: string, range: TranscriptRange) =>
+    this.call(this.http.post<SavedTranscript>(`/api/families/${familyId}/chat/transcripts`, range));
+  transcripts = (familyId: string) => this.call(this.http.get<SavedTranscript[]>(`/api/families/${familyId}/chat/transcripts`));
+  /** The range as a PDF (opened in the browser, or saved to the device with `download`). Same-origin, so the session cookie applies. */
+  transcriptPdfUrl = (familyId: string, range: TranscriptRange, download: boolean) => {
+    const params = new URLSearchParams(rangeParams(range));
+    if (download) params.set('download', 'true');
+    const query = params.toString();
+    return `/api/families/${familyId}/chat/transcripts/pdf${query ? `?${query}` : ''}`;
+  };
+  savedTranscriptUrl = (familyId: string, transcriptId: string, download = false) =>
+    `/api/families/${familyId}/chat/transcripts/${transcriptId}/pdf${download ? '?download=true' : ''}`;
   chatUnread = (familyId: string) => this.call(this.http.get<ChatUnread>(`/api/families/${familyId}/chat/unread`));
   typing = (familyId: string) => this.call(this.http.post<void>(`/api/families/${familyId}/chat/typing`, {}));
 
   private call<T>(request: import('rxjs').Observable<T>): Promise<T> {
     return firstValueFrom(request);
   }
+}
+
+function rangeParams(range: TranscriptRange): Record<string, string> {
+  return range.from && range.to ? { from: range.from, to: range.to } : {};
 }

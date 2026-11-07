@@ -3,6 +3,7 @@ using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Messaging.Endpoints;
 using CoParent.Modules.Messaging.Infrastructure;
 using CoParent.Modules.Messaging.Realtime;
+using CoParent.Modules.Messaging.Transcripts;
 using CoParent.SharedKernel.Accounts;
 using CoParent.SharedKernel.Security;
 using Microsoft.AspNetCore.Builder;
@@ -21,6 +22,7 @@ public static class MessagingModule
         services.AddModuleDbContext<MessagingDbContext>();
         services.AddScoped<IParentDepartureHandler, MessagingDeparture>();
         services.AddSingleton<ChatNotifier>();
+        services.AddScoped<TranscriptBuilder>();
 
         // Clients only call Watch (a family id), so incoming hub messages stay tiny.
         services.AddSignalR(options => options.MaximumReceiveMessageSize = 1024);
@@ -30,6 +32,9 @@ public static class MessagingModule
         {
             options.AddPolicy(ChatEndpoints.SendRateLimitPolicy, context => PerUser(context, 60));
             options.AddPolicy(ChatEndpoints.TypingRateLimitPolicy, context => PerUser(context, 30));
+            // Rendering a transcript reads the whole range; previews and downloads are a person's pace.
+            options.AddPolicy(TranscriptEndpoints.RenderRateLimitPolicy, context => PerUser(context, 30));
+            options.AddPolicy(TranscriptEndpoints.SaveRateLimitPolicy, context => PerUser(context, 10));
         });
         return services;
     }
