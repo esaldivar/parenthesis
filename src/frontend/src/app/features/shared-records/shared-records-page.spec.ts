@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -12,7 +13,7 @@ describe('SharedRecordsPage', () => {
     childIds: ['child-1'], status: 'AwaitingAgreement',
   };
 
-  async function render(funds: SharedFund[] = [], support: SupportRecord[] = []) {
+  async function render(funds: SharedFund[] = [], support: SupportRecord[] = [], attachmentsReady = true) {
     const user = signal<Me | null>({ id: 'user', displayName: 'Parent', email: 'parent@example.test' });
     const currentFamily = signal<FamilySummary | null>({ id: 'family', name: 'Family', timeZone: 'UTC', role: 'Parent' });
     const api = {
@@ -30,6 +31,7 @@ describe('SharedRecordsPage', () => {
       reportSupportPayment: vi.fn(),
       respondToEntry: vi.fn(),
       sharedRecordsAttention: vi.fn().mockResolvedValue({ count: 0 }),
+      sharedRecordsAttachmentStorage: vi.fn().mockResolvedValue({ ready: attachmentsReady }),
       entryAttachmentUrl: (familyId: string, id: string) => `/api/families/${familyId}/shared-records/entries/${id}/attachment`,
       proposeSharedFund: vi.fn().mockResolvedValue({ id: 'new', approvalId: 'new-approval', status: 'AwaitingAgreement' }),
       approve: vi.fn().mockResolvedValue({ status: 'Approved' }),
@@ -247,5 +249,47 @@ describe('SharedRecordsPage', () => {
     });
     expect(api.createChildSupport).toHaveBeenCalledWith('family', { title: 'November 2026', currency: 'USD', youPay: true, referenceMinor: 50000 });
     expect(button('Report payment')).toBeDefined();
+  });
+
+  it('says up front that reports can’t be sent while attachments can’t be saved', async () => {
+    const { button, fixture, page } = await render([openFund], [], false);
+    button('Report contribution')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(page.querySelector('app-report-form [role="status"]')!.textContent).toContain(
+      'Attachments can’t be saved yet, so contributions can’t be reported.');
+    expect(page.querySelector('app-report-form input[type="file"]')).toBeNull();
+    expect(button('Submit contribution')).toBeUndefined();
+    button('Close')!.click();
+    fixture.detectChanges();
+    expect(page.querySelector('app-report-form')).toBeNull();
+  });
+
+  it('shows the "can’t be sent yet" state when the server says attachments can’t be saved', async () => {
+    const { api, button, fixture, page } = await render([openFund]);
+    button('Report contribution')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const amount = page.querySelector<HTMLInputElement>('input[name="amount"]')!;
+    amount.value = '150';
+    amount.dispatchEvent(new Event('input'));
+    const picker = page.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'image.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(picker, 'files', { value: [file], configurable: true });
+    picker.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    api.reportContribution.mockRejectedValueOnce(new HttpErrorResponse({
+      status: 503, error: { title: 'Attachments can\'t be saved yet. Try again later.', reason: 'storage-off' },
+    }));
+    page.querySelector('app-report-form form')!.dispatchEvent(new Event('submit'));
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(page.querySelector('app-report-form [role="status"]')?.textContent).toContain('Attachments can’t be saved yet');
+    });
+    expect(page.textContent).not.toContain('couldn’t reach Parenthesis');
   });
 });

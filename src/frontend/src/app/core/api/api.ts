@@ -1080,6 +1080,9 @@ export class Api {
     this.sendReport(`/api/families/${familyId}/child-support/${recordId}/payments`, report);
   respondToEntry = (familyId: string, entryId: string, response: 'acknowledge' | 'dispute') =>
     this.call(this.http.post<RecordEntry>(`/api/families/${familyId}/shared-records/entries/${entryId}/${response}`, {}));
+  /** Whether payment attachments can be saved at all; until they can, no report can be sent. */
+  sharedRecordsAttachmentStorage = (familyId: string) =>
+    this.call(this.http.get<{ ready: boolean }>(`/api/families/${familyId}/shared-records/attachment-storage`));
   sharedRecordsAttention = (familyId: string) =>
     this.call(this.http.get<{ count: number }>(`/api/families/${familyId}/shared-records/attention`));
   /** Same-origin link to a report's attachment; the server checks the parent's access on every read. */

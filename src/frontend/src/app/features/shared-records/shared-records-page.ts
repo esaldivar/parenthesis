@@ -7,7 +7,7 @@ import { RouterLink } from '@angular/router';
 import {
   Api, RecordEntry, ReportDraft, SharedFund, SharedFundDraft, SupportDraft, SupportRecord,
 } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
+import { generalMessage, Problem, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
 import { Icon } from '../../shared/icon/icon';
@@ -22,6 +22,8 @@ interface Workspace {
   readonly children: readonly { id: string; displayName: string }[];
   readonly funds: readonly SharedFund[];
   readonly support: readonly SupportRecord[];
+  /** False until the server can save payment attachments; the report form says so before a file is picked. */
+  readonly attachmentsReady: boolean;
 }
 
 /** A record in the list: a Shared Fund or a Child Support record, always labeled with its type in text. */
@@ -114,9 +116,11 @@ export class SharedRecordsPage {
   private async load(scope: NonNullable<ReturnType<typeof this.scope>>): Promise<void> {
     this.error.set('');
     try {
-      const [family, children, funds, support] = await Promise.all([
+      const [family, children, funds, support, storage] = await Promise.all([
         this.api.family(scope.familyId), this.api.children(scope.familyId),
         this.api.sharedFunds(scope.familyId), this.api.childSupport(scope.familyId),
+        // If this check fails, let parents try: the server still refuses with the reason.
+        this.api.sharedRecordsAttachmentStorage(scope.familyId).catch(() => ({ ready: true })),
       ]);
       if (!this.isCurrent(scope)) return;
       const parent = family.members.find(member => member.isYou && member.role === 'Parent');
@@ -129,6 +133,7 @@ export class SharedRecordsPage {
           children: children.filter(child => child.status === 'Active').map(child => ({ id: child.id, displayName: child.firstName })),
           funds,
           support,
+          attachmentsReady: storage.ready,
         },
       });
     } catch (error) {
@@ -227,10 +232,19 @@ export class SharedRecordsPage {
         : 'Payment reported. Your co-parent can now confirm receipt.');
       this.focus(this.recordHeading);
     } catch (error) {
-      if (this.isCurrent(scope)) this.reportError.set(generalMessage(toProblem(error)));
+      if (this.isCurrent(scope)) this.reportFailed(scope, toProblem(error));
     } finally {
       if (this.isCurrent(scope)) this.busy.set(false);
     }
+  }
+
+  private reportFailed(scope: NonNullable<ReturnType<typeof this.scope>>, problem: Problem): void {
+    if (problem.reason === 'storage-off') {
+      // Storage went away since the page loaded: show the form's "can't be sent yet" state instead of an error.
+      this.update(scope, workspace => ({ ...workspace, attachmentsReady: false }));
+      return;
+    }
+    this.reportError.set(generalMessage(problem));
   }
 
   protected async respond(item: Listed, entry: RecordEntry, response: EntryResponse): Promise<void> {
