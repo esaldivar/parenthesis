@@ -12,11 +12,8 @@ import { Api, WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section aria-labelledby="what-helps-heading" (appOnScreen)="marks.sectionOnScreen()">
+    <section aria-labelledby="what-helps-heading">
       <h3 id="what-helps-heading">What Helps
-        @if (marks.dot()) {
-          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
-        }
       </h3>
       @if (error()) {
         <p role="alert">{{ error() }}</p>

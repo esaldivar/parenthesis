@@ -11,14 +11,13 @@ that points back here.
   - [ ] Verify shared and household Routines in both themes, including protected history, revision acceptance, and stop sharing. Coordinate household update indicators with #128.
   - [x] Verify the allergy PDF renderer with one child, multiple children, empty allergy states and long notes.
     Correct fractional-height pagination; keep API scope and page-count regression checks in CI.
-  - [ ] Run the Routines draft-preservation and allergy PDF regression checks in CI before accepting the verification follow-up.
+  - [x] Routines draft-preservation and allergy PDF regression checks passed in CI (#465).
   - [x] #128 in-page update flow for School, Allergies & Food, Clothing & Shoes and What Helps: navigation dot,
     first-visit banners, child and section dots, row highlights (November 7, 2026).
   - [x] #128 update notices for Routines (shared rows, and a dot on the co-parent's tab until opened), Emergency
     Contacts and Shared Caregivers (November 7, 2026). Ratings, accepting a routine and stopping sharing make none.
   - [ ] Extend #128 update notices to Medication (values stay in the protected record) when it ships.
-  - [ ] When the overview becomes section tiles (handoff mockup), move each section's dot to its tile and clear it on
-    opening the tile; today the dot clears when the section comes on screen.
+  - [x] Put update dots on the section tiles and clear them on open. Keep row highlights tied to visibility and household routine notices tied to the co-parent tab.
   - [ ] Complete visual polish with the handoff illustrations and verify the Clothing & Shoes, What Helps, School, and Allergies & Food flows on the development site in both themes.
 - [ ] **Shared Caregivers (#130, M4).** Verify caregiver details, duplicate-number confirmation, and independent ratings on mobile and desktop in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in

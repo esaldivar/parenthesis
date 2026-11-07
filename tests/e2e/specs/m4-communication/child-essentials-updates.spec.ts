@@ -49,8 +49,11 @@ for (const theme of ['light', 'dark'] as const) {
 
     // 3. Clothing's dot and the changed row's highlight show; the unchanged row doesn't.
     const clothing = page.locator('app-clothing-section');
-    await clothing.scrollIntoViewIfNeeded();
-    await expect(clothing.locator('.updated-badge')).toHaveText('Updated');
+    const tile = page.locator('[data-section=clothing] > summary');
+    await expect(tile).toContainText('updated');
+    await expect(clothing.locator('section')).not.toBeVisible();
+    await activate(tile, info);
+    await expect(tile).not.toContainText('updated');
     const shoes = clothing.locator('.row').filter({ hasText: 'Shoe size' });
     await expect(shoes).toHaveClass(/row--updated/);
     await expect(shoes).toContainText('Updated');
@@ -75,6 +78,7 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(page.locator('.updated-badge')).toHaveCount(0);
 
     // The change stays in history, with no need to acknowledge it.
+    await activate(tile, info);
     await activate(clothing.getByRole('button', { name: 'History' }), info);
     await expect(clothing.locator('#clothing-history article')).toHaveCount(2);
     await expect(clothing.locator('#clothing-history article').first()).toContainText('Mom');
@@ -94,6 +98,8 @@ test('the co-parent’s Routines tab shows a dot until opened, and a changed car
   await expect(page.locator('.banner')).toHaveText(['Kai’s bedtime at your co-parent’s home updated', 'Kai’s Shared Caregivers updated']);
 
   const routines = page.locator('app-routines-section');
+  const routinesTile = page.locator('[data-section=routines] > summary');
+  await activate(routinesTile, info);
   const momsTab = routines.getByRole('button', { name: /Mom’s routines.*updated/ });
   await momsTab.scrollIntoViewIfNeeded();
   await expect(momsTab).toBeVisible();
@@ -101,6 +107,7 @@ test('the co-parent’s Routines tab shows a dot until opened, and a changed car
   await expect(routines.getByRole('button', { name: 'Mom’s routines', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(routines.locator('.row').filter({ hasText: 'Bedtime' })).toHaveClass(/row--updated/);
 
+  await activate(page.locator('[data-section=caregivers] > summary'), info);
   const ava = page.locator('app-caregivers-section article').filter({ hasText: 'Ava Park' });
   await ava.scrollIntoViewIfNeeded();
   await expect(ava).toHaveClass(/row--updated/);
@@ -111,6 +118,7 @@ test('the co-parent’s Routines tab shows a dot until opened, and a changed car
   // Opened and seen: the next visit shows none of it.
   await expect.poll(async () => (await dad.json<Updates>(dad.get(`/api/families/${familyId}/essentials/updates`))).sections).toEqual([]);
   await page.reload();
+  await activate(routinesTile, info);
   await expect(routines.getByRole('button', { name: 'Mom’s routines', exact: true })).toBeVisible();
   await expect(page.locator('.row--updated')).toHaveCount(0);
 });

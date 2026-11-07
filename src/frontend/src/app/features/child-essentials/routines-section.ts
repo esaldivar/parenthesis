@@ -13,11 +13,8 @@ import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section aria-labelledby="routines-heading" (appOnScreen)="marks.sectionOnScreen()">
+    <section aria-labelledby="routines-heading">
       <h3 id="routines-heading">Routines
-        @if (marks.dot()) {
-          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
-        }
       </h3>
       <div class="actions" role="group" aria-label="Routine views">
         <button type="button" [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">Shared</button>

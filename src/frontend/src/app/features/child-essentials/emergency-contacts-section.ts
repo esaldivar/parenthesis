@@ -11,11 +11,8 @@ import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../core/
   styleUrl: './essentials-section.css',
   styles: ':host { display: block; margin-block-start: 1rem; }',
   template: `
-    <section aria-labelledby="emergency-contacts-heading" (appOnScreen)="marks.sectionOnScreen()">
+    <section aria-labelledby="emergency-contacts-heading">
       <h3 id="emergency-contacts-heading">Emergency Contacts
-        @if (marks.dot()) {
-          <span class="updated-badge"><span class="updated-dot" aria-hidden="true"></span>Updated</span>
-        }
       </h3>
       @if (error()) { <p role="alert">{{ error() }}</p> }
       <p role="status">{{ notice() }}</p>
