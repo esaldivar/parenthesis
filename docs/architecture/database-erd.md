@@ -183,33 +183,34 @@ erDiagram
     timestamptz lifted_at
   }
 
-  %% ---------- messaging (post-MVP) ----------
-  CONVERSATION {
-    uuid id PK
-    uuid family_id FK
-    timestamptz created_at
-  }
-  CONVERSATION_PARTICIPANT {
-    uuid family_id FK
-    uuid conversation_id PK, FK
-    uuid membership_id PK, FK
-    uuid last_read_message_id
-  }
+  %% ---------- messaging (M4, ADR-0008) ----------
   MESSAGE {
     uuid id PK
     uuid family_id FK
-    uuid conversation_id FK
+    bigint sequence "conversation order"
     uuid sender_membership_id FK
-    text body
+    uuid client_message_id "idempotent sends"
+    text text
+    uuid event_id "optional shared calendar event"
     timestamptz sent_at
   }
-  MESSAGE_ATTACHMENT {
+  READ_POSITION {
+    uuid membership_id PK, FK
+    uuid family_id FK
+    uuid message_id
+    bigint message_sequence "only moves forward"
+    timestamptz updated_at
+  }
+  TRANSCRIPT {
     uuid id PK
     uuid family_id FK
-    uuid message_id FK
-    text blob_key
-    text content_type
-    bigint size_bytes
+    uuid owner_membership_id FK
+    text file_name
+    date range_from
+    date range_to
+    int message_count
+    bytea pdf
+    timestamptz created_at
   }
 
   %% ---------- notifications / audit / integrations ----------
@@ -288,10 +289,9 @@ erDiagram
   MEMORY ||--o{ MEMORY_ATTACHMENT : "has"
   MEMORY ||--o{ MEMORY_RESTRICTION : "restricted by"
 
-  FAMILY ||--o{ CONVERSATION : "has"
-  CONVERSATION ||--o{ CONVERSATION_PARTICIPANT : "includes"
-  CONVERSATION ||--o{ MESSAGE : "contains"
-  MESSAGE ||--o{ MESSAGE_ATTACHMENT : "has"
+  FAMILY ||--o{ MESSAGE : "one conversation"
+  FAMILY_MEMBERSHIP ||--o| READ_POSITION : "reads to"
+  FAMILY_MEMBERSHIP ||--o{ TRANSCRIPT : "saves"
 
   USER ||--o{ NOTIFICATION : "receives"
   USER ||--o{ EXTERNAL_CALENDAR_CONNECTION : "authorizes"
@@ -309,9 +309,18 @@ erDiagram
 | CalendarProposal / DeletionRequest | `approvals.change_request` (`type` tells them apart) |
 | CalendarApproval / DeletionApproval | `approvals.approval_decision` |
 | Memory, MemoryAttachment | Same names in `memories` (+ `memory_restriction` for protective actions) |
-| Conversation, Message, MessageAttachment | Same names in `messaging` (+ `conversation_participant`) |
+| Conversation, Message, MessageAttachment | `messaging.messages` (one conversation per family, text only, no attachments), `read_positions` and `transcripts` ([ADR-0008](../adr/0008-parent-messaging.md)) |
 | Notification, AuditLog, ExternalCalendarConnection | Same names (+ `external_event_link` for de-duplication) |
 | *(new)* Invitation, CategoryApprovalPolicy, OutboxMessage | Needed for invitations, configurable approvals and reliable side effects |
+
+## M4 additions (v0.4.0)
+- **Messaging** (`messaging` schema, ADR-0008): `messages`, `read_positions` and `transcripts`, as in the diagram.
+- **Child Essentials** (`families` schema, #126): each shared section keeps every save as a revision row, the newest
+  being current, so history needs no separate table: `child_school_revisions`, `child_allergies_food_revisions`,
+  `child_clothing_revisions`, `child_what_helps_revisions` and `child_routines_revisions` (household routines carry
+  their owner's membership id and the agreed revision). `child_emergency_contacts` and `child_shared_caregivers` hold
+  each child's list as JSON with a version for concurrent edits. `essentials_updates` holds each parent's notices of
+  the other parent's saves (#128): ids and field names only, never values.
 
 ## M2 additions (ADR-0006, accepted 2026-10-17)
 The new tables for profile picker sign-in, child PINs, paired child devices, and children that need both parents'

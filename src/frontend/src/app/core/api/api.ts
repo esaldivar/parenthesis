@@ -949,11 +949,17 @@ export class Api {
     return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/emergency-contacts`;
   }
 
-  downloadAllergyPdf = (familyId: string, childId: string | null) =>
-    this.call(this.http.get(`/api/families/${encodeURIComponent(familyId)}/child-essentials/allergies/pdf`, {
-      responseType: 'blob',
-      params: childId ? { childId } : {},
-    }));
+  /** The allergy PDF and the dated file name the server gave it ("allergies-2026-11-07.pdf"). */
+  downloadAllergyPdf = async (familyId: string, childId: string | null) => {
+    const response = await this.call(
+      this.http.get(`/api/families/${encodeURIComponent(familyId)}/child-essentials/allergies/pdf`, {
+        responseType: 'blob',
+        observe: 'response',
+        params: childId ? { childId } : {},
+      }),
+    );
+    return { pdf: response.body ?? new Blob(), fileName: attachmentName(response.headers.get('Content-Disposition')) ?? 'allergies.pdf' };
+  };
 
   allergiesFood = (familyId: string, childId: string) =>
     this.call(this.http.get<AllergiesFoodView>(this.allergiesFoodUrl(familyId, childId)));
@@ -1278,6 +1284,22 @@ export class Api {
   private call<T>(request: import('rxjs').Observable<T>): Promise<T> {
     return firstValueFrom(request);
   }
+}
+
+/** The file name in a Content-Disposition header (the RFC 5987 `filename*` form first), or null. */
+export function attachmentName(header: string | null): string | null {
+  if (!header) return null;
+  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header);
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[1].trim());
+    } catch {
+      /* fall back to the plain form */
+    }
+  }
+  const plain = /filename\s*=\s*("([^"]*)"|[^;]+)/i.exec(header);
+  const name = (plain?.[2] ?? plain?.[1])?.trim();
+  return name ? name : null;
 }
 
 function rangeParams(range: TranscriptRange): Record<string, string> {
