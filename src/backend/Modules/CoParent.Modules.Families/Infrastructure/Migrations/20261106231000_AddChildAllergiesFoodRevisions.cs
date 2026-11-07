@@ -30,7 +30,7 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                 {
                     table.PrimaryKey("pk_child_allergies_food_revisions", x => x.id);
                     table.ForeignKey(
-                        name: "fk_child_allergies_food_revisions_child_profiles_child_profile_id",
+                        name: "fk_child_allergies_food_revisions_child_profiles",
                         column: x => x.child_profile_id,
                         principalSchema: "families",
                         principalTable: "child_profiles",

@@ -807,7 +807,7 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .HasForeignKey("ChildProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_child_allergies_food_revisions_child_profiles_child_profile_id");
+                        .HasConstraintName("fk_child_allergies_food_revisions_child_profiles");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.SchoolRevision", b =>

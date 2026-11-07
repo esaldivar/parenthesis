@@ -115,7 +115,8 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             revision.ToTable("child_allergies_food_revisions");
             revision.Property(row => row.Allergies).HasMaxLength(AllergiesFoodRevision.TextLimit);
             revision.Property(row => row.FoodPreferences).HasMaxLength(AllergiesFoodRevision.TextLimit);
-            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId)
+                .HasConstraintName("fk_child_allergies_food_revisions_child_profiles");
             revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
             revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
         });
