@@ -187,7 +187,6 @@ internal static class ChatEndpoints
                 db.Messages.Add(message);
                 await db.SaveChangesAsync(token); // assigns the message's place in the conversation
                 await AdvanceAsync(db, tenant, message, now, token);
-                await db.SaveChangesAsync(token);
             }, ct);
         }
         catch (DbUpdateException)
@@ -220,7 +219,6 @@ internal static class ChatEndpoints
         ReadRequest request,
         ITenantContext tenant,
         MessagingDbContext db,
-        IUnitOfWork unitOfWork,
         ChatNotifier notifier,
         TimeProvider clock,
         CancellationToken ct)
@@ -241,13 +239,8 @@ internal static class ChatEndpoints
             return TypedResults.NotFound();
         }
 
-        var moved = false;
-        await unitOfWork.ExecuteAsync(async token =>
-        {
-            moved = await AdvanceAsync(db, tenant, message, clock.GetUtcNow(), token);
-            await db.SaveChangesAsync(token);
-        }, ct);
-        if (moved)
+        // One statement, so no transaction is needed around it.
+        if (await AdvanceAsync(db, tenant, message, clock.GetUtcNow(), ct))
         {
             await notifier.ReadAsync(tenant.FamilyId, new ReadView(tenant.MembershipId, message.Id), ct);
         }
@@ -313,16 +306,28 @@ internal static class ChatEndpoints
     private static Task<ChatMessage?> Find(MessagingDbContext db, Guid sender, Guid clientId, CancellationToken ct) =>
         db.Messages.AsNoTracking().SingleOrDefaultAsync(m => m.SenderMembershipId == sender && m.ClientMessageId == clientId, ct);
 
+    /// <summary>
+    /// Moves this parent's read position to <paramref name="message"/> if it's later, in one statement: two tabs (or a
+    /// send and a read) at once can't move it back, and a parent's first two reads can't both try to insert it. True
+    /// when it moved.
+    /// </summary>
     private static async Task<bool> AdvanceAsync(MessagingDbContext db, ITenantContext tenant, ChatMessage message, DateTimeOffset now, CancellationToken ct)
     {
-        var position = await db.ReadPositions.SingleOrDefaultAsync(p => p.MembershipId == tenant.MembershipId, ct);
-        if (position is null)
+        if (message.Sequence <= 0)
         {
-            position = new ReadPosition { FamilyId = tenant.FamilyId, MembershipId = tenant.MembershipId };
-            db.ReadPositions.Add(position);
+            throw new InvalidOperationException("The message must be stored before it can be read.");
         }
 
-        return position.AdvanceTo(message, now);
+        var moved = await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO messaging.read_positions (membership_id, family_id, message_id, message_sequence, updated_at)
+            VALUES ({tenant.MembershipId}, {tenant.FamilyId}, {message.Id}, {message.Sequence}, {now})
+            ON CONFLICT (membership_id) DO UPDATE
+            SET message_id = excluded.message_id, message_sequence = excluded.message_sequence, updated_at = excluded.updated_at
+            WHERE read_positions.message_sequence < excluded.message_sequence
+            """,
+            ct);
+        return moved > 0;
     }
 
     private static MessageView View(ChatMessage message, Guid viewer, IReadOnlyDictionary<Guid, SharedEvent> events) =>

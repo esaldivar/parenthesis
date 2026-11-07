@@ -52,8 +52,15 @@ export function bannerText(childName: string, banner: EssentialsBanner): string 
   return `${childName}’s ${field ?? section?.name ?? 'Child Essentials'} updated`;
 }
 
+/** Half the element is on screen, or, for one taller than the screen, it fills at least half the screen. */
+function seen(entry: IntersectionObserverEntry): boolean {
+  if (!entry.isIntersecting) return false;
+  const screen = entry.rootBounds?.height ?? 0;
+  return entry.intersectionRatio >= 0.5 || (screen > 0 && entry.intersectionRect.height >= screen / 2);
+}
+
 /**
- * Emits once, the first time its element is on screen (half of it, or all of a tall one). Without
+ * Emits once, the first time its element is on screen (half of it, or half the screen for a tall one). Without
  * IntersectionObserver (old browsers, tests) it never emits, so nothing is cleared that wasn't seen.
  */
 @Directive({ selector: '[appOnScreen]' })
@@ -67,12 +74,13 @@ export class OnScreen {
       if (typeof IntersectionObserver === 'undefined') return;
       const observer = new IntersectionObserver(
         (entries) => {
-          if (entries.some((e) => e.isIntersecting)) {
+          if (entries.some(seen)) {
             observer.disconnect();
             this.appOnScreen.emit();
           }
         },
-        { threshold: 0.5 },
+        // Fine steps, so an element taller than the screen is noticed as it fills it, not only at half of itself.
+        { threshold: [0, 0.25, 0.5, 0.75, 1] },
       );
       observer.observe(element);
       destroyRef.onDestroy(() => observer.disconnect());

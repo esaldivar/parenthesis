@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { AllergiesFoodValues } from '../../core/api/api';
+import { AllergiesFoodValues, attachmentName } from '../../core/api/api';
 import { AllergiesFoodSection } from './allergies-food-section';
 
 describe('Allergies & Food', () => {
@@ -33,6 +33,43 @@ describe('Allergies & Food', () => {
     fixture.detectChanges();
     expect(host.querySelector('#allergy-pdf-options')?.textContent).toContain('couldn’t be downloaded');
     http.verify();
+  });
+
+  it('saves the PDF under the dated name the server gave it', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const fixture = TestBed.createComponent(AllergiesFoodSection);
+    fixture.componentRef.setInput('familyId', 'family-1');
+    fixture.componentRef.setInput('childId', 'child-1');
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne({ method: 'GET', url }).flush({ revision: 0, values: empty });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const names: string[] = [];
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      names.push(this.download);
+    });
+    vi.stubGlobal('URL', Object.assign(Object.create(URL), { createObjectURL: () => 'blob:pdf', revokeObjectURL: () => undefined }));
+    const host = fixture.nativeElement as HTMLElement;
+    [...host.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Download allergy PDF')!.click();
+    fixture.detectChanges();
+    [...host.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Download PDF')!.click();
+    http.expectOne((r) => r.url === '/api/families/family-1/child-essentials/allergies/pdf').flush(new Blob(['%PDF']), {
+      headers: { 'Content-Disposition': "attachment; filename=allergies-2026-11-07.pdf; filename*=UTF-8''allergies-2026-11-07.pdf" },
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(names).toEqual(['allergies-2026-11-07.pdf']);
+    click.mockRestore();
+    vi.unstubAllGlobals();
+    http.verify();
+  });
+
+  it('reads a file name from either Content-Disposition form', () => {
+    expect(attachmentName('attachment; filename="allergies-2026-11-07.pdf"')).toBe('allergies-2026-11-07.pdf');
+    expect(attachmentName("attachment; filename*=UTF-8''Kai%E2%80%99s.pdf")).toBe('Kai’s.pdf');
+    expect(attachmentName('attachment')).toBeNull();
+    expect(attachmentName(null)).toBeNull();
   });
 
   it('keeps the draft after a conflicting save and retries against the reviewed revision', async () => {

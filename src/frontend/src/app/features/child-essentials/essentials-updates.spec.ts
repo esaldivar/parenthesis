@@ -28,11 +28,12 @@ class FakeObserver {
   disconnect() {
     FakeObserver.all = FakeObserver.all.filter((o) => o !== this);
   }
-  static show(match: (element: Element) => boolean) {
+  /** Puts matching elements on screen: fully by default, or as described (a tall element only partly in view). */
+  static show(match: (element: Element) => boolean, view: Partial<IntersectionObserverEntry> = { intersectionRatio: 1 }) {
     for (const observer of [...FakeObserver.all]) {
       const target = observer.elements.find(match);
       if (target) {
-        observer.callback([{ isIntersecting: true, target } as IntersectionObserverEntry], observer as unknown as IntersectionObserver);
+        observer.callback([{ isIntersecting: true, target, ...view } as IntersectionObserverEntry], observer as unknown as IntersectionObserver);
       }
     }
   }
@@ -226,6 +227,20 @@ describe('Child Essentials updates (#128)', () => {
     FakeObserver.show((element) => element === ava);
     await settle(fixture);
     expect(api.essentialsRowsSeen).toHaveBeenCalledWith('family-1', 'kai', 'caregivers', ['cg-ava']);
+  });
+
+  it('counts a row taller than the screen as seen once it fills half the screen', async () => {
+    const { fixture, el, api } = await render();
+    const shoes = (element: Element) => element === shoeRow(el);
+    const screen = { height: 800 } as DOMRectReadOnly;
+
+    FakeObserver.show(shoes, { intersectionRatio: 0.1, rootBounds: screen, intersectionRect: { height: 120 } as DOMRectReadOnly });
+    await settle(fixture);
+    expect(api.essentialsRowsSeen).not.toHaveBeenCalled();
+
+    FakeObserver.show(shoes, { intersectionRatio: 0.3, rootBounds: screen, intersectionRect: { height: 640 } as DOMRectReadOnly });
+    await settle(fixture);
+    expect(api.essentialsRowsSeen).toHaveBeenCalledWith('family-1', 'kai', 'clothing', ['shoeSize']);
   });
 
   it('shows nothing when there’s nothing new', async () => {
