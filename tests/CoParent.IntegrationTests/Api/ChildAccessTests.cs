@@ -484,8 +484,8 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         var token = TestContext.Current.CancellationToken;
         var singlePdf = System.Text.Encoding.ASCII.GetString(await single.Content.ReadAsByteArrayAsync(token));
         var allPdf = System.Text.Encoding.ASCII.GetString(await all.Content.ReadAsByteArrayAsync(token));
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(singlePdf, @"/Type /Page\b").Count);
-        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(allPdf, @"/Type /Page\b").Count);
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Count(singlePdf, @"/Type /Page\b"));
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Count(allPdf, @"/Type /Page\b"));
     }
 
     [Fact]
