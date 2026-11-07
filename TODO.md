@@ -9,9 +9,18 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
-- [ ] **Shared records (#477, M4).** Add proposal revisions and private notifications. The parent-only preview connects the proposal form to the Shared Funds API. Verify shared-device switching, screen reader use and all four approved layouts before exposing navigation. Contribution reporting and Child Support remain separate slices.
-  - [ ] Add contribution reporting, private attachments, acknowledgment history, accessible progress, and privacy-safe notifications.
-  - [ ] Review the Child Support record's terminology, access, retention, and official payment-channel guidance before implementing it.
+- [ ] **Shared records (#477, M4).** Shared Fund proposals and agreement, contribution reports with required
+  attachments, acknowledgment and mismatch history, the progress thermometer, one-time Child Support records, and the
+  navigation link with a waiting-on-you dot are built (November 7, 2026; decisions in
+  `docs/design/shared-records-issue-477.md`).
+  - [ ] Create the `shared-records` storage container, its role and `SharedRecords__BlobServiceUri` on development and
+    production (`docs/runbooks/azure-environments.md`); until then reports answer "Attachments can't be saved yet."
+  - [ ] Proposal revisions before agreement (today the other parent requests changes and a new proposal is sent).
+  - [ ] In-app notices on submission and when acknowledged entries reach a target, once the notifications feed (#178)
+    exists; the navigation dot stands in until then.
+  - [ ] Owner review of the Child Support wording for the U.S., Canada and Mexico, and of attachment retention.
+  - [ ] Verify on the development site in both themes on a phone and a desktop, including screen reader use and a
+    shared-device switch from a parent to a child.
 - [ ] **Child Essentials (#126, M4).** Complete section editing and protected history, concurrent edit handling,
   and in-page update indicators.
   - [ ] Verify shared and household Routines in both themes, including protected history, revision acceptance, and stop sharing. Coordinate household update indicators with #128.

@@ -83,9 +83,7 @@ button {
   background: var(--color-selected);
 }
 
-.request-type.support strong {
-  color: var(--color-text-secondary);
-}
+
 
 .badge {
   padding: var(--space-1) var(--space-3);
@@ -129,7 +127,7 @@ button:focus-visible, [tabindex]:focus-visible {
   outline-offset: 2px;
 }
 
-.fund-list {
+.record-list {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -138,12 +136,40 @@ button:focus-visible, [tabindex]:focus-visible {
   padding: 0;
 }
 
-.fund-link[aria-pressed='true'] {
+.record-link[aria-pressed='true'] {
   background: var(--color-selected);
 }
 
-.fund-link span {
+.record-link span {
   font-size: 0.75rem;
+}
+
+/* Child Support always reads as its own type: a distinct label colour, never colour alone (the text says it). */
+.badge.support,
+.record-link.support span,
+.request-type.support strong {
+  color: var(--color-support-fg);
+}
+
+.badge.support {
+  background: var(--color-support-bg);
+}
+
+.note {
+  border-radius: var(--radius-control);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-soft);
+  color: var(--color-text-secondary);
+}
+
+h3 {
+  margin: var(--space-2) 0 0;
+}
+
+.request-type {
+  justify-items: start;
+  text-align: start;
+  cursor: pointer;
 }
 
 .error {
@@ -182,8 +208,25 @@ button:focus-visible, [tabindex]:focus-visible {
     order: -1;
   }
 
-  .composing .records {
+  /* A phone shows the form on its own screen. The page heading stays for screen readers (one h1 per page). */
+  .composing .records > :not(.heading),
+  .composing .records .heading > :not(div),
+  .composing .records .privacy {
     display: none;
+  }
+
+  .composing .records > .heading {
+    padding: 0;
+    border: 0;
+  }
+
+  .composing .records h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 

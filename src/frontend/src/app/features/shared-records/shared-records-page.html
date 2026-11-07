@@ -1,59 +1,98 @@
 @if (isParent()) {
-  <div class="workspace" [class.composing]="creating()">
+  <div class="workspace" [class.composing]="composer() !== null">
     <section class="records" aria-labelledby="shared-records-title">
       <header class="heading">
         <div>
           <h1 id="shared-records-title"><a class="mobile-back" routerLink="/more" aria-label="Back to More"><app-icon name="chevron-left" /></a> Shared records</h1>
           <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
         </div>
-        <button #newRequest type="button" class="primary" [disabled]="!workspace()?.hasCoParent || creating()" (click)="start()">
+        <button #newRequest type="button" class="primary" [disabled]="!workspace()?.hasCoParent || composer() !== null" (click)="start()">
           <app-icon name="plus" /> New request
         </button>
       </header>
       @if (workspace(); as data) {
         @if (!data.hasCoParent) {
-          <p class="muted">Your co-parent must join before you can propose a Shared Fund.</p>
+          <p class="muted">Your co-parent must join before you can start a Shared Fund or Child Support record.</p>
         }
-        @if (selected(); as fund) {
-          @if (data.funds.length > 1) {
-            <ul class="fund-list" aria-label="Shared Funds">
-              @for (item of data.funds; track item.id) {
+        @if (selected(); as item) {
+          @if (records().length > 1) {
+            <ul class="record-list" aria-label="Shared records">
+              @for (entry of records(); track entry.key) {
                 <li>
-                  <button type="button" class="fund-link" [attr.aria-pressed]="item.id === fund.id" (click)="select(item)">
-                    <span>Shared Fund</span> {{ item.title }}
+                  <button type="button" class="record-link" [class.support]="entry.kind === 'support'"
+                    [attr.aria-pressed]="entry.key === item.key" (click)="select(entry)">
+                    <span>{{ entry.kind === 'fund' ? 'Shared Fund' : 'Child Support' }}</span> {{ entry.title }}
                   </button>
                 </li>
               }
             </ul>
           }
-          <article aria-labelledby="fund-title">
-            <div class="badges">
-              <span class="badge">Shared Fund</span>
-              <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] }}</span>
-            </div>
-            <h2 #fundHeading id="fund-title" tabindex="-1">{{ fund.title }}</h2>
-            <p class="muted">@if (childrenOf(fund); as names) { {{ names }} · }{{ fund.currency }}</p>
-            @let mine = fund.proposerId === data.membershipId;
-            <p class="split">
-              <strong>{{ fund.status === 'Open' ? 'Agreed split' : 'Proposed split' }}</strong>
-              <span>You {{ (mine ? fund.proposerShareMinor : fund.coParentShareMinor) / 100 | currency: fund.currency : 'symbol' }}</span>
-              <span>Co-parent {{ (mine ? fund.coParentShareMinor : fund.proposerShareMinor) / 100 | currency: fund.currency : 'symbol' }}</span>
-            </p>
-            <div class="panel target">
-              <strong>{{ fund.status === 'Open' ? 'Agreed target' : 'Proposed target' }}</strong>
-              <strong>{{ (fund.proposerShareMinor + fund.coParentShareMinor) / 100 | currency: fund.currency : 'symbol' }}</strong>
-            </div>
-            @if (fund.status === 'AwaitingAgreement') {
-              @if (mine) {
-                <p class="muted">Waiting for your co-parent to agree.</p>
-              } @else {
-                <div class="actions">
-                  <button class="primary" type="button" [disabled]="busy()" (click)="decide(fund, true)">Agree to proposal</button>
-                  <button class="secondary" type="button" [disabled]="busy()" (click)="decide(fund, false)">Request changes</button>
+          @switch (item.kind) {
+            @case ('fund') {
+              @let fund = item.fund;
+              <article aria-labelledby="record-title">
+                <div class="badges">
+                  <span class="badge">Shared Fund</span>
+                  <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] }}</span>
                 </div>
-              }
+                <h2 #recordHeading id="record-title" tabindex="-1">{{ fund.title }}</h2>
+                @let mine = fund.proposerId === data.membershipId;
+                <p class="muted">@if (childrenOf(fund); as names) { {{ names }} · }{{ fund.currency }}</p>
+                <p class="split">
+                  <strong>{{ fund.status === 'Open' ? 'Agreed split' : 'Proposed split' }}</strong>
+                  <span>You {{ (mine ? fund.proposerShareMinor : fund.coParentShareMinor) / 100 | currency: fund.currency : 'symbol' }}</span>
+                  <span aria-hidden="true">/</span>
+                  <span>Co-parent {{ (mine ? fund.coParentShareMinor : fund.proposerShareMinor) / 100 | currency: fund.currency : 'symbol' }}</span>
+                </p>
+                @if (fund.status === 'Open') {
+                  <app-record-progress [totals]="fund.totals ?? { acknowledgedMinor: 0, pendingMinor: 0, disputedMinor: 0 }"
+                    [currency]="fund.currency" [target]="fund.proposerShareMinor + fund.coParentShareMinor" kind="fund" />
+                  <h3>Contribution history</h3>
+                  <app-record-history [entries]="fund.entries ?? []" [currency]="fund.currency" kind="fund" [busy]="busy()"
+                    [attachmentUrl]="attachmentUrl" (respond)="respond(item, $event.entry, $event.response)" />
+                  <div class="actions">
+                    <button class="primary" type="button" [disabled]="busy() || composer() !== null" (click)="startReport(item)">Report contribution</button>
+                  </div>
+                } @else {
+                  <div class="panel target">
+                    <strong>Proposed target</strong>
+                    <strong>{{ (fund.proposerShareMinor + fund.coParentShareMinor) / 100 | currency: fund.currency : 'symbol' }}</strong>
+                  </div>
+                  @if (fund.status === 'AwaitingAgreement') {
+                    @if (mine) {
+                      <p class="muted">Waiting for your co-parent to agree.</p>
+                    } @else {
+                      <div class="actions">
+                        <button class="primary" type="button" [disabled]="busy()" (click)="decide(fund, true)">Agree to proposal</button>
+                        <button class="secondary" type="button" [disabled]="busy()" (click)="decide(fund, false)">Request changes</button>
+                      </div>
+                    }
+                  }
+                }
+              </article>
             }
-          </article>
+            @case ('support') {
+              @let record = item.record;
+              <article aria-labelledby="record-title">
+                <div class="badges">
+                  <span class="badge support">Child Support</span>
+                </div>
+                <h2 #recordHeading id="record-title" tabindex="-1">{{ record.title }}</h2>
+                <p class="muted">One-time record · {{ record.currency }} · {{ record.youPay ? 'You pay' : 'Your co-parent pays' }}</p>
+                <app-record-progress [totals]="record.totals" [currency]="record.currency" [target]="record.referenceMinor" kind="support" />
+                <h3>Payment history</h3>
+                <app-record-history [entries]="record.entries" [currency]="record.currency" kind="support" [busy]="busy()"
+                  [attachmentUrl]="attachmentUrl" (respond)="respond(item, $event.entry, $event.response)" />
+                <p class="note">This is a shared record of payments. Use your required payment channel. Confirming receipt
+                  doesn’t verify bank settlement or compliance with an order.</p>
+                @if (record.youPay) {
+                  <div class="actions">
+                    <button class="primary" type="button" [disabled]="busy() || composer() !== null" (click)="startReport(item)">Report payment</button>
+                  </div>
+                }
+              </article>
+            }
+          }
         } @else {
           <p class="muted">No shared records yet.</p>
         }
@@ -61,23 +100,44 @@
         <p class="muted" role="status">Loading shared records…</p>
       }
     </section>
-    @if (creating() && workspace(); as data) {
-      <section class="panel composer" aria-labelledby="proposal-title">
+    @if (composer() !== null && workspace(); as data) {
+      <section class="panel composer" aria-labelledby="composer-title">
         <header class="heading">
           <div>
-            <h2 #proposalHeading id="proposal-title" tabindex="-1">New request</h2>
+            <h2 #composerHeading id="composer-title" tabindex="-1">
+              @if (reporting(); as target) { {{ target.kind === 'fund' ? 'Report contribution' : 'Report payment' }} } @else { New request }
+            </h2>
             <p class="muted mobile-subtitle">Shared records</p>
           </div>
           <button class="secondary back" type="button" [disabled]="busy()" (click)="close()" aria-label="Back to shared records">
             <app-icon name="chevron-left" />
           </button>
         </header>
-        <h3>Choose a request type</h3>
-        <div class="request-types">
-          <div class="request-type selected"><strong>Shared Fund</strong><span>Agree on a goal</span></div>
-          <div class="request-type support"><strong>Child Support</strong><span>Coming later</span></div>
-        </div>
-        <app-shared-fund-proposal-form [children]="data.children" [submitting]="busy()" (proposal)="propose($event)" />
+        @if (reporting(); as target) {
+          <div class="badges">
+            <span class="badge" [class.support]="target.kind === 'support'">{{ target.kind === 'fund' ? 'Shared Fund' : 'Child Support' }}</span>
+          </div>
+          <p class="muted">{{ target.title }}</p>
+          <app-report-form [kind]="target.kind" [currency]="target.kind === 'fund' ? target.fund.currency : target.record.currency"
+            [submitting]="busy()" [error]="reportError()" (report)="submitReport(target, $event)" (cancelled)="close()" />
+        } @else {
+          <h3 id="request-type-label">Choose a request type</h3>
+          <div class="request-types" role="radiogroup" aria-labelledby="request-type-label">
+            <button type="button" role="radio" class="request-type" [class.selected]="requestType() === 'fund'"
+              [attr.aria-checked]="requestType() === 'fund'" (click)="requestType.set('fund')">
+              <strong>Shared Fund</strong><span>Agree on a goal</span>
+            </button>
+            <button type="button" role="radio" class="request-type support" [class.selected]="requestType() === 'support'"
+              [attr.aria-checked]="requestType() === 'support'" (click)="requestType.set('support')">
+              <strong>Child Support</strong><span>Log a payment</span>
+            </button>
+          </div>
+          @if (requestType() === 'fund') {
+            <app-shared-fund-proposal-form [children]="data.children" [submitting]="busy()" (proposal)="propose($event)" />
+          } @else {
+            <app-support-form [submitting]="busy()" (record)="createSupport($event)" />
+          }
+        }
       </section>
     }
   </div>

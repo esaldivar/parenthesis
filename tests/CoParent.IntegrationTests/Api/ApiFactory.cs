@@ -118,6 +118,8 @@ public sealed class ApiFactory(PostgresFixture postgres, AzuriteFixture azurite)
 
         // Event photos (#403) in Azurite. The cleanup runs only when a test asks for it.
         builder.UseSetting("EventPhotos:ConnectionString", azurite.ConnectionString);
+        // Shared records payment attachments (#477), in their own Azurite container.
+        builder.UseSetting("SharedRecords:ConnectionString", azurite.ConnectionString);
         builder.UseSetting("EventPhotos:UploadsEnabled", "true");
         builder.UseSetting("EventPhotos:CleanupInterval", "1.00:00:00");
         builder.ConfigureServices(services =>

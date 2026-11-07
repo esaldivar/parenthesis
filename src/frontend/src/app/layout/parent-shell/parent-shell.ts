@@ -17,6 +17,7 @@ import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates
 import { SAMPLE_NOTIFICATIONS, SAMPLE_UNREAD } from '../sample-counts';
 import { ToastHost } from '../../shared/toast/toast-host';
 import { BottomNav } from '../../shared/overlay/bottom-nav-clearance';
+import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
 import { ChatDock } from '../../features/messages/chat-dock';
 
 const IGNORE_QUERY = { queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' } as const;
@@ -65,6 +66,7 @@ export class ParentShell {
 
   /** The co-parent's Child Essentials saves this parent hasn't opened yet (#128). */
   protected readonly essentials = inject(EssentialsUpdatesStore);
+  protected readonly records = inject(SharedRecordsAttentionStore);
 
   /** Messages fill the screen on phones, as in the M4 mockups: no top bar or bottom navigation there. */
   protected readonly onMessages = computed(() => /^\/messages(\/|$)/.test(this.url().split(/[?#]/)[0]));

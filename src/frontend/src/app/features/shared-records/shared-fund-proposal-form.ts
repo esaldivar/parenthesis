@@ -4,16 +4,9 @@ import { FormsModule } from '@angular/forms';
 
 import { FundCurrency, SharedFundDraft } from '../../core/api/api';
 import { Icon } from '../../shared/icon/icon';
+import { parseMinor as parseShare } from './money';
 
 const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
-
-/** Parse text as minor units without floating-point rounding. All supported currencies have two decimal places. */
-function parseShare(text: string): number | null {
-  const match = /^([0-9]{1,12})(?:[.,]([0-9]{1,2}))?$/.exec(text.trim());
-  if (!match) return null;
-
-  return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
-}
 
 @Component({
   selector: 'app-shared-fund-proposal-form',

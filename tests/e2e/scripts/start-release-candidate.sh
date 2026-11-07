@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Starts the release candidate's API image for the Playwright release gate, against the job's own Postgres and
-# Mailpit (service containers on localhost) and a throwaway Azurite blob emulator for event photos (#403). Nothing here is shared or long-lived: the database, the mailbox and the
+# Mailpit (service containers on localhost) and a throwaway Azurite blob emulator for event photos (#403) and Shared records attachments (#477). Nothing here is shared or long-lived: the database, the mailbox and the
 # certificate exist only for this run, and every account is synthetic.
 #
 # Usage: start-release-candidate.sh <image>
@@ -48,6 +48,7 @@ docker run -d --name api "${common[@]}" \
   -e Identity__AuthRateLimit__PermitLimit=1000 \
   -e EventPhotos__ConnectionString=UseDevelopmentStorage=true \
   -e EventPhotos__UploadsEnabled=true \
+  -e SharedRecords__ConnectionString=UseDevelopmentStorage=true \
   "$image" >/dev/null
 
 for _ in $(seq 1 60); do
