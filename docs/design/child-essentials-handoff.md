@@ -15,7 +15,7 @@ Give parents an easy way to switch children and locate each child's section on m
 | What Helps | Warm peach · stuffed animal | Shared tips about what helps the child feel settled, including comfort items and calming strategies. |
 | Medication | Dusty coral · prescription bottle | Shared parent-entered reference with name, prescribed dose, schedule, instructions, and who updated it and when. Discontinued entries move to history. |
 | Shared Caregivers | Muted teal · helping hands | Shared list with name, tap-to-call number, average rating, and **School pickup** when applicable. |
-| Emergency Contacts | Muted rose · telephone | One shared **Call first** contact per child when set, pinned above any additional contacts. Show name, relationship to the child, and tap-to-call phone number. |
+| Emergency Contacts | Muted rose · telephone | One shared **Call first** contact per child when set, pinned above any additional contacts. Show name, relationship to the child, and tap-to-call phone number. Relationship is chosen from Grandparent, Aunt, Uncle, Sibling, Other relative, Family friend, Neighbor or Other (described in the parent's own words) (owner, November 7, 2026). |
 
 Either authorized parent can edit shared reference details directly. Section history shows who updated what and when, with previous and current values. If both parents edit the same section at once, preserve the second parent's draft and show the latest saved values for review before they save again.
 

@@ -4,6 +4,11 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { OnScreen, sectionUpdates } from './essentials-updates';
 import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../core/api/api';
 
+/** The relationships offered for an emergency contact, closest family first. */
+export const RELATIONSHIPS = [
+  'Grandparent', 'Aunt', 'Uncle', 'Sibling', 'Other relative', 'Family friend', 'Neighbor',
+] as const;
+
 @Component({
   selector: 'app-emergency-contacts-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,7 +61,16 @@ import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../core/
             <fieldset [disabled]="busy()">
               <legend>{{ editing() === -1 ? 'Add emergency contact' : 'Edit emergency contact' }}</legend>
               <label>Name <input formControlName="name" maxlength="100" required /></label>
-              <label>Relationship <input formControlName="relationship" maxlength="100" required /></label>
+              <label>Relationship
+                <select formControlName="relationshipKind" required>
+                  <option value="" disabled>Choose a relationship</option>
+                  @for (kind of relationships; track kind) { <option [value]="kind">{{ kind }}</option> }
+                  <option [value]="other">{{ other }}</option>
+                </select>
+              </label>
+              @if (form.controls.relationshipKind.value === other) {
+                <label>Describe the relationship <input formControlName="relationship" maxlength="100" required /></label>
+              }
               <label>Phone <input type="tel" formControlName="phone" maxlength="32" required /></label>
               <label>Address (optional) <input formControlName="address" maxlength="300" /></label>
               <label><input type="checkbox" formControlName="callFirst" /> Call first</label>
@@ -88,12 +102,20 @@ export class EmergencyContactsSection {
   protected readonly editing = signal<number | null>(null);
   protected readonly confirmRemove = signal<number | null>(null);
   protected readonly otherChildren = computed(() => this.children().filter((child) => child.id !== this.childId()));
+  /** Common relationships to pick from; Other takes the parent's own words (a godparent, a coach). */
+  protected readonly relationships = RELATIONSHIPS;
+  protected readonly other = 'Other';
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: Validators.required }),
-    relationship: new FormControl('', { nonNullable: true, validators: Validators.required }),
+    relationshipKind: new FormControl('', { nonNullable: true, validators: Validators.required }),
+    relationship: new FormControl('', { nonNullable: true }),
     phone: new FormControl('', { nonNullable: true, validators: Validators.required }),
     address: new FormControl('', { nonNullable: true }),
     callFirst: new FormControl(false, { nonNullable: true }),
+  }, {
+    // Other needs the parent's own description.
+    validators: (group) => group.get('relationshipKind')?.value === 'Other' && !group.get('relationship')?.value.trim()
+      ? { relationship: true } : null,
   });
 
   constructor() {
@@ -111,8 +133,12 @@ export class EmergencyContactsSection {
 
   protected edit(index: number): void {
     const contact = this.view()?.contacts[index];
+    // A relationship saved before the list (or typed under Other) comes back as Other with its words.
+    const known = RELATIONSHIPS.find((kind) => kind === contact?.relationship);
     this.form.reset({
-      name: contact?.name ?? '', relationship: contact?.relationship ?? '',
+      name: contact?.name ?? '',
+      relationshipKind: known ?? (contact ? this.other : ''),
+      relationship: known ? '' : contact?.relationship ?? '',
       phone: contact?.phone ?? '', address: contact?.address ?? '', callFirst: contact?.callFirst ?? false,
     });
     this.error.set('');
@@ -125,8 +151,9 @@ export class EmergencyContactsSection {
     const saved = this.view();
     const index = this.editing();
     if (!saved || index === null || this.form.invalid || this.busy()) return;
-    const raw = this.form.getRawValue();
-    const contact = { ...raw, id: saved.contacts[index]?.id, address: raw.address.trim() || null };
+    const { relationshipKind, ...raw } = this.form.getRawValue();
+    const relationship = relationshipKind === this.other ? raw.relationship.trim() : relationshipKind;
+    const contact = { ...raw, relationship, id: saved.contacts[index]?.id, address: raw.address.trim() || null };
     const contacts = saved.contacts.map((item, position) =>
       position === index ? contact : contact.callFirst ? { ...item, callFirst: false } : item,
     );
