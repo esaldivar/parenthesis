@@ -21,11 +21,11 @@ import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../core/
       <p role="status">{{ notice() }}</p>
       @if (view(); as saved) {
         @if (!saved.contacts.length) { <p>No emergency contacts yet.</p> }
-        @for (contact of saved.contacts; track contact.phone; let index = $index) {
-          <article class="entry" [class.row--updated]="marks.updated('contact-' + index)"
-            (appOnScreen)="marks.rowOnScreen('contact-' + index)">
+        @for (contact of saved.contacts; track contact.id ?? contact.phone; let index = $index) {
+          <article class="entry" [class.row--updated]="marks.updated(contact.id ?? 'contact-' + index)"
+            (appOnScreen)="marks.rowOnScreen(contact.id ?? 'contact-' + index)">
             <h4>{{ contact.name }} @if (contact.callFirst) { <span>· Call first</span> }
-              @if (marks.updated('contact-' + index)) { <span class="updated-pill">Updated</span> }</h4>
+              @if (marks.updated(contact.id ?? 'contact-' + index)) { <span class="updated-pill">Updated</span> }</h4>
             <p>{{ contact.relationship }} · {{ contact.phone }}</p>
             <div class="actions">
               <a [href]="phoneLink(contact.phone)" [attr.aria-label]="'Call ' + contact.name">Call</a>
@@ -129,7 +129,7 @@ export class EmergencyContactsSection {
     const index = this.editing();
     if (!saved || index === null || this.form.invalid || this.busy()) return;
     const raw = this.form.getRawValue();
-    const contact = { ...raw, address: raw.address.trim() || null };
+    const contact = { ...raw, id: saved.contacts[index]?.id, address: raw.address.trim() || null };
     const contacts = saved.contacts.map((item, position) =>
       position === index ? contact : contact.callFirst ? { ...item, callFirst: false } : item,
     );
@@ -175,7 +175,7 @@ export class EmergencyContactsSection {
     try {
       const target = await this.api.emergencyContacts(this.familyId(), childId);
       await this.api.saveEmergencyContacts(this.familyId(), childId, {
-        version: target.version, contacts: [...target.contacts, { ...contact, callFirst: false }],
+        version: target.version, contacts: [...target.contacts, { ...contact, id: null, callFirst: false }],
       });
       this.notice.set('Emergency contact copied.');
     } catch (error) {

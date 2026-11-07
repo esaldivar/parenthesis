@@ -174,22 +174,31 @@ public sealed class EssentialsUpdatesTests(ApiFactory api) : IAsyncLifetime
 
         var view = await UpdatesAsync(dad, familyId);
         var contacts = view.GetProperty("sections").EnumerateArray().Single(s => s.GetProperty("section").GetString() == "emergencyContacts");
-        Assert.Equal(["contact-0", "contact-1"], Strings(contacts.GetProperty("rows")));
+        var savedContacts = (await JsonAsync(await mom.GetAsync($"{child}/emergency-contacts"))).GetProperty("contacts");
+        var grandmaId = savedContacts[0].GetProperty("id").GetString()!;
+        var neighborId = savedContacts[1].GetProperty("id").GetString()!;
+        Assert.Equal([grandmaId, neighborId], Strings(contacts.GetProperty("rows")));
         var caregivers = view.GetProperty("sections").EnumerateArray().Single(s => s.GetProperty("section").GetString() == "caregivers");
         Assert.Equal([caregiverId], Strings(caregivers.GetProperty("rows")));
         Assert.Equal(3L, await NoticeCountAsync(familyId));
-        foreach (var value in new[] { "Rosa", "555", "Ava", "Grandmother" })
+        foreach (var value in new[] { "Rosa", "555-010-", "Ava", "Grandmother" })
         {
             Assert.DoesNotContain(value, view.GetRawText(), StringComparison.Ordinal);
         }
 
         // Removing the caregiver: its row can't come on screen, so it stops being highlighted; the removal still shows.
         Assert.Equal(HttpStatusCode.NoContent, (await mom.SendAsync(HttpMethod.Delete, $"{child}/caregivers/{caregiverId}?version=1")).StatusCode);
-        // Removing the second contact leaves only the first position changed.
+        // Moving the neighbor to Call first keeps both contacts' IDs.
+        var reordered = await JsonAsync(await mom.SendAsync(HttpMethod.Put, $"{child}/emergency-contacts",
+            new { version = 2, contacts = new object[] { grandma with { callFirst = false }, neighbor with { callFirst = true } } }));
+        Assert.Equal([neighborId, grandmaId], reordered.GetProperty("contacts").EnumerateArray()
+            .Select(contact => contact.GetProperty("id").GetString()!).ToList());
+
+        // Removing the first contact moves Grandma up without moving the neighbor's highlight onto her.
         Assert.Equal(HttpStatusCode.OK, (await mom.SendAsync(HttpMethod.Put, $"{child}/emergency-contacts",
-            new { version = 2, contacts = new object[] { grandma } })).StatusCode);
+            new { version = 3, contacts = new object[] { grandma with { callFirst = false } } })).StatusCode);
         view = await UpdatesAsync(dad, familyId);
-        Assert.Equal(["contact-0"], Strings(view.GetProperty("sections").EnumerateArray()
+        Assert.Equal([grandmaId], Strings(view.GetProperty("sections").EnumerateArray()
             .Single(s => s.GetProperty("section").GetString() == "emergencyContacts").GetProperty("rows")));
         Assert.Empty(view.GetProperty("sections").EnumerateArray()
             .Single(s => s.GetProperty("section").GetString() == "caregivers").GetProperty("rows").EnumerateArray());
