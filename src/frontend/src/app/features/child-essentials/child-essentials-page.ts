@@ -1,7 +1,7 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, signal, untracked, viewChild,
 } from '@angular/core';
-import { Api, Child, EssentialsBanner } from '../../core/api/api';
+import { Api, Child, EssentialsBanner, EssentialsSectionId } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { Avatar } from '../../shared/avatar/avatar';
@@ -68,13 +68,36 @@ import { WhatHelpsSection } from './what-helps-section';
           <h2 id="essentials-heading">{{ child.firstName }}’s essentials</h2>
           @if (familyId(); as family) {
             @for (profile of [child]; track profile.id) {
-              <app-school-section [familyId]="family" [childId]="profile.id" />
-              <app-allergies-food-section [familyId]="family" [childId]="profile.id" [children]="children()" />
-              <app-routines-section [familyId]="family" [childId]="profile.id" />
-              <app-clothing-section [familyId]="family" [childId]="profile.id" />
-              <app-what-helps-section [familyId]="family" [childId]="profile.id" />
-              <app-caregivers-section [familyId]="family" [childId]="profile.id" />
-              <app-emergency-contacts-section [familyId]="family" [childId]="profile.id" [children]="children()" />
+              <div class="section-tiles">
+                @for (tile of tiles; track tile.section) {
+                  <details #disclosure [attr.data-section]="tile.section" (toggle)="tileToggled($event, child.id, tile.section)">
+                    <summary [style.--tile-bg]="tile.bg" [style.--tile-fg]="tile.fg"
+                      [style.--tile-dark-bg]="tile.darkBg" [style.--tile-dark-fg]="tile.darkFg">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path [attr.d]="tile.art" />
+                      </svg>
+                      <span>{{ tile.name }}</span>
+                      @if (!disclosure.open && tileHasUpdate(child.id, tile.section)) {
+                        <span class="child-dot" aria-hidden="true"></span>
+                        <span class="visually-hidden">, updated</span>
+                      }
+                      <app-icon class="tile-chevron" name="chevron-down" [size]="18" />
+                    </summary>
+                    <div class="tile-content">
+                      @switch (tile.section) {
+                        @case ('school') { <app-school-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('allergiesFood') { <app-allergies-food-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
+                        @case ('routines') { <app-routines-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('clothing') { <app-clothing-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('whatHelps') { <app-what-helps-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('caregivers') { <app-caregivers-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('emergencyContacts') { <app-emergency-contacts-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
+                      }
+                    </div>
+                  </details>
+                }
+              </div>
             }
           }
         </section>
@@ -86,7 +109,30 @@ import { WhatHelpsSection } from './what-helps-section';
   styles: `
     :host { display: block; }
     .layout, .children { display: grid; gap: 1rem; align-content: start; }
-    app-allergies-food-section, app-routines-section, app-clothing-section, app-what-helps-section { margin-block-start: 1rem; }
+    .section-tiles { display: grid; gap: 0.75rem; }
+    .section-tiles details { min-width: 0; }
+    .section-tiles summary {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: 56px;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid currentColor;
+      border-radius: 0.75rem;
+      background: light-dark(var(--tile-bg), var(--tile-dark-bg));
+      color: light-dark(var(--tile-fg), var(--tile-dark-fg));
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+    summary svg { width: 1.75rem; height: 1.75rem; flex: none; }
+    .tile-chevron { margin-inline-start: auto; flex: none; }
+    summary .child-dot { margin-inline-start: auto; background: currentColor; }
+    summary .child-dot ~ .tile-chevron { margin-inline-start: 0; }
+    details[open] .tile-chevron { transform: rotate(180deg); }
+    .tile-content { padding-block-start: 0.5rem; }
     button {
       display: flex;
       align-items: center;
@@ -153,8 +199,7 @@ export class ChildEssentialsPage {
       .map((banner) => ({
         key: `${banner.childId}:${banner.section}`,
         text: bannerText(names.get(banner.childId)!, banner),
-        bg: ESSENTIALS_SECTIONS[banner.section].bg,
-        fg: ESSENTIALS_SECTIONS[banner.section].fg,
+        ...this.bannerTint(banner.section),
       }))
       .filter((banner) => !this.dismissed().has(banner.key));
   });
@@ -167,6 +212,42 @@ export class ChildEssentialsPage {
   protected readonly selectedChild = computed(() =>
     this.children().find((child) => child.id === this.selectedId()) ?? this.children()[0],
   );
+
+  protected readonly tiles = [
+    { section: 'school', name: ESSENTIALS_SECTIONS.school.name, art: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6M12 7v3',
+      bg: '#e1edf9', fg: '#233f63', darkBg: '#263b54', darkFg: '#dbeaff' },
+    { section: 'allergiesFood', name: ESSENTIALS_SECTIONS.allergiesFood.name, art: 'M3 13h18c-1 5-4 7-9 7s-8-2-9-7zM12 12c0-5 3-8 8-8-1 5-4 8-8 8z',
+      bg: '#faedc5', fg: '#614718', darkBg: '#493b24', darkFg: '#fff0c7' },
+    { section: 'routines', name: ESSENTIALS_SECTIONS.routines.name, art: 'M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5zM17 4v6m-3-3h6',
+      bg: '#e0ebdb', fg: '#344f36', darkBg: '#2c4230', darkFg: '#dfefd9' },
+    { section: 'clothing', name: ESSENTIALS_SECTIONS.clothing.name, art: 'M9 4 4 6l-2 5 4 2 2-3v10h8V10l2 3 4-2-2-5-5-2c-1 4-5 4-6 0z',
+      bg: '#ebe3fa', fg: '#4f386d', darkBg: '#403451', darkFg: '#f1e5ff' },
+    { section: 'whatHelps', name: ESSENTIALS_SECTIONS.whatHelps.name, art: 'M12 20S3 15 3 9a4 4 0 0 1 9-1 4 4 0 0 1 9 1c0 6-9 11-9 11z',
+      bg: '#f8e2d4', fg: '#643d2b', darkBg: '#50382f', darkFg: '#ffe9de' },
+    { section: 'caregivers', name: ESSENTIALS_SECTIONS.caregivers.name, art: 'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8 1a3 3 0 1 0 0-6M2 20v-2a6 6 0 0 1 12 0v2m2-6a5 5 0 0 1 6 5v1',
+      bg: '#dcefeb', fg: '#24534c', darkBg: '#254542', darkFg: '#def7f1' },
+    { section: 'emergencyContacts', name: ESSENTIALS_SECTIONS.emergencyContacts.name, art: 'M5 3h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 2-2 3-4 2C9 19 5 15 3 7c-1-2 0-4 2-4z',
+      bg: '#f7e0e8', fg: '#66384a', darkBg: '#503342', darkFg: '#ffe6ef' },
+  ] as const;
+
+  private bannerTint(section: EssentialsSectionId): Pick<ShownBanner, 'bg' | 'fg'> {
+    const tile = this.tiles.find((item) => item.section === (section === 'householdRoutines' ? 'routines' : section))!;
+    return {
+      bg: `light-dark(${tile.bg}, ${tile.darkBg})`,
+      fg: `light-dark(${tile.fg}, ${tile.darkFg})`,
+    };
+  }
+
+  protected tileHasUpdate(childId: string, section: EssentialsSectionId): boolean {
+    return this.updates.unopened(childId, section) ||
+      (section === 'routines' && this.updates.unopened(childId, 'householdRoutines'));
+  }
+
+  protected tileToggled(event: Event, childId: string, section: EssentialsSectionId): void {
+    if ((event.currentTarget as HTMLDetailsElement).open) {
+      this.updates.sectionOpened(childId, section);
+    }
+  }
 
   protected retryLoad(): void {
     this.retry.update((attempt) => attempt + 1);
