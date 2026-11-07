@@ -53,7 +53,7 @@
                 <span class="visually-hidden">, updated by your co-parent</span>
               }
               @if (unread(item.path); as count) {
-                <span class="badge" aria-hidden="true">{{ count }}</span>
+                <span class="dot" aria-hidden="true"></span>
                 <span class="visually-hidden">, {{ count }} unread (sample data)</span>
               }
             </a>
@@ -83,7 +83,7 @@
       >
         <app-icon name="bell" [size]="26" />
         @if (notifications(); as count) {
-          <span class="badge badge--bell" aria-hidden="true">{{ count }}</span>
+          <span class="dot dot--bell" aria-hidden="true"></span>
         }
       </button>
       <button class="account" type="button" [matMenuTriggerFor]="accountMenu">

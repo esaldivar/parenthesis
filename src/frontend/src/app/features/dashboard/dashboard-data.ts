@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { Api, CalendarCategory, CalendarEvent, ChatConversation, Child, FamilyMember, Memory } from '../../core/api/api';
+import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember, Memory } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { parentPalette } from '../calendar/calendar-palette';
 import { FORMER_PARENT } from '../calendar/calendar-items';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from '../calendar/time';
-import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate, RecentMessage } from './model';
+import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from './model';
 import { addDays } from './week';
 import { familyDate, whoseText } from '../memories/photo-text';
 
@@ -41,7 +41,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
     const zone = this.auth.currentFamily()?.timeZone ?? 'UTC';
     const weekEnd = addDays(weekStart, 7);
     const [from, to] = [fromFamilyLocal(`${weekStart}T00:00`, zone), fromFamilyLocal(`${weekEnd}T00:00`, zone)];
-    const [family, children, listed, approvals, reminders, tasks, memories, conversation] = await Promise.all([
+    const [family, children, listed, approvals, reminders, tasks, memories] = await Promise.all([
       this.api.family(familyId),
       this.api.children(familyId),
       this.api.calendarEvents(familyId, from, to),
@@ -50,8 +50,6 @@ export class LiveDashboardDataSource extends DashboardDataSource {
       this.api.tasks(familyId, weekStart, weekEnd),
       // Family Memories (#403) are a bonus here: if they can't load, the card just shows its empty state.
       this.api.memories(familyId).catch((): Memory[] => []),
-      // So are the latest messages (#125): reading them here never marks them read.
-      this.api.conversation(familyId).catch((): ChatConversation | null => null),
     ]);
     // Declined requests (#199) stay on the Calendar page, labelled; the home page shows only what's planned or asked.
     const events = listed.filter((e) => e.status === 'Confirmed' || e.status === 'PendingApproval');
@@ -76,7 +74,6 @@ export class LiveDashboardDataSource extends DashboardDataSource {
         .filter((r) => r.canDecide && r.status === 'Pending')
         .map((r) => ({ id: r.id, summary: r.summary, proposedBy: parent(r.proposerMembershipId).displayName })),
       kidShares: [],
-      recentMessages: recentMessages(conversation, members, zone),
       recentMemories: memories.slice(0, 5).map((m) => ({
         id: m.eventId,
         title: m.title,
@@ -202,12 +199,6 @@ export class SampleDashboardDataSource extends DashboardDataSource {
         { id: 'k1', child: aurora, kind: 'drawing', sharedAt: '2 hours ago' },
         { id: 'k2', child: kai, kind: 'photo', sharedAt: '5 hours ago' },
       ],
-      // Messaging is parent-to-parent in the architecture, so the sample messages come from the co-parent.
-      recentMessages: [
-        { id: 'msg1', from: 'Dad', preview: 'Can you pick Aurora up after art class?', sentAt: '3:24 PM' },
-        { id: 'msg2', from: 'Dad', preview: 'Soccer practice moved to 5:30!', sentAt: '11:02 AM' },
-        { id: 'msg3', from: 'Dad', preview: 'Dentist confirmed Thursday at 10.', sentAt: 'Yesterday' },
-      ],
       recentMemories: [
         { id: 'm1', title: 'Sunset at the Lake', sharedBy: 'Dad', date: date(3) },
         { id: 'm2', title: 'Pumpkin Patch', sharedBy: 'Mom', date: date(-4) },
@@ -219,24 +210,4 @@ export class SampleDashboardDataSource extends DashboardDataSource {
       ],
     };
   }
-}
-
-/** The three latest messages, newest first: today's show the time, older ones the date, in the family's time zone. */
-function recentMessages(conversation: ChatConversation | null, members: readonly FamilyMember[], zone: string): RecentMessage[] {
-  const today = familyDate(new Date().toISOString(), zone);
-  return (conversation?.messages ?? [])
-    .slice(-3)
-    .reverse()
-    .map((m) => {
-      const day = familyDate(m.sentAt, zone);
-      return {
-        id: m.id,
-        from: m.yours ? 'You' : (members.find((x) => x.membershipId === m.senderMembershipId)?.displayName ?? FORMER_PARENT),
-        preview: m.text,
-        sentAt: new Intl.DateTimeFormat(
-          'en-US',
-          day === today ? { timeZone: zone, hour: 'numeric', minute: '2-digit' } : { timeZone: zone, month: 'short', day: 'numeric' },
-        ).format(new Date(m.sentAt)),
-      };
-    });
 }
