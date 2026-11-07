@@ -39,6 +39,7 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
     public DbSet<WhatHelpsRevision> WhatHelpsRevisions => Set<WhatHelpsRevision>();
     public DbSet<RoutinesRevision> RoutinesRevisions => Set<RoutinesRevision>();
     public DbSet<AllergiesFoodRevision> AllergiesFoodRevisions => Set<AllergiesFoodRevision>();
+    public DbSet<EmergencyContacts> EmergencyContacts => Set<EmergencyContacts>();
     public DbSet<SchoolRevision> SchoolRevisions => Set<SchoolRevision>();
 
     // Read per query, so each request's filters use its own tenant.
@@ -131,6 +132,14 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
                 .HasConstraintName("fk_child_allergies_food_revisions_child_profiles");
             revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
             revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<EmergencyContacts>(contacts =>
+        {
+            contacts.ToTable("child_emergency_contacts");
+            contacts.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
+            contacts.HasIndex(row => row.ChildProfileId).IsUnique();
+            contacts.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<SchoolRevision>(revision =>

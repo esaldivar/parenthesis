@@ -5,6 +5,7 @@ import { Avatar } from '../../shared/avatar/avatar';
 
 import { AllergiesFoodSection } from './allergies-food-section';
 import { ClothingSection } from './clothing-section';
+import { EmergencyContactsSection } from './emergency-contacts-section';
 import { RoutinesSection } from './routines-section';
 import { SchoolSection } from './school-section';
 import { WhatHelpsSection } from './what-helps-section';
@@ -12,7 +13,7 @@ import { WhatHelpsSection } from './what-helps-section';
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, AllergiesFoodSection, ClothingSection, RoutinesSection, SchoolSection, WhatHelpsSection],
+  imports: [Avatar, AllergiesFoodSection, ClothingSection, EmergencyContactsSection, RoutinesSection, SchoolSection, WhatHelpsSection],
   template: `
     <h1>Child Essentials</h1>
     @if (loading()) {
@@ -39,6 +40,7 @@ import { WhatHelpsSection } from './what-helps-section';
               <app-routines-section [familyId]="family" [childId]="profile.id" />
               <app-clothing-section [familyId]="family" [childId]="profile.id" />
               <app-what-helps-section [familyId]="family" [childId]="profile.id" />
+              <app-emergency-contacts-section [familyId]="family" [childId]="profile.id" [children]="children()" />
             }
           }
         </section>

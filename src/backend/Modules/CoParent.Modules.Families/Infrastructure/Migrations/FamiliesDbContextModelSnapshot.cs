@@ -284,6 +284,40 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.ToTable("child_routines_revisions", "families");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.EmergencyContacts", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<string>("ContactsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("contacts_json");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_child_emergency_contacts");
+
+                    b.HasIndex("ChildProfileId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_child_emergency_contacts_child_profile_id");
+
+                    b.ToTable("child_emergency_contacts", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.AllergiesFoodRevision", b =>
                 {
                     b.Property<Guid>("Id")
@@ -860,6 +894,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_child_routines_revisions_child_profiles_child_profile_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.EmergencyContacts", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_child_emergency_contacts_child_profiles_child_profile_id");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.AllergiesFoodRevision", b =>

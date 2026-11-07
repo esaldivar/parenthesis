@@ -80,6 +80,7 @@ public static class FamiliesModule
         RoutinesEndpoints.Map(family);
         AllergiesFoodEndpoints.Map(family);
         SchoolEndpoints.Map(family);
+        EmergencyContactsEndpoints.Map(family);
         ChildAccessEndpoints.Map(api, family);
         SharedDeviceEndpoints.Map(api, family);
         PhotoEndpoints.Map(api, family);
