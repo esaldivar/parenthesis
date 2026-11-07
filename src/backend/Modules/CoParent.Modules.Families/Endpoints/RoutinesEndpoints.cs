@@ -39,6 +39,7 @@ internal static class RoutinesEndpoints
         routines.MapGet("", GetAsync);
         routines.MapPut("", SaveAsync);
         routines.MapGet("/history", HistoryAsync);
+        HouseholdRoutinesEndpoints.Map(routines);
     }
 
     private static async Task<IResult> GetAsync(
@@ -151,6 +152,6 @@ internal static class RoutinesEndpoints
     }
 
     private static IQueryable<RoutinesRevision> Revisions(FamiliesDbContext db, Guid childId) =>
-        db.RoutinesRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId)
+        db.RoutinesRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId && row.OwnerMembershipId == Guid.Empty)
             .OrderByDescending(row => row.Revision);
 }

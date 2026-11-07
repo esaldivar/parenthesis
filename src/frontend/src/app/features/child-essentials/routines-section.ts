@@ -1,10 +1,10 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal,
+  ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Api, RoutinesHistoryPage, RoutinesView } from '../../core/api/api';
+import { Api, HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/api/api';
 
 @Component({
   selector: 'app-routines-section',
@@ -13,6 +13,50 @@ import { Api, RoutinesHistoryPage, RoutinesView } from '../../core/api/api';
   template: `
     <section aria-labelledby="routines-heading">
       <h3 id="routines-heading">Routines</h3>
+      <div class="actions" role="group" aria-label="Routine views">
+        <button type="button" [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">Shared</button>
+        @for (home of households(); track home.ownerId) {
+          <button type="button" [attr.aria-pressed]="selectedOwner() === home.ownerId"
+            (click)="openHousehold(home)">{{ home.isMine ? 'My routines' : home.ownerName + '’s routines' }}</button>
+        }
+      </div>
+      @if (householdError()) {
+        <p role="alert">{{ householdError() }}</p>
+        <button type="button" (click)="loadHouseholds()">Refresh household routines</button>
+      }
+      @if (selectedHousehold(); as home) {
+        @if (home.isMine) {
+          <fieldset [disabled]="householdSaving()">
+            <legend>My household routine</legend>
+            <label>Bedtime
+              <textarea maxlength="1000" [value]="householdBedtime()" (input)="householdBedtime.set($any($event.target).value)"></textarea>
+            </label>
+            <label>Naps
+              <textarea maxlength="1000" [value]="householdNaps()" (input)="householdNaps.set($any($event.target).value)"></textarea>
+            </label>
+            <button type="button" (click)="updateHousehold(home, 'save')">Save my routines</button>
+          </fieldset>
+          @if (householdConflict()) {
+            <p>Latest saved values</p>
+            <ng-container *ngTemplateOutlet="values; context: { $implicit: home.latest.values }" />
+          }
+        } @else {
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: home.latest.values }" />
+          @if (home.canAccept) {
+            <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'accept')">Use in both homes</button>
+          }
+        }
+        @if (home.shared) {
+          <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">Stop sharing</button>
+        }
+      } @else {
+        @for (home of households(); track home.ownerId) {
+          @if (home.shared; as agreed) {
+            <h4>{{ home.isMine ? 'My shared routine' : home.ownerName + '’s shared routine' }}</h4>
+            <ng-container *ngTemplateOutlet="values; context: { $implicit: agreed.values }" />
+            <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">Stop sharing</button>
+          }
+        }
       <p>Shared routines for both homes.</p>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
@@ -81,6 +125,7 @@ import { Api, RoutinesHistoryPage, RoutinesView } from '../../core/api/api';
       } @else {
         <p role="status">Loading Routines…</p>
       }
+      }
     </section>
     <ng-template #values let-entry>
       <dl>
@@ -119,8 +164,62 @@ export class RoutinesSection {
     naps: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
   });
 
+  protected readonly households = signal<readonly HouseholdRoutine[]>([]);
+  protected readonly selectedOwner = signal<string | null>(null);
+  protected readonly selectedHousehold = computed(() => this.households().find((home) => home.ownerId === this.selectedOwner()));
+  protected readonly householdBedtime = signal('');
+  protected readonly householdNaps = signal('');
+  protected readonly householdSaving = signal(false);
+  protected readonly householdError = signal('');
+  protected readonly householdConflict = signal(false);
+
+  protected openHousehold(home: HouseholdRoutine | null): void {
+    if (this.householdSaving() || this.selectedOwner() === (home?.ownerId ?? null)) return;
+    this.selectedOwner.set(home?.ownerId ?? null);
+    this.householdBedtime.set(home?.latest.values.bedtime ?? '');
+    this.householdNaps.set(home?.latest.values.naps ?? '');
+    this.householdConflict.set(false);
+  }
+
+  protected async loadHouseholds(): Promise<void> {
+    try {
+      this.households.set(await this.api.householdRoutines(this.familyId(), this.childId()));
+      this.householdError.set('');
+    } catch {
+      this.householdError.set('Household routines couldn’t be loaded.');
+    }
+  }
+
+  protected async updateHousehold(home: HouseholdRoutine, action: 'save' | 'accept' | 'stop'): Promise<void> {
+    if (this.householdSaving()) return;
+    this.householdSaving.set(true);
+    this.householdError.set('');
+    try {
+      const saved = await this.api.updateHouseholdRoutine(this.familyId(), this.childId(), home.ownerId, {
+        revision: home.latest.revision, action,
+        ...(action === 'save' ? { values: { bedtime: this.householdBedtime(), naps: this.householdNaps() } } : {}),
+      });
+      if (action === 'save') {
+        this.householdBedtime.set(saved.values.bedtime ?? '');
+        this.householdNaps.set(saved.values.naps ?? '');
+      }
+      this.householdConflict.set(false);
+      await this.loadHouseholds();
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 409) {
+        await this.loadHouseholds();
+        this.householdConflict.set(action === 'save');
+        this.householdError.set('The routine was updated. Review the latest values before trying again.');
+      } else {
+        this.householdError.set('The routine couldn’t be updated. Try again.');
+      }
+    } finally {
+      this.householdSaving.set(false);
+    }
+  }
+
   constructor() {
-    effect(() => { void this.load(); });
+    effect(() => { void this.load(); void this.loadHouseholds(); });
   }
 
   protected async load(): Promise<void> {

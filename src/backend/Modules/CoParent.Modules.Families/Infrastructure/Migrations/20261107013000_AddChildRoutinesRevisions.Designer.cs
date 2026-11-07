@@ -260,6 +260,14 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("naps");
 
+                    b.Property<Guid>("OwnerMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_membership_id");
+
+                    b.Property<int?>("SharedRevision")
+                        .HasColumnType("integer")
+                        .HasColumnName("shared_revision");
+
                     b.Property<int>("Revision")
                         .HasColumnType("integer")
                         .HasColumnName("revision");
@@ -272,9 +280,9 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_child_routines_revisions");
 
-                    b.HasIndex("ChildProfileId", "Revision")
+                    b.HasIndex("ChildProfileId", "OwnerMembershipId", "Revision")
                         .IsUnique()
-                        .HasDatabaseName("ix_child_routines_revisions_child_profile_id_revision");
+                        .HasDatabaseName("ix_child_routines_revisions_child_owner_revision");
 
                     b.ToTable("child_routines_revisions", "families");
                 });

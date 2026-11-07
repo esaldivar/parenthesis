@@ -8,7 +8,7 @@ that points back here.
 ## Big projects
 - [ ] **Child Essentials (#126, M4).** Complete section editing and protected history, concurrent edit handling,
   and in-page update indicators.
-  - [ ] Add the allergy PDF. Complete household-specific Routines, including mutual sharing, revision acceptance, and stop sharing. Verify the shared Routines form and protected history in both themes.
+  - [ ] Add the allergy PDF. Verify shared and household Routines in both themes, including protected history, revision acceptance, and stop sharing. Coordinate household update indicators with #128.
   - [ ] Implement the full #128 in-page update flow (navigation dot, first-visit banners, section dots and row highlights).
   - [ ] Complete visual polish with the handoff illustrations and verify the Clothing & Shoes, What Helps, School, and Allergies & Food flows on the development site in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in

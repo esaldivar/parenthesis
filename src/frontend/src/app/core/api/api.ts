@@ -696,6 +696,15 @@ export interface WhatHelpsHistoryPage {
   readonly beforeRevision: number | null;
 }
 
+export interface HouseholdRoutine {
+  readonly ownerId: string;
+  readonly ownerName: string;
+  readonly isMine: boolean;
+  readonly latest: RoutinesView;
+  readonly shared: RoutinesView | null;
+  readonly canAccept: boolean;
+}
+
 export interface RoutinesValues {
   readonly bedtime: string | null;
   readonly naps: string | null;
@@ -839,6 +848,12 @@ export class Api {
     this.call(this.http.get<RoutinesHistoryPage>(this.routinesUrl(familyId, childId) + '/history', {
       params: beforeRevision === null ? {} : { beforeRevision },
     }));
+
+  householdRoutines = (familyId: string, childId: string) =>
+    this.call(this.http.get<readonly HouseholdRoutine[]>(this.routinesUrl(familyId, childId) + '/households'));
+  updateHouseholdRoutine = (familyId: string, childId: string, ownerId: string,
+    body: { revision: number; action: 'save' | 'accept' | 'stop'; values?: RoutinesValues }) =>
+    this.call(this.http.put<RoutinesView>(this.routinesUrl(familyId, childId) + '/households/' + encodeURIComponent(ownerId), body));
 
   private routinesUrl(familyId: string, childId: string): string {
     return `/api/families/${familyId}/children/${childId}/essentials/routines`;

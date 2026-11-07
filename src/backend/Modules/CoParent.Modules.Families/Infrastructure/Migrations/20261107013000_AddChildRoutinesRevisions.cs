@@ -19,6 +19,8 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     family_id = table.Column<Guid>(type: "uuid", nullable: false),
                     child_profile_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    owner_membership_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    shared_revision = table.Column<int>(type: "integer", nullable: true),
                     revision = table.Column<int>(type: "integer", nullable: false),
                     edited_by_user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     edited_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -38,10 +40,10 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "ix_child_routines_revisions_child_profile_id_revision",
+                name: "ix_child_routines_revisions_child_owner_revision",
                 schema: "families",
                 table: "child_routines_revisions",
-                columns: new[] { "child_profile_id", "revision" },
+                columns: new[] { "child_profile_id", "owner_membership_id", "revision" },
                 unique: true);
         }
 

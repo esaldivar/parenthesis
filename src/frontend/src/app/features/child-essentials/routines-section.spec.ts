@@ -27,6 +27,7 @@ describe('Routines', () => {
     };
 
     fixture.detectChanges();
+    http.expectOne({ method: 'GET', url: url + '/households' }).flush([]);
     http.expectOne({ method: 'GET', url }).flush({ revision: 0, values: empty });
     await settle();
     expect(host.textContent).toContain('Not set');
