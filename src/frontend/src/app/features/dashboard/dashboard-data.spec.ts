@@ -63,17 +63,6 @@ describe('the live dashboard source (#196)', () => {
         coverThumbnailUrl: `${F}/memories/photos/p1/thumbnail`,
       },
     ]);
-    http.expectOne(`${F}/chat`).flush({
-      yourMembershipId: 'm-alex',
-      hasOlder: false,
-      yourReadThrough: null,
-      coParentReadThrough: null,
-      messages: [
-        { id: 'c1', clientMessageId: 'k1', senderMembershipId: 'm-gone', yours: false, text: 'From before', sentAt: '2026-10-01T15:00:00Z' },
-        { id: 'c2', clientMessageId: 'k2', senderMembershipId: 'm-sam', yours: false, text: 'Pickup at 5?', sentAt: '2026-10-10T15:00:00Z' },
-        { id: 'c3', clientMessageId: 'k3', senderMembershipId: 'm-alex', yours: true, text: 'Yes', sentAt: '2026-10-10T15:05:00Z' },
-      ],
-    });
     const week = await loading;
 
     expect(week.source).toBe('live');
@@ -105,12 +94,6 @@ describe('the live dashboard source (#196)', () => {
       ['task', 'Science fair poster', '2026-10-22', undefined, ['Kai']],
     ]);
     expect(week.kidShares).toEqual([]);
-    // The latest messages (#125), newest first, dated in the family's time zone; a departed parent stays unnamed.
-    expect(week.recentMessages).toEqual([
-      { id: 'c3', from: 'You', preview: 'Yes', sentAt: 'Oct 10' },
-      { id: 'c2', from: 'Sam', preview: 'Pickup at 5?', sentAt: 'Oct 10' },
-      { id: 'c1', from: 'Former parent', preview: 'From before', sentAt: 'Oct 1' },
-    ]);
     // The latest Family Memories (#403), with their first photo and page.
     expect(week.recentMemories).toEqual([
       {

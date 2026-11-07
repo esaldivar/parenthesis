@@ -1,6 +1,7 @@
 // The approved dashboard layout. Wide: calendar centrepiece (two columns) with Upcoming and Quick Add beside it,
-// then From Your Kids, Recent Messages and Family Memories. Medium: two columns. Phones: one column, with Upcoming
-// straight after the calendar so the next handoff and pending reviews are easy to find.
+// then From Your Kids and a wider Family Memories (Recent Messages removed, owner decision, November 7, 2026).
+// Medium: two columns. Phones: one column, with Upcoming straight after the calendar so the next handoff and pending
+// reviews are easy to find.
 :host {
   display: block;
   container-type: inline-size;
@@ -59,7 +60,6 @@ ul {
     'upcoming'
     'quick'
     'kids'
-    'messages'
     'memories';
 }
 
@@ -144,9 +144,6 @@ ul {
 }
 .area-kids {
   grid-area: kids;
-}
-.area-messages {
-  grid-area: messages;
 }
 .area-memories {
   grid-area: memories;
@@ -316,45 +313,12 @@ a.quick__btn {
   font-size: 0.9375rem;
 }
 
-// Recent Messages
-.messages li {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding-block: var(--space-3);
-  border-bottom: 1px solid var(--color-divider);
-
-  &:last-child {
-    border-bottom: 0;
-  }
-}
-
-.messages__text {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-}
-
-.messages__from {
-  font-weight: 700;
-}
-
-.messages__preview {
-  color: var(--color-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.messages__time {
-  align-self: flex-start;
-  white-space: nowrap;
-}
-
 // Family Memories
 .memory {
   display: flex;
   align-items: center;
+  // Keeps the arrows beside the photo now that the card is wider (it took Recent Messages' space).
+  justify-content: center;
   gap: var(--space-2);
 }
 
@@ -367,10 +331,9 @@ a.quick__btn {
 }
 
 .memory__figure {
-  flex: 1;
+  flex: 0 1 26rem;
   min-width: 0;
-  max-width: 26rem;
-  margin: 0 auto;
+  margin: 0;
   display: grid;
   gap: var(--space-2);
   text-align: center;
@@ -425,8 +388,7 @@ a.quick__btn {
       'welcome welcome'
       'calendar calendar'
       'upcoming quick'
-      'kids messages'
-      'memories memories';
+      'kids memories';
   }
 
   .welcome__leaves {
@@ -451,7 +413,7 @@ a.quick__btn {
       'calendar calendar upcoming'
       'calendar calendar quick'
       'calendar calendar .'
-      'kids messages memories';
+      'kids memories memories';
     align-items: start;
   }
 
@@ -476,7 +438,6 @@ a.quick__btn {
     }
 
     .area-kids,
-    .area-messages,
     .area-memories {
       align-self: stretch;
       padding-block: var(--space-3);
@@ -518,10 +479,6 @@ a.quick__btn {
     .kids__tile {
       aspect-ratio: auto;
       height: 5rem;
-    }
-
-    .messages li {
-      padding-block: 6px;
     }
 
     .memory__tile {

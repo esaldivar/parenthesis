@@ -102,7 +102,6 @@ describe('application shells', () => {
         'Upcoming',
         'Quick Add',
         'From Your Kids',
-        'Recent Messages',
         'Family Memories',
       ]);
     });

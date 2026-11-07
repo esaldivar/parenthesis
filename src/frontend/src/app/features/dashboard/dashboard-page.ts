@@ -52,11 +52,10 @@ interface UpcomingItem {
 
 /**
  * The parent dashboard, built to the approved design (docs/design/APPROVED_DASHBOARD_2026-10-16.md): greeting, the
- * weekly calendar as the centrepiece, Upcoming and Quick Add, then From Your Kids, Recent Messages and Family
- * Memories.
+ * weekly calendar as the centrepiece, Upcoming and Quick Add, then From Your Kids and Family Memories. The owner
+ * removed Recent Messages on November 7, 2026; Family Memories took its place.
  *
- * The week, Upcoming and Quick Add use the real calendar, approvals, reminders and tasks (#196), and Recent Messages the
- * parents' conversation (#125). Children's shares keep an honest "not available yet" state until that feature exists. In development builds,
+ * The week, Upcoming and Quick Add use the real calendar, approvals, reminders and tasks (#196). Children's shares keep an honest "not available yet" state until that feature exists. In development builds,
  * `?sample=1` previews the layout with clearly labelled synthetic data.
  */
 @Component({

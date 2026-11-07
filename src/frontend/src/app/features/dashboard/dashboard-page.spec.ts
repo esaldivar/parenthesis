@@ -29,7 +29,6 @@ describe('DashboardPage (approved design)', () => {
     events: [],
     pendingReviews: [],
     kidShares: [],
-    recentMessages: [],
     recentMemories: [],
     notes: [],
   };
@@ -124,7 +123,6 @@ describe('DashboardPage (approved design)', () => {
         'Upcoming',
         'Quick Add',
         'From Your Kids',
-        'Recent Messages',
         'Family Memories',
       ]);
     });
@@ -142,7 +140,8 @@ describe('DashboardPage (approved design)', () => {
 
       expect(el.querySelector('.sample-banner')).toBeNull();
       expect(text(el.querySelector('.area-upcoming'))).toContain('Nothing else this week');
-      expect(text(el.querySelector('.area-messages'))).toContain('No messages yet');
+      expect(el.querySelector('.area-messages')).toBeNull();
+      expect(text(el.querySelector('.area-memories'))).toContain('No memories yet');
     });
 
     it('opens Add to calendar from Event and Note, Messages from Message, and keeps Memory marked unavailable', async () => {
@@ -828,10 +827,9 @@ describe('DashboardPage (approved design)', () => {
       expect(text(el.querySelector('.memory__title'))).toBe('Pumpkin Patch');
     });
 
-    it('shows parent-to-parent messages and children’s shares', async () => {
+    it('shows children’s shares', async () => {
       const { el } = await render({ sample: true });
 
-      expect(text(el.querySelector('.messages'))).toContain('Can you pick Aurora up after art class?');
       expect([...el.querySelectorAll('.kids__what')].map(text)).toEqual([
         'Aurora shared a drawing with you',
         'Kai shared a photo with you',

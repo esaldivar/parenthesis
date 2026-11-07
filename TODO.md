@@ -379,8 +379,9 @@ that points back here.
 - [ ] Commit the exact approved dashboard image as `docs/design/assets/approved-dashboard-2026-10-16.png`, or confirm
   that `3116E10A-….png` is it.
 - [ ] Choose the rounded brand typeface (open in `docs/design/BRANDING.md`).
-- [ ] Recent Messages: decide whether the card shows messages from the children (as in the mockup) or from the other
-  parent (current sample).
+- [x] Recent Messages: decided by removing the card from Home (owner decision, November 7, 2026). Family Memories
+  takes its place beside From Your Kids; messages stay one tap away in the side menu, bottom bar and Quick Add.
+  - [ ] Owner check of the new Home bottom row on the dev site after the next release/0.4.0 promotion.
 - [ ] Replace placeholder counts (`src/frontend/src/app/layout/sample-counts.ts`) with real unread and notification
   data.
 - [ ] Deferred (owner OK for now): photo avatars, kids' artwork and memory photos (initials and tiles are used).
