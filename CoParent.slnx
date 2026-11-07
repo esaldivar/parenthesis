@@ -11,6 +11,7 @@
     <Project Path="src/backend/Modules/CoParent.Modules.Calendar/CoParent.Modules.Calendar.csproj" />
     <Project Path="src/backend/Modules/CoParent.Modules.Memories/CoParent.Modules.Memories.csproj" />
     <Project Path="src/backend/Modules/CoParent.Modules.Messaging/CoParent.Modules.Messaging.csproj" />
+    <Project Path="src/backend/Modules/CoParent.Modules.SharedRecords/CoParent.Modules.SharedRecords.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
