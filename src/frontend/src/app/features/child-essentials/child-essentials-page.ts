@@ -70,9 +70,10 @@ import { WhatHelpsSection } from './what-helps-section';
             @for (profile of [child]; track profile.id) {
               <div class="section-tiles">
                 @for (tile of tiles; track tile.section) {
-                  <details #disclosure [attr.data-section]="tile.section" (toggle)="tileToggled($event, child.id, tile.section)">
-                    <summary [style.--tile-bg]="tile.bg" [style.--tile-fg]="tile.fg"
-                      [style.--tile-dark-bg]="tile.darkBg" [style.--tile-dark-fg]="tile.darkFg">
+                  <details #disclosure [attr.data-section]="tile.section" (toggle)="tileToggled($event, child.id, tile.section)"
+                    [style.--tile-bg]="tile.bg" [style.--tile-fg]="tile.fg"
+                    [style.--tile-dark-bg]="tile.darkBg" [style.--tile-dark-fg]="tile.darkFg">
+                    <summary>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path [attr.d]="tile.art" />
@@ -110,7 +111,11 @@ import { WhatHelpsSection } from './what-helps-section';
     :host { display: block; }
     .layout, .children { display: grid; gap: 1rem; align-content: start; }
     .section-tiles { display: grid; gap: 0.75rem; }
-    .section-tiles details { min-width: 0; }
+    .section-tiles > details {
+      min-width: 0;
+      --essentials-tile-bg: light-dark(var(--tile-bg), var(--tile-dark-bg));
+      --essentials-tile-fg: light-dark(var(--tile-fg), var(--tile-dark-fg));
+    }
     .section-tiles summary {
       display: flex;
       align-items: center;
@@ -119,8 +124,8 @@ import { WhatHelpsSection } from './what-helps-section';
       padding: 0.65rem 0.85rem;
       border: 1px solid currentColor;
       border-radius: 0.75rem;
-      background: light-dark(var(--tile-bg), var(--tile-dark-bg));
-      color: light-dark(var(--tile-fg), var(--tile-dark-fg));
+      background: var(--essentials-tile-bg);
+      color: var(--essentials-tile-fg);
       font-weight: 700;
       cursor: pointer;
       list-style: none;

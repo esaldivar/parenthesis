@@ -9,8 +9,8 @@ h3 {
   margin: -1rem -1rem 1rem;
   border-radius: 1rem 1rem 0 0;
   padding: 0.75rem 1rem;
-  background: var(--essentials-section-bg);
-  color: var(--essentials-section-fg);
+  background: var(--essentials-tile-bg, var(--essentials-section-bg));
+  color: var(--essentials-tile-fg, var(--essentials-section-fg));
 }
 dl { display: grid; gap: 0.25rem; }
 /* One row per field, so a changed row can be highlighted (#128). */
@@ -28,9 +28,9 @@ dt { font-weight: 600; }
 .entry { border: 2px solid transparent; border-radius: 0.5rem; padding: 0 0.5rem; }
 /* A changed row: its section's tint, a border and the word Updated, so it doesn't rely on color. */
 .row--updated {
-  border-color: var(--essentials-section-fg, var(--color-text));
-  background: var(--essentials-section-bg, var(--color-surface-soft));
-  color: var(--essentials-section-fg, var(--color-text));
+  border-color: var(--essentials-tile-fg, var(--essentials-section-fg, var(--color-text)));
+  background: var(--essentials-tile-bg, var(--essentials-section-bg, var(--color-surface-soft)));
+  color: var(--essentials-tile-fg, var(--essentials-section-fg, var(--color-text)));
 }
 h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .updated-badge, .updated-pill {
