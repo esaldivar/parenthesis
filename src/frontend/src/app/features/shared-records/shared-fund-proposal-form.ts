@@ -2,16 +2,10 @@ import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-const currencies = ['USD', 'CAD', 'MXN'] as const;
-type FundCurrency = (typeof currencies)[number];
+import { FundCurrency, SharedFundDraft } from '../../core/api/api';
+import { Icon } from '../../shared/icon/icon';
 
-export interface SharedFundProposalDraft {
-  title: string;
-  childIds: string[];
-  currency: FundCurrency;
-  proposerShareMinor: number;
-  coParentShareMinor: number;
-}
+const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
 
 /** Parse text as minor units without floating-point rounding. All supported currencies have two decimal places. */
 function parseShare(text: string): number | null {
@@ -23,12 +17,10 @@ function parseShare(text: string): number | null {
 
 @Component({
   selector: 'app-shared-fund-proposal-form',
-  imports: [CurrencyPipe, FormsModule],
+  imports: [CurrencyPipe, FormsModule, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form (ngSubmit)="submit()">
-      <h2>New Shared Fund</h2>
-
       <label>
         Fund title
         <input name="title" type="text" maxlength="120" required [(ngModel)]="title" />
@@ -36,7 +28,7 @@ function parseShare(text: string): number | null {
 
       @if (children().length) {
         <fieldset class="children">
-          <legend>Children (optional)</legend>
+          <legend>Children · optional</legend>
           @for (child of children(); track child.id) {
             <label class="child-option">
               <input type="checkbox" [checked]="childIds().has(child.id)"
@@ -72,7 +64,7 @@ function parseShare(text: string): number | null {
           <strong>Proposed target</strong>
           @let target = targetMinor();
           @if (target !== null) {
-            <strong>{{ target / 100 | currency: currency() : 'code' }}</strong>
+            <strong>{{ target / 100 | currency: currency() : 'symbol' }}</strong>
           } @else {
             <span>Enter both shares to see the total.</span>
           }
@@ -83,16 +75,16 @@ function parseShare(text: string): number | null {
         <p class="error" role="alert">Enter a title and both shares using up to two decimal places. The total must be greater than zero.</p>
       }
       <button type="submit" [disabled]="submitting()">Send for agreement</button>
-      <p class="privacy">Visible to authorized parents only.</p>
+      <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
     </form>
   `,
   styles: `
     form { display: grid; gap: var(--space-4); }
-    h2, p { margin: 0; }
+    p { margin: 0; }
     p { color: var(--color-text-secondary); }
     label, .shares { display: grid; gap: var(--space-2); }
     label, legend { font-weight: 600; }
-    .shares { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+    .shares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .children {
       display: flex;
       flex-wrap: wrap;
@@ -119,7 +111,7 @@ function parseShare(text: string): number | null {
       background: var(--color-surface-soft);
     }
     .target strong { color: var(--color-text); }
-    .privacy { font-size: 0.875rem; }
+    .privacy { display: flex; align-items: center; gap: var(--space-2); font-size: 0.875rem; }
     input:not([type='checkbox']), select, button {
       box-sizing: border-box;
       min-width: 0;
@@ -141,7 +133,7 @@ function parseShare(text: string): number | null {
 export class SharedFundProposalForm {
   readonly children = input<readonly { id: string; displayName: string }[]>([]);
   readonly submitting = input(false);
-  readonly proposal = output<SharedFundProposalDraft>();
+  readonly proposal = output<SharedFundDraft>();
 
   protected readonly currencyOptions = currencies;
   protected readonly title = signal('');
