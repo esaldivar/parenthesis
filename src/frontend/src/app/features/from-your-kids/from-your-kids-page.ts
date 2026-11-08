@@ -50,6 +50,7 @@ import { AuthStore } from '../../core/auth/auth.store';
             <div class="page">
               <p class="empty">No diary entries shared with you yet.</p>
               <p class="hint">When your child shares an entry, you'll be able to turn its pages here.</p>
+              <p class="diary-placeholder">This book is waiting for a story.</p>
             </div>
           </section>
         }
@@ -97,6 +98,7 @@ import { AuthStore } from '../../core/auth/auth.store';
     .page + .page { border-left: 2px solid #d6cbb9; }
     .page h2 { font-family: Georgia, serif; margin-bottom: 1rem; }
     .page .empty { font-weight: 700; margin-top: 2rem; }
+    .diary-placeholder { margin-top: 2rem; font-family: Georgia, serif; font-style: italic; text-align: center; color: #52615c; }
     .gallery { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border-radius: var(--radius-card); text-align: center; }
     .fridge { display: grid; width: min(100%, 18rem); height: 24rem; padding: 0.65rem; gap: 0.5rem; border: 3px solid var(--color-outline); border-radius: 1.5rem; background: var(--color-surface-soft); box-shadow: 0 8px 15px #0002; }
     .fridge-door { position: relative; border: 2px solid var(--color-divider); border-radius: 0.75rem; background: var(--color-surface); }
@@ -108,7 +110,15 @@ import { AuthStore } from '../../core/auth/auth.store';
     .corkboard { gap: var(--space-3); padding: var(--space-3); }
     .corkboard h3 { margin: 0; font-family: Georgia, serif; }
     .corkboard p { padding: 1rem; background: #F7F5ED; transform: rotate(-2deg); }
-    @media (max-width: 40rem) { .book { grid-template-columns: 1fr; } .page:first-child { display: none; } .page + .page { border-left: 0; } .sections button { padding: var(--space-2); } }
+    @media (max-width: 40rem) {
+      .book { grid-template-columns: 1fr; }
+      .page:first-child { display: none; }
+      .page + .page { border-left: 0; }
+      .sections button { padding: var(--space-2); }
+      .gallery { padding: var(--space-2); }
+      .fridge { width: min(100%, 16rem); }
+      .corkboard { width: 100%; border-width: 8px; }
+    }
     @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition: none !important; animation: none !important; } }
   `,
 })
