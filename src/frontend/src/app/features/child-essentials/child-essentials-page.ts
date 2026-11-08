@@ -85,9 +85,8 @@ const MEDICAL_TINT = {
             </button>
           }
         </div>
-        <section aria-labelledby="essentials-heading">
+        <section [attr.aria-labelledby]="openSection() ? 'section-heading' : 'essentials-heading'">
           <h2 id="essentials-heading">{{ child.firstName }}’s essentials</h2>
-          <!-- Phones show one section at a time (docs/design/child-essentials-handoff.md); this goes back to them all. -->
           @if (openSection() !== null) {
             <button type="button" class="back" (click)="closeSection()">
               <app-icon name="chevron-left" [size]="20" />
@@ -116,7 +115,7 @@ const MEDICAL_TINT = {
                     <div class="tile-content">
                       @if (openSection() === tile.section) {
                         <header class="section-hero">
-                          <h2 tabindex="-1">{{ tile.name }}</h2>
+                          <h2 id="section-heading" tabindex="-1">{{ tile.name }}</h2>
                           <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
                         </header>
                       }
@@ -213,7 +212,6 @@ const MEDICAL_TINT = {
       border-radius: 1rem; background: var(--color-surface-soft); color: var(--color-text);
       text-align: start; font: inherit; cursor: pointer;
     }
-    .focused .medical-tile { display: none; }
     summary::-webkit-details-marker { display: none; }
     summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
     .tile-text { display: grid; gap: 0.125rem; flex: 1; min-width: 0; }
@@ -222,8 +220,6 @@ const MEDICAL_TINT = {
     .tile-art { order: 1; flex: none; width: 5.5rem; height: 4.25rem; object-fit: contain; }
     .tile-chevron { order: 2; flex: none; }
     summary .child-dot { order: 1; margin-inline-start: 0; background: currentColor; }
-    details[open] .tile-chevron { transform: rotate(90deg); }
-    .tile-content { padding: 0 0.75rem 0.75rem; }
 
     .back {
       display: inline-flex;
@@ -291,45 +287,30 @@ const MEDICAL_TINT = {
     }
     .section-hero img { inline-size: min(38%, 10rem); block-size: auto; }
 
-    /* Phones: one section at a time, as its own screen, with a way back. */
-    @media (max-width: 47.99rem) {
-      .focused .children, .focused details:not([open]), .focused details[open] > summary { display: none; }
-      .focused #essentials-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-      .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
-      .focused .tile-content { padding: 0; }
-      .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-    }
+    .layout.focused { grid-template-columns: minmax(0, 1fr); }
+    .focused .children,
+    .focused #essentials-heading,
+    .focused .medical-tile,
+    .focused details:not([open]),
+    .focused details[open] > summary { display: none; }
+    .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
+    .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+
     @media (min-width: 48rem) {
-      .back, .section-hero { display: none; }
       .layout { grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr); }
       .children { flex-direction: column; flex-wrap: nowrap; }
       .children button { flex: none; min-height: 64px; }
       h2 { font-size: 1.75rem; }
+      .section-hero { min-block-size: 7rem; }
+      .section-hero img { inline-size: min(32%, 11rem); max-block-size: 6rem; object-fit: contain; }
     }
-    /* Wide enough for two columns of tiles; an open one takes the whole row. */
     .layout > section { container-type: inline-size; }
     @container (min-width: 46rem) {
       .section-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .section-tiles > details[open] { grid-column: 1 / -1; }
+      .focused .section-tiles { grid-template-columns: minmax(0, 1fr); }
       .section-tiles summary { min-height: 6rem; gap: 1rem; padding-inline-start: 0.75rem; }
       .tile-art { order: -1; width: 7rem; height: 5rem; }
       .tile-name { font-size: 1.375rem; }
-    }
-    @media (min-width: 48rem) {
-      .section-tiles > details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
-      .section-tiles > details[open] > summary {
-        min-block-size: 7rem;
-        padding-inline: 1rem;
-        background: var(--essentials-tile-bg);
-        color: var(--essentials-tile-fg);
-      }
-      details[open] > summary .tile-name { font: 700 2rem Georgia, serif; }
-      details[open] > summary .tile-art {
-        order: 1;
-        inline-size: min(32%, 11rem);
-        block-size: 6rem;
-      }
-      .section-tiles > details[open] > .tile-content { padding: 0.75rem 0 0; }
     }
     @media (forced-colors: active) {
       .section-tiles > details, .banner { border: 1px solid CanvasText; }
@@ -343,7 +324,6 @@ export class ChildEssentialsPage {
   private readonly injector = inject(Injector);
   private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
   private readonly disclosures = viewChildren<ElementRef<HTMLDetailsElement>>('disclosure');
-  /** The section shown on its own on a phone. */
   protected readonly medicalOpen = signal(false);
   private readonly medicalTile = viewChild<ElementRef<HTMLButtonElement>>('medicalTile');
 
@@ -420,16 +400,13 @@ export class ChildEssentialsPage {
     const tile = event.currentTarget as HTMLDetailsElement;
     if (tile.open) {
       this.updates.sectionOpened(childId, section);
-      if (this.oneAtATime()) {
-        // A phone shows the open section as its own screen, so only one is open.
-        for (const other of this.disclosures()) {
-          if (other.nativeElement !== tile) other.nativeElement.open = false;
-        }
-        this.openSection.set(section);
-        afterNextRender({ read: () => {
-          if (this.openSection() === section) tile.querySelector<HTMLElement>('.section-hero h2')?.focus();
-        } }, { injector: this.injector });
+      for (const other of this.disclosures()) {
+        if (other.nativeElement !== tile) other.nativeElement.open = false;
       }
+      this.openSection.set(section);
+      afterNextRender({ read: () => {
+        if (this.openSection() === section) tile.querySelector<HTMLElement>('.section-hero h2')?.focus();
+      } }, { injector: this.injector });
     } else if (this.openSection() === section) {
       this.openSection.set(null);
     }
@@ -444,10 +421,6 @@ export class ChildEssentialsPage {
     open.open = false;
     // After the page shows every section again: a hidden summary can't take focus.
     afterNextRender({ read: () => open.querySelector('summary')?.focus() }, { injector: this.injector });
-  }
-
-  private oneAtATime(): boolean {
-    return typeof matchMedia === 'function' && matchMedia('(max-width: 47.99rem)').matches;
   }
 
   protected selectChild(id: string): void {

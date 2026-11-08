@@ -51,6 +51,8 @@ that points back here.
   - [ ] Verify the Clothing & Shoes, What Helps, School, Allergies & Food, Routines, Caregivers and Emergency Contacts
     screens on the development site in both themes, on a phone and a desktop. Include the illustrated section
     headers, return focus, and caregiver card actions at 320px and with enlarged text (#510).
+  - [ ] On dev, verify each section replaces the overview in the desktop main area while the sidebar stays visible,
+    and that Back restores focus to the same child’s tile on mobile and desktop (#527).
   - [ ] Still missing from the mockups: the Medication tile (#127), the Download PDF bottom sheet with the child
     picker.
   - [ ] Verify caregiver phone formatting and stars beside names on desktop and mobile in both themes,
