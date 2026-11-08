@@ -1,0 +1,87 @@
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { KidsGalleryItem } from './from-your-kids-contract';
+
+/**
+ * Read-only M4 gallery. Parent actions are emitted, never persisted locally;
+ * M5 must authorize every mutation and return the updated viewer-specific item.
+ */
+@Component({
+  selector: 'app-kids-gallery',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="gallery-items" [class.artwork]="kind() === 'Artwork'" [class.photos]="kind() === 'Photo'">
+      @for (item of items(); track item.id) {
+        <button type="button" class="memory" (click)="open(item.id)"
+          [attr.aria-label]="'View ' + item.altText">
+          <img [src]="item.thumbnailUrl" [alt]="item.altText" loading="lazy" />
+          @if (item.bookmarked) { <span class="saved">Saved</span> }
+        </button>
+      }
+    </div>
+    @if (active(); as item) {
+      <div class="backdrop" (click)="close()" role="presentation">
+        <section class="detail" role="dialog" aria-modal="true" aria-labelledby="memory-title"
+          (click)="$event.stopPropagation()" (keydown.escape)="close()">
+          <header>
+            <h3 id="memory-title">{{ item.kind === 'Artwork' ? 'Artwork' : 'Photo' }} from your child</h3>
+            <button type="button" (click)="close()" aria-label="Close preview">✕</button>
+          </header>
+          <img class="full" [src]="item.imageUrl" [alt]="item.altText" />
+          <div class="actions">
+            <button type="button" [attr.aria-pressed]="item.heartedByViewer"
+              (click)="heart.emit({ id: item.id, value: !item.heartedByViewer })">
+              {{ item.heartedByViewer ? '♥ Hearted' : '♡ Heart' }}
+            </button>
+            <button type="button" [attr.aria-pressed]="item.bookmarked"
+              (click)="bookmark.emit({ id: item.id, value: !item.bookmarked })">
+              {{ item.bookmarked ? 'Saved' : 'Save' }}
+            </button>
+            @if (item.downloadUrl) {
+              <a [href]="item.downloadUrl" download rel="noopener noreferrer">Download</a>
+            }
+            <button type="button" (click)="exportRequested.emit(item.id)">Export to Google Photos</button>
+          </div>
+          <label for="child-memory-comment">Your message to your child (one-way)</label>
+          <textarea id="child-memory-comment" maxlength="500" rows="3"
+            [value]="item.viewerComment ?? ''" #commentText></textarea>
+          <button type="button" (click)="comment.emit({ id: item.id, text: commentText.value })">
+            Save message
+          </button>
+          <p class="privacy">Your child can read your message but cannot reply here.</p>
+        </section>
+      </div>
+    }
+  `,
+  styles: `
+    :host { display: block; width: 100%; }
+    .gallery-items { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; }
+    .memory { position: relative; padding: .5rem; border: 0; border-radius: .5rem; background: #f7f5ed; box-shadow: 0 3px 10px #0003; cursor: pointer; }
+    .memory img { display: block; width: 9rem; height: 9rem; object-fit: cover; }
+    .artwork .memory { transform: rotate(-2deg); }
+    .photos .memory { padding-bottom: 1.8rem; transform: rotate(2deg); }
+    .saved { position: absolute; bottom: .3rem; right: .4rem; color: #20303f; font-size: .8rem; }
+    .backdrop { position: fixed; inset: 0; z-index: 1000; background: #000a; display: grid; place-items: center; padding: 1rem; }
+    .detail { width: min(100%, 42rem); max-height: 90dvh; overflow: auto; display: grid; gap: 1rem; padding: 1rem; border-radius: 1rem; background: var(--color-surface); color: var(--color-text); }
+    header { display: flex; justify-content: space-between; align-items: center; }
+    h3,p { margin: 0; }
+    .full { display: block; max-width: 100%; max-height: 50dvh; object-fit: contain; margin: auto; }
+    .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+    button,a { min-height: 44px; padding: .5rem .8rem; border: 1px solid var(--color-outline); border-radius: .5rem; background: var(--color-surface-soft); color: var(--color-text); font: inherit; cursor: pointer; }
+    textarea { width: 100%; box-sizing: border-box; background: var(--color-surface); color: var(--color-text); }
+    .privacy { color: var(--color-text-secondary); font-size: .85rem; }
+    :is(button,a,textarea):focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .memory { transform: none !important; } }
+  `,
+})
+export class KidsGallery {
+  readonly kind = input.required<'Artwork' | 'Photo'>();
+  readonly items = input<readonly KidsGalleryItem[]>([]);
+  readonly heart = output<{ id: string; value: boolean }>();
+  readonly bookmark = output<{ id: string; value: boolean }>();
+  readonly comment = output<{ id: string; text: string }>();
+  readonly exportRequested = output<string>();
+  protected readonly activeId = signal<string | null>(null);
+  protected readonly active = computed(() => this.items().find(item => item.id === this.activeId()) ?? null);
+  protected open(id: string): void { this.activeId.set(id); }
+  protected close(): void { this.activeId.set(null); }
+}
