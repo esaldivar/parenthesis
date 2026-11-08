@@ -89,6 +89,9 @@ describe('Family Memories (#403)', () => {
     await settle(fixture);
 
     const rows = [...el.querySelectorAll('.memory')];
+    expect(text(el.querySelector('header h1'))).toBe('Family Memories');
+    expect(text(el.querySelector('header .tagline'))).toBe('The little things are worth remembering.');
+    expect(el.querySelector('.memories-header__art')?.getAttribute('aria-hidden')).toBe('true');
     expect(rows.map(text)).toEqual([
       'Science fair.Oct 28 · 5 photos · Sam.Deleted Nov 25',
       'Soccer final.Oct 12 · 7 photos · You and Sam.Deleted in 3 days',
