@@ -47,7 +47,8 @@ that points back here.
   - [ ] Replace the section illustrations cut from the mockup (`src/frontend/public/art/child-essentials/`) with the
     original illustration exports (about 400px wide, transparent) when the owner has them.
   - [ ] Verify the Clothing & Shoes, What Helps, School, Allergies & Food, Routines, Caregivers and Emergency Contacts
-    screens on the development site in both themes, on a phone and a desktop.
+    screens on the development site in both themes, on a phone and a desktop. Include the illustrated section
+    headers, return focus, and caregiver card actions at 320px and with enlarged text (#510).
   - [ ] Still missing from the mockups: the Medication tile (#127), the Download PDF bottom sheet with the child
     picker.
   - [ ] Verify caregiver phone formatting and stars beside names on desktop and mobile in both themes,

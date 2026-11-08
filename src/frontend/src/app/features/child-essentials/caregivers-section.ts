@@ -17,6 +17,25 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
     .stars { display: inline-flex; color: light-dark(#9a6b00, #f2c14e); font-size: 1.25rem; }
     .star { position: relative; }
     .filled { position: absolute; inset-inline-start: 0; overflow: hidden; }
+    .contact-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.375rem 0.75rem;
+    }
+    .contact-line .call { padding-inline: 0.875rem; border-radius: 0.75rem; }
+    .added-by { font-size: 0.875rem; }
+    .entry .management { gap: 0.25rem; }
+    .entry .management button {
+      border-color: transparent;
+      border-radius: 0.5rem;
+      background: transparent;
+      color: inherit;
+      font-size: 0.875rem;
+    }
+    .entry .management button:hover:not(:disabled) { background: var(--color-surface-soft); }
+    section > .add-caregiver { background: var(--color-action); color: var(--color-on-action); border-radius: 0.75rem; }
   `,
   template: `
     <section aria-labelledby="caregivers-heading">
@@ -39,21 +58,18 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
               @if (marks.updated(caregiver.id)) { <span class="updated-pill">Updated</span> }
             </h4>
             @if (caregiver.details.schoolPickup) { <p><span class="tag">School pickup</span></p> }
-            <p>{{ displayPhone(caregiver.details.phone) }}
+            <p class="contact-line"><span>{{ displayPhone(caregiver.details.phone) }}</span>
               <a class="call" [href]="phoneLink(caregiver.details.phone)" [attr.aria-label]="'Call ' + caregiver.details.name">Call</a>
             </p>
-            <details>
-              <summary>Details for {{ caregiver.details.name }}</summary>
-              @if (caregiver.details.city) { <p>Town or city: {{ caregiver.details.city }}</p> }
-              @if (caregiver.details.hourlyRate !== null) {
-                <p>Hourly rate: {{ caregiver.details.hourlyRate | currency: 'USD' }}</p>
-              }
-              <p>Added by {{ caregiver.addedBy }}</p>
-            </details>
-            <div class="actions">
+            @if (caregiver.details.city) { <p>City: {{ caregiver.details.city }}</p> }
+            @if (caregiver.details.hourlyRate !== null) {
+              <p>Hourly rate: {{ caregiver.details.hourlyRate | currency: 'USD' }}</p>
+            }
+            <p class="added-by">Added by {{ caregiver.addedBy }}</p>
+            <div class="actions management">
               <button type="button" [disabled]="busy()" (click)="edit(caregiver)">Edit</button>
               <button type="button" [disabled]="busy()" (click)="removing.set(caregiver.id)">Remove</button>
-              <button type="button" [disabled]="busy()" (click)="ratingId.set(caregiver.id)">Rate caregiver</button>
+              <button type="button" [disabled]="busy()" (click)="ratingId.set(caregiver.id)" aria-label="Rate caregiver">Rate</button>
             </div>
             @if (removing() === caregiver.id) {
               <p>Remove {{ caregiver.details.name }} from this child’s caregiver list?</p>
@@ -75,7 +91,7 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
           </article>
         }
         @if (!editing()) {
-          <button type="button" [disabled]="busy() || current.caregivers.length >= 30" (click)="edit(null)">Add caregiver</button>
+          <button type="button" class="add-caregiver" [disabled]="busy() || current.caregivers.length >= 30" (click)="edit(null)">Add caregiver</button>
         } @else {
           <form [formGroup]="form" (ngSubmit)="save()">
             <fieldset [disabled]="busy()">
