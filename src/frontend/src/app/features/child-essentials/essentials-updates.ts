@@ -43,6 +43,11 @@ export const ESSENTIALS_SECTIONS: Record<
     name: 'Shared Caregivers',
     fields: {},
   },
+  // Providers are named by id, never by their details, so the banner names the section.
+  medical: {
+    name: 'Medical',
+    fields: {},
+  },
 };
 
 /** "Kai’s shoe size updated" for one field, otherwise "Kai’s Clothing & Shoes updated". Never a value. */
