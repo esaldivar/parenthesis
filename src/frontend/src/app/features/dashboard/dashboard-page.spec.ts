@@ -38,6 +38,7 @@ describe('DashboardPage (approved design)', () => {
       sample?: boolean;
       failingSource?: boolean;
       week?: string;
+      now?: Date;
       live?: DashboardWeek;
       load?: () => Promise<DashboardWeek | null>;
       photos?: Pick<ProfilePhotos, 'url' | 'own'>;
@@ -49,7 +50,7 @@ describe('DashboardPage (approved design)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         fakeAuth(),
-        { provide: NOW, useValue: () => WEDNESDAY_MORNING },
+        { provide: NOW, useValue: () => options.now ?? WEDNESDAY_MORNING },
         ...(options.photos ? [{ provide: ProfilePhotos, useValue: options.photos }] : []),
       ],
     });
@@ -113,6 +114,21 @@ describe('DashboardPage (approved design)', () => {
 
       expect(text(el.querySelector('h1'))).toBe('Good morning, Alex!');
       expect(text(el.querySelector('.welcome__sub'))).toBe('Here’s what’s happening with your family.');
+    });
+
+    it.each([
+      ['09:59', 'Hello', '.sunrise'],
+      ['10:00', 'Good morning', '.sunrise'],
+      ['17:00', 'Good afternoon', '.full-sun'],
+      ['23:00', 'Good evening', '.moon'],
+    ])('matches the greeting artwork to the family time at %s UTC', async (time, greeting, artwork) => {
+      const { el } = await render({ now: new Date(`2026-10-14T${time}:00Z`) });
+
+      expect(text(el.querySelector('h1'))).toBe(`${greeting}, Alex!`);
+      const illustration = el.querySelector('.welcome__artwork');
+      expect(illustration?.getAttribute('aria-hidden')).toBe('true');
+      expect(illustration?.querySelector(artwork)).not.toBeNull();
+      expect(illustration?.querySelectorAll('.sunrise, .full-sun, .moon')).toHaveLength(1);
     });
 
     it('has the approved sections in order', async () => {
