@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { CalendarPalette, CalendarPaletteKey } from '../calendar/calendar-palette';
 import {
@@ -64,12 +66,17 @@ interface UpcomingItem {
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, CalendarPalette, RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails],
+  imports: [NgTemplateOutlet, CalendarPalette, RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails, TranslatePipe],
   providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.scss',
 })
 export class DashboardPage {
+  private readonly locale = inject(LocaleService);
+  protected readonly t = (key: TranslationKey) => translate(key, this.locale.locale());
+  protected quickLabel(kind: 'event' | 'task' | 'reminder'): string {
+    return this.t(({ event: 'dash.event', task: 'dash.task', reminder: 'dash.reminder' } as const)[kind]);
+  }
   private readonly auth = inject(AuthStore);
   private readonly api = inject(Api);
   private readonly router = inject(Router);
@@ -118,8 +125,12 @@ export class DashboardPage {
 
   protected readonly firstName = computed(() => this.auth.user()?.displayName.split(/\s+/)[0] ?? '');
   protected readonly greetingText = computed(() => greetingFor(hourIn(this.timeZone(), this.now)));
+  protected readonly localizedGreeting = computed(() => {
+    const greeting = this.greetingText();
+    return this.t(greeting === 'Good afternoon' ? 'dash.afternoon' : greeting === 'Good evening' ? 'dash.evening' : 'dash.morning');
+  });
   protected readonly greeting = computed(() => {
-    const hello = this.greetingText();
+    const hello = this.localizedGreeting();
     return this.firstName() ? `${hello}, ${this.firstName()}!` : `${hello}!`;
   });
 
