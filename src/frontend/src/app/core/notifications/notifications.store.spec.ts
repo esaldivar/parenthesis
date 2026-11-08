@@ -32,7 +32,7 @@ describe('NotificationsStore (#178)', () => {
   });
 
   it('ignores an answer that arrives after a newer refresh', async () => {
-    let answerFirst: (value: { unseen: boolean }) => void = () => undefined;
+    let answerFirst!: (value: { unseen: boolean }) => void;
     const unseen = vi.fn(async () => ({ unseen: false }));
     const store = create(unseen);
     await vi.waitFor(() => expect(unseen).toHaveBeenCalledTimes(1));
