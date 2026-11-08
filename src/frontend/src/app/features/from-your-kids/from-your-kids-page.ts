@@ -51,11 +51,12 @@ import { KidsDiary } from './kids-diary';
         @case ('artwork') {
           <section class="gallery" aria-labelledby="artwork-title">
             <h2 id="artwork-title">{{ selectedChild()?.firstName }}'s Artwork</h2>
-            <div class="fridge" role="img" aria-label="Empty closed refrigerator, ready for your child's shared drawings">
+            <div class="artwork-display"><div class="fridge" role="img" aria-label="Empty closed refrigerator, ready for your child's shared drawings">
               <div class="fridge-door fridge-door--upper"><span class="fridge-handle" aria-hidden="true"></span></div>
               <div class="fridge-door fridge-door--lower"><span class="fridge-handle" aria-hidden="true"></span></div>
             </div>
             <app-kids-gallery kind="Artwork" />
+            </div>
             <p>No artwork shared with you yet.</p>
             <p class="hint">Drawings will appear on the outside of the fridge, held up by magnets.</p>
           </section>
@@ -98,12 +99,13 @@ import { KidsDiary } from './kids-diary';
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
     .gallery { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 1.25rem; text-align: center; }
     .gallery h2 { font-family: Georgia,serif; font-size: clamp(1.4rem,2.5vw,2rem); }
+    .artwork-display { display: grid; grid-template-columns: minmax(12rem, 19rem) minmax(0, 1fr); align-items: center; gap: clamp(1rem,3vw,2rem); width: min(100%, 58rem); }
     .fridge { display: grid; width: min(100%, 18rem); height: 24rem; padding: 0.65rem; gap: 0.5rem; border: 3px solid var(--color-outline); border-radius: 1.5rem; background: var(--color-surface-soft); box-shadow: 0 8px 15px #0002; }
     .fridge-door { position: relative; border: 2px solid var(--color-divider); border-radius: 0.75rem; background: var(--color-surface); }
     .fridge-door--upper { min-height: 9rem; }
     .fridge-door--lower { min-height: 11rem; }
     .fridge-handle { position: absolute; left: 0.8rem; top: 20%; width: 0.55rem; height: 45%; border-radius: 0.4rem; background: var(--color-outline); }
-    .corkboard { display: grid; place-items: center; width: min(100%,42rem); min-height: 16rem; border: 12px solid #996638; border-radius: 12px; background: #c48c55; color: #20303F; box-shadow: inset 0 0 12px #56351855; }
+    .corkboard { display: grid; place-items: center; width: min(100%,58rem); min-height: 20rem; border: 12px solid #996638; border-radius: 12px; background: #c48c55; color: #20303F; box-shadow: inset 0 0 12px #56351855; }
     .corkboard { gap: var(--space-3); padding: var(--space-3); }
     .corkboard h3 { margin: 0; font-family: Georgia, serif; }
     .corkboard p { padding: 1rem; background: #F7F5ED; transform: rotate(-2deg); }
@@ -111,6 +113,7 @@ import { KidsDiary } from './kids-diary';
     @media (max-width: 40rem) {
       .sections button { padding: var(--space-2); }
       .gallery { padding: var(--space-2); }
+      .artwork-display { grid-template-columns: 1fr; justify-items: center; }
       .fridge { width: min(100%, 16rem); }
       .corkboard { width: 100%; border-width: 8px; }
     }
