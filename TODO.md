@@ -22,6 +22,8 @@ that points back here.
   - [ ] Proposal revisions before agreement (today the other parent requests changes and a new proposal is sent).
   - [ ] In-app notices on submission and when acknowledged entries reach a target, once the notifications feed (#178)
     exists; the navigation dot stands in until then.
+  - [ ] Verify pending indicators on a phone and desktop in both themes with a slow submission and
+    attachment error, including reduced motion (#496).
   - [ ] Owner review of the Child Support wording for the U.S., Canada and Mexico, and of attachment retention.
   - [ ] Verify on the development site in both themes on a phone and a desktop, including screen reader use and a
     shared-device switch from a parent to a child.
