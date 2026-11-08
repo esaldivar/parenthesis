@@ -40,6 +40,19 @@ export const translations = {
   'confirm.working': ["Confirming…","Confirmando…"],
   'confirm.done': ["Your email is confirmed. You can sign in now.","Tu correo electrónico está confirmado. Ya puedes iniciar sesión."],
   'confirm.invalidHelp': ["Sign in to get a new link, or create your account again.","Inicia sesión para obtener otro enlace o vuelve a crear tu cuenta."],
+  'register.title': ["Create your Parenthesis account","Crea tu cuenta de Parenthesis"],
+  'register.invited': ["You’ve been invited to join your co-parent’s family. Use the email address the invitation was sent to; you’ll accept it after confirming your email.","Te invitaron a unirte a la familia de tu copadre o comadre. Usa el correo electrónico al que llegó la invitación; podrás aceptarla después de confirmar tu correo."],
+  'register.lead': ["For parents and caregivers. Children get their own profile later, set up by a parent.","Para padres, madres y cuidadores. Más adelante, un adulto podrá configurar el perfil de cada niño."],
+  'register.name': ["Your name","Tu nombre"],
+  'register.nameHint': ["Shown to your co-parent.","Visible para el otro padre o madre."],
+  'register.nameRequired': ["Enter your name.","Ingresa tu nombre."],
+  'register.passwordHint': ["At least 12 characters. A few unrelated words works well.","Al menos 12 caracteres. Puedes usar varias palabras sin relación entre sí."],
+  'register.confirmPassword': ["Confirm password","Confirma tu contraseña"],
+  'register.confirmRequired': ["Enter your password again.","Ingresa tu contraseña otra vez."],
+  'register.mismatch': ["The passwords don’t match.","Las contraseñas no coinciden."],
+  'register.creating': ["Creating account…","Creando cuenta…"],
+  'register.create': ["Create account","Crear cuenta"],
+  'register.already': ["Already have an account? Sign in","¿Ya tienes una cuenta? Inicia sesión"],
 } as const;
 
 export type TranslationKey = keyof typeof translations;
