@@ -7,8 +7,11 @@ import {
   OnInit,
   afterNextRender,
   computed,
+  effect,
   inject,
+  input,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -57,7 +60,7 @@ const COMMENT_MAX = 500;
         } @else {
           <ul class="requests">
             @for (request of pending; track request.id) {
-              <li class="request">
+              <li #requestRow class="request" tabindex="-1" [attr.data-request]="request.id">
                 <div class="request__head">
                   <p class="request__summary">{{ request.summary }}</p>
                   <span class="chip chip--pending">{{ request.canDecide ? 'Waiting for you' : 'Waiting for your co-parent' }}</span>
@@ -120,7 +123,7 @@ const COMMENT_MAX = 500;
         } @else {
           <ul class="requests">
             @for (request of history; track request.id) {
-              <li class="request">
+              <li #requestRow class="request" tabindex="-1" [attr.data-request]="request.id">
                 <div class="request__head">
                   <p class="request__summary">{{ request.summary }}</p>
                   <span class="chip" [attr.data-status]="request.status">{{ outcome(request) }}</span>
@@ -233,6 +236,18 @@ const COMMENT_MAX = 500;
 export class ApprovalsPage implements OnInit {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
+
+  readonly request = input<string>();
+  private readonly requestRows = viewChildren<ElementRef<HTMLElement>>('requestRow');
+
+  constructor() {
+    effect(() => {
+      const request = this.request();
+      if (!request) return;
+      const row = this.requestRows().find(({ nativeElement }) => nativeElement.dataset['request'] === request);
+      if (row) afterNextRender(() => row.nativeElement.focus(), { injector: this.injector });
+    });
+  }
 
   protected readonly commentMax = COMMENT_MAX;
   protected readonly comment = new FormControl('', { nonNullable: true, validators: Validators.maxLength(COMMENT_MAX) });

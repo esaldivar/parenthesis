@@ -9,6 +9,7 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] Verify Home Upcoming row destinations and keyboard focus on the development site (#517).
 - [ ] **Unified Notifications (#178, M4).** First slice: parent inbox, real unseen dot, seen-item expiry and notices
   for directly confirmed calendar event changes. Finish approval-gated and series changes, authorized Family Memories
   and Shared Records producers, live arrival updates, and responsive visual/accessibility acceptance.
@@ -22,6 +23,8 @@ that points back here.
   - [ ] Proposal revisions before agreement (today the other parent requests changes and a new proposal is sent).
   - [ ] In-app notices on submission and when acknowledged entries reach a target, once the notifications feed (#178)
     exists; the navigation dot stands in until then.
+  - [ ] Verify pending indicators on a phone and desktop in both themes with a slow submission and
+    attachment error, including reduced motion (#496).
   - [ ] Owner review of the Child Support wording for the U.S., Canada and Mexico, and of attachment retention.
   - [ ] Verify on the development site in both themes on a phone and a desktop, including screen reader use and a
     shared-device switch from a parent to a child.
@@ -31,6 +34,8 @@ that points back here.
   - [x] Verify the allergy PDF renderer with one child, multiple children, empty allergy states and long notes.
     Correct fractional-height pagination; keep API scope and page-count regression checks in CI.
   - [x] Routines draft-preservation and allergy PDF regression checks passed in CI (#465).
+  - [ ] Verify adding an emergency contact to all children on desktop and mobile, including partial saves,
+    retry and preserving each child’s Call first selection (#499).
   - [x] #128 in-page update flow for School, Allergies & Food, Clothing & Shoes and What Helps: navigation dot,
     first-visit banners, child and section dots, row highlights (November 7, 2026).
   - [x] #128 update notices for Routines (shared rows, and a dot on the co-parent's tab until opened), Emergency
@@ -43,10 +48,14 @@ that points back here.
   - [ ] Replace the section illustrations cut from the mockup (`src/frontend/public/art/child-essentials/`) with the
     original illustration exports (about 400px wide, transparent) when the owner has them.
   - [ ] Verify the Clothing & Shoes, What Helps, School, Allergies & Food, Routines, Caregivers and Emergency Contacts
-    screens on the development site in both themes, on a phone and a desktop.
+    screens on the development site in both themes, on a phone and a desktop. Include the illustrated section
+    headers, return focus, and caregiver card actions at 320px and with enlarged text (#510).
   - [ ] Still missing from the mockups: the Medication tile (#127), the Download PDF bottom sheet with the child
-    picker, and star icons for caregiver ratings in place of text stars.
+    picker.
+  - [ ] Verify caregiver phone formatting and stars beside names on desktop and mobile in both themes,
+    including screen-reader rating announcements (#502, #503).
 - [ ] **Shared Caregivers (#130, M4).** Verify caregiver details, duplicate-number confirmation, and independent ratings on mobile and desktop in both themes.
+  - [ ] Verify adding to all children (#500), including partial saves, retries and separate ratings.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
   Settings. Owner decisions: operator Eric Saldivar (individual), US families only, contact
@@ -704,3 +713,5 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   `ubuntu-24.04` until those are understood (real issue or WebKit difference) and fixed.
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
+
+- [ ] Verify Home Quick Add saves and cancellation from all four shortcuts on the development site (#515).

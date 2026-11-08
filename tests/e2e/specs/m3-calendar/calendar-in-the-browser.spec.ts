@@ -389,8 +389,8 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await expect(upcoming).toContainText('Sign the field trip form');
       await expect(page.getByText('Sample data')).toHaveCount(0);
 
-      // Quick Add: Note opens the Add page as a reminder.
-      await page.locator('section.area-quick').getByRole('link', { name: /Note/ }).click();
+      // Quick Add opens the existing Reminder form.
+      await page.locator('section.area-quick').getByRole('link', { name: 'Reminder' }).click();
       await expect(page).toHaveURL(/\/calendar\/new\?.*kind=reminder/);
       await expect(page.getByRole('button', { name: /Reminder/, pressed: true })).toBeVisible();
     } finally {

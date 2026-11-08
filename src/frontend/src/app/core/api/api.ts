@@ -168,6 +168,31 @@ export interface EmergencyContact {
   readonly callFirst: boolean;
 }
 
+export const MEDICAL_PROVIDER_TYPES = ['Doctor', 'Dentist', 'Optometrist', 'Other'] as const;
+
+export interface MedicalProvider {
+  readonly id: string;
+  readonly type: (typeof MEDICAL_PROVIDER_TYPES)[number];
+  readonly name: string;
+  readonly specialty: string | null;
+  readonly practice: string | null;
+  readonly phone: string | null;
+  readonly address: string | null;
+}
+
+export interface MedicalProvidersView {
+  readonly revision: number;
+  readonly providers: readonly MedicalProvider[];
+}
+
+export interface MedicalProvidersHistoryEntry {
+  readonly revision: number;
+  readonly editedBy: string;
+  readonly editedAt: string;
+  readonly previous: readonly MedicalProvider[];
+  readonly current: readonly MedicalProvider[];
+}
+
 export interface EmergencyContactsView {
   readonly version: number;
   readonly contacts: readonly EmergencyContact[];
@@ -769,7 +794,8 @@ export type EssentialsSectionId =
   | 'routines'
   | 'householdRoutines'
   | 'emergencyContacts'
-  | 'caregivers';
+  | 'caregivers'
+  | 'medical';
 
 /** A child's section with an update this parent hasn't looked at: its dot, and the changed rows not yet seen. */
 export interface EssentialsSectionUpdates {
@@ -1026,6 +1052,25 @@ export class Api {
 
   private caregiversUrl(familyId: string, childId: string): string {
     return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/caregivers`;
+  }
+
+  medicalProviders = (familyId: string, childId: string) =>
+    this.call(this.http.get<MedicalProvidersView>(this.medicalProvidersUrl(familyId, childId)));
+
+  saveMedicalProviders = (familyId: string, childId: string, body: MedicalProvidersView) =>
+    this.call(this.http.put<MedicalProvidersView>(this.medicalProvidersUrl(familyId, childId), body));
+
+  addMedicalProvider = (familyId: string, childId: string, provider: MedicalProvider, childIds: readonly string[]) =>
+    this.call(this.http.post<MedicalProvidersView>(this.medicalProvidersUrl(familyId, childId), { provider, childIds }));
+
+  medicalProvidersHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<{ entries: readonly MedicalProvidersHistoryEntry[]; beforeRevision: number | null }>(
+      this.medicalProvidersUrl(familyId, childId) + '/history',
+      { params: beforeRevision === null ? {} : { beforeRevision } },
+    ));
+
+  private medicalProvidersUrl(familyId: string, childId: string): string {
+    return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/medical`;
   }
 
   emergencyContacts = (familyId: string, childId: string) =>

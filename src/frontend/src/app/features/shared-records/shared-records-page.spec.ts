@@ -13,7 +13,7 @@ describe('SharedRecordsPage', () => {
     childIds: ['child-1'], status: 'AwaitingAgreement',
   };
 
-  async function render(funds: SharedFund[] = [], support: SupportRecord[] = [], attachmentsReady = true) {
+  async function render(funds: SharedFund[] = [], support: SupportRecord[] = [], attachmentsReady = true, add?: string) {
     const user = signal<Me | null>({ id: 'user', displayName: 'Parent', email: 'parent@example.test' });
     const currentFamily = signal<FamilySummary | null>({ id: 'family', name: 'Family', timeZone: 'UTC', role: 'Parent' });
     const api = {
@@ -40,6 +40,7 @@ describe('SharedRecordsPage', () => {
       providers: [provideRouter([]), { provide: Api, useValue: api }, { provide: AuthStore, useValue: { user, currentFamily, status: () => 'signed-in' } }],
     });
     const fixture = TestBed.createComponent(SharedRecordsPage);
+    fixture.componentRef.setInput('add', add);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -51,6 +52,15 @@ describe('SharedRecordsPage', () => {
     const button = (label: string) => Array.from(page.querySelectorAll('button')).find(item => item.textContent?.trim() === label);
     return { api, button, currentFamily, fixture, page };
   }
+
+  it('opens the existing request form once when arriving from Quick Add', async () => {
+    const { fixture, page } = await render([], [], true, '1');
+    expect(page.querySelector('form')).not.toBeNull();
+    page.querySelector<HTMLButtonElement>('button[aria-label="Back to shared records"]')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(page.querySelector('form')).toBeNull();
+  });
 
   it('submits the approved form and shows that the co-parent still needs to agree', async () => {
     const { api, button, fixture, page } = await render();
@@ -65,8 +75,16 @@ describe('SharedRecordsPage', () => {
       input.dispatchEvent(new Event('input'));
     }
     page.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
-    page.querySelector('form')!.dispatchEvent(new Event('submit'));
+    let complete!: (value: { id: string; approvalId: string; status: string }) => void;
+    api.proposeSharedFund.mockReturnValueOnce(new Promise(resolve => { complete = resolve; }));
+    const form = page.querySelector('form')!;
+    form.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
+    expect(page.querySelector('app-loading-indicator [role="status"]')?.textContent).toBe('Sending request…');
+    expect(form.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
+    form.dispatchEvent(new Event('submit'));
+    expect(api.proposeSharedFund).toHaveBeenCalledTimes(1);
+    complete({ id: 'new', approvalId: 'new-approval', status: 'AwaitingAgreement' });
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -180,12 +198,17 @@ describe('SharedRecordsPage', () => {
     fixture.detectChanges();
     expect(page.textContent).toContain('soccer-payment.pdf');
 
-    api.reportContribution.mockRejectedValueOnce(new Error('offline'));
+    let fail!: (reason: Error) => void;
+    api.reportContribution.mockReturnValueOnce(new Promise((_, reject) => { fail = reject; }));
     page.querySelector('app-report-form form')!.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    expect(page.querySelector('app-loading-indicator [role="status"]')?.textContent).toBe('Reporting contribution…');
+    fail(new Error('offline'));
     await vi.waitFor(() => {
       fixture.detectChanges();
       expect(page.textContent).toContain('Your entries are still here.');
     });
+    expect(page.querySelector('app-loading-indicator svg')).toBeNull();
     expect(page.querySelector<HTMLInputElement>('input[name="amount"]')!.value).toBe('40');
 
     api.reportContribution.mockResolvedValueOnce(entry({ id: 'new', yours: true, amountMinor: 4000 }));

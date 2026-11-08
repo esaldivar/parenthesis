@@ -42,6 +42,7 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
     public DbSet<EmergencyContacts> EmergencyContacts => Set<EmergencyContacts>();
     public DbSet<SharedCaregivers> SharedCaregivers => Set<SharedCaregivers>();
     public DbSet<SchoolRevision> SchoolRevisions => Set<SchoolRevision>();
+    public DbSet<MedicalProvidersRevision> MedicalProvidersRevisions => Set<MedicalProvidersRevision>();
 
     /// <summary>Each parent's notices of the other parent's Child Essentials saves (#128).</summary>
     public DbSet<EssentialsUpdate> EssentialsUpdates => Set<EssentialsUpdate>();
@@ -151,6 +152,15 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             contacts.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
             contacts.HasIndex(row => row.ChildProfileId).IsUnique();
             contacts.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<MedicalProvidersRevision>(revision =>
+        {
+            revision.ToTable("child_medical_provider_revisions");
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId)
+                .HasConstraintName("fk_child_medical_provider_revisions_child");
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<SchoolRevision>(revision =>

@@ -69,7 +69,7 @@ describe('Child Essentials updates (#128)', () => {
         caregivers: [
           {
             id: 'cg-ava',
-            details: { name: 'Ava Park', phone: '555-010-4000', city: null, hourlyRate: null, schoolPickup: true },
+            details: { name: 'Ava Park', phone: '+15125550100', city: 'Katy', hourlyRate: 20, schoolPickup: true },
             averageRating: null,
             myRating: null,
             addedBy: 'Jamie',
@@ -173,6 +173,26 @@ describe('Child Essentials updates (#128)', () => {
     expect(text(kai)).not.toContain('has updates');
   });
 
+  it('focuses the illustrated mobile section heading and returns focus to the tile on Back', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(max-width: 47.99rem)' })));
+    const { fixture, el } = await render();
+    const tile = el.querySelector<HTMLDetailsElement>('[data-section=caregivers]')!;
+    tile.open = true;
+    tile.dispatchEvent(new Event('toggle'));
+    await settle(fixture);
+
+    const hero = tile.querySelector('.section-hero')!;
+    expect(text(hero.querySelector('h2'))).toBe('Shared Caregivers');
+    expect(hero.querySelector('img')?.getAttribute('src')).toBe('art/child-essentials/caregivers.webp');
+    expect(document.activeElement).toBe(hero.querySelector('h2'));
+
+    el.querySelector<HTMLButtonElement>('.back')!.click();
+    await settle(fixture);
+    expect(tile.open).toBe(false);
+    expect(tile.querySelector('.section-hero')).toBeNull();
+    expect(document.activeElement).toBe(tile.querySelector('summary'));
+  });
+
   it('a banner leaves by itself after about ten seconds, but not while the parent is reading it', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const { fixture, el } = await render();
@@ -214,7 +234,16 @@ describe('Child Essentials updates (#128)', () => {
     expect(text(tab)).toBe('Jamie’s routines, updated');
     const ava = el.querySelector('app-caregivers-section article')!;
     expect(ava.classList).toContain('row--updated');
-    expect(text(ava.querySelector('h4'))).toBe('Ava Park Updated');
+    expect(text(ava.querySelector('.caregiver-name'))).toBe('Ava Park');
+    expect(text(ava.querySelector('.updated-pill'))).toBe('Updated');
+    expect(ava.querySelector('h4 [role="img"]')?.getAttribute('aria-label')).toBe('Unrated');
+    expect(text(ava.querySelector('.contact-line > span'))).toBe('512-555-0100');
+    expect(text(ava.querySelector('.call'))).toBe('Call');
+    expect(ava.querySelector('.call')?.getAttribute('href')).toBe('tel:+15125550100');
+    expect([...ava.querySelectorAll('p:not(.contact-line)')].map(text)).toEqual([
+      'School pickup', 'City: Katy', 'Hourly rate: $20.00', 'Added by Jamie',
+    ]);
+    expect([...ava.querySelectorAll('.management button')].map(text)).toEqual(['Edit', 'Remove', 'Rate']);
 
     tab.click();
     await settle(fixture);

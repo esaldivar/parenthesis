@@ -1,7 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender,
-  computed, effect, inject, signal, viewChild,
+  computed, effect, inject, input, signal, viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
@@ -10,6 +10,7 @@ import {
 import { generalMessage, Problem, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
+import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { Icon } from '../../shared/icon/icon';
 import { EntryResponse, RecordHistory, RecordProgress } from './record-history';
 import { ReportForm } from './report-form';
@@ -40,7 +41,7 @@ type Composer = { readonly mode: 'new' } | { readonly mode: 'report'; readonly k
 @Component({
   selector: 'app-shared-records-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, Icon, RouterLink, RecordHistory, RecordProgress, ReportForm, SharedFundProposalForm, SupportForm],
+  imports: [CurrencyPipe, Icon, LoadingIndicator, RouterLink, RecordHistory, RecordProgress, ReportForm, SharedFundProposalForm, SupportForm],
   templateUrl: './shared-records-page.html',
   styleUrl: './shared-records-page.scss',
 })
@@ -53,6 +54,9 @@ export class SharedRecordsPage {
   private readonly composerHeading = viewChild<ElementRef<HTMLElement>>('composerHeading');
   private readonly recordHeading = viewChild<ElementRef<HTMLElement>>('recordHeading');
   private readonly newRequest = viewChild<ElementRef<HTMLButtonElement>>('newRequest');
+
+  readonly add = input<string>();
+  private openedFromLink = false;
 
   private readonly scope = computed(() => {
     const family = this.auth.currentFamily();
@@ -84,6 +88,11 @@ export class SharedRecordsPage {
     return composer?.mode === 'report' ? this.records().find(item => item.key === composer.key) ?? null : null;
   });
   protected readonly busy = signal(false);
+  protected readonly savingLabel = computed(() => {
+    const report = this.reporting();
+    if (report) return report.kind === 'fund' ? 'Reporting contribution…' : 'Reporting payment…';
+    return this.requestType() === 'fund' ? 'Sending request…' : 'Creating record…';
+  });
   protected readonly error = signal('');
   protected readonly reportError = signal('');
   protected readonly announcement = signal('');
@@ -105,6 +114,14 @@ export class SharedRecordsPage {
       this.reportError.set('');
       this.announcement.set('');
       if (scope) void this.load(scope);
+    });
+    effect(() => {
+      if (this.add() !== '1') {
+        this.openedFromLink = false;
+      } else if (!this.openedFromLink && this.workspace()?.hasCoParent) {
+        this.openedFromLink = true;
+        this.start();
+      }
     });
   }
 

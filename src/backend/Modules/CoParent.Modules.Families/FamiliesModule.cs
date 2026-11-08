@@ -82,6 +82,7 @@ public static class FamiliesModule
         AllergiesFoodEndpoints.Map(family);
         SchoolEndpoints.Map(family);
         EmergencyContactsEndpoints.Map(family);
+        MedicalProvidersEndpoints.Map(family);
         SharedCaregiversEndpoints.Map(family);
         ChildAccessEndpoints.Map(api, family);
         SharedDeviceEndpoints.Map(api, family);

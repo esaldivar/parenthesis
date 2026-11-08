@@ -55,33 +55,40 @@
       <ul class="upcoming">
         @for (item of upcoming(); track item.key) {
           <li class="upcoming__item" [attr.data-category]="item.category" [attr.data-status]="item.status">
-            <span [appCalendarPalette]="item.palette" class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
-            <span class="upcoming__text">
-              @if (item.link) {
-                <a class="upcoming__title" [routerLink]="item.link">{{ item.title }}</a>
-              } @else {
+            @if (item.eventId; as eventId) {
+              <button #trigger class="upcoming__action" type="button" (click)="openEvent(eventId, trigger)">
+                <ng-container [ngTemplateOutlet]="row" />
+              </button>
+            } @else {
+              <a class="upcoming__action" [routerLink]="item.link" [queryParams]="item.params">
+                <ng-container [ngTemplateOutlet]="row" />
+              </a>
+            }
+            <ng-template #row>
+              <span [appCalendarPalette]="item.palette" class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
+              <span class="upcoming__text">
                 <span class="upcoming__title">{{ item.title }}</span>
-              }
-              <span class="upcoming__when">{{ item.when }}</span>
-              @if (item.people.length > 0) {
-                <span class="visually-hidden">, with {{ childNames(item.people.map(personRef)) }}</span>
-              }
-              @if (item.status !== 'confirmed' || item.note) {
-                <span class="upcoming__status">
-                  @if (item.status !== 'confirmed') {
-                    <app-status-label [status]="item.status" />
-                  }
-                  @if (item.note) {
-                    <app-status-label status="change-pending" />
-                  }
-                </span>
-              }
-            </span>
-            <span class="upcoming__people" aria-hidden="true">
-              @for (person of item.people; track person.name) {
-                <app-avatar [name]="person.name" [kind]="person.kind" [size]="32" />
-              }
-            </span>
+                <span class="upcoming__when">{{ item.when }}</span>
+                @if (item.people.length > 0) {
+                  <span class="visually-hidden">, with {{ childNames(item.people.map(personRef)) }}</span>
+                }
+                @if (item.status !== 'confirmed' || item.note) {
+                  <span class="upcoming__status">
+                    @if (item.status !== 'confirmed') {
+                      <app-status-label [status]="item.status" />
+                    }
+                    @if (item.note) {
+                      <app-status-label status="change-pending" />
+                    }
+                  </span>
+                }
+              </span>
+              <span class="upcoming__people" aria-hidden="true">
+                @for (person of item.people; track person.name) {
+                  <app-avatar [name]="person.name" [kind]="person.kind" [size]="32" />
+                }
+              </span>
+            </ng-template>
           </li>
         }
       </ul>
@@ -99,30 +106,18 @@
   <section class="card area-quick" aria-labelledby="quick-heading">
     <h2 id="quick-heading">Quick Add</h2>
     <div class="quick">
-      @for (action of quickActions; track action.label) {
-        @if (action.link; as link) {
-          <a class="quick__btn" [routerLink]="link">
-            <app-icon [name]="action.icon" [size]="26" />
-            <span>{{ action.label }}</span>
-          </a>
-        } @else if (action.kind; as kind) {
-          <a
-            class="quick__btn"
-            routerLink="/calendar/new"
-            [queryParams]="{ date: isCurrentWeek() ? today() : shownWeek(), kind: kind === 'reminder' ? 'reminder' : null }"
-          >
-            <app-icon [name]="action.icon" [size]="26" />
-            <span>{{ action.label }}</span>
-          </a>
-        } @else {
-          <button type="button" class="quick__btn" aria-disabled="true" aria-describedby="quick-note">
-            <app-icon [name]="action.icon" [size]="26" />
-            <span>{{ action.label }}</span>
-          </button>
-        }
+      @for (action of quickCalendarActions; track action.kind) {
+        <a class="quick__btn" routerLink="/calendar/new"
+          [queryParams]="{ date: isCurrentWeek() ? today() : shownWeek(), kind: action.kind === 'event' ? null : action.kind }">
+          <app-icon [name]="action.icon" [size]="26" />
+          <span>{{ action.label }}</span>
+        </a>
       }
+      <a class="quick__btn" routerLink="/shared-records" [queryParams]="{ add: '1' }">
+        <app-icon name="receipt" [size]="26" />
+        <span>Record</span>
+      </a>
     </div>
-    <p id="quick-note" class="muted">Memories open here when they’re ready.</p>
   </section>
 
   <section class="card area-kids" aria-labelledby="kids-heading">

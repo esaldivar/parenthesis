@@ -24,14 +24,21 @@ import { AllergiesFoodSection } from './allergies-food-section';
 import { CaregiversSection } from './caregivers-section';
 import { ClothingSection } from './clothing-section';
 import { EmergencyContactsSection } from './emergency-contacts-section';
+import { MedicalProvidersSection } from './medical-providers-section';
 import { RoutinesSection } from './routines-section';
 import { SchoolSection } from './school-section';
 import { WhatHelpsSection } from './what-helps-section';
 
+/** Medical's banner colours and icon (dusty coral, docs/design/child-essentials-handoff.md); it has its own screen. */
+const MEDICAL_TINT = {
+  bg: '#f6ddd6', fg: '#6b2f24', darkBg: '#4d2d2a', darkFg: '#ffe1da',
+  art: 'M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z',
+} as const;
+
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, RoutinesSection, SchoolSection, WhatHelpsSection],
+  imports: [Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, MedicalProvidersSection, RoutinesSection, SchoolSection, WhatHelpsSection],
   template: `
     <h1 tabindex="-1" #heading>Child Essentials</h1>
     <!-- The other parent's saves since the last visit (#128): shown once, then gone after about ten seconds or on X. -->
@@ -54,6 +61,14 @@ import { WhatHelpsSection } from './what-helps-section';
       <p role="alert">Child profiles couldn’t be loaded.</p>
       <button type="button" (click)="retryLoad()">Try again</button>
     } @else if (selectedChild(); as child) {
+      @if (medicalOpen()) {
+        @if (familyId(); as family) {
+          @for (profile of [child]; track profile.id) {
+            <app-medical-providers-section [familyId]="family" [childId]="profile.id" [children]="children()"
+              (childSelected)="selectChild($event)" (back)="closeMedical()" />
+          }
+        }
+      } @else {
       <div class="layout" [class.focused]="openSection() !== null">
         <div class="children" role="group" aria-label="Choose a child">
           @for (item of children(); track item.id) {
@@ -99,23 +114,41 @@ import { WhatHelpsSection } from './what-helps-section';
                       <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
                     </summary>
                     <div class="tile-content">
+                      @if (openSection() === tile.section) {
+                        <header class="section-hero">
+                          <h2 tabindex="-1">{{ tile.name }}</h2>
+                          <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
+                        </header>
+                      }
                       @switch (tile.section) {
                         @case ('school') { <app-school-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('allergiesFood') { <app-allergies-food-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
                         @case ('routines') { <app-routines-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('clothing') { <app-clothing-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('whatHelps') { <app-what-helps-section [familyId]="family" [childId]="profile.id" /> }
-                        @case ('caregivers') { <app-caregivers-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('caregivers') { <app-caregivers-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
                         @case ('emergencyContacts') { <app-emergency-contacts-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
                       }
                     </div>
                   </details>
                 }
+                <button type="button" #medicalTile class="medical-tile" (click)="openMedical(child.id)">
+                  <span class="tile-text"><span class="tile-name">Medical</span>
+                    <span class="tile-about">Doctors, dentists, and other providers</span>
+                  </span>
+                  @if (tileHasUpdate(child.id, 'medical')) {
+                    <span class="child-dot" aria-hidden="true"></span>
+                    <span class="visually-hidden">, updated</span>
+                  }
+                  <img class="tile-art" src="art/child-essentials/medical.webp" alt="" />
+                  <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
+                </button>
               </div>
             }
           }
         </section>
       </div>
+      }
     } @else {
       <p>No active child profiles yet.</p>
     }
@@ -174,6 +207,13 @@ import { WhatHelpsSection } from './what-helps-section';
       cursor: pointer;
       list-style: none;
     }
+    .medical-tile {
+      display: flex; align-items: center; gap: 0.75rem; min-height: 5.25rem; width: 100%;
+      padding: 0.5rem 0.75rem 0.5rem 1rem; border: 1px solid var(--color-outline);
+      border-radius: 1rem; background: var(--color-surface-soft); color: var(--color-text);
+      text-align: start; font: inherit; cursor: pointer;
+    }
+    .focused .medical-tile { display: none; }
     summary::-webkit-details-marker { display: none; }
     summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
     .tile-text { display: grid; gap: 0.125rem; flex: 1; min-width: 0; }
@@ -232,13 +272,35 @@ import { WhatHelpsSection } from './what-helps-section';
     }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
 
+    .section-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      min-block-size: 6rem;
+      margin-block-end: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 1rem;
+      background: var(--essentials-tile-bg);
+      color: var(--essentials-tile-fg);
+    }
+    .section-hero h2 {
+      min-inline-size: 0;
+      font: 700 clamp(1.5rem, 5vw, 2rem) Georgia, serif;
+      overflow-wrap: anywhere;
+    }
+    .section-hero img { inline-size: min(38%, 10rem); block-size: auto; }
+
     /* Phones: one section at a time, as its own screen, with a way back. */
     @media (max-width: 47.99rem) {
-      .focused .children, .focused details:not([open]) { display: none; }
-      .focused h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .focused .children, .focused details:not([open]), .focused details[open] > summary { display: none; }
+      .focused #essentials-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
+      .focused .tile-content { padding: 0; }
+      .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
     }
     @media (min-width: 48rem) {
-      .back { display: none; }
+      .back, .section-hero { display: none; }
       .layout { grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr); }
       .children { flex-direction: column; flex-wrap: nowrap; }
       .children button { flex: none; min-height: 64px; }
@@ -253,6 +315,22 @@ import { WhatHelpsSection } from './what-helps-section';
       .tile-art { order: -1; width: 7rem; height: 5rem; }
       .tile-name { font-size: 1.375rem; }
     }
+    @media (min-width: 48rem) {
+      .section-tiles > details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
+      .section-tiles > details[open] > summary {
+        min-block-size: 7rem;
+        padding-inline: 1rem;
+        background: var(--essentials-tile-bg);
+        color: var(--essentials-tile-fg);
+      }
+      details[open] > summary .tile-name { font: 700 2rem Georgia, serif; }
+      details[open] > summary .tile-art {
+        order: 1;
+        inline-size: min(32%, 11rem);
+        block-size: 6rem;
+      }
+      .section-tiles > details[open] > .tile-content { padding: 0.75rem 0 0; }
+    }
     @media (forced-colors: active) {
       .section-tiles > details, .banner { border: 1px solid CanvasText; }
     }
@@ -266,6 +344,14 @@ export class ChildEssentialsPage {
   private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
   private readonly disclosures = viewChildren<ElementRef<HTMLDetailsElement>>('disclosure');
   /** The section shown on its own on a phone. */
+  protected readonly medicalOpen = signal(false);
+  private readonly medicalTile = viewChild<ElementRef<HTMLButtonElement>>('medicalTile');
+
+  protected closeMedical(): void {
+    this.medicalOpen.set(false);
+    afterNextRender({ read: () => this.medicalTile()?.nativeElement.focus() }, { injector: this.injector });
+  }
+
   protected readonly openSection = signal<EssentialsSectionId | null>(null);
   private readonly opened = signal<readonly EssentialsBanner[] | null>(null);
   private readonly dismissed = signal<ReadonlySet<string>>(new Set());
@@ -310,12 +396,19 @@ export class ChildEssentialsPage {
   ] as const;
 
   private bannerTint(section: EssentialsSectionId): Pick<ShownBanner, 'bg' | 'fg' | 'art'> {
-    const tile = this.tiles.find((item) => item.section === (section === 'householdRoutines' ? 'routines' : section))!;
+    const tile = this.tiles.find((item) => item.section === (section === 'householdRoutines' ? 'routines' : section))
+      ?? MEDICAL_TINT;
     return {
       bg: `light-dark(${tile.bg}, ${tile.darkBg})`,
       fg: `light-dark(${tile.fg}, ${tile.darkFg})`,
       art: tile.art,
     };
+  }
+
+  /** Opens Medical; like opening any section, it clears that section's dot. */
+  protected openMedical(childId: string): void {
+    this.medicalOpen.set(true);
+    this.updates.sectionOpened(childId, 'medical');
   }
 
   protected tileHasUpdate(childId: string, section: EssentialsSectionId): boolean {
@@ -333,7 +426,9 @@ export class ChildEssentialsPage {
           if (other.nativeElement !== tile) other.nativeElement.open = false;
         }
         this.openSection.set(section);
-        tile.scrollIntoView?.({ block: 'start' });
+        afterNextRender({ read: () => {
+          if (this.openSection() === section) tile.querySelector<HTMLElement>('.section-hero h2')?.focus();
+        } }, { injector: this.injector });
       }
     } else if (this.openSection() === section) {
       this.openSection.set(null);
@@ -342,7 +437,8 @@ export class ChildEssentialsPage {
 
   /** Back to all of the child's sections; focus returns to the one that was open. */
   protected closeSection(): void {
-    const open = this.disclosures().find((tile) => tile.nativeElement.open)?.nativeElement;
+    const section = this.openSection();
+    const open = this.disclosures().find((tile) => tile.nativeElement.dataset['section'] === section)?.nativeElement;
     this.openSection.set(null);
     if (!open) return;
     open.open = false;
