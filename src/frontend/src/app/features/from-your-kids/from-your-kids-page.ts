@@ -56,17 +56,18 @@ import { AuthStore } from '../../core/auth/auth.store';
         @case ('artwork') {
           <section class="gallery" aria-labelledby="artwork-title">
             <h2 id="artwork-title">Their artwork</h2>
-            <div class="fridge">
-              <p class="empty">The artwork gallery is being prepared from the approved design.</p>
-              <p>No artwork shared with you yet.</p>
+            <div class="fridge" role="img" aria-label="Empty closed refrigerator, ready for your child's shared drawings">
+              <div class="fridge-door fridge-door--upper"><span class="fridge-handle" aria-hidden="true"></span></div>
+              <div class="fridge-door fridge-door--lower"><span class="fridge-handle" aria-hidden="true"></span></div>
             </div>
+            <p>No artwork shared with you yet.</p>
             <p class="hint">Drawings will appear on the outside of the fridge, held up by magnets.</p>
           </section>
         }
         @case ('photos') {
           <section class="gallery" aria-labelledby="photos-title">
             <h2 id="photos-title">Their photos</h2>
-            <div class="corkboard"><p>No photos shared with you yet.</p></div>
+            <div class="corkboard"><h3>{{ selectedChild()?.firstName }}'s photos</h3><p>No photos shared with you yet.</p></div>
             <p class="hint">Your child's photos will be pinned here like little memories.</p>
           </section>
         }
@@ -97,9 +98,15 @@ import { AuthStore } from '../../core/auth/auth.store';
     .page h2 { font-family: Georgia, serif; margin-bottom: 1rem; }
     .page .empty { font-weight: 700; margin-top: 2rem; }
     .gallery { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border-radius: var(--radius-card); text-align: center; }
-    .fridge img { display: block; width: min(100%, 21rem); max-height: 28rem; margin: auto; }
+    .fridge { display: grid; width: min(100%, 18rem); height: 24rem; padding: 0.65rem; gap: 0.5rem; border: 3px solid var(--color-outline); border-radius: 1.5rem; background: var(--color-surface-soft); box-shadow: 0 8px 15px #0002; }
+    .fridge-door { position: relative; border: 2px solid var(--color-divider); border-radius: 0.75rem; background: var(--color-surface); }
+    .fridge-door--upper { min-height: 9rem; }
+    .fridge-door--lower { min-height: 11rem; }
+    .fridge-handle { position: absolute; left: 0.8rem; top: 20%; width: 0.55rem; height: 45%; border-radius: 0.4rem; background: var(--color-outline); }
     .fridge p { margin-top: var(--space-2); }
     .corkboard { display: grid; place-items: center; width: min(100%,42rem); min-height: 16rem; border: 12px solid #996638; border-radius: 12px; background: #c48c55; color: #20303F; box-shadow: inset 0 0 12px #56351855; }
+    .corkboard { gap: var(--space-3); padding: var(--space-3); }
+    .corkboard h3 { margin: 0; font-family: Georgia, serif; }
     .corkboard p { padding: 1rem; background: #F7F5ED; transform: rotate(-2deg); }
     @media (max-width: 40rem) { .book { grid-template-columns: 1fr; } .page:first-child { display: none; } .page + .page { border-left: 0; } .sections button { padding: var(--space-2); } }
     @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition: none !important; animation: none !important; } }
