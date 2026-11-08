@@ -239,14 +239,14 @@ a.is-active {
     grid-area: sidebar;
     position: sticky;
     top: 0;
-    height: 100dvh;
+    align-self: start;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
     padding: var(--space-6) var(--space-4) var(--space-4);
     background: var(--color-surface);
     border-right: 1px solid var(--color-divider);
-    overflow-y: auto;
   }
 
   .sidebar .brand {
@@ -318,6 +318,29 @@ a.is-active {
 
   .bottomnav {
     display: none;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 48rem) {
+  .sidebar {
+    gap: var(--space-2);
+    padding-block: var(--space-3);
+  }
+
+  .sidenav a {
+    min-height: max(var(--target-min), 2.75rem);
+    margin-bottom: 0;
+  }
+
+  .sidebar__decor {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 35rem) {
+  .sidebar {
+    position: static;
+    align-self: stretch;
   }
 }
 
