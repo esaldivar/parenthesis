@@ -1,3 +1,5 @@
+import { LocaleService, AppLocale } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { EventThemesService } from '../../core/theme/event-themes.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
@@ -21,6 +23,7 @@ import { MemorySettingsSection } from './memory-settings';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatSlideToggleModule,
+    TranslatePipe,
     AppearancePicker,
     InviteCoParent,
     ChildrenAccess,
@@ -34,7 +37,16 @@ import { MemorySettingsSection } from './memory-settings';
     RouterLink,
   ],
   template: `
-    <h1>Settings</h1>
+    <h1>{{ 'settings.title' | tr }}</h1>
+    <section class="card" aria-labelledby="language-heading">
+      <h2 id="language-heading">{{ 'settings.languageHeading' | tr }}</h2>
+      <label for="settings-language">{{ 'settings.languageLabel' | tr }}</label>
+      <select id="settings-language" [value]="locale.locale()" (change)="changeLanguage($event)" aria-describedby="settings-language-help">
+        <option value="en">English</option>
+        <option value="es-419">Español</option>
+      </select>
+      <p id="settings-language-help">{{ 'settings.languageHelp' | tr }}</p>
+    </section>
     <section class="card">
       <app-appearance-picker />
       <mat-slide-toggle [checked]="eventThemes.enabled()" (change)="eventThemes.setEnabled($event.checked)" aria-describedby="event-theme-help">Add themes to events</mat-slide-toggle>
@@ -131,12 +143,29 @@ import { MemorySettingsSection } from './memory-settings';
       font-size: var(--font-size-h3);
       margin-top: 0;
     }
+    select {
+      display: block;
+      min-height: var(--target-min);
+      margin-top: var(--space-2);
+      padding: var(--space-2);
+      background: var(--color-surface);
+      color: inherit;
+      border: 1px solid var(--color-divider);
+      border-radius: 0.5rem;
+    }
     .muted {
       color: var(--color-text-secondary);
     }
   `,
 })
 export class SettingsPage implements OnInit {
+  protected readonly locale = inject(LocaleService);
+
+  protected changeLanguage(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === 'en' || value === 'es-419') this.locale.setLocale(value as AppLocale);
+  }
+
   protected readonly eventThemes = inject(EventThemesService);
   protected readonly auth = inject(AuthStore);
   private readonly api = inject(Api);
