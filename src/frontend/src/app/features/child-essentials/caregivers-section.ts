@@ -12,6 +12,8 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
   styleUrl: './essentials-section.css',
   styles: `
     :host { display: block; margin-block-start: 1rem; }
+    h4 { display: flex; align-items: center; flex-wrap: wrap; gap: .375rem; }
+    .caregiver-name { min-inline-size: 0; overflow-wrap: anywhere; }
     .stars { display: inline-flex; color: light-dark(#9a6b00, #f2c14e); font-size: 1.25rem; }
     .star { position: relative; }
     .filled { position: absolute; inset-inline-start: 0; overflow: hidden; }
@@ -26,19 +28,19 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
         @if (!current.caregivers.length) { <p>No shared caregivers yet.</p> }
         @for (caregiver of current.caregivers; track caregiver.id) {
           <article class="entry" [class.row--updated]="marks.updated(caregiver.id)" (appOnScreen)="marks.rowOnScreen(caregiver.id)">
-            <h4>{{ caregiver.details.name }}
-              @if (marks.updated(caregiver.id)) { <span class="updated-pill">Updated</span> }</h4>
-            @if (caregiver.details.schoolPickup) { <p><span class="tag">School pickup</span></p> }
-            <p>{{ caregiver.details.phone }}
-              <a class="call" [href]="phoneLink(caregiver.details.phone)" [attr.aria-label]="'Call ' + caregiver.details.name">Call</a>
-            </p>
-            <p>
-              <span class="stars" aria-hidden="true">
+            <h4>
+              <span class="caregiver-name">{{ caregiver.details.name }}</span>
+              <span class="stars" role="img"
+                    [attr.aria-label]="caregiver.averageRating === null ? 'Unrated' : caregiver.averageRating + ' out of 3 stars'">
                 @for (star of [0, 1, 2]; track star) {
-                  <span class="star">☆<span class="filled" [style.width.%]="fill(caregiver.averageRating, star)">★</span></span>
+                  <span class="star" aria-hidden="true">☆<span class="filled" [style.width.%]="fill(caregiver.averageRating, star)">★</span></span>
                 }
               </span>
-              {{ caregiver.averageRating === null ? 'Unrated' : caregiver.averageRating + ' out of 3 stars' }}
+              @if (marks.updated(caregiver.id)) { <span class="updated-pill">Updated</span> }
+            </h4>
+            @if (caregiver.details.schoolPickup) { <p><span class="tag">School pickup</span></p> }
+            <p>{{ displayPhone(caregiver.details.phone) }}
+              <a class="call" [href]="phoneLink(caregiver.details.phone)" [attr.aria-label]="'Call ' + caregiver.details.name">Call</a>
             </p>
             <details>
               <summary>Details for {{ caregiver.details.name }}</summary>
@@ -201,6 +203,15 @@ export class CaregiversSection {
 
   protected fill(average: number | null, star: number): number {
     return Math.min(1, Math.max(0, (average ?? 0) - star)) * 100;
+  }
+
+  protected displayPhone(phone: string): string {
+    const value = phone.trim();
+    if (!/^(?:\+1|1)?[\d(). -]+$/.test(value)) return phone;
+    const digits = value.replace(/\D/g, '');
+    if (value.startsWith('+') && digits.length !== 11) return phone;
+    const usNumber = /^(?:1)?(\d{3})(\d{3})(\d{4})$/.exec(digits);
+    return usNumber ? usNumber.slice(1).join('-') : phone;
   }
 
   protected phoneLink(phone: string): string {
