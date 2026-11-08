@@ -51,6 +51,14 @@ jobs:
           ./scripts/windows-nvda-candidate.test.ps1
           node --test scripts/verify-nvda-results.test.mjs
 
+      # Reuse the checksum-verified Postgres and Mailpit archives so a download-host outage doesn't fail the run.
+      # The install step still verifies each archive's SHA-256 before using it.
+      - name: Cache Postgres and Mailpit downloads
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/nvda-downloads
+          key: nvda-downloads-${{ runner.os }}-${{ hashFiles('tests/e2e/scripts/windows-nvda-candidate.ps1') }}
+
       - name: Install isolated Postgres and Mailpit
         run: ./scripts/windows-nvda-candidate.ps1 -Action Install
 
