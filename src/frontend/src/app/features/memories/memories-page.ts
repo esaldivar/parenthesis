@@ -13,6 +13,7 @@ import { Api, FamilyMember, Memory } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { EmptyState } from '../../shared/empty-state/empty-state';
+import { Icon } from '../../shared/icon/icon';
 import { monthDay } from '../dashboard/week';
 import {
   PHOTOS_NOW,
@@ -30,9 +31,15 @@ import {
 @Component({
   selector: 'app-memories-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, EmptyState],
+  imports: [MatButtonModule, RouterLink, EmptyState, Icon],
   template: `
-    <h1>Family Memories</h1>
+    <header class="memories-header">
+      <div>
+        <h1>Family Memories</h1>
+        <p class="tagline">The little things are worth remembering.</p>
+      </div>
+      <span class="memories-header__art" aria-hidden="true"></span>
+    </header>
     <p class="intro">
       Photos from your events. Each photo is deleted {{ retentionDays }} days after it’s added, so
       download the ones you want to keep.
@@ -66,6 +73,7 @@ import {
                     <span class="muted">{{ row.date }} · {{ row.count }} · {{ row.whose }}<span class="visually-hidden">.</span></span>
                     <span class="chip" [attr.data-soon]="row.soon">{{ row.expiry }}</span>
                   </span>
+                  <app-icon name="chevron-right" [size]="20" aria-hidden="true" />
                 </a>
               </li>
             }
@@ -79,10 +87,48 @@ import {
       display: grid;
       gap: var(--space-4);
       align-content: start;
+      container: memories / inline-size;
     }
     h1,
     p {
       margin: 0;
+    }
+    .memories-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 42%);
+      align-items: center;
+      min-height: 7rem;
+      border-radius: var(--radius-card);
+      background: var(--color-surface);
+      overflow: hidden;
+    }
+    .memories-header > div {
+      padding: var(--space-4) 0 var(--space-4) var(--space-4);
+      font-family: Georgia, serif;
+      overflow-wrap: anywhere;
+    }
+    .memories-header h1 {
+      font-family: inherit;
+      font-size: clamp(1.5rem, 5cqi, 3rem);
+      line-height: 1.05;
+    }
+    .tagline {
+      margin-top: var(--space-2);
+      font-style: italic;
+      color: var(--color-text-secondary);
+    }
+    .memories-header__art {
+      align-self: stretch;
+      background: url('/art/family-memories-light.webp') right center / contain no-repeat;
+      mask-image: linear-gradient(to right, transparent, black 16%);
+    }
+    :host-context(html[data-theme='dark']) .memories-header__art {
+      background-image: url('/art/family-memories-dark.webp');
+    }
+    @media (prefers-color-scheme: dark) {
+      :host-context(html:not([data-theme])) .memories-header__art {
+        background-image: url('/art/family-memories-dark.webp');
+      }
     }
     .intro,
     .muted {
@@ -100,15 +146,15 @@ import {
       padding: 0;
       display: grid;
       gap: var(--space-3);
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+      grid-template-columns: minmax(0, 1fr);
     }
     .memory {
       display: grid;
-      grid-template-columns: 88px 1fr;
-      gap: var(--space-3);
+      grid-template-columns: clamp(3.5rem, 23cqi, 6rem) minmax(0, 1fr) auto;
+      gap: var(--space-2);
       align-items: center;
       min-height: var(--target-min);
-      padding: var(--space-3);
+      padding: var(--space-2);
       border: 1px solid var(--color-divider);
       border-radius: var(--radius-card);
       background: var(--color-surface);
@@ -123,8 +169,8 @@ import {
       outline-offset: 2px;
     }
     .memory img {
-      width: 88px;
-      height: 88px;
+      width: 100%;
+      aspect-ratio: 1;
       object-fit: cover;
       border-radius: 8px;
       background: var(--color-surface-soft);
@@ -136,7 +182,35 @@ import {
       overflow-wrap: anywhere;
     }
     .memory__title {
+      font-family: Georgia, serif;
       font-weight: 700;
+    }
+    @container memories (min-width: 42rem) {
+      .memories-header {
+        min-height: 10rem;
+      }
+      .memories-header > div {
+        padding-left: var(--space-6);
+      }
+      .memories {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .memory {
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding: 0;
+        overflow: hidden;
+      }
+      .memory img {
+        grid-column: 1 / -1;
+        aspect-ratio: 2.35;
+        border-radius: 0;
+      }
+      .memory__text {
+        padding: 0 0 var(--space-3) var(--space-3);
+      }
+      .memory app-icon {
+        margin-right: var(--space-3);
+      }
     }
     .chip {
       justify-self: start;
