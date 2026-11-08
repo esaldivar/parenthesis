@@ -117,6 +117,22 @@ describe('Api (Milestone 2 endpoints)', () => {
       body: { caregiverMembershipId: 'm2' },
     },
     { name: 'cancel event', call: (a) => a.cancelEvent('f1', 'e1'), method: 'DELETE', url: '/api/families/f1/calendar/events/e1' },
+    // Notifications (#178) and Shared Records attachment storage (#477).
+    { name: 'notifications', call: (a) => a.notifications('f1', 20), method: 'GET', url: '/api/families/f1/notifications?offset=20' },
+    { name: 'notifications unseen', call: (a) => a.notificationsUnseen('f1'), method: 'GET', url: '/api/families/f1/notifications/unseen' },
+    {
+      name: 'mark notifications seen',
+      call: (a) => a.markNotificationsSeen('f1', ['n1', 'n2']),
+      method: 'POST',
+      url: '/api/families/f1/notifications/seen',
+      body: { ids: ['n1', 'n2'] },
+    },
+    {
+      name: 'attachment storage',
+      call: (a) => a.sharedRecordsAttachmentStorage('f1'),
+      method: 'GET',
+      url: '/api/families/f1/shared-records/attachment-storage',
+    },
   ];
 
   for (const c of cases) {

@@ -141,6 +141,26 @@ public sealed class AccountDeletionTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task The_departing_parent_s_notifications_go_and_the_co_parent_s_stay_until_the_family_closes()
+    {
+        var (dad, mom, _, familyId, kaiId) = await TwoParentFamilyAsync();
+        using (dad)
+        using (mom)
+        {
+            await dad.PostAsync(Events(familyId), Activity("Soccer Practice", kaiId));
+            await mom.PostAsync(Events(familyId), Activity("Swim Lesson", kaiId));
+            Assert.Equal(2L, await CountAsync("calendar.notifications", "family_id", familyId));
+
+            Assert.Equal(HttpStatusCode.NoContent, (await dad.PostAsync("/api/me/delete", new { password = ApiSession.Password })).StatusCode);
+            Assert.Equal(1L, await CountAsync("calendar.notifications", "family_id", familyId));
+            Assert.True((await JsonAsync(await mom.GetAsync($"/api/families/{familyId}/notifications/unseen"))).GetProperty("unseen").GetBoolean());
+
+            Assert.Equal(HttpStatusCode.NoContent, (await mom.PostAsync("/api/me/delete", new { password = ApiSession.Password })).StatusCode);
+            Assert.Equal(0L, await CountAsync("calendar.notifications", "family_id", familyId));
+        }
+    }
+
+    [Fact]
     public async Task When_the_invited_parent_leaves_the_invitation_holding_their_email_goes_too()
     {
         var (dad, mom, momEmail, familyId, _) = await TwoParentFamilyAsync();

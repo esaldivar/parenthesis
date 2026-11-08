@@ -70,6 +70,47 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await child.PostAsync($"{feed}/seen", new { ids })).StatusCode);
     }
 
+    [Fact]
+    public async Task Private_availability_gives_no_notice_and_marking_seen_needs_a_bounded_list_of_ids()
+    {
+        using var f = await FamilyAsync();
+        var feed = $"/api/families/{f.FamilyId}/notifications";
+        Assert.Equal(HttpStatusCode.Created, (await f.Dad.PostAsync(Events(f),
+            new { category = "Unavailable", startsAt = _monday.AddHours(8), endsAt = _monday.AddHours(9), notes = "Private" })).StatusCode);
+
+        Assert.False((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        var page = await JsonAsync(await f.Mom.GetAsync(feed));
+        Assert.Empty(page.GetProperty("items").EnumerateArray());
+        Assert.False(page.GetProperty("hasMore").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await f.Mom.PostAsync($"{feed}/seen", new { ids = Array.Empty<Guid>() })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await f.Mom.PostAsync($"{feed}/seen", new { ids = Enumerable.Range(0, 51).Select(_ => Guid.NewGuid()).ToArray() })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Notifications_page_fifty_at_a_time()
+    {
+        using var f = await FamilyAsync();
+        var feed = $"/api/families/{f.FamilyId}/notifications";
+        for (var i = 0; i < 51; i++)
+        {
+            Assert.Equal(HttpStatusCode.Created, (await f.Dad.PostAsync(Events(f), new
+            {
+                category = "Activity",
+                title = $"Practice {i}",
+                startsAt = _monday.AddDays(i).AddHours(17),
+                endsAt = _monday.AddDays(i).AddHours(18),
+            })).StatusCode);
+        }
+
+        var first = await JsonAsync(await f.Mom.GetAsync(feed));
+        Assert.Equal(50, first.GetProperty("items").GetArrayLength());
+        Assert.True(first.GetProperty("hasMore").GetBoolean());
+        var rest = await JsonAsync(await f.Mom.GetAsync($"{feed}?offset=50"));
+        Assert.Single(rest.GetProperty("items").EnumerateArray());
+        Assert.False(rest.GetProperty("hasMore").GetBoolean());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
