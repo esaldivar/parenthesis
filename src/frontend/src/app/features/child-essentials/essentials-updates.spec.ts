@@ -173,8 +173,8 @@ describe('Child Essentials updates (#128)', () => {
     expect(text(kai)).not.toContain('has updates');
   });
 
-  it('focuses the illustrated mobile section heading and returns focus to the tile on Back', async () => {
-    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(max-width: 47.99rem)' })));
+  it('opens an illustrated detail screen at desktop width and returns focus to the same child’s tile on Back', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
     const { fixture, el } = await render();
     const tile = el.querySelector<HTMLDetailsElement>('[data-section=caregivers]')!;
     tile.open = true;
@@ -182,13 +182,18 @@ describe('Child Essentials updates (#128)', () => {
     await settle(fixture);
 
     const hero = tile.querySelector('.section-hero')!;
+    expect(el.querySelector('.layout')?.classList).toContain('focused');
+    expect(hero.closest('section')?.getAttribute('aria-labelledby')).toBe('essentials-heading');
     expect(text(hero.querySelector('h2'))).toBe('Shared Caregivers');
     expect(hero.querySelector('img')?.getAttribute('src')).toBe('art/child-essentials/caregivers.webp');
     expect(document.activeElement).toBe(hero.querySelector('h2'));
+    expect(await axeViolations(el)).toEqual([]);
 
     el.querySelector<HTMLButtonElement>('.back')!.click();
     await settle(fixture);
     expect(tile.open).toBe(false);
+    expect(el.querySelector('.layout')?.classList).not.toContain('focused');
+    expect(el.querySelector('.children [aria-pressed=true]')?.textContent).toContain('Kai');
     expect(tile.querySelector('.section-hero')).toBeNull();
     expect(document.activeElement).toBe(tile.querySelector('summary'));
   });
