@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, injec
 import { Api, Child } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { KidsGallery } from './kids-gallery';
+import { KidsDiary } from './kids-diary';
 
 /**
  * M4 parent-facing presentation shell (#531). No synthetic child data is exposed to parents.
@@ -10,7 +11,7 @@ import { KidsGallery } from './kids-gallery';
 @Component({
   selector: 'app-from-your-kids-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [KidsGallery],
+  imports: [KidsGallery, KidsDiary],
   template: `
     <section class="kids" aria-labelledby="kids-title">
       <header class="intro">
@@ -44,17 +45,7 @@ import { KidsGallery } from './kids-gallery';
       <p class="sharing-note">Only things {{ selectedChild()?.firstName }} chooses to share with you will appear here.</p>
       @switch (section()) {
         @case ('diary') {
-          <section class="book" aria-labelledby="diary-title">
-            <div class="page">
-              <h2 id="diary-title">Their diary</h2>
-              <p>Thoughts, feelings and stories shared just with you.</p>
-            </div>
-            <div class="page">
-              <p class="empty">No diary entries shared with you yet.</p>
-              <p class="hint">When your child shares an entry, you'll be able to turn its pages here.</p>
-              <p class="diary-placeholder">This book is waiting for a story.</p>
-            </div>
-          </section>
+          <app-kids-diary />
         }
         @case ('artwork') {
           <section class="gallery" aria-labelledby="artwork-title">
