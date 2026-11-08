@@ -287,14 +287,17 @@ const MEDICAL_TINT = {
     }
     .section-hero img { inline-size: min(38%, 10rem); block-size: auto; }
 
-    .layout.focused { grid-template-columns: minmax(0, 1fr); }
-    .focused .children,
     .focused #essentials-heading,
     .focused .medical-tile,
     .focused details:not([open]),
     .focused details[open] > summary { display: none; }
     .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
     .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+
+    @media (max-width: 47.999rem) {
+      .layout.focused { grid-template-columns: minmax(0, 1fr); }
+      .focused .children { display: none; }
+    }
 
     @media (min-width: 48rem) {
       .layout { grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr); }
