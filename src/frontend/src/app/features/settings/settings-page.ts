@@ -46,6 +46,7 @@ import { MemorySettingsSection } from './memory-settings';
         <option value="es-419">Español</option>
       </select>
       <p id="settings-language-help">{{ 'settings.languageHelp' | tr }}</p>
+      @if (languageError(); as message) { <p role="alert">{{ message }}</p> }
     </section>
     <section class="card">
       <app-appearance-picker />
@@ -161,9 +162,22 @@ import { MemorySettingsSection } from './memory-settings';
 export class SettingsPage implements OnInit {
   protected readonly locale = inject(LocaleService);
 
-  protected changeLanguage(event: Event): void {
+  protected readonly languageError = signal<string | null>(null);
+
+  protected async changeLanguage(event: Event): Promise<void> {
     const value = (event.target as HTMLSelectElement).value;
-    if (value === 'en' || value === 'es-419') this.locale.setLocale(value as AppLocale);
+    if (value !== 'en' && value !== 'es-419') return;
+    const previous = this.locale.locale();
+    this.locale.setLocale(value as AppLocale);
+    this.languageError.set(null);
+    try {
+      if (this.auth.status() === 'signed-in') await this.api.setLanguage(value as AppLocale);
+    } catch {
+      this.locale.setLocale(previous);
+      this.languageError.set(previous === 'es-419'
+        ? 'No se pudo guardar el idioma. Inténtalo de nuevo.'
+        : 'Could not save your language. Please try again.');
+    }
   }
 
   protected readonly eventThemes = inject(EventThemesService);
