@@ -304,7 +304,7 @@ export class AuthStore {
     this.calendarCache.useViewer(user ? `user:${user.id}` : null);
     // Each account has its own appearance; signed out, the app follows the system.
     this.appearance.useAccount(user?.id ?? null);
-    this.locale.useAccount(user?.id ?? null);
+    this.locale.useAccount(user?.id ?? null, user?.language);
     this.eventThemes.useAccount(user?.id ?? null);
   }
 
