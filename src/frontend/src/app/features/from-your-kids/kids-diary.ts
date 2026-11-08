@@ -15,7 +15,7 @@ import { KidsDiaryEntry } from './from-your-kids-contract';
         </div>
       </div>
     } @else {
-      <section class="book" aria-label="Shared diary">
+      <section class="book" aria-label="Shared diary" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
         <div class="paper cover"><h2>Dear Diary</h2><p>{{ ordered().length }} shared {{ ordered().length === 1 ? 'story' : 'stories' }}</p></div>
         <article class="paper" aria-live="polite">
           @if (current(); as entry) {
@@ -56,6 +56,16 @@ export class KidsDiary {
   protected readonly index = signal(0);
   protected readonly ordered = computed(() => [...this.entries()].sort((a,b) => b.createdAt.localeCompare(a.createdAt)));
   protected readonly current = computed(() => this.ordered()[Math.min(this.index(), this.ordered().length - 1)] ?? null);
+  private touchStartX: number | null = null;
+  protected onTouchStart(event: TouchEvent): void { this.touchStartX = event.changedTouches[0]?.clientX ?? null; }
+  protected onTouchEnd(event: TouchEvent): void {
+    const endX = event.changedTouches[0]?.clientX;
+    if (this.touchStartX === null || endX === undefined) return;
+    const delta = endX - this.touchStartX;
+    this.touchStartX = null;
+    if (Math.abs(delta) < 60) return;
+    if (delta < 0) this.next(); else this.previous();
+  }
   protected previous(): void { this.index.update(i => Math.max(0, i - 1)); }
   protected next(): void { this.index.update(i => Math.min(this.ordered().length - 1, i + 1)); }
 }
