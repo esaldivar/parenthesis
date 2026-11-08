@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Api, Child } from '../../core/api/api';
+import { AuthStore } from '../../core/auth/auth.store';
 
 /**
  * M4 parent-facing presentation shell (#531). No synthetic child data is exposed to parents.
@@ -14,6 +16,20 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
         <p>A little window into the things your children choose to share.</p>
       </header>
 
+      @if (loading()) {
+        <p role="status">Loading children…</p>
+      } @else if (failed()) {
+        <p role="alert">We couldn't load your children's profiles.</p>
+        <button type="button" class="retry" (click)="retry()">Try again</button>
+      } @else if (children().length === 0) {
+        <p>No active child profiles yet.</p>
+      } @else {
+      <nav class="child-tabs" aria-label="Choose a child">
+        @for (child of children(); track child.id) {
+          <button type="button" [attr.aria-pressed]="selectedChildId() === child.id"
+            (click)="selectChild(child.id)">{{ child.firstName }}</button>
+        }
+      </nav>
       <nav class="sections" aria-label="From Your Kids sections">
         <button type="button" [attr.aria-current]="section() === 'diary' ? 'page' : null"
           (click)="section.set('diary')"><span aria-hidden="true">📖</span> Diary</button>
@@ -23,6 +39,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
           (click)="section.set('photos')"><span aria-hidden="true">📷</span> Photos</button>
       </nav>
 
+      <p class="sharing-note">Only things {{ selectedChild()?.firstName }} chooses to share with you will appear here.</p>
       @switch (section()) {
         @case ('diary') {
           <section class="book" aria-labelledby="diary-title">
@@ -54,6 +71,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
           </section>
         }
       }
+      }
     </section>
   `,
   styles: `
@@ -64,6 +82,10 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
     .intro h1 { font-family: Georgia, serif; font-size: clamp(1.7rem, 4vw, 2.6rem); }
     .intro p,.hint { color: var(--color-text-secondary); }
     .intro p { margin-top: var(--space-2); }
+    .child-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .child-tabs button,.retry { min-height: var(--target-min); padding: var(--space-2) var(--space-4); border: 1px solid var(--color-outline); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font: inherit; cursor: pointer; }
+    .child-tabs button[aria-pressed='true'] { background: var(--color-surface-soft); border: 2px solid var(--color-focus); font-weight: 700; }
+    .sharing-note { color: var(--color-text-secondary); }
     .sections { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--space-2); }
     .sections button { min-height: var(--target-min); padding: var(--space-3); border: 1px solid var(--color-divider); border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-text); cursor: pointer; font: inherit; font-weight: 650; }
     .sections button[aria-current='page'] { border: 2px solid var(--color-focus); background: var(--color-surface-soft); }
@@ -84,5 +106,54 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
   `,
 })
 export class FromYourKidsPage {
+  private readonly api = inject(Api);
+  private readonly auth = inject(AuthStore);
+  private readonly destroy = inject(DestroyRef);
+  private requestId = 0;
   protected readonly section = signal<'diary' | 'artwork' | 'photos'>('diary');
+  protected readonly children = signal<readonly Child[]>([]);
+  protected readonly selectedChildId = signal<string | null>(null);
+  protected readonly selectedChild = computed(() => this.children().find(child => child.id === this.selectedChildId()) ?? null);
+  protected readonly loading = signal(true);
+  protected readonly failed = signal(false);
+
+  constructor() {
+    effect(() => {
+      const familyId = this.auth.currentFamily()?.id;
+      untracked(() => void this.loadChildren(familyId));
+    });
+  }
+
+  protected selectChild(childId: string): void {
+    if (!this.children().some(child => child.id === childId)) return;
+    this.selectedChildId.set(childId);
+    this.section.set('diary');
+  }
+
+  protected retry(): void {
+    void this.loadChildren(this.auth.currentFamily()?.id);
+  }
+
+  private async loadChildren(familyId: string | undefined): Promise<void> {
+    const request = ++this.requestId;
+    this.children.set([]);
+    this.selectedChildId.set(null);
+    this.loading.set(!!familyId);
+    this.failed.set(false);
+    if (!familyId) return;
+    try {
+      const children = (await this.api.children(familyId)).filter(child => child.status === 'Active');
+      if (this.destroy.destroyed || request !== this.requestId || this.auth.currentFamily()?.id !== familyId) return;
+      this.children.set(children);
+      this.selectedChildId.set(children[0]?.id ?? null);
+    } catch {
+      if (!this.destroy.destroyed && request === this.requestId && this.auth.currentFamily()?.id === familyId) {
+        this.failed.set(true);
+      }
+    } finally {
+      if (!this.destroy.destroyed && request === this.requestId && this.auth.currentFamily()?.id === familyId) {
+        this.loading.set(false);
+      }
+    }
+  }
 }
