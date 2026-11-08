@@ -28,9 +28,35 @@ article,
   justify-content: space-between;
 }
 
-.records > .heading {
-  padding-block-end: var(--space-3);
-  border-block-end: 1px solid var(--color-divider);
+.records-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 30%);
+  align-items: center;
+  gap: var(--space-2);
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-soft);
+}
+
+.records-hero__copy {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.records-hero__art {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 14rem;
+  block-size: auto;
+  justify-self: end;
+  pointer-events: none;
+}
+
+.records-hero .privacy app-icon {
+  flex: none;
 }
 
 h1, h2, h3, p {
