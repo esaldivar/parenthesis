@@ -13,6 +13,7 @@ import { KidsGalleryItem } from './from-your-kids-contract';
       @for (item of items(); track item.id) {
         <button type="button" class="memory" (click)="open(item.id)"
           [attr.aria-label]="'View ' + item.altText">
+          <span class="pin" aria-hidden="true"></span>
           <img [src]="item.thumbnailUrl" [alt]="item.altText" loading="lazy" />
           @if (item.bookmarked) { <span class="saved">Saved</span> }
         </button>
@@ -56,11 +57,17 @@ import { KidsGalleryItem } from './from-your-kids-contract';
   `,
   styles: `
     :host { display: block; width: 100%; }
-    .gallery-items { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; }
+    .gallery-items { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,8rem),1fr)); justify-items: center; gap: 1rem; width: 100%; }
+    .pin { display: none; position: absolute; top: -.45rem; left: 50%; width: 1rem; height: 1rem; border-radius: 50%; background: #f08a6b; border: 2px solid #e6b7a5; box-shadow: 0 2px 3px #0005; transform: translateX(-50%); z-index: 1; }
+    .photos .pin { display: block; }
+    .photos .memory:nth-child(3n + 2) .pin { background: #4e79a7; border-color: #b2c5da; }
+    .photos .memory:nth-child(3n) .pin { background: #f4c15d; border-color: #e8d18c; }
     .memory { position: relative; padding: .5rem; border: 0; border-radius: .5rem; background: #f7f5ed; box-shadow: 0 3px 10px #0003; cursor: pointer; }
-    .memory img { display: block; width: 9rem; height: 9rem; object-fit: cover; }
-    .artwork .memory { transform: rotate(-2deg); }
+    .memory img { display: block; width: min(9rem,100%); aspect-ratio: 1; object-fit: cover; }
+    .artwork .memory { transform: rotate(-2deg); border: 2px solid #f1ded0; }
+    .artwork .memory:nth-child(even) { transform: rotate(2deg); }
     .photos .memory { padding-bottom: 1.8rem; transform: rotate(2deg); }
+    .photos .memory:nth-child(even) { transform: rotate(-2deg); }
     .saved { position: absolute; bottom: .3rem; right: .4rem; color: #20303f; font-size: .8rem; }
     .backdrop { position: fixed; inset: 0; z-index: 1000; background: #000a; display: grid; place-items: center; padding: 1rem; }
     .detail { width: min(100%, 42rem); max-height: 90dvh; overflow: auto; display: grid; gap: 1rem; padding: 1rem; border-radius: 1rem; background: var(--color-surface); color: var(--color-text); }
@@ -72,6 +79,7 @@ import { KidsGalleryItem } from './from-your-kids-contract';
     textarea { width: 100%; box-sizing: border-box; background: var(--color-surface); color: var(--color-text); }
     .privacy { color: var(--color-text-secondary); font-size: .85rem; }
     :is(button,a,textarea):focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+    @media (max-width: 40rem) { .gallery-items { grid-auto-flow: column; grid-auto-columns: minmax(9rem,70%); grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; padding: .75rem .25rem; justify-items: stretch; } .memory { scroll-snap-align: center; } .memory img { width: 100%; } }
     @media (prefers-reduced-motion: reduce) { .memory { transform: none !important; } }
   `,
 })
