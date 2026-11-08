@@ -9,6 +9,7 @@ export interface Me {
   readonly id: string;
   readonly email: string;
   readonly displayName: string;
+  readonly language?: 'en' | 'es-419';
 }
 
 export type FamilyRole = 'Parent' | 'Child';
@@ -959,6 +960,7 @@ export class Api {
 
   antiforgery = () => this.call(this.http.get<void>('/api/antiforgery'));
   me = () => this.call(this.http.get<Me>('/api/me'));
+  setLanguage = (language: 'en' | 'es-419') => this.call(this.http.put<Me>('/api/me/language', { language }));
 
   register = (body: { email: string; password: string; displayName: string }) =>
     this.call(this.http.post<void>('/api/auth/register', body));
