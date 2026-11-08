@@ -31,7 +31,7 @@ export class LocaleService {
   }
 
   /** Isolate each parent's choice on a shared device, including after switching profiles. */
-  useAccount(accountId: string | null): void {
+  useAccount(accountId: string | null, serverLanguage?: AppLocale): void {
     this.accountId = accountId;
     let saved: string | null = null;
     try {
@@ -39,9 +39,16 @@ export class LocaleService {
     } catch {
       // Browser storage is optional.
     }
-    const locale = resolveLocale(saved, typeof navigator === 'undefined' ? [] : navigator.languages);
+    const locale = serverLanguage ?? resolveLocale(saved, typeof navigator === 'undefined' ? [] : navigator.languages);
     this.selected.set(locale);
     this.updateDocumentLanguage(locale);
+    if (accountId && serverLanguage) {
+      try {
+        localStorage.setItem(ACCOUNT_LOCALE_PREFIX + accountId, serverLanguage);
+      } catch {
+        // The server remains authoritative when local storage is blocked.
+      }
+    }
   }
 
   setLocale(locale: AppLocale): void {
