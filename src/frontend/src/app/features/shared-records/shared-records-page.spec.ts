@@ -65,8 +65,16 @@ describe('SharedRecordsPage', () => {
       input.dispatchEvent(new Event('input'));
     }
     page.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
-    page.querySelector('form')!.dispatchEvent(new Event('submit'));
+    let complete!: (value: { id: string; approvalId: string; status: string }) => void;
+    api.proposeSharedFund.mockReturnValueOnce(new Promise(resolve => { complete = resolve; }));
+    const form = page.querySelector('form')!;
+    form.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
+    expect(page.querySelector('app-loading-indicator [role="status"]')?.textContent).toBe('Sending request…');
+    expect(form.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
+    form.dispatchEvent(new Event('submit'));
+    expect(api.proposeSharedFund).toHaveBeenCalledTimes(1);
+    complete({ id: 'new', approvalId: 'new-approval', status: 'AwaitingAgreement' });
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -180,12 +188,17 @@ describe('SharedRecordsPage', () => {
     fixture.detectChanges();
     expect(page.textContent).toContain('soccer-payment.pdf');
 
-    api.reportContribution.mockRejectedValueOnce(new Error('offline'));
+    let fail!: (reason: Error) => void;
+    api.reportContribution.mockReturnValueOnce(new Promise((_, reject) => { fail = reject; }));
     page.querySelector('app-report-form form')!.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    expect(page.querySelector('app-loading-indicator [role="status"]')?.textContent).toBe('Reporting contribution…');
+    fail(new Error('offline'));
     await vi.waitFor(() => {
       fixture.detectChanges();
       expect(page.textContent).toContain('Your entries are still here.');
     });
+    expect(page.querySelector('app-loading-indicator svg')).toBeNull();
     expect(page.querySelector<HTMLInputElement>('input[name="amount"]')!.value).toBe('40');
 
     api.reportContribution.mockResolvedValueOnce(entry({ id: 'new', yours: true, amountMinor: 4000 }));

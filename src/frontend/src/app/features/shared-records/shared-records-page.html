@@ -113,6 +113,7 @@
             <app-icon name="chevron-left" />
           </button>
         </header>
+        <app-loading-indicator [active]="busy()" [label]="savingLabel()" />
         @if (reporting(); as target) {
           <div class="badges">
             <span class="badge" [class.support]="target.kind === 'support'">{{ target.kind === 'fund' ? 'Shared Fund' : 'Child Support' }}</span>
@@ -125,11 +126,11 @@
           <h3 id="request-type-label">Choose a request type</h3>
           <div class="request-types" role="radiogroup" aria-labelledby="request-type-label">
             <button type="button" role="radio" class="request-type" [class.selected]="requestType() === 'fund'"
-              [attr.aria-checked]="requestType() === 'fund'" (click)="requestType.set('fund')">
+              [disabled]="busy()" [attr.aria-checked]="requestType() === 'fund'" (click)="requestType.set('fund')">
               <strong>Shared Fund</strong><span>Agree on a goal</span>
             </button>
             <button type="button" role="radio" class="request-type support" [class.selected]="requestType() === 'support'"
-              [attr.aria-checked]="requestType() === 'support'" (click)="requestType.set('support')">
+              [disabled]="busy()" [attr.aria-checked]="requestType() === 'support'" (click)="requestType.set('support')">
               <strong>Child Support</strong><span>Log a payment</span>
             </button>
           </div>
