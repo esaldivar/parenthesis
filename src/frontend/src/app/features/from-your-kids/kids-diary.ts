@@ -16,7 +16,16 @@ import { KidsDiaryEntry } from './from-your-kids-contract';
       </div>
     } @else {
       <section class="book" aria-label="Shared diary" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
-        <div class="paper cover"><h2>Dear Diary</h2><p>{{ ordered().length }} shared {{ ordered().length === 1 ? 'story' : 'stories' }}</p></div>
+        <div class="paper index-page"><h2>Diary Entries</h2>
+          <nav aria-label="Choose diary entry">
+            @for (entry of ordered(); track entry.id; let i = $index) {
+              <button type="button" class="entry-choice" [attr.aria-current]="index() === i ? 'page' : null" (click)="index.set(i)">
+                <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
+                <strong>{{ entry.title || 'A diary entry' }}</strong>
+              </button>
+            }
+          </nav>
+        </div>
         <article class="paper" aria-live="polite">
           @if (current(); as entry) {
             <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
@@ -40,6 +49,10 @@ import { KidsDiaryEntry } from './from-your-kids-contract';
     .paper { min-height: 19rem; padding: clamp(1rem,3vw,2rem); background: repeating-linear-gradient(#fff9ed,#fff9ed 30px,#e5ded1 31px); }
     .paper + .paper { border-left: 2px solid #d6cbb9; }
     .cover { display: grid; align-content: center; justify-items: center; text-align: center; }
+    .index-page nav { display: grid; gap: .6rem; margin-top: 1rem; }
+    .entry-choice { display: grid; gap: .3rem; width: 100%; text-align: left; background: #fff9ed; border: 1px solid #e2d4c5; }
+    .entry-choice[aria-current="page"] { background: #e8d9f1; border-color: #a38aba; }
+    .entry-choice time { font-size: .8rem; }
     h2,h3 { font-family: Georgia,serif; }
     h2 { font-size: clamp(1.5rem,3vw,2.3rem); }
     .mood { font-weight: 700; color: #5e8f7e; }
@@ -48,7 +61,7 @@ import { KidsDiaryEntry } from './from-your-kids-contract';
     button { min-height: 44px; border: 1px solid var(--color-outline); border-radius: .5rem; padding: .5rem 1rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; }
     button:disabled { opacity: .5; cursor: default; }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
-    @media (max-width: 40rem) { .book { grid-template-columns: 1fr; } .cover { display: none; } .paper + .paper { border-left: 0; } }
+    @media (max-width: 40rem) { .book { grid-template-columns: 1fr; } .cover,.index-page { display: none; } .paper + .paper { border-left: 0; } }
   `,
 })
 export class KidsDiary {
