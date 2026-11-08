@@ -962,7 +962,7 @@ export class Api {
   me = () => this.call(this.http.get<Me>('/api/me'));
   setLanguage = (language: 'en' | 'es-419') => this.call(this.http.put<Me>('/api/me/language', { language }));
 
-  register = (body: { email: string; password: string; displayName: string }) =>
+  register = (body: { email: string; password: string; displayName: string; language?: 'en' | 'es-419' }) =>
     this.call(this.http.post<void>('/api/auth/register', body));
   login = (body: { email: string; password: string }) => this.call(this.http.post<void>('/api/auth/login', body));
   logout = () => this.call(this.http.post<void>('/api/auth/logout', {}));
