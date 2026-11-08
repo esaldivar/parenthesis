@@ -38,6 +38,7 @@ describe('DashboardPage (approved design)', () => {
       sample?: boolean;
       failingSource?: boolean;
       week?: string;
+      now?: Date;
       live?: DashboardWeek;
       load?: () => Promise<DashboardWeek | null>;
       photos?: Pick<ProfilePhotos, 'url' | 'own'>;
@@ -49,7 +50,7 @@ describe('DashboardPage (approved design)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         fakeAuth(),
-        { provide: NOW, useValue: () => WEDNESDAY_MORNING },
+        { provide: NOW, useValue: () => options.now ?? WEDNESDAY_MORNING },
         ...(options.photos ? [{ provide: ProfilePhotos, useValue: options.photos }] : []),
       ],
     });
@@ -107,12 +108,71 @@ describe('DashboardPage (approved design)', () => {
     });
   });
 
+  it('shows viewer-authorized Upcoming photos on both layouts and falls back to initials', async () => {
+    const child = { id: 'child-1', name: 'Sam' };
+    const parent = { membershipId: 'parent-1', displayName: 'Sam' };
+    const photos = {
+      url: (kind: 'parent' | 'child', id: string) =>
+        id === child.id || id === parent.membershipId ? `/photos/${kind}-${id}.webp` : null,
+      own: () => null,
+    } as unknown as Pick<ProfilePhotos, 'url' | 'own'>;
+    const { fixture, el } = await render({
+      photos,
+      live: {
+        ...EMPTY_WEEK,
+        parentingTime: [{
+          id: 'block', child, caregiver: parent, start: '2026-10-15T08:00', end: '2026-10-15T17:00', status: 'confirmed',
+        }],
+        events: [{
+          id: 'joint', title: 'School play', date: '2026-10-15', category: 'family', parents: [parent],
+          children: [child, { id: 'child-2', name: 'Alex' }], status: 'confirmed',
+        }],
+        notes: [{ id: 'task:one', kind: 'task', title: 'Bring a bag', date: '2026-10-16', children: [child] }],
+      },
+    });
+    const rows = [...el.querySelectorAll('.upcoming__people')];
+    const photosIn = (row: Element) => [...row.querySelectorAll('img')].map((img) => img.getAttribute('src'));
+
+    expect(rows.map(photosIn)).toEqual([
+      ['/photos/parent-parent-1.webp', '/photos/child-child-1.webp'],
+      ['/photos/parent-parent-1.webp', '/photos/child-child-1.webp'],
+      ['/photos/child-child-1.webp'],
+    ]);
+    expect([...el.querySelectorAll('.upcoming__people app-avatar[data-photo]')].every(
+      (avatar) => avatar.getAttribute('data-photo') === 'any',
+    )).toBe(true);
+    const fallback = rows[1].querySelector('app-avatar[title="Alex"]')!;
+    expect(fallback.querySelector('img')).toBeNull();
+    expect(text(fallback)).toBe('A');
+
+    const failed = rows[0].querySelector('app-avatar[data-kind="parent"]')!;
+    failed.querySelector('img')!.dispatchEvent(new Event('error'));
+    await settle(fixture);
+    expect(failed.querySelector('img')).toBeNull();
+    expect(text(failed)).toBe('S');
+  });
+
   describe('layout and live data', () => {
     it('greets the parent like the approved design', async () => {
       const { el } = await render();
 
       expect(text(el.querySelector('h1'))).toBe('Good morning, Alex!');
       expect(text(el.querySelector('.welcome__sub'))).toBe('Here’s what’s happening with your family.');
+    });
+
+    it.each([
+      ['09:59', 'Hello', '.sunrise'],
+      ['10:00', 'Good morning', '.sunrise'],
+      ['17:00', 'Good afternoon', '.full-sun'],
+      ['23:00', 'Good evening', '.moon'],
+    ])('matches the greeting artwork to the family time at %s UTC', async (time, greeting, artwork) => {
+      const { el } = await render({ now: new Date(`2026-10-14T${time}:00Z`) });
+
+      expect(text(el.querySelector('h1'))).toBe(`${greeting}, Alex!`);
+      const illustration = el.querySelector('.welcome__artwork');
+      expect(illustration?.getAttribute('aria-hidden')).toBe('true');
+      expect(illustration?.querySelector(artwork)).not.toBeNull();
+      expect(illustration?.querySelectorAll('.sunrise, .full-sun, .moon')).toHaveLength(1);
     });
 
     it('has the approved sections in order', async () => {

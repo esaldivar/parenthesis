@@ -1,9 +1,20 @@
 <div class="dashboard">
   <header class="welcome">
-    <svg class="welcome__sun" viewBox="0 0 64 40" aria-hidden="true" focusable="false">
-      <path class="sun-body" d="M14 34a18 18 0 0 1 36 0z" />
-      <path class="sun-rays" d="M32 2v8 M10 10l5 5 M54 10l-5 5 M2 26h7 M55 26h7" />
-      <path class="sun-ground" d="M6 37h52" />
+    <svg class="welcome__artwork" viewBox="0 0 64 40" aria-hidden="true" focusable="false">
+      @switch (greetingText()) {
+        @case ('Good afternoon') {
+          <circle class="full-sun sun-body" cx="32" cy="20" r="11" />
+          <path class="sun-rays" d="M32 2v3 M32 35v3 M14 20h3 M47 20h3 M19 7l3 3 M42 30l3 3 M45 7l-3 3 M22 30l-3 3" />
+        }
+        @case ('Good evening') {
+          <path class="moon" d="M33 3a17 17 0 1 0 17 24A16 16 0 0 1 33 3Z" />
+        }
+        @default {
+          <path class="sunrise sun-body" d="M14 34a18 18 0 0 1 36 0z" />
+          <path class="sun-rays" d="M32 2v8 M10 10l5 5 M54 10l-5 5 M2 26h7 M55 26h7" />
+          <path class="sun-ground" d="M6 37h52" />
+        }
+      }
     </svg>
     <div>
       <h1>{{ greeting() }}</h1>
@@ -70,7 +81,7 @@
                 <span class="upcoming__title">{{ item.title }}</span>
                 <span class="upcoming__when">{{ item.when }}</span>
                 @if (item.people.length > 0) {
-                  <span class="visually-hidden">, with {{ childNames(item.people.map(personRef)) }}</span>
+                  <span class="visually-hidden">, with {{ childNames(item.people) }}</span>
                 }
                 @if (item.status !== 'confirmed' || item.note) {
                   <span class="upcoming__status">
@@ -84,8 +95,8 @@
                 }
               </span>
               <span class="upcoming__people" aria-hidden="true">
-                @for (person of item.people; track person.name) {
-                  <app-avatar [name]="person.name" [kind]="person.kind" [size]="32" />
+                @for (person of item.people; track person.kind + ':' + person.id) {
+                  <app-avatar [name]="person.name" [kind]="person.kind" [personId]="person.id" [size]="32" />
                 }
               </span>
             </ng-template>

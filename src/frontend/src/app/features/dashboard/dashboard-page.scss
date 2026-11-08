@@ -74,12 +74,13 @@ ul {
   padding-block: var(--space-2);
 }
 
-.welcome__sun {
+.welcome__artwork {
   flex: none;
   width: 3.5rem;
   height: 2.25rem;
 
-  .sun-body {
+  .sun-body,
+  .moon {
     fill: var(--brand-gold);
   }
   .sun-rays,

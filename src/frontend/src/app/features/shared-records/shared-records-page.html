@@ -1,14 +1,15 @@
 @if (isParent()) {
   <div class="workspace" [class.composing]="composer() !== null">
     <section class="records" aria-labelledby="shared-records-title">
-      <header class="heading">
-        <div>
+      <header class="records-hero">
+        <div class="records-hero__copy">
           <h1 id="shared-records-title"><a class="mobile-back" routerLink="/more" aria-label="Back to More"><app-icon name="chevron-left" /></a> Shared records</h1>
           <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
+          <button #newRequest type="button" class="primary" [disabled]="!workspace()?.hasCoParent || composer() !== null" (click)="start()">
+            <app-icon name="plus" /> New request
+          </button>
         </div>
-        <button #newRequest type="button" class="primary" [disabled]="!workspace()?.hasCoParent || composer() !== null" (click)="start()">
-          <app-icon name="plus" /> New request
-        </button>
+        <img class="records-hero__art" src="art/shared-records/paper-and-ribbon.webp" alt="" width="600" height="400" />
       </header>
       @if (workspace(); as data) {
         @if (!data.hasCoParent) {

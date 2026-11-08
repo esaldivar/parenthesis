@@ -9,6 +9,10 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
+- [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523).
+- [ ] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514).
+- [ ] Verify viewer-authorized Home Upcoming avatars and initials fallback on the development site at phone and desktop widths (#529).
 - [ ] Verify Home Upcoming row destinations and keyboard focus on the development site (#517).
 - [ ] **Unified Notifications (#178, M4).** First slice: parent inbox, real unseen dot, seen-item expiry and notices
   for directly confirmed calendar event changes. Finish approval-gated and series changes, authorized Family Memories
@@ -20,6 +24,7 @@ that points back here.
   `docs/design/shared-records-issue-477.md`).
   - [ ] Create the `shared-records` storage container, its role and `SharedRecords__BlobServiceUri` on development and
     production (`docs/runbooks/azure-environments.md`); until then reports answer "Attachments can't be saved yet."
+  - [ ] Verify the approved paper-and-ribbon header on Development in both themes and with enlarged text.
   - [ ] Proposal revisions before agreement (today the other parent requests changes and a new proposal is sent).
   - [ ] In-app notices on submission and when acknowledged entries reach a target, once the notifications feed (#178)
     exists; the navigation dot stands in until then.
@@ -50,6 +55,8 @@ that points back here.
   - [ ] Verify the Clothing & Shoes, What Helps, School, Allergies & Food, Routines, Caregivers and Emergency Contacts
     screens on the development site in both themes, on a phone and a desktop. Include the illustrated section
     headers, return focus, and caregiver card actions at 320px and with enlarged text (#510).
+  - [ ] On dev, verify each section replaces the overview in the desktop main area while the sidebar stays visible,
+    and that Back restores focus to the same child’s tile on mobile and desktop (#527).
   - [ ] Still missing from the mockups: the Medication tile (#127), the Download PDF bottom sheet with the child
     picker.
   - [ ] Verify caregiver phone formatting and stars beside names on desktop and mobile in both themes,

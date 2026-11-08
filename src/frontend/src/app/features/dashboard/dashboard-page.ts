@@ -45,7 +45,7 @@ interface UpcomingItem {
   readonly palette?: CalendarPaletteKey;
   readonly title: string;
   readonly when: string;
-  readonly people: readonly { name: string; kind: 'parent' | 'child' }[];
+  readonly people: readonly { id: string; name: string; kind: 'parent' | 'child' }[];
   readonly status: ScheduleStatus;
   readonly note?: string;
   readonly link?: string;
@@ -117,8 +117,9 @@ export class DashboardPage {
   private requestId = 0;
 
   protected readonly firstName = computed(() => this.auth.user()?.displayName.split(/\s+/)[0] ?? '');
+  protected readonly greetingText = computed(() => greetingFor(hourIn(this.timeZone(), this.now)));
   protected readonly greeting = computed(() => {
-    const hello = greetingFor(hourIn(this.timeZone(), this.now));
+    const hello = this.greetingText();
     return this.firstName() ? `${hello}, ${this.firstName()}!` : `${hello}!`;
   });
 
@@ -149,7 +150,10 @@ export class DashboardPage {
         palette: b.caregiver.palette ?? 'parenting',
         title: b.title,
         when: blockRange(b),
-        people: [{ name: b.caregiver.displayName, kind: 'parent' as const }, ...b.children.map((c) => ({ name: c.name, kind: 'child' as const }))],
+        people: [
+          { id: b.caregiver.membershipId, name: b.caregiver.displayName, kind: 'parent' },
+          ...b.children.map((child) => ({ ...child, kind: 'child' as const })),
+        ],
         status: b.status,
         note: b.changePending ? 'Change pending' : undefined,
         eventId: b.items[0].eventId && b.items.every((entry) => entry.eventId === b.items[0].eventId) ? b.items[0].eventId : undefined,
@@ -167,8 +171,8 @@ export class DashboardPage {
         title: e.title,
         when: e.time ? dateTimeLabel(`${e.date}T${e.time}`).replace(/, (\d)/, ' · $1') : dayLong(e.date),
         people: [
-          ...(e.parents ?? []).map((p) => ({ name: p.displayName, kind: 'parent' as const })),
-          ...e.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+          ...(e.parents ?? []).map((p) => ({ id: p.membershipId, name: p.displayName, kind: 'parent' as const })),
+          ...e.children.map((c) => ({ ...c, kind: 'child' as const })),
         ],
         status: e.status,
         eventId: e.id,
@@ -187,7 +191,7 @@ export class DashboardPage {
           n.kind === 'task'
             ? `Task · due ${dayLong(n.date)}`
             : `Reminder · ${n.time ? dateTimeLabel(`${n.date}T${n.time}`).replace(/, (\d)/, ' · $1') : dayLong(n.date)}`,
-        people: n.children.map((c) => ({ name: c.name, kind: 'child' as const })),
+        people: n.children.map((c) => ({ ...c, kind: 'child' as const })),
         status: 'confirmed',
         link: '/calendar',
         params: { view: 'list', date: n.date, event: n.id },
@@ -219,7 +223,6 @@ export class DashboardPage {
     { label: 'Reminder', icon: 'bell', kind: 'reminder' },
   ] as const;
 
-  protected readonly personRef = (person: { name: string }) => ({ id: person.name, name: person.name });
   protected readonly childNames = childNames;
   protected readonly dateMedium = dateMedium;
   protected readonly timeLabel = timeLabel;
