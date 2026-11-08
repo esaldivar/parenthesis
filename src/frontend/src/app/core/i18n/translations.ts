@@ -28,6 +28,18 @@ export const translations = {
   'check.sentGeneric': ["We’ve sent you a confirmation link. Open it to finish setting up your account.","Te enviamos un enlace de confirmación. Ábrelo para terminar de configurar tu cuenta."],
   'check.resend': ["Send the link again","Volver a enviar el enlace"],
   'check.resendSuccess': ["If that account still needs confirming, a new link is on its way.","Si esa cuenta aún necesita confirmación, recibirás un nuevo enlace."],
+  'reset.title': ["Choose a new password","Elige una nueva contraseña"],
+  'reset.done': ["Your password has been changed. Other devices have been signed out.","Se cambió tu contraseña. Se cerró la sesión en los demás dispositivos."],
+  'reset.invalid': ["This link is invalid or has expired.","Este enlace no es válido o venció."],
+  'reset.request': ["Request a new link","Solicitar otro enlace"],
+  'reset.newPassword': ["New password","Nueva contraseña"],
+  'reset.hint': ["At least 12 characters.","Al menos 12 caracteres."],
+  'reset.validation': ["Use at least 12 characters.","Usa al menos 12 caracteres."],
+  'reset.save': ["Save new password","Guardar nueva contraseña"],
+  'confirm.title': ["Confirm your email","Confirma tu correo electrónico"],
+  'confirm.working': ["Confirming…","Confirmando…"],
+  'confirm.done': ["Your email is confirmed. You can sign in now.","Tu correo electrónico está confirmado. Ya puedes iniciar sesión."],
+  'confirm.invalidHelp': ["Sign in to get a new link, or create your account again.","Inicia sesión para obtener otro enlace o vuelve a crear tu cuenta."],
 } as const;
 
 export type TranslationKey = keyof typeof translations;
