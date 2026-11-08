@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
 /**
  * M4 parent-facing presentation shell (#531). No synthetic child data is exposed to parents.
