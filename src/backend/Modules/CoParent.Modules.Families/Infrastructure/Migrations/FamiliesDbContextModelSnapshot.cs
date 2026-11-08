@@ -791,6 +791,48 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                     b.ToTable("profile_photos", "families");
                 });
 
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.MedicalProvidersRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<DateTimeOffset>("EditedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("edited_at");
+
+                    b.Property<Guid>("EditedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("edited_by_user_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("ProvidersJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("providers_json");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision");
+
+                    b.HasKey("Id")
+                        .HasName("pk_child_medical_provider_revisions");
+
+                    b.HasIndex("ChildProfileId", "Revision")
+                        .IsUnique()
+                        .HasDatabaseName("ix_child_medical_provider_revisions_child_profile_id_revision");
+
+                    b.ToTable("child_medical_provider_revisions", "families");
+                });
+
             modelBuilder.Entity("CoParent.Modules.Families.Domain.RoutinesRevision", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1095,6 +1137,16 @@ namespace CoParent.Modules.Families.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_profile_photos_families_family_id");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Families.Domain.MedicalProvidersRevision", b =>
+                {
+                    b.HasOne("CoParent.Modules.Families.Domain.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_child_medical_provider_revisions_child");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Families.Domain.RoutinesRevision", b =>

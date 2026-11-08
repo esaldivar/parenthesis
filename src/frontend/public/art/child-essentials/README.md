@@ -7,3 +7,5 @@ so it sits on the light and dark section tints. No logo, people's faces, names o
 These are stand-ins taken from a screenshot, so they are softer than original art files. Replace them with the original
 illustration exports, at about 400px wide, when they're available (tracked in TODO.md). Files: `school`, `allergies`,
 `routines`, `clothing`, `what-helps`, `caregivers`, `emergency` (`.webp`, transparent).
+
+`medical.webp` (#501) uses the approved standalone watercolor bag and stethoscope from the Medical mockup. It was cropped to its transparent bounds and exported for the section tile and header.

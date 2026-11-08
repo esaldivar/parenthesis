@@ -24,6 +24,7 @@ import { AllergiesFoodSection } from './allergies-food-section';
 import { CaregiversSection } from './caregivers-section';
 import { ClothingSection } from './clothing-section';
 import { EmergencyContactsSection } from './emergency-contacts-section';
+import { MedicalProvidersSection } from './medical-providers-section';
 import { RoutinesSection } from './routines-section';
 import { SchoolSection } from './school-section';
 import { WhatHelpsSection } from './what-helps-section';
@@ -31,7 +32,7 @@ import { WhatHelpsSection } from './what-helps-section';
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, RoutinesSection, SchoolSection, WhatHelpsSection],
+  imports: [Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, MedicalProvidersSection, RoutinesSection, SchoolSection, WhatHelpsSection],
   template: `
     <h1 tabindex="-1" #heading>Child Essentials</h1>
     <!-- The other parent's saves since the last visit (#128): shown once, then gone after about ten seconds or on X. -->
@@ -54,6 +55,14 @@ import { WhatHelpsSection } from './what-helps-section';
       <p role="alert">Child profiles couldn’t be loaded.</p>
       <button type="button" (click)="retryLoad()">Try again</button>
     } @else if (selectedChild(); as child) {
+      @if (medicalOpen()) {
+        @if (familyId(); as family) {
+          @for (profile of [child]; track profile.id) {
+            <app-medical-providers-section [familyId]="family" [childId]="profile.id" [children]="children()"
+              (childSelected)="selectChild($event)" (back)="closeMedical()" />
+          }
+        }
+      } @else {
       <div class="layout" [class.focused]="openSection() !== null">
         <div class="children" role="group" aria-label="Choose a child">
           @for (item of children(); track item.id) {
@@ -111,11 +120,19 @@ import { WhatHelpsSection } from './what-helps-section';
                     </div>
                   </details>
                 }
+                <button type="button" #medicalTile class="medical-tile" (click)="medicalOpen.set(true)">
+                  <span class="tile-text"><span class="tile-name">Medical</span>
+                    <span class="tile-about">Doctors, dentists, and other providers</span>
+                  </span>
+                  <img class="tile-art" src="art/child-essentials/medical.webp" alt="" />
+                  <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
+                </button>
               </div>
             }
           }
         </section>
       </div>
+      }
     } @else {
       <p>No active child profiles yet.</p>
     }
@@ -174,6 +191,13 @@ import { WhatHelpsSection } from './what-helps-section';
       cursor: pointer;
       list-style: none;
     }
+    .medical-tile {
+      display: flex; align-items: center; gap: 0.75rem; min-height: 5.25rem; width: 100%;
+      padding: 0.5rem 0.75rem 0.5rem 1rem; border: 1px solid var(--color-outline);
+      border-radius: 1rem; background: var(--color-surface-soft); color: var(--color-text);
+      text-align: start; font: inherit; cursor: pointer;
+    }
+    .focused .medical-tile { display: none; }
     summary::-webkit-details-marker { display: none; }
     summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
     .tile-text { display: grid; gap: 0.125rem; flex: 1; min-width: 0; }
@@ -266,6 +290,14 @@ export class ChildEssentialsPage {
   private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
   private readonly disclosures = viewChildren<ElementRef<HTMLDetailsElement>>('disclosure');
   /** The section shown on its own on a phone. */
+  protected readonly medicalOpen = signal(false);
+  private readonly medicalTile = viewChild<ElementRef<HTMLButtonElement>>('medicalTile');
+
+  protected closeMedical(): void {
+    this.medicalOpen.set(false);
+    afterNextRender({ read: () => this.medicalTile()?.nativeElement.focus() }, { injector: this.injector });
+  }
+
   protected readonly openSection = signal<EssentialsSectionId | null>(null);
   private readonly opened = signal<readonly EssentialsBanner[] | null>(null);
   private readonly dismissed = signal<ReadonlySet<string>>(new Set());
