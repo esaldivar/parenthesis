@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Api, Child } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { KidsGallery } from './kids-gallery';
 
 /**
  * M4 parent-facing presentation shell (#531). No synthetic child data is exposed to parents.
@@ -9,6 +10,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 @Component({
   selector: 'app-from-your-kids-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [KidsGallery],
   template: `
     <section class="kids" aria-labelledby="kids-title">
       <header class="intro">
@@ -61,6 +63,7 @@ import { AuthStore } from '../../core/auth/auth.store';
               <div class="fridge-door fridge-door--upper"><span class="fridge-handle" aria-hidden="true"></span></div>
               <div class="fridge-door fridge-door--lower"><span class="fridge-handle" aria-hidden="true"></span></div>
             </div>
+            <app-kids-gallery kind="Artwork" />
             <p>No artwork shared with you yet.</p>
             <p class="hint">Drawings will appear on the outside of the fridge, held up by magnets.</p>
           </section>
@@ -68,7 +71,7 @@ import { AuthStore } from '../../core/auth/auth.store';
         @case ('photos') {
           <section class="gallery" aria-labelledby="photos-title">
             <h2 id="photos-title">Their photos</h2>
-            <div class="corkboard"><h3>{{ selectedChild()?.firstName }}'s photos</h3><p>No photos shared with you yet.</p></div>
+            <div class="corkboard"><h3>{{ selectedChild()?.firstName }}'s photos</h3><app-kids-gallery kind="Photo" /><p>No photos shared with you yet.</p></div>
             <p class="hint">Your child's photos will be pinned here like little memories.</p>
           </section>
         }
