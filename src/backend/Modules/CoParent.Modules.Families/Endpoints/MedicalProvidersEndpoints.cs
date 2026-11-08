@@ -109,7 +109,7 @@ internal static class MedicalProvidersEndpoints
 
             AddRevision(db, tenant, userId, childId, current.Revision + 1, providers, clock.GetUtcNow());
             await db.SaveChangesAsync(ct);
-            return TypedResults.Ok(new MedicalProvidersView(next.Revision, providers));
+            return TypedResults.Ok(new MedicalProvidersView(current.Revision + 1, providers));
         }, cancellationToken);
     }
 
@@ -124,7 +124,7 @@ internal static class MedicalProvidersEndpoints
         }
 
         if (request.Provider is null || request.Provider.Id == Guid.Empty ||
-            request.ChildIds is null or { Count: 0 })
+            request.ChildIds is null or { Count: 0 or > ChildEndpoints.MaxChildren })
         {
             return TypedResults.BadRequest();
         }
