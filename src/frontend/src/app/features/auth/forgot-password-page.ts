@@ -6,19 +6,20 @@ import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { Api } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { FORM_STYLES } from './form-styles';
 
 @Component({
   selector: 'app-forgot-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, TranslatePipe],
   template: `
-    <h1>Reset your password</h1>
-    <p class="lead">Enter your email and we’ll send you a link to choose a new password.</p>
+    <h1>{{ 'forgot.title' | tr }}</h1>
+    <p class="lead">{{ 'forgot.lead' | tr }}</p>
 
     <div aria-live="polite">
       @if (sent()) {
-        <div class="status">If there’s an account for that email, a reset link is on its way. It works once.</div>
+        <div class="status">{{ 'forgot.sent' | tr }}</div>
       }
     </div>
     @if (error(); as error) {
@@ -27,18 +28,18 @@ import { FORM_STYLES } from './form-styles';
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Email</mat-label>
+        <mat-label>{{ 'signIn.email' | tr }}</mat-label>
         <input matInput type="email" formControlName="email" autocomplete="email" required />
         @if (form.controls.email.invalid) {
-          <mat-error>Enter a valid email address.</mat-error>
+          <mat-error>{{ 'signIn.emailInvalid' | tr }}</mat-error>
         }
       </mat-form-field>
       <div class="actions">
-        <button mat-flat-button type="submit" [disabled]="busy()">Send reset link</button>
+        <button mat-flat-button type="submit" [disabled]="busy()">{{ 'forgot.send' | tr }}</button>
       </div>
     </form>
 
-    <div class="links"><a routerLink="/sign-in">Back to sign in</a></div>
+    <div class="links"><a routerLink="/sign-in">{{ 'auth.back' | tr }}</a></div>
   `,
   styles: FORM_STYLES,
 })
