@@ -4,6 +4,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ChatStore } from '../../core/chat/chat.store';
 import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
@@ -32,11 +34,24 @@ const SECTION_ACTIVE: IsActiveMatchOptions = { paths: 'subset', ...IGNORE_QUERY 
 @Component({
   selector: 'app-parent-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule, Icon, Logo, Leaves, Avatar, ToastHost, BottomNav, ChatDock],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule, Icon, Logo, Leaves, Avatar, ToastHost, BottomNav, ChatDock, TranslatePipe],
   templateUrl: './parent-shell.html',
   styleUrl: './parent-shell.scss',
 })
 export class ParentShell {
+  private readonly locale = inject(LocaleService);
+  protected navLabel(path: string, fallback: string): string {
+    const keys: Record<string, TranslationKey> = {
+      '/': 'nav.home', '/calendar': 'nav.calendar', '/messages': 'nav.messages',
+      '/from-your-kids': 'nav.fromKids', '/memories': 'nav.memories',
+      '/child-essentials': 'nav.essentials', '/shared-records': 'nav.records',
+      '/settings': 'settings.title', '/more': 'nav.more',
+    };
+    return keys[path] ? translate(keys[path], this.locale.locale()) : fallback;
+  }
+  protected mobileLabel(path: string, fallback: string): string {
+    return path === '/memories' ? translate('nav.memoriesShort', this.locale.locale()) : this.navLabel(path, fallback);
+  }
   protected readonly nav = PARENT_NAV;
   protected readonly mobileNav = PARENT_MOBILE_NAV;
   /** Home is active only on "/" itself, other items on their sections too; queries (`?week=`, `?sample=1`) never matter. */
