@@ -59,11 +59,8 @@ export const PARENT_ROUTES: Routes = [
   },
   {
     path: 'from-your-kids',
-    ...comingSoon('From Your Kids', {
-      icon: 'pencil',
-      intro: 'Drawings, photos and notes your children choose to share with you.',
-      emptyBody: 'Sharing from your children’s space isn’t available yet, so nothing has been shared.',
-    }),
+    title: 'From Your Kids',
+    loadComponent: () => import('./from-your-kids/from-your-kids-page').then((m) => m.FromYourKidsPage),
   },
   // Event photos (#403): temporary, private by default, parents only.
   {
