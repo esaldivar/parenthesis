@@ -124,6 +124,26 @@ internal static class CalendarEndpoints
         calendar.MapPost("/{eventId:guid}/dismiss", DismissAsync);
     }
 
+    // Keep the generic notice in the same transaction as the calendar change. Private availability never produces one.
+    private static void AddNotices(
+        CalendarDbContext db, ITenantContext tenant, IReadOnlySet<Guid> parents, CalendarEvent calendarEvent, CalendarNoticeKind kind)
+    {
+        if (calendarEvent.Category == EventCategory.Unavailable)
+        {
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        db.Notifications.AddRange(parents.Where(id => id != tenant.MembershipId).Select(id => new CalendarNotice
+        {
+            FamilyId = tenant.FamilyId,
+            RecipientMembershipId = id,
+            EventId = calendarEvent.Id,
+            Kind = kind,
+            CreatedAt = now,
+        }));
+    }
+
     /// <summary>Non-blocking: the proposed parenting time overlaps the other parent's unavailable time (CALENDAR_DECISIONS.md).</summary>
     public const string OverlapsCoParentUnavailable = "OverlapsCoParentUnavailable";
 
@@ -362,6 +382,11 @@ internal static class CalendarEndpoints
             }
 
             db.Events.Add(calendarEvent);
+            if (calendarEvent.Status == EventStatus.Confirmed)
+            {
+                AddNotices(db, tenant, parents, calendarEvent, CalendarNoticeKind.Added);
+            }
+
             await db.SaveChangesAsync(ct);
             if (calendarEvent.Status == EventStatus.PendingApproval)
             {
@@ -671,6 +696,10 @@ internal static class CalendarEndpoints
             else
             {
                 e.Apply(change);
+                if (moved || change.AllDay != current.AllDay || change.Location != current.Location)
+                {
+                    AddNotices(db, tenant, parents, e, CalendarNoticeKind.Updated);
+                }
             }
 
             await db.SaveChangesAsync(ct);
@@ -768,6 +797,7 @@ internal static class CalendarEndpoints
             else
             {
                 e.Status = EventStatus.Cancelled;
+                AddNotices(db, tenant, parents, e, CalendarNoticeKind.Cancelled);
             }
 
             await db.SaveChangesAsync(ct);

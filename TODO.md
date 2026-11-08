@@ -9,6 +9,10 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Unified Notifications (#178, M4).** First slice: parent inbox, real unseen dot, seen-item expiry and notices
+  for directly confirmed calendar event changes. Finish approval-gated and series changes, authorized Family Memories
+  and Shared Records producers, live arrival updates, and responsive visual/accessibility acceptance.
+  Child diary/artwork producers depend on M5 (#131).
 - [ ] **Shared records (#477, M4).** Shared Fund proposals and agreement, contribution reports with required
   attachments, acknowledgment and mismatch history, the progress thermometer, one-time Child Support records, and the
   navigation link with a waiting-on-you dot are built (November 7, 2026; decisions in

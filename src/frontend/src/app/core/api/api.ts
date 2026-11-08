@@ -917,6 +917,15 @@ export interface SchoolHistoryPage {
   readonly beforeRevision: number | null;
 }
 
+export interface NotificationItem {
+  id: string;
+  kind: 'Added' | 'Updated' | 'Cancelled';
+  createdAt: string;
+  seen: boolean;
+  eventId: string | null;
+  eventDate: string | null;
+}
+
 /** Thin, typed wrappers over the /api endpoints. Relative URLs, so Angular attaches the X-XSRF-TOKEN header. */
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -1378,6 +1387,13 @@ export class Api {
   };
   savedTranscriptUrl = (familyId: string, transcriptId: string, download = false) =>
     `/api/families/${familyId}/chat/transcripts/${transcriptId}/pdf${download ? '?download=true' : ''}`;
+  notifications = (familyId: string, offset: number) =>
+    this.call(this.http.get<{ items: NotificationItem[]; hasMore: boolean }>(`/api/families/${familyId}/notifications?offset=${offset}`));
+  notificationsUnseen = (familyId: string) =>
+    this.call(this.http.get<{ unseen: boolean }>(`/api/families/${familyId}/notifications/unseen`));
+  markNotificationsSeen = (familyId: string, ids: string[]) =>
+    this.call(this.http.post<void>(`/api/families/${familyId}/notifications/seen`, { ids }));
+
   // Child Essentials update indicators (#128): identifiers only, never values.
   essentialsUpdates = (familyId: string) =>
     this.call(this.http.get<EssentialsUpdates>(`/api/families/${familyId}/essentials/updates`));

@@ -40,6 +40,11 @@ export const PARENT_ROUTES: Routes = [
     title: 'Calendar',
     loadComponent: () => import('./calendar/calendar-page').then((m) => m.CalendarPage),
   },
+  {
+    path: 'notifications',
+    title: 'Notifications',
+    loadComponent: () => import('./notifications/notifications-page').then((m) => m.NotificationsPage),
+  },
   // The parents' conversation (#125, ADR-0008). Children never reach it.
   {
     path: 'messages',
