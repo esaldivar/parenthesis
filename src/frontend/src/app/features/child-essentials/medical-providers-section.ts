@@ -1,6 +1,7 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject, input, output, signal, viewChild } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import {
   Child, MEDICAL_PROVIDER_TYPES, MedicalProvider, MedicalProvidersHistoryEntry, MedicalProvidersView,
 } from '../../core/api/api';
@@ -9,6 +10,12 @@ import { LOCATION_MAX_LENGTH, mapsDirectionsUrl } from '../calendar/maps-link';
 import { RevisionedSection } from './revisioned-section';
 
 type ProviderFields = Omit<MedicalProvider, 'id'>;
+
+/** A doctor's or dentist's phone and address are required; for the other types they're optional. */
+function requiredForContact(control: AbstractControl): ValidationErrors | null {
+  const type = control.parent?.get('type')?.value;
+  return (type === 'Doctor' || type === 'Dentist') && !String(control.value ?? '').trim() ? { required: true } : null;
+}
 
 @Component({
   selector: 'app-medical-providers-section',
@@ -95,13 +102,13 @@ type ProviderFields = Omit<MedicalProvider, 'id'>;
                   <input type="tel" formControlName="phone" maxlength="32" [required]="contactRequired()" />
                 </label>
                 @if (form.controls.phone.touched && form.controls.phone.invalid) {
-                  <p role="alert">Enter a phone number with 7 to 15 digits.</p>
+                  <p role="alert">{{ form.controls.phone.hasError('required') ? 'Enter a phone number for a doctor or dentist.' : 'Enter a phone number with 7 to 15 digits.' }}</p>
                 }
                 <label>Practice address {{ contactRequired() ? '(required)' : '(optional)' }}
                   <input formControlName="address" [maxLength]="addressLimit" [required]="contactRequired()" />
                 </label>
                 @if (form.controls.address.touched && form.controls.address.invalid) {
-                  <p role="alert">Enter a practice address.</p>
+                  <p role="alert">{{ form.controls.address.hasError('required') ? 'Enter a practice address for a doctor or dentist.' : 'Enter a practice address.' }}</p>
                 }
                 @if (!existing()) {
                   <fieldset class="child-picker">
@@ -202,14 +209,19 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
     practice: new FormControl('', { nonNullable: true }),
     phone: new FormControl('', {
       nonNullable: true,
-      validators: Validators.pattern(/^\s*(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)[0-9+ ().-]+\s*$/),
+      validators: [requiredForContact, Validators.pattern(/^\s*(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)[0-9+ ().-]+\s*$/)],
     }),
-    address: new FormControl('', { nonNullable: true, validators: Validators.pattern(/\S/) }),
+    address: new FormControl('', { nonNullable: true, validators: [requiredForContact, Validators.pattern(/\S/)] }),
   });
 
   constructor() {
     super();
     effect(() => { void this.load(); });
+    // A doctor or dentist needs a phone and an address; other types don't. Check both again when the type changes.
+    this.form.controls.type.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+      this.form.controls.phone.updateValueAndValidity();
+      this.form.controls.address.updateValueAndValidity();
+    });
     this.focus(this.backButton);
   }
 
@@ -240,13 +252,20 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
     if (!this.destroyRef.destroyed && !this.editing()) this.focus(this.addButton);
   }
 
+  /**
+   * Loads the selected child's providers. Switching children clears what was shown first, and an answer for a child
+   * who is no longer selected is ignored, so one child's medical contacts never show under another child.
+   */
   protected async load(): Promise<void> {
+    const childId = this.childId();
     this.error.set('');
+    this.current.set(null);
+    this.conflict.set(null);
     try {
-      const saved = await this.api.medicalProviders(this.familyId(), this.childId());
-      if (!this.destroyRef.destroyed) this.current.set(saved);
+      const saved = await this.api.medicalProviders(this.familyId(), childId);
+      if (!this.destroyRef.destroyed && childId === this.childId()) this.current.set(saved);
     } catch {
-      this.error.set('Medical providers couldn’t be loaded.');
+      if (childId === this.childId()) this.error.set('Medical providers couldn’t be loaded.');
     }
   }
 

@@ -107,7 +107,13 @@ internal static class MedicalProvidersEndpoints
                 return TypedResults.Conflict(current);
             }
 
-            AddRevision(db, tenant, userId, childId, current.Revision + 1, providers, clock.GetUtcNow());
+            var now = clock.GetUtcNow();
+            AddRevision(db, tenant, userId, childId, current.Revision + 1, providers, now);
+            // The other parent's notice (#128): the providers added or changed, and "removed" when one was taken off.
+            var changed = providers.Except(current.Providers).Select(item => item.Id.ToString()).ToList();
+            var removed = current.Providers.Any(item => providers.All(next => next.Id != item.Id));
+            await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.Medical, current.Revision + 1,
+                removed ? [.. changed, "removed"] : changed, now, ct, rows: changed);
             await db.SaveChangesAsync(ct);
             return TypedResults.Ok(new MedicalProvidersView(current.Revision + 1, providers));
         }, cancellationToken);
@@ -175,6 +181,8 @@ internal static class MedicalProvidersEndpoints
             foreach (var (target, view) in pending)
             {
                 AddRevision(db, tenant, userId, target, view.Revision, view.Providers, now);
+                await EssentialsUpdateEndpoints.RecordAsync(db, tenant, target, EssentialsSections.Medical, view.Revision,
+                    [provider.Id.ToString()], now, ct);
             }
 
             await db.SaveChangesAsync(ct);

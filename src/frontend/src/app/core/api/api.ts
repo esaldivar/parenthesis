@@ -794,7 +794,8 @@ export type EssentialsSectionId =
   | 'routines'
   | 'householdRoutines'
   | 'emergencyContacts'
-  | 'caregivers';
+  | 'caregivers'
+  | 'medical';
 
 /** A child's section with an update this parent hasn't looked at: its dot, and the changed rows not yet seen. */
 export interface EssentialsSectionUpdates {

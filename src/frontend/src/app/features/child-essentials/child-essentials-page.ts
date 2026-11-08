@@ -29,6 +29,12 @@ import { RoutinesSection } from './routines-section';
 import { SchoolSection } from './school-section';
 import { WhatHelpsSection } from './what-helps-section';
 
+/** Medical's banner colours and icon (dusty coral, docs/design/child-essentials-handoff.md); it has its own screen. */
+const MEDICAL_TINT = {
+  bg: '#f6ddd6', fg: '#6b2f24', darkBg: '#4d2d2a', darkFg: '#ffe1da',
+  art: 'M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z',
+} as const;
+
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -126,10 +132,14 @@ import { WhatHelpsSection } from './what-helps-section';
                     </div>
                   </details>
                 }
-                <button type="button" #medicalTile class="medical-tile" (click)="medicalOpen.set(true)">
+                <button type="button" #medicalTile class="medical-tile" (click)="openMedical(child.id)">
                   <span class="tile-text"><span class="tile-name">Medical</span>
                     <span class="tile-about">Doctors, dentists, and other providers</span>
                   </span>
+                  @if (tileHasUpdate(child.id, 'medical')) {
+                    <span class="child-dot" aria-hidden="true"></span>
+                    <span class="visually-hidden">, updated</span>
+                  }
                   <img class="tile-art" src="art/child-essentials/medical.webp" alt="" />
                   <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
                 </button>
@@ -386,12 +396,19 @@ export class ChildEssentialsPage {
   ] as const;
 
   private bannerTint(section: EssentialsSectionId): Pick<ShownBanner, 'bg' | 'fg' | 'art'> {
-    const tile = this.tiles.find((item) => item.section === (section === 'householdRoutines' ? 'routines' : section))!;
+    const tile = this.tiles.find((item) => item.section === (section === 'householdRoutines' ? 'routines' : section))
+      ?? MEDICAL_TINT;
     return {
       bg: `light-dark(${tile.bg}, ${tile.darkBg})`,
       fg: `light-dark(${tile.fg}, ${tile.darkFg})`,
       art: tile.art,
     };
+  }
+
+  /** Opens Medical; like opening any section, it clears that section's dot. */
+  protected openMedical(childId: string): void {
+    this.medicalOpen.set(true);
+    this.updates.sectionOpened(childId, 'medical');
   }
 
   protected tileHasUpdate(childId: string, section: EssentialsSectionId): boolean {

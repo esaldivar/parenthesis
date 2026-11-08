@@ -42,11 +42,17 @@ public sealed class MedicalProvidersTests(ApiFactory api) : IAsyncLifetime
             address = "120 Example Lane",
         };
 
-        using var missingPhone = await parent.PostAsync(path,
-            new { provider = provider with { phone = "" }, childIds = targets });
+        using var missingPhone = await parent.PostAsync(path, new
+        {
+            provider = new { provider.id, provider.type, provider.name, phone = "", provider.address },
+            childIds = targets,
+        });
         Assert.Equal(HttpStatusCode.BadRequest, missingPhone.StatusCode);
-        using var missingAddress = await parent.PostAsync(path,
-            new { provider = provider with { address = "" }, childIds = targets });
+        using var missingAddress = await parent.PostAsync(path, new
+        {
+            provider = new { provider.id, provider.type, provider.name, provider.phone, address = "" },
+            childIds = targets,
+        });
         Assert.Equal(HttpStatusCode.BadRequest, missingAddress.StatusCode);
 
         using var outsider = await ApiSession.SignedInAsync(api);
@@ -73,6 +79,17 @@ public sealed class MedicalProvidersTests(ApiFactory api) : IAsyncLifetime
         Assert.Single((await JsonAsync(history)).GetProperty("entries").EnumerateArray());
         using var denied = await outsider.GetAsync(path);
         Assert.Equal(HttpStatusCode.NotFound, denied.StatusCode);
+
+        // The other parent is told (#128): a Medical notice for each child, naming the provider by id only.
+        using var updates = await coParent.GetAsync($"/api/families/{family}/essentials/updates");
+        var medical = (await JsonAsync(updates)).GetProperty("sections").EnumerateArray()
+            .Where(section => section.GetProperty("section").GetString() == "medical").ToList();
+        Assert.Equal(targets.Order(), medical.Select(section => section.GetProperty("childId").GetGuid()).Order());
+        Assert.All(medical, section => Assert.Equal(
+            [provider.id.ToString()], section.GetProperty("rows").EnumerateArray().Select(row => row.GetString())));
+        using var mine = await parent.GetAsync($"/api/families/{family}/essentials/updates");
+        Assert.DoesNotContain((await JsonAsync(mine)).GetProperty("sections").EnumerateArray(),
+            section => section.GetProperty("section").GetString() == "medical");
     }
 
     private static async Task<(Guid ChildId, Guid RequestId)> ProposeChildAsync(
