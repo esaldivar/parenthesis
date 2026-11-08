@@ -45,7 +45,9 @@ that points back here.
   - [ ] Verify the Clothing & Shoes, What Helps, School, Allergies & Food, Routines, Caregivers and Emergency Contacts
     screens on the development site in both themes, on a phone and a desktop.
   - [ ] Still missing from the mockups: the Medication tile (#127), the Download PDF bottom sheet with the child
-    picker, and star icons for caregiver ratings in place of text stars.
+    picker.
+  - [ ] Verify caregiver phone formatting and stars beside names on desktop and mobile in both themes,
+    including screen-reader rating announcements (#502, #503).
 - [ ] **Shared Caregivers (#130, M4).** Verify caregiver details, duplicate-number confirmation, and independent ratings on mobile and desktop in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
