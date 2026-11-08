@@ -1,11 +1,4 @@
 import { Routes } from '@angular/router';
-import { ComingSoonPage } from '../shared/coming-soon/coming-soon-page';
-
-const comingSoon = (title: string, data: Record<string, string>) => ({
-  title,
-  component: ComingSoonPage,
-  data: { heading: title, ...data },
-});
 
 // Order follows the approved navigation (docs/design/APPROVED_DASHBOARD_2026-10-16.md).
 export const PARENT_ROUTES: Routes = [

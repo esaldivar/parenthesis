@@ -19,7 +19,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthStore, useValue: { currentFamily: family } },
-        { provide: Api, useValue: { children: (...args: unknown[]) => load(...args) } },
+        { provide: Api, useValue: { children: load } },
       ],
     });
   });
@@ -60,7 +60,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     fixture.detectChanges();
     const host = fixture.nativeElement as HTMLElement;
     expect(host.querySelector('[role="alert"]')?.textContent).toContain("couldn't load");
-    load.and.resolveTo(children);
+    load.mockResolvedValue(children);
     host.querySelector<HTMLButtonElement>('.retry')!.click();
     await fixture.whenStable();
     fixture.detectChanges();
