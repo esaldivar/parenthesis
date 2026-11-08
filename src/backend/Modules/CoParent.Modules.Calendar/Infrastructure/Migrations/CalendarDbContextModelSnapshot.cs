@@ -18,7 +18,7 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("calendar")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -123,6 +123,48 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasDatabaseName("ix_events_series_id_starts_at");
 
                     b.ToTable("events", "calendar");
+                });
+
+            modelBuilder.Entity("CoParent.Modules.Calendar.Domain.CalendarNotice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("RecipientMembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipient_membership_id");
+
+                    b.Property<DateTimeOffset?>("SeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("seen_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notifications");
+
+                    b.HasIndex("FamilyId", "RecipientMembershipId", "CreatedAt")
+                        .HasDatabaseName("ix_notifications_family_id_recipient_membership_id_created_at");
+
+                    b.ToTable("notifications", "calendar");
                 });
 
             modelBuilder.Entity("CoParent.Modules.Calendar.Domain.CalendarSeries", b =>

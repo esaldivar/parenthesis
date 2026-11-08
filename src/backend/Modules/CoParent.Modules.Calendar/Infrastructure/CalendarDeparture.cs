@@ -42,6 +42,9 @@ internal sealed class CalendarDeparture(CalendarDbContext db) : IParentDeparture
         db.TaskSeen.RemoveRange(departure.FamilyClosing
             ? await db.TaskSeen.ToListAsync(cancellationToken)
             : await db.TaskSeen.Where(s => s.MembershipId == departure.MembershipId).ToListAsync(cancellationToken));
+        db.Notifications.RemoveRange(departure.FamilyClosing
+            ? await db.Notifications.ToListAsync(cancellationToken)
+            : await db.Notifications.Where(n => n.RecipientMembershipId == departure.MembershipId).ToListAsync(cancellationToken));
         // Their Google Calendar copy stops (#386): the encrypted token is deleted with the connection. The copy itself
         // stays in their Google account, which Parenthesis can no longer reach once the parent has left.
         db.GoogleConnections.RemoveRange(departure.FamilyClosing

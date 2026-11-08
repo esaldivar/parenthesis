@@ -32,6 +32,44 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal([f.KaiId], soccer.GetProperty("childIds").EnumerateArray().Select(c => c.GetGuid()));
     }
 
+    [Fact]
+    public async Task Calendar_notifications_are_private_and_only_meaningful_updates_create_a_notice()
+    {
+        using var f = await FamilyAsync();
+        var feed = $"/api/families/{f.FamilyId}/notifications";
+        var activity = await JsonAsync(await f.Dad.PostAsync(Events(f), Activity("Private event title", f.KaiId)));
+        var eventId = activity.GetProperty("id").GetGuid();
+        var eventUrl = $"{Events(f)}/{eventId}";
+
+        Assert.False((await JsonAsync(await f.Dad.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        Assert.True((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        var added = Assert.Single((await JsonAsync(await f.Mom.GetAsync(feed))).GetProperty("items").EnumerateArray());
+        Assert.Equal("Added", added.GetProperty("kind").GetString());
+        Assert.Equal(eventId, added.GetProperty("eventId").GetGuid());
+        Assert.Equal("2026-10-12", added.GetProperty("eventDate").GetString());
+        Assert.DoesNotContain("Private event title", added.GetRawText(), StringComparison.Ordinal);
+
+        var ids = new[] { added.GetProperty("id").GetGuid() };
+        await f.Dad.PostAsync($"{feed}/seen", new { ids });
+        Assert.True((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        Assert.Equal(HttpStatusCode.NoContent, (await f.Mom.PostAsync($"{feed}/seen", new { ids })).StatusCode);
+        Assert.False((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+
+        Assert.Equal(HttpStatusCode.OK, (await f.Dad.SendAsync(HttpMethod.Patch, eventUrl, new { notes = "Only a note" })).StatusCode);
+        Assert.False((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, (await f.Dad.SendAsync(HttpMethod.Patch, eventUrl, new { location = "New field" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await f.Dad.SendAsync(HttpMethod.Delete, eventUrl)).StatusCode);
+
+        var items = (await JsonAsync(await f.Mom.GetAsync(feed))).GetProperty("items").EnumerateArray().ToArray();
+        Assert.Equal(["Cancelled", "Updated", "Added"], items.Select(item => item.GetProperty("kind").GetString()));
+        Assert.All(items, item => Assert.Equal(JsonValueKind.Null, item.GetProperty("eventId").ValueKind));
+
+        using var child = await KaiSignedInAsync(f);
+        Assert.Equal(HttpStatusCode.Forbidden, (await child.GetAsync(feed)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await child.GetAsync($"{feed}/unseen")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await child.PostAsync($"{feed}/seen", new { ids })).StatusCode);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
