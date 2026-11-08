@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Api, Child } from '../../core/api/api';
@@ -10,11 +11,11 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     { id: 'kid-1', firstName: 'Kai', status: 'Active', changeRequestId: null, signIn: { enabled: false, locked: false, pinChangePending: false } },
     { id: 'kid-2', firstName: 'Aurora', status: 'Active', changeRequestId: null, signIn: { enabled: false, locked: false, pinChangePending: false } },
   ];
-  let load: jasmine.Spy;
+  let load: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     family.set({ id: 'family-1', role: 'Parent' });
-    load = jasmine.createSpy('children').and.resolveTo(children);
+    load = vi.fn().mockResolvedValue(children);
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthStore, useValue: { currentFamily: family } },
@@ -43,7 +44,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
   });
 
   it('never renders pending child profiles', async () => {
-    load.and.resolveTo([...children, { ...children[0], id: 'pending', firstName: 'Hidden', status: 'PendingApproval' }]);
+    load.mockResolvedValue([...children, { ...children[0], id: 'pending', firstName: 'Hidden', status: 'PendingApproval' }]);
     const fixture = TestBed.createComponent(FromYourKidsPage);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -52,7 +53,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
   });
 
   it('shows retry when child profiles cannot load', async () => {
-    load.and.rejectWith(new Error('offline'));
+    load.mockRejectedValue(new Error('offline'));
     const fixture = TestBed.createComponent(FromYourKidsPage);
     fixture.detectChanges();
     await fixture.whenStable();
