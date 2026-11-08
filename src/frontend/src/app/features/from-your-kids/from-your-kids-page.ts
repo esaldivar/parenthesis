@@ -15,7 +15,7 @@ import { KidsDiary } from './kids-diary';
   template: `
     <section class="kids" aria-labelledby="kids-title">
       <header class="intro">
-        <h1 id="kids-title">From Your Kids</h1>
+        <h1 id="kids-title">From Your Kids <span aria-hidden="true">♡</span></h1>
         <p>A little window into the things your children choose to share.</p>
       </header>
 
@@ -35,21 +35,22 @@ import { KidsDiary } from './kids-diary';
       </nav>
       <nav class="sections" aria-label="From Your Kids sections">
         <button type="button" [attr.aria-current]="section() === 'diary' ? 'page' : null"
-          (click)="section.set('diary')"><span aria-hidden="true">📖</span> Diary</button>
+          (click)="section.set('diary')"><span class="section-icon" aria-hidden="true">📖</span><span class="section-copy"><strong>Diary</strong><small>Thoughts, stories, and daily adventures</small></span><span aria-hidden="true">›</span></button>
         <button type="button" [attr.aria-current]="section() === 'artwork' ? 'page' : null"
-          (click)="section.set('artwork')"><span aria-hidden="true">🎨</span> Artwork</button>
+          (click)="section.set('artwork')"><span class="section-icon" aria-hidden="true">🧲</span><span class="section-copy"><strong>Artwork</strong><small>Creative drawings, projects, and more</small></span><span aria-hidden="true">›</span></button>
         <button type="button" [attr.aria-current]="section() === 'photos' ? 'page' : null"
-          (click)="section.set('photos')"><span aria-hidden="true">📷</span> Photos</button>
+          (click)="section.set('photos')"><span class="section-icon" aria-hidden="true">📷</span><span class="section-copy"><strong>Photos</strong><small>Photo adventures from your kid</small></span><span aria-hidden="true">›</span></button>
       </nav>
 
       <p class="sharing-note">Only things {{ selectedChild()?.firstName }} chooses to share with you will appear here.</p>
       @switch (section()) {
         @case ('diary') {
+          <div class="section-heading"><h2>{{ selectedChild()?.firstName }}'s Diary</h2><span aria-hidden="true">✧ ♡</span></div>
           <app-kids-diary />
         }
         @case ('artwork') {
           <section class="gallery" aria-labelledby="artwork-title">
-            <h2 id="artwork-title">Their artwork</h2>
+            <h2 id="artwork-title">{{ selectedChild()?.firstName }}'s Artwork</h2>
             <div class="fridge" role="img" aria-label="Empty closed refrigerator, ready for your child's shared drawings">
               <div class="fridge-door fridge-door--upper"><span class="fridge-handle" aria-hidden="true"></span></div>
               <div class="fridge-door fridge-door--lower"><span class="fridge-handle" aria-hidden="true"></span></div>
@@ -61,7 +62,7 @@ import { KidsDiary } from './kids-diary';
         }
         @case ('photos') {
           <section class="gallery" aria-labelledby="photos-title">
-            <h2 id="photos-title">Their photos</h2>
+            <h2 id="photos-title">{{ selectedChild()?.firstName }}'s Photos</h2>
             <div class="corkboard"><h3>{{ selectedChild()?.firstName }}'s photos</h3><app-kids-gallery kind="Photo" /><p>No photos shared with you yet.</p></div>
             <p class="hint">Your child's photos will be pinned here like little memories.</p>
           </section>
@@ -74,20 +75,29 @@ import { KidsDiary } from './kids-diary';
     :host { display: block; color: var(--color-text); }
     .kids { display: grid; gap: var(--space-4); max-width: 75rem; }
     h1,h2,p { margin: 0; }
-    .intro { padding: var(--space-4); border-radius: var(--radius-card); background: var(--color-surface); }
+    .intro { position: relative; overflow: hidden; padding: clamp(1.25rem, 3vw, 2.5rem); border-radius: 1.25rem; background: var(--color-surface-soft); border: 1px solid var(--color-divider); }
+    .intro::after { content: '✦  ♡  ✧'; position: absolute; right: 1rem; top: 1rem; font-size: 1.4rem; color: #5e8f7e; opacity: .75; }
+    .intro h1 span { color: #f08a6b; }
     .intro h1 { font-family: Georgia, serif; font-size: clamp(1.7rem, 4vw, 2.6rem); }
     .intro p,.hint { color: var(--color-text-secondary); }
     .intro p { margin-top: var(--space-2); }
     .child-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); }
     .child-tabs button,.retry { min-height: var(--target-min); padding: var(--space-2) var(--space-4); border: 1px solid var(--color-outline); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font: inherit; cursor: pointer; }
+    .child-tabs button::before { content: '♡'; display: inline-grid; place-items: center; margin-right: .5rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--color-surface-soft); color: #5e8f7e; }
     .child-tabs button[aria-pressed='true'] { background: var(--color-surface-soft); border: 2px solid var(--color-focus); font-weight: 700; }
     .sharing-note { color: var(--color-text-secondary); }
     .sections { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--space-2); }
-    .sections button { min-height: var(--target-min); padding: var(--space-3); border: 1px solid var(--color-divider); border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-text); cursor: pointer; font: inherit; font-weight: 650; }
+    .sections button { display: flex; align-items: center; gap: 1rem; text-align: left; min-height: 7.5rem; padding: clamp(.75rem,2vw,1.4rem); border: 2px solid var(--color-divider); border-radius: 1.25rem; background: var(--color-surface); color: var(--color-text); cursor: pointer; font: inherit; box-shadow: 0 4px 14px #0001; }
+    .section-copy { display: grid; gap: .35rem; flex: 1; }
+    .section-copy strong { font-family: Georgia,serif; font-size: 1.25rem; }
+    .section-copy small { font-size: .8rem; line-height: 1.4; color: var(--color-text-secondary); }
+    .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .25rem .5rem; }
+    .section-heading span { color: #f08a6b; font-size: 1.4rem; }
     .sections button[aria-current='page'] { border: 2px solid var(--color-focus); background: var(--color-surface-soft); }
-    .sections button span { display: block; font-size: 1.7rem; }
+    .sections .section-icon { display: grid; place-items: center; flex: 0 0 3.5rem; width: 3.5rem; height: 3.5rem; border-radius: .85rem; background: var(--color-surface-soft); font-size: 2rem; }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-    .gallery { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border-radius: var(--radius-card); text-align: center; }
+    .gallery { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 1.25rem; text-align: center; }
+    .gallery h2 { font-family: Georgia,serif; font-size: clamp(1.4rem,2.5vw,2rem); }
     .fridge { display: grid; width: min(100%, 18rem); height: 24rem; padding: 0.65rem; gap: 0.5rem; border: 3px solid var(--color-outline); border-radius: 1.5rem; background: var(--color-surface-soft); box-shadow: 0 8px 15px #0002; }
     .fridge-door { position: relative; border: 2px solid var(--color-divider); border-radius: 0.75rem; background: var(--color-surface); }
     .fridge-door--upper { min-height: 9rem; }
@@ -97,6 +107,7 @@ import { KidsDiary } from './kids-diary';
     .corkboard { gap: var(--space-3); padding: var(--space-3); }
     .corkboard h3 { margin: 0; font-family: Georgia, serif; }
     .corkboard p { padding: 1rem; background: #F7F5ED; transform: rotate(-2deg); }
+    @media (max-width: 55rem) { .sections { grid-template-columns: 1fr; } .sections button { min-height: 5.5rem; } }
     @media (max-width: 40rem) {
       .sections button { padding: var(--space-2); }
       .gallery { padding: var(--space-2); }
