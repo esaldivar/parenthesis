@@ -31,6 +31,8 @@ that points back here.
   - [x] Verify the allergy PDF renderer with one child, multiple children, empty allergy states and long notes.
     Correct fractional-height pagination; keep API scope and page-count regression checks in CI.
   - [x] Routines draft-preservation and allergy PDF regression checks passed in CI (#465).
+  - [ ] Verify adding an emergency contact to all children on desktop and mobile, including partial saves,
+    retry and preserving each child’s Call first selection (#499).
   - [x] #128 in-page update flow for School, Allergies & Food, Clothing & Shoes and What Helps: navigation dot,
     first-visit banners, child and section dots, row highlights (November 7, 2026).
   - [x] #128 update notices for Routines (shared rows, and a dot on the co-parent's tab until opened), Emergency
@@ -46,8 +48,6 @@ that points back here.
     screens on the development site in both themes, on a phone and a desktop.
   - [ ] Still missing from the mockups: the Medication tile (#127), the Download PDF bottom sheet with the child
     picker, and star icons for caregiver ratings in place of text stars.
-- [ ] **Emergency contacts (#499, M4).** Verify adding to all children on desktop and mobile, including partial saves,
-  retry and preserving each child’s Call first selection.
 - [ ] **Shared Caregivers (#130, M4).** Verify caregiver details, duplicate-number confirmation, and independent ratings on mobile and desktop in both themes.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
