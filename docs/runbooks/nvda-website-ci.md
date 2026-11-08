@@ -7,7 +7,8 @@ loopback HTTPS. The five existing Guidepup tests run serially using real NVDA; t
 parent navigation, activity form labels/validation, activity saving and calendar event dialog keyboard/focus behavior.
 It is not a complete audit of every page or WCAG conformance, and does not certify VoiceOver or mobile readers.
 
-The startup script downloads tools with SHA-256 verification and creates its own database, certificate, mailbox
+The startup script downloads tools with SHA-256 verification (retrying a failed download up to five times with
+backoff; the workflow caches the verified archives so a download-host outage doesn't fail later runs) and creates its own database, certificate, mailbox
 and process records below `RUNNER_TEMP`. Occupied ports, wrong source metadata, missing Angular output and failed
 health/API checks stop the job before NVDA. Teardown always attempts to stop only the recorded candidate processes
 and private database. It never uses the machine's preinstalled database service or the owner's user-secrets.

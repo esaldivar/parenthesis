@@ -29,8 +29,27 @@ function Invoke-Checked([string]$Program, [string[]]$Arguments) {
   if ($LASTEXITCODE -ne 0) { throw "$([IO.Path]::GetFileName($Program)) exited $LASTEXITCODE" }
 }
 
+# Download hosts (EnterpriseDB, GitHub releases) sometimes answer 5xx for a few minutes. Retry with backoff before
+# failing; a partial file is never left behind, and the checksum below still decides whether the archive is used.
+function Save-Download([string]$Url, [string]$Archive, [int]$Attempts = 5, [int]$DelaySeconds = 15) {
+  $partial = "$Archive.partial"
+  for ($attempt = 1; ; $attempt++) {
+    try {
+      Invoke-WebRequest -Uri $Url -OutFile $partial
+      Move-Item -LiteralPath $partial -Destination $Archive -Force
+      return
+    } catch {
+      Remove-Item -LiteralPath $partial -Force -ErrorAction SilentlyContinue
+      if ($attempt -ge $Attempts) { throw "Download failed after $Attempts attempts: $Url ($($_.Exception.Message))" }
+      $wait = $DelaySeconds * [Math]::Pow(2, $attempt - 1)
+      Write-Warning "Download attempt $attempt of $Attempts failed for $Url; retrying in $wait seconds. $($_.Exception.Message)"
+      Start-Sleep -Seconds $wait
+    }
+  }
+}
+
 function Install-Archive([string]$Url, [string]$Hash, [string]$Archive, [string]$Destination, [string[]]$Prefixes = @()) {
-  if (-not (Test-Path -LiteralPath $Archive)) { Invoke-WebRequest -Uri $Url -OutFile $Archive }
+  if (-not (Test-Path -LiteralPath $Archive)) { Save-Download $Url $Archive }
   if ((Get-FileHash -LiteralPath $Archive -Algorithm SHA256).Hash -ne $Hash) { throw "Checksum mismatch: $Archive" }
   # Skip bundled pgAdmin/documentation; only server runtime directories are needed.
   $destinationRoot = [IO.Path]::GetFullPath($Destination).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
