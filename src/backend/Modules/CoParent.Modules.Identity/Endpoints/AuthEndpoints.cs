@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 
 namespace CoParent.Modules.Identity.Endpoints;
 
-internal sealed record RegisterRequest(string? Email, string? Password, string? DisplayName);
+internal sealed record RegisterRequest(string? Email, string? Password, string? DisplayName, string? Language = null);
 
 internal sealed record LoginRequest(string? Email, string? Password);
 
@@ -84,6 +84,8 @@ internal static class AuthEndpoints
 
         if (result.Succeeded)
         {
+            if (UserLanguage.IsSupported(request.Language))
+                await UserLanguage.SetAsync(users, user, request.Language!);
             await emails.SendConfirmationAsync(user, cancellationToken);
         }
         else if (await users.FindByEmailAsync(email) is { } existing)
