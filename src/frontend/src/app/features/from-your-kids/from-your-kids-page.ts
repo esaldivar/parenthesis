@@ -40,7 +40,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
           <section class="gallery" aria-labelledby="artwork-title">
             <h2 id="artwork-title">Their artwork</h2>
             <div class="fridge">
-              <img src="/art/from-your-kids-closed-fridge.svg" alt="A closed refrigerator with drawings attached to the outside" />
+              <p class="empty">The artwork gallery is being prepared from the approved design.</p>
               <p>No artwork shared with you yet.</p>
             </div>
             <p class="hint">Drawings will appear on the outside of the fridge, held up by magnets.</p>
