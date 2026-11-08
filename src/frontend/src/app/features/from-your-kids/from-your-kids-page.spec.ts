@@ -76,7 +76,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     fixture.detectChanges();
     family.set({ id: 'family-2', role: 'Parent' });
     fixture.detectChanges();
-    await fixture.whenStable();
+    await Promise.resolve();
     fixture.detectChanges();
     resolveFirst(children);
     await fixture.whenStable();
