@@ -69,7 +69,7 @@ describe('Child Essentials updates (#128)', () => {
         caregivers: [
           {
             id: 'cg-ava',
-            details: { name: 'Ava Park', phone: '555-010-4000', city: null, hourlyRate: null, schoolPickup: true },
+            details: { name: 'Ava Park', phone: '+15125550100', city: null, hourlyRate: null, schoolPickup: true },
             averageRating: null,
             myRating: null,
             addedBy: 'Jamie',
@@ -214,7 +214,11 @@ describe('Child Essentials updates (#128)', () => {
     expect(text(tab)).toBe('Jamie’s routines, updated');
     const ava = el.querySelector('app-caregivers-section article')!;
     expect(ava.classList).toContain('row--updated');
-    expect(text(ava.querySelector('h4'))).toBe('Ava Park Updated');
+    expect(text(ava.querySelector('.caregiver-name'))).toBe('Ava Park');
+    expect(text(ava.querySelector('.updated-pill'))).toBe('Updated');
+    expect(ava.querySelector('h4 [role="img"]')?.getAttribute('aria-label')).toBe('Unrated');
+    expect(text(ava.querySelector('p .call')?.parentElement ?? null)).toBe('512-555-0100 Call');
+    expect(ava.querySelector('.call')?.getAttribute('href')).toBe('tel:+15125550100');
 
     tab.click();
     await settle(fixture);
