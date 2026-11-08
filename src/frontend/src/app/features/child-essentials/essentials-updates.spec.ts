@@ -183,10 +183,11 @@ describe('Child Essentials updates (#128)', () => {
 
     const hero = tile.querySelector('.section-hero')!;
     expect(el.querySelector('.layout')?.classList).toContain('focused');
-    expect(hero.closest('section')?.getAttribute('aria-labelledby')).toBe(hero.querySelector('h2')?.id);
+    expect(hero.closest('section')?.getAttribute('aria-labelledby')).toBe('essentials-heading');
     expect(text(hero.querySelector('h2'))).toBe('Shared Caregivers');
     expect(hero.querySelector('img')?.getAttribute('src')).toBe('art/child-essentials/caregivers.webp');
     expect(document.activeElement).toBe(hero.querySelector('h2'));
+    expect(await axeViolations(el)).toEqual([]);
 
     el.querySelector<HTMLButtonElement>('.back')!.click();
     await settle(fixture);

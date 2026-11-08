@@ -85,7 +85,7 @@ const MEDICAL_TINT = {
             </button>
           }
         </div>
-        <section [attr.aria-labelledby]="openSection() ? 'section-heading' : 'essentials-heading'">
+        <section aria-labelledby="essentials-heading">
           <h2 id="essentials-heading">{{ child.firstName }}’s essentials</h2>
           @if (openSection() !== null) {
             <button type="button" class="back" (click)="closeSection()">
