@@ -49,45 +49,45 @@ import { MemorySettingsSection } from './memory-settings';
     </section>
     <section class="card">
       <app-appearance-picker />
-      <mat-slide-toggle [checked]="eventThemes.enabled()" (change)="eventThemes.setEnabled($event.checked)" aria-describedby="event-theme-help">Add themes to events</mat-slide-toggle>
-      <p id="event-theme-help">Show subtle illustrations when an event title matches a theme. This changes only your view on this device.</p>
+      <mat-slide-toggle [checked]="eventThemes.enabled()" (change)="eventThemes.setEnabled($event.checked)" aria-describedby="event-theme-help">{{ 'settings.themes' | tr }}</mat-slide-toggle>
+      <p id="event-theme-help">{{ 'settings.themesHelp' | tr }}</p>
     </section>
 
     @if (auth.currentFamily(); as current) {
       @if (current.role === 'Parent') {
         <section class="card" aria-labelledby="co-parent-heading">
-          <h2 id="co-parent-heading">Co-parent</h2>
+          <h2 id="co-parent-heading">{{ 'settings.coParent' | tr }}</h2>
           @if (error(); as error) {
             <p role="alert">{{ error }}</p>
           } @else if (details(); as details) {
             @if (coParent(details); as coParent) {
               <p>You share {{ details.name }} with <strong>{{ coParent }}</strong>. You both have the same say.</p>
             } @else {
-              <p class="muted">Invite your co-parent so you can make decisions together.</p>
+              <p class="muted">{{ 'settings.invite' | tr }}</p>
               <app-invite-co-parent [familyId]="current.id" [pending]="pending()" />
             }
           } @else {
-            <p class="muted">Loading…</p>
+            <p class="muted">{{ 'settings.loading' | tr }}</p>
           }
         </section>
 
         <section class="card" aria-labelledby="photos-heading">
-          <h2 id="photos-heading">Profile photos</h2>
+          <h2 id="photos-heading">{{ 'settings.profilePhotos' | tr }}</h2>
           <app-profile-photo-settings [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="memories-heading">
-          <h2 id="memories-heading">Memories</h2>
+          <h2 id="memories-heading">{{ 'settings.memories' | tr }}</h2>
           <app-memory-settings [familyId]="current.id" [coParent]="details() ? coParent(details()!) : null" />
         </section>
 
         <section class="card" aria-labelledby="children-heading">
-          <h2 id="children-heading">Children</h2>
+          <h2 id="children-heading">{{ 'settings.children' | tr }}</h2>
           <app-children-access [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="parent-pin-heading">
-          <h2 id="parent-pin-heading">Your parent PIN</h2>
+          <h2 id="parent-pin-heading">{{ 'settings.pin' | tr }}</h2>
           <app-parent-pin-settings [familyId]="current.id" />
         </section>
 
@@ -102,27 +102,27 @@ import { MemorySettingsSection } from './memory-settings';
         </section>
 
         <section class="card" aria-labelledby="devices-heading">
-          <h2 id="devices-heading">Devices</h2>
+          <h2 id="devices-heading">{{ 'settings.devices' | tr }}</h2>
           <app-device-list [familyId]="current.id" />
         </section>
       }
     }
 
     <section class="card" aria-labelledby="privacy-heading">
-      <h2 id="privacy-heading">Privacy</h2>
-      <p>What Parenthesis collects about you and your children, who it’s shared with, and how long it’s kept.</p>
-      <a routerLink="/privacy">Read the privacy notice</a>
+      <h2 id="privacy-heading">{{ 'settings.privacy' | tr }}</h2>
+      <p>{{ 'settings.privacyHelp' | tr }}</p>
+      <a routerLink="/privacy">{{ 'settings.privacyLink' | tr }}</a>
     </section>
 
     @if (auth.status() === 'signed-in') {
       <section class="card" aria-labelledby="delete-account-heading">
-        <h2 id="delete-account-heading">Delete account</h2>
+        <h2 id="delete-account-heading">{{ 'settings.delete' | tr }}</h2>
         @if (deletionError(); as message) {
           <p role="alert">{{ message }}</p>
         } @else if (deletionFamilies(); as families) {
           <app-delete-account [families]="families" />
         } @else {
-          <p class="muted">Loading account deletion details…</p>
+          <p class="muted">{{ 'settings.deletionLoading' | tr }}</p>
         }
       </section>
     }
