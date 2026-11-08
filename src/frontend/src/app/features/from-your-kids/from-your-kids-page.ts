@@ -87,27 +87,17 @@ import { KidsDiary } from './kids-diary';
     .sections button[aria-current='page'] { border: 2px solid var(--color-focus); background: var(--color-surface-soft); }
     .sections button span { display: block; font-size: 1.7rem; }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-    .book { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border: 6px solid #5E8F7E; border-radius: 16px; background: #F7F5ED; color: #20303F; box-shadow: 0 8px 20px #0002; overflow: hidden; }
-    .page { min-height: 18rem; padding: clamp(1rem,3vw,2rem); background: repeating-linear-gradient(#fff9ed,#fff9ed 30px,#e5ded1 31px); }
-    .page + .page { border-left: 2px solid #d6cbb9; }
-    .page h2 { font-family: Georgia, serif; margin-bottom: 1rem; }
-    .page .empty { font-weight: 700; margin-top: 2rem; }
-    .diary-placeholder { margin-top: 2rem; font-family: Georgia, serif; font-style: italic; text-align: center; color: #52615c; }
     .gallery { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border-radius: var(--radius-card); text-align: center; }
     .fridge { display: grid; width: min(100%, 18rem); height: 24rem; padding: 0.65rem; gap: 0.5rem; border: 3px solid var(--color-outline); border-radius: 1.5rem; background: var(--color-surface-soft); box-shadow: 0 8px 15px #0002; }
     .fridge-door { position: relative; border: 2px solid var(--color-divider); border-radius: 0.75rem; background: var(--color-surface); }
     .fridge-door--upper { min-height: 9rem; }
     .fridge-door--lower { min-height: 11rem; }
     .fridge-handle { position: absolute; left: 0.8rem; top: 20%; width: 0.55rem; height: 45%; border-radius: 0.4rem; background: var(--color-outline); }
-    .fridge p { margin-top: var(--space-2); }
     .corkboard { display: grid; place-items: center; width: min(100%,42rem); min-height: 16rem; border: 12px solid #996638; border-radius: 12px; background: #c48c55; color: #20303F; box-shadow: inset 0 0 12px #56351855; }
     .corkboard { gap: var(--space-3); padding: var(--space-3); }
     .corkboard h3 { margin: 0; font-family: Georgia, serif; }
     .corkboard p { padding: 1rem; background: #F7F5ED; transform: rotate(-2deg); }
     @media (max-width: 40rem) {
-      .book { grid-template-columns: 1fr; }
-      .page:first-child { display: none; }
-      .page + .page { border-left: 0; }
       .sections button { padding: var(--space-2); }
       .gallery { padding: var(--space-2); }
       .fridge { width: min(100%, 16rem); }
