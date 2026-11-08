@@ -53,6 +53,10 @@ export const translations = {
   'register.creating': ["Creating account…","Creando cuenta…"],
   'register.create': ["Create account","Crear cuenta"],
   'register.already': ["Already have an account? Sign in","¿Ya tienes una cuenta? Inicia sesión"],
+  'settings.title': ['Settings', 'Configuración'],
+  'settings.languageHeading': ['Language', 'Idioma'],
+  'settings.languageHelp': ['Choose the language used in Parenthesis on this device.', 'Elige el idioma que se usa en Parenthesis en este dispositivo.'],
+  'settings.languageLabel': ['Display language', 'Idioma de la aplicación'],
 } as const;
 
 export type TranslationKey = keyof typeof translations;
