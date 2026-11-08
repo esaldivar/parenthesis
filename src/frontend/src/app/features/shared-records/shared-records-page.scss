@@ -234,16 +234,18 @@ h3 {
     order: -1;
   }
 
-  /* A phone shows the form on its own screen. The page heading stays for screen readers (one h1 per page). */
-  .composing .records > :not(.heading),
-  .composing .records .heading > :not(div),
+  /* A phone shows the form on its own screen. Keep the page's sole h1 available to assistive technology. */
+  .composing .records > :not(.records-hero),
+  .composing .records-hero > :not(.records-hero__copy),
+  .composing .records-hero__copy > :not(h1),
   .composing .records .privacy {
     display: none;
   }
 
-  .composing .records > .heading {
+  .composing .records > .records-hero {
     padding: 0;
     border: 0;
+    background: transparent;
   }
 
   .composing .records h1 {
