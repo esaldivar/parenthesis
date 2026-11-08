@@ -61,9 +61,15 @@ public sealed class ApiSession : IDisposable
     }
 
     /// <summary>An unsafe request with a raw body, like the app's photo uploads.</summary>
-    public Task<HttpResponseMessage> SendBytesAsync(HttpMethod method, string path, byte[] body, string contentType = "image/jpeg")
+    public Task<HttpResponseMessage> SendBytesAsync(HttpMethod method, string path, byte[] body, string contentType = "image/jpeg") =>
+        SendRawAsync(method, path, new ByteArrayContent(body), contentType);
+
+    /// <summary>An unsafe request whose raw body is streamed with no length, as a browser may send a large file.</summary>
+    public Task<HttpResponseMessage> SendStreamAsync(HttpMethod method, string path, Stream body, string contentType) =>
+        SendRawAsync(method, path, new StreamContent(body), contentType);
+
+    private Task<HttpResponseMessage> SendRawAsync(HttpMethod method, string path, HttpContent content, string contentType)
     {
-        var content = new ByteArrayContent(body);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
         var request = new HttpRequestMessage(method, path) { Content = content };
         if (_xsrfToken is not null)
