@@ -27,6 +27,7 @@ import { KidsGalleryItem } from './from-your-kids-contract';
             <button type="button" (click)="close()" aria-label="Close preview">✕</button>
           </header>
           <img class="full" [src]="item.imageUrl" [alt]="item.altText" />
+          @if (actionsEnabled()) {
           <div class="actions">
             <button type="button" [attr.aria-pressed]="item.heartedByViewer"
               (click)="heart.emit({ id: item.id, value: !item.heartedByViewer })">
@@ -48,6 +49,7 @@ import { KidsGalleryItem } from './from-your-kids-contract';
             Save message
           </button>
           <p class="privacy">Your child can read your message but cannot reply here.</p>
+          }
         </section>
       </div>
     }
@@ -76,6 +78,8 @@ import { KidsGalleryItem } from './from-your-kids-contract';
 export class KidsGallery {
   readonly kind = input.required<'Artwork' | 'Photo'>();
   readonly items = input<readonly KidsGalleryItem[]>([]);
+  /** M5 turns these on only when authorized, persisted handlers are connected. */
+  readonly actionsEnabled = input(false);
   readonly heart = output<{ id: string; value: boolean }>();
   readonly bookmark = output<{ id: string; value: boolean }>();
   readonly comment = output<{ id: string; text: string }>();
