@@ -22,6 +22,7 @@ that points back here.
   `docs/design/shared-records-issue-477.md`).
   - [ ] Create the `shared-records` storage container, its role and `SharedRecords__BlobServiceUri` on development and
     production (`docs/runbooks/azure-environments.md`); until then reports answer "Attachments can't be saved yet."
+  - [ ] Verify the approved paper-and-ribbon header on Development in both themes and with enlarged text.
   - [ ] Proposal revisions before agreement (today the other parent requests changes and a new proposal is sent).
   - [ ] In-app notices on submission and when acknowledged entries reach a target, once the notifications feed (#178)
     exists; the navigation dot stands in until then.
