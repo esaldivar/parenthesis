@@ -117,8 +117,9 @@ export class DashboardPage {
   private requestId = 0;
 
   protected readonly firstName = computed(() => this.auth.user()?.displayName.split(/\s+/)[0] ?? '');
+  protected readonly greetingText = computed(() => greetingFor(hourIn(this.timeZone(), this.now)));
   protected readonly greeting = computed(() => {
-    const hello = greetingFor(hourIn(this.timeZone(), this.now));
+    const hello = this.greetingText();
     return this.firstName() ? `${hello}, ${this.firstName()}!` : `${hello}!`;
   });
 
