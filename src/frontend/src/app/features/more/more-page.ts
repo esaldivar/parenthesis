@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { RouterLink } from '@angular/router';
@@ -9,22 +11,22 @@ import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation'
 @Component({
   selector: 'app-more-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon],
+  imports: [RouterLink, Icon, TranslatePipe],
   template: `
-    <h1>More</h1>
+    <h1>{{ 'nav.more' | tr }}</h1>
     <ul>
       @for (item of items; track item.path) {
         <li>
           <a [routerLink]="item.path">
             <app-icon [name]="item.icon" />
-            <span>{{ item.label }}</span>
+            <span>{{ label(item) }}</span>
             @if (item.path === '/child-essentials' && essentials.newUpdates()) {
               <span class="dot" aria-hidden="true"></span>
-              <span class="visually-hidden">, updated by your co-parent</span>
+              <span class="visually-hidden">, {{ 'nav.updated' | tr }}</span>
             }
             @if (item.path === '/shared-records' && records.needsYou()) {
               <span class="dot" aria-hidden="true"></span>
-              <span class="visually-hidden">, waiting on your response</span>
+              <span class="visually-hidden">, {{ 'nav.waiting' | tr }}</span>
             }
             @if (item.note) {
               <span class="note"><span class="visually-hidden">, </span>{{ item.note }}</span>
@@ -73,6 +75,16 @@ import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation'
   `,
 })
 export class MorePage {
+  private readonly locale = inject(LocaleService);
+  protected label(item: NavItem): string {
+    const keys: Record<string, TranslationKey> = {
+      '/from-your-kids': 'nav.fromKids',
+      '/child-essentials': 'nav.essentials',
+      '/shared-records': 'nav.records',
+      '/settings': 'settings.title',
+    };
+    return keys[item.path] ? translate(keys[item.path], this.locale.locale()) : item.label;
+  }
   protected readonly essentials = inject(EssentialsUpdatesStore);
   protected readonly records = inject(SharedRecordsAttentionStore);
   private readonly inBottomNav = new Set(PARENT_MOBILE_NAV.map((item) => item.path));
