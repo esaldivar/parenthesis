@@ -712,3 +712,5 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   `ubuntu-24.04` until those are understood (real issue or WebKit difference) and fixed.
 - [ ] Owner: require **Release E2E gate** on `release/*` and retain up-to-date checks and the existing develop gate.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
+
+- [ ] Verify Home Quick Add saves and cancellation from all four shortcuts on the development site (#515).

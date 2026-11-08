@@ -204,16 +204,11 @@ export class DashboardPage {
   protected readonly memories = computed(() => this.data()?.recentMemories ?? []);
   protected readonly currentMemory = computed(() => this.memories()[this.memoryIndex()] ?? null);
 
-  /**
-   * As in the approved design. Event and Note open Add to calendar (a note is a shared reminder) and Message opens
-   * Messages (#125); Memory stays marked unavailable (owner decision, October 22, 2026).
-   */
-  protected readonly quickActions: readonly { label: string; icon: IconName; kind?: 'event' | 'reminder'; link?: string }[] = [
+  protected readonly quickCalendarActions = [
     { label: 'Event', icon: 'calendar', kind: 'event' },
-    { label: 'Message', icon: 'messages', link: '/messages' },
-    { label: 'Memory', icon: 'image' },
-    { label: 'Note', icon: 'plus', kind: 'reminder' },
-  ];
+    { label: 'Task', icon: 'note', kind: 'task' },
+    { label: 'Reminder', icon: 'bell', kind: 'reminder' },
+  ] as const;
 
   protected readonly personRef = (person: { name: string }) => ({ id: person.name, name: person.name });
   protected readonly childNames = childNames;

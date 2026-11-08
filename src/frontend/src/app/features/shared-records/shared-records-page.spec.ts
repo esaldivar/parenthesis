@@ -13,7 +13,7 @@ describe('SharedRecordsPage', () => {
     childIds: ['child-1'], status: 'AwaitingAgreement',
   };
 
-  async function render(funds: SharedFund[] = [], support: SupportRecord[] = [], attachmentsReady = true) {
+  async function render(funds: SharedFund[] = [], support: SupportRecord[] = [], attachmentsReady = true, add?: string) {
     const user = signal<Me | null>({ id: 'user', displayName: 'Parent', email: 'parent@example.test' });
     const currentFamily = signal<FamilySummary | null>({ id: 'family', name: 'Family', timeZone: 'UTC', role: 'Parent' });
     const api = {
@@ -40,6 +40,7 @@ describe('SharedRecordsPage', () => {
       providers: [provideRouter([]), { provide: Api, useValue: api }, { provide: AuthStore, useValue: { user, currentFamily, status: () => 'signed-in' } }],
     });
     const fixture = TestBed.createComponent(SharedRecordsPage);
+    fixture.componentRef.setInput('add', add);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -51,6 +52,15 @@ describe('SharedRecordsPage', () => {
     const button = (label: string) => Array.from(page.querySelectorAll('button')).find(item => item.textContent?.trim() === label);
     return { api, button, currentFamily, fixture, page };
   }
+
+  it('opens the existing request form once when arriving from Quick Add', async () => {
+    const { fixture, page } = await render([], [], true, '1');
+    expect(page.querySelector('form')).not.toBeNull();
+    page.querySelector<HTMLButtonElement>('button[aria-label="Back to shared records"]')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(page.querySelector('form')).toBeNull();
+  });
 
   it('submits the approved form and shows that the co-parent still needs to agree', async () => {
     const { api, button, fixture, page } = await render();
