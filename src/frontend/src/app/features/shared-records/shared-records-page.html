@@ -119,7 +119,8 @@
           </div>
           <p class="muted">{{ target.title }}</p>
           <app-report-form [kind]="target.kind" [currency]="target.kind === 'fund' ? target.fund.currency : target.record.currency"
-            [submitting]="busy()" [error]="reportError()" (report)="submitReport(target, $event)" (cancelled)="close()" />
+            [submitting]="busy()" [error]="reportError()" [attachmentsReady]="workspace()?.attachmentsReady ?? true"
+            (report)="submitReport(target, $event)" (cancelled)="close()" />
         } @else {
           <h3 id="request-type-label">Choose a request type</h3>
           <div class="request-types" role="radiogroup" aria-labelledby="request-type-label">

@@ -73,11 +73,12 @@ describe('application shells', () => {
       expect(current).toEqual(['Calendar', 'Calendar']); // Side and bottom navigation; only one is visible at a time.
     });
 
-    it('never shows unread counts for real data: the bell says notifications are not available yet', async () => {
+    it('links the bell to Notifications without a placeholder count', async () => {
       const body = await open('/');
 
       expect(body.querySelector('.dot')).toBeNull();
-      expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications');
+      expect(body.querySelector('a.bell')?.getAttribute('href')).toBe('/notifications');
+      expect(body.querySelector('a.bell')!.getAttribute('aria-label')).toBe('Notifications');
     });
 
     it('shows placeholder counts only in the sample preview, labelled as sample data', async () => {
@@ -86,10 +87,10 @@ describe('application shells', () => {
 
       expect(sidenav.textContent).toContain('2 unread (sample data)'); // From Your Kids
       expect(sidenav.textContent).not.toContain('3 unread'); // Messages have real unread state (#125)
-      expect(body.querySelector('button.bell')!.getAttribute('aria-label')).toBe('Notifications, 3 unread (sample data)');
-      // Counts show as the green "something new" dot; the number is only in the words for assistive technology.
-      expect(body.querySelector('button.bell .dot.dot--bell')).not.toBeNull();
-      expect(body.querySelector('button.bell')!.textContent).not.toContain('3');
+      expect(body.querySelector('a.bell')!.getAttribute('aria-label')).toBe('Notifications');
+      // The notification bell only uses real data, even in the sample preview.
+      expect(body.querySelector('a.bell .dot.dot--bell')).toBeNull();
+      expect(body.querySelector('a.bell')!.textContent).not.toContain('3');
       expect(sidenav.querySelectorAll('.dot')).toHaveLength(1);
     });
 

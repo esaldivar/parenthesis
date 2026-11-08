@@ -1,13 +1,4 @@
-/**
- * PLACEHOLDER — fictional unread counts for the development-only sample preview (`?sample=1`).
- *
- * There is no notifications or unread-count API yet, so real parents never see these numbers: the bell shows no
- * badge and says notifications aren't available, and the navigation shows no counts. Replace with real data when the
- * notifications/kid-shares endpoints exist (messages have real unread state, #125); delete this file then.
- */
+/** Fictional counts for the development-only preview of features that are still placeholders. */
 export const SAMPLE_UNREAD: Readonly<Record<string, number>> = {
   '/from-your-kids': 2,
 };
-
-/** PLACEHOLDER — fictional notification count for the sample preview only. */
-export const SAMPLE_NOTIFICATIONS = 3;

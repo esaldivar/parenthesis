@@ -124,6 +124,26 @@ internal static class CalendarEndpoints
         calendar.MapPost("/{eventId:guid}/dismiss", DismissAsync);
     }
 
+    // Keep the generic notice in the same transaction as the calendar change. Private availability never produces one.
+    private static void AddNotices(
+        CalendarDbContext db, ITenantContext tenant, IReadOnlySet<Guid> parents, CalendarEvent calendarEvent, CalendarNoticeKind kind, TimeProvider clock)
+    {
+        if (calendarEvent.Category == EventCategory.Unavailable)
+        {
+            return;
+        }
+
+        var now = clock.GetUtcNow();
+        db.Notifications.AddRange(parents.Where(id => id != tenant.MembershipId).Select(id => new CalendarNotice
+        {
+            FamilyId = tenant.FamilyId,
+            RecipientMembershipId = id,
+            EventId = calendarEvent.Id,
+            Kind = kind,
+            CreatedAt = now,
+        }));
+    }
+
     /// <summary>Non-blocking: the proposed parenting time overlaps the other parent's unavailable time (CALENDAR_DECISIONS.md).</summary>
     public const string OverlapsCoParentUnavailable = "OverlapsCoParentUnavailable";
 
@@ -362,6 +382,11 @@ internal static class CalendarEndpoints
             }
 
             db.Events.Add(calendarEvent);
+            if (calendarEvent.Status == EventStatus.Confirmed)
+            {
+                AddNotices(db, tenant, parents, calendarEvent, CalendarNoticeKind.Added, clock);
+            }
+
             await db.SaveChangesAsync(ct);
             if (calendarEvent.Status == EventStatus.PendingApproval)
             {
@@ -510,8 +535,9 @@ internal static class CalendarEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         [FromKeyedServices(CalendarModule.TodayClock)] TimeProvider today,
+        TimeProvider clock,
         CancellationToken cancellationToken) =>
-        UpdateCoreAsync(eventId, request, scope, http, tenant, db, roster, changeRequests, unitOfWork, audit, today, false, cancellationToken);
+        UpdateCoreAsync(eventId, request, scope, http, tenant, db, roster, changeRequests, unitOfWork, audit, today, clock, false, cancellationToken);
 
     private static Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> SwapAsync(
         Guid eventId,
@@ -524,9 +550,10 @@ internal static class CalendarEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         [FromKeyedServices(CalendarModule.TodayClock)] TimeProvider today,
+        TimeProvider clock,
         CancellationToken cancellationToken) =>
         UpdateCoreAsync(eventId, new UpdateEventRequest(null, request.StartsAt, request.EndsAt, request.AllDay, null, null, null, request.Reason),
-            null, http, tenant, db, roster, changeRequests, unitOfWork, audit, today, true, cancellationToken);
+            null, http, tenant, db, roster, changeRequests, unitOfWork, audit, today, clock, true, cancellationToken);
 
     private static async Task<Results<Ok<EventView>, Accepted<EventView>, NotFound, ValidationProblem, ProblemHttpResult, ForbidHttpResult>> UpdateCoreAsync(
         Guid eventId,
@@ -540,6 +567,7 @@ internal static class CalendarEndpoints
         IUnitOfWork unitOfWork,
         IAuditLog audit,
         TimeProvider today,
+        TimeProvider clock,
         bool swap,
         CancellationToken cancellationToken)
     {
@@ -671,6 +699,10 @@ internal static class CalendarEndpoints
             else
             {
                 e.Apply(change);
+                if (moved || change.AllDay != current.AllDay || change.Location != current.Location)
+                {
+                    AddNotices(db, tenant, parents, e, CalendarNoticeKind.Updated, clock);
+                }
             }
 
             await db.SaveChangesAsync(ct);
@@ -712,6 +744,7 @@ internal static class CalendarEndpoints
         IChangeRequests changeRequests,
         IUnitOfWork unitOfWork,
         IAuditLog audit,
+        TimeProvider clock,
         CancellationToken cancellationToken)
     {
         if (tenant.Role != FamilyRole.Parent)
@@ -768,6 +801,7 @@ internal static class CalendarEndpoints
             else
             {
                 e.Status = EventStatus.Cancelled;
+                AddNotices(db, tenant, parents, e, CalendarNoticeKind.Cancelled, clock);
             }
 
             await db.SaveChangesAsync(ct);

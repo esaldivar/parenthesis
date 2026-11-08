@@ -17,15 +17,6 @@
   </button>
 </mat-menu>
 
-<mat-menu #notificationsMenu="matMenu" xPosition="before">
-  <p class="menu-note">
-    @if (sample()) {
-      Sample preview: these counts are fictional.
-    }
-    Notifications aren’t available yet.
-  </p>
-</mat-menu>
-
 <div class="shell" [class.shell--full-screen]="fullScreen()">
   <aside class="sidebar">
     <a class="brand" routerLink="/" aria-label="Parenthesis home">
@@ -79,17 +70,18 @@
       <app-logo [decorative]="true" />
     </a>
     <div class="topbar__actions">
-      <button
+      <a
         class="bell"
-        type="button"
-        [matMenuTriggerFor]="notificationsMenu"
-        [attr.aria-label]="notifications() ? 'Notifications, ' + notifications() + ' unread (sample data)' : 'Notifications'"
+        routerLink="/notifications"
+        routerLinkActive="is-active"
+        ariaCurrentWhenActive="page"
+        [attr.aria-label]="notifications.unseen() ? 'Notifications, new activity' : 'Notifications'"
       >
         <app-icon name="bell" [size]="26" />
-        @if (notifications(); as count) {
+        @if (notifications.unseen()) {
           <span class="dot dot--bell" aria-hidden="true"></span>
         }
-      </button>
+      </a>
       <button class="account" type="button" [matMenuTriggerFor]="accountMenu">
         <app-avatar [name]="firstName()" kind="parent" [size]="36" [src]="photos.own()" />
         <span class="account__name">{{ firstName() }}</span>

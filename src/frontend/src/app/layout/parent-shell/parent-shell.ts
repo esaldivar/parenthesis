@@ -14,7 +14,8 @@ import { Icon } from '../../shared/icon/icon';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
-import { SAMPLE_NOTIFICATIONS, SAMPLE_UNREAD } from '../sample-counts';
+import { NotificationsStore } from '../../core/notifications/notifications.store';
+import { SAMPLE_UNREAD } from '../sample-counts';
 import { ToastHost } from '../../shared/toast/toast-host';
 import { BottomNav } from '../../shared/overlay/bottom-nav-clearance';
 import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
@@ -59,7 +60,7 @@ export class ParentShell {
   protected readonly sample = computed(
     () => isDevMode() && new URLSearchParams(this.url().split('?')[1] ?? '').get('sample') === '1',
   );
-  protected readonly notifications = computed(() => (this.sample() ? SAMPLE_NOTIFICATIONS : 0));
+  protected readonly notifications = inject(NotificationsStore);
 
   /** The parents' conversation: its connection lives as long as the shell, for the unread dot (#125). */
   protected readonly chat = inject(ChatStore);

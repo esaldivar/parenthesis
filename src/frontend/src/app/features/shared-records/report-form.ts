@@ -17,61 +17,83 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
   imports: [FormsModule, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <form (ngSubmit)="submit()">
-      <label>
-        Amount ({{ currency() }})
-        <input name="amount" type="text" inputmode="decimal" required autocomplete="off" [(ngModel)]="amount" />
-      </label>
-      <label>
-        Payment date
-        <input name="paidOn" type="date" required [max]="today" [(ngModel)]="paidOn" />
-      </label>
-      @if (kind() === 'fund') {
-        <fieldset>
-          <legend>Who was paid</legend>
-          <label class="choice">
-            <input type="radio" name="paidTo" value="Vendor" [(ngModel)]="paidTo" />
-            <span>A vendor or provider<small>Your co-parent acknowledges the contribution.</small></span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="paidTo" value="CoParent" [(ngModel)]="paidTo" />
-            <span>My co-parent<small>Your co-parent confirms they received it.</small></span>
-          </label>
-        </fieldset>
-      }
-      <div class="attachment">
-        <span class="label" id="attachment-label">Payment attachment · required</span>
-        @if (file(); as chosen) {
-          <div class="file">
-            <app-icon name="note" />
-            <span><strong>{{ chosen.name }}</strong><small>{{ describe(chosen) }} attached</small></span>
-            <button type="button" class="link" (click)="picker.click()">Replace</button>
-          </div>
-        } @else {
-          <button type="button" class="choose" aria-describedby="attachment-label attachment-hint" (click)="picker.click()">
-            <app-icon name="cloud-upload" /> Choose a PDF or image
-          </button>
+    @if (!attachmentsReady()) {
+      <div class="unavailable">
+        <p class="notice" role="status">
+          <app-icon name="cloud-upload" />
+          <span>Attachments can’t be saved yet, so {{ kind() === 'fund' ? 'contributions' : 'payments' }} can’t be reported.
+            Please try again later.</span>
+        </p>
+        <div class="actions">
+          <button type="button" (click)="cancelled.emit()">Close</button>
+        </div>
+      </div>
+    } @else {
+      <form (ngSubmit)="submit()">
+        <label>
+          Amount ({{ currency() }})
+          <input name="amount" type="text" inputmode="decimal" required autocomplete="off" [(ngModel)]="amount" />
+        </label>
+        <label>
+          Payment date
+          <input name="paidOn" type="date" required [max]="today" [(ngModel)]="paidOn" />
+        </label>
+        @if (kind() === 'fund') {
+          <fieldset>
+            <legend>Who was paid</legend>
+            <label class="choice">
+              <input type="radio" name="paidTo" value="Vendor" [(ngModel)]="paidTo" />
+              <span>A vendor or provider<small>Your co-parent acknowledges the contribution.</small></span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="paidTo" value="CoParent" [(ngModel)]="paidTo" />
+              <span>My co-parent<small>Your co-parent confirms they received it.</small></span>
+            </label>
+          </fieldset>
         }
-        <input #picker class="visually-hidden" type="file" tabindex="-1" aria-hidden="true"
-          accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg" (change)="choose(picker)" />
-        <p id="attachment-hint" class="hint">PDF, PNG or JPEG, up to 10 MB. Cover account numbers and unrelated transactions before sharing.</p>
-      </div>
-      @if (problem(); as message) {
-        <p class="error" role="alert">{{ message }}</p>
-      } @else if (error()) {
-        <p class="error" role="alert">{{ error() }} Your entries are still here.</p>
-      }
-      <div class="actions">
-        <button type="submit" class="primary" [disabled]="submitting()">
-          {{ submitting() ? 'Sending…' : kind() === 'fund' ? 'Submit contribution' : 'Submit payment' }}
-        </button>
-        <button type="button" [disabled]="submitting()" (click)="cancelled.emit()">Cancel</button>
-      </div>
-      <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
-    </form>
+        <div class="attachment">
+          <span class="label" id="attachment-label">Payment attachment · required</span>
+          @if (file(); as chosen) {
+            <div class="file">
+              <app-icon name="note" />
+              <span><strong>{{ chosen.name }}</strong><small>{{ describe(chosen) }} attached</small></span>
+              <button type="button" class="link" (click)="picker.click()">Replace</button>
+            </div>
+          } @else {
+            <button type="button" class="choose" aria-describedby="attachment-label attachment-hint" (click)="picker.click()">
+              <app-icon name="cloud-upload" /> Choose a PDF or image
+            </button>
+          }
+          <input #picker class="visually-hidden" type="file" tabindex="-1" aria-hidden="true"
+            accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg" (change)="choose(picker)" />
+          <p id="attachment-hint" class="hint">PDF, PNG or JPEG, up to 10 MB. Cover account numbers and unrelated transactions before sharing.</p>
+        </div>
+        @if (problem(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        } @else if (error()) {
+          <p class="error" role="alert">{{ error() }} Your entries are still here.</p>
+        }
+        <div class="actions">
+          <button type="submit" class="primary" [disabled]="submitting()">
+            {{ submitting() ? 'Sending…' : kind() === 'fund' ? 'Submit contribution' : 'Submit payment' }}
+          </button>
+          <button type="button" [disabled]="submitting()" (click)="cancelled.emit()">Cancel</button>
+        </div>
+        <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
+      </form>
+    }
   `,
   styles: `
-    form { display: grid; gap: var(--space-4); }
+    form, .unavailable { display: grid; gap: var(--space-4); }
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      border: 1px solid var(--color-outline);
+      border-radius: var(--radius-control);
+      padding: var(--space-3);
+      background: var(--color-surface-soft);
+    }
     p { margin: 0; }
     label, fieldset, .attachment { display: grid; gap: var(--space-2); }
     label, legend, .label { font-weight: 600; }
@@ -128,6 +150,8 @@ export class ReportForm {
   readonly submitting = input(false);
   /** Why the last attempt failed (from the server); the entries stay. */
   readonly error = input('');
+  /** False while the server can't save attachments: the form says so instead of asking for a file it can't keep. */
+  readonly attachmentsReady = input(true);
   readonly report = output<ReportDraft>();
   readonly cancelled = output<void>();
 

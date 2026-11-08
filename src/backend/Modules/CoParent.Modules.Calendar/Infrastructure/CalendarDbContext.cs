@@ -36,11 +36,21 @@ internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> opti
 
     public DbSet<GoogleSyncedEvent> GoogleSyncedEvents => Set<GoogleSyncedEvent>();
 
+    public DbSet<CalendarNotice> Notifications => Set<CalendarNotice>();
+
     private Guid CurrentFamilyId => tenant.FamilyId;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
+
+        modelBuilder.Entity<CalendarNotice>(n =>
+        {
+            n.ToTable("notifications");
+            n.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
+            n.HasIndex(x => new { x.FamilyId, x.RecipientMembershipId, x.CreatedAt });
+            n.HasQueryFilter(TenantContext.QueryFilterName, x => x.FamilyId == CurrentFamilyId);
+        });
 
         modelBuilder.Entity<CalendarEvent>(e =>
         {

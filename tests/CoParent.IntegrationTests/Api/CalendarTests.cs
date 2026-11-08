@@ -32,6 +32,85 @@ public sealed class CalendarTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal([f.KaiId], soccer.GetProperty("childIds").EnumerateArray().Select(c => c.GetGuid()));
     }
 
+    [Fact]
+    public async Task Calendar_notifications_are_private_and_only_meaningful_updates_create_a_notice()
+    {
+        using var f = await FamilyAsync();
+        var feed = $"/api/families/{f.FamilyId}/notifications";
+        var activity = await JsonAsync(await f.Dad.PostAsync(Events(f), Activity("Private event title", f.KaiId)));
+        var eventId = activity.GetProperty("id").GetGuid();
+        var eventUrl = $"{Events(f)}/{eventId}";
+
+        Assert.False((await JsonAsync(await f.Dad.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        Assert.True((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        var added = Assert.Single((await JsonAsync(await f.Mom.GetAsync(feed))).GetProperty("items").EnumerateArray());
+        Assert.Equal("Added", added.GetProperty("kind").GetString());
+        Assert.Equal(eventId, added.GetProperty("eventId").GetGuid());
+        Assert.Equal("2026-10-12", added.GetProperty("eventDate").GetString());
+        Assert.DoesNotContain("Private event title", added.GetRawText(), StringComparison.Ordinal);
+
+        var ids = new[] { added.GetProperty("id").GetGuid() };
+        await f.Dad.PostAsync($"{feed}/seen", new { ids });
+        Assert.True((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        Assert.Equal(HttpStatusCode.NoContent, (await f.Mom.PostAsync($"{feed}/seen", new { ids })).StatusCode);
+        Assert.False((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+
+        Assert.Equal(HttpStatusCode.OK, (await f.Dad.SendAsync(HttpMethod.Patch, eventUrl, new { notes = "Only a note" })).StatusCode);
+        Assert.False((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, (await f.Dad.SendAsync(HttpMethod.Patch, eventUrl, new { location = "New field" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await f.Dad.SendAsync(HttpMethod.Delete, eventUrl)).StatusCode);
+
+        var items = (await JsonAsync(await f.Mom.GetAsync(feed))).GetProperty("items").EnumerateArray().ToArray();
+        Assert.Equal(["Cancelled", "Updated", "Added"], items.Select(item => item.GetProperty("kind").GetString()));
+        Assert.All(items, item => Assert.Equal(JsonValueKind.Null, item.GetProperty("eventId").ValueKind));
+
+        using var child = await KaiSignedInAsync(f);
+        Assert.Equal(HttpStatusCode.Forbidden, (await child.GetAsync(feed)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await child.GetAsync($"{feed}/unseen")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await child.PostAsync($"{feed}/seen", new { ids })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Private_availability_gives_no_notice_and_marking_seen_needs_a_bounded_list_of_ids()
+    {
+        using var f = await FamilyAsync();
+        var feed = $"/api/families/{f.FamilyId}/notifications";
+        Assert.Equal(HttpStatusCode.Created, (await f.Dad.PostAsync(Events(f),
+            new { category = "Unavailable", startsAt = _monday.AddHours(8), endsAt = _monday.AddHours(9), notes = "Private" })).StatusCode);
+
+        Assert.False((await JsonAsync(await f.Mom.GetAsync($"{feed}/unseen"))).GetProperty("unseen").GetBoolean());
+        var page = await JsonAsync(await f.Mom.GetAsync(feed));
+        Assert.Empty(page.GetProperty("items").EnumerateArray());
+        Assert.False(page.GetProperty("hasMore").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await f.Mom.PostAsync($"{feed}/seen", new { ids = Array.Empty<Guid>() })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await f.Mom.PostAsync($"{feed}/seen", new { ids = Enumerable.Range(0, 51).Select(_ => Guid.NewGuid()).ToArray() })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Notifications_page_fifty_at_a_time()
+    {
+        using var f = await FamilyAsync();
+        var feed = $"/api/families/{f.FamilyId}/notifications";
+        for (var i = 0; i < 51; i++)
+        {
+            Assert.Equal(HttpStatusCode.Created, (await f.Dad.PostAsync(Events(f), new
+            {
+                category = "Activity",
+                title = $"Practice {i}",
+                startsAt = _monday.AddDays(i).AddHours(17),
+                endsAt = _monday.AddDays(i).AddHours(18),
+            })).StatusCode);
+        }
+
+        var first = await JsonAsync(await f.Mom.GetAsync(feed));
+        Assert.Equal(50, first.GetProperty("items").GetArrayLength());
+        Assert.True(first.GetProperty("hasMore").GetBoolean());
+        var rest = await JsonAsync(await f.Mom.GetAsync($"{feed}?offset=50"));
+        Assert.Single(rest.GetProperty("items").EnumerateArray());
+        Assert.False(rest.GetProperty("hasMore").GetBoolean());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

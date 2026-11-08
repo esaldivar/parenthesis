@@ -61,6 +61,7 @@ public static class CalendarModule
     public static IEndpointRouteBuilder MapCalendarEndpoints(this IEndpointRouteBuilder family)
     {
         CalendarEndpoints.Map(family);
+        NotificationEndpoints.Map(family);
         ReminderEndpoints.Map(family);
         TaskEndpoints.Map(family);
         PlaceSuggestionEndpoints.Map(family);
