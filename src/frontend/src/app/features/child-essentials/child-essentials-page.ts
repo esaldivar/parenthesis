@@ -99,6 +99,12 @@ import { WhatHelpsSection } from './what-helps-section';
                       <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
                     </summary>
                     <div class="tile-content">
+                      @if (openSection() === tile.section) {
+                        <header class="section-hero">
+                          <h2 tabindex="-1">{{ tile.name }}</h2>
+                          <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
+                        </header>
+                      }
                       @switch (tile.section) {
                         @case ('school') { <app-school-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('allergiesFood') { <app-allergies-food-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
@@ -232,13 +238,35 @@ import { WhatHelpsSection } from './what-helps-section';
     }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
 
+    .section-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      min-block-size: 6rem;
+      margin-block-end: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 1rem;
+      background: var(--essentials-tile-bg);
+      color: var(--essentials-tile-fg);
+    }
+    .section-hero h2 {
+      min-inline-size: 0;
+      font: 700 clamp(1.5rem, 5vw, 2rem) Georgia, serif;
+      overflow-wrap: anywhere;
+    }
+    .section-hero img { inline-size: min(38%, 10rem); block-size: auto; }
+
     /* Phones: one section at a time, as its own screen, with a way back. */
     @media (max-width: 47.99rem) {
-      .focused .children, .focused details:not([open]) { display: none; }
-      .focused h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .focused .children, .focused details:not([open]), .focused details[open] > summary { display: none; }
+      .focused #essentials-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
+      .focused .tile-content { padding: 0; }
+      .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
     }
     @media (min-width: 48rem) {
-      .back { display: none; }
+      .back, .section-hero { display: none; }
       .layout { grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr); }
       .children { flex-direction: column; flex-wrap: nowrap; }
       .children button { flex: none; min-height: 64px; }
@@ -252,6 +280,22 @@ import { WhatHelpsSection } from './what-helps-section';
       .section-tiles summary { min-height: 6rem; gap: 1rem; padding-inline-start: 0.75rem; }
       .tile-art { order: -1; width: 7rem; height: 5rem; }
       .tile-name { font-size: 1.375rem; }
+    }
+    @media (min-width: 48rem) {
+      .section-tiles > details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
+      .section-tiles > details[open] > summary {
+        min-block-size: 7rem;
+        padding-inline: 1rem;
+        background: var(--essentials-tile-bg);
+        color: var(--essentials-tile-fg);
+      }
+      details[open] > summary .tile-name { font: 700 2rem Georgia, serif; }
+      details[open] > summary .tile-art {
+        order: 1;
+        inline-size: min(32%, 11rem);
+        block-size: 6rem;
+      }
+      .section-tiles > details[open] > .tile-content { padding: 0.75rem 0 0; }
     }
     @media (forced-colors: active) {
       .section-tiles > details, .banner { border: 1px solid CanvasText; }
@@ -333,7 +377,9 @@ export class ChildEssentialsPage {
           if (other.nativeElement !== tile) other.nativeElement.open = false;
         }
         this.openSection.set(section);
-        tile.scrollIntoView?.({ block: 'start' });
+        afterNextRender({ read: () => {
+          if (this.openSection() === section) tile.querySelector<HTMLElement>('.section-hero h2')?.focus();
+        } }, { injector: this.injector });
       }
     } else if (this.openSection() === section) {
       this.openSection.set(null);
@@ -342,7 +388,8 @@ export class ChildEssentialsPage {
 
   /** Back to all of the child's sections; focus returns to the one that was open. */
   protected closeSection(): void {
-    const open = this.disclosures().find((tile) => tile.nativeElement.open)?.nativeElement;
+    const section = this.openSection();
+    const open = this.disclosures().find((tile) => tile.nativeElement.dataset['section'] === section)?.nativeElement;
     this.openSection.set(null);
     if (!open) return;
     open.open = false;
