@@ -155,14 +155,34 @@ ul {
 }
 
 .upcoming__item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding-block: var(--space-3);
   border-bottom: 1px solid var(--color-divider);
 
   &:last-child {
     border-bottom: 0;
+  }
+}
+
+.upcoming__action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-1);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover .upcoming__title {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
   }
 }
 
@@ -206,12 +226,6 @@ ul {
 .upcoming__title {
   font-weight: 600;
   overflow-wrap: anywhere;
-}
-
-a.upcoming__title {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
 }
 
 .upcoming__when {

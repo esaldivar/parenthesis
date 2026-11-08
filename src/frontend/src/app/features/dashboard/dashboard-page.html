@@ -55,33 +55,40 @@
       <ul class="upcoming">
         @for (item of upcoming(); track item.key) {
           <li class="upcoming__item" [attr.data-category]="item.category" [attr.data-status]="item.status">
-            <span [appCalendarPalette]="item.palette" class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
-            <span class="upcoming__text">
-              @if (item.link) {
-                <a class="upcoming__title" [routerLink]="item.link">{{ item.title }}</a>
-              } @else {
+            @if (item.eventId; as eventId) {
+              <button #trigger class="upcoming__action" type="button" (click)="openEvent(eventId, trigger)">
+                <ng-container [ngTemplateOutlet]="row" />
+              </button>
+            } @else {
+              <a class="upcoming__action" [routerLink]="item.link" [queryParams]="item.params">
+                <ng-container [ngTemplateOutlet]="row" />
+              </a>
+            }
+            <ng-template #row>
+              <span [appCalendarPalette]="item.palette" class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
+              <span class="upcoming__text">
                 <span class="upcoming__title">{{ item.title }}</span>
-              }
-              <span class="upcoming__when">{{ item.when }}</span>
-              @if (item.people.length > 0) {
-                <span class="visually-hidden">, with {{ childNames(item.people.map(personRef)) }}</span>
-              }
-              @if (item.status !== 'confirmed' || item.note) {
-                <span class="upcoming__status">
-                  @if (item.status !== 'confirmed') {
-                    <app-status-label [status]="item.status" />
-                  }
-                  @if (item.note) {
-                    <app-status-label status="change-pending" />
-                  }
-                </span>
-              }
-            </span>
-            <span class="upcoming__people" aria-hidden="true">
-              @for (person of item.people; track person.name) {
-                <app-avatar [name]="person.name" [kind]="person.kind" [size]="32" />
-              }
-            </span>
+                <span class="upcoming__when">{{ item.when }}</span>
+                @if (item.people.length > 0) {
+                  <span class="visually-hidden">, with {{ childNames(item.people.map(personRef)) }}</span>
+                }
+                @if (item.status !== 'confirmed' || item.note) {
+                  <span class="upcoming__status">
+                    @if (item.status !== 'confirmed') {
+                      <app-status-label [status]="item.status" />
+                    }
+                    @if (item.note) {
+                      <app-status-label status="change-pending" />
+                    }
+                  </span>
+                }
+              </span>
+              <span class="upcoming__people" aria-hidden="true">
+                @for (person of item.people; track person.name) {
+                  <app-avatar [name]="person.name" [kind]="person.kind" [size]="32" />
+                }
+              </span>
+            </ng-template>
           </li>
         }
       </ul>

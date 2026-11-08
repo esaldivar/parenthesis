@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { CalendarPalette, CalendarPaletteKey } from '../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -31,7 +32,7 @@ import { DashboardWeek, PlainDate, ScheduleStatus, eventPalette } from './model'
 import { StatusLabel } from './status-label';
 import { CATEGORY_ICONS } from './timeline';
 import { InlineView, WeekCalendar, WeekState } from './week-calendar';
-import { addDays, dateMedium, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
+import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
 import { Toasts } from '../../shared/toast/toasts';
 
 /** The current time; replaced in tests. */
@@ -48,6 +49,8 @@ interface UpcomingItem {
   readonly status: ScheduleStatus;
   readonly note?: string;
   readonly link?: string;
+  readonly params?: Readonly<Record<string, string>>;
+  readonly eventId?: string;
 }
 
 /**
@@ -61,7 +64,7 @@ interface UpcomingItem {
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails],
+  imports: [NgTemplateOutlet, CalendarPalette, RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails],
   providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.scss',
@@ -135,6 +138,7 @@ export class DashboardPage {
       people: [],
       status: 'proposed',
       link: '/approvals',
+      params: { request: r.id },
     }));
     const parenting: UpcomingItem[] = groupParentingTime(data.parentingTime, { split: false })
       .filter((b) => b.status === 'confirmed' && b.end > nowLocal)
@@ -148,6 +152,9 @@ export class DashboardPage {
         people: [{ name: b.caregiver.displayName, kind: 'parent' as const }, ...b.children.map((c) => ({ name: c.name, kind: 'child' as const }))],
         status: b.status,
         note: b.changePending ? 'Change pending' : undefined,
+        eventId: b.items[0].eventId && b.items.every((entry) => entry.eventId === b.items[0].eventId) ? b.items[0].eventId : undefined,
+        link: '/calendar',
+        params: { date: datePart(b.start) },
       }));
     const events: (UpcomingItem & { sort: string })[] = data.events
       .filter((e) => e.date >= this.today())
@@ -164,6 +171,7 @@ export class DashboardPage {
           ...e.children.map((c) => ({ name: c.name, kind: 'child' as const })),
         ],
         status: e.status,
+        eventId: e.id,
       }));
     // Reminders and tasks due, in Upcoming only (owner decision, October 22, 2026); never on the week calendar.
     const notes: (UpcomingItem & { sort: string })[] = (data.notes ?? [])
@@ -182,6 +190,7 @@ export class DashboardPage {
         people: n.children.map((c) => ({ name: c.name, kind: 'child' as const })),
         status: 'confirmed',
         link: '/calendar',
+        params: { view: 'list', date: n.date, event: n.id },
       }));
     const dated: UpcomingItem[] = [...events, ...notes].sort((a, b) => a.sort.localeCompare(b.sort));
     return [...reviews, ...parenting, ...dated].slice(0, 5);
@@ -254,13 +263,13 @@ export class DashboardPage {
    * Opens an event's details over the home page (#213), as the Calendar page does: the same sheet, permissions and
    * actions, loaded fresh so it's never stale. Opening it changes nothing. Closing it returns focus to the block.
    */
-  protected async openEvent(eventId: string): Promise<void> {
+  protected async openEvent(eventId: string, trigger?: HTMLElement): Promise<void> {
     const familyId = this.auth.currentFamily()?.id;
     if (!familyId) {
       return;
     }
     const attempt = ++this.opening;
-    this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.opener = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     try {
       const [event, family, children] = await Promise.all([
         this.api.calendarEvent(familyId, eventId),
