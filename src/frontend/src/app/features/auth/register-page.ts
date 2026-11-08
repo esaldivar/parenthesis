@@ -7,6 +7,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { PendingInvitation } from '../../core/invitations/pending-invitation';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe } from '../../core/i18n/translations';
 import { FORM_STYLES } from './form-styles';
 
@@ -106,6 +107,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 })
 export class RegisterPage implements OnInit {
   private readonly api = inject(Api);
+  private readonly locale = inject(LocaleService);
   private readonly router = inject(Router);
   private readonly pending = inject(PendingInvitation);
 
@@ -148,7 +150,7 @@ export class RegisterPage implements OnInit {
     this.serverErrors.set({});
     const { displayName, email, password } = this.form.getRawValue();
     try {
-      await this.api.register({ displayName: displayName.trim(), email: email.trim(), password });
+      await this.api.register({ displayName: displayName.trim(), email: email.trim(), password, language: this.locale.locale() });
       // The email travels in navigation state, not the URL, so it stays out of history and logs.
       await this.router.navigateByUrl('/check-email', { state: { email: email.trim() } });
     } catch (error) {
