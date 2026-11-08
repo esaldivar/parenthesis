@@ -74,6 +74,9 @@ export const RELATIONSHIPS = [
               <label>Phone <input type="tel" formControlName="phone" maxlength="32" required /></label>
               <label>Address (optional) <input formControlName="address" maxlength="300" /></label>
               <label><input type="checkbox" formControlName="callFirst" /> Call first</label>
+              @if (editing() === -1 && otherChildren().length) {
+                <label><input type="checkbox" formControlName="addToAll" /> Add to all children</label>
+              }
               <div class="actions">
                 <button type="submit" [disabled]="form.invalid">Save contact</button>
                 <button type="button" (click)="editing.set(null)">Cancel</button>
@@ -112,6 +115,7 @@ export class EmergencyContactsSection {
     phone: new FormControl('', { nonNullable: true, validators: Validators.required }),
     address: new FormControl('', { nonNullable: true }),
     callFirst: new FormControl(false, { nonNullable: true }),
+    addToAll: new FormControl(false, { nonNullable: true }),
   }, {
     // Other needs the parent's own description.
     validators: (group) => group.get('relationshipKind')?.value === 'Other' && !group.get('relationship')?.value.trim()
@@ -140,6 +144,7 @@ export class EmergencyContactsSection {
       relationshipKind: known ?? (contact ? this.other : ''),
       relationship: known ? '' : contact?.relationship ?? '',
       phone: contact?.phone ?? '', address: contact?.address ?? '', callFirst: contact?.callFirst ?? false,
+      addToAll: false,
     });
     this.error.set('');
     this.notice.set('');
@@ -151,14 +156,58 @@ export class EmergencyContactsSection {
     const saved = this.view();
     const index = this.editing();
     if (!saved || index === null || this.form.invalid || this.busy()) return;
-    const { relationshipKind, ...raw } = this.form.getRawValue();
+    const { relationshipKind, addToAll, ...raw } = this.form.getRawValue();
     const relationship = relationshipKind === this.other ? raw.relationship.trim() : relationshipKind;
     const contact = { ...raw, relationship, id: saved.contacts[index]?.id, address: raw.address.trim() || null };
+    if (index === -1 && addToAll && this.otherChildren().length) {
+      await this.addForAll(contact);
+      return;
+    }
     const contacts = saved.contacts.map((item, position) =>
       position === index ? contact : contact.callFirst ? { ...item, callFirst: false } : item,
     );
     if (index === -1) contacts.push(contact);
     if (await this.write(contacts)) this.editing.set(null);
+  }
+
+  private async addForAll(contact: EmergencyContact): Promise<void> {
+    const familyId = this.familyId();
+    const currentId = this.childId();
+    const siblings = this.otherChildren();
+    this.busy.set(true);
+    this.error.set('');
+    this.notice.set('');
+    try {
+      const current = await this.addIfMissing(familyId, currentId, contact);
+      this.view.set(current);
+      const results = await Promise.allSettled(siblings.map(child =>
+        this.addIfMissing(familyId, child.id, { ...contact, callFirst: false }),
+      ));
+      const failed = siblings.filter((_, index) => results[index].status === 'rejected');
+      if (failed.length) {
+        this.error.set(`Couldn’t save for ${failed.map(child => child.firstName).join(', ')}. Retry to add the missing contact.`);
+        return;
+      }
+      this.notice.set('Emergency contact saved for all children.');
+      this.editing.set(null);
+    } catch (error) {
+      this.reportSaveError(error);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private async addIfMissing(familyId: string, childId: string, contact: EmergencyContact): Promise<EmergencyContactsView> {
+    const target = await this.api.emergencyContacts(familyId, childId);
+    const name = contact.name.trim().toLowerCase();
+    const phone = this.phoneLink(contact.phone);
+    if (target.contacts.some(item => item.name.trim().toLowerCase() === name && this.phoneLink(item.phone) === phone)) {
+      return target;
+    }
+    const contacts = contact.callFirst ? target.contacts.map(item => ({ ...item, callFirst: false })) : target.contacts;
+    return this.api.saveEmergencyContacts(familyId, childId, {
+      version: target.version, contacts: [...contacts, { ...contact, id: null }],
+    });
   }
 
   protected async remove(index: number): Promise<void> {

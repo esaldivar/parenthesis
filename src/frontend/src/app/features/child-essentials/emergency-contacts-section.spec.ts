@@ -6,12 +6,12 @@ import { EmergencyContactsSection } from './emergency-contacts-section';
 describe('Emergency Contacts', () => {
   const url = '/api/families/family-1/children/child-1/essentials/emergency-contacts';
 
-  async function render(contacts: unknown[] = []) {
+  async function render(contacts: unknown[] = [], children: unknown[] = []) {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(EmergencyContactsSection);
     fixture.componentRef.setInput('familyId', 'family-1');
     fixture.componentRef.setInput('childId', 'child-1');
-    fixture.componentRef.setInput('children', []);
+    fixture.componentRef.setInput('children', children);
     const http = TestBed.inject(HttpTestingController);
     const host = fixture.nativeElement as HTMLElement;
     fixture.detectChanges();
@@ -28,7 +28,7 @@ describe('Emergency Contacts', () => {
       field.dispatchEvent(new Event(event, { bubbles: true }));
       fixture.detectChanges();
     };
-    return { http, host, click, type };
+    return { http, host, click, type, fixture };
   }
 
   it('offers common relationships to choose from instead of typing one', async () => {
@@ -67,6 +67,49 @@ describe('Emergency Contacts', () => {
 
     const save = http.expectOne({ method: 'PUT', url });
     expect(save.request.body.contacts).toEqual([expect.objectContaining({ id: 'c1', relationship: 'Soccer coach' })]);
+    http.verify();
+  });
+  it('adds to all children, preserves Call first, and retries only missing contacts', async () => {
+    const { http, host, click, type, fixture } = await render([], [{ id: 'child-2', firstName: 'Taylor' }]);
+    const siblingUrl = url.replace('child-1', 'child-2');
+    const existing = { id: 'c2', name: 'Morgan Lee', relationship: 'Aunt', phone: '512-555-0101', address: null, callFirst: true };
+    const added = { id: 'c1', name: 'Jordan Lee', relationship: 'Grandparent', phone: '512-555-0100', address: null, callFirst: true };
+    click('Add emergency contact');
+    type('input[formcontrolname="name"]', added.name);
+    type('input[formcontrolname="phone"]', added.phone);
+    type('select[formcontrolname="relationshipKind"]', added.relationship, 'change');
+    host.querySelector<HTMLInputElement>('input[formcontrolname="callFirst"]')!.click();
+    host.querySelector<HTMLInputElement>('input[formcontrolname="addToAll"]')!.click();
+    click('Save contact');
+    http.expectOne({ method: 'GET', url }).flush({ version: 3, contacts: [] });
+    await Promise.resolve();
+    const current = http.expectOne({ method: 'PUT', url });
+    expect(current.request.body.contacts).toEqual([{ ...added, id: null }]);
+    current.flush({ version: 4, contacts: [added] });
+    await Promise.resolve();
+    await vi.waitFor(() => http.expectOne({ method: 'GET', url: siblingUrl }).flush({ version: 5, contacts: [existing] }));
+    await Promise.resolve();
+    const failed = http.expectOne({ method: 'PUT', url: siblingUrl });
+    expect(failed.request.body.contacts).toEqual([existing, { ...added, id: null, callFirst: false }]);
+    failed.flush({}, { status: 500, statusText: 'Failed' });
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(host.querySelector('[role="alert"]')?.textContent).toContain('Taylor');
+    });
+
+    click('Save contact');
+    http.expectOne({ method: 'GET', url }).flush({ version: 4, contacts: [added] });
+    await Promise.resolve();
+    http.expectNone({ method: 'PUT', url });
+    await vi.waitFor(() => http.expectOne({ method: 'GET', url: siblingUrl }).flush({ version: 5, contacts: [existing] }));
+    await Promise.resolve();
+    const retried = http.expectOne({ method: 'PUT', url: siblingUrl });
+    expect(retried.request.body.contacts).toEqual([existing, { ...added, id: null, callFirst: false }]);
+    retried.flush({ version: 6, contacts: [existing, { ...added, callFirst: false }] });
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(host.textContent).toContain('Emergency contact saved for all children.');
+    });
     http.verify();
   });
 });

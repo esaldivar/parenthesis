@@ -33,6 +33,8 @@ that points back here.
   - [x] Verify the allergy PDF renderer with one child, multiple children, empty allergy states and long notes.
     Correct fractional-height pagination; keep API scope and page-count regression checks in CI.
   - [x] Routines draft-preservation and allergy PDF regression checks passed in CI (#465).
+  - [ ] Verify adding an emergency contact to all children on desktop and mobile, including partial saves,
+    retry and preserving each child’s Call first selection (#499).
   - [x] #128 in-page update flow for School, Allergies & Food, Clothing & Shoes and What Helps: navigation dot,
     first-visit banners, child and section dots, row highlights (November 7, 2026).
   - [x] #128 update notices for Routines (shared rows, and a dot on the co-parent's tab until opened), Emergency
