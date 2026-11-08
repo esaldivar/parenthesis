@@ -11,7 +11,7 @@ import { Logo } from '../../shared/brand/logo';
 @Component({
   selector: 'app-auth-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Logo],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Logo, TranslatePipe],
   template: `
     <a class="skip-link" href="#auth-main">{{ 'auth.skip' | tr }}</a>
     <header class="auth-header">
