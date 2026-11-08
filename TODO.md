@@ -10,6 +10,7 @@ that points back here.
 
 ## Big projects
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
+- [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523).
 - [ ] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514).
 - [ ] Verify Home Upcoming row destinations and keyboard focus on the development site (#517).
 - [ ] **Unified Notifications (#178, M4).** First slice: parent inbox, real unseen dot, seen-item expiry and notices
