@@ -53,6 +53,7 @@ that points back here.
   - [ ] Verify caregiver phone formatting and stars beside names on desktop and mobile in both themes,
     including screen-reader rating announcements (#502, #503).
 - [ ] **Shared Caregivers (#130, M4).** Verify caregiver details, duplicate-number confirmation, and independent ratings on mobile and desktop in both themes.
+  - [ ] Verify adding to all children (#500), including partial saves, retries and separate ratings.
 - [ ] **Privacy audit and Privacy Notice (#416, M3, October 31, 2026).** Inventory and findings in
   `docs/privacy/`; public notice at `/privacy`, linked from the sign-in-area footer, parent Settings and kids'
   Settings. Owner decisions: operator Eric Saldivar (individual), US families only, contact

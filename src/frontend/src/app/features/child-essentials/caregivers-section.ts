@@ -1,9 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OnScreen, sectionUpdates } from './essentials-updates';
-import { Api, Caregiver, CaregiverList } from '../../core/api/api';
+import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../core/api/api';
 
 @Component({
   selector: 'app-caregivers-section',
@@ -85,6 +85,9 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
               <label>Town or city (optional) <input formControlName="city" maxlength="100" /></label>
               <label>Hourly rate in USD (optional) <input type="number" min="0" max="10000" step="0.01" formControlName="hourlyRate" /></label>
               <label><input type="checkbox" formControlName="schoolPickup" /> School pickup</label>
+              @if (!editId() && otherChildren().length) {
+                <label><input type="checkbox" formControlName="addToAll" /> Add to all children</label>
+              }
               @if (duplicate()) {
                 <p role="alert">{{ duplicate() }} already uses that number.</p>
                 <button type="button" [disabled]="form.invalid" (click)="save(true)">Continue for a different person</button>
@@ -107,6 +110,8 @@ import { Api, Caregiver, CaregiverList } from '../../core/api/api';
 export class CaregiversSection {
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
+  readonly children = input<readonly Child[]>([]);
+  protected readonly otherChildren = computed(() => this.children().filter(child => child.id !== this.childId()));
   protected readonly marks = sectionUpdates('caregivers', this.childId);
   private readonly api = inject(Api);
   protected readonly list = signal<CaregiverList | null>(null);
@@ -124,6 +129,7 @@ export class CaregiversSection {
     city: new FormControl('', { nonNullable: true }),
     hourlyRate: new FormControl<number | null>(null, [Validators.min(0), Validators.max(10000)]),
     schoolPickup: new FormControl(false, { nonNullable: true }),
+    addToAll: new FormControl(false, { nonNullable: true }),
   });
 
   constructor() {
@@ -144,7 +150,7 @@ export class CaregiversSection {
     const details = caregiver?.details;
     this.form.reset({
       name: details?.name ?? '', phone: details?.phone ?? '', city: details?.city ?? '',
-      hourlyRate: details?.hourlyRate ?? null, schoolPickup: details?.schoolPickup ?? false,
+      hourlyRate: details?.hourlyRate ?? null, schoolPickup: details?.schoolPickup ?? false, addToAll: false,
     });
     this.error.set('');
     this.editId.set(caregiver?.id ?? null);
@@ -153,11 +159,58 @@ export class CaregiversSection {
 
   protected async save(allowDuplicate = false): Promise<void> {
     const current = this.list();
-    if (!current || this.form.invalid) return;
-    const details = this.form.getRawValue();
+    if (!current || this.form.invalid || this.busy()) return;
+    const { addToAll, ...details } = this.form.getRawValue();
+    if (!this.editId() && addToAll && this.otherChildren().length) {
+      await this.addForAll(details, allowDuplicate);
+      return;
+    }
     if (await this.change(() => this.api.saveCaregiver(this.familyId(), this.childId(), this.editId(), {
       version: current.version, details, allowDuplicate,
     }))) this.editing.set(false);
+  }
+
+  private async addForAll(details: CaregiverDetails, allowDuplicate: boolean): Promise<void> {
+    const familyId = this.familyId();
+    const currentId = this.childId();
+    const targets = [
+      this.children().find(child => child.id === currentId) ?? { id: currentId, firstName: 'this child' },
+      ...this.otherChildren(),
+    ];
+    const name = details.name.trim().toLowerCase();
+    const phone = details.phone.replace(/\D/g, '');
+    this.busy.set(true);
+    this.error.set('');
+    this.notice.set('');
+    this.duplicate.set('');
+    try {
+      const results = await Promise.allSettled(targets.map(async child => {
+        const list = await this.api.caregivers(familyId, child.id);
+        const exists = list.caregivers.some(item =>
+          item.details.name.trim().toLowerCase() === name && item.details.phone.replace(/\D/g, '') === phone,
+        );
+        if (!exists) {
+          await this.api.saveCaregiver(familyId, child.id, null, { version: list.version, details, allowDuplicate });
+        }
+      }));
+      const failed = targets.filter((_, index) => results[index].status === 'rejected');
+      await this.load();
+      if (failed.length) {
+        for (const result of results) {
+          if (result.status === 'rejected' && result.reason instanceof HttpErrorResponse &&
+              result.reason.status === 409 && typeof result.reason.error?.duplicateName === 'string') {
+            this.duplicate.set(result.reason.error.duplicateName);
+            break;
+          }
+        }
+        this.error.set(`Couldn’t save for ${failed.map(child => child.firstName).join(', ')}. Retry to add the missing caregiver.`);
+        return;
+      }
+      this.notice.set('Shared caregiver saved for all children.');
+      this.editing.set(false);
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected async remove(id: string, version: number): Promise<void> {

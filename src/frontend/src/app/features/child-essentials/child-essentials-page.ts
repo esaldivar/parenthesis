@@ -105,7 +105,7 @@ import { WhatHelpsSection } from './what-helps-section';
                         @case ('routines') { <app-routines-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('clothing') { <app-clothing-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('whatHelps') { <app-what-helps-section [familyId]="family" [childId]="profile.id" /> }
-                        @case ('caregivers') { <app-caregivers-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('caregivers') { <app-caregivers-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
                         @case ('emergencyContacts') { <app-emergency-contacts-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
                       }
                     </div>
