@@ -81,7 +81,7 @@
                 <span class="upcoming__title">{{ item.title }}</span>
                 <span class="upcoming__when">{{ item.when }}</span>
                 @if (item.people.length > 0) {
-                  <span class="visually-hidden">, with {{ childNames(item.people.map(personRef)) }}</span>
+                  <span class="visually-hidden">, with {{ childNames(item.people) }}</span>
                 }
                 @if (item.status !== 'confirmed' || item.note) {
                   <span class="upcoming__status">
@@ -95,8 +95,8 @@
                 }
               </span>
               <span class="upcoming__people" aria-hidden="true">
-                @for (person of item.people; track person.name) {
-                  <app-avatar [name]="person.name" [kind]="person.kind" [size]="32" />
+                @for (person of item.people; track person.kind + ':' + person.id) {
+                  <app-avatar [name]="person.name" [kind]="person.kind" [personId]="person.id" [size]="32" />
                 }
               </span>
             </ng-template>
