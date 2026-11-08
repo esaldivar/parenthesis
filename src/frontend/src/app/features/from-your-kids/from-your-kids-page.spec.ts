@@ -66,4 +66,24 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     fixture.detectChanges();
     expect(host.querySelector('.child-tabs')).not.toBeNull();
   });
+  it('does not expose child tabs from a previous family after switching families', async () => {
+    let resolveFirst!: (value: Child[]) => void;
+    const first = new Promise<Child[]>(resolve => { resolveFirst = resolve; });
+    load.mockImplementation((familyId: string) => familyId === 'family-1' ? first : Promise.resolve([
+      { ...children[0], id: 'new-family-child', firstName: 'New family child' },
+    ]));
+    const fixture = TestBed.createComponent(FromYourKidsPage);
+    fixture.detectChanges();
+    family.set({ id: 'family-2', role: 'Parent' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    resolveFirst(children);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const tabs = (fixture.nativeElement as HTMLElement).querySelector('.child-tabs')?.textContent ?? '';
+    expect(tabs).toContain('New family child');
+    expect(tabs).not.toContain('Aurora');
+  });
+
 });
