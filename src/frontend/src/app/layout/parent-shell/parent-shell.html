@@ -1,19 +1,19 @@
-<a class="skip-link" href="#main-content">Skip to main content</a>
+<a class="skip-link" href="#main-content">{{ 'auth.skip' | tr }}</a>
 
 <mat-menu #accountMenu="matMenu" xPosition="before">
   <a mat-menu-item routerLink="/settings">
     <app-icon name="settings" [size]="20" />
-    <span>Settings</span>
+    <span>{{ 'settings.title' | tr }}</span>
   </a>
   <!-- On this parent's shared device, Sign out goes back to "Who's using Parenthesis?" and keeps the device (#153);
        stopping sharing is in Settings. Switch profile is here and in Settings, not in the top bar (#372). -->
   @if (sharedDevice()) {
     <button mat-menu-item type="button" (click)="switchProfile()">
-      <span>Switch profile</span>
+      <span>{{ 'nav.switchProfile' | tr }}</span>
     </button>
   }
   <button mat-menu-item type="button" (click)="signOut()">
-    <span>Sign out</span>
+    <span>{{ 'nav.signOut' | tr }}</span>
   </button>
 </mat-menu>
 
@@ -23,7 +23,7 @@
       <app-logo [decorative]="true" />
     </a>
 
-    <nav class="sidenav" aria-label="Main">
+    <nav class="sidenav" [attr.aria-label]="'nav.main' | tr">
       <ul>
         @for (item of nav; track item.path) {
           <li>
@@ -34,18 +34,18 @@
               ariaCurrentWhenActive="page"
             >
               <app-icon [name]="item.icon" [size]="28" />
-              <span>{{ item.label }}</span>
+              <span>{{ navLabel(item.path, item.label) }}</span>
               @if (item.path === '/messages' && chat.hasUnread()) {
                 <span class="dot" aria-hidden="true"></span>
-                <span class="visually-hidden">, unread messages</span>
+                <span class="visually-hidden">, {{ 'nav.unread' | tr }}</span>
               }
               @if (item.path === '/child-essentials' && essentials.newUpdates()) {
                 <span class="dot" aria-hidden="true"></span>
-                <span class="visually-hidden">, updated by your co-parent</span>
+                <span class="visually-hidden">, {{ 'nav.updated' | tr }}</span>
               }
               @if (item.path === '/shared-records' && records.needsYou()) {
                 <span class="dot" aria-hidden="true"></span>
-                <span class="visually-hidden">, waiting on your response</span>
+                <span class="visually-hidden">, {{ 'nav.waiting' | tr }}</span>
               }
               @if (unread(item.path); as count) {
                 <span class="dot" aria-hidden="true"></span>
@@ -59,7 +59,7 @@
 
     <div class="sidebar__decor">
       <app-leaves />
-      <p class="tagline">Different homes.<br />Same love.</p>
+      <p class="tagline">{{ 'nav.tagline' | tr }}</p>
     </div>
 
     <!-- No profile button here: the account menu is in the top bar only (user decision, October 17, 2026). -->
@@ -75,7 +75,7 @@
         routerLink="/notifications"
         routerLinkActive="is-active"
         ariaCurrentWhenActive="page"
-        [attr.aria-label]="notifications.unseen() ? 'Notifications, new activity' : 'Notifications'"
+        [attr.aria-label]="notifications.unseen() ? ('nav.newActivity' | tr) : ('nav.notifications' | tr)"
       >
         <app-icon name="bell" [size]="26" />
         @if (notifications.unseen()) {
@@ -85,7 +85,7 @@
       <button class="account" type="button" [matMenuTriggerFor]="accountMenu">
         <app-avatar [name]="firstName()" kind="parent" [size]="36" [src]="photos.own()" />
         <span class="account__name">{{ firstName() }}</span>
-        <span class="visually-hidden">, account menu</span>
+        <span class="visually-hidden">, {{ 'nav.accountMenu' | tr }}</span>
         <app-icon name="chevron-down" [size]="20" />
       </button>
     </div>
@@ -95,7 +95,7 @@
     <router-outlet />
   </main>
 
-  <nav class="bottomnav" appBottomNav aria-label="Main">
+  <nav class="bottomnav" appBottomNav [attr.aria-label]="'nav.main' | tr">
     <ul>
       @for (item of mobileNav; track item.path) {
         <li>
@@ -114,15 +114,15 @@
                 <span class="dot dot--icon" aria-hidden="true"></span>
               }
             </span>
-            <span>{{ item.label }}</span>
+            <span>{{ mobileLabel(item.path, item.label) }}</span>
             @if (item.path === '/messages' && chat.hasUnread()) {
-              <span class="visually-hidden">, unread messages</span>
+              <span class="visually-hidden">, {{ 'nav.unread' | tr }}</span>
             }
             @if (item.path === '/more' && essentials.newUpdates()) {
-              <span class="visually-hidden">, Child Essentials updated</span>
+              <span class="visually-hidden">, {{ 'nav.essentials' | tr }}</span>
             }
             @if (item.path === '/more' && records.needsYou()) {
-              <span class="visually-hidden">, Shared records waiting on your response</span>
+              <span class="visually-hidden">, {{ 'nav.records' | tr }}</span>
             }
           </a>
         </li>
