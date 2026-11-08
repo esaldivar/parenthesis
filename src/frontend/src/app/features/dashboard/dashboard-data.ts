@@ -86,7 +86,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
         ...reminders.map((r) => {
           const local = toFamilyLocal(r.startsAt, zone);
           return {
-            id: `reminder-${r.id}-${r.startsAt}`,
+            id: `reminder:${r.id}:${r.startsAt}`,
             kind: 'reminder' as const,
             title: r.title,
             date: local.slice(0, 10),
@@ -96,7 +96,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
         }),
         ...tasks
           .filter((t) => t.completedAt === null)
-          .map((t) => ({ id: `task-${t.id}`, kind: 'task' as const, title: t.title, date: t.dueDate, children: kids([t.childId]) })),
+          .map((t) => ({ id: `task:${t.id}`, kind: 'task' as const, title: t.title, date: t.dueDate, children: kids([t.childId]) })),
       ],
     };
   }

@@ -178,6 +178,9 @@ describe('DashboardPage (approved design)', () => {
         'Soccer practice',
         'Science fair poster',
       ]);
+      expect(items.map((item) => item.querySelectorAll('a, button').length)).toEqual([1, 1, 1, 1]);
+      expect(items[1].querySelector('a')?.getAttribute('href')).toBe('/calendar?view=list&date=2026-10-14&event=n1');
+      expect(items[3].querySelector('a')?.getAttribute('href')).toBe('/calendar?view=list&date=2026-10-16&event=n2');
       expect(text(items[1].querySelector('.upcoming__when'))).toBe('Reminder · Wed, Oct 14 · 8:00 AM');
       expect(text(items[3].querySelector('.upcoming__when'))).toBe('Task · due Friday, October 16');
       // Reminders and tasks stay off the week calendar (owner decision).
@@ -446,6 +449,18 @@ describe('DashboardPage (approved design)', () => {
       await settle(fixture);
       expect(dialog()).toBeNull();
       await vi.waitFor(() => expect(document.activeElement).toBe(swim));
+    });
+
+    it('opens details from anywhere in the Upcoming event row and returns focus to the row', async () => {
+      const { fixture, el } = await render({ live: LIVE });
+      const row = el.querySelector<HTMLButtonElement>('.upcoming__item button')!;
+      row.querySelector<HTMLElement>('.upcoming__when')!.click();
+      await answer(fixture, SWIM);
+
+      expect(text(dialog()!.querySelector('h2'))).toBe('Swim lesson');
+      dialog()?.querySelector<HTMLButtonElement>('button[aria-label="Close details"]')?.click();
+      await settle(fixture);
+      await vi.waitFor(() => expect(document.activeElement).toBe(row));
     });
 
     it('opens parenting time from its block in the all-day row, showing it’s still waiting for approval', async () => {
@@ -768,7 +783,7 @@ describe('DashboardPage (approved design)', () => {
       const first = el.querySelector('.upcoming__item')!;
 
       expect(text(first)).toContain('needs your review');
-      expect(first.querySelector('a')!.getAttribute('href')).toBe('/approvals');
+      expect(first.querySelector('a')!.getAttribute('href')).toBe('/approvals?request=r1');
       expect([...el.querySelectorAll('.upcoming__title')].map(text)).toContain('Time with Dad');
     });
 
