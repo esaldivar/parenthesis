@@ -9,6 +9,7 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514).
 - [ ] Verify Home Upcoming row destinations and keyboard focus on the development site (#517).
 - [ ] **Unified Notifications (#178, M4).** First slice: parent inbox, real unseen dot, seen-item expiry and notices
   for directly confirmed calendar event changes. Finish approval-gated and series changes, authorized Family Memories
