@@ -222,8 +222,11 @@ internal static class MedicalProvidersEndpoints
 
         return provider with
         {
-            Name = name, Specialty = provider.Type == "Other" ? specialty : null,
-            Practice = practice, Phone = phone, Address = address,
+            Name = name,
+            Specialty = provider.Type == "Other" ? specialty : null,
+            Practice = practice,
+            Phone = phone,
+            Address = address,
         };
     }
 

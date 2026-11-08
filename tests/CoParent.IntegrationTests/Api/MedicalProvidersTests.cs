@@ -35,8 +35,11 @@ public sealed class MedicalProvidersTests(ApiFactory api) : IAsyncLifetime
         var targets = new[] { first.ChildId, second.ChildId };
         var provider = new
         {
-            id = Guid.NewGuid(), type = "Doctor", name = "Dr. Reed",
-            phone = "512-555-0142", address = "120 Example Lane",
+            id = Guid.NewGuid(),
+            type = "Doctor",
+            name = "Dr. Reed",
+            phone = "512-555-0142",
+            address = "120 Example Lane",
         };
 
         using var missingPhone = await parent.PostAsync(path,
