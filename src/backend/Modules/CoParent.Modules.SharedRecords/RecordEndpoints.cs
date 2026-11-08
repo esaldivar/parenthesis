@@ -57,11 +57,15 @@ internal static partial class RecordEndpoints
             RespondAsync(entryId, EntryStatus.Disputed, services, ct));
         records.MapGet("/entries/{entryId:guid}/attachment", AttachmentAsync);
         records.MapGet("/attention", AttentionAsync);
+        // Whether reports can be sent at all, so the form can say so before a parent picks a file.
+        records.MapGet("/attachment-storage", (IAttachmentStore store) => TypedResults.Ok(new AttachmentStorage(store.IsConfigured)));
     }
 
     internal sealed record Services(
         SharedRecordsDbContext Db, ITenantContext Tenant, IFamilyRoster Roster, IAttachmentStore Store, TimeProvider Clock,
         ILoggerFactory Loggers);
+
+    internal sealed record AttachmentStorage(bool Ready);
 
     internal sealed record SupportProposal(string? Title, string? Currency, bool? YouPay, long? ReferenceMinor);
 
@@ -156,6 +160,7 @@ internal static partial class RecordEndpoints
     private static async Task<IResult> ReportContributionAsync(
         Guid fundId, [AsParameters] Report report, HttpRequest request, [AsParameters] Services services, CancellationToken ct)
     {
+        var content = await ReadAsync(request, ct);
         var me = services.Tenant.MembershipId;
         var fund = await services.Db.Funds.AsNoTracking()
             .SingleOrDefaultAsync(f => f.Id == fundId && (f.ProposerId == me || f.CoParentId == me), ct);
@@ -170,12 +175,13 @@ internal static partial class RecordEndpoints
         }
 
         var other = fund.ProposerId == me ? fund.CoParentId : fund.ProposerId;
-        return await StoreReportAsync(RecordKind.Fund, fund.Id, other, report, report.PaidTo, request, services, ct);
+        return await StoreReportAsync(RecordKind.Fund, fund.Id, other, report, report.PaidTo, content, services, ct);
     }
 
     private static async Task<IResult> ReportPaymentAsync(
         Guid recordId, [AsParameters] Report report, HttpRequest request, [AsParameters] Services services, CancellationToken ct)
     {
+        var content = await ReadAsync(request, ct);
         var me = services.Tenant.MembershipId;
         var record = await services.Db.SupportRecords.AsNoTracking()
             .SingleOrDefaultAsync(r => r.Id == recordId && (r.PayerId == me || r.RecipientId == me), ct);
@@ -189,15 +195,16 @@ internal static partial class RecordEndpoints
             return Problem(StatusCodes.Status403Forbidden, "not-payer", "Only the paying parent reports payments on this record.");
         }
 
-        return await StoreReportAsync(RecordKind.Support, record.Id, record.RecipientId, report, PaidTo.CoParent, request, services, ct);
+        return await StoreReportAsync(RecordKind.Support, record.Id, record.RecipientId, report, PaidTo.CoParent, content, services, ct);
     }
 
     /// <summary>
     /// Saves a report with its attachment. The file is checked and stored first, then the report is recorded, so a
     /// failed upload records nothing. The same request id from the same parent records the report once.
+    /// <paramref name="content"/> is the whole upload, already read, or null when it was over the limit.
     /// </summary>
     private static async Task<IResult> StoreReportAsync(
-        RecordKind kind, Guid recordId, Guid responderId, Report report, PaidTo? paidTo, HttpRequest request,
+        RecordKind kind, Guid recordId, Guid responderId, Report report, PaidTo? paidTo, byte[]? content,
         Services services, CancellationToken ct)
     {
         var me = services.Tenant.MembershipId;
@@ -225,7 +232,6 @@ internal static partial class RecordEndpoints
             return Problem(StatusCodes.Status503ServiceUnavailable, "storage-off", "Attachments can't be saved yet. Try again later.");
         }
 
-        var content = await ReadAsync(request, ct);
         if (content is null)
         {
             return Problem(StatusCodes.Status413PayloadTooLarge, "too-large", "Attach a file of 10 MB or less.");
@@ -333,27 +339,28 @@ internal static partial class RecordEndpoints
         return TypedResults.Ok(new { Count = reports + proposals });
     }
 
-    private static async Task<byte[]?> ReadAsync(HttpRequest request, CancellationToken ct)
+    /// <summary>
+    /// Reads the whole upload before any answer is sent, or null when it's over 10 MB. Answering while a browser is
+    /// still sending makes the hosting ingress drop the connection, so the parent would see "couldn't reach Parenthesis"
+    /// instead of the real reason. An oversized upload is still read to the end (Kestrel's own body limit caps it) but
+    /// not kept.
+    /// </summary>
+    internal static async Task<byte[]?> ReadAsync(HttpRequest request, CancellationToken ct)
     {
-        if (request.ContentLength > Entry.MaxAttachmentBytes)
-        {
-            return null;
-        }
-
         using var buffer = new MemoryStream();
         var chunk = new byte[81920];
+        var tooLarge = request.ContentLength > Entry.MaxAttachmentBytes;
         int read;
         while ((read = await request.Body.ReadAsync(chunk, ct)) > 0)
         {
-            if (buffer.Length + read > Entry.MaxAttachmentBytes)
+            tooLarge |= buffer.Length + read > Entry.MaxAttachmentBytes;
+            if (!tooLarge)
             {
-                return null;
+                await buffer.WriteAsync(chunk.AsMemory(0, read), ct);
             }
-
-            await buffer.WriteAsync(chunk.AsMemory(0, read), ct);
         }
 
-        return buffer.ToArray();
+        return tooLarge ? null : buffer.ToArray();
     }
 
     private static ProblemHttpResult Problem(int status, string reason, string title) =>

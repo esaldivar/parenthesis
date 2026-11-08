@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using CoParent.Modules.SharedRecords.Contracts;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -135,15 +136,58 @@ public sealed class SharedRecordReportTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(0, await cleanup.CleanUpAsync(TestContext.Current.CancellationToken));
     }
 
-    private async Task<(ApiSession Dad, ApiSession Mom, string Root)> FamilyAsync()
+    [Fact]
+    public async Task Refusals_wait_for_the_whole_upload_so_browsers_see_the_reason()
     {
-        var dad = await ApiSession.SignedInAsync(api);
+        // Answering while a browser is still sending makes the hosting ingress drop the connection, and the parent
+        // sees "couldn't reach Parenthesis" instead of the reason. Every refusal reads the upload to the end first.
+        var (dad, mom, root) = await FamilyAsync();
+        using var _ = dad;
+        using var __ = mom;
+        Assert.True(await StorageReadyAsync(dad, root));
+        var fund = await ConcertFundAsync(dad, root);
+        var photo = new byte[3 * 1024 * 1024];
+
+        var notOpen = await ReportStreamAsync(dad, $"{root}/shared-funds/{fund.GetProperty("id").GetGuid()}/contributions", photo);
+        Assert.Equal(HttpStatusCode.Conflict, notOpen.Response.StatusCode);
+        Assert.Equal(photo.Length, notOpen.Read);
+
+        var oversized = new byte[11 * 1024 * 1024];
+        var unknown = await ReportStreamAsync(dad, $"{root}/shared-funds/{Guid.NewGuid()}/contributions", oversized);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.Response.StatusCode);
+        Assert.Equal(oversized.Length, unknown.Read);
+    }
+
+    [Fact]
+    public async Task Without_attachment_storage_the_form_is_told_up_front_and_a_report_gets_the_reason()
+    {
+        await using var noStorage = api.WithWebHostBuilder(b => b.UseSetting("SharedRecords:ConnectionString", ""));
+        var (dad, mom, root) = await FamilyAsync(noStorage);
+        using var _ = dad;
+        using var __ = mom;
+        Assert.False(await StorageReadyAsync(dad, root));
+        var fund = await ConcertFundAsync(dad, root);
+        Assert.Equal(HttpStatusCode.OK, (await mom.PostAsync($"{root}/approvals/{fund.GetProperty("approvalId").GetGuid()}/approve")).StatusCode);
+
+        var photo = new byte[3 * 1024 * 1024];
+        var report = await ReportStreamAsync(dad, $"{root}/shared-funds/{fund.GetProperty("id").GetGuid()}/contributions", photo);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, report.Response.StatusCode);
+        Assert.Equal(photo.Length, report.Read);
+        var problem = await report.Response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal("storage-off", problem.GetProperty("reason").GetString());
+        Assert.Equal(0L, await CountAsync("entries", root));
+    }
+
+    private async Task<(ApiSession Dad, ApiSession Mom, string Root)> FamilyAsync(WebApplicationFactory<Program>? host = null)
+    {
+        host ??= api;
+        var dad = await ApiSession.SignedInAsync(host);
         var familyId = await dad.CreateFamilyAsync();
         var root = $"/api/families/{familyId}";
         var email = ApiSession.NewEmail();
         Assert.Equal(HttpStatusCode.Accepted, (await dad.PostAsync($"{root}/invitations", new { email })).StatusCode);
         var token = QueryHelpers.ParseQuery(dad.Emails.LatestLink(email, "invited").Query)["token"].ToString();
-        var mom = await ApiSession.SignedInAsync(api, email: email);
+        var mom = await ApiSession.SignedInAsync(host, email: email);
         Assert.Equal(HttpStatusCode.OK, (await mom.PostAsync("/api/invitations/accept", new { token })).StatusCode);
         return (dad, mom, root);
     }
@@ -154,6 +198,28 @@ public sealed class SharedRecordReportTests(ApiFactory api) : IAsyncLifetime
         var query = $"?amountMinor={amountMinor}&paidOn=2026-11-07&requestId={requestId ?? Guid.NewGuid()}"
             + (paidTo is null ? "" : $"&paidTo={paidTo}");
         return parent.SendBytesAsync(HttpMethod.Post, path + query, file, "application/octet-stream");
+    }
+
+    /// <summary>Sends a report whose body is streamed, and how many of its bytes the server read before answering.</summary>
+    private static async Task<JsonElement> ConcertFundAsync(ApiSession parent, string root) =>
+        await JsonAsync(await parent.PostAsync($"{root}/shared-funds",
+            new { title = "Concert fund", currency = "USD", proposerShareMinor = 15000, coParentShareMinor = 15000 }));
+
+    private static async Task<bool> StorageReadyAsync(ApiSession parent, string root) =>
+        (await JsonAsync(await parent.GetAsync($"{root}/shared-records/attachment-storage"))).GetProperty("ready").GetBoolean();
+
+    private static async Task<(HttpResponseMessage Response, long Read)> ReportStreamAsync(ApiSession parent, string path, byte[] file)
+    {
+        var body = new CountingStream(file);
+        var query = $"?amountMinor=15000&paidOn=2026-11-07&paidTo=Vendor&requestId={Guid.NewGuid()}";
+        var response = await parent.SendStreamAsync(HttpMethod.Post, path + query, body, "image/jpeg");
+        return (response, body.Position);
+    }
+
+    /// <summary>A request body that only moves forward as the server reads it.</summary>
+    private sealed class CountingStream(byte[] content) : MemoryStream(content, writable: false)
+    {
+        public override bool CanSeek => false;
     }
 
     private static async Task<int> AttentionAsync(ApiSession parent, string root) =>

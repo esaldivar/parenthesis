@@ -38,6 +38,13 @@ try {
   if (Test-Path (Join-Path $state 'extracted')) { throw 'An invalid archive was extracted.' }
   Write-Output 'PASS: checksum mismatch fails before extraction.'
 
+  $closed = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+  $closed.Start(); $closedPort = $closed.LocalEndpoint.Port; $closed.Stop()
+  $missing = Join-Path $state 'missing.zip'
+  Assert-Throws { Save-Download "http://127.0.0.1:$closedPort/archive.zip" $missing -Attempts 2 -DelaySeconds 0 } 'after 2 attempts'
+  if ((Test-Path $missing) -or (Test-Path "$missing.partial")) { throw 'A failed download left a file behind.' }
+  Write-Output 'PASS: downloads retry, then fail without leaving a partial archive.'
+
   $record = Join-Path $state 'unrelated.process.json'
   @{ id = $PID; startedTicks = -1 } | ConvertTo-Json | Set-Content $record
   Assert-Throws { Stop-CandidateProcess $record } 'reused process ID'
