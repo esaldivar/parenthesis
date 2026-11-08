@@ -108,6 +108,50 @@ describe('DashboardPage (approved design)', () => {
     });
   });
 
+  it('shows viewer-authorized Upcoming photos on both layouts and falls back to initials', async () => {
+    const child = { id: 'child-1', name: 'Sam' };
+    const parent = { membershipId: 'parent-1', displayName: 'Sam' };
+    const photos = {
+      url: (kind: 'parent' | 'child', id: string) =>
+        id === child.id || id === parent.membershipId ? `/photos/${kind}-${id}.webp` : null,
+      own: () => null,
+    } as unknown as Pick<ProfilePhotos, 'url' | 'own'>;
+    const { fixture, el } = await render({
+      photos,
+      live: {
+        ...EMPTY_WEEK,
+        parentingTime: [{
+          id: 'block', child, caregiver: parent, start: '2026-10-15T08:00', end: '2026-10-15T17:00', status: 'confirmed',
+        }],
+        events: [{
+          id: 'joint', title: 'School play', date: '2026-10-15', category: 'family', parents: [parent],
+          children: [child, { id: 'child-2', name: 'Alex' }], status: 'confirmed',
+        }],
+        notes: [{ id: 'task:one', kind: 'task', title: 'Bring a bag', date: '2026-10-16', children: [child] }],
+      },
+    });
+    const rows = [...el.querySelectorAll('.upcoming__people')];
+    const photosIn = (row: Element) => [...row.querySelectorAll('img')].map((img) => img.getAttribute('src'));
+
+    expect(rows.map(photosIn)).toEqual([
+      ['/photos/parent-parent-1.webp', '/photos/child-child-1.webp'],
+      ['/photos/parent-parent-1.webp', '/photos/child-child-1.webp'],
+      ['/photos/child-child-1.webp'],
+    ]);
+    expect([...el.querySelectorAll('.upcoming__people app-avatar[data-photo]')].every(
+      (avatar) => avatar.getAttribute('data-photo') === 'any',
+    )).toBe(true);
+    const fallback = rows[1].querySelector('app-avatar[title="Alex"]')!;
+    expect(fallback.querySelector('img')).toBeNull();
+    expect(text(fallback)).toBe('A');
+
+    const failed = rows[0].querySelector('app-avatar[data-kind="parent"]')!;
+    failed.querySelector('img')!.dispatchEvent(new Event('error'));
+    await settle(fixture);
+    expect(failed.querySelector('img')).toBeNull();
+    expect(text(failed)).toBe('S');
+  });
+
   describe('layout and live data', () => {
     it('greets the parent like the approved design', async () => {
       const { el } = await render();
