@@ -103,7 +103,7 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
       background: var(--kids-fridge) center / 100% 100% no-repeat;
     }
     .on-door { position: absolute; inset: 17% 15% auto 33%; }
-    .on-door .memory { padding: .25rem; transform: rotate(-6deg); }
+    .on-door .memory { --card-tilt: -6deg; padding: .25rem; }
     .on-door .retention { font-size: .7rem; }
     .gallery-items {
       display: grid;
@@ -118,9 +118,17 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
       box-shadow: 0 2px 3px #0006; transform: translateX(-50%); z-index: 1; }
     .photos .memory:nth-child(3n + 2) .pin { background: radial-gradient(circle at 35% 25%, #b5d7ec, #38688c 70%); }
     .photos .memory:nth-child(3n) .pin { background: radial-gradient(circle at 35% 25%, #ffeda3, #b87924 70%); }
-    .memory { position: relative; width: 100%; padding: .5rem; border: 1px solid #d9c5a2; border-radius: .3rem;
-      background: #fffaed; box-shadow: 0 .25rem .55rem #0004; cursor: pointer; transform: rotate(-2deg); }
-    .memory:nth-child(even) { transform: rotate(2deg); }
+    .memory { --card-tilt: -2deg; position: relative; width: 100%; padding: .5rem; border: 1px solid #d9c5a2; border-radius: .3rem;
+      background: #fffaed; box-shadow: 0 .25rem .55rem #0004; cursor: pointer; transform: rotate(var(--card-tilt)); }
+    .memory:nth-child(even) { --card-tilt: 2deg; }
+    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+      .artwork .memory { transition: transform 180ms ease, box-shadow 180ms ease; }
+      .artwork .memory:is(:hover, :focus-visible) {
+        z-index: 2;
+        transform: rotate(calc(var(--card-tilt) * -1.5)) scale(1.12);
+        box-shadow: 0 .5rem 1rem #0005;
+      }
+    }
     .memory img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
     .drawings .memory img, .on-door .memory img { object-fit: contain; background: #fff8e8; }
     .retention { display: block; margin-top: .25rem; color: #20303f; font-size: .8rem; overflow-wrap: anywhere; }

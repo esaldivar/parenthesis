@@ -13,7 +13,7 @@ Status: **implementation in progress**. Source branch: `feature/531-from-your-ki
 ## Product behavior
 1. Parent selects child, then Diary / Artwork / Photos.
 2. Diary: latest first, desktop facing pages, mobile single page, turn arrows/swipe; mood character and entry content, **no reactions/comments**. Entries are visible only to selected parents.
-3. Artwork: refrigerator stays **CLOSED**; pictures are magnetically attached **on its exterior**. Open artwork details on tap/click; parent heart, short one-way comment, bookmark, download, explicit Google Photos export.
+3. Artwork: refrigerator stays **CLOSED**; pictures are magnetically attached **on its exterior**. On desktop, hovering a drawing tilts and enlarges it briefly, then it settles when the pointer leaves. Reduced motion keeps the drawing still. Open artwork details on tap/click; parent heart, short one-way comment, bookmark, download, explicit Google Photos export.
 4. Photos: corkboard with child's name and pinned photos; same one-way reactions, bookmarking and explicit export.
 5. Bookmark preserves artwork/photos; hearts do not. Unsaved items expire after 60 days, enforced by M5 service. Diary retained separately.
 6. Parent never uploads or creates content in these views. Never automatically export. No child replies to comments.
