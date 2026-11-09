@@ -9,6 +9,9 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **From Your Kids (#531).** Review the rendered diary, closed fridge, and corkboard against the approved
+  collage on phone and desktop in both themes, and verify keyboard and screen-reader behavior. Connect
+  parent-authorized content and actions once the M5 service is available.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
 - [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523).
 - [ ] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514).

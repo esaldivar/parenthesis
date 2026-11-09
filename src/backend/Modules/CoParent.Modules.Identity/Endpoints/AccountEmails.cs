@@ -23,13 +23,14 @@ internal sealed partial class AccountEmails(
             ["token"] = token,
         });
 
+        var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
-            "Confirm your email for Parenthesis",
-            "One step left: confirm your email",
-            ["Confirm your email address to finish setting up your Parenthesis account. The link works once."],
-            new EmailAction("Confirm email", link),
-            "If you didn't create an account, you can ignore this email and nothing will happen."), cancellationToken);
+            spanish ? "Confirma tu correo electrónico de Parenthesis" : "Confirm your email for Parenthesis",
+            spanish ? "Solo falta un paso: confirma tu correo electrónico" : "One step left: confirm your email",
+            [spanish ? "Confirma tu correo electrónico para terminar de configurar tu cuenta. El enlace solo se puede usar una vez." : "Confirm your email address to finish setting up your Parenthesis account. The link works once."],
+            new EmailAction(spanish ? "Confirmar correo electrónico" : "Confirm email", link),
+            spanish ? "Si no creaste una cuenta, puedes ignorar este mensaje." : "If you didn't create an account, you can ignore this email and nothing will happen."), cancellationToken);
     }
 
     /// <summary>Sent when someone registers with an email that already has an account. Only the inbox owner learns that.</summary>
@@ -37,16 +38,17 @@ internal sealed partial class AccountEmails(
     {
         var link = urls.Build("/forgot-password", new Dictionary<string, string?>());
 
+        var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
-            "You already have a Parenthesis account",
-            "Sign in with this email address",
+            spanish ? "Ya tienes una cuenta de Parenthesis" : "You already have a Parenthesis account",
+            spanish ? "Inicia sesión con este correo electrónico" : "Sign in with this email address",
             [
-                "Someone tried to create a Parenthesis account with this email address, which already has one.",
-                "If it was you, sign in with this email address. If you've forgotten your password, you can reset it.",
+                spanish ? "Alguien intentó crear una cuenta con este correo, pero ya existe una." : "Someone tried to create a Parenthesis account with this email address, which already has one.",
+                spanish ? "Si fuiste tú, inicia sesión con este correo. Si olvidaste tu contraseña, puedes restablecerla." : "If it was you, sign in with this email address. If you've forgotten your password, you can reset it.",
             ],
-            new EmailAction("Reset password", link),
-            "If it wasn't you, no action is needed. Your account hasn't changed."), cancellationToken);
+            new EmailAction(spanish ? "Restablecer contraseña" : "Reset password", link),
+            spanish ? "Si no fuiste tú, no necesitas hacer nada. Tu cuenta no cambió." : "If it wasn't you, no action is needed. Your account hasn't changed."), cancellationToken);
     }
 
     public async Task SendPasswordResetAsync(AppUser user, CancellationToken cancellationToken)
@@ -58,14 +60,18 @@ internal sealed partial class AccountEmails(
             ["token"] = token,
         });
 
+        var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
-            "Reset your Parenthesis password",
-            "Choose a new password",
-            ["We received a request to reset your Parenthesis password. The link works once."],
+            spanish ? "Restablece tu contraseña de Parenthesis" : "Reset your Parenthesis password",
+            spanish ? "Elige una nueva contraseña" : "Choose a new password",
+            [spanish ? "Recibimos una solicitud para restablecer tu contraseña. El enlace solo se puede usar una vez." : "We received a request to reset your Parenthesis password. The link works once."],
             new EmailAction("Choose a new password", link),
-            "If you didn't ask for this, you can ignore this email. Your password won't change."), cancellationToken);
+            spanish ? "Si no solicitaste esto, puedes ignorar el mensaje. Tu contraseña no cambiará." : "If you didn't ask for this, you can ignore this email. Your password won't change."), cancellationToken);
     }
+
+    private async Task<bool> IsSpanishAsync(AppUser user) =>
+        await UserLanguage.GetAsync(users, user) == UserLanguage.Spanish;
 
     /// <summary>Identity tokens contain characters that aren't URL-safe, so links carry them base64url-encoded.</summary>
     public static string Encode(string token) => WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));

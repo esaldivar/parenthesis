@@ -6,37 +6,38 @@ import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { FORM_STYLES } from './form-styles';
 
 /** Opened from the reset email. Reads the one-time token, then removes it from the address bar. */
 @Component({
   selector: 'app-reset-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, TranslatePipe],
   template: `
-    <h1>Choose a new password</h1>
+    <h1>{{ 'reset.title' | tr }}</h1>
 
     @if (done()) {
-      <div class="status" role="status">Your password has been changed. Other devices have been signed out.</div>
-      <div class="links"><a routerLink="/sign-in">Sign in</a></div>
+      <div class="status" role="status">{{ 'reset.done' | tr }}</div>
+      <div class="links"><a routerLink="/sign-in">{{ 'signIn.title' | tr }}</a></div>
     } @else if (!linkValid()) {
-      <div class="alert" role="alert">This link is invalid or has expired.</div>
-      <div class="links"><a routerLink="/forgot-password">Request a new link</a></div>
+      <div class="alert" role="alert">{{ 'reset.invalid' | tr }}</div>
+      <div class="links"><a routerLink="/forgot-password">{{ 'reset.request' | tr }}</a></div>
     } @else {
       @if (error(); as error) {
         <div class="alert" role="alert">{{ error }}</div>
       }
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>New password</mat-label>
+          <mat-label>{{ 'reset.newPassword' | tr }}</mat-label>
           <input matInput type="password" formControlName="password" autocomplete="new-password" required />
-          <mat-hint>At least 12 characters.</mat-hint>
+          <mat-hint>{{ 'reset.hint' | tr }}</mat-hint>
           @if (form.controls.password.invalid) {
-            <mat-error>{{ passwordError() ?? 'Use at least 12 characters.' }}</mat-error>
+            <mat-error>{{ passwordError() ?? ('reset.validation' | tr) }}</mat-error>
           }
         </mat-form-field>
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">Save new password</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ 'reset.save' | tr }}</button>
         </div>
       </form>
     }

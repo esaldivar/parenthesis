@@ -7,6 +7,8 @@ import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { PendingInvitation } from '../../core/invitations/pending-invitation';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { FORM_STYLES } from './form-styles';
 
 const MIN_PASSWORD = 12; // Matches the API's policy (NIST 800-63B: length, not composition rules).
@@ -19,16 +21,15 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-register-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, TranslatePipe],
   template: `
-    <h1>Create your Parenthesis account</h1>
+    <h1>{{ 'register.title' | tr }}</h1>
     @if (invited()) {
       <p class="lead">
-        You’ve been invited to join your co-parent’s family. Use the email address the invitation was sent to; you’ll
-        accept it after confirming your email.
+        {{ 'register.invited' | tr }}
       </p>
     } @else {
-      <p class="lead">For parents and caregivers. Children get their own profile later, set up by a parent.</p>
+      <p class="lead">{{ 'register.lead' | tr }}</p>
     }
 
     @if (error(); as error) {
@@ -37,33 +38,33 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Your name</mat-label>
+        <mat-label>{{ 'register.name' | tr }}</mat-label>
         <input matInput formControlName="displayName" autocomplete="name" required maxlength="80" />
-        <mat-hint>Shown to your co-parent.</mat-hint>
+        <mat-hint>{{ 'register.nameHint' | tr }}</mat-hint>
         @if (form.controls.displayName.invalid) {
-          <mat-error>{{ serverErrors()['displayName'] ?? 'Enter your name.' }}</mat-error>
+          <mat-error>{{ serverErrors()['displayName'] ?? ('register.nameRequired' | tr) }}</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Email</mat-label>
+        <mat-label>{{ 'signIn.email' | tr }}</mat-label>
         <input matInput type="email" formControlName="email" autocomplete="email" required />
         @if (form.controls.email.invalid) {
-          <mat-error>{{ serverErrors()['email'] ?? 'Enter a valid email address.' }}</mat-error>
+          <mat-error>{{ serverErrors()['email'] ?? ('signIn.emailInvalid' | tr) }}</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Password</mat-label>
+        <mat-label>{{ 'signIn.password' | tr }}</mat-label>
         <input matInput type="password" formControlName="password" autocomplete="new-password" required />
-        <mat-hint>At least {{ minPassword }} characters. A few unrelated words works well.</mat-hint>
+        <mat-hint>{{ 'register.passwordHint' | tr }}</mat-hint>
         @if (form.controls.password.invalid) {
-          <mat-error>{{ serverErrors()['password'] ?? 'Use at least ' + minPassword + ' characters.' }}</mat-error>
+          <mat-error>{{ serverErrors()['password'] ?? ('reset.validation' | tr) }}</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Confirm password</mat-label>
+        <mat-label>{{ 'register.confirmPassword' | tr }}</mat-label>
         <input
           matInput
           type="password"
@@ -74,22 +75,22 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
           aria-describedby="password-mismatch"
         />
         @if (form.controls.confirmPassword.hasError('required') && form.controls.confirmPassword.touched) {
-          <mat-error>Enter your password again.</mat-error>
+          <mat-error>{{ 'register.confirmRequired' | tr }}</mat-error>
         }
       </mat-form-field>
       <p id="password-mismatch" class="field-error" aria-live="polite">
         @if (mismatch()) {
-          The passwords don’t match.
+          {{ 'register.mismatch' | tr }}
         }
       </p>
 
       <div class="actions">
-        <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Creating account…' : 'Create account' }}</button>
+        <button mat-flat-button type="submit" [disabled]="busy()">{{ (busy() ? 'register.creating' : 'register.create') | tr }}</button>
       </div>
     </form>
 
     <div class="links">
-      <a routerLink="/sign-in">Already have an account? Sign in</a>
+      <a routerLink="/sign-in">{{ 'register.already' | tr }}</a>
     </div>
   `,
   styles: [
@@ -106,6 +107,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 })
 export class RegisterPage implements OnInit {
   private readonly api = inject(Api);
+  private readonly locale = inject(LocaleService);
   private readonly router = inject(Router);
   private readonly pending = inject(PendingInvitation);
 
@@ -148,7 +150,7 @@ export class RegisterPage implements OnInit {
     this.serverErrors.set({});
     const { displayName, email, password } = this.form.getRawValue();
     try {
-      await this.api.register({ displayName: displayName.trim(), email: email.trim(), password });
+      await this.api.register({ displayName: displayName.trim(), email: email.trim(), password, language: this.locale.locale() });
       // The email travels in navigation state, not the URL, so it stays out of history and logs.
       await this.router.navigateByUrl('/check-email', { state: { email: email.trim() } });
     } catch (error) {

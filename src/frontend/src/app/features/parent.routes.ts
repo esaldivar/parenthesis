@@ -1,11 +1,4 @@
 import { Routes } from '@angular/router';
-import { ComingSoonPage } from '../shared/coming-soon/coming-soon-page';
-
-const comingSoon = (title: string, data: Record<string, string>) => ({
-  title,
-  component: ComingSoonPage,
-  data: { heading: title, ...data },
-});
 
 // Order follows the approved navigation (docs/design/APPROVED_DASHBOARD_2026-10-16.md).
 export const PARENT_ROUTES: Routes = [
@@ -59,11 +52,8 @@ export const PARENT_ROUTES: Routes = [
   },
   {
     path: 'from-your-kids',
-    ...comingSoon('From Your Kids', {
-      icon: 'pencil',
-      intro: 'Drawings, photos and notes your children choose to share with you.',
-      emptyBody: 'Sharing from your children’s space isn’t available yet, so nothing has been shared.',
-    }),
+    title: 'From Your Kids',
+    loadComponent: () => import('./from-your-kids/from-your-kids-page').then((m) => m.FromYourKidsPage),
   },
   // Event photos (#403): temporary, private by default, parents only.
   {

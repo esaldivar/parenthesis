@@ -261,7 +261,7 @@ describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #
       const signIn = vi.spyOn(auth, 'parentPinSignIn');
 
       expect(body.querySelector('h1')!.textContent).toBe('Hi, Dad');
-      expect(body.querySelector('label')!.textContent).toContain('Parent PIN');
+      expect(body.querySelector('label[for="pin"]')?.textContent ?? text(body)).toContain('Parent PIN');
       type(harness, 'input[inputmode="numeric"]', '583920');
       await submit(harness);
 

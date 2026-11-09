@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } fro
 import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { FORM_STYLES } from './form-styles';
 
 type State = 'working' | 'confirmed' | 'invalid' | 'error';
@@ -10,22 +11,22 @@ type State = 'working' | 'confirmed' | 'invalid' | 'error';
 @Component({
   selector: 'app-confirm-email-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   template: `
-    <h1>Confirm your email</h1>
+    <h1>{{ 'confirm.title' | tr }}</h1>
     <div aria-live="polite">
       @switch (state()) {
         @case ('working') {
-          <p class="lead">Confirming…</p>
+          <p class="lead">{{ 'confirm.working' | tr }}</p>
         }
         @case ('confirmed') {
-          <div class="status">Your email is confirmed. You can sign in now.</div>
-          <div class="links"><a routerLink="/sign-in">Sign in</a></div>
+          <div class="status">{{ 'confirm.done' | tr }}</div>
+          <div class="links"><a routerLink="/sign-in">{{ 'signIn.title' | tr }}</a></div>
         }
         @case ('invalid') {
-          <div class="alert" role="alert">This link is invalid or has expired.</div>
-          <p>Sign in to get a new link, or create your account again.</p>
-          <div class="links"><a routerLink="/sign-in">Sign in</a><a routerLink="/register">Create an account</a></div>
+          <div class="alert" role="alert">{{ 'reset.invalid' | tr }}</div>
+          <p>{{ 'confirm.invalidHelp' | tr }}</p>
+          <div class="links"><a routerLink="/sign-in">{{ 'signIn.title' | tr }}</a><a routerLink="/register">{{ 'signIn.register' | tr }}</a></div>
         }
         @case ('error') {
           <div class="alert" role="alert">{{ error() }}</div>
