@@ -18,11 +18,10 @@
     </svg>
     <div>
       <h1>{{ greeting() }}</h1>
-      <p class="welcome__sub">Here’s what’s happening with your family.</p>
+      <p class="welcome__sub">{{ 'dash.lead' | tr }}</p>
       @if (showingSample()) {
         <p class="sample-banner" role="note">
-          <strong>Sample data</strong> · fictional people and events (development builds only). This is not your
-          family’s schedule, and nothing here can be changed.
+          <strong>{{ 'dash.sample' | tr }}</strong> · {{ 'dash.sampleHelp' | tr }}
         </p>
       }
     </div>
@@ -50,17 +49,17 @@
 
   <section class="card area-upcoming" aria-labelledby="upcoming-heading" [attr.aria-busy]="state() === 'loading'">
     <header class="card__header">
-      <h2 id="upcoming-heading">Upcoming</h2>
+      <h2 id="upcoming-heading">{{ 'dash.upcoming' | tr }}</h2>
       <a class="see-all" routerLink="/calendar" [queryParams]="{ view: 'list', week: shownWeek() }">
-        See all<span class="visually-hidden"> upcoming events</span>
+        {{ 'dash.seeAll' | tr }}<span class="visually-hidden"> {{ 'dash.upcomingEvents' | tr }}</span>
       </a>
     </header>
     @if (state() === 'loading') {
-      <p role="status">Loading upcoming events…</p>
+      <p role="status">{{ 'dash.loading' | tr }}</p>
     } @else if (state() === 'error') {
       <div role="alert">
-        <p>We couldn’t load upcoming events.</p>
-        <button mat-button type="button" (click)="reload()">Try again</button>
+        <p>{{ 'dash.loadError' | tr }}</p>
+        <button mat-button type="button" (click)="reload()">{{ 'dash.retry' | tr }}</button>
       </div>
     } @else if (state() === 'ready' && upcoming().length > 0) {
       <ul class="upcoming">
@@ -104,37 +103,37 @@
         }
       </ul>
     } @else if (state() === 'ready') {
-      <app-empty-state icon="calendar" title="Nothing else this week" body="New plans and activities will show here." />
+      <app-empty-state icon="calendar" [title]="'dash.emptyWeek' | tr" [body]="'dash.emptyWeekBody' | tr" />
     } @else {
       <app-empty-state
         icon="calendar"
-        title="Nothing to show yet"
-        body="Parenting time and activities will appear here once your family is set up."
+        [title]="'dash.empty' | tr"
+        [body]="'dash.emptyBody' | tr"
       />
     }
   </section>
 
   <section class="card area-quick" aria-labelledby="quick-heading">
-    <h2 id="quick-heading">Quick Add</h2>
+    <h2 id="quick-heading">{{ 'dash.quick' | tr }}</h2>
     <div class="quick">
       @for (action of quickCalendarActions; track action.kind) {
         <a class="quick__btn" routerLink="/calendar/new"
           [queryParams]="{ date: isCurrentWeek() ? today() : shownWeek(), kind: action.kind === 'event' ? null : action.kind }">
           <app-icon [name]="action.icon" [size]="26" />
-          <span>{{ action.label }}</span>
+          <span>{{ quickLabel(action.kind) }}</span>
         </a>
       }
       <a class="quick__btn" routerLink="/shared-records" [queryParams]="{ add: '1' }">
         <app-icon name="receipt" [size]="26" />
-        <span>Record</span>
+        <span>{{ 'dash.record' | tr }}</span>
       </a>
     </div>
   </section>
 
   <section class="card area-kids" aria-labelledby="kids-heading">
     <header class="card__header">
-      <h2 id="kids-heading"><app-icon name="children" [size]="26" /> From Your Kids</h2>
-      <a class="see-all" routerLink="/from-your-kids">See all<span class="visually-hidden"> from your kids</span></a>
+      <h2 id="kids-heading"><app-icon name="children" [size]="26" /> {{ 'nav.fromKids' | tr }}</h2>
+      <a class="see-all" routerLink="/from-your-kids">{{ 'dash.seeAll' | tr }}<span class="visually-hidden"> {{ 'dash.kids' | tr }}</span></a>
     </header>
     @if (state() === 'ready' && data()!.kidShares.length > 0) {
       <ul class="kids">
@@ -156,20 +155,20 @@
     } @else {
       <app-empty-state
         icon="pencil"
-        title="Nothing shared yet"
-        body="Drawings and photos your children choose to share with you will appear here."
+        [title]="'dash.kidsEmpty' | tr"
+        [body]="'dash.kidsEmptyBody' | tr"
       />
     }
   </section>
 
   <section class="card area-memories" aria-labelledby="memories-heading">
     <header class="card__header">
-      <h2 id="memories-heading"><app-icon name="album" [size]="26" /> Family Memories</h2>
-      <a class="see-all" routerLink="/memories">See all<span class="visually-hidden"> family memories</span></a>
+      <h2 id="memories-heading"><app-icon name="album" [size]="26" /> {{ 'nav.memories' | tr }}</h2>
+      <a class="see-all" routerLink="/memories">{{ 'dash.seeAll' | tr }}<span class="visually-hidden"> {{ 'dash.memories' | tr }}</span></a>
     </header>
     @if (state() === 'ready' && currentMemory(); as memory) {
       <div class="memory">
-        <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(-1)" aria-label="Previous memory">
+        <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(-1)" [attr.aria-label]="'dash.previous' | tr">
           <app-icon name="chevron-left" />
         </button>
         <figure class="memory__figure" aria-live="polite">
@@ -193,15 +192,15 @@
             <span class="visually-hidden">, memory {{ memoryIndex() + 1 }} of {{ memories().length }}</span>
           </figcaption>
         </figure>
-        <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(1)" aria-label="Next memory">
+        <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(1)" [attr.aria-label]="'dash.next' | tr">
           <app-icon name="chevron-right" />
         </button>
       </div>
     } @else {
       <app-empty-state
         icon="album"
-        title="No memories yet"
-        body="Photos added to confirmed events will show here. Each photo is kept for 28 days."
+        [title]="'dash.memoriesEmpty' | tr"
+        [body]="'dash.memoriesEmptyBody' | tr"
       />
     }
   </section>

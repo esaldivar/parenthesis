@@ -1,3 +1,4 @@
+import { LocaleService } from '../i18n/locale.service';
 import { CalendarCache } from '../cache/calendar-cache';
 import { EventThemesService } from '../theme/event-themes.service';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -31,6 +32,7 @@ export type AuthStatus = 'unknown' | 'anonymous' | 'signed-in' | 'child';
 export class AuthStore {
   private readonly api = inject(Api);
   private readonly appearance = inject(AppearanceService);
+  private readonly locale = inject(LocaleService);
   private readonly eventThemes = inject(EventThemesService);
 
   readonly user = signal<Me | null>(null);
@@ -302,6 +304,7 @@ export class AuthStore {
     this.calendarCache.useViewer(user ? `user:${user.id}` : null);
     // Each account has its own appearance; signed out, the app follows the system.
     this.appearance.useAccount(user?.id ?? null);
+    this.locale.useAccount(user?.id ?? null, user?.language);
     this.eventThemes.useAccount(user?.id ?? null);
   }
 
@@ -314,6 +317,7 @@ export class AuthStore {
     this.calendarCache.useViewer(`child:${child.childId}`);
     // A child's appearance is their own, never a parent's (CLAUDE.md: appearance is personal).
     this.appearance.useAccount(`child:${child.childId}`);
+    this.locale.useAccount(null); // Child-facing localization is outside issue #534.
     this.eventThemes.useAccount(`child:${child.childId}`);
   }
 }

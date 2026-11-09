@@ -12,11 +12,12 @@ using Microsoft.Extensions.Options;
 
 namespace CoParent.Modules.Identity.Endpoints;
 
-internal sealed record RegisterRequest(string? Email, string? Password, string? DisplayName);
+internal sealed record RegisterRequest(string? Email, string? Password, string? DisplayName, string? Language = null);
 
 internal sealed record LoginRequest(string? Email, string? Password);
 
-internal sealed record MeResponse(Guid Id, string Email, string DisplayName);
+internal sealed record MeResponse(Guid Id, string Email, string DisplayName, string Language);
+internal sealed record LanguageRequest(string? Language);
 
 /// <summary>
 /// Cookie sign-in for the same-origin SPA (ADR-0004). Responses never reveal whether an email is registered:
@@ -35,6 +36,7 @@ internal static class AuthEndpoints
 
         api.MapPost("/auth/logout", LogoutAsync).WithTags("Auth").WithMetadata(new ChildSessionAllowed());
         api.MapGet("/me", MeAsync).WithTags("Me");
+        api.MapPut("/me/language", SetLanguageAsync).WithTags("Me");
     }
 
     private static async Task<Results<Accepted, ValidationProblem, ProblemHttpResult>> RegisterAsync(
@@ -82,6 +84,8 @@ internal static class AuthEndpoints
 
         if (result.Succeeded)
         {
+            if (UserLanguage.IsSupported(request.Language))
+                await UserLanguage.SetAsync(users, user, request.Language!);
             await emails.SendConfirmationAsync(user, cancellationToken);
         }
         else if (await users.FindByEmailAsync(email) is { } existing)
@@ -140,13 +144,26 @@ internal static class AuthEndpoints
         return TypedResults.NoContent();
     }
 
+    private static async Task<Results<Ok<MeResponse>, UnauthorizedHttpResult, ValidationProblem>> SetLanguageAsync(
+        LanguageRequest request, ClaimsPrincipal principal, UserManager<AppUser> users)
+    {
+        var user = await users.GetUserAsync(principal);
+        if (user is null) return TypedResults.Unauthorized();
+        if (!UserLanguage.IsSupported(request.Language))
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["language"] = ["Choose English or Spanish."] });
+        var result = await UserLanguage.SetAsync(users, user, request.Language!);
+        if (!result.Succeeded)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["language"] = ["Could not save your language preference."] });
+        return TypedResults.Ok(new MeResponse(user.Id, user.Email!, user.DisplayName, request.Language!));
+    }
+
     private static async Task<Results<Ok<MeResponse>, UnauthorizedHttpResult>> MeAsync(
         ClaimsPrincipal principal, UserManager<AppUser> users)
     {
         var user = await users.GetUserAsync(principal);
         return user is null
             ? TypedResults.Unauthorized()
-            : TypedResults.Ok(new MeResponse(user.Id, user.Email!, user.DisplayName));
+            : TypedResults.Ok(new MeResponse(user.Id, user.Email!, user.DisplayName, await UserLanguage.GetAsync(users, user)));
     }
 
     private static ProblemHttpResult InvalidCredentials() =>

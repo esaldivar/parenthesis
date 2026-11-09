@@ -1,3 +1,5 @@
+import { LocaleService, AppLocale } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { EventThemesService } from '../../core/theme/event-themes.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
@@ -21,6 +23,7 @@ import { MemorySettingsSection } from './memory-settings';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatSlideToggleModule,
+    TranslatePipe,
     AppearancePicker,
     InviteCoParent,
     ChildrenAccess,
@@ -34,48 +37,58 @@ import { MemorySettingsSection } from './memory-settings';
     RouterLink,
   ],
   template: `
-    <h1>Settings</h1>
+    <h1>{{ 'settings.title' | tr }}</h1>
+    <section class="card" aria-labelledby="language-heading">
+      <h2 id="language-heading">{{ 'settings.languageHeading' | tr }}</h2>
+      <label for="settings-language">{{ 'settings.languageLabel' | tr }}</label>
+      <select id="settings-language" [value]="locale.locale()" (change)="changeLanguage($event)" aria-describedby="settings-language-help">
+        <option value="en">English</option>
+        <option value="es-419">Español</option>
+      </select>
+      <p id="settings-language-help">{{ 'settings.languageHelp' | tr }}</p>
+      @if (languageError(); as message) { <p role="alert">{{ message }}</p> }
+    </section>
     <section class="card">
       <app-appearance-picker />
-      <mat-slide-toggle [checked]="eventThemes.enabled()" (change)="eventThemes.setEnabled($event.checked)" aria-describedby="event-theme-help">Add themes to events</mat-slide-toggle>
-      <p id="event-theme-help">Show subtle illustrations when an event title matches a theme. This changes only your view on this device.</p>
+      <mat-slide-toggle [checked]="eventThemes.enabled()" (change)="eventThemes.setEnabled($event.checked)" aria-describedby="event-theme-help">{{ 'settings.themes' | tr }}</mat-slide-toggle>
+      <p id="event-theme-help">{{ 'settings.themesHelp' | tr }}</p>
     </section>
 
     @if (auth.currentFamily(); as current) {
       @if (current.role === 'Parent') {
         <section class="card" aria-labelledby="co-parent-heading">
-          <h2 id="co-parent-heading">Co-parent</h2>
+          <h2 id="co-parent-heading">{{ 'settings.coParent' | tr }}</h2>
           @if (error(); as error) {
             <p role="alert">{{ error }}</p>
           } @else if (details(); as details) {
             @if (coParent(details); as coParent) {
               <p>You share {{ details.name }} with <strong>{{ coParent }}</strong>. You both have the same say.</p>
             } @else {
-              <p class="muted">Invite your co-parent so you can make decisions together.</p>
+              <p class="muted">{{ 'settings.invite' | tr }}</p>
               <app-invite-co-parent [familyId]="current.id" [pending]="pending()" />
             }
           } @else {
-            <p class="muted">Loading…</p>
+            <p class="muted">{{ 'settings.loading' | tr }}</p>
           }
         </section>
 
         <section class="card" aria-labelledby="photos-heading">
-          <h2 id="photos-heading">Profile photos</h2>
+          <h2 id="photos-heading">{{ 'settings.profilePhotos' | tr }}</h2>
           <app-profile-photo-settings [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="memories-heading">
-          <h2 id="memories-heading">Memories</h2>
+          <h2 id="memories-heading">{{ 'settings.memories' | tr }}</h2>
           <app-memory-settings [familyId]="current.id" [coParent]="details() ? coParent(details()!) : null" />
         </section>
 
         <section class="card" aria-labelledby="children-heading">
-          <h2 id="children-heading">Children</h2>
+          <h2 id="children-heading">{{ 'settings.children' | tr }}</h2>
           <app-children-access [familyId]="current.id" />
         </section>
 
         <section class="card" aria-labelledby="parent-pin-heading">
-          <h2 id="parent-pin-heading">Your parent PIN</h2>
+          <h2 id="parent-pin-heading">{{ 'settings.pin' | tr }}</h2>
           <app-parent-pin-settings [familyId]="current.id" />
         </section>
 
@@ -90,27 +103,27 @@ import { MemorySettingsSection } from './memory-settings';
         </section>
 
         <section class="card" aria-labelledby="devices-heading">
-          <h2 id="devices-heading">Devices</h2>
+          <h2 id="devices-heading">{{ 'settings.devices' | tr }}</h2>
           <app-device-list [familyId]="current.id" />
         </section>
       }
     }
 
     <section class="card" aria-labelledby="privacy-heading">
-      <h2 id="privacy-heading">Privacy</h2>
-      <p>What Parenthesis collects about you and your children, who it’s shared with, and how long it’s kept.</p>
-      <a routerLink="/privacy">Read the privacy notice</a>
+      <h2 id="privacy-heading">{{ 'settings.privacy' | tr }}</h2>
+      <p>{{ 'settings.privacyHelp' | tr }}</p>
+      <a routerLink="/privacy">{{ 'settings.privacyLink' | tr }}</a>
     </section>
 
     @if (auth.status() === 'signed-in') {
       <section class="card" aria-labelledby="delete-account-heading">
-        <h2 id="delete-account-heading">Delete account</h2>
+        <h2 id="delete-account-heading">{{ 'settings.delete' | tr }}</h2>
         @if (deletionError(); as message) {
           <p role="alert">{{ message }}</p>
         } @else if (deletionFamilies(); as families) {
           <app-delete-account [families]="families" />
         } @else {
-          <p class="muted">Loading account deletion details…</p>
+          <p class="muted">{{ 'settings.deletionLoading' | tr }}</p>
         }
       </section>
     }
@@ -131,12 +144,42 @@ import { MemorySettingsSection } from './memory-settings';
       font-size: var(--font-size-h3);
       margin-top: 0;
     }
+    select {
+      display: block;
+      min-height: var(--target-min);
+      margin-top: var(--space-2);
+      padding: var(--space-2);
+      background: var(--color-surface);
+      color: inherit;
+      border: 1px solid var(--color-divider);
+      border-radius: 0.5rem;
+    }
     .muted {
       color: var(--color-text-secondary);
     }
   `,
 })
 export class SettingsPage implements OnInit {
+  protected readonly locale = inject(LocaleService);
+
+  protected readonly languageError = signal<string | null>(null);
+
+  protected async changeLanguage(event: Event): Promise<void> {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value !== 'en' && value !== 'es-419') return;
+    const previous = this.locale.locale();
+    this.locale.setLocale(value as AppLocale);
+    this.languageError.set(null);
+    try {
+      if (this.auth.status() === 'signed-in') await this.api.setLanguage(value as AppLocale);
+    } catch {
+      this.locale.setLocale(previous);
+      this.languageError.set(previous === 'es-419'
+        ? 'No se pudo guardar el idioma. Inténtalo de nuevo.'
+        : 'Could not save your language. Please try again.');
+    }
+  }
+
   protected readonly eventThemes = inject(EventThemesService);
   protected readonly auth = inject(AuthStore);
   private readonly api = inject(Api);

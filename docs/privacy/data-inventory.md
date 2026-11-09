@@ -20,6 +20,8 @@ All first-party, `Secure`, `SameSite=Strict`, `Path=/`.
 
 | Key | Storage | Purpose | Lifetime | Set in |
 |---|---|---|---|---|
+| `parenthesis.locale` | local | Signed-out language selection | Until cleared | `locale.service.ts` |
+| `parenthesis.locale.account.<userId>` | local | Device copy of each parent's language choice (server account preference is authoritative) | Until cleared | `locale.service.ts` |
 | `parenthesis.appearance.<userId>` | local | Light/dark/system choice | Until cleared | `appearance.service.ts` |
 | `parenthesis.event-themes.<account>` | local | Event themes on/off | Until cleared | `event-themes.service.ts` |
 | `parenthesis.calendar-filters.<userId>.<familyId>` | local | Calendar filters | Until reset/cleared | `calendar-filters.ts`, `calendar-page.ts` |
