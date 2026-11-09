@@ -24,10 +24,10 @@ describe('KidsDiary (#531)', () => {
     ]);
     fixture.detectChanges();
     const host = fixture.nativeElement as HTMLElement;
-    expect(host.querySelector('time')?.getAttribute('datetime')).toBe('2026-11-01T00:00:00Z');
+    expect(host.querySelector('article time')?.getAttribute('datetime')).toBe('2026-11-01T00:00:00Z');
     host.querySelector<HTMLButtonElement>('[aria-label="Next diary page"]')!.click();
     fixture.detectChanges();
-    expect(host.querySelector('time')?.getAttribute('datetime')).toBe('2026-10-01T00:00:00Z');
+    expect(host.querySelector('article time')?.getAttribute('datetime')).toBe('2026-10-01T00:00:00Z');
     expect(host.textContent).toContain('Page 2 of 2');
   });
 });
