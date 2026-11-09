@@ -40,6 +40,18 @@ export const STORED_ITEMS: readonly StoredItem[] = [
       '30 days for a shared device, about 400 days for a child’s tablet, or until a parent removes it.',
   },
   {
+    name: 'parenthesis.locale',
+    kind: 'Browser storage',
+    purpose: 'Your language choice before signing in.',
+    lasts: 'Until you clear it.',
+  },
+  {
+    name: 'parenthesis.locale.account.…',
+    kind: 'Browser storage',
+    purpose: 'Remembers each signed-in parent’s language choice on this device; the account also saves the preference.',
+    lasts: 'Until you clear it.',
+  },
+  {
     name: 'parenthesis.appearance.…',
     kind: 'Browser storage',
     purpose: 'Your light, dark or system appearance choice.',
