@@ -96,16 +96,18 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
   test('an activity’s location opens directions in Google Maps, outside Parenthesis (#113)', async ({ page, context }) => {
     const family = await familyWithKai();
     try {
-      await signIn(page, family.dad.email);
-      await openList(page);
-      await page.getByRole('link', { name: 'Add', exact: true }).click();
-      await page.getByRole('button', { name: /Activity/ }).click();
-      await page.getByLabel('Title').fill('Swim lesson');
-      await page.getByLabel('Location (optional)').fill('100 Example Ave & Pool #2, Springfield');
-      await page.getByLabel('Kai').check();
-      await page.getByRole('button', { name: 'Add to calendar' }).click();
-      await expect(page.getByText('“Swim lesson” is on the calendar.')).toBeVisible();
-
+      const { dad, familyId, kaiId } = family;
+      const location = '100 Example Ave & Pool #2, Springfield';
+      await dad.json(dad.post(events(familyId), {
+        category: 'Activity',
+        title: 'Swim lesson',
+        location,
+        childIds: [kaiId],
+        startsAt: at(15),
+        endsAt: at(16),
+      }));
+      // The activity-creation scenario above covers sign-in and the form separately.
+      await context.addCookies((await dad.http.storageState()).cookies);
       await openList(page);
       await item(page, 'Swim lesson').click();
       const link = details(page).getByRole('link', { name: 'Open in Google Maps (opens in a new tab)' });
@@ -125,7 +127,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       const url = new URL(maps.url());
       expect(url.origin + url.pathname).toBe('https://www.google.com/maps/dir/');
       expect(url.searchParams.get('api')).toBe('1');
-      expect(url.searchParams.get('destination')).toBe('100 Example Ave & Pool #2, Springfield');
+      expect(url.searchParams.get('destination')).toBe(location);
       expect(opened).toHaveLength(1);
       // Google isn't told which Parenthesis page (or event) the address came from.
       expect(referrers).toEqual([undefined]);
