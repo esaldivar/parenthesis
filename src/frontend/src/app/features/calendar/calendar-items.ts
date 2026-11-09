@@ -46,7 +46,7 @@ export interface CalendarItem {
   /** Auto-confirmed while the family had one parent; shown so the co-parent can review it (decision 7). */
   readonly beforeCoParentJoined: boolean;
   readonly children: readonly Person[];
-  /** The parents shown on it: the caregiver for parenting time, both parents for a family event, the owner otherwise. */
+  /** The caregiver for parenting time, both parents for family events, and the owner for unavailable time. */
   readonly parents: readonly Person[];
   readonly ownerName: string;
   readonly isMine: boolean;
@@ -144,7 +144,7 @@ export function toItems(
     const shownParents: Person[] =
       kind === 'family'
         ? parents.map((p) => ({ id: p.membershipId, name: p.displayName }))
-        : kind === 'parenting'
+        : event.category === 'ParentingTime'
           ? [{ id: event.caregiverMembershipId ?? '', name: name(event.caregiverMembershipId) }]
           : kind === 'unavailable'
             ? [{ id: event.ownerMembershipId, name: name(event.ownerMembershipId) }]

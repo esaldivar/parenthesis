@@ -2,7 +2,7 @@
 
 :host {
   display: block;
-  container-type: inline-size;
+  container: calendar-week / inline-size;
 }
 
 ul,
@@ -100,6 +100,16 @@ ol {
 .item--timed {
   min-height: 0;
 }
+@media (min-width: 1024px) {
+  @container calendar-week (min-width: 720px) {
+    // Fit title, time and one attendee row into the existing shortest timed block.
+    .item--timed,
+    .item--span {
+      padding: 1px 2px;
+    }
+  }
+}
+
 // Hidden unavailable time (#190): a thin strip at the day's edge, over the lanes, widening on hover or focus.
 .daycol li.marker {
   grid-column: 1 / -1;
