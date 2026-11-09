@@ -127,7 +127,7 @@ export class DashboardPage {
   protected readonly greetingText = computed(() => greetingFor(hourIn(this.timeZone(), this.now)));
   protected readonly localizedGreeting = computed(() => {
     const greeting = this.greetingText();
-    return this.t(greeting === 'Good afternoon' ? 'dash.afternoon' : greeting === 'Good evening' ? 'dash.evening' : 'dash.morning');
+    return this.t(greeting === 'Hello' ? 'dash.hello' : greeting === 'Good afternoon' ? 'dash.afternoon' : greeting === 'Good evening' ? 'dash.evening' : 'dash.morning');
   });
   protected readonly greeting = computed(() => {
     const hello = this.localizedGreeting();
