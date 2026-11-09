@@ -119,7 +119,7 @@
               <span class="visually-hidden">, {{ 'nav.unread' | tr }}</span>
             }
             @if (item.path === '/more' && essentials.newUpdates()) {
-              <span class="visually-hidden">, {{ 'nav.essentials' | tr }}</span>
+              <span class="visually-hidden">, {{ 'nav.essentialsUpdated' | tr }}</span>
             }
             @if (item.path === '/more' && records.needsYou()) {
               <span class="visually-hidden">, {{ 'nav.records' | tr }}</span>
