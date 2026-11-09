@@ -743,3 +743,6 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
 
 - [ ] Verify Home Quick Add saves and cancellation from all four shortcuts on the development site (#515).
+
+### #552 — Seven-day mobile Calendar Week grid
+- [ ] Retest on Development with physical iPhone Safari and Android Chrome in both themes, including touch scrolling, dense overlap, event details and bottom navigation.

@@ -16,7 +16,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { PlainDate } from '../dashboard/model';
-import { dayLong, hourLabel, monthDay, weekDays, weekdayShort } from '../dashboard/week';
+import { dayLong, dayOfMonth, hourLabel, monthDay, weekDays, weekdayShort } from '../dashboard/week';
 import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRows, pickText } from './slot';
 import { CalendarItem, byStart, onDate } from './calendar-items';
 import { ItemText, itemSummary } from './item-text';
@@ -24,18 +24,14 @@ import { minutesOfDay } from './time';
 
 const SLOT = 30;
 const MIN_SLOTS = 2;
+const DAY_MINUTES = 24 * 60;
+// Allow a 24px-high button plus a gap for short events when there is space before midnight.
+const MOBILE_MIN_MINUTES = 16;
 
 interface Span {
   readonly item: CalendarItem;
   readonly start: number;
   readonly end: number;
-  readonly lane: number;
-}
-
-interface Timed {
-  readonly item: CalendarItem;
-  readonly row: number;
-  readonly span: number;
   readonly lane: number;
 }
 
@@ -52,9 +48,40 @@ function lanes<T extends { start: number; end: number }>(entries: readonly T[]):
   });
 }
 
+/** Give each cluster of overlapping events its own set of lanes. Later events can use the full column again. */
+function narrowPlacements(entries: readonly { item: CalendarItem; minute: number; endMinute: number }[]) {
+  const placed = lanes(entries.map(({ item, minute, endMinute }) => ({
+    item,
+    start: minute,
+    end: Math.min(DAY_MINUTES, Math.max(minute + MOBILE_MIN_MINUTES, endMinute)),
+  })));
+  const positions = new Map<CalendarItem, { top: number; height: number; left: number; width: number }>();
+
+  for (let first = 0; first < placed.length;) {
+    let last = first + 1;
+    let end = placed[first].end;
+    let count = placed[first].lane;
+    while (last < placed.length && placed[last].start < end) {
+      end = Math.max(end, placed[last].end);
+      count = Math.max(count, placed[last].lane);
+      last++;
+    }
+    for (const entry of placed.slice(first, last)) {
+      positions.set(entry.item, {
+        top: entry.start / DAY_MINUTES * 100,
+        height: (entry.end - entry.start) / DAY_MINUTES * 100,
+        left: (entry.lane - 1) / count * 100,
+        width: 100 / count,
+      });
+    }
+    first = last;
+  }
+  return positions;
+}
+
 /**
  * The Week view (the default). All-day and multi-day items sit in the all-day row across their own dates only;
- * timed items sit in their slots, side by side when they overlap. On narrow screens it becomes a day-by-day list.
+ * timed items sit in their slots, side by side when they overlap. The same grid adapts to narrow screens.
  * Every item is a button that opens its details.
  */
 @Component({
@@ -75,9 +102,9 @@ export class CalendarWeek {
 
   /** The highlighted time or day (#237): a first tap highlights it, a tap on the highlight adds there. */
   protected readonly pick = new SlotPick((at) => this.add.emit(at));
-  protected readonly pickLabel = pickLabel;
+  protected readonly pickLabel = (at: AddAt) => pickLabel(at, this.locale.locale());
   protected readonly pickRows = pickRows;
-  protected readonly pickText = pickText;
+  protected readonly pickText = (at: AddAt) => pickText(at, this.locale.locale());
   /** The highlighted day's column in the all-day row (1–7), for a whole-day highlight. */
   protected readonly pickColumn = computed(() => {
     const at = this.pick.at();
@@ -94,10 +121,6 @@ export class CalendarWeek {
     if (date) {
       this.pick.tap({ date }, true);
     }
-  }
-
-  protected addOnDay(date: PlainDate): void {
-    this.pick.tap({ date }, true);
   }
 
   @HostListener('document:click', ['$event.target'])
@@ -119,6 +142,7 @@ export class CalendarWeek {
       date,
       weekday: weekdayShort(date, this.locale.locale()),
       monthDay: monthDay(date, this.locale.locale()),
+      dayOfMonth: dayOfMonth(date),
       longLabel: dayLong(date, this.locale.locale()),
       isToday: date === this.today(),
       items: onDate(this.items(), date).sort(byStart),
@@ -138,29 +162,41 @@ export class CalendarWeek {
       }));
     return lanes(entries);
   });
-  protected readonly spanLanes = computed(() => Math.max(1, ...this.spans().map((s) => s.lane)));
 
-  /** Timed items per day, in 30-minute rows and overlap lanes. */
+  /** Timed items per day, using the desktop grid and exact minute positions on narrow screens. */
   protected readonly timed = computed(() =>
     this.days().map((day) => {
       const entries = day.items
         .filter((i) => !i.spansDays)
         .map((item) => {
-          const row = Math.floor(minutesOfDay(item.start) / SLOT) + 1;
-          const span = Math.max(MIN_SLOTS, Math.ceil((minutesOfDay(item.end) - minutesOfDay(item.start) || 60) / SLOT));
-          return { item, start: row, end: row + span, row, span };
+          const minute = minutesOfDay(item.start);
+          const endMinute = item.end.slice(0, 10) > day.date ? DAY_MINUTES : minutesOfDay(item.end);
+          const row = Math.floor(minute / SLOT) + 1;
+          const span = Math.max(MIN_SLOTS, Math.ceil((minutesOfDay(item.end) - minute || 60) / SLOT));
+          return { item, start: row, end: row + span, row, span, minute, endMinute };
         });
-      // Hidden unavailable time takes no lane: it's a thin marker at the day's edge that widens on hover or focus.
-      const placed = lanes(entries.filter((e) => !e.item.concealed)) as Timed[];
+      // Desktop keeps hidden unavailable time as an edge marker. On narrow screens give it its own
+      // space in an overlap so it can't cover an already narrow event button.
+      const placed = lanes(entries.filter((e) => !e.item.concealed));
       const markers = entries.filter((e) => e.item.concealed);
-      return { date: day.date, label: day.longLabel, placed, markers, lanes: Math.max(1, ...placed.map((p) => p.lane)) };
+      const narrow = narrowPlacements(entries);
+      return {
+        date: day.date,
+        label: day.longLabel,
+        placed: placed.map((entry) => ({ ...entry, narrow: narrow.get(entry.item)! })),
+        markers: markers.map((entry) => ({ ...entry, narrow: narrow.get(entry.item)! })),
+        lanes: Math.max(1, ...placed.map((p) => p.lane)),
+      };
     }),
   );
 
-  protected readonly markerLabel = itemSummary;
+  protected readonly markerLabel = (item: CalendarItem) => itemSummary(item, this.locale.locale());
 
   protected readonly hourMarks = computed(() =>
-    Array.from({ length: 12 }, (_, i) => ({ label: hourLabel(i * 2, this.locale.locale()), row: i * 4 + 1 })),
+    Array.from({ length: 24 }, (_, hour) => ({
+      label: hourLabel(hour, this.locale.locale()),
+      row: hour * 2 + 1,
+    })),
   );
 
   /** The earliest timed item this week, or 7 AM. */

@@ -130,6 +130,7 @@ const WEEK_OVERFLOW_WIDTH = 24;
       min-width: 0;
     }
     .icon {
+      display: var(--week-item-details, inline-flex);
       flex: none;
     }
     .title {
@@ -139,6 +140,7 @@ const WEEK_OVERFLOW_WIDTH = 24;
       white-space: nowrap;
     }
     .when {
+      display: var(--week-item-details, block);
       font-size: 0.8125rem;
       color: var(--color-text-secondary);
       overflow: hidden;
@@ -146,7 +148,7 @@ const WEEK_OVERFLOW_WIDTH = 24;
       white-space: nowrap;
     }
     .people {
-      display: flex;
+      display: var(--week-item-details, flex);
       gap: 2px;
       flex-wrap: wrap;
     }
@@ -158,6 +160,9 @@ const WEEK_OVERFLOW_WIDTH = 24;
       border-radius: var(--radius-pill);
       border: 1px dashed var(--color-outline);
       background: var(--color-surface);
+      max-inline-size: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
     .week-people,
