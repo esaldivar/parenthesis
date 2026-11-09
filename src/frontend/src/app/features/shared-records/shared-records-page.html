@@ -3,21 +3,21 @@
     <section class="records" aria-labelledby="shared-records-title">
       <header class="records-hero">
         <div class="records-hero__copy">
-          <h1 id="shared-records-title"><a class="mobile-back" routerLink="/more" aria-label="Back to More"><app-icon name="chevron-left" /></a> Shared records</h1>
-          <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
+          <h1 id="shared-records-title"><a class="mobile-back" routerLink="/more" aria-label="{{ 'feature.back.to.more' | tr }}"><app-icon name="chevron-left" /></a> {{ 'feature.shared.records' | tr }}</h1>
+          <p class="privacy"><app-icon name="lock" /> {{ 'feature.visible.to.authorized.parents.only' | tr }}</p>
           <button #newRequest type="button" class="primary" [disabled]="!workspace()?.hasCoParent || composer() !== null" (click)="start()">
-            <app-icon name="plus" /> New request
+            <app-icon name="plus" /> {{ 'feature.new.request' | tr }}
           </button>
         </div>
         <img class="records-hero__art" src="art/shared-records/paper-and-ribbon.webp" alt="" width="600" height="400" />
       </header>
       @if (workspace(); as data) {
         @if (!data.hasCoParent) {
-          <p class="muted">Your co-parent must join before you can start a Shared Fund or Child Support record.</p>
+          <p class="muted">{{ 'feature.your.co.parent.must.join.before.you' | tr }}</p>
         }
         @if (selected(); as item) {
           @if (records().length > 1) {
-            <ul class="record-list" aria-label="Shared records">
+            <ul class="record-list" aria-label="{{ 'feature.shared.records' | tr }}">
               @for (entry of records(); track entry.key) {
                 <li>
                   <button type="button" class="record-link" [class.support]="entry.kind === 'support'"
@@ -41,9 +41,9 @@
                 <p class="muted">@if (childrenOf(fund); as names) { {{ names }} · }{{ fund.currency }}</p>
                 <p class="split">
                   <strong>{{ fund.status === 'Open' ? 'Agreed split' : 'Proposed split' }}</strong>
-                  <span>You {{ (mine ? fund.proposerShareMinor : fund.coParentShareMinor) / 100 | currency: fund.currency : 'symbol' }}</span>
+                  <span>You {{ (mine ? fund.proposerShareMinor : fund.coParentShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</span>
                   <span aria-hidden="true">/</span>
-                  <span>Co-parent {{ (mine ? fund.coParentShareMinor : fund.proposerShareMinor) / 100 | currency: fund.currency : 'symbol' }}</span>
+                  <span>Co-parent {{ (mine ? fund.coParentShareMinor : fund.proposerShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</span>
                 </p>
                 @if (fund.status === 'Open') {
                   <app-record-progress [totals]="fund.totals ?? { acknowledgedMinor: 0, pendingMinor: 0, disputedMinor: 0 }"
@@ -57,7 +57,7 @@
                 } @else {
                   <div class="panel target">
                     <strong>Proposed target</strong>
-                    <strong>{{ (fund.proposerShareMinor + fund.coParentShareMinor) / 100 | currency: fund.currency : 'symbol' }}</strong>
+                    <strong>{{ (fund.proposerShareMinor + fund.coParentShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</strong>
                   </div>
                   @if (fund.status === 'AwaitingAgreement') {
                     @if (mine) {
@@ -95,10 +95,10 @@
             }
           }
         } @else {
-          <p class="muted">No shared records yet.</p>
+          <p class="muted">{{ 'feature.no.shared.records.yet' | tr }}</p>
         }
       } @else if (!error()) {
-        <p class="muted" role="status">Loading shared records…</p>
+        <p class="muted" role="status">{{ 'feature.loading.shared.records' | tr }}</p>
       }
     </section>
     @if (composer() !== null && workspace(); as data) {
@@ -106,11 +106,11 @@
         <header class="heading">
           <div>
             <h2 #composerHeading id="composer-title" tabindex="-1">
-              @if (reporting(); as target) { {{ target.kind === 'fund' ? 'Report contribution' : 'Report payment' }} } @else { New request }
+              @if (reporting(); as target) { {{ target.kind === 'fund' ? 'Report contribution' : 'Report payment' }} } @else { {{ 'feature.new.request' | tr }} }
             </h2>
-            <p class="muted mobile-subtitle">Shared records</p>
+            <p class="muted mobile-subtitle">{{ 'feature.shared.records' | tr }}</p>
           </div>
-          <button class="secondary back" type="button" [disabled]="busy()" (click)="close()" aria-label="Back to shared records">
+          <button class="secondary back" type="button" [disabled]="busy()" (click)="close()" aria-label="{{ 'feature.back.to.shared.records' | tr }}">
             <app-icon name="chevron-left" />
           </button>
         </header>
@@ -124,15 +124,15 @@
             [submitting]="busy()" [error]="reportError()" [attachmentsReady]="workspace()?.attachmentsReady ?? true"
             (report)="submitReport(target, $event)" (cancelled)="close()" />
         } @else {
-          <h3 id="request-type-label">Choose a request type</h3>
+          <h3 id="request-type-label">{{ 'feature.choose.a.request.type' | tr }}</h3>
           <div class="request-types" role="radiogroup" aria-labelledby="request-type-label">
             <button type="button" role="radio" class="request-type" [class.selected]="requestType() === 'fund'"
               [disabled]="busy()" [attr.aria-checked]="requestType() === 'fund'" (click)="requestType.set('fund')">
-              <strong>Shared Fund</strong><span>Agree on a goal</span>
+              <strong>{{ 'feature.shared.fund' | tr }}</strong><span>{{ 'feature.agree.on.a.goal' | tr }}</span>
             </button>
             <button type="button" role="radio" class="request-type support" [class.selected]="requestType() === 'support'"
               [disabled]="busy()" [attr.aria-checked]="requestType() === 'support'" (click)="requestType.set('support')">
-              <strong>Child Support</strong><span>Log a payment</span>
+              <strong>{{ 'feature.child.support' | tr }}</strong><span>{{ 'feature.log.a.payment' | tr }}</span>
             </button>
           </div>
           @if (requestType() === 'fund') {
@@ -147,7 +147,7 @@
   @if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
     @if (!workspace()) {
-      <button class="secondary" type="button" (click)="retry()">Try again</button>
+      <button class="secondary" type="button" (click)="retry()">{{ 'feature.try.again' | tr }}</button>
     }
   }
   <p class="visually-hidden" role="status">{{ announcement() }}</p>

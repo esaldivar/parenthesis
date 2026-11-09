@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,10 +29,10 @@ import { familyDate } from './photo-text';
 @Component({
   selector: 'app-memory-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, Icon, EventPhotosSection],
+  imports: [TranslatePipe, MatButtonModule, RouterLink, Icon, EventPhotosSection],
   template: `
     <a mat-button class="back" routerLink="/memories"
-      ><app-icon name="chevron-left" [size]="18" /> Family Memories</a
+      ><app-icon name="chevron-left" [size]="18" /> {{ 'feature.family.memories' | tr }}</a
     >
     @switch (state()) {
       @case ('loading') {

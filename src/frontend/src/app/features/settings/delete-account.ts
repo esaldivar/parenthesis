@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, input, signal, viewChild } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,34 +18,32 @@ import { FORM_STYLES } from '../auth/form-styles';
 @Component({
   selector: 'app-delete-account',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [TranslatePipe, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   template: `
     @if (!open()) {
-      <p class="muted">Permanently delete your Parenthesis account and your personal details.</p>
+      <p class="muted">{{ 'feature.permanently.delete.your.parenthesis.account.and.your' | tr }}</p>
       <div class="actions actions--start">
-        <button #deleteButton mat-stroked-button class="danger" type="button" (click)="start()">Delete account…</button>
+        <button #deleteButton mat-stroked-button class="danger" type="button" (click)="start()">{{ 'feature.delete.account' | tr }}</button>
       </div>
     } @else {
       <div class="confirm">
-        <p class="warning" #warning tabindex="-1"><strong>This can't be undone.</strong> Deleting your account:</p>
+        <p class="warning" #warning tabindex="-1"><strong>{{ 'feature.this.can.t.be.undone' | tr }}</strong> {{ 'feature.deleting.your.account' | tr }}</p>
         <ul>
-          <li>Removes your sign-in, your name and your private details, and signs you out everywhere.</li>
+          <li>{{ 'feature.removes.your.sign.in.your.name.and' | tr }}</li>
           @for (family of families(); track $index) {
             @if (family.coParentName; as coParent) {
               <li>
-                Leaves <strong>{{ family.name }}</strong> with <strong>{{ coParent }}</strong>: the family, your children and your
-                shared history stay with them. What you added shows as “Former parent”.
+                {{ 'feature.leaves' | tr }} <strong>{{ family.name }}</strong> {{ 'feature.with' | tr }} <strong>{{ coParent }}</strong>{{ 'feature.the.family.your.children.and.your.shared' | tr }}
               </li>
-              <li>Withdraws requests you're waiting on, and removes your Unavailable time.</li>
+              <li>{{ 'feature.withdraws.requests.you.re.waiting.on.and' | tr }}</li>
               <li>Sends {{ coParent }} an email that a parent has left. It doesn't include your name.</li>
             } @else {
               <li>
-                Deletes <strong>{{ family.name }}</strong> too, because you're its only parent: your children's profiles, devices,
-                calendar and invitations.
+                {{ 'feature.deletes' | tr }} <strong>{{ family.name }}</strong> {{ 'feature.too.because.you.re.its.only.parent' | tr }}
               </li>
             }
           }
-          <li>Sends you a confirmation email.</li>
+          <li>{{ 'feature.sends.you.a.confirmation.email' | tr }}</li>
         </ul>
 
         @if (error(); as error) {
@@ -53,9 +52,9 @@ import { FORM_STYLES } from '../auth/form-styles';
 
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Your password</mat-label>
+            <mat-label>{{ 'feature.your.password' | tr }}</mat-label>
             <input matInput type="password" formControlName="password" autocomplete="current-password" required />
-            <mat-hint>To confirm it's you.</mat-hint>
+            <mat-hint>{{ 'feature.to.confirm.it.s.you' | tr }}</mat-hint>
             @if (form.controls.password.invalid) {
               <mat-error>{{ fieldError() ?? 'Enter your password.' }}</mat-error>
             }
@@ -64,7 +63,7 @@ import { FORM_STYLES } from '../auth/form-styles';
             <button mat-flat-button class="danger-fill" type="submit" [disabled]="busy()">
               {{ busy() ? 'Deleting…' : 'Delete my account' }}
             </button>
-            <button mat-button type="button" [disabled]="busy()" (click)="cancel()">Cancel</button>
+            <button mat-button type="button" [disabled]="busy()" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
           </div>
         </form>
       </div>

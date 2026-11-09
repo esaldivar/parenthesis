@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,10 +20,10 @@ const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;
 @Component({
   selector: 'app-pair-device-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [TranslatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
   template: `
-    <h1>Set up a child’s tablet</h1>
-    <p class="lead">On your phone, open Settings, choose your child and tap “Pair a tablet”. Then enter the code here.</p>
+    <h1>{{ 'feature.set.up.a.child.s.tablet' | tr }}</h1>
+    <p class="lead">{{ 'feature.on.your.phone.open.settings.choose.your' | tr }}</p>
 
     @if (error(); as error) {
       <div class="alert" role="alert">{{ error }}</div>
@@ -30,7 +31,7 @@ const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Code</mat-label>
+        <mat-label>{{ 'feature.code' | tr }}</mat-label>
         <input
           matInput
           formControlName="code"
@@ -40,20 +41,20 @@ const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;
           maxlength="11"
           required
         />
-        <mat-hint>8 letters and numbers, like ABCD-2345</mat-hint>
+        <mat-hint>{{ 'feature.8.letters.and.numbers.like.abcd.2345' | tr }}</mat-hint>
         @if (form.controls.code.hasError('required')) {
-          <mat-error>Enter the code from your phone.</mat-error>
+          <mat-error>{{ 'feature.enter.the.code.from.your.phone' | tr }}</mat-error>
         } @else if (form.controls.code.hasError('pattern')) {
-          <mat-error>The code has 8 letters and numbers, like ABCD-2345.</mat-error>
+          <mat-error>{{ 'feature.the.code.has.8.letters.and.numbers' | tr }}</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Name this tablet</mat-label>
+        <mat-label>{{ 'feature.name.this.tablet' | tr }}</mat-label>
         <input matInput formControlName="deviceName" autocomplete="off" maxlength="60" required />
-        <mat-hint>You’ll see it in your list of devices, like “Kai’s tablet”</mat-hint>
+        <mat-hint>{{ 'feature.you.ll.see.it.in.your.list' | tr }}</mat-hint>
         @if (form.controls.deviceName.hasError('required')) {
-          <mat-error>Give this tablet a name.</mat-error>
+          <mat-error>{{ 'feature.give.this.tablet.a.name' | tr }}</mat-error>
         }
       </mat-form-field>
 
@@ -63,7 +64,7 @@ const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;
     </form>
 
     <div class="links">
-      <a routerLink="/sign-in">Sign in instead</a>
+      <a routerLink="/sign-in">{{ 'feature.sign.in.instead' | tr }}</a>
     </div>
   `,
   styles: FORM_STYLES,

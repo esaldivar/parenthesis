@@ -1,4 +1,6 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
+import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -11,58 +13,58 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
 @Component({
   selector: 'app-routines-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
+  imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
   template: `
     <section aria-labelledby="routines-heading">
-      <h3 id="routines-heading">Routines
+      <h3 id="routines-heading">{{ 'feature.routines' | tr }}
       </h3>
-      <div class="actions" role="group" aria-label="Routine views">
-        <button type="button" [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">Shared</button>
+      <div class="actions" role="group" aria-label="{{ 'feature.routine.views' | tr }}">
+        <button type="button" [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">{{ 'feature.shared' | tr }}</button>
         @for (home of households(); track home.ownerId) {
           <button type="button" [attr.aria-pressed]="selectedOwner() === home.ownerId"
             (click)="openHousehold(home)">{{ home.isMine ? 'My routines' : home.ownerName + '’s routines' }}@if (
               !home.isMine && updates.unopened(childId(), 'householdRoutines')
-            ) {<span class="visually-hidden">, updated</span><span class="updated-dot tab-dot" aria-hidden="true"></span>}</button>
+            ) {<span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span><span class="updated-dot tab-dot" aria-hidden="true"></span>}</button>
         }
       </div>
       @if (householdError()) {
         <p role="alert">{{ householdError() }}</p>
-        <button type="button" (click)="loadHouseholds()">Refresh household routines</button>
+        <button type="button" (click)="loadHouseholds()">{{ 'feature.refresh.household.routines' | tr }}</button>
       }
       @if (selectedHousehold(); as home) {
         @if (home.isMine) {
           <fieldset [disabled]="householdSaving()">
-            <legend>My household routine</legend>
-            <label>Bedtime
+            <legend>{{ 'feature.my.household.routine' | tr }}</legend>
+            <label>{{ 'feature.bedtime' | tr }}
               <textarea maxlength="1000" [value]="householdBedtime()" (input)="householdBedtime.set($any($event.target).value)"></textarea>
             </label>
-            <label>Naps
+            <label>{{ 'feature.naps' | tr }}
               <textarea maxlength="1000" [value]="householdNaps()" (input)="householdNaps.set($any($event.target).value)"></textarea>
             </label>
-            <button type="button" (click)="updateHousehold(home, 'save')">Save my routines</button>
+            <button type="button" (click)="updateHousehold(home, 'save')">{{ 'feature.save.my.routines' | tr }}</button>
           </fieldset>
           @if (householdConflict()) {
-            <p>Latest saved values</p>
+            <p>{{ 'feature.latest.saved.values' | tr }}</p>
             <ng-container *ngTemplateOutlet="values; context: { $implicit: home.latest.values }" />
           }
         } @else {
           <ng-container *ngTemplateOutlet="values; context: { $implicit: home.latest.values, rowMarks: homeMarks }" />
           @if (home.canAccept) {
-            <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'accept')">Use in both homes</button>
+            <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'accept')">{{ 'feature.use.in.both.homes' | tr }}</button>
           }
         }
         @if (home.shared) {
-          <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">Stop sharing</button>
+          <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}</button>
         }
       } @else {
         @for (home of households(); track home.ownerId) {
           @if (home.shared; as agreed) {
             <h4>{{ home.isMine ? 'My shared routine' : home.ownerName + '’s shared routine' }}</h4>
             <ng-container *ngTemplateOutlet="values; context: { $implicit: agreed.values }" />
-            <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">Stop sharing</button>
+            <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}</button>
           }
         }
-      <p>Shared routines for both homes.</p>
+      <p>{{ 'feature.shared.routines.for.both.homes' | tr }}</p>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
       }
@@ -71,74 +73,73 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
           <form [formGroup]="form" (ngSubmit)="save()">
             @if (conflict(); as latest) {
               <div class="latest">
-                <p role="alert">Your co-parent saved changes first. Review the latest saved values below.
-                  Your draft is still in the form.</p>
-                <h4>Latest saved values</h4>
+                <p role="alert">{{ 'feature.your.co.parent.saved.changes.first.review' | tr }}</p>
+                <h4>{{ 'feature.latest.saved.values' | tr }}</h4>
                 <ng-container *ngTemplateOutlet="values; context: { $implicit: latest.values }" />
               </div>
             }
             <fieldset [disabled]="saving()">
-              <legend>Shared bedtime and naps</legend>
-              <label>Bedtime <textarea formControlName="bedtime" maxlength="1000"></textarea></label>
-              <label>Naps (optional) <textarea formControlName="naps" maxlength="1000"></textarea></label>
+              <legend>{{ 'feature.shared.bedtime.and.naps' | tr }}</legend>
+              <label>{{ 'feature.bedtime' | tr }} <textarea formControlName="bedtime" maxlength="1000"></textarea></label>
+              <label>{{ 'feature.naps.optional' | tr }} <textarea formControlName="naps" maxlength="1000"></textarea></label>
               <div class="actions">
                 <button type="submit" [disabled]="form.invalid">
                   {{ saving() ? 'Saving…' : conflict() ? 'Save my draft' : 'Save' }}
                 </button>
-                <button type="button" (click)="cancel()">Cancel</button>
+                <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>
             </fieldset>
           </form>
         } @else {
           <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, rowMarks: marks }" />
           <div class="actions">
-            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />Edit<span class="visually-hidden"> Routines</span></button>
+            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ 'feature.routines' | tr }}</span></button>
             <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="routines-history"
-              (click)="toggleHistory()"><app-icon name="history" [size]="18" />History</button>
+              (click)="toggleHistory()"><app-icon name="history" [size]="18" />{{ 'feature.history' | tr }}</button>
           </div>
           <p role="status">{{ notice() }}</p>
         }
         <div id="routines-history" [hidden]="!historyOpen() || editing()">
-          <h4>Routines history</h4>
+          <h4>{{ 'feature.routines.history' | tr }}</h4>
           @if (historyError()) {
-            <p role="alert">History couldn’t be loaded.</p>
-            <button type="button" (click)="loadHistory(nextRevision())">Try again</button>
+            <p role="alert">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
+            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
           } @else if (historyLoading()) {
-            <p role="status">Loading history…</p>
+            <p role="status">{{ 'feature.loading.history' | tr }}</p>
           } @else if (!history().length) {
-            <p>No changes yet.</p>
+            <p>{{ 'feature.no.changes.yet' | tr }}</p>
           }
           @for (entry of history(); track entry.revision) {
             <article>
-              <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | date: 'medium' }}</time></h5>
+              <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | appDate: 'medium' }}</time></h5>
               <div class="comparison">
-                <div><strong>Previous values</strong>
+                <div><strong>{{ 'feature.previous.values' | tr }}</strong>
                   <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.previous }" />
                 </div>
-                <div><strong>Saved values</strong>
+                <div><strong>{{ 'feature.saved.values' | tr }}</strong>
                   <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.current }" />
                 </div>
               </div>
             </article>
           }
           @if (nextRevision() !== null && !historyLoading() && !historyError()) {
-            <button type="button" (click)="loadHistory(nextRevision())">Show older changes</button>
+            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
           }
         </div>
       } @else if (error()) {
-        <button type="button" (click)="load()">Try again</button>
+        <button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       } @else {
-        <p role="status">Loading Routines…</p>
+        <p role="status">{{ 'feature.loading.routines' | tr }}</p>
       }
       }
     </section>
     <ng-template #values let-entry let-rowMarks="rowMarks">
       <dl>
         <div class="row" [class.row--updated]="rowMarks?.updated('bedtime')" (appOnScreen)="rowMarks?.rowOnScreen('bedtime')">
-          <dt>Bedtime@if (rowMarks?.updated('bedtime')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.bedtime ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.bedtime' | tr }}@if (rowMarks?.updated('bedtime')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.bedtime ?? 'Not set' }}</dd>
         </div>
         <div class="row" [class.row--updated]="rowMarks?.updated('naps')" (appOnScreen)="rowMarks?.rowOnScreen('naps')">
-          <dt>Naps@if (rowMarks?.updated('naps')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.naps ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.naps' | tr }}@if (rowMarks?.updated('naps')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.naps ?? 'Not set' }}</dd>
         </div>
       </dl>
     </ng-template>

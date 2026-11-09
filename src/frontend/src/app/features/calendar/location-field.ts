@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -45,11 +46,11 @@ export const NEARBY_MESSAGES: Record<NearbyState, string> = {
 @Component({
   selector: 'app-location-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatAutocompleteModule, MatButtonModule, Icon],
+  imports: [TranslatePipe, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatAutocompleteModule, MatButtonModule, Icon],
   template: `
     <div class="row">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Location (optional)</mat-label>
+        <mat-label>{{ 'feature.location.optional' | tr }}</mat-label>
         <input
           matInput
           name="location"
@@ -71,9 +72,9 @@ export const NEARBY_MESSAGES: Record<NearbyState, string> = {
         } @else {
           <!-- "Open in Google Maps" searches this text as written (#113): a full address finds the right place. -->
           <mat-hint>
-            Include the street, city and ZIP so directions find the right place.
+            {{ 'feature.include.the.street.city.and.zip.so' | tr }}
             @if (confirmed()) {
-              <span class="visually-hidden">Address suggestions come from Google Maps.</span>
+              <span class="visually-hidden">{{ 'feature.address.suggestions.come.from.google.maps' | tr }}</span>
             }
           </mat-hint>
         }
@@ -89,7 +90,7 @@ export const NEARBY_MESSAGES: Record<NearbyState, string> = {
           (click)="toggleNearby()"
         >
           <app-icon [name]="nearby() === 'on' ? 'check' : 'locate'" [size]="18" />
-          Use my location
+          {{ 'feature.use.my.location' | tr }}
         </button>
       }
     </div>

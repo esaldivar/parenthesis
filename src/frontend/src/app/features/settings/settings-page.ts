@@ -1,4 +1,4 @@
-import { LocaleService, AppLocale } from '../../core/i18n/locale.service';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe } from '../../core/i18n/translations';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { EventThemesService } from '../../core/theme/event-themes.service';
@@ -41,7 +41,7 @@ import { MemorySettingsSection } from './memory-settings';
     <section class="card" aria-labelledby="language-heading">
       <h2 id="language-heading">{{ 'settings.languageHeading' | tr }}</h2>
       <label for="settings-language">{{ 'settings.languageLabel' | tr }}</label>
-      <select id="settings-language" [value]="locale.locale()" (change)="changeLanguage($event)" aria-describedby="settings-language-help">
+      <select id="settings-language" [value]="locale.locale()" [disabled]="savingLanguage()" (change)="changeLanguage($event)" aria-describedby="settings-language-help">
         <option value="en">English</option>
         <option value="es-419">Español</option>
       </select>
@@ -62,7 +62,7 @@ import { MemorySettingsSection } from './memory-settings';
             <p role="alert">{{ error }}</p>
           } @else if (details(); as details) {
             @if (coParent(details); as coParent) {
-              <p>You share {{ details.name }} with <strong>{{ coParent }}</strong>. You both have the same say.</p>
+              <p>You share {{ details.name }} with <strong>{{ coParent }}</strong>{{ 'feature.you.both.have.the.same.say' | tr }}</p>
             } @else {
               <p class="muted">{{ 'settings.invite' | tr }}</p>
               <app-invite-co-parent [familyId]="current.id" [pending]="pending()" />
@@ -164,19 +164,31 @@ export class SettingsPage implements OnInit {
 
   protected readonly languageError = signal<string | null>(null);
 
+  protected readonly savingLanguage = signal(false);
+
   protected async changeLanguage(event: Event): Promise<void> {
-    const value = (event.target as HTMLSelectElement).value;
-    if (value !== 'en' && value !== 'es-419') return;
-    const previous = this.locale.locale();
-    this.locale.setLocale(value as AppLocale);
+    const select = event.target as HTMLSelectElement;
+    const value = select.value;
+    const accountId = this.auth.user()?.id;
+    if ((value !== 'en' && value !== 'es-419') || !accountId || this.savingLanguage()) return;
+    this.savingLanguage.set(true);
     this.languageError.set(null);
     try {
-      if (this.auth.status() === 'signed-in') await this.api.setLanguage(value as AppLocale);
+      const saved = await this.api.setLanguage(value);
+      const current = this.auth.user();
+      if (current?.id === accountId && saved.id === accountId) {
+        this.auth.user.set({ ...current, language: value });
+        this.locale.setLocale(value);
+      }
     } catch {
-      this.locale.setLocale(previous);
-      this.languageError.set(previous === 'es-419'
-        ? 'No se pudo guardar el idioma. Inténtalo de nuevo.'
-        : 'Could not save your language. Please try again.');
+      if (this.auth.user()?.id === accountId) {
+        select.value = this.locale.locale();
+        this.languageError.set(this.locale.locale() === 'es-419'
+          ? 'No se pudo guardar el idioma. Inténtalo de nuevo.'
+          : 'Could not save your language. Please try again.');
+      }
+    } finally {
+      this.savingLanguage.set(false);
     }
   }
 

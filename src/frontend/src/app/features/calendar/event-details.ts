@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { EventDecoration } from './event-decoration';
 import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
@@ -47,12 +49,13 @@ export const COMMENT_MAX = 500;
 @Component({
   selector: 'app-event-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EventDecoration, CalendarPalette, PanelTint, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
+  imports: [TranslatePipe, EventDecoration, CalendarPalette, PanelTint, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './event-details.html',
   styleUrl: './event-details.scss',
 })
 export class EventDetails {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -89,7 +92,7 @@ export class EventDetails {
   protected readonly error = signal<string | null>(null);
 
   protected readonly status = computed(() => statusText(this.item()) ?? 'Confirmed');
-  protected readonly date = computed(() => dayLong(this.item().firstDate));
+  protected readonly date = computed(() => dayLong(this.item().firstDate, this.locale.locale()));
   protected readonly when = computed(() => whenText(this.item()));
   protected readonly coParent = computed(
     () => this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null,
@@ -105,7 +108,7 @@ export class EventDetails {
 
   protected readonly swapTargetWhen = computed(() => {
     const target = this.swapTarget();
-    return target ? `${dayLong(target.firstDate)} · ${whenText(target)}` : null;
+    return target ? `${dayLong(target.firstDate, this.locale.locale())} · ${whenText(target)}` : null;
   });
 
   /** A swap changes confirmed parenting time's dates, with the co-parent's approval. */
@@ -114,7 +117,7 @@ export class EventDetails {
   );
   protected readonly sentAt = computed(() => {
     const request = this.request();
-    return request ? dateTimeLabel(toFamilyLocal(request.createdAt, this.timeZone())) : null;
+    return request ? dateTimeLabel(toFamilyLocal(request.createdAt, this.timeZone()), this.locale.locale()) : null;
   });
   protected readonly answerLabel = computed(() =>
     this.request()?.canDecide ? 'Your answer' : `${this.coParent() ?? 'Your co-parent'}’s answer`,

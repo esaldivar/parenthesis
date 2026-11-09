@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -39,6 +40,7 @@ const NEEDS_BOTH: readonly CalendarCategory[] = ['ParentingTime', 'Holiday', 'Jo
   selector: 'app-event-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    TranslatePipe,
     LoadingIndicator,
     DateField,
     LocationField,

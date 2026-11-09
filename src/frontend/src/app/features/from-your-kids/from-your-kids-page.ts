@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, isDevMode, signal, untracked } from '@angular/core';
 import { Api, Child } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -12,45 +13,45 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
 @Component({
   selector: 'app-from-your-kids-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [KidsGallery, KidsDiary],
+  imports: [TranslatePipe, KidsGallery, KidsDiary],
   template: `
     <section class="kids" aria-labelledby="kids-title">
       <header class="intro">
-        <h1 id="kids-title">From Your Kids</h1>
-        <p>A little window into the things your children choose to share.</p>
+        <h1 id="kids-title">{{ 'feature.from.your.kids' | tr }}</h1>
+        <p>{{ 'feature.a.little.window.into.the.things.your' | tr }}</p>
       </header>
 
       @if (loading()) {
-        <p role="status">Loading children…</p>
+        <p role="status">{{ 'feature.loading.children' | tr }}</p>
       } @else if (failed()) {
-        <p role="alert">We couldn't load your children's profiles.</p>
-        <button type="button" class="retry" (click)="retry()">Try again</button>
+        <p role="alert">{{ 'feature.we.couldn.t.load.your.children.s' | tr }}</p>
+        <button type="button" class="retry" (click)="retry()">{{ 'feature.try.again' | tr }}</button>
       } @else if (children().length === 0) {
-        <p>No active child profiles yet.</p>
+        <p>{{ 'feature.no.active.child.profiles.yet' | tr }}</p>
       } @else {
-      <nav class="child-tabs" aria-label="Choose a child">
+      <nav class="child-tabs" aria-label="{{ 'feature.choose.a.child' | tr }}">
         @for (child of children(); track child.id) {
           <button type="button" [attr.aria-pressed]="selectedChildId() === child.id"
             (click)="selectChild(child.id)">{{ child.firstName }}</button>
         }
       </nav>
-      <nav class="sections" aria-label="From Your Kids sections">
+      <nav class="sections" aria-label="{{ 'feature.from.your.kids.sections' | tr }}">
         <button type="button" [attr.aria-current]="section() === 'diary' ? 'page' : null"
-          (click)="section.set('diary')"><span class="section-icon" aria-hidden="true">📖</span><span class="section-copy"><strong>Diary</strong><small>Thoughts, stories, and daily adventures</small></span><span aria-hidden="true">›</span></button>
+          (click)="section.set('diary')"><span class="section-icon" aria-hidden="true">📖</span><span class="section-copy"><strong>{{ 'feature.diary' | tr }}</strong><small>{{ 'feature.thoughts.stories.and.daily.adventures' | tr }}</small></span><span aria-hidden="true">›</span></button>
         <button type="button" [attr.aria-current]="section() === 'artwork' ? 'page' : null"
-          (click)="section.set('artwork')"><span class="section-icon" aria-hidden="true">🧲</span><span class="section-copy"><strong>Artwork</strong><small>Creative drawings, projects, and more</small></span><span aria-hidden="true">›</span></button>
+          (click)="section.set('artwork')"><span class="section-icon" aria-hidden="true">🧲</span><span class="section-copy"><strong>{{ 'feature.artwork' | tr }}</strong><small>{{ 'feature.creative.drawings.projects.and.more' | tr }}</small></span><span aria-hidden="true">›</span></button>
         <button type="button" [attr.aria-current]="section() === 'photos' ? 'page' : null"
-          (click)="section.set('photos')"><span class="section-icon" aria-hidden="true">📷</span><span class="section-copy"><strong>Photos</strong><small>Photo adventures from your kid</small></span><span aria-hidden="true">›</span></button>
+          (click)="section.set('photos')"><span class="section-icon" aria-hidden="true">📷</span><span class="section-copy"><strong>{{ 'feature.photos' | tr }}</strong><small>{{ 'feature.photo.adventures.from.your.kid' | tr }}</small></span><span aria-hidden="true">›</span></button>
       </nav>
 
       @if (developmentBuild) {
         <label class="preview-toggle">
           <input type="checkbox" [checked]="previewAt() !== null" (change)="setPreview($event)" />
-          Development preview with sample content
+          {{ 'feature.development.preview.with.sample.content' | tr }}
         </label>
       }
       @if (previewAt() !== null) {
-        <p role="status">Showing synthetic examples for UI testing.</p>
+        <p role="status">{{ 'feature.showing.synthetic.examples.for.ui.testing' | tr }}</p>
       } @else {
         <p class="sharing-note">Only things {{ selectedChild()?.firstName }} chooses to share with you will appear here.</p>
       }

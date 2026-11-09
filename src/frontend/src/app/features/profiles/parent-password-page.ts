@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,12 +16,11 @@ import { FORM_STYLES } from '../auth/form-styles';
 @Component({
   selector: 'app-parent-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [TranslatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
   template: `
     <h1>Hi, {{ name() }}</h1>
     <p class="lead">
-      Enter your email and password to continue. If you’ve forgotten your parent PIN, you can choose a new one in
-      Settings after you sign in.
+      {{ 'feature.enter.your.email.and.password.to.continue' | tr }}
     </p>
 
     @if (error(); as error) {
@@ -29,20 +29,20 @@ import { FORM_STYLES } from '../auth/form-styles';
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Email</mat-label>
+        <mat-label>{{ 'feature.email' | tr }}</mat-label>
         <input matInput type="email" formControlName="email" autocomplete="username" required />
         @if (form.controls.email.hasError('required')) {
-          <mat-error>Enter your email address.</mat-error>
+          <mat-error>{{ 'feature.enter.your.email.address' | tr }}</mat-error>
         } @else if (form.controls.email.hasError('email')) {
-          <mat-error>Enter a valid email address.</mat-error>
+          <mat-error>{{ 'feature.enter.a.valid.email.address' | tr }}</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Password</mat-label>
+        <mat-label>{{ 'feature.password' | tr }}</mat-label>
         <input matInput type="password" formControlName="password" autocomplete="current-password" required />
         @if (form.controls.password.hasError('required')) {
-          <mat-error>Enter your password.</mat-error>
+          <mat-error>{{ 'feature.enter.your.password' | tr }}</mat-error>
         }
       </mat-form-field>
 
@@ -52,8 +52,8 @@ import { FORM_STYLES } from '../auth/form-styles';
     </form>
 
     <div class="links">
-      <a routerLink="/profiles">Back to profiles</a>
-      <a routerLink="/forgot-password">Forgot your password?</a>
+      <a routerLink="/profiles">{{ 'feature.back.to.profiles' | tr }}</a>
+      <a routerLink="/forgot-password">{{ 'feature.forgot.your.password' | tr }}</a>
     </div>
   `,
   styles: FORM_STYLES,

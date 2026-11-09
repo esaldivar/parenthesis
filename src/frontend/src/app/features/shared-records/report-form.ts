@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -14,7 +15,7 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
  */
 @Component({
   selector: 'app-report-form',
-  imports: [FormsModule, Icon],
+  imports: [TranslatePipe, FormsModule, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!attachmentsReady()) {
@@ -25,7 +26,7 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
             Please try again later.</span>
         </p>
         <div class="actions">
-          <button type="button" (click)="cancelled.emit()">Close</button>
+          <button type="button" (click)="cancelled.emit()">{{ 'feature.close' | tr }}</button>
         </div>
       </div>
     } @else {
@@ -35,38 +36,38 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
           <input name="amount" type="text" inputmode="decimal" required autocomplete="off" [(ngModel)]="amount" />
         </label>
         <label>
-          Payment date
+          {{ 'feature.payment.date' | tr }}
           <input name="paidOn" type="date" required [max]="today" [(ngModel)]="paidOn" />
         </label>
         @if (kind() === 'fund') {
           <fieldset>
-            <legend>Who was paid</legend>
+            <legend>{{ 'feature.who.was.paid' | tr }}</legend>
             <label class="choice">
               <input type="radio" name="paidTo" value="Vendor" [(ngModel)]="paidTo" />
-              <span>A vendor or provider<small>Your co-parent acknowledges the contribution.</small></span>
+              <span>{{ 'feature.a.vendor.or.provider' | tr }}<small>{{ 'feature.your.co.parent.acknowledges.the.contribution' | tr }}</small></span>
             </label>
             <label class="choice">
               <input type="radio" name="paidTo" value="CoParent" [(ngModel)]="paidTo" />
-              <span>My co-parent<small>Your co-parent confirms they received it.</small></span>
+              <span>{{ 'feature.my.co.parent' | tr }}<small>{{ 'feature.your.co.parent.confirms.they.received.it' | tr }}</small></span>
             </label>
           </fieldset>
         }
         <div class="attachment">
-          <span class="label" id="attachment-label">Payment attachment · required</span>
+          <span class="label" id="attachment-label">{{ 'feature.payment.attachment.required' | tr }}</span>
           @if (file(); as chosen) {
             <div class="file">
               <app-icon name="note" />
               <span><strong>{{ chosen.name }}</strong><small>{{ describe(chosen) }} attached</small></span>
-              <button type="button" class="link" (click)="picker.click()">Replace</button>
+              <button type="button" class="link" (click)="picker.click()">{{ 'feature.replace' | tr }}</button>
             </div>
           } @else {
             <button type="button" class="choose" aria-describedby="attachment-label attachment-hint" (click)="picker.click()">
-              <app-icon name="cloud-upload" /> Choose a PDF or image
+              <app-icon name="cloud-upload" /> {{ 'feature.choose.a.pdf.or.image' | tr }}
             </button>
           }
           <input #picker class="visually-hidden" type="file" tabindex="-1" aria-hidden="true"
             accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg" (change)="choose(picker)" />
-          <p id="attachment-hint" class="hint">PDF, PNG or JPEG, up to 10 MB. Cover account numbers and unrelated transactions before sharing.</p>
+          <p id="attachment-hint" class="hint">{{ 'feature.pdf.png.or.jpeg.up.to.10' | tr }}</p>
         </div>
         @if (problem(); as message) {
           <p class="error" role="alert">{{ message }}</p>
@@ -77,9 +78,9 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
           <button type="submit" class="primary" [disabled]="submitting()">
             {{ submitting() ? 'Sending…' : kind() === 'fund' ? 'Submit contribution' : 'Submit payment' }}
           </button>
-          <button type="button" [disabled]="submitting()" (click)="cancelled.emit()">Cancel</button>
+          <button type="button" [disabled]="submitting()" (click)="cancelled.emit()">{{ 'feature.cancel' | tr }}</button>
         </div>
-        <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
+        <p class="privacy"><app-icon name="lock" /> {{ 'feature.visible.to.authorized.parents.only' | tr }}</p>
       </form>
     }
   `,

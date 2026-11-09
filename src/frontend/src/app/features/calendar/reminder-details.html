@@ -13,29 +13,29 @@
     <span class="panel__icon" [appCalendarPalette]="'reminder'"><app-icon name="bell" [size]="24" /></span>
     <div class="panel__titles">
       <h2 id="reminder-details-title" tabindex="-1" cdkFocusInitial>{{ reminder().title }}</h2>
-      <p class="panel__type" [appCalendarPalette]="'reminder'">Reminder</p>
+      <p class="panel__type" [appCalendarPalette]="'reminder'">{{ 'feature.reminder' | tr }}</p>
     </div>
-    <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close details">
+    <button mat-icon-button type="button" (click)="closed.emit()" aria-label="{{ 'feature.close.details' | tr }}">
       <app-icon name="close" />
     </button>
   </div>
 
   <dl class="facts">
-    <dt>When</dt>
+    <dt>{{ 'feature.when' | tr }}</dt>
     <dd>{{ date() }} · {{ when() }}</dd>
     @if (repeats(); as repeats) {
-      <dt>Repeats</dt>
+      <dt>{{ 'feature.repeats' | tr }}</dt>
       <dd>{{ repeats }}</dd>
     }
     @if (item().children[0]; as child) {
-      <dt>About</dt>
+      <dt>{{ 'feature.about' | tr }}</dt>
       <dd>{{ child.name }}</dd>
     }
     @if (reminder().details; as details) {
-      <dt>Details</dt>
+      <dt>{{ 'feature.details' | tr }}</dt>
       <dd>{{ details }}</dd>
     }
-    <dt>Added by</dt>
+    <dt>{{ 'feature.added.by' | tr }}</dt>
     <dd>
       {{ item().isMine ? 'You' : item().ownerName }}
       @if (editedBy(); as editor) {
@@ -49,14 +49,14 @@
 
   <div class="actions">
     @if (!confirming()) {
-      <a mat-flat-button [routerLink]="['/calendar/reminders', reminder().id, 'edit']">Edit reminder</a>
-      <button #deleteButton mat-stroked-button type="button" (click)="confirmDelete(true)">Delete reminder…</button>
+      <a mat-flat-button [routerLink]="['/calendar/reminders', reminder().id, 'edit']">{{ 'feature.edit.reminder' | tr }}</a>
+      <button #deleteButton mat-stroked-button type="button" (click)="confirmDelete(true)">{{ 'feature.delete.reminder' | tr }}</button>
     } @else {
       <p class="explain" id="reminder-delete-explanation">
         @if (repeats()) {
-          This deletes the reminder and every repeat of it, for both of you.
+          {{ 'feature.this.deletes.the.reminder.and.every.repeat' | tr }}
         } @else {
-          This deletes the reminder for both of you.
+          {{ 'feature.this.deletes.the.reminder.for.both.of' | tr }}
         }
       </p>
       @if (error(); as error) {
@@ -66,7 +66,7 @@
         <button mat-flat-button type="button" class="danger" [disabled]="busy()" disabledInteractive aria-describedby="reminder-delete-explanation" (click)="remove()">
           {{ busy() ? 'Deleting…' : 'Yes, delete' }}
         </button>
-        <button #keepButton mat-button type="button" [disabled]="busy()" aria-describedby="reminder-delete-explanation" (click)="confirmDelete(false)">Keep it</button>
+        <button #keepButton mat-button type="button" [disabled]="busy()" aria-describedby="reminder-delete-explanation" (click)="confirmDelete(false)">{{ 'feature.keep.it' | tr }}</button>
       </div>
     }
   </div>

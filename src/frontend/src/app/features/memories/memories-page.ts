@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,12 +32,12 @@ import {
 @Component({
   selector: 'app-memories-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, EmptyState, Icon],
+  imports: [TranslatePipe, MatButtonModule, RouterLink, EmptyState, Icon],
   template: `
     <header class="memories-header">
       <div>
-        <h1>Family Memories</h1>
-        <p class="tagline">The little things are worth remembering.</p>
+        <h1>{{ 'feature.family.memories' | tr }}</h1>
+        <p class="tagline">{{ 'feature.the.little.things.are.worth.remembering' | tr }}</p>
       </div>
       <span class="memories-header__art" aria-hidden="true"></span>
     </header>

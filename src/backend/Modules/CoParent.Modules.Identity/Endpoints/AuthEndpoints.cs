@@ -16,7 +16,7 @@ internal sealed record RegisterRequest(string? Email, string? Password, string? 
 
 internal sealed record LoginRequest(string? Email, string? Password);
 
-internal sealed record MeResponse(Guid Id, string Email, string DisplayName, string Language);
+internal sealed record MeResponse(Guid Id, string Email, string DisplayName, string? Language);
 internal sealed record LanguageRequest(string? Language);
 
 /// <summary>

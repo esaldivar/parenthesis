@@ -82,14 +82,14 @@ internal static class AccountDeletionEndpoints
 
         if (me is not null)
         {
-            await emails.SendDeletedAsync(me.Email, cancellationToken);
+            await emails.SendDeletedAsync(me.Email, cancellationToken, me.Spanish);
         }
 
         foreach (var coParentId in coParents)
         {
             if (await directory.FindByIdAsync(coParentId, cancellationToken) is { } coParent)
             {
-                await emails.SendParentLeftAsync(coParent.Email, cancellationToken);
+                await emails.SendParentLeftAsync(coParent.Email, cancellationToken, coParent.Spanish);
             }
         }
 

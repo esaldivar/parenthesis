@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
@@ -9,7 +10,7 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
 @Component({
   selector: 'app-kids-gallery',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [A11yModule],
+  imports: [TranslatePipe, A11yModule],
   template: `
     <div class="gallery-items" [class.artwork]="kind() === 'Artwork'" [class.photos]="kind() === 'Photo'">
       @for (item of ordered(); track item.id) {
@@ -27,7 +28,7 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
         cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown.escape)="close()">
         <header>
           <h3 id="memory-title">{{ item.kind === 'Artwork' ? 'Artwork' : 'Photo' }} from your child</h3>
-          <button type="button" (click)="close()" cdkFocusInitial aria-label="Close preview">✕</button>
+          <button type="button" (click)="close()" cdkFocusInitial aria-label="{{ 'feature.close.preview' | tr }}">✕</button>
         </header>
         <img class="full" [src]="item.imageUrl" [alt]="item.altText" />
         <p>{{ item.retention }}</p>
@@ -42,17 +43,17 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
             {{ item.bookmarked ? 'Saved' : 'Save' }}
           </button>
           @if (item.downloadUrl) {
-            <a [href]="item.downloadUrl" download rel="noopener noreferrer">Download</a>
+            <a [href]="item.downloadUrl" download rel="noopener noreferrer">{{ 'feature.download' | tr }}</a>
           }
-          <button type="button" (click)="exportRequested.emit(item.id)">Export to Google Photos</button>
+          <button type="button" (click)="exportRequested.emit(item.id)">{{ 'feature.export.to.google.photos' | tr }}</button>
         </div>
-        <label for="child-memory-comment">Your message to your child (one-way)</label>
+        <label for="child-memory-comment">{{ 'feature.your.message.to.your.child.one.way' | tr }}</label>
         <textarea id="child-memory-comment" maxlength="500" rows="3"
           [value]="item.viewerComment ?? ''" #commentText></textarea>
         <button type="button" (click)="comment.emit({ id: item.id, text: commentText.value })">
-          Save message
+          {{ 'feature.save.message' | tr }}
         </button>
-        <p class="privacy">Your child can read your message but cannot reply here.</p>
+        <p class="privacy">{{ 'feature.your.child.can.read.your.message.but' | tr }}</p>
         }
       </section>
     }

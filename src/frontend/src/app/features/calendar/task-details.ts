@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { DOCUMENT } from '@angular/common';
@@ -40,12 +42,13 @@ const CONFETTI_PIECES = 14;
 @Component({
   selector: 'app-task-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, PanelTint, A11yModule, MatButtonModule, RouterLink, Icon],
+  imports: [TranslatePipe, CalendarPalette, PanelTint, A11yModule, MatButtonModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './task-details.html',
   styleUrls: ['./event-details.scss', './task-details.scss'],
 })
 export class TaskDetails implements OnInit {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly window = inject(DOCUMENT).defaultView;
   private readonly injector = inject(Injector);
@@ -75,7 +78,7 @@ export class TaskDetails implements OnInit {
   protected readonly confetti = signal(false);
   protected readonly pieces = Array.from({ length: CONFETTI_PIECES }, (_, i) => i);
 
-  protected readonly due = computed(() => dayLong(this.current().dueDate));
+  protected readonly due = computed(() => dayLong(this.current().dueDate, this.locale.locale()));
   protected readonly hasChecklist = computed(() => this.current().items.length > 0);
   protected readonly anyRequired = computed(() => this.current().items.some((i) => i.required));
   protected readonly done = computed(() => this.current().completedAt !== null);

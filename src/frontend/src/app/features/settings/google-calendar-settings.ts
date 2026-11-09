@@ -1,4 +1,6 @@
-import { DatePipe, DOCUMENT } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
+import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -34,7 +36,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
 @Component({
   selector: 'app-google-calendar-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, MatButtonModule, MatFormFieldModule, MatSelectModule],
+  imports: [TranslatePipe, AppDatePipe, MatButtonModule, MatFormFieldModule, MatSelectModule],
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
@@ -42,7 +44,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
 
     @if (status(); as status) {
       @if (!status.available) {
-        <p class="muted">Copying events to Google Calendar isn’t available yet.</p>
+        <p class="muted">{{ 'feature.copying.events.to.google.calendar.isn.t' | tr }}</p>
       } @else {
         <p>
           Add your family’s confirmed events to a separate “{{ status.calendarName }}” calendar in
@@ -50,12 +52,11 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
           anything from it into the family calendar.
         </p>
         <ul class="facts">
-          <li>Requests still waiting for approval aren’t copied until both parents agree.</li>
+          <li>{{ 'feature.requests.still.waiting.for.approval.aren.t' | tr }}</li>
           <li>
-            Changes and cancellations follow within a few minutes. Change events here, not in Google
-            Calendar.
+            {{ 'feature.changes.and.cancellations.follow.within.a.few' | tr }}
           </li>
-          <li>Only your Google Calendar is affected. Your co-parent can connect their own.</li>
+          <li>{{ 'feature.only.your.google.calendar.is.affected.your' | tr }}</li>
         </ul>
 
         @switch (status.state) {
@@ -63,7 +64,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
             <p class="state" role="status">
               <strong>Connected.</strong>
               @if (status.lastSyncedAt) {
-                Last updated {{ status.lastSyncedAt | date: 'MMM d, h:mm a' }}.
+                Last updated {{ status.lastSyncedAt | appDate: 'MMM d, h:mm a' }}.
               } @else {
                 Your events will appear in Google Calendar in a minute or two.
               }
@@ -84,7 +85,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
 
         @if (status.state !== 'NotConnected') {
           <mat-form-field class="types" appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Events to copy</mat-label>
+            <mat-label>{{ 'feature.events.to.copy' | tr }}</mat-label>
             <mat-select
               multiple
               [value]="selection()"
@@ -99,7 +100,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
               }
             </mat-select>
             <mat-hint id="google-types-hint"
-              >Only your Google Calendar changes. Events you untick are removed from it.</mat-hint
+              >{{ 'feature.only.your.google.calendar.changes.events.you' | tr }}</mat-hint
             >
           </mat-form-field>
           <p class="hint">{{ leftOut() }}</p>
@@ -109,7 +110,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
         @if (confirming()) {
           <div class="panel" role="group" aria-labelledby="google-disconnect-heading">
             <h3 id="google-disconnect-heading" #confirmHeading tabindex="-1">
-              Disconnect Google Calendar?
+              {{ 'feature.disconnect.google.calendar' | tr }}
             </h3>
             <p>
               Parenthesis stops copying events and removes the “{{ status.calendarName }}” calendar
@@ -120,7 +121,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
                 {{ busy() ? 'Disconnecting…' : 'Disconnect' }}
               </button>
               <button mat-button type="button" [disabled]="busy()" (click)="confirming.set(false)">
-                Cancel
+                {{ 'feature.cancel' | tr }}
               </button>
             </div>
           </div>
@@ -144,14 +145,14 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
                 [disabled]="busy()"
                 (click)="askToDisconnect()"
               >
-                Disconnect…
+                {{ 'feature.disconnect' | tr }}
               </button>
             }
           </div>
         }
       }
     } @else if (!error()) {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
     }
   `,
   styles: `

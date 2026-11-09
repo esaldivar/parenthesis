@@ -1,4 +1,5 @@
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
@@ -17,7 +18,7 @@ import { Toasts } from '../../shared/toast/toasts';
 @Component({
   selector: 'app-device-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, MatButtonModule],
+  imports: [TranslatePipe, AppDatePipe, RouterLink, MatButtonModule],
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
@@ -26,18 +27,17 @@ import { Toasts } from '../../shared/toast/toasts';
     @if (!(auth.device()?.deviceKind === 'Household' && auth.device()?.isYours)) {
       <div class="panel">
         <p>
-          Is this a shared family device, like a kitchen tablet? Set it up so your family can choose their profile here.
-          It lasts 30 days. Don’t do this on a public or borrowed device.
+          {{ 'feature.is.this.a.shared.family.device.like' | tr }}
         </p>
         <div class="actions">
-          <a mat-stroked-button routerLink="/shared-device/setup" [queryParams]="{ returnUrl: '/settings' }">Set up this device for sharing</a>
+          <a mat-stroked-button routerLink="/shared-device/setup" [queryParams]="{ returnUrl: '/settings' }">{{ 'feature.set.up.this.device.for.sharing' | tr }}</a>
         </div>
       </div>
     }
 
     @if (devices(); as devices) {
       @if (devices.length === 0) {
-        <p class="muted">No devices yet.</p>
+        <p class="muted">{{ 'feature.no.devices.yet' | tr }}</p>
       } @else {
         <ul class="devices">
           @for (device of devices; track device.id) {
@@ -46,24 +46,23 @@ import { Toasts } from '../../shared/toast/toasts';
                 <p class="device__name">
                   {{ device.name }}
                   @if (device.isThisDevice) {
-                    <span class="this">(this device)</span>
+                    <span class="this">{{ 'feature.this.device' | tr }}</span>
                   }
                 </p>
-                <p class="muted">{{ kind(device) }} · Last used {{ device.lastSeenAt | date: 'mediumDate' }}</p>
+                <p class="muted">{{ kind(device) }} · Last used {{ device.lastSeenAt | appDate: 'mediumDate' }}</p>
                 @if (device.expiresAt) {
-                  <p class="muted">Sharing ends {{ device.expiresAt | date: 'mediumDate' }}</p>
+                  <p class="muted">Sharing ends {{ device.expiresAt | appDate: 'mediumDate' }}</p>
                 }
               </div>
               @if (confirming() === device.id) {
                 <div class="panel">
                   @if (stopsSharing(device)) {
                     <p>
-                      Stop sharing this device? Everyone using it, including you, is signed out at once, and “Who’s using
-                      Parenthesis?” goes away here until a parent signs in and sets it up again.
+                      {{ 'feature.stop.sharing.this.device.everyone.using.it' | tr }}
                     </p>
                     <div class="actions">
-                      <button mat-flat-button type="button" [disabled]="busy()" (click)="remove(device)">Stop sharing</button>
-                      <button mat-button type="button" (click)="confirming.set(null)">Cancel</button>
+                      <button mat-flat-button type="button" [disabled]="busy()" (click)="remove(device)">{{ 'feature.stop.sharing' | tr }}</button>
+                      <button mat-button type="button" (click)="confirming.set(null)">{{ 'feature.cancel' | tr }}</button>
                     </div>
                   } @else {
                     <p>
@@ -71,8 +70,8 @@ import { Toasts } from '../../shared/toast/toasts';
                       profiles until a parent signs in there and sets it up again.
                     </p>
                     <div class="actions">
-                      <button mat-flat-button type="button" [disabled]="busy()" (click)="remove(device)">Remove device</button>
-                      <button mat-button type="button" (click)="confirming.set(null)">Cancel</button>
+                      <button mat-flat-button type="button" [disabled]="busy()" (click)="remove(device)">{{ 'feature.remove.device' | tr }}</button>
+                      <button mat-button type="button" (click)="confirming.set(null)">{{ 'feature.cancel' | tr }}</button>
                     </div>
                   }
                 </div>
@@ -80,11 +79,11 @@ import { Toasts } from '../../shared/toast/toasts';
                 <div class="actions">
                   @if (stopsSharing(device)) {
                     <!-- Switching lives here and in the account menu, not as a top-bar button (#372). -->
-                    <button mat-stroked-button type="button" (click)="switchProfile()">Switch profile</button>
-                    <button mat-stroked-button type="button" (click)="confirming.set(device.id)">Stop sharing this device</button>
+                    <button mat-stroked-button type="button" (click)="switchProfile()">{{ 'feature.switch.profile' | tr }}</button>
+                    <button mat-stroked-button type="button" (click)="confirming.set(device.id)">{{ 'feature.stop.sharing.this.device' | tr }}</button>
                   } @else {
                     <button mat-stroked-button type="button" (click)="confirming.set(device.id)" [attr.aria-label]="'Remove ' + device.name">
-                      Remove
+                      {{ 'feature.remove' | tr }}
                     </button>
                   }
                 </div>
@@ -94,7 +93,7 @@ import { Toasts } from '../../shared/toast/toasts';
         </ul>
       }
     } @else if (!error()) {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
     }
   `,
   styles: `

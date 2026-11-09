@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -25,7 +26,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
 @Component({
   selector: 'app-google-photos-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, Icon],
+  imports: [TranslatePipe, MatButtonModule, Icon],
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
@@ -33,7 +34,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
 
     @if (status(); as status) {
       @if (!status.available) {
-        <p class="muted">Exporting to Google Photos isn’t available yet.</p>
+        <p class="muted">{{ 'feature.exporting.to.google.photos.isn.t.available' | tr }}</p>
       } @else {
         @switch (status.state) {
           @case ('NotConnected') {
@@ -76,24 +77,23 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
         @if (confirming()) {
           <div class="panel" role="group" aria-labelledby="photos-disconnect-heading">
             <h3 id="photos-disconnect-heading" #confirmHeading tabindex="-1">
-              Disconnect Google Photos?
+              {{ 'feature.disconnect.google.photos' | tr }}
             </h3>
             <p>
-              Albums and photos already in your Google Photos stay there.
+              {{ 'feature.albums.and.photos.already.in.your.google' | tr }}
               @if (status.waitingCount > 0) {
                 {{ photos(status.waitingCount) }} waiting to export won’t be sent.
               }
             </p>
             <p class="muted">
-              Parenthesis can’t see your Google Photos, so after you reconnect, photos show as not
-              exported and new exports make new albums.
+              {{ 'feature.parenthesis.can.t.see.your.google.photos' | tr }}
             </p>
             <div class="actions">
               <button mat-flat-button type="button" [disabled]="busy()" (click)="disconnect()">
                 {{ busy() ? 'Disconnecting…' : 'Disconnect' }}
               </button>
               <button mat-button type="button" [disabled]="busy()" (click)="cancelDisconnect()">
-                Cancel
+                {{ 'feature.cancel' | tr }}
               </button>
             </div>
           </div>
@@ -119,14 +119,14 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
                 [disabled]="busy()"
                 (click)="askToDisconnect()"
               >
-                Disconnect…
+                {{ 'feature.disconnect' | tr }}
               </button>
             }
           </div>
         }
       }
     } @else if (!error()) {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
     }
   `,
   styles: `

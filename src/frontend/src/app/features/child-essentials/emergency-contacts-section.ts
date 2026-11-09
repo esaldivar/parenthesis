@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -12,35 +13,35 @@ export const RELATIONSHIPS = [
 @Component({
   selector: 'app-emergency-contacts-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, OnScreen],
+  imports: [TranslatePipe, ReactiveFormsModule, OnScreen],
   styleUrl: './essentials-section.css',
   styles: ':host { display: block; margin-block-start: 1rem; }',
   template: `
     <section aria-labelledby="emergency-contacts-heading">
-      <h3 id="emergency-contacts-heading">Emergency Contacts
+      <h3 id="emergency-contacts-heading">{{ 'feature.emergency.contacts' | tr }}
       </h3>
       @if (error()) { <p role="alert">{{ error() }}</p> }
       <p role="status">{{ notice() }}</p>
       @if (view(); as saved) {
-        @if (!saved.contacts.length) { <p>No emergency contacts yet.</p> }
+        @if (!saved.contacts.length) { <p>{{ 'feature.no.emergency.contacts.yet' | tr }}</p> }
         @for (contact of saved.contacts; track contact.id ?? contact.phone; let index = $index) {
           <article class="entry" [class.row--updated]="marks.updated(contact.id ?? 'contact-' + index)"
             (appOnScreen)="marks.rowOnScreen(contact.id ?? 'contact-' + index)">
-            <h4>@if (contact.callFirst) { <span class="call-first">Call first</span> }{{ contact.name }}
-              @if (marks.updated(contact.id ?? 'contact-' + index)) { <span class="updated-pill">Updated</span> }</h4>
+            <h4>@if (contact.callFirst) { <span class="call-first">{{ 'feature.call.first' | tr }}</span> }{{ contact.name }}
+              @if (marks.updated(contact.id ?? 'contact-' + index)) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</h4>
             <p>{{ contact.relationship }} · {{ contact.phone }}</p>
             <div class="actions">
-              <a class="call" [href]="phoneLink(contact.phone)" [attr.aria-label]="'Call ' + contact.name">Call</a>
+              <a class="call" [href]="phoneLink(contact.phone)" [attr.aria-label]="'Call ' + contact.name">{{ 'feature.call' | tr }}</a>
               @if (contact.address; as address) {
-                <a [href]="mapLink(address)" target="_blank" rel="noopener noreferrer">Open in Maps</a>
+                <a [href]="mapLink(address)" target="_blank" rel="noopener noreferrer">{{ 'feature.open.in.maps' | tr }}</a>
               }
-              <button type="button" [disabled]="busy() || editing() !== null" (click)="edit(index)">Edit</button>
-              <button type="button" [disabled]="busy() || editing() !== null" (click)="confirmRemove.set(index)">Remove</button>
+              <button type="button" [disabled]="busy() || editing() !== null" (click)="edit(index)">{{ 'feature.edit' | tr }}</button>
+              <button type="button" [disabled]="busy() || editing() !== null" (click)="confirmRemove.set(index)">{{ 'feature.remove' | tr }}</button>
             </div>
             @if (confirmRemove() === index) {
               <p>Remove {{ contact.name }} from this child’s emergency contacts?</p>
-              <button type="button" [disabled]="busy()" (click)="remove(index)">Confirm removal</button>
-              <button type="button" [disabled]="busy()" (click)="confirmRemove.set(null)">Cancel removal</button>
+              <button type="button" [disabled]="busy()" (click)="remove(index)">{{ 'feature.confirm.removal' | tr }}</button>
+              <button type="button" [disabled]="busy()" (click)="confirmRemove.set(null)">{{ 'feature.cancel.removal' | tr }}</button>
             }
             @if (otherChildren().length) {
               <label>Copy {{ contact.name }} to
@@ -50,44 +51,44 @@ export const RELATIONSHIPS = [
                   }
                 </select>
               </label>
-              <button type="button" [disabled]="busy()" (click)="copy(contact, target.value)">Copy contact</button>
+              <button type="button" [disabled]="busy()" (click)="copy(contact, target.value)">{{ 'feature.copy.contact' | tr }}</button>
             }
           </article>
         }
         @if (editing() === null) {
-          <button type="button" [disabled]="busy() || saved.contacts.length >= 30" (click)="edit(-1)">Add emergency contact</button>
+          <button type="button" [disabled]="busy() || saved.contacts.length >= 30" (click)="edit(-1)">{{ 'feature.add.emergency.contact' | tr }}</button>
         } @else {
           <form [formGroup]="form" (ngSubmit)="save()">
             <fieldset [disabled]="busy()">
               <legend>{{ editing() === -1 ? 'Add emergency contact' : 'Edit emergency contact' }}</legend>
-              <label>Name <input formControlName="name" maxlength="100" required /></label>
-              <label>Relationship
+              <label>{{ 'feature.name' | tr }} <input formControlName="name" maxlength="100" required /></label>
+              <label>{{ 'feature.relationship' | tr }}
                 <select formControlName="relationshipKind" required>
-                  <option value="" disabled>Choose a relationship</option>
+                  <option value="" disabled>{{ 'feature.choose.a.relationship' | tr }}</option>
                   @for (kind of relationships; track kind) { <option [value]="kind">{{ kind }}</option> }
                   <option [value]="other">{{ other }}</option>
                 </select>
               </label>
               @if (form.controls.relationshipKind.value === other) {
-                <label>Describe the relationship <input formControlName="relationship" maxlength="100" required /></label>
+                <label>{{ 'feature.describe.the.relationship' | tr }} <input formControlName="relationship" maxlength="100" required /></label>
               }
-              <label>Phone <input type="tel" formControlName="phone" maxlength="32" required /></label>
-              <label>Address (optional) <input formControlName="address" maxlength="300" /></label>
-              <label><input type="checkbox" formControlName="callFirst" /> Call first</label>
+              <label>{{ 'feature.phone' | tr }} <input type="tel" formControlName="phone" maxlength="32" required /></label>
+              <label>{{ 'feature.address.optional' | tr }} <input formControlName="address" maxlength="300" /></label>
+              <label><input type="checkbox" formControlName="callFirst" /> {{ 'feature.call.first' | tr }}</label>
               @if (editing() === -1 && otherChildren().length) {
-                <label><input type="checkbox" formControlName="addToAll" /> Add to all children</label>
+                <label><input type="checkbox" formControlName="addToAll" /> {{ 'feature.add.to.all.children' | tr }}</label>
               }
               <div class="actions">
-                <button type="submit" [disabled]="form.invalid">Save contact</button>
-                <button type="button" (click)="editing.set(null)">Cancel</button>
+                <button type="submit" [disabled]="form.invalid">{{ 'feature.save.contact' | tr }}</button>
+                <button type="button" (click)="editing.set(null)">{{ 'feature.cancel' | tr }}</button>
               </div>
             </fieldset>
           </form>
         }
       } @else if (error()) {
-        <button type="button" (click)="load()">Try again</button>
+        <button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       } @else {
-        <p role="status">Loading emergency contacts…</p>
+        <p role="status">{{ 'feature.loading.emergency.contacts' | tr }}</p>
       }
     </section>
   `,

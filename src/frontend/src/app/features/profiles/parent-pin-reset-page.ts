@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,9 +29,9 @@ type Step = 'checking' | 'sign-in' | 'form' | 'saved' | 'unusable' | 'wrong-acco
 @Component({
   selector: 'app-parent-pin-reset-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [TranslatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
   template: `
-    <h1>Choose a new parent PIN</h1>
+    <h1>{{ 'feature.choose.a.new.parent.pin' | tr }}</h1>
 
     @switch (step()) {
       @case ('checking') {

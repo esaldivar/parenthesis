@@ -1,9 +1,9 @@
 <header class="head">
-  <h1 #calendarHeading tabindex="-1">Calendar</h1>
+  <h1 #calendarHeading tabindex="-1">{{ 'feature.calendar.d5d0a3' | tr }}</h1>
   <div class="head__actions">
-    <a mat-stroked-button class="add" routerLink="/approvals">Approvals</a>
+    <a mat-stroked-button class="add" routerLink="/approvals">{{ 'feature.approvals' | tr }}</a>
     <a mat-flat-button class="add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">
-      <app-icon name="plus" [size]="20" /> Add
+      <app-icon name="plus" [size]="20" /> {{ 'feature.add' | tr }}
     </a>
   </div>
 </header>
@@ -12,23 +12,23 @@
 <div class="toolbar">
   <div class="period">
     <span class="period__nav">
-      <button mat-icon-button type="button" (click)="step(-1)" [attr.aria-label]="'Previous ' + current()">
+      <button mat-icon-button type="button" (click)="step(-1)" [attr.aria-label]="periodLabel('previous') | tr">
         <app-icon name="chevron-left" />
       </button>
       <h2 class="period__label" aria-live="polite">{{ heading() }}</h2>
-      <button mat-icon-button type="button" (click)="step(1)" [attr.aria-label]="'Next ' + current()">
+      <button mat-icon-button type="button" (click)="step(1)" [attr.aria-label]="periodLabel('next') | tr">
         <app-icon name="chevron-right" />
       </button>
     </span>
-    <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">Today</button>
+    <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">{{ 'feature.today.2b065c' | tr }}</button>
     @if (family(); as f) {
       <app-calendar-search [familyId]="f.id" [timeZone]="f.timeZone" [members]="members()" [children]="children()" (picked)="openFound($event)" />
     }
   </div>
   <div class="toolbar__end">
-    <div class="segmented" role="group" aria-label="Calendar view">
+    <div class="segmented" role="group" aria-label="{{ 'feature.calendar.view' | tr }}">
       @for (v of views; track v.id) {
-        <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label }}</button>
+        <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label | tr }}</button>
       }
     </div>
     <button
@@ -36,10 +36,10 @@
       class="pill filters-button"
       aria-haspopup="dialog"
       [attr.aria-expanded]="filtersOpen()"
-      [attr.aria-label]="activeFilters().length ? 'Filters, ' + activeFilters().length + ' active' : 'Filters'"
+      [attr.aria-label]="activeFilters().length ? ('calendar.filtersActive' | tr: { count: activeFilters().length }) : ('feature.filters' | tr)"
       (click)="openFilters()"
     >
-      <app-icon name="filter" [size]="18" /> Filters
+      <app-icon name="filter" [size]="18" /> {{ 'feature.filters' | tr }}
       @if (activeFilters().length; as count) {
         <span class="count" aria-hidden="true">{{ count }}</span>
       }
@@ -48,19 +48,19 @@
 </div>
 
 @if (activeFilters().length) {
-  <div class="active-filters" role="group" aria-label="Active filters">
+  <div class="active-filters" role="group" aria-label="{{ 'feature.active.filters' | tr }}">
     @for (f of activeFilters(); track f.id) {
       <button type="button" class="chip chip--active" [attr.aria-label]="'Remove ' + f.label + ' filter: ' + f.text" (click)="clearFilter(f.id)">
         {{ f.label }}: {{ f.text }} <app-icon name="close" [size]="16" />
       </button>
     }
-    <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+    <button mat-button type="button" (click)="resetFilters()">{{ 'feature.reset.filters' | tr }}</button>
   </div>
 }
 
 @if (activeChildren().length > 0) {
-  <div class="filters" role="group" aria-label="Show events for">
-    <button type="button" class="chip" [attr.aria-pressed]="childFilter() === null" (click)="setChild(null)">All</button>
+  <div class="filters" role="group" aria-label="{{ 'feature.show.events.for' | tr }}">
+    <button type="button" class="chip" [attr.aria-pressed]="childFilter() === null" (click)="setChild(null)">{{ 'feature.all' | tr }}</button>
     @for (child of activeChildren(); track child.id) {
       <button type="button" class="chip" [attr.aria-pressed]="childFilter() === child.id" (click)="setChild(child.id)">
         {{ child.firstName }}
@@ -74,7 +74,7 @@
     @case ('loading') {
       <app-loading-indicator
         class="loading"
-        [label]="slow() ? 'Still loading. Parenthesis may be starting up after a quiet spell, which can take a few seconds.' : 'Loading your calendar…'"
+        [label]="(slow() ? 'calendar.loadingSlow' : 'calendar.loading') | tr"
       />
       <div class="skeleton" aria-hidden="true">
         @for (n of [1, 2, 3, 4, 5, 6]; track n) {

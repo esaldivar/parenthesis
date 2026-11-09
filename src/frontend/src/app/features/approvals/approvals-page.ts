@@ -1,4 +1,5 @@
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -43,20 +44,20 @@ const COMMENT_MAX = 500;
 @Component({
   selector: 'app-approvals-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [TranslatePipe, AppDatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   template: `
-    <h1>Approvals</h1>
-    <p class="intro">Some changes need both parents to agree. Nothing here takes effect until you both approve.</p>
+    <h1>{{ 'feature.approvals' | tr }}</h1>
+    <p class="intro">{{ 'feature.some.changes.need.both.parents.to.agree' | tr }}</p>
 
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
     }
 
     <section aria-labelledby="waiting-heading">
-      <h2 id="waiting-heading" tabindex="-1">Waiting</h2>
+      <h2 id="waiting-heading" tabindex="-1">{{ 'feature.waiting' | tr }}</h2>
       @if (pending(); as pending) {
         @if (pending.length === 0) {
-          <p class="muted">Nothing is waiting for either of you.</p>
+          <p class="muted">{{ 'feature.nothing.is.waiting.for.either.of.you' | tr }}</p>
         } @else {
           <ul class="requests">
             @for (request of pending; track request.id) {
@@ -66,43 +67,43 @@ const COMMENT_MAX = 500;
                   <span class="chip chip--pending">{{ request.canDecide ? 'Waiting for you' : 'Waiting for your co-parent' }}</span>
                 </div>
                 <p class="muted">
-                  Proposed by {{ proposer(request) }} on {{ request.createdAt | date: 'mediumDate' }} ·
+                  Proposed by {{ proposer(request) }} on {{ request.createdAt | appDate: 'mediumDate' }} ·
                   {{ request.approvals }} of {{ request.requiredApprovals }} approvals
                 </p>
                 <p>{{ explain(request) }}</p>
                 @if (request.reason) {
-                  <p class="comment"><span class="visually-hidden">Reason from</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
+                  <p class="comment"><span class="visually-hidden">{{ 'feature.reason.from' | tr }}</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
                 }
 
                 @if (request.canDecide) {
                   @if (declining() === request.id) {
                     <div class="panel">
                       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                        <mat-label>Tell your co-parent why (optional)</mat-label>
+                        <mat-label>{{ 'feature.tell.your.co.parent.why.optional' | tr }}</mat-label>
                         <textarea matInput [formControl]="comment" rows="3" [maxlength]="commentMax"></textarea>
                         <mat-hint align="end">{{ comment.value.length }} / {{ commentMax }}</mat-hint>
                       </mat-form-field>
                       <div class="actions">
                         <button mat-flat-button type="button" [attr.data-decline-submit]="request.id" [disabled]="busy()" (click)="decline(request)">
-                          Decline
+                          {{ 'feature.decline.a2d285' | tr }}
                         </button>
-                        <button mat-button type="button" (click)="cancelDecline(request)">Cancel</button>
+                        <button mat-button type="button" (click)="cancelDecline(request)">{{ 'feature.cancel' | tr }}</button>
                       </div>
                     </div>
                   } @else {
                     <div class="actions">
                       <button mat-flat-button type="button" [attr.data-approve]="request.id" [disabled]="busy()" (click)="approve(request)">
-                        Approve
+                        {{ 'feature.approve' | tr }}
                       </button>
                       <button mat-stroked-button type="button" [attr.data-decline]="request.id" (click)="startDecline(request)">
-                        Decline
+                        {{ 'feature.decline.a2d285' | tr }}
                       </button>
                     </div>
                   }
                 } @else if (request.proposedByYou) {
                   <div class="actions">
                     <button mat-stroked-button type="button" [attr.data-withdraw]="request.id" [disabled]="busy()" (click)="withdraw(request)">
-                      Withdraw
+                      {{ 'feature.withdraw' | tr }}
                     </button>
                   </div>
                 }
@@ -111,15 +112,15 @@ const COMMENT_MAX = 500;
           </ul>
         }
       } @else if (!error()) {
-        <p class="muted">Loading…</p>
+        <p class="muted">{{ 'feature.loading' | tr }}</p>
       }
     </section>
 
     <section aria-labelledby="history-heading">
-      <h2 id="history-heading">Decided</h2>
+      <h2 id="history-heading">{{ 'feature.decided' | tr }}</h2>
       @if (history(); as history) {
         @if (history.length === 0) {
-          <p class="muted">No decisions yet.</p>
+          <p class="muted">{{ 'feature.no.decisions.yet' | tr }}</p>
         } @else {
           <ul class="requests">
             @for (request of history; track request.id) {
@@ -129,15 +130,15 @@ const COMMENT_MAX = 500;
                   <span class="chip" [attr.data-status]="request.status">{{ outcome(request) }}</span>
                 </div>
                 <p class="muted">
-                  Proposed by {{ proposer(request) }} · {{ outcome(request) }} {{ request.resolvedAt | date: 'mediumDate' }}
+                  Proposed by {{ proposer(request) }} · {{ outcome(request) }} {{ request.resolvedAt | appDate: 'mediumDate' }}
                 </p>
                 @if (request.reason) {
-                  <p class="comment"><span class="visually-hidden">Reason from</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
+                  <p class="comment"><span class="visually-hidden">{{ 'feature.reason.from' | tr }}</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
                 }
                 @for (decision of request.decisions; track decision.decidedAt) {
                   @if (decision.comment) {
                     <p class="comment">
-                      <span class="visually-hidden">Comment from</span> {{ nameOf(decision.deciderMembershipId) }}: “{{ decision.comment }}”
+                      <span class="visually-hidden">{{ 'feature.comment.from' | tr }}</span> {{ nameOf(decision.deciderMembershipId) }}: “{{ decision.comment }}”
                     </p>
                   }
                 }

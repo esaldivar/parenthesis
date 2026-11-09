@@ -1,4 +1,5 @@
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormGroupDirective, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,7 +23,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
 @Component({
   selector: 'app-child-pin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
+  imports: [TranslatePipe, AppDatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
   template: `
     <div class="who">
       <app-avatar [name]="name()" [size]="72" [src]="tile()?.photoUrl" />
@@ -42,10 +43,10 @@ export const PIN_PATTERN = /^\d{4,6}$/;
         <p class="status__title">Let’s take a short break.</p>
         <p>
           That was a few wrong tries. Ask a parent for help, or try again after
-          {{ retryAt() | date: 'shortTime' }}.
+          {{ retryAt() | appDate: 'shortTime' }}.
         </p>
         <div class="actions">
-          <button mat-stroked-button type="button" (click)="tryAgain()">Try again</button>
+          <button mat-stroked-button type="button" (click)="tryAgain()">{{ 'feature.try.again' | tr }}</button>
         </div>
       </div>
     } @else {
@@ -67,7 +68,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
             formControlName="pin"
             required
           />
-          <mat-hint>4 to 6 numbers</mat-hint>
+          <mat-hint>{{ 'feature.4.to.6.numbers' | tr }}</mat-hint>
           @if (form.controls.pin.hasError('required')) {
             <mat-error>Type your PIN.</mat-error>
           } @else if (form.controls.pin.hasError('pattern')) {
@@ -83,7 +84,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
 
     <div class="links">
       @if (!pairedTablet()) {
-        <a routerLink="/profiles" [replaceUrl]="true">Back to profiles</a>
+        <a routerLink="/profiles" [replaceUrl]="true">{{ 'feature.back.to.profiles' | tr }}</a>
       }
     </div>
   `,

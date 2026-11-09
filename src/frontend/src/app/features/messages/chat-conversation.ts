@@ -1,4 +1,5 @@
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -45,21 +46,21 @@ const BOTTOM_SLACK_PX = 48;
 @Component({
   selector: 'app-chat-conversation',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, MatButtonModule, RouterLink, Avatar, EmptyState, Icon, ChatEventCardView, ChatEventPicker],
+  imports: [TranslatePipe, AppDatePipe, MatButtonModule, RouterLink, Avatar, EmptyState, Icon, ChatEventCardView, ChatEventPicker],
   template: `
     <header class="chat-header">
       <ng-content select="[chatLead]" />
       @if (coParent(); as other) {
         <app-avatar [name]="other.displayName" kind="parent" [personId]="other.membershipId" [size]="40" />
         @if (level() === 1) {
-          <h1><span class="visually-hidden">Messages with </span>{{ other.displayName }}</h1>
+          <h1><span class="visually-hidden">{{ 'feature.messages.with' | tr }} </span>{{ other.displayName }}</h1>
         } @else {
-          <h2><span class="visually-hidden">Messages with </span>{{ other.displayName }}</h2>
+          <h2><span class="visually-hidden">{{ 'feature.messages.with' | tr }} </span>{{ other.displayName }}</h2>
         }
       } @else if (level() === 1) {
-        <h1>Messages</h1>
+        <h1>{{ 'feature.messages' | tr }}</h1>
       } @else {
-        <h2>Messages</h2>
+        <h2>{{ 'feature.messages' | tr }}</h2>
       }
       <span class="spacer"></span>
       @if (state() === 'ready' && coParent()) {
@@ -67,7 +68,7 @@ const BOTTOM_SLACK_PX = 48;
           #pickerButton
           class="icon-button"
           type="button"
-          aria-label="Share a calendar event"
+          aria-label="{{ 'feature.share.a.calendar.event' | tr }}"
           aria-haspopup="dialog"
           (click)="picking.set(true)"
         >
@@ -121,7 +122,7 @@ const BOTTOM_SLACK_PX = 48;
                     <span class="sender">Former parent</span>
                   }
                   <div class="bubble">
-                    <span class="visually-hidden">{{ message.yours ? 'You' : senderName(message.senderMembershipId) }}, {{ message.sentAt | date: 'MMM d, h:mm a' }}: </span>
+                    <span class="visually-hidden">{{ message.yours ? 'You' : senderName(message.senderMembershipId) }}, {{ message.sentAt | appDate: 'MMM d, h:mm a' }}: </span>
                     @if (message.text) {
                       <p class="text">{{ message.text }}</p>
                     }

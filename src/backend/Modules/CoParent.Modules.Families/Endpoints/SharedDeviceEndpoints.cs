@@ -263,11 +263,11 @@ internal static class SharedDeviceEndpoints
         {
             var sent = parent is not null
                 && await emails.SendParentPausedAsync(
-                    parent.Email, parent.DisplayName, credential.PausedUntil!.Value, timeZone, resetToken!, cancellationToken);
+                    parent.Email, parent.DisplayName, credential.PausedUntil!.Value, timeZone, resetToken!, cancellationToken, parent.Spanish);
             return PinProblems.ParentPaused(credential.PausedUntil!.Value, sent);
         }
 
-        var lockSent = parent is not null && await emails.SendParentLockedAsync(parent.Email, parent.DisplayName, resetToken!, cancellationToken);
+        var lockSent = parent is not null && await emails.SendParentLockedAsync(parent.Email, parent.DisplayName, resetToken!, cancellationToken, parent.Spanish);
         return PinProblems.ParentLocked(lockSent);
     }
 
@@ -406,7 +406,7 @@ internal static class SharedDeviceEndpoints
             await audit.RecordAsync(new AuditEntry(device.FamilyId, null, "parent.pin_reset_requested", "membership", owner.Id), ct);
         }, cancellationToken);
 
-        var sent = parent is not null && await emails.SendParentResetLinkAsync(parent.Email, parent.DisplayName, token, cancellationToken);
+        var sent = parent is not null && await emails.SendParentResetLinkAsync(parent.Email, parent.DisplayName, token, cancellationToken, parent.Spanish);
         return TypedResults.Accepted((string?)null, new ParentPinResetSent(sent));
     }
 

@@ -1,4 +1,5 @@
-import { CurrencyPipe } from '@angular/common';
+import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -10,18 +11,18 @@ const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
 
 @Component({
   selector: 'app-shared-fund-proposal-form',
-  imports: [CurrencyPipe, FormsModule, Icon],
+  imports: [TranslatePipe, AppCurrencyPipe, FormsModule, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form (ngSubmit)="submit()">
       <label>
-        Fund title
+        {{ 'feature.fund.title' | tr }}
         <input name="title" type="text" maxlength="120" required [(ngModel)]="title" />
       </label>
 
       @if (children().length) {
         <fieldset class="children">
-          <legend>Children · optional</legend>
+          <legend>{{ 'feature.children.optional' | tr }}</legend>
           @for (child of children(); track child.id) {
             <label class="child-option">
               <input type="checkbox" [checked]="childIds().has(child.id)"
@@ -33,7 +34,7 @@ const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
       }
 
       <label>
-        Currency
+        {{ 'feature.currency' | tr }}
         <select name="currency" [(ngModel)]="currency">
           @for (code of currencyOptions; track code) {
             <option [value]="code">{{ code }}</option>
@@ -54,21 +55,21 @@ const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
 
       <div class="target">
         <p class="total">
-          <strong>Proposed target</strong>
+          <strong>{{ 'feature.proposed.target' | tr }}</strong>
           @let target = targetMinor();
           @if (target !== null) {
-            <strong>{{ target / 100 | currency: currency() : 'symbol' }}</strong>
+            <strong>{{ target / 100 | appCurrency: currency() : 'symbol' }}</strong>
           } @else {
-            <span>Enter both shares to see the total.</span>
+            <span>{{ 'feature.enter.both.shares.to.see.the.total' | tr }}</span>
           }
         </p>
-        <p>Sending records your agreement. Both parents must agree to the same proposal before the fund opens.</p>
+        <p>{{ 'feature.sending.records.your.agreement.both.parents.must' | tr }}</p>
       </div>
       @if (showError()) {
-        <p class="error" role="alert">Enter a title and both shares using up to two decimal places. The total must be greater than zero.</p>
+        <p class="error" role="alert">{{ 'feature.enter.a.title.and.both.shares.using' | tr }}</p>
       }
-      <button type="submit" [disabled]="submitting()">Send for agreement</button>
-      <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
+      <button type="submit" [disabled]="submitting()">{{ 'feature.send.for.agreement' | tr }}</button>
+      <p class="privacy"><app-icon name="lock" /> {{ 'feature.visible.to.authorized.parents.only' | tr }}</p>
     </form>
   `,
   styles: `

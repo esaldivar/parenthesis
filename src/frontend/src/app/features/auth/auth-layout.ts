@@ -37,7 +37,7 @@ import { Logo } from '../../shared/brand/logo';
         routerLinkActive
         #privacy="routerLinkActive"
         [attr.aria-current]="privacy.isActive ? 'page' : null"
-        >Privacy</a
+        >{{ 'feature.privacy' | tr }}</a
       >
     </footer>
   `,

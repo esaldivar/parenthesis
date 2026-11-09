@@ -117,7 +117,7 @@ export function datesText(count: number | undefined, firstDates: readonly PlainD
   if (!count || firstDates.length === 0) {
     return null;
   }
-  const shown = firstDates.map(monthDay).join(', ');
+  const shown = firstDates.map((date) => monthDay(date)).join(', ');
   const more = count - firstDates.length;
   return `${count} ${count === 1 ? 'date' : 'dates'}: ${shown}${more > 0 ? ` and ${more} more` : ''}`;
 }

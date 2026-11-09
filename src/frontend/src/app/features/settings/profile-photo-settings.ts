@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { Api, Child } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
@@ -13,27 +14,27 @@ import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
 @Component({
   selector: 'app-profile-photo-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PhotoEditor],
+  imports: [TranslatePipe, PhotoEditor],
   template: `
     @if (you(); as you) {
       <app-photo-editor
         [familyId]="familyId()"
         [subject]="you"
         [name]="yourName()"
-        label="Your photo"
+        label="{{ 'feature.your.photo' | tr }}"
         hint="You and your co-parent see this photo."
       />
     } @else {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
     }
 
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
     } @else if (children(); as children) {
       @if (children.length > 0) {
-        <h3>Your photos of your children</h3>
+        <h3>{{ 'feature.your.photos.of.your.children' | tr }}</h3>
         <p class="muted">
-          Only you see these. Your co-parent picks their own, and each child picks the photo on the sign-in screen.
+          {{ 'feature.only.you.see.these.your.co.parent' | tr }}
         </p>
         <ul>
           @for (child of children; track child.id) {

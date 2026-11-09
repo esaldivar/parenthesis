@@ -2,22 +2,22 @@
   <header class="toolbar">
     <div class="toolbar__nav">
       <div class="toolbar__week">
-        <button mat-icon-button type="button" class="nav-btn" (click)="previousWeek.emit()" aria-label="Previous week">
+        <button mat-icon-button type="button" class="nav-btn" (click)="previousWeek.emit()" aria-label="{{ 'feature.previous.week' | tr }}">
           <app-icon name="chevron-left" />
         </button>
       <h2 id="week-heading" class="toolbar__label">
         <span class="visually-hidden">{{ isCurrentWeek() ? 'This week, ' : 'Week of ' }}</span>{{ label() }}
       </h2>
-        <button mat-icon-button type="button" class="nav-btn" (click)="nextWeek.emit()" aria-label="Next week">
+        <button mat-icon-button type="button" class="nav-btn" (click)="nextWeek.emit()" aria-label="{{ 'feature.next.week' | tr }}">
           <app-icon name="chevron-right" />
         </button>
       </div>
-      <button type="button" class="pill" (click)="goToToday.emit()" [attr.aria-disabled]="isCurrentWeek()">Today</button>
+      <button type="button" class="pill" (click)="goToToday.emit()" [attr.aria-disabled]="isCurrentWeek()">{{ 'feature.today.2b065c' | tr }}</button>
     </div>
-    <div class="segmented" role="group" aria-label="Calendar view">
-      <button type="button" [attr.aria-pressed]="view() === 'week'" (click)="viewChange.emit('week')">Week</button>
-      <a routerLink="/calendar" [queryParams]="{ view: 'month', week: weekStart() }">Month</a>
-      <button type="button" [attr.aria-pressed]="view() === 'list'" (click)="viewChange.emit('list')">List</button>
+    <div class="segmented" role="group" aria-label="{{ 'feature.calendar.view' | tr }}">
+      <button type="button" [attr.aria-pressed]="view() === 'week'" (click)="viewChange.emit('week')">{{ 'feature.week' | tr }}</button>
+      <a routerLink="/calendar" [queryParams]="{ view: 'month', week: weekStart() }">{{ 'feature.month' | tr }}</a>
+      <button type="button" [attr.aria-pressed]="view() === 'list'" (click)="viewChange.emit('list')">{{ 'feature.list' | tr }}</button>
     </div>
   </header>
   <p class="visually-hidden" aria-live="polite">{{ label() }}</p>
@@ -49,8 +49,8 @@
         }
 
         @if (state() === 'ready') {
-          <div class="grid__allday-label" aria-hidden="true">All day</div>
-          <ol class="allday" aria-label="All day" [style.--lanes]="allDayLanes()">
+          <div class="grid__allday-label" aria-hidden="true">{{ 'feature.all.day' | tr }}</div>
+          <ol class="allday" aria-label="{{ 'feature.all.day' | tr }}" [style.--lanes]="allDayLanes()">
             @if (live()) {
               <!-- A tap on the row's empty space adds on that day (#212): pointer only, as the day columns below do it
                    for keyboards. -->
@@ -99,11 +99,11 @@
                       <!-- Short proposals keep the hatching, outline and Proposed label; this note moves to the tooltip and
                            screen readers so the block stays compact. -->
                       <span class="pt__note" [class.visually-hidden]="place.endColumn - place.startColumn <= 2">
-                        Needs approval · not on the schedule yet
+                        {{ 'feature.needs.approval.not.on.the.schedule.yet' | tr }}
                       </span>
                     }
                     @if (block.status === 'confirmed' && !block.changePending) {
-                      <span class="visually-hidden">, confirmed</span>
+                      <span class="visually-hidden">{{ 'feature.confirmed' | tr }}</span>
                     }
                   </span>
                   @if (block.status !== 'confirmed' || block.changePending) {
@@ -174,7 +174,7 @@
           class="grid__body"
           tabindex="0"
           role="region"
-          aria-label="Activities by time of day, scrollable"
+          aria-label="{{ 'feature.activities.by.time.of.day.scrollable' | tr }}"
         >
           <div class="grid__hours" aria-hidden="true">
             @for (mark of hourMarks(); track mark.row) {
@@ -248,9 +248,9 @@
   <!-- Agenda: List view, and Week view on narrow screens. -->
   @if (state() === 'ready') {
     <div class="agenda" [class.agenda--always]="view() === 'list'">
-      <h3 id="allday-heading">All day</h3>
+      <h3 id="allday-heading">{{ 'feature.all.day' | tr }}</h3>
       @if (allDay().length === 0) {
-        <p class="muted">No parenting time this week.</p>
+        <p class="muted">{{ 'feature.no.parenting.time.this.week' | tr }}</p>
       } @else {
         <ol class="agenda__blocks" aria-labelledby="allday-heading">
           @for (block of allDay(); track block.key) {
@@ -265,7 +265,7 @@
                 <span class="pt__title">{{ block.title }}</span>
                 <span class="pt__meta">{{ childNames(block.children) }} · {{ range(block) }}</span>
                 @if (block.status === 'proposed') {
-                  <span class="pt__note">Needs approval · not on the schedule yet</span>
+                  <span class="pt__note">{{ 'feature.needs.approval.not.on.the.schedule.yet' | tr }}</span>
                 }
                 <span class="pt__status">
                   <app-status-label [status]="block.status" />
@@ -301,7 +301,7 @@
         </ol>
       }
 
-      <ol class="agenda__days" aria-label="Activities by day">
+      <ol class="agenda__days" aria-label="{{ 'feature.activities.by.day' | tr }}">
         @for (day of days(); track day.date) {
           <li
             class="agenda__day"
@@ -316,11 +316,11 @@
             <p class="agenda__date">
               {{ day.longLabel }}
               @if (day.isToday) {
-                <span class="today-badge">Today</span>
+                <span class="today-badge">{{ 'feature.today.2b065c' | tr }}</span>
               }
             </p>
             @if (day.events.length === 0) {
-              <p class="muted">No activities</p>
+              <p class="muted">{{ 'feature.no.activities' | tr }}</p>
             } @else {
               <ul>
                 @for (event of day.events; track event.id) {
@@ -368,8 +368,7 @@
     </footer>
   } @else if (state() === 'unavailable') {
     <p class="note">
-      Once your family is set up, its parenting time and activities for this week will appear here. Nothing shown on
-      this page is a schedule yet.
+      {{ 'feature.once.your.family.is.set.up.its' | tr }}
     </p>
   }
 </section>

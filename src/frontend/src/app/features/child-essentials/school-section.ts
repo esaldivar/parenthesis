@@ -1,4 +1,6 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Icon } from '../../shared/icon/icon';
@@ -9,10 +11,10 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
 @Component({
   selector: 'app-school-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
+  imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
   template: `
     <section aria-labelledby="school-heading">
-      <h3 id="school-heading">School
+      <h3 id="school-heading">{{ 'feature.school' | tr }}
       </h3>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
@@ -22,86 +24,85 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
           <form [formGroup]="form" (ngSubmit)="save()">
             @if (conflict(); as latest) {
               <div class="latest">
-                <p role="alert">Your co-parent saved changes first. Review the latest saved values below.
-                  Your draft is still in the form.</p>
-                <h4>Latest saved values</h4>
+                <p role="alert">{{ 'feature.your.co.parent.saved.changes.first.review' | tr }}</p>
+                <h4>{{ 'feature.latest.saved.values' | tr }}</h4>
                 <ng-container *ngTemplateOutlet="values; context: { $implicit: latest.values }" />
               </div>
             }
             <fieldset [disabled]="saving()">
-              <legend>School information</legend>
-              <label>Grade <select formControlName="grade">
-                <option value="">Not set</option>
+              <legend>{{ 'feature.school.information' | tr }}</legend>
+              <label>{{ 'feature.grade' | tr }} <select formControlName="grade">
+                <option value="">{{ 'feature.not.set' | tr }}</option>
                 @for (grade of grades; track grade) {
                   <option [value]="grade">{{ grade }}</option>
                 }
               </select></label>
               @if (canSetHomeroom()) {
-                <label>Homeroom teacher (optional)
+                <label>{{ 'feature.homeroom.teacher.optional' | tr }}
                   <input formControlName="homeroomTeacher" maxlength="1000" />
                 </label>
               }
-              <label>Parent concerns (optional) <textarea formControlName="parentConcerns" maxlength="1000"></textarea></label>
+              <label>{{ 'feature.parent.concerns.optional' | tr }} <textarea formControlName="parentConcerns" maxlength="1000"></textarea></label>
               <div class="actions">
                 <button type="submit" [disabled]="form.invalid">
                   {{ saving() ? 'Saving…' : conflict() ? 'Save my draft' : 'Save' }}
                 </button>
-                <button type="button" (click)="cancel()">Cancel</button>
+                <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>
             </fieldset>
           </form>
         } @else {
           <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           <div class="actions">
-            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />Edit<span class="visually-hidden"> School</span></button>
+            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ 'feature.school' | tr }}</span></button>
             <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="school-history"
-              (click)="toggleHistory()"><app-icon name="history" [size]="18" />History</button>
+              (click)="toggleHistory()"><app-icon name="history" [size]="18" />{{ 'feature.history' | tr }}</button>
           </div>
           <p role="status">{{ notice() }}</p>
         }
         <div id="school-history" [hidden]="!historyOpen() || editing()">
-          <h4>School history</h4>
+          <h4>{{ 'feature.school.history' | tr }}</h4>
           @if (historyError()) {
-            <p role="alert">History couldn’t be loaded.</p>
-            <button type="button" (click)="loadHistory(nextRevision())">Try again</button>
+            <p role="alert">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
+            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
           } @else if (historyLoading()) {
-            <p role="status">Loading history…</p>
+            <p role="status">{{ 'feature.loading.history' | tr }}</p>
           } @else if (!history().length) {
-            <p>No changes yet.</p>
+            <p>{{ 'feature.no.changes.yet' | tr }}</p>
           }
           @for (entry of history(); track entry.revision) {
             <article>
-              <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | date: 'medium' }}</time></h5>
+              <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | appDate: 'medium' }}</time></h5>
               <div class="comparison">
-                <div><strong>Previous values</strong>
+                <div><strong>{{ 'feature.previous.values' | tr }}</strong>
                   <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.previous }" />
                 </div>
-                <div><strong>Saved values</strong>
+                <div><strong>{{ 'feature.saved.values' | tr }}</strong>
                   <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.current }" />
                 </div>
               </div>
             </article>
           }
           @if (nextRevision() !== null && !historyLoading() && !historyError()) {
-            <button type="button" (click)="loadHistory(nextRevision())">Show older changes</button>
+            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
           }
         </div>
       } @else if (error()) {
-        <button type="button" (click)="load()">Try again</button>
+        <button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       } @else {
-        <p role="status">Loading School…</p>
+        <p role="status">{{ 'feature.loading.school' | tr }}</p>
       }
     </section>
     <ng-template #values let-entry let-current="current">
       <dl>
         <div class="row" [class.row--updated]="current && marks.updated('grade')" (appOnScreen)="current && marks.rowOnScreen('grade')">
-          <dt>Grade@if (current && marks.updated('grade')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.grade ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.grade' | tr }}@if (current && marks.updated('grade')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.grade ?? 'Not set' }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('homeroomTeacher')" (appOnScreen)="current && marks.rowOnScreen('homeroomTeacher')">
-          <dt>Homeroom teacher@if (current && marks.updated('homeroomTeacher')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.homeroomTeacher ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.homeroom.teacher' | tr }}@if (current && marks.updated('homeroomTeacher')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.homeroomTeacher ?? 'Not set' }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('parentConcerns')" (appOnScreen)="current && marks.rowOnScreen('parentConcerns')">
-          <dt>Parent concerns@if (current && marks.updated('parentConcerns')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.parentConcerns ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.parent.concerns' | tr }}@if (current && marks.updated('parentConcerns')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.parentConcerns ?? 'Not set' }}</dd>
         </div>
       </dl>
     </ng-template>

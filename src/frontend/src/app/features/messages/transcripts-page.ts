@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../../shared/icon/icon';
@@ -10,10 +11,10 @@ import { ChatTranscripts } from './chat-transcripts';
 @Component({
   selector: 'app-transcripts-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, ChatTranscripts],
+  imports: [TranslatePipe, RouterLink, Icon, ChatTranscripts],
   template: `
     <app-chat-transcripts [level]="1">
-      <a transcriptsLead class="round" routerLink="/messages" aria-label="Back to Messages">
+      <a transcriptsLead class="round" routerLink="/messages" aria-label="{{ 'feature.back.to.messages' | tr }}">
         <app-icon name="chevron-left" [size]="26" />
       </a>
     </app-chat-transcripts>

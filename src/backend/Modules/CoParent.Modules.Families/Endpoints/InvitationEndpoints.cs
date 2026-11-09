@@ -114,7 +114,7 @@ internal static class InvitationEndpoints
         }, cancellationToken);
 
         await emails.SendAsync(
-            email, inviter?.DisplayName ?? "Your co-parent", familyName, token, hasAccount: invitee is not null, cancellationToken);
+            email, inviter?.DisplayName ?? "Your co-parent", familyName, token, hasAccount: invitee is not null, cancellationToken, spanish: invitee?.Spanish == true);
 
         return TypedResults.Accepted(
             $"/api/families/{tenant.FamilyId}/invitations",

@@ -1,3 +1,4 @@
+import { TranslatePipe, TranslationKey } from '../../core/i18n/translations';
 import { CalendarPalette, CalendarPaletteKey } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
@@ -17,7 +18,7 @@ const TYPE_PALETTES: Readonly<Record<string, CalendarPaletteKey | undefined>> = 
 @Component({
   selector: 'app-calendar-filter-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, A11yModule, MatButtonModule, Icon],
+  imports: [TranslatePipe, CalendarPalette, A11yModule, MatButtonModule, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   template: `
     <div class="backdrop" (click)="closed.emit()" aria-hidden="true"></div>
@@ -30,17 +31,17 @@ const TYPE_PALETTES: Readonly<Record<string, CalendarPaletteKey | undefined>> = 
       [cdkTrapFocusAutoCapture]="true"
     >
       <header class="sheet__head">
-        <h2 id="filters-title" tabindex="-1" cdkFocusInitial>Filters</h2>
-        <button mat-icon-button type="button" (click)="closed.emit()" aria-label="Close filters">
+        <h2 id="filters-title" tabindex="-1" cdkFocusInitial>{{ 'feature.filters' | tr }}</h2>
+        <button mat-icon-button type="button" (click)="closed.emit()" aria-label="{{ 'feature.close.filters' | tr }}">
           <app-icon name="close" />
         </button>
       </header>
-      <p class="sheet__note">Only your view changes. Your co-parent’s calendar, approvals and conflict checks stay the same.</p>
+      <p class="sheet__note">{{ 'feature.only.your.view.changes.your.co.parent' | tr }}</p>
       @for (dimension of dimensions; track dimension.id) {
         <fieldset>
-          <legend>{{ dimension.label }}</legend>
+          <legend>{{ filterLabel(dimension.id) | tr }}</legend>
           @if (dimension.id === 'approval') {
-            <p class="hint">Tasks and reminders have no approval, so they show only when all three are ticked.</p>
+            <p class="hint">{{ 'feature.tasks.and.reminders.have.no.approval.so' | tr }}</p>
           }
           @for (option of dimension.options; track option.id) {
             <label>
@@ -57,14 +58,14 @@ const TYPE_PALETTES: Readonly<Record<string, CalendarPaletteKey | undefined>> = 
                   <span [appCalendarPalette]="typePalette(option.id)" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
                 }
               }
-              {{ option.label }}
+              {{ filterLabel(option.id) | tr }}
             </label>
           }
         </fieldset>
       }
       <div class="sheet__actions">
-        <button mat-flat-button type="button" (click)="closed.emit()">Done</button>
-        <button mat-stroked-button type="button" (click)="resetAll.emit()">Reset filters</button>
+        <button mat-flat-button type="button" (click)="closed.emit()">{{ 'feature.done' | tr }}</button>
+        <button mat-stroked-button type="button" (click)="resetAll.emit()">{{ 'feature.reset.filters' | tr }}</button>
       </div>
     </section>
   `,
@@ -80,6 +81,11 @@ export class CalendarFilterPanel {
   readonly closed = output();
 
   protected readonly dimensions = DIMENSIONS;
+
+  protected filterLabel(id: string): TranslationKey {
+    // IDs come from DIMENSIONS, whose labels are defined in the calendar filter catalog.
+    return `calendar.filter.${id}` as TranslationKey;
+  }
 
   protected isChecked(dimension: Dimension, option: string): boolean {
     return (this.filters()[dimension] as readonly string[]).includes(option);

@@ -1,12 +1,12 @@
-<p class="back"><a routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">← Calendar</a></p>
-<h1>Add to calendar</h1>
+<p class="back"><a routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">{{ 'feature.calendar' | tr }}</a></p>
+<h1>{{ 'feature.add.to.calendar' | tr }}</h1>
 
 @if (loadError(); as message) {
   <div class="alert" role="alert">{{ message }}</div>
 }
 
 <section aria-labelledby="kind-heading">
-  <h2 id="kind-heading" class="step">What are you creating?</h2>
+  <h2 id="kind-heading" class="step">{{ 'feature.what.are.you.creating' | tr }}</h2>
   <div class="types kinds" role="group" aria-labelledby="kind-heading">
     @for (option of kinds; track option.id) {
       <button type="button" class="type kind" [appCalendarPalette]="option.id" [attr.aria-pressed]="creating() === option.id" (click)="creating.set(option.id)">
@@ -26,7 +26,7 @@
   <app-task-form [date]="form.controls.startDate.value" />
 } @else {
   <section aria-labelledby="type-heading">
-    <h2 id="type-heading" class="step">What kind of event?</h2>
+    <h2 id="type-heading" class="step">{{ 'feature.what.kind.of.event' | tr }}</h2>
     <div class="types" role="group" aria-labelledby="type-heading">
       @for (option of types; track option.id) {
         <button type="button" class="type" [appCalendarPalette]="option.id === 'parenting' ? undefined : option.id" [attr.aria-pressed]="type() === option.id" (click)="choose(option.id)">
@@ -48,7 +48,7 @@
 
   @if (type(); as current) {
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="details-heading">
-      <h2 id="details-heading" class="step">Details</h2>
+      <h2 id="details-heading" class="step">{{ 'feature.details' | tr }}</h2>
 
       @if (approvalNote(); as note) {
         <p class="note">{{ note }}</p>
@@ -62,7 +62,7 @@
           <mat-label>Title{{ current === 'parenting' ? ' (optional)' : '' }}</mat-label>
           <input matInput formControlName="title" maxlength="120" [required]="current !== 'parenting'" />
           @if (current === 'parenting') {
-            <mat-hint>Leave blank for “Time with …”.</mat-hint>
+            <mat-hint>{{ 'feature.leave.blank.for.time.with' | tr }}</mat-hint>
           }
           @if (fieldError('title'); as e) {
             <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
@@ -72,7 +72,7 @@
 
       @if (current === 'activity') {
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Category</mat-label>
+          <mat-label>{{ 'feature.category' | tr }}</mat-label>
           <mat-select formControlName="category">
             @for (c of categories; track c.id) {
               <mat-option [value]="c.id">{{ c.label }}</mat-option>
@@ -87,13 +87,13 @@
       }
 
       <fieldset class="when">
-        <legend>When</legend>
-        <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+        <legend>{{ 'feature.when' | tr }}</legend>
+        <mat-slide-toggle formControlName="allDay">{{ 'feature.all.day' | tr }}</mat-slide-toggle>
         <!-- Start and End as separate fields, each opening its own calendar (#249). Only past days are greyed
              out; an invalid date turns red, with its reason for screen readers, and blocks sending (#248). -->
         <div class="when__row dates">
           <app-date-field
-            label="Start date"
+            label="{{ 'feature.start.date' | tr }}"
             name="startDate"
             inputId="add-start-date"
             [control]="form.controls.startDate"
@@ -101,7 +101,7 @@
             [issue]="dateCheck.issues().start"
           />
           <app-date-field
-            label="End date"
+            label="{{ 'feature.end.date' | tr }}"
             name="endDate"
             inputId="add-end-date"
             [control]="form.controls.endDate"
@@ -113,11 +113,11 @@
         @if (!allDay()) {
           <div class="when__row">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Start time</mat-label>
+              <mat-label>{{ 'feature.start.time' | tr }}</mat-label>
               <input matInput type="time" formControlName="startTime" required />
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>End time</mat-label>
+              <mat-label>{{ 'feature.end.time' | tr }}</mat-label>
               <input
                 matInput
                 type="time"
@@ -136,24 +136,24 @@
 
       @if (canRepeat()) {
         <fieldset class="when repeat">
-          <legend>Repeat</legend>
+          <legend>{{ 'feature.repeat' | tr }}</legend>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>How often</mat-label>
+            <mat-label>{{ 'feature.how.often' | tr }}</mat-label>
             <mat-select formControlName="repeat" (selectionChange)="chooseRepeat()">
-              <mat-option value="none">Does not repeat</mat-option>
-              <mat-option value="daily">Every day</mat-option>
+              <mat-option value="none">{{ 'feature.does.not.repeat' | tr }}</mat-option>
+              <mat-option value="daily">{{ 'feature.every.day' | tr }}</mat-option>
               <mat-option value="weekly">{{ weeklyLabel() }}</mat-option>
               <mat-option value="monthly">{{ monthlyLabel() }}</mat-option>
-              <mat-option value="custom">Custom…</mat-option>
+              <mat-option value="custom">{{ 'feature.custom' | tr }}</mat-option>
             </mat-select>
           </mat-form-field>
           @if (repeats()) {
             @if (custom()) {
               <!-- Custom (#238), as in Google Calendar: every [number] [day/week/month]. Native lists, so phones show
                    their own scrolling picker. -->
-              <div class="when__row custom" role="group" aria-label="Custom repeat">
+              <div class="when__row custom" role="group" aria-label="{{ 'feature.custom.repeat' | tr }}">
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>Every</mat-label>
+                  <mat-label>{{ 'feature.every' | tr }}</mat-label>
                   <select matNativeControl formControlName="every">
                     @for (n of intervals(); track n) {
                       <option [ngValue]="n">{{ n }}</option>
@@ -161,7 +161,7 @@
                   </select>
                 </mat-form-field>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>Unit</mat-label>
+                  <mat-label>{{ 'feature.unit' | tr }}</mat-label>
                   <select matNativeControl formControlName="unit" (change)="chooseUnit()">
                     <option value="Daily">{{ value().every === 1 ? 'day' : 'days' }}</option>
                     <option value="Weekly">{{ value().every === 1 ? 'week' : 'weeks' }}</option>
@@ -173,7 +173,7 @@
                 <p class="field-error" role="alert">{{ e }}</p>
               }
               @if (unit() === 'Weekly') {
-                <div class="weekdays" role="group" aria-label="Repeat on">
+                <div class="weekdays" role="group" aria-label="{{ 'feature.repeat.on' | tr }}">
                   @for (day of weekdays; track day.id) {
                     <label class="weekday">
                       <input
@@ -190,15 +190,15 @@
             }
             <div class="when__row">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Ends</mat-label>
+                <mat-label>{{ 'feature.ends' | tr }}</mat-label>
                 <mat-select formControlName="ends">
-                  <mat-option value="date">On a date</mat-option>
-                  <mat-option value="count">After a number of times</mat-option>
+                  <mat-option value="date">{{ 'feature.on.a.date' | tr }}</mat-option>
+                  <mat-option value="count">{{ 'feature.after.a.number.of.times' | tr }}</mat-option>
                 </mat-select>
               </mat-form-field>
               @if (endsOnDate()) {
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>Last day</mat-label>
+                  <mat-label>{{ 'feature.last.day' | tr }}</mat-label>
                   <input
                     matInput
                     [matDatepicker]="untilPicker"
@@ -207,17 +207,17 @@
                     formControlName="repeatUntil"
                     required
                   />
-                  <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="Choose the last day" />
+                  <mat-datepicker-toggle matIconSuffix [for]="untilPicker" aria-label="{{ 'feature.choose.the.last.day' | tr }}" />
                   <mat-datepicker #untilPicker [calendarHeaderComponent]="calendarHeader" />
                   @if (fieldError('repeatUntil'); as e) {
                     <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
                   } @else {
-                    <mat-hint class="visually-hidden">Date format: MM/DD/YYYY or YYYY-MM-DD.</mat-hint>
+                    <mat-hint class="visually-hidden">{{ 'feature.date.format.mm.dd.yyyy.or.yyyy' | tr }}</mat-hint>
                   }
                 </mat-form-field>
               } @else {
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>Times in all</mat-label>
+                  <mat-label>{{ 'feature.times.in.all' | tr }}</mat-label>
                   <input matInput type="number" min="2" max="366" formControlName="repeatCount" required />
                   @if (fieldError('repeatCount'); as e) {
                     <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
@@ -238,8 +238,7 @@
               </p>
             }
             <p class="legend-hint">
-              Each date is one day, so the end date is the start date. Choose the days, how often and when it ends here.
-              A repeat ends within a year. Each date is its own event, so you can change or cancel one later.
+              {{ 'feature.each.date.is.one.day.so.the' | tr }}
               @if (current === 'parenting') {
                 {{ coParent() ?? 'Your co-parent' }} approves or declines every date at once.
               }
@@ -251,16 +250,16 @@
       @if (current !== 'unavailable' && activeChildren().length > 0) {
         <fieldset class="kids">
           <legend>
-            Children
+            {{ 'feature.children' | tr }}
             @if (current === 'family') {
-              <span class="legend-hint">(optional: both parents always attend)</span>
+              <span class="legend-hint">{{ 'feature.optional.both.parents.always.attend' | tr }}</span>
             } @else if (current === 'activity') {
-              <span class="legend-hint">(optional)</span>
+              <span class="legend-hint">{{ 'feature.optional' | tr }}</span>
             }
           </legend>
           <label class="kid">
             <input type="checkbox" [checked]="allChildren()" (change)="toggleAll($any($event.target).checked)" />
-            All children
+            {{ 'feature.all.children' | tr }}
           </label>
           @for (child of activeChildren(); track child.id) {
             <label class="kid">
@@ -279,13 +278,13 @@
       } @else if (current === 'parenting') {
         <!-- Parenting time needs a child, so say why there's none to choose instead of failing quietly on save. -->
         <fieldset class="kids">
-          <legend>Children</legend>
+          <legend>{{ 'feature.children' | tr }}</legend>
           <p class="note">
             @if (pendingChildren()) {
               Your children are waiting for {{ coParent() ?? 'your co-parent' }}’s approval. Parenting time can include them
               once they’re approved.
             } @else {
-              Parenting time is for your children. Add them first in <a routerLink="/settings">Settings</a>.
+              {{ 'feature.parenting.time.is.for.your.children.add' | tr }} <a routerLink="/settings">{{ 'feature.settings' | tr }}</a>.
             }
           </p>
           @if (fieldError('childIds'); as e) {
@@ -302,7 +301,7 @@
         <mat-label>{{ current === 'unavailable' ? 'Private note (optional)' : 'Notes (optional)' }}</mat-label>
         <textarea matInput formControlName="notes" rows="3" maxlength="1000"></textarea>
         @if (current === 'unavailable') {
-          <mat-hint>Only you can see this. Your co-parent sees “Unavailable”.</mat-hint>
+          <mat-hint>{{ 'feature.only.you.can.see.this.your.co' | tr }}</mat-hint>
         }
         @if (fieldError('notes'); as e) {
           <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
@@ -312,10 +311,10 @@
       @if (availabilityWarning()) {
         <section class="alert" aria-labelledby="availability-heading">
           <h2 id="availability-heading" tabindex="-1">{{ coParent() }} marked that time as unavailable</h2>
-          <p>They may still approve your request. You can send it anyway, or choose different dates.</p>
+          <p>{{ 'feature.they.may.still.approve.your.request.you' | tr }}</p>
           <div class="actions">
-            <button mat-flat-button type="button" [disabled]="busy()" (click)="sendAnyway()">Send anyway</button>
-            <button mat-stroked-button type="button" [disabled]="busy()" (click)="chooseDifferentDates()">Choose different dates</button>
+            <button mat-flat-button type="button" [disabled]="busy()" (click)="sendAnyway()">{{ 'feature.send.anyway' | tr }}</button>
+            <button mat-stroked-button type="button" [disabled]="busy()" (click)="chooseDifferentDates()">{{ 'feature.choose.different.dates' | tr }}</button>
           </div>
         </section>
       }
@@ -326,13 +325,13 @@
           @if (busy()) {
             {{ checkingAvailability() ? 'Checking…' : 'Saving…' }}
           } @else if (current === 'family' || (current === 'parenting' && coParent())) {
-            Send for approval
+            {{ 'feature.send.for.approval' | tr }}
           } @else {
-            Add to calendar
+            {{ 'feature.add.to.calendar' | tr }}
           }
         </button>
         }
-        <a mat-button routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">Cancel</a>
+        <a mat-button routerLink="/calendar" [queryParams]="{ date: form.controls.startDate.value }">{{ 'feature.cancel' | tr }}</a>
       </div>
     </form>
   }

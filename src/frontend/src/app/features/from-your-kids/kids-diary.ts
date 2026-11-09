@@ -1,5 +1,6 @@
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { KidsDiaryEntry, KidsMood } from './from-your-kids-contract';
 
 const MOOD_CHARACTER: Record<KidsMood, string> = {
@@ -18,19 +19,19 @@ const MOOD_CHARACTER: Record<KidsMood, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ordered().length === 0) {
-      <div class="book empty-book" aria-label="Empty diary">
-        <div class="paper cover"><h2>Dear Diary</h2><p>Little stories, big feelings.</p></div>
-        <div class="paper"><p>No diary entries shared with you yet.</p>
-          <p>When your child shares an entry, you'll be able to turn its pages here.</p>
+      <div class="book empty-book" aria-label="{{ 'feature.empty.diary' | tr }}">
+        <div class="paper cover"><h2>{{ 'feature.dear.diary' | tr }}</h2><p>{{ 'feature.little.stories.big.feelings' | tr }}</p></div>
+        <div class="paper"><p>{{ 'feature.no.diary.entries.shared.with.you.yet' | tr }}</p>
+          <p>{{ 'feature.when.your.child.shares.an.entry.you' | tr }}</p>
         </div>
       </div>
     } @else {
-      <section class="book" aria-label="Shared diary" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
-        <div class="paper index-page"><h2>Diary Entries</h2>
-          <nav aria-label="Choose diary entry">
+      <section class="book" aria-label="{{ 'feature.shared.diary' | tr }}" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
+        <div class="paper index-page"><h2>{{ 'feature.diary.entries' | tr }}</h2>
+          <nav aria-label="{{ 'feature.choose.diary.entry' | tr }}">
             @for (entry of ordered(); track entry.id; let i = $index) {
               <button type="button" class="entry-choice" [attr.aria-current]="index() === i ? 'page' : null" (click)="index.set(i)">
-                <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
+                <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | appDate:'mediumDate' }}</time>
                 <strong>{{ entry.title || 'A diary entry' }}</strong>
               </button>
             }
@@ -38,21 +39,21 @@ const MOOD_CHARACTER: Record<KidsMood, string> = {
         </div>
         <article class="paper" aria-live="polite">
           @if (current(); as entry) {
-            <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
+            <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | appDate:'mediumDate' }}</time>
             <p class="mood"><span aria-hidden="true">{{ moodCharacter[entry.mood] }}</span> {{ entry.mood }}</p>
             @if (entry.title) { <h3>{{ entry.title }}</h3> }
             <p class="entry">{{ entry.body }}</p>
           }
         </article>
       </section>
-      <nav class="pager" aria-label="Diary pages">
-        <button type="button" (click)="previous()" [disabled]="index() === 0" aria-label="Previous diary page">← Previous</button>
+      <nav class="pager" aria-label="{{ 'feature.diary.pages' | tr }}">
+        <button type="button" (click)="previous()" [disabled]="index() === 0" aria-label="{{ 'feature.previous.diary.page' | tr }}">{{ 'feature.previous' | tr }}</button>
         <span aria-live="polite">Page {{ index() + 1 }} of {{ ordered().length }}</span>
-        <button type="button" (click)="next()" [disabled]="index() >= ordered().length - 1" aria-label="Next diary page">Next →</button>
+        <button type="button" (click)="next()" [disabled]="index() >= ordered().length - 1" aria-label="{{ 'feature.next.diary.page' | tr }}">{{ 'feature.next' | tr }}</button>
       </nav>
     }
   `,
-  imports: [DatePipe],
+  imports: [TranslatePipe, AppDatePipe],
   styles: `
     :host { display: grid; gap: 1rem; }
     .book { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border: 7px solid #5e8f7e; border-radius: 1rem; overflow: hidden; box-shadow: 0 8px 20px #0002; color: #20303f; }

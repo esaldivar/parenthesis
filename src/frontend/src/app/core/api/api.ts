@@ -9,7 +9,7 @@ export interface Me {
   readonly id: string;
   readonly email: string;
   readonly displayName: string;
-  readonly language?: 'en' | 'es-419';
+  readonly language?: 'en' | 'es-419' | null;
 }
 
 export type FamilyRole = 'Parent' | 'Child';

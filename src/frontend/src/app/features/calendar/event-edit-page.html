@@ -1,10 +1,10 @@
-<p class="back"><a routerLink="/calendar" [queryParams]="{ date: back() }">← Calendar</a></p>
-<h1>Edit event</h1>
+<p class="back"><a routerLink="/calendar" [queryParams]="{ date: back() }">{{ 'feature.calendar' | tr }}</a></p>
+<h1>{{ 'feature.edit.event' | tr }}</h1>
 
 @if (loadError(); as message) {
   <div class="alert" role="alert">{{ message }}</div>
 } @else if (!event()) {
-  <p role="status">Loading…</p>
+  <p role="status">{{ 'feature.loading' | tr }}</p>
 } @else if (blocked(); as message) {
   <div class="alert" role="alert">{{ message }}</div>
 } @else {
@@ -25,7 +25,7 @@
           </label>
         }
         @if (scope() !== 'this') {
-          <p class="legend-hint">Each date keeps its own day. You can change the times, title, place and notes.</p>
+          <p class="legend-hint">{{ 'feature.each.date.keeps.its.own.day.you' | tr }}</p>
         }
       </fieldset>
       }
@@ -36,7 +36,7 @@
 
     @if (!unavailable()) {
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Title</mat-label>
+        <mat-label>{{ 'feature.title' | tr }}</mat-label>
         <input matInput formControlName="title" maxlength="120" required [attr.aria-invalid]="!!fieldError('title')" />
         @if (fieldError('title'); as e) {
           <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
@@ -53,13 +53,13 @@
     }
 
     <fieldset class="when">
-      <legend>When</legend>
-      <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+      <legend>{{ 'feature.when' | tr }}</legend>
+      <mat-slide-toggle formControlName="allDay">{{ 'feature.all.day' | tr }}</mat-slide-toggle>
       <!-- Start and End as separate fields, each opening its own calendar (#249). Only past days are greyed
            out; an invalid date turns red, with its reason for screen readers, and blocks sending (#248). -->
       <div class="when__row dates">
         <app-date-field
-          label="Start date"
+          label="{{ 'feature.start.date' | tr }}"
           name="startDate"
           inputId="edit-start-date"
           [control]="form.controls.startDate"
@@ -67,7 +67,7 @@
           [issue]="dateCheck.issues().start"
         />
         <app-date-field
-          label="End date"
+          label="{{ 'feature.end.date' | tr }}"
           name="endDate"
           inputId="edit-end-date"
           [control]="form.controls.endDate"
@@ -79,11 +79,11 @@
       @if (!allDay()) {
         <div class="when__row">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Start time</mat-label>
+            <mat-label>{{ 'feature.start.time' | tr }}</mat-label>
             <input matInput type="time" formControlName="startTime" required />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>End time</mat-label>
+            <mat-label>{{ 'feature.end.time' | tr }}</mat-label>
             <input
               matInput
               type="time"
@@ -110,16 +110,16 @@
       @if (fieldError('notes'); as e) {
         <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
       } @else if (unavailable()) {
-        <mat-hint>Only you can see this. Your co-parent sees “Unavailable”.</mat-hint>
+        <mat-hint>{{ 'feature.only.you.can.see.this.your.co' | tr }}</mat-hint>
       }
     </mat-form-field>
 
-    <app-loading-indicator [active]="busy()" label="Saving…" />
+    <app-loading-indicator [active]="busy()" label="{{ 'feature.saving' | tr }}" />
     <div class="actions">
       <button mat-flat-button type="submit" [disabled]="busy()">
         {{ busy() ? 'Saving…' : needsApproval() && materialChange() ? 'Send for approval' : 'Save changes' }}
       </button>
-      <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">Cancel</a>
+      <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">{{ 'feature.cancel' | tr }}</a>
     </div>
   </form>
 }
