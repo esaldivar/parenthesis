@@ -1,4 +1,4 @@
-import { LocaleService } from '../../core/i18n/locale.service';
+import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe } from '../../core/i18n/translations';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { EventThemesService } from '../../core/theme/event-themes.service';
@@ -169,16 +169,18 @@ export class SettingsPage implements OnInit {
   protected async changeLanguage(event: Event): Promise<void> {
     const select = event.target as HTMLSelectElement;
     const value = select.value;
+    if (value !== 'en' && value !== 'es-419') return;
+    const language: AppLocale = value;
     const accountId = this.auth.user()?.id;
-    if ((value !== 'en' && value !== 'es-419') || !accountId || this.savingLanguage()) return;
+    if (!accountId || this.savingLanguage()) return;
     this.savingLanguage.set(true);
     this.languageError.set(null);
     try {
-      const saved = await this.api.setLanguage(value);
+      const saved = await this.api.setLanguage(language);
       const current = this.auth.user();
       if (current?.id === accountId && saved.id === accountId) {
-        this.auth.user.set({ ...current, language: value });
-        this.locale.setLocale(value);
+        this.auth.user.set({ ...current, language });
+        this.locale.setLocale(language);
       }
     } catch {
       if (this.auth.user()?.id === accountId) {

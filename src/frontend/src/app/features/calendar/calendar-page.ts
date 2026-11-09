@@ -168,7 +168,11 @@ export class CalendarPage {
   });
 
   protected periodLabel(direction: 'previous' | 'next'): TranslationKey {
-    return `calendar.${direction}.${this.current()}`;
+    const labels = {
+      previous: { week: 'calendar.previous.week', month: 'calendar.previous.month', list: 'calendar.previous.list' },
+      next: { week: 'calendar.next.week', month: 'calendar.next.month', list: 'calendar.next.list' },
+    } as const;
+    return labels[direction][this.current()];
   }
 
   protected readonly heading = computed(() =>

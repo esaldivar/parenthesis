@@ -118,7 +118,7 @@ export class CalendarWeek {
     weekDays(this.weekStart()).map((date) => ({
       date,
       weekday: weekdayShort(date, this.locale.locale()),
-      monthDay: monthDay(date),
+      monthDay: monthDay(date, this.locale.locale()),
       longLabel: dayLong(date, this.locale.locale()),
       isToday: date === this.today(),
       items: onDate(this.items(), date).sort(byStart),
@@ -159,7 +159,9 @@ export class CalendarWeek {
 
   protected readonly markerLabel = itemSummary;
 
-  protected readonly hourMarks = Array.from({ length: 12 }, (_, i) => ({ label: hourLabel(i * 2), row: i * 4 + 1 }));
+  protected readonly hourMarks = computed(() =>
+    Array.from({ length: 12 }, (_, i) => ({ label: hourLabel(i * 2, this.locale.locale()), row: i * 4 + 1 })),
+  );
 
   /** The earliest timed item this week, or 7 AM. */
   private readonly firstHour = computed(() =>

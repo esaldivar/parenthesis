@@ -77,7 +77,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
         </mat-form-field>
 
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.checking' | tr) : 'Go' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.checking' | tr) : ('pin.go' | tr) }}</button>
         </div>
       </form>
     }

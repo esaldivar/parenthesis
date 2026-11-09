@@ -41,7 +41,7 @@
 
   <div #scroller class="grid__body" tabindex="0" role="region" aria-label="{{ 'feature.events.by.time.of.day.scrollable' | tr }}">
     <div class="grid__hours" aria-hidden="true">
-      @for (mark of hourMarks; track mark.row) {
+      @for (mark of hourMarks(); track mark.row) {
         <span [style.grid-row]="mark.row">{{ mark.label }}</span>
       }
     </div>

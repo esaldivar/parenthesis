@@ -1,5 +1,5 @@
 import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { EventDecoration } from './event-decoration';
 import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
@@ -91,7 +91,7 @@ export class EventDetails {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly status = computed(() => statusText(this.item()) ?? 'Confirmed');
+  protected readonly status = computed(() => statusText(this.item(), this.locale.locale()) ?? translate('calendar.filter.confirmed', this.locale.locale()));
   protected readonly date = computed(() => dayLong(this.item().firstDate, this.locale.locale()));
   protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
   protected readonly coParent = computed(
