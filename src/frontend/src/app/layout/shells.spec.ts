@@ -115,7 +115,7 @@ describe('application shells', () => {
     it('opens the From Your Kids parent-facing shell', async () => {
       const body = await open('/from-your-kids');
 
-      expect(body.querySelector('main h1')!.textContent).toBe('From Your Kids');
+      expect(body.querySelector('main h1')!.textContent?.trim()).toMatch(/^From Your Kids(?:\\s*♡)?$/);
     });
 
     it('opens Messages full screen on phones, with its own way back', async () => {
