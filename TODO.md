@@ -446,6 +446,8 @@ that points back here.
   - [ ] Run backend build/format/integration and frontend lint/test/build in PR CI; this workspace has no .NET SDK
     or Docker. After promotion, retest mobile/desktop, both themes and screen-reader behavior before acceptance.
 
+- [ ] #554: verify the Unavailable details pattern and private-note visibility on Development from Home and Calendar, on desktop and phone in both themes.
+
 - [x] **Reminder delete confirmation focus (#172).** Opening confirmation focuses Keep it with the deletion
   explanation; cancelling restores Delete reminder. The pending delete action keeps focus and blocks duplicate
   requests, including error/retry. Regression tests cover the observed BODY-focus failure and error-state axe.
