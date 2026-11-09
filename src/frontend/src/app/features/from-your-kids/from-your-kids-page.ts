@@ -86,7 +86,7 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
   `,
   styles: `
     :host { display: block; color: var(--color-text); }
-    .kids { display: grid; gap: var(--space-4); max-width: 75rem; }
+    .kids { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); max-width: 75rem; }
     h1,h2,p { margin: 0; }
     .intro { position: relative; overflow: hidden; padding: clamp(1.25rem, 3vw, 2.5rem); border-radius: 1.25rem; background: var(--color-surface-soft); border: 1px solid var(--color-divider); }
     .intro::after { content: '✦  ♡  ✧'; position: absolute; right: 1rem; top: 1rem; font-size: 1.4rem; color: #5e8f7e; opacity: .75; }
@@ -109,7 +109,7 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
     .sections button[aria-current='page'] { border: 2px solid var(--color-focus); background: var(--color-surface-soft); }
     .sections .section-icon { display: grid; place-items: center; flex: 0 0 3.5rem; width: 3.5rem; height: 3.5rem; border-radius: .85rem; background: var(--color-surface-soft); font-size: 2rem; }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-    .gallery { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 1.25rem; text-align: center; }
+    .gallery { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 1.25rem; text-align: center; }
     .gallery h2 { font-family: Georgia,serif; font-size: clamp(1.4rem,2.5vw,2rem); }
     .fridge { display: grid; width: min(100%, 18rem); min-height: 24rem; padding: 0.65rem; gap: 0.5rem; border: 3px solid var(--color-outline); border-radius: 1.5rem; background: var(--color-surface-soft); box-shadow: 0 8px 15px #0002; }
     .fridge-door { position: relative; border: 2px solid var(--color-divider); border-radius: 0.75rem; background: var(--color-surface); }
@@ -117,7 +117,7 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
     .fridge-door--lower { min-height: 11rem; padding: 1rem .65rem 1rem 2rem; }
     .preview-toggle { display: flex; align-items: center; gap: .5rem; min-height: var(--target-min); }
     .fridge-handle { position: absolute; left: 0.8rem; top: 20%; width: 0.55rem; height: 45%; border-radius: 0.4rem; background: var(--color-outline); }
-    .corkboard { display: grid; place-items: center; width: min(100%,58rem); min-height: 20rem; border: 12px solid #996638; border-radius: 12px; background: #c48c55; color: #20303F; box-shadow: inset 0 0 12px #56351855; }
+    .corkboard { display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; width: min(100%,58rem); min-height: 20rem; border: 12px solid #996638; border-radius: 12px; background: #c48c55; color: #20303F; box-shadow: inset 0 0 12px #56351855; }
     .corkboard { gap: var(--space-3); padding: var(--space-3); }
     .corkboard h3 { margin: 0; font-family: Georgia, serif; }
     .corkboard p { padding: 1rem; background: #F7F5ED; transform: rotate(-2deg); }
