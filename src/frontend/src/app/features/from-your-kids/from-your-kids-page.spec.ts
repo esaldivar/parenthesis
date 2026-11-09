@@ -43,6 +43,32 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     expect(host.querySelector('button[aria-label="Add Photo"]')).toBeNull();
   });
 
+  it('shows labeled sample content only after opting into the development preview', async () => {
+    const fixture = TestBed.createComponent(FromYourKidsPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    const toggle = host.querySelector<HTMLInputElement>('.preview-toggle input')!;
+    expect(host.textContent).toContain('No diary entries shared with you yet');
+    toggle.click();
+    fixture.detectChanges();
+    expect(host.textContent).toContain('Showing synthetic examples');
+    expect(host.querySelector('article .mood')?.textContent).toContain('Happy');
+    const [, artwork, photos] = host.querySelectorAll<HTMLButtonElement>('.sections button');
+    artwork.click();
+    fixture.detectChanges();
+    expect(host.querySelectorAll('.fridge-door .memory')).toHaveLength(2);
+    expect(host.textContent).not.toContain('No artwork shared with you yet');
+    photos.click();
+    fixture.detectChanges();
+    expect(host.querySelectorAll('.corkboard .memory')).toHaveLength(2);
+    toggle.click();
+    fixture.detectChanges();
+    expect(host.querySelector('.corkboard .memory')).toBeNull();
+    expect(host.textContent).toContain('No photos shared with you yet');
+  });
+
   it('never renders pending child profiles', async () => {
     load.mockResolvedValue([...children, { ...children[0], id: 'pending', firstName: 'Hidden', status: 'PendingApproval' }]);
     const fixture = TestBed.createComponent(FromYourKidsPage);
