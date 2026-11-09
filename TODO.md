@@ -12,9 +12,9 @@ that points back here.
 - [ ] **English and Spanish localization (#534).** Finish coverage for app-generated dynamic messages, validation,
   notifications, and accessibility announcements. Walk the parent routes on Development in both languages at phone
   and desktop widths, including both themes, shared-device sign-in, and recipient-language email delivery.
-- [ ] **From Your Kids (#531).** Review the rendered diary, closed fridge, and corkboard against the approved
-  collage on phone and desktop in both themes, and verify keyboard and screen-reader behavior. Connect
-  parent-authorized content and actions once the M5 service is available.
+- [ ] **From Your Kids (#531).** Verify the integrated release candidate in both themes and with a real screen reader.
+  The owner approved the rendered artwork and photos preview on November 8, 2026. Connect parent-authorized
+  content and actions once the M5 service is available.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
 - [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523).
 - [ ] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514).

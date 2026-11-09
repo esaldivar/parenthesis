@@ -32,7 +32,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     const host = fixture.nativeElement as HTMLElement;
     expect(load).toHaveBeenCalledWith('family-1');
     const tabs = [...host.querySelectorAll<HTMLButtonElement>('.child-tabs button')];
-    expect(tabs.map(button => button.textContent.trim())).toEqual(['Kai', 'Aurora']);
+    expect(tabs.map(button => button.querySelector('.child-name')?.textContent.trim())).toEqual(['Kai', 'Aurora']);
     tabs[1].click();
     fixture.detectChanges();
     expect(tabs[1].getAttribute('aria-pressed')).toBe('true');
@@ -40,6 +40,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     photos.click();
     fixture.detectChanges();
     expect(host.textContent).toContain('No photos shared with you yet');
+    expect(host.querySelector('.corkboard-sticker')).toBeNull();
     expect(host.querySelector('button[aria-label="Add Photo"]')).toBeNull();
   });
 
@@ -59,13 +60,16 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     artwork.click();
     fixture.detectChanges();
     expect(host.querySelectorAll('.fridge-door .memory')).toHaveLength(2);
+    expect(host.querySelectorAll('.artwork-grid .memory')).toHaveLength(3);
     expect(host.textContent).not.toContain('No artwork shared with you yet');
     photos.click();
     fixture.detectChanges();
-    expect(host.querySelectorAll('.corkboard .memory')).toHaveLength(2);
+    expect(host.querySelectorAll('.corkboard .memory')).toHaveLength(3);
+    expect(host.querySelectorAll('.corkboard-sticker')).toHaveLength(2);
     toggle.click();
     fixture.detectChanges();
     expect(host.querySelector('.corkboard .memory')).toBeNull();
+    expect(host.querySelector('.corkboard-sticker')).toBeNull();
     expect(host.textContent).toContain('No photos shared with you yet');
   });
 
