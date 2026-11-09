@@ -15,7 +15,7 @@ import { KidsDiary } from './kids-diary';
   template: `
     <section class="kids" aria-labelledby="kids-title">
       <header class="intro">
-        <h1 id="kids-title">From Your Kids <span aria-hidden="true">♡</span></h1>
+        <h1 id="kids-title">From Your Kids</h1>
         <p>A little window into the things your children choose to share.</p>
       </header>
 
@@ -78,7 +78,7 @@ import { KidsDiary } from './kids-diary';
     h1,h2,p { margin: 0; }
     .intro { position: relative; overflow: hidden; padding: clamp(1.25rem, 3vw, 2.5rem); border-radius: 1.25rem; background: var(--color-surface-soft); border: 1px solid var(--color-divider); }
     .intro::after { content: '✦  ♡  ✧'; position: absolute; right: 1rem; top: 1rem; font-size: 1.4rem; color: #5e8f7e; opacity: .75; }
-    .intro h1 span { color: #f08a6b; }
+    .intro h1::after { content: ' ♡'; color: #f08a6b; }
     .intro h1 { font-family: Georgia, serif; font-size: clamp(1.7rem, 4vw, 2.6rem); }
     .intro p,.hint { color: var(--color-text-secondary); }
     .intro p { margin-top: var(--space-2); }
