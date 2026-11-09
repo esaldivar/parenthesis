@@ -64,7 +64,6 @@ export const translations = {
   'nav.messages': ["Messages","Mensajes"],
   'nav.fromKids': ["From Your Kids","De tus hijos"],
   'nav.memories': ["Family Memories","Recuerdos familiares"],
-  'nav.memoriesShort': ["Memories","Recuerdos"],
   'nav.essentials': ["Child Essentials","Información esencial de tus hijos"],
   'nav.records': ["Shared records","Registros compartidos"],
   'nav.more': ["More","Más"],

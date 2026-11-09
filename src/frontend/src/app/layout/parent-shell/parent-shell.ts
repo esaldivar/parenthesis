@@ -2,10 +2,9 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, injec
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
-import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { IsActiveMatchOptions, NavigationEnd, PRIMARY_OUTLET, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ChatStore } from '../../core/chat/chat.store';
 import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
@@ -14,7 +13,7 @@ import { Logo } from '../../shared/brand/logo';
 import { Leaves } from '../../shared/decor/leaves';
 import { Icon } from '../../shared/icon/icon';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
-import { PARENT_MOBILE_NAV, PARENT_NAV } from '../navigation';
+import { PARENT_MOBILE_NAV, PARENT_MORE_NAV, PARENT_NAV } from '../navigation';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { NotificationsStore } from '../../core/notifications/notifications.store';
 import { SAMPLE_UNREAD } from '../sample-counts';
@@ -39,19 +38,6 @@ const SECTION_ACTIVE: IsActiveMatchOptions = { paths: 'subset', ...IGNORE_QUERY 
   styleUrl: './parent-shell.scss',
 })
 export class ParentShell {
-  private readonly locale = inject(LocaleService);
-  protected navLabel(path: string, fallback: string): string {
-    const keys: Record<string, TranslationKey> = {
-      '/': 'nav.home', '/calendar': 'nav.calendar', '/messages': 'nav.messages',
-      '/from-your-kids': 'nav.fromKids', '/memories': 'nav.memories',
-      '/child-essentials': 'nav.essentials', '/shared-records': 'nav.records',
-      '/settings': 'settings.title', '/more': 'nav.more',
-    };
-    return keys[path] ? translate(keys[path], this.locale.locale()) : fallback;
-  }
-  protected mobileLabel(path: string, fallback: string): string {
-    return path === '/memories' ? translate('nav.memoriesShort', this.locale.locale()) : this.navLabel(path, fallback);
-  }
   protected readonly nav = PARENT_NAV;
   protected readonly mobileNav = PARENT_MOBILE_NAV;
   /** Home is active only on "/" itself, other items on their sections too; queries (`?week=`, `?sample=1`) never matter. */
@@ -70,6 +56,17 @@ export class ParentShell {
     ),
     { initialValue: this.router.url },
   );
+
+  private readonly section = computed(() => {
+    const path = this.router.parseUrl(this.url()).root.children[PRIMARY_OUTLET]?.segments[0]?.path;
+    return path ? `/${path}` : '/';
+  });
+
+  protected mobileCurrent(path: string): 'page' | 'location' | null {
+    const section = this.section();
+    if (section === path) return 'page';
+    return path === '/more' && PARENT_MORE_NAV.some((item) => item.path === section) ? 'location' : null;
+  }
 
   /** The development-only sample preview (`?sample=1`), the only place placeholder counts appear. */
   protected readonly sample = computed(

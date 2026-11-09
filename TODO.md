@@ -491,6 +491,8 @@ that points back here.
   and frontend message-preservation regressions pass.
   - [ ] After merge/promotion, retest the dated conflict feedback on Development before closing #259.
 
+- [ ] #549: verify parent navigation order, routes, active states and badges on Development in English and Spanish.
+
 ## Backend features the dashboard is waiting on
 - [ ] Calendar and parenting-time endpoints, including change requests and approvals.
 - [ ] Family events (both parents attend) and parent unavailability. These are UI-only mock categories today.

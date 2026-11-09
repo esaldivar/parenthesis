@@ -1,3 +1,4 @@
+import type { TranslationKey } from '../core/i18n/translations';
 import { IconName } from '../shared/icon/icon';
 
 export interface NavItem {
@@ -8,31 +9,28 @@ export interface NavItem {
   readonly note?: string;
 }
 
-/**
- * Parent navigation, in the exact order of the approved dashboard (docs/design/APPROVED_DASHBOARD_2026-10-16.md):
- * Calendar is one standalone item; Child Essentials sits directly below Family Memories and above Settings.
- * Approvals stays reachable from the dashboard and the calendar, not from the main navigation.
- */
-export const PARENT_NAV: readonly NavItem[] = [
-  { label: 'Home', path: '/', icon: 'home' },
-  { label: 'Calendar', path: '/calendar', icon: 'calendar' },
-  { label: 'Messages', path: '/messages', icon: 'messages' },
-  { label: 'From Your Kids', path: '/from-your-kids', icon: 'pencil' },
-  { label: 'Family Memories', path: '/memories', icon: 'album' },
-  { label: 'Child Essentials', path: '/child-essentials', icon: 'children' },
-  // Parent-only Shared Funds and Child Support (#477), as in the approved desktop mockup.
-  { label: 'Shared records', path: '/shared-records', icon: 'receipt' },
-  { label: 'Settings', path: '/settings', icon: 'settings' },
+type ParentNavItem = Omit<NavItem, 'label'> & { readonly labelKey: TranslationKey };
+
+const MOBILE_PRIMARY_COUNT = 3;
+
+/** The parent destination order (#549), shared by the sidebar, bottom bar and More. */
+export const PARENT_NAV: readonly ParentNavItem[] = [
+  { labelKey: 'nav.home', path: '/', icon: 'home' },
+  { labelKey: 'nav.calendar', path: '/calendar', icon: 'calendar' },
+  { labelKey: 'nav.messages', path: '/messages', icon: 'messages' },
+  { labelKey: 'nav.records', path: '/shared-records', icon: 'receipt' },
+  { labelKey: 'nav.essentials', path: '/child-essentials', icon: 'children' },
+  { labelKey: 'nav.fromKids', path: '/from-your-kids', icon: 'pencil' },
+  { labelKey: 'nav.memories', path: '/memories', icon: 'album' },
+  { labelKey: 'settings.title', path: '/settings', icon: 'settings' },
 ];
 
-/** Compact bottom navigation on phones; the rest is under More, in the same order as the sidebar. */
-export const PARENT_MOBILE_NAV: readonly NavItem[] = [
-  { label: 'Home', path: '/', icon: 'home' },
-  { label: 'Calendar', path: '/calendar', icon: 'calendar' },
-  { label: 'Messages', path: '/messages', icon: 'messages' },
-  { label: 'Memories', path: '/memories', icon: 'album' },
-  { label: 'More', path: '/more', icon: 'more' },
+export const PARENT_MOBILE_NAV: readonly ParentNavItem[] = [
+  ...PARENT_NAV.slice(0, MOBILE_PRIMARY_COUNT),
+  { labelKey: 'nav.more', path: '/more', icon: 'more' },
 ];
+
+export const PARENT_MORE_NAV = PARENT_NAV.slice(MOBILE_PRIMARY_COUNT);
 
 /** Only child-appropriate destinations. No approvals, messages, calendar negotiation or parent data. */
 export const KID_NAV: readonly NavItem[] = [
