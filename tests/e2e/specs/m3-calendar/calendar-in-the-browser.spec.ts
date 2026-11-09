@@ -95,17 +95,10 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
 
   test('an activity’s location opens directions in Google Maps, outside Parenthesis (#113)', async ({ page, context }) => {
     const family = await familyWithKai();
-    // Never reach Google from the test: answer its URL locally and record what was asked for.
-    const opened: string[] = [];
-    const referrers: (string | undefined)[] = [];
-    await context.route('https://www.google.com/**', (route) => {
-      opened.push(route.request().url());
-      referrers.push(route.request().headers()['referer']);
-      return route.fulfill({ status: 200, contentType: 'text/plain', body: 'Maps stand-in' });
-    });
     try {
       await signIn(page, family.dad.email);
-      await page.goto(`/calendar/new?date=${tuesday}`);
+      await openList(page);
+      await page.getByRole('link', { name: 'Add', exact: true }).click();
       await page.getByRole('button', { name: /Activity/ }).click();
       await page.getByLabel('Title').fill('Swim lesson');
       await page.getByLabel('Location (optional)').fill('100 Example Ave & Pool #2, Springfield');
@@ -119,6 +112,14 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await expect(link).toHaveAttribute('target', '_blank');
       await expect(page.locator('iframe')).toHaveCount(0);
 
+      // Intercept Google only for the popup, after the app navigation is complete.
+      const opened: string[] = [];
+      const referrers: (string | undefined)[] = [];
+      await context.route('https://www.google.com/**', (route) => {
+        opened.push(route.request().url());
+        referrers.push(route.request().headers()['referer']);
+        return route.fulfill({ status: 200, contentType: 'text/plain', body: 'Maps stand-in' });
+      });
       const [maps] = await Promise.all([context.waitForEvent('page'), link.click()]);
       await maps.waitForLoadState();
       const url = new URL(maps.url());
