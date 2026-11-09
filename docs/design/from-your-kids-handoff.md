@@ -6,7 +6,8 @@ Status: **implementation in progress**. Source branch: `feature/531-from-your-ki
 - Approved conversation mockups: overview, diary, fridge and corkboard in desktop/mobile and light/dark.
 - **Owner-uploaded, authoritative visual asset:** [Parenthesis From Your Kids UI Collage.png](assets/Parenthesis%20From%20Your%20Kids%20UI%20Collage.png). This is the reference for implementation and handoff. Do not redraw, substitute or invent replacement assets. Keep the original PNG unchanged.
 - The collage includes multiple responsive/theme states. Any individual production art assets must be extracted or separately approved; do not use the collage as an in-app image or pretend it is a sprite sheet.
-- The prior invented refrigerator SVG was not approved and is not part of this handoff.
+- The shipped WebP crops in `src/frontend/public/art/from-your-kids` retain the original drawings. The collage supplies the closed fridge variants and diary sun. *Emma’s Heartfelt Photo Adventures* supplies the overview icons, leaves, wood, cork, stickers and synthetic preview photos. *Artwork Fridge Experience* supplies individual drawings. *Emma’s Cozy Diary* supplies the binding and heart.
+- The full UI Board, Photos Mockup and Kids’ Illustrated Diary UI guide section navigation, the photo layout, and the single-page mobile journal. Where the concepts differ, the final collage and the closed-fridge and forest-green decisions govern. No complete mockup is shipped as an app screen.
 - Follow [BRANDING.md](BRANDING.md) strictly: preserve existing logo artwork; light charcoal #20303F, dark ivory #F7F5ED, sage #5E8F7E, blue #4E79A7, coral #F08A6B, golden rays #F4C15D. UI uses existing design-system tokens, not the purple palette from the AI concepts.
 
 ## Product behavior
@@ -27,4 +28,4 @@ M4 owns parent-facing layout, accessible state machine and content contracts. M5
 - Viewports 320/390/768/1280+, both themes, keyboard and screen reader.
 - Closed fridge visible at all sizes; no open-door animation.
 - Confirm child selection, diary page controls, empty states, privacy placeholders, no parent creation affordances.
-- Review the implementation directly against the owner-uploaded collage linked above. Obtain approval before producing separate production assets.
+- Review the implementation directly against the owner-uploaded collage linked above. The extracted art uses the approved source images. New or replacement artwork still requires approval.

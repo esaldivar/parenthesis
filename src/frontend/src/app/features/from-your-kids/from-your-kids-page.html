@@ -1,0 +1,70 @@
+<section class="kids" aria-labelledby="kids-title">
+  <header class="intro">
+    <h1 id="kids-title">From Your Kids <span aria-hidden="true">♡</span></h1>
+  </header>
+
+  @if (loading()) {
+    <p role="status">Loading children…</p>
+  } @else if (failed()) {
+    <p role="alert">We couldn't load your children's profiles.</p>
+    <button type="button" class="retry" (click)="retry()">Try again</button>
+  } @else if (children().length === 0) {
+    <p>No active child profiles yet.</p>
+  } @else {
+    <nav class="child-tabs" aria-label="Choose a child">
+      @for (child of children(); track child.id) {
+        <button type="button" [attr.aria-pressed]="selectedChildId() === child.id"
+          (click)="selectChild(child.id)">
+          <app-avatar [name]="child.firstName" [personId]="child.id" [size]="28" />
+          <span class="child-name">{{ child.firstName }}</span>
+        </button>
+      }
+    </nav>
+
+    <nav class="sections" aria-label="From Your Kids sections">
+      @for (item of sections; track item.id) {
+        <button type="button" [attr.aria-current]="section() === item.id ? 'page' : null"
+          (click)="section.set(item.id)">
+          <img [src]="'/art/from-your-kids/' + item.id + '-icon.webp'" alt="" />
+          <span class="section-copy"><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span>
+        </button>
+      }
+    </nav>
+
+    @if (developmentBuild) {
+      <div class="preview-controls">
+        <label class="preview-toggle">
+          <input type="checkbox" [checked]="previewAt() !== null" (change)="setPreview($event)" />
+          Development preview with sample content
+        </label>
+        @if (previewAt() !== null) {
+          <p class="sharing-note" role="status">Showing synthetic examples for UI testing.</p>
+        }
+      </div>
+    }
+
+    @switch (section()) {
+      @case ('diary') {
+        <h2 class="section-heading">{{ contentName() }}'s Diary <span aria-hidden="true">♡</span></h2>
+        <app-kids-diary [entries]="diaryEntries()" />
+      }
+      @case ('artwork') {
+        <section class="gallery" aria-labelledby="artwork-title">
+          <h2 id="artwork-title" class="section-heading">{{ contentName() }}'s Artwork</h2>
+          <app-kids-gallery kind="Artwork" [items]="artwork()" />
+          @if (!artwork().length) { <p class="empty">No artwork shared with you yet.</p> }
+        </section>
+      }
+      @case ('photos') {
+        <section class="corkboard" aria-labelledby="photos-title">
+          <h2 id="photos-title">{{ contentName() }}'s Photos <span aria-hidden="true">♡</span></h2>
+          <app-kids-gallery kind="Photo" [items]="photos()" />
+          @if (!photos().length) { <p class="empty">No photos shared with you yet.</p> }
+        </section>
+      }
+    }
+    @if (previewAt() === null) {
+      <p class="sharing-note">Only things {{ selectedChild()?.firstName }} chooses to share with you will appear here.</p>
+    }
+  }
+</section>

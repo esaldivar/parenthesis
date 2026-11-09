@@ -14,11 +14,20 @@ export function previewDiary(now: number): readonly KidsDiaryEntry[] {
 
 export function previewGallery(kind: KidsGalleryItem['kind'], now: number): readonly KidsGalleryItem[] {
   const examples = kind === 'Artwork'
-    ? [{ label: 'Sample flower drawing', symbol: '🌼' }, { label: 'Sample rainbow drawing', symbol: '🌈' }]
-    : [{ label: 'Sample mountain scene', symbol: '⛰️' }, { label: 'Sample beach scene', symbol: '🏖️' }];
-  return examples.map(({ label, symbol }, index) => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><rect width="160" height="160" fill="#f7f5ed"/><text x="80" y="105" font-size="66" text-anchor="middle">${symbol}</text></svg>`;
-    const imageUrl = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    ? [
+      { label: 'Sample flower drawing', asset: 'art-flower' },
+      { label: 'Sample rainbow drawing', asset: 'art-rainbow' },
+      { label: 'Sample cat drawing', asset: 'art-cat' },
+      { label: 'Sample rocket drawing', asset: 'art-rocket' },
+      { label: 'Sample heart drawing', asset: 'art-heart' },
+    ]
+    : [
+      { label: 'Sample sunset photo', asset: 'sample-sunset' },
+      { label: 'Sample dog photo', asset: 'sample-dog' },
+      { label: 'Sample playground photo', asset: 'sample-swing' },
+    ];
+  return examples.map(({ label, asset }, index) => {
+    const imageUrl = `/art/from-your-kids/${asset}.webp`;
     const createdAt = now - index * day;
     const bookmarked = index === 1;
     return {

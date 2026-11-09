@@ -29,7 +29,7 @@ describe('KidsDiary (#531)', () => {
     fixture.detectChanges();
     expect(host.querySelector('article time')?.getAttribute('datetime')).toBe('2026-10-01T00:00:00Z');
     expect(host.textContent).toContain('Page 2 of 2');
-    expect(host.querySelector('.mood span')?.textContent?.trim()).toBe('🌞');
+    expect(host.querySelector('.mood img')?.getAttribute('src')).toBe('/art/from-your-kids/journal-sun.webp');
     const book = host.querySelector('.book')!;
     const swipe = (type: string, clientX: number) => {
       const event = new Event(type);

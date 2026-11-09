@@ -2,8 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
 import { DatePipe } from '@angular/common';
 import { KidsDiaryEntry, KidsMood } from './from-your-kids-contract';
 
-const MOOD_CHARACTER: Record<KidsMood, string> = {
-  Happy: '🌞',
+const MOOD_CHARACTER: Record<Exclude<KidsMood, 'Happy'>, string> = {
   Excited: '🤩',
   Calm: '😌',
   Sad: '😢',
@@ -19,7 +18,7 @@ const MOOD_CHARACTER: Record<KidsMood, string> = {
   template: `
     @if (ordered().length === 0) {
       <div class="book empty-book" aria-label="Empty diary">
-        <div class="paper cover"><h2>Dear Diary</h2><p>Little stories, big feelings.</p></div>
+        <div class="paper cover"><h2>Dear Diary</h2><p>Little stories, big feelings.</p><img src="/art/from-your-kids/journal-heart.webp" alt="" /></div>
         <div class="paper"><p>No diary entries shared with you yet.</p>
           <p>When your child shares an entry, you'll be able to turn its pages here.</p>
         </div>
@@ -39,7 +38,14 @@ const MOOD_CHARACTER: Record<KidsMood, string> = {
         <article class="paper" aria-live="polite">
           @if (current(); as entry) {
             <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
-            <p class="mood"><span aria-hidden="true">{{ moodCharacter[entry.mood] }}</span> {{ entry.mood }}</p>
+            <p class="mood">
+              @if (entry.mood === 'Happy') {
+                <img src="/art/from-your-kids/journal-sun.webp" alt="" />
+              } @else {
+                <span aria-hidden="true">{{ moodCharacter[entry.mood] }}</span>
+              }
+              {{ entry.mood }}
+            </p>
             @if (entry.title) { <h3>{{ entry.title }}</h3> }
             <p class="entry">{{ entry.body }}</p>
           }
@@ -54,15 +60,37 @@ const MOOD_CHARACTER: Record<KidsMood, string> = {
   `,
   imports: [DatePipe],
   styles: `
-    :host { display: grid; gap: 1rem; }
-    .book { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border: 7px solid #5e8f7e; border-radius: 1rem; overflow: hidden; box-shadow: 0 8px 20px #0002; color: #20303f; }
-    .paper { min-height: 19rem; padding: clamp(1rem,3vw,2rem); background: repeating-linear-gradient(#fff9ed,#fff9ed 30px,#e5ded1 31px); }
-    .paper + .paper { border-left: 2px solid #d6cbb9; }
+    :host { display: grid; gap: 1rem; --journal-ink: #20303f; --journal-paper: #fffaeb; --journal-edge: #eed9b6;
+      --journal-line: #c9a97b; --journal-date: #f2dfb9; }
+    :host-context([data-theme='dark']) { --journal-ink: #f7f5ed; --journal-paper: #223c31;
+      --journal-edge: #152a22; --journal-line: #57796b; --journal-date: #345244; }
+    @media (prefers-color-scheme: dark) {
+      :host-context(html:not([data-theme])) { --journal-ink: #f7f5ed; --journal-paper: #223c31;
+        --journal-edge: #152a22; --journal-line: #57796b; --journal-date: #345244; }
+    }
+    .book { position: relative; display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+      padding: .3rem; border: .25rem solid var(--color-outline); border-radius: 1.45rem 1.2rem 1.4rem 1.15rem;
+      background: var(--color-selected); box-shadow: 0 .45rem .85rem #0003; color: var(--journal-ink); }
+    .book::after { content: ''; position: absolute; inset: 1.5rem auto 1.5rem 50%; width: 2.4rem;
+      transform: translateX(-50%); background: url('/art/from-your-kids/journal-rings.webp') top center / 100% auto repeat-y;
+      pointer-events: none; }
+    .paper { min-height: 19rem; padding: clamp(1.25rem,3vw,2.65rem);
+      border-radius: 1rem .35rem .5rem 1rem; border: 1px solid var(--journal-line);
+      background: radial-gradient(ellipse at center, var(--journal-paper) 52%, var(--journal-edge)); }
+    .paper + .paper { border-radius: .35rem 1rem 1rem .5rem; }
+    article.paper { overflow-wrap: anywhere; }
+    .cover img { width: 3rem; }
+    .mood img { width: 1.85rem; height: 1.85rem; object-fit: contain; }
+    article.paper::after { content: ''; display: block; width: 2.5rem; height: 2.5rem; margin-block-start: 1.15rem;
+      background: url('/art/from-your-kids/journal-heart.webp') center / contain no-repeat; }
     .cover { display: grid; align-content: center; justify-items: center; text-align: center; }
     .index-page nav { display: grid; gap: .6rem; margin-top: 1rem; }
     .entry-choice { display: grid; gap: .3rem; width: 100%; text-align: left; background: var(--color-surface); border: 1px solid var(--color-divider); }
     .entry-choice[aria-current="page"] { background: var(--color-selected); border-color: var(--color-action); }
     .entry-choice time { font-size: .8rem; }
+    article time { display: inline-block; border-radius: var(--radius-pill); padding: .25rem .65rem; background: var(--journal-date); }
+    article h3 { font-size: clamp(1.15rem, 2.8vw, 1.7rem); margin-block: .75rem .5rem; }
+    .entry { line-height: 1.65; }
     h2,h3 { font-family: Georgia,serif; }
     h2 { font-size: clamp(1.5rem,3vw,2.3rem); }
     .mood { display: flex; align-items: center; gap: .4rem; font-weight: 700; }
@@ -72,7 +100,7 @@ const MOOD_CHARACTER: Record<KidsMood, string> = {
     button { min-height: 44px; border: 1px solid var(--color-outline); border-radius: .5rem; padding: .5rem 1rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; }
     button:disabled { opacity: .5; cursor: default; }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
-    @media (max-width: 40rem) { .book { grid-template-columns: 1fr; } .cover,.index-page { display: none; } .paper + .paper { border-left: 0; } }
+    @media (max-width: 40rem) { .book { grid-template-columns: 1fr; } .book::after,.cover,.index-page { display: none; } .paper { min-height: 14rem; } .paper + .paper { border-radius: .9rem; } }
   `,
 })
 export class KidsDiary {
