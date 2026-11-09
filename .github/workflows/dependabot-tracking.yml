@@ -1,0 +1,33 @@
+name: Dependabot tracking issues
+
+on:
+  workflow_run:
+    workflows: [PR branch policy]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: dependabot-tracking-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  track:
+    if: github.event.workflow_run.event == 'pull_request' && startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      # The triggering run is only a signal. Never use its checkout or artifacts.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+      - name: Create and link a Dependabot tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/dependabot-tracking.mjs

@@ -192,6 +192,9 @@ that points back here.
     routing corrects PR bases in the interim, but cannot change which manifests Dependabot scanned.
   - [ ] Security updates still start on main under GitHub's platform behavior before routing; alerts stay enabled.
 
+- [ ] **Dependabot tracking issues (#544).** After normal promotion to `main`, verify a real Dependabot PR gets
+  one issue and passes the required tracking check. Rerun the writer to verify that it reuses the issue and link.
+
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
   - [ ] Review required PR checks and promote through the normal release route to `main` (scheduled workflows run there).

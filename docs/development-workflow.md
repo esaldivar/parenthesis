@@ -45,6 +45,12 @@ hotfix/…                  from main, for urgent production bugs
   this cannot prevent their initial creation on `main`. Security alerts remain enabled. Retargeting can expose
   conflicts and dismiss reviews; inspect the new diff and rerun required checks on the release candidate.
   Changes made with the workflow token may not trigger other workflows; check runs are a separate acceptance step.
+  **Dependabot tracking issues** (#544) uses the completed branch-policy run to create one issue per open bot PR
+  and add its reference under `## Tracking issues`. The write job verifies the live bot PR and head and runs only
+  trusted default-branch code. Rerunning the write job reuses the issue if a previous attempt created it. The
+  read-only tracking check waits briefly for the write and validates the actual issue against the current PR.
+  After promotion to `main`, verify this on the next real Dependabot PR, including a rerun. If runner delays cause
+  the tracking check to time out, rerun it after the writer succeeds. Human PRs use the existing validation path.
   See [GitHub's target-branch reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#target-branch).
 - **Hotfixes** for urgent production bugs: branch from `main`, make the smallest safe fix, test, open a PR into
   `main`, get the owner's approval, deploy (approval again in Actions), verify production, then sync into `develop`
