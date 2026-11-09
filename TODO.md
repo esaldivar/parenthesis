@@ -452,6 +452,8 @@ that points back here.
   - [ ] After promotion, manually retest the confirmation, cancellation, failed and successful deletion by keyboard
     and screen reader on development, phone/desktop and both themes. Independent-parent checks remain open.
 
+- [ ] #553: verify desktop Calendar Week attendee photos, initials and overflow with synthetic profiles on Development in both themes.
+
 - [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
   29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
   range splitting, four-occurrence count and local time across the spring daylight-saving boundary.

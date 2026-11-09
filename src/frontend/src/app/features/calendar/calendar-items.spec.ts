@@ -31,10 +31,11 @@ describe('calendar items', () => {
   });
 
   it('shows both parents on a family event, the caregiver on parenting time, and the owner on unavailable time', () => {
-    const [family, parenting, away] = items(
+    const [family, parenting, away, holiday] = items(
       event({ id: 'f', category: 'Joint', childIds: [] }),
       event({ id: 'p', category: 'ParentingTime', caregiverMembershipId: 'm-sam' }),
       event({ id: 'u', category: 'Unavailable', title: 'Unavailable', childIds: [], ownerMembershipId: 'm-sam' }),
+      event({ id: 'h', category: 'Holiday', childIds: [], caregiverMembershipId: null }),
     );
 
     expect(family.parents.map((p) => p.name)).toEqual(['Alex', 'Sam']);
@@ -42,6 +43,8 @@ describe('calendar items', () => {
     expect(parenting.parents.map((p) => p.name)).toEqual(['Sam']);
     expect(away.kind).toBe('unavailable');
     expect(away.isMine).toBe(false);
+    expect(holiday.parents).toEqual([]);
+    expect(holiday.children).toEqual([]);
   });
 
   it('shows someone else’s unavailable time only as “Unavailable”, whatever the API sends', () => {
