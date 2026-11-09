@@ -9,6 +9,7 @@ import { STORED_ITEMS } from '../features/privacy/privacy-page';
  */
 const REVIEWED = new Set([
   'app/core/auth/auth.store.ts',
+  'app/core/i18n/locale.service.ts',
   'app/core/invitations/pending-invitation.ts',
   'app/core/theme/appearance.service.ts',
   'app/core/theme/event-themes.service.ts',
@@ -17,6 +18,8 @@ const REVIEWED = new Set([
 ]);
 
 const KEY_PREFIXES = [
+  'parenthesis.locale',
+  'parenthesis.locale.account.',
   'parenthesis.appearance.',
   'parenthesis.event-themes.',
   'parenthesis.calendar-filters.',
