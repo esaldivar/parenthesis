@@ -111,10 +111,10 @@ time zones where relevant, children involved, and neutral empty states. Do not
 expose unnecessary location or family details on public/unauthenticated screens.
 
 Use one primary action per section. On mobile, provide a compact bottom navigation
-for frequent destinations (for example Home, Calendar, Memories, Approvals, More),
-with Children and Settings reachable through More. On larger screens, expand to
-the planned full navigation. Messages remains a clearly labelled future feature
-until implemented. Preserve reading order as cards expand into columns.
+with Home, Calendar, Messages, and More. More lists Shared records, Child Essentials,
+From Your Kids, Family Memories, and Settings. On larger screens, the sidebar lists
+all eight destinations in the same order. Preserve reading order as cards expand into
+columns.
 
 For approval reviews, show the existing value and proposed value, who proposed the
 change, its current status, and explicit Approve/Reject actions. Keep confirmed
