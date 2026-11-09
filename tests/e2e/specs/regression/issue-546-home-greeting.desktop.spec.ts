@@ -60,7 +60,7 @@ test('Home keeps the greeting above the calendar after loading, resizing and scr
     const today = toolbar.getByRole('button', { name: 'Today' });
     const week = toolbar.getByRole('button', { name: 'Week', exact: true });
     const list = toolbar.getByRole('button', { name: 'List' });
-    const month = toolbar.getByRole('button', { name: 'Month' });
+    const month = toolbar.getByRole('button', { name: 'Month', exact: true });
 
     await previous.click();
     await expect(today).toHaveAttribute('aria-disabled', 'false');
