@@ -27,7 +27,7 @@ h1, h2, .section-copy strong { font-family: Georgia, serif; }
 }
 .intro::before { inset-inline-start: 0; }
 .intro::after { inset-inline-end: 0; transform: scaleX(-1); }
-.intro h1, .corkboard h2 {
+.title-ribbon, .corkboard h2 {
   padding: .35em .65em;
   border: 1px solid #c89c61;
   border-radius: .65rem .85rem .55rem .9rem;
@@ -36,8 +36,9 @@ h1, h2, .section-copy strong { font-family: Georgia, serif; }
   box-shadow: 0 .2rem .35rem #0003;
   text-align: center;
 }
-.intro h1 { font-size: clamp(1.3rem, 4vw, 2.65rem); }
-h1 span, h2 span { color: #a9384f; }
+.title-ribbon { display: inline-flex; align-items: center; gap: .35em; font-size: clamp(1.3rem, 4vw, 2.65rem); }
+.title-ribbon h1 { font-size: inherit; }
+.title-ribbon span, h2 span { color: #a9384f; }
 .section-heading span { color: var(--color-action); }
 .child-tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); }
 .child-tabs button, .retry {
