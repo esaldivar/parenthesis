@@ -91,6 +91,8 @@ export const translations = {
   'settings.privacyLink': ["Read the privacy notice","Leer el aviso de privacidad"],
   'settings.delete': ["Delete account","Eliminar cuenta"],
   'settings.deletionLoading': ["Loading account deletion details…","Cargando detalles para eliminar la cuenta…"],
+  'dash.hello': ['Hello', 'Hola'],
+  'nav.essentialsUpdated': ['Child Essentials updated', 'Información esencial actualizada'],
   'dash.morning': ["Good morning","Buenos días"],
   'dash.afternoon': ["Good afternoon","Buenas tardes"],
   'dash.evening': ["Good evening","Buenas noches"],
