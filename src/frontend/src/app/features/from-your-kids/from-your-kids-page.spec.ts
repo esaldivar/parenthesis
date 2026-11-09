@@ -40,6 +40,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     photos.click();
     fixture.detectChanges();
     expect(host.textContent).toContain('No photos shared with you yet');
+    expect(host.querySelector('.corkboard-sticker')).toBeNull();
     expect(host.querySelector('button[aria-label="Add Photo"]')).toBeNull();
   });
 
@@ -64,9 +65,11 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     photos.click();
     fixture.detectChanges();
     expect(host.querySelectorAll('.corkboard .memory')).toHaveLength(3);
+    expect(host.querySelectorAll('.corkboard-sticker')).toHaveLength(2);
     toggle.click();
     fixture.detectChanges();
     expect(host.querySelector('.corkboard .memory')).toBeNull();
+    expect(host.querySelector('.corkboard-sticker')).toBeNull();
     expect(host.textContent).toContain('No photos shared with you yet');
   });
 

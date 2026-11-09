@@ -45,4 +45,29 @@ describe('KidsDiary (#531)', () => {
     fixture.detectChanges();
     expect(host.textContent).toContain('Page 1 of 2');
   });
+
+  it('opens a selected entry with its mood and returns to the diary index', async () => {
+    const fixture = TestBed.createComponent(KidsDiary);
+    fixture.componentRef.setInput('entries', [
+      entry('newer', '2026-11-01T00:00:00Z'),
+      { ...entry('older', '2026-10-01T00:00:00Z'), title: 'Older entry', mood: 'Proud' },
+    ]);
+    fixture.autoDetectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    const choice = host.querySelectorAll<HTMLButtonElement>('.entry-choice')[1];
+    const back = host.querySelector<HTMLButtonElement>('.back-to-entries')!;
+
+    choice.focus();
+    choice.click();
+    await fixture.whenStable();
+    expect(host.querySelector('article h3')?.textContent).toBe('Older entry');
+    expect(host.querySelector('.mood span')?.textContent).toBeTruthy();
+    expect(host.querySelector('.mood')?.textContent).toContain('Proud');
+    expect(host.querySelector('.book')?.classList.contains('reading')).toBe(true);
+
+    back.click();
+    await fixture.whenStable();
+    expect(host.querySelector('.book')?.classList.contains('reading')).toBe(false);
+    expect(choice.getAttribute('aria-current')).toBe('page');
+  });
 });

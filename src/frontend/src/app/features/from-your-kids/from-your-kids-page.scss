@@ -95,15 +95,15 @@ button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3p
   padding: clamp(.6rem, 2vw, 1.2rem);
   color: #20303f;
 }
-.corkboard::before, .corkboard::after {
-  content: '';
+.corkboard-sticker {
   position: absolute;
   width: clamp(1.75rem, 6vw, 3.5rem);
   aspect-ratio: 1;
+  object-fit: contain;
   pointer-events: none;
 }
-.corkboard::before { top: .45rem; left: .45rem; background: url('/art/from-your-kids/sample-rainbow.webp') center / contain no-repeat; }
-.corkboard::after { bottom: .4rem; right: .45rem; background: url('/art/from-your-kids/sample-star.webp') center / contain no-repeat; }
+.corkboard-sticker.rainbow { inset-block-start: .45rem; inset-inline-start: .45rem; }
+.corkboard-sticker.star { inset-block-end: .4rem; inset-inline-end: .45rem; }
 .corkboard h2 { font-size: clamp(1.15rem, 3vw, 1.9rem); }
 .empty { justify-self: center; text-align: center; }
 .corkboard .empty { padding: .65rem 1rem; border-radius: .5rem; background: #f7f5ed; }
@@ -115,5 +115,5 @@ button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3p
   .sections button { display: grid; justify-items: center; align-content: center; gap: .3rem; min-height: 5rem; text-align: center; }
   .sections img { width: clamp(2.35rem, 10vw, 3.5rem); }
   .section-copy small { display: none; }
-  .corkboard::before, .corkboard::after { display: none; }
+  .corkboard-sticker { display: none; }
 }
