@@ -731,3 +731,6 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
 
 - [ ] Verify Home Quick Add saves and cancellation from all four shortcuts on the development site (#515).
+
+### #546 — Desktop Home greeting overlap
+- [ ] After promotion, verify the greeting and calendar toolbar on Development with the original browser and 125% browser zoom.
