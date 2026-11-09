@@ -93,7 +93,7 @@ export class EventDetails {
 
   protected readonly status = computed(() => statusText(this.item()) ?? 'Confirmed');
   protected readonly date = computed(() => dayLong(this.item().firstDate, this.locale.locale()));
-  protected readonly when = computed(() => whenText(this.item()));
+  protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
   protected readonly coParent = computed(
     () => this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null,
   );
@@ -108,7 +108,7 @@ export class EventDetails {
 
   protected readonly swapTargetWhen = computed(() => {
     const target = this.swapTarget();
-    return target ? `${dayLong(target.firstDate, this.locale.locale())} · ${whenText(target)}` : null;
+    return target ? `${dayLong(target.firstDate, this.locale.locale())} · ${whenText(target, this.locale.locale())}` : null;
   });
 
   /** A swap changes confirmed parenting time's dates, with the co-parent's approval. */
@@ -207,7 +207,7 @@ export class EventDetails {
     // Keep weekday ordering anchored to the series, even when a later occurrence is opened.
     // Older responses may omit the first dates; fall back to the opened occurrence.
     return event?.repeat
-      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10))
+      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10), this.locale.locale())
       : null;
   });
 
@@ -215,7 +215,7 @@ export class EventDetails {
   protected readonly seriesDates = computed(() => {
     const repeat = this.event()?.repeat;
     const zone = this.timeZone();
-    return repeat ? datesText(repeat.dateCount, (repeat.firstStarts ?? []).map((s) => toFamilyLocal(s, zone).slice(0, 10))) : null;
+    return repeat ? datesText(repeat.dateCount, (repeat.firstStarts ?? []).map((s) => toFamilyLocal(s, zone).slice(0, 10)), this.locale.locale()) : null;
   });
 
   /** Editing/cancelling another parent's parenting time is never offered (#260). */

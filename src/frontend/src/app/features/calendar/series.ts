@@ -1,3 +1,4 @@
+import { AppLocale } from '../../core/i18n/locale.service';
 import { EventRepeat, SeriesFrequency, Weekday } from '../../core/api/api';
 import { PlainDate } from '../dashboard/model';
 import { addDays, dateMedium, monthDay } from '../dashboard/week';
@@ -82,9 +83,14 @@ export function ordinal(day: number): string {
 }
 
 /** "Wed and Fri", "Mon, Wed and Fri"; from the first date's weekday when given: "Fri, Sat and Sun" (#259). */
-const dayList = (days: readonly Weekday[], first: PlainDate | null = null) => {
+const dayList = (days: readonly Weekday[], first: PlainDate | null = null, locale: AppLocale = 'en') => {
   const from = first ? utc(first).getUTCDay() : 0;
-  const names = [...WEEKDAYS.slice(from), ...WEEKDAYS.slice(0, from)].filter((d) => days.includes(d.id)).map((d) => d.short);
+  const ordered = [...WEEKDAYS.slice(from), ...WEEKDAYS.slice(0, from)].filter((d) => days.includes(d.id));
+  if (locale === 'es-419') {
+    const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
+    return new Intl.ListFormat(locale).format(ordered.map((d) => weekday.format(Date.UTC(2026, 0, 4 + WEEKDAYS.indexOf(d)))));
+  }
+  const names = ordered.map((d) => d.short);
   return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : (names[0] ?? '');
 };
 
@@ -92,8 +98,23 @@ const dayList = (days: readonly Weekday[], first: PlainDate | null = null) => {
  * How often, without the end: "Every day", "Every 3 days", "Every Wed and Fri", "Every 2 weeks on Tue",
  * "Every month on the 20th", "Every 2 months on the 20th". `first` gives a monthly repeat's day.
  */
-export function everyText(rule: RepeatRule, first: PlainDate | null): string {
+export function everyText(rule: RepeatRule, first: PlainDate | null, locale: AppLocale = 'en'): string {
   const n = Math.max(1, rule.interval);
+  if (locale === 'es-419') {
+    switch (rule.frequency) {
+      case 'Daily':
+        return n === 1 ? 'Todos los días' : `Cada ${n} días`;
+      case 'Monthly': {
+        const day = first ? ` el día ${Number(first.slice(8))}` : '';
+        return `${n === 1 ? 'Cada mes' : `Cada ${n} meses`}${day}`;
+      }
+      default: {
+        const days = dayList(rule.days, first, locale);
+        if (n === 1) return rule.days.length === 7 ? 'Todos los días' : `Cada ${days}`;
+        return `Cada ${n} semanas: ${days}`;
+      }
+    }
+  }
   switch (rule.frequency) {
     case 'Daily':
       return n === 1 ? 'Every day' : `Every ${n} days`;
@@ -113,18 +134,23 @@ export function everyText(rule: RepeatRule, first: PlainDate | null): string {
  * The series' dates for its details (#239): "3 dates: Oct 28, Nov 4, Nov 11", "12 dates: Oct 28, Nov 4, Nov 11 and
  * 9 more". `firstDates` are the first dates' family-local days. Null when the server didn't say.
  */
-export function datesText(count: number | undefined, firstDates: readonly PlainDate[]): string | null {
+export function datesText(count: number | undefined, firstDates: readonly PlainDate[], locale: AppLocale = 'en'): string | null {
   if (!count || firstDates.length === 0) {
     return null;
   }
-  const shown = firstDates.map((date) => monthDay(date)).join(', ');
+  const shown = firstDates.map((date) => monthDay(date, locale === 'en' ? 'en-US' : locale)).join(', ');
   const more = count - firstDates.length;
+  if (locale === 'es-419') return `${count} ${count === 1 ? 'fecha' : 'fechas'}: ${shown}${more > 0 ? ` y ${more} más` : ''}`;
   return `${count} ${count === 1 ? 'date' : 'dates'}: ${shown}${more > 0 ? ` and ${more} more` : ''}`;
 }
 
 /** "Every Wed and Fri until Nov 13, 2026", "Every 2 months on the 20th, 4 times". `first` is the series' first date. */
-export function repeatText(repeat: EventRepeat, first: PlainDate | null = null): string {
-  const every = everyText(repeat, first);
+export function repeatText(repeat: EventRepeat, first: PlainDate | null = null, locale: AppLocale = 'en'): string {
+  const every = everyText(repeat, first, locale);
+  if (locale === 'es-419') {
+    if (repeat.count) return `${every}, ${repeat.count} ${repeat.count === 1 ? 'vez' : 'veces'}`;
+    return repeat.until ? `${every} hasta el ${dateMedium(repeat.until, locale)}` : every;
+  }
   if (repeat.count) {
     return `${every}, ${repeat.count} times`;
   }

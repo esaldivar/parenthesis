@@ -57,7 +57,7 @@ export class ReminderDetails implements OnInit {
   protected readonly error = signal<string | null>(null);
 
   protected readonly date = computed(() => dayLong(this.item().firstDate, this.locale.locale()));
-  protected readonly when = computed(() => whenText(this.item()));
+  protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
   protected readonly repeats = computed(() => repeatText(this.reminder()));
   private readonly me = computed(() => this.members().find((m) => m.isYou)?.membershipId);
   private readonly name = (membershipId: string) =>
