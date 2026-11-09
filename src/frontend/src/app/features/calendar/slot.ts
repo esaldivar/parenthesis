@@ -1,4 +1,6 @@
 import { signal } from '@angular/core';
+import { AppLocale } from '../../core/i18n/locale.service';
+import { translate } from '../../core/i18n/translations';
 import { PlainDate } from '../dashboard/model';
 import { dayLong, timeLabel } from '../dashboard/week';
 
@@ -109,10 +111,16 @@ export class SlotPick {
 }
 
 /** The highlight's button name: "Add on Tuesday, October 20 at 6:00 PM". */
-export const pickLabel = (at: AddAt): string => `Add on ${dayLong(at.date)}${at.time ? ` at ${timeLabel(at.time)}` : ''}`;
+export const pickLabel = (at: AddAt, locale: AppLocale = 'en'): string => {
+  const date = dayLong(at.date, locale);
+  return at.time
+    ? translate('calendar.addAt', locale, { date, time: timeLabel(at.time, locale) })
+    : translate('calendar.addOn', locale, { date });
+};
 
 /** The highlight's text: "6:00 PM", or "Add" for a whole day. */
-export const pickText = (at: AddAt): string => (at.time ? timeLabel(at.time) : 'Add');
+export const pickText = (at: AddAt, locale: AppLocale = 'en'): string =>
+  at.time ? timeLabel(at.time, locale) : translate('feature.add', locale);
 
 /**
  * Clears a highlight on a click anywhere but empty space or the highlight itself (an item, the toolbar, outside the

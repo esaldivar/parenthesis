@@ -36,6 +36,12 @@ ul {
   min-height: 0;
 }
 
+// The embedded month can scroll within the fixed-height desktop Home card.
+.month-body {
+  min-height: 0;
+  overflow: auto;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

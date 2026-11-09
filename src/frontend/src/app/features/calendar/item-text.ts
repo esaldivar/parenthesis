@@ -1,6 +1,6 @@
 import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../core/i18n/translations';
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
 import { monthDay, timeLabel } from '../dashboard/week';
@@ -65,22 +65,42 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
     .join(', ');
 }
 
+const WEEK_AVATAR_SIZE = 18;
+const WEEK_AVATAR_GAP = 4;
+const WEEK_OVERFLOW_WIDTH = 24;
+
 /** The visible content of an item button: icon, title, time, people and status. */
 @Component({
   selector: 'app-item-text',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, Avatar, Icon],
+  host: { '[class.week-slot]': 'weekSlot()' },
   template: `
     <span class="visually-hidden">{{ summary() }}</span>
     <span class="row" aria-hidden="true">
       <app-icon class="icon" [name]="item().icon" [size]="18" />
-      <span class="title" [class.title--declined]="item().status === 'declined'">{{
+      <span class="title" [class.title--declined]="item().status === 'declined'" [attr.title]="weekSlot() ? item().title : null">{{
         item().concealed ? ('feature.hidden.unavailable' | tr) : item().title
       }}</span>
     </span>
     @if (!compact()) {
-      <span class="when" aria-hidden="true">{{ when() }}</span>
-      @if (avatars()) {
+      <span class="when" aria-hidden="true" [attr.title]="weekSlot() ? when() : null">
+        <span [class.when--full]="weekStartTime()">{{ when() }}</span>
+        @if (weekStartTime(); as start) {
+          <span class="when--start">{{ start }}</span>
+        }
+      </span>
+      @if (weekSlot() && attendees().length) {
+        <span #weekPeople class="week-people" aria-hidden="true">
+          @for (person of visibleAttendees(); track person.kind + ':' + person.id) {
+            <app-avatar [name]="person.name" [kind]="person.kind" [size]="weekAvatarSize" [personId]="person.id" photoOn="desktop" />
+          }
+          @if (extraAttendees(); as count) {
+            <span class="people-more" [attr.title]="'calendar.moreAttendees' | tr: { count }">+{{ count }}</span>
+          }
+        </span>
+      }
+      @if (avatars() && !peopleWidth()) {
         <span class="people" aria-hidden="true">
           @for (parent of item().parents; track parent.id) {
             <app-avatar [name]="parent.name" kind="parent" [size]="22" [personId]="parent.id" photoOn="desktop" />
@@ -110,6 +130,7 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
       min-width: 0;
     }
     .icon {
+      display: var(--week-item-details, inline-flex);
       flex: none;
     }
     .title {
@@ -119,6 +140,7 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
       white-space: nowrap;
     }
     .when {
+      display: var(--week-item-details, block);
       font-size: 0.8125rem;
       color: var(--color-text-secondary);
       overflow: hidden;
@@ -126,7 +148,7 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
       white-space: nowrap;
     }
     .people {
-      display: flex;
+      display: var(--week-item-details, flex);
       gap: 2px;
       flex-wrap: wrap;
     }
@@ -138,8 +160,94 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
       border-radius: var(--radius-pill);
       border: 1px dashed var(--color-outline);
       background: var(--color-surface);
+      max-inline-size: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .week-people,
+    .when--start {
+      display: none;
+    }
+
+    @media (min-width: 1024px) {
+      @container calendar-week (min-width: 720px) {
+        :host(.week-slot) {
+          container: week-item / inline-size;
+          grid-template-columns: minmax(0, 1fr) fit-content(45%);
+          gap: 1px 2px;
+          line-height: 1.1;
+        }
+        :host(.week-slot) .row,
+        :host(.week-slot) .when {
+          grid-column: 1 / -1;
+        }
+        :host(.week-slot) .row {
+          height: 14px;
+          font-size: 0.75rem;
+        }
+        :host(.week-slot) .icon {
+          scale: 0.78;
+        }
+        :host(.week-slot) .when {
+          font-size: 0.6875rem;
+          line-height: 1;
+        }
+        :host(.week-slot) .people {
+          display: none;
+        }
+        .week-people {
+          display: flex;
+          grid-column: 1;
+          grid-row: 3;
+          align-items: center;
+          min-inline-size: 0;
+          gap: 4px;
+          padding: 2px;
+        }
+        .people-more {
+          display: inline-grid;
+          place-items: center;
+          flex: none;
+          inline-size: 24px;
+          max-inline-size: 100%;
+          block-size: 18px;
+          border-radius: var(--radius-pill);
+          background: var(--color-surface);
+          color: var(--color-text);
+          font-size: 0.625rem;
+          font-weight: 700;
+        }
+        :host(.week-slot) .status {
+          grid-column: 2;
+          grid-row: 3;
+          align-self: center;
+          min-inline-size: 0;
+          max-inline-size: 100%;
+          padding-inline: 2px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          font-size: 0.625rem;
+        }
+      }
+
+      @container week-item (width < 115px) {
+        .icon,
+        .when--full {
+          display: none;
+        }
+        .when--start {
+          display: inline;
+        }
+      }
+
+      @container week-item (width < 60px) {
+        :host(.week-slot) .when {
+          font-size: 0.625rem;
+        }
+      }
+    }
+
     /* Declined (#199): struck through and labelled, so it never reads as a confirmed plan. */
     .title--declined {
       text-decoration: line-through;
@@ -161,8 +269,42 @@ export class ItemText {
   /** Title only (and status), for small month cells. */
   readonly compact = input(false);
   readonly avatars = input(true);
+  /** The full desktop Week grid uses a single compact row measured to fit its slot. */
+  readonly weekSlot = input(false);
+
+  protected readonly weekAvatarSize = WEEK_AVATAR_SIZE;
+  private readonly weekPeople = viewChild<ElementRef<HTMLElement>>('weekPeople');
+  protected readonly peopleWidth = signal(0);
+
+  protected readonly attendees = computed(() => [
+    ...this.item().parents.map(person => ({ ...person, kind: 'parent' as const })),
+    ...this.item().children.map(person => ({ ...person, kind: 'child' as const })),
+  ]);
+
+  protected readonly visibleAttendees = computed(() => {
+    const people = this.attendees();
+    const width = this.peopleWidth();
+    const stride = WEEK_AVATAR_SIZE + WEEK_AVATAR_GAP;
+    if (people.length * stride - WEEK_AVATAR_GAP <= width) return people;
+    const count = Math.max(0, Math.floor((width - WEEK_OVERFLOW_WIDTH) / stride));
+    return people.slice(0, count);
+  });
+  protected readonly extraAttendees = computed(() => this.attendees().length - this.visibleAttendees().length);
+  protected readonly weekStartTime = computed(() =>
+    this.weekSlot() && !this.item().spansDays ? timeLabel(this.item().start.slice(11), this.locale.locale()).replace(/\s+/g, '') : null,
+  );
 
   protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
   protected readonly status = computed(() => statusText(this.item(), this.locale.locale()));
   protected readonly summary = computed(() => itemSummary(this.item(), this.locale.locale()));
+
+  constructor() {
+    afterRenderEffect((onCleanup) => {
+      const row = this.weekPeople()?.nativeElement;
+      if (!row || typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(([entry]) => this.peopleWidth.set(entry.contentRect.width));
+      observer.observe(row);
+      onCleanup(() => observer.disconnect());
+    });
+  }
 }

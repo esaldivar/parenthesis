@@ -60,7 +60,7 @@ test('Home keeps the greeting above the calendar after loading, resizing and scr
     const today = toolbar.getByRole('button', { name: 'Today' });
     const week = toolbar.getByRole('button', { name: 'Week', exact: true });
     const list = toolbar.getByRole('button', { name: 'List' });
-    const month = toolbar.getByRole('link', { name: 'Month' });
+    const month = toolbar.getByRole('button', { name: 'Month' });
 
     await previous.click();
     await expect(today).toHaveAttribute('aria-disabled', 'false');
@@ -71,13 +71,15 @@ test('Home keeps the greeting above the calendar after loading, resizing and scr
     await week.press('Space');
     await expect(week).toHaveAttribute('aria-pressed', 'true');
     await month.press('Enter');
-    await expect(page).toHaveURL(/\/calendar\?view=month/);
-    await expect(page.getByRole('button', { name: 'Month', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(month).toHaveAttribute('aria-pressed', 'true');
+    await expectSeparateRows();
 
     await page.setViewportSize({ width: 320, height: 844 });
     await page.goto('/');
     await expectSeparateRows();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+    await toolbar.getByRole('link', { name: 'Month' }).press('Enter');
+    await expect(page).toHaveURL(/\/calendar\?view=month/);
   } finally {
     await dad.dispose();
   }

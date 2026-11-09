@@ -373,6 +373,10 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("child_profile_id");
 
+                    b.PrimitiveCollection<Guid[]>("ChildProfileIds")
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("child_profile_ids");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -516,6 +520,10 @@ namespace CoParent.Modules.Calendar.Infrastructure.Migrations
                     b.Property<Guid?>("ChildProfileId")
                         .HasColumnType("uuid")
                         .HasColumnName("child_profile_id");
+
+                    b.PrimitiveCollection<Guid[]>("ChildProfileIds")
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("child_profile_ids");
 
                     b.Property<DateTimeOffset?>("CompletedAt")
                         .HasColumnType("timestamp with time zone")

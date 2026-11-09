@@ -35,19 +35,43 @@ describe('application shells', () => {
         'Home',
         'Calendar',
         'Messages',
+        'Shared records',
+        'Child Essentials',
         'From Your Kids',
         'Family Memories',
-        'Child Essentials',
-        'Shared records',
         'Settings',
       ]);
-      expect(linkTexts(body.querySelector('nav.bottomnav')!)).toEqual(['Home', 'Calendar', 'Messages', 'Memories', 'More']);
+      expect(linkTexts(body.querySelector('nav.bottomnav')!)).toEqual(['Home', 'Calendar', 'Messages', 'More']);
     });
 
     it('lists the remaining destinations under More on phones, in the same order', async () => {
       const body = await open('/more');
 
-      expect(linkTexts(body.querySelector('main ul')!)).toEqual(['From Your Kids', 'Child Essentials', 'Shared records', 'Settings']);
+      const more = body.querySelector('main ul')!;
+      expect(linkTexts(more)).toEqual(['Shared records', 'Child Essentials', 'From Your Kids', 'Family Memories', 'Settings']);
+      expect(body.querySelector('nav.bottomnav [aria-current="page"]')?.getAttribute('href')).toBe('/more');
+
+      const locale = TestBed.inject(LocaleService);
+      const originalLocale = locale.locale();
+      try {
+        locale.setLocale('es-419');
+        TestBed.tick();
+        expect(linkTexts(more)).toEqual([
+          'Registros compartidos', 'Información esencial de tus hijos', 'De tus hijos', 'Recuerdos familiares', 'Configuración',
+        ]);
+        expect(linkTexts(body.querySelector('nav.bottomnav')!)).toEqual(['Inicio', 'Calendario', 'Mensajes', 'Más']);
+      } finally {
+        locale.setLocale(originalLocale);
+      }
+    });
+
+    it('marks More as the current section on a destination moved under it', async () => {
+      const body = await open('/memories?sample=1');
+      const desktop = body.querySelector('nav.sidenav [aria-current="page"]');
+      const mobile = body.querySelector('nav.bottomnav [aria-current="location"]');
+      expect(desktop?.getAttribute('href')).toBe('/memories');
+      expect(mobile?.getAttribute('href')).toBe('/more');
+      expect(mobile?.classList.contains('is-active')).toBe(true);
     });
 
     it('sends old /children links to Child Essentials', async () => {

@@ -17,7 +17,7 @@
   </button>
 </mat-menu>
 
-<div class="shell" [class.shell--full-screen]="fullScreen()">
+<div class="shell" [class.shell--full-screen]="fullScreen()" [class.shell--chat-open]="chat.dock() === 'open'">
   <aside class="sidebar">
     <a class="brand" routerLink="/" aria-label="{{ 'feature.parenthesis.home' | tr }}">
       <app-logo [decorative]="true" />
@@ -34,7 +34,7 @@
               ariaCurrentWhenActive="page"
             >
               <app-icon [name]="item.icon" [size]="28" />
-              <span>{{ navLabel(item.path, item.label) }}</span>
+              <span>{{ item.labelKey | tr }}</span>
               @if (item.path === '/messages' && chat.hasUnread()) {
                 <span class="dot" aria-hidden="true"></span>
                 <span class="visually-hidden">, {{ 'nav.unread' | tr }}</span>
@@ -98,12 +98,12 @@
   <nav class="bottomnav" appBottomNav [attr.aria-label]="'nav.main' | tr">
     <ul>
       @for (item of mobileNav; track item.path) {
+        @let current = mobileCurrent(item.path);
         <li>
           <a
             [routerLink]="item.path"
-            routerLinkActive="is-active"
-            [routerLinkActiveOptions]="activeOptions(item.path)"
-            ariaCurrentWhenActive="page"
+            [class.is-active]="current !== null"
+            [attr.aria-current]="current"
           >
             <span class="bottomnav__icon">
               <app-icon [name]="item.icon" />
@@ -114,7 +114,7 @@
                 <span class="dot dot--icon" aria-hidden="true"></span>
               }
             </span>
-            <span>{{ mobileLabel(item.path, item.label) }}</span>
+            <span>{{ item.labelKey | tr }}</span>
             @if (item.path === '/messages' && chat.hasUnread()) {
               <span class="visually-hidden">, {{ 'nav.unread' | tr }}</span>
             }

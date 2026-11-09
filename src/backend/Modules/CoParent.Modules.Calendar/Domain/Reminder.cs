@@ -21,8 +21,11 @@ internal sealed class Reminder : Entity, IFamilyScoped
 
     public bool AllDay { get; set; }
 
-    /// <summary>Optional: one child it's about.</summary>
+    /// <summary>Legacy single-child association.</summary>
     public Guid? ChildProfileId { get; set; }
+
+    /// <summary>Explicit selection for new writes. Null uses the original single-child field.</summary>
+    public Guid[]? ChildProfileIds { get; set; }
 
     public string? Details { get; set; }
 

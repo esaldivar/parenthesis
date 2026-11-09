@@ -1,3 +1,4 @@
+import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslatePipe } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
@@ -5,11 +6,12 @@ import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, after
 import { FormArray, FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { CalendarNoteChildren } from './calendar-note-children';
+import { associatedChildIds } from './calendar-items';
 import { CalendarHeader } from './calendar-header';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { Api, Child, SharedTask, TaskInput } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
@@ -42,13 +44,13 @@ type ItemGroup = FormGroup<{ id: FormControl<string>; text: FormControl<string>;
   imports: [
     TranslatePipe,
     LoadingIndicator,
+    CalendarNoteChildren,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatDatepickerModule,
     Icon,
   ],
@@ -98,10 +100,11 @@ export class TaskForm implements OnInit {
   protected readonly form = this.fb.group({
     title: ['', [Validators.required, Validators.maxLength(TASK_TITLE_MAX)]],
     dueDate: ['', Validators.required],
-    childId: [''],
+    childIds: [[] as string[]],
     details: ['', Validators.maxLength(TASK_DETAILS_MAX)],
     items: this.fb.array<ItemGroup>([]),
   });
+  protected readonly selectedChildIds = toSignal(this.form.controls.childIds.valueChanges, { initialValue: [] });
   protected get items(): FormArray<ItemGroup> {
     return this.form.controls.items;
   }
@@ -241,7 +244,7 @@ export class TaskForm implements OnInit {
     for (const i of task.items) {
       this.items.push(this.item(i.id, i.text, i.required));
     }
-    this.form.patchValue({ title: task.title, dueDate: task.dueDate, childId: task.childId ?? '', details: task.details ?? '' });
+    this.form.patchValue({ title: task.title, dueDate: task.dueDate, childIds: [...associatedChildIds(task)], details: task.details ?? '' });
   }
 
   private item(id: string, text: string, required: boolean): ItemGroup {
@@ -274,7 +277,8 @@ export class TaskForm implements OnInit {
     return {
       title: v.title.trim(),
       dueDate: v.dueDate,
-      childId: v.childId || null,
+      childIds: v.childIds,
+      childId: v.childIds.length === 1 ? v.childIds[0] : null,
       details: v.details.trim() || undefined,
       items: v.items.map((i) => ({ ...(i.id ? { id: i.id } : {}), text: i.text.trim(), required: i.required })),
       ...(this.editing() ? { version: this.version() ?? undefined } : {}),

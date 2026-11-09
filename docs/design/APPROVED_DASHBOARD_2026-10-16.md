@@ -11,16 +11,20 @@ The user explicitly approved the final wide Parenthesis dashboard image produced
 - Exact approved logo: Variation 1 Default icon + Option B wordmark. Do not redraw or generate it. Production exports pending visual verification.
 - Use consistent recognizable line icons (calendar, message bubble, child artwork/pencil for From Your Kids, photo album for Family Memories, family/people for Child Essentials, proper gear for Settings), with accessible labels.
 
-## Desktop navigation — exact order
-1. Home
-2. Calendar — **single standalone item, no chevron/dropdown, no nested Events**
-3. Messages
-4. From Your Kids
-5. Family Memories
-6. Child Essentials — **top-level, directly below Family Memories and above Settings**, NOT nested under Calendar
-7. Settings
+## Parent navigation order (#549)
 
-Do not revert these decisions based on older notes.
+1. Home
+2. Calendar
+3. Messages
+4. Shared records
+5. Child Essentials
+6. From Your Kids
+7. Family Memories
+8. Settings
+
+Desktop shows the full list. On phones, Home, Calendar and Messages appear in the bottom bar, followed by More.
+More lists Shared records through Settings in the order above. Calendar is a standalone destination. Approvals is
+reachable from Home and Calendar.
 
 ## Weekly calendar centerpiece
 - Weekly view by default, with previous/next week, Today, and Week/Month/List view controls. Current day indicated clearly.

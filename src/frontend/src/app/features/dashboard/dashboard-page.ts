@@ -1,3 +1,5 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
@@ -22,6 +24,8 @@ import { Api, CalendarEvent, FamilyMember } from '../../core/api/api';
 import { toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { CalendarItem, swapTargetFor, toItems } from '../calendar/calendar-items';
+import { monthGrid, startOfMonth } from '../calendar/calendar-month';
+import { fromFamilyLocal } from '../calendar/time';
 import { EventDetails } from '../calendar/event-details';
 import { AddAt, addQuery } from '../calendar/slot';
 import { Avatar } from '../../shared/avatar/avatar';
@@ -117,7 +121,23 @@ export class DashboardPage {
       events: data.events.filter((e) => (e.childIds ?? e.children.map((c) => c.id)).length === 0 || (e.childIds ?? e.children.map((c) => c.id)).includes(child)),
     };
   });
-  protected readonly inlineView = signal<InlineView>('week');
+  private readonly selectedView = signal<InlineView>('week');
+  private readonly desktop = toSignal(inject(BreakpointObserver).observe('(min-width: 1024px)'), { requireSync: true });
+  protected readonly desktopMonth = computed(() => this.desktop().matches && !this.showingSample());
+  protected readonly inlineView = computed(() => {
+    const view = this.selectedView();
+    return view === 'month' && !this.desktopMonth() ? 'week' : view;
+  });
+  protected readonly monthDate = signal<PlainDate | null>(null);
+  protected readonly monthState = signal<WeekState>('loading');
+  private readonly monthItems = signal<readonly (CalendarItem & { readonly childIds: readonly string[] })[]>([]);
+  protected readonly filteredMonthItems = computed(() => {
+    const child = this.selectedChild();
+    const items = this.monthItems();
+    return child ? items.filter(item => item.childIds.length === 0 || item.childIds.includes(child)) : items;
+  });
+  private readonly monthRefresh = signal(0);
+  private monthRequest = 0;
 
   protected readonly state = signal<WeekState>('loading');
   protected readonly data = signal<DashboardWeek | null>(null);
@@ -252,13 +272,67 @@ export class DashboardPage {
       const source = this.showingSample() ? new SampleDashboardDataSource() : this.liveSource;
       untracked(() => void this.load(source, familyId, weekStart));
     });
+
+    effect(() => {
+      const month = this.inlineView() === 'month' ? this.monthDate() : null;
+      const family = this.auth.currentFamily();
+      this.monthRefresh();
+      if (month && family) {
+        untracked(() => void this.loadMonth(family.id, family.timeZone, month));
+      } else {
+        this.monthRequest++;
+      }
+    });
   }
 
-  protected goToWeek(offsetWeeks: number): void {
-    this.chooseWeek(addDays(this.shownWeek(), offsetWeeks * 7));
+  protected selectView(view: InlineView): void {
+    if (view === 'month' && this.inlineView() !== 'month') {
+      this.monthDate.set(startOfMonth(this.shownWeek()));
+    }
+    this.selectedView.set(view);
+  }
+
+  protected openMonthDay(day: PlainDate): void {
+    this.selectView('week');
+    this.chooseWeek(startOfWeek(day));
+  }
+
+  private async loadMonth(familyId: string, zone: string, month: PlainDate): Promise<void> {
+    const request = ++this.monthRequest;
+    this.monthItems.set([]);
+    this.monthState.set('loading');
+    const dates = monthGrid(month);
+    const from = fromFamilyLocal(`${dates[0]}T00:00`, zone);
+    const to = fromFamilyLocal(`${addDays(dates[41], 1)}T00:00`, zone);
+    try {
+      const [events, family, children] = await Promise.all([
+        this.api.calendarEvents(familyId, from, to), this.api.family(familyId), this.api.children(familyId),
+      ]);
+      if (request !== this.monthRequest) return;
+      const schedule = events.filter(event => event.status === 'Confirmed' || event.status === 'PendingApproval');
+      this.monthItems.set(toItems(schedule, family.members, children, zone).map((item, index) => ({
+        ...item, childIds: schedule[index].childIds,
+      })));
+      this.monthState.set('ready');
+    } catch {
+      if (request === this.monthRequest) this.monthState.set('error');
+    }
+  }
+
+  protected stepCalendar(direction: -1 | 1): void {
+    const month = this.monthDate();
+    if (this.inlineView() === 'month' && month) {
+      this.monthDate.set(startOfMonth(addDays(month, direction === -1 ? -1 : 32)));
+      return;
+    }
+    this.chooseWeek(addDays(this.shownWeek(), direction * 7));
   }
 
   protected goToToday(): void {
+    if (this.inlineView() === 'month') {
+      this.monthDate.set(startOfMonth(this.today()));
+      return;
+    }
     this.chooseWeek(this.currentWeekStart());
   }
 
@@ -335,6 +409,7 @@ export class DashboardPage {
   }
 
   protected reload(): void {
+    if (this.inlineView() === 'month') this.monthRefresh.update(value => value + 1);
     const source = this.showingSample() ? new SampleDashboardDataSource() : this.liveSource;
     void this.load(source, this.auth.currentFamily()?.id, this.shownWeek());
   }

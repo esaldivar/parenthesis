@@ -1,3 +1,5 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of } from 'rxjs';
 import { Location } from '@angular/common';
 import { provideLocationMocks } from '@angular/common/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -36,6 +38,7 @@ describe('DashboardPage (approved design)', () => {
   async function render(
     options: {
       sample?: boolean;
+      desktop?: boolean;
       failingSource?: boolean;
       week?: string;
       now?: Date;
@@ -50,6 +53,7 @@ describe('DashboardPage (approved design)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         fakeAuth(),
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: options.desktop ?? false }) } },
         { provide: NOW, useValue: () => options.now ?? WEDNESDAY_MORNING },
         ...(options.photos ? [{ provide: ProfilePhotos, useValue: options.photos }] : []),
       ],
@@ -299,7 +303,7 @@ describe('DashboardPage (approved design)', () => {
       expect(text(el.querySelector('#week-heading'))).toBe('Week of October 4 – 10, 2026');
     });
 
-    it('opens Month on the full Calendar page with the selected week preserved', async () => {
+    it('keeps the phone Month link to the full Calendar with its selected week', async () => {
       const { fixture, el } = await render();
 
       button(el, 'Next week').click();
@@ -307,6 +311,44 @@ describe('DashboardPage (approved design)', () => {
 
       expect(link(el, 'Month').getAttribute('href')).toBe('/calendar?view=month&week=2026-10-18');
       expect(link(el, 'See all').getAttribute('href')).toBe('/calendar?view=list&week=2026-10-18');
+    });
+
+    it('embeds the month of a cross-year week start and keeps the Home child filter', async () => {
+      const { fixture, el } = await render({
+        desktop: true, week: '2027-01-02', live: {
+          ...EMPTY_WEEK, children: [{ id: 'kai', name: 'Kai' }, { id: 'aurora', name: 'Aurora' }],
+        },
+      });
+      button(el, 'Kai').click();
+      await settle(fixture);
+      button(el, 'Month').click();
+      await settle(fixture);
+      const http = TestBed.inject(HttpTestingController);
+      const familyPath = '/api/families/family-1';
+      const request = http.expectOne(r => r.url === familyPath + '/calendar/events');
+      expect(request.request.params.get('from')).toBe('2026-11-29T06:00:00.000Z');
+      expect(request.request.params.get('to')).toBe('2027-01-10T06:00:00.000Z');
+      http.expectOne(familyPath).flush({ members: MEMBERS });
+      http.expectOne(familyPath + '/children').flush(CHILDREN);
+      request.flush([
+        event({ id: 'kai-event', title: 'Kai lesson', childIds: ['kai'], startsAt: '2026-12-12T15:00:00Z', endsAt: '2026-12-12T16:00:00Z' }),
+        event({ id: 'aurora-event', title: 'Aurora lesson', childIds: ['aurora'], startsAt: '2026-12-13T15:00:00Z', endsAt: '2026-12-13T16:00:00Z' }),
+      ]);
+      await settle(fixture);
+      expect(text(el.querySelector('#week-heading'))).toBe('December 2026');
+      expect(button(el, 'Month').getAttribute('aria-pressed')).toBe('true');
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(text(el.querySelector('app-calendar-month'))).toContain('Kai lesson');
+      });
+      expect(el.querySelector('app-calendar-month')?.textContent).not.toContain('Aurora lesson');
+      expect(button(el, 'Kai').getAttribute('aria-pressed')).toBe('true');
+
+      button(el, 'List').click();
+      await settle(fixture);
+      expect(el.querySelector('app-calendar-month')).toBeNull();
+      expect(text(el.querySelector('#week-heading'))).toBe('Week of December 27, 2026 – January 2, 2027');
+      expect(button(el, 'Kai').getAttribute('aria-pressed')).toBe('true');
     });
 
     it('starts on the week passed back from the Calendar page', async () => {

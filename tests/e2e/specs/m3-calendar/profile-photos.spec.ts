@@ -120,6 +120,14 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
           expect(await shownPhoto(child)).toBe(dadsKai);
         }
         await evidence(page, info, `${theme}-profile-photos-calendar`);
+
+        if (!phone) {
+          await page.goto(`/calendar?date=${week}`);
+          const slot = page.locator('app-calendar-week .grid').getByRole('button', { name: /^Dad time/ });
+          const attendee = slot.locator('.week-people app-avatar[title="Kai"]');
+          await expect(attendee.locator('img')).toBeVisible();
+          expect(await shownPhoto(attendee)).toBe(dadsKai);
+        }
       });
 
       await test.step('Mom still sees only her own photo of Kai, and Dad can’t read hers', async () => {

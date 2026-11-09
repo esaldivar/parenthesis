@@ -2,11 +2,10 @@
 
 :host {
   display: block;
-  container-type: inline-size;
+  container: calendar-week / inline-size;
 }
 
-ul,
-ol {
+ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -23,11 +22,23 @@ ol {
   overflow: hidden;
 }
 
-/* The grid shows from 720px; below that, the day-by-day list. */
 .grid {
+  --time-gutter: 56px;
+  --half-hour: 28px;
+  --hour-lines: 4;
+  --week-columns: var(--time-gutter) repeat(7, minmax(0, 1fr));
+
+  display: grid;
+  grid-template-columns: var(--week-columns);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.grid__day-number,
+.grid__hour--extra {
   display: none;
 }
-
 
 .grid__head {
   display: grid;
@@ -65,7 +76,7 @@ ol {
 .grid__body {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 56px repeat(7, minmax(0, 1fr));
+  grid-template-columns: var(--week-columns);
   height: 560px;
   overflow-y: auto;
 }
@@ -76,7 +87,7 @@ ol {
 .grid__hours,
 .daycol {
   display: grid;
-  grid-template-rows: repeat(48, 28px);
+  grid-template-rows: repeat(48, var(--half-hour));
 }
 .grid__hours span {
   font-size: 0.75rem;
@@ -91,15 +102,29 @@ ol {
   padding: 0 2px;
   border-inline-start: 1px solid var(--color-divider);
   background-image: linear-gradient(var(--color-divider) 1px, transparent 1px);
-  background-size: 100% 112px;
+  background-size: 100% calc(var(--half-hour) * var(--hour-lines));
 }
 .daycol li {
   min-width: 0;
   padding: 1px 0;
 }
+.timed-slot {
+  grid-row: var(--slot-row);
+  grid-column: var(--slot-column);
+}
 .item--timed {
   min-height: 0;
 }
+@media (min-width: 1024px) {
+  @container calendar-week (min-width: 720px) {
+    // Fit title, time and one attendee row into the existing shortest timed block.
+    .item--timed,
+    .item--span {
+      padding: 1px 2px;
+    }
+  }
+}
+
 // Hidden unavailable time (#190): a thin strip at the day's edge, over the lanes, widening on hover or focus.
 .daycol li.marker {
   grid-column: 1 / -1;
@@ -135,49 +160,6 @@ ol {
 .daycol li.marker:hover .item--marker span,
 .daycol li.marker:focus-within .item--marker span {
   opacity: 1;
-}
-
-.agenda {
-  display: grid;
-  gap: var(--space-3);
-}
-.agenda__day {
-  display: grid;
-  grid-template-columns: 64px 1fr;
-  gap: var(--space-2);
-}
-.agenda__date {
-  margin: 0;
-  font-size: 0.9375rem;
-  display: grid;
-  align-content: start;
-}
-.agenda__day.is-today .agenda__date {
-  color: var(--color-action);
-}
-.agenda__none {
-  margin: 0;
-  color: var(--color-text-secondary);
-  align-self: center;
-}
-.agenda__items {
-  display: grid;
-  gap: var(--space-2);
-}
-
-/* Last, so it overrides the day-by-day list's own display. */
-@container (min-width: 720px) {
-  .grid {
-    display: grid;
-    grid-template-columns: 56px repeat(7, minmax(0, 1fr));
-    border: 1px solid var(--color-divider);
-    border-radius: var(--radius-card);
-    background: var(--color-surface);
-    overflow: hidden;
-  }
-  .agenda {
-    display: none;
-  }
 }
 
 // Adding from a tap (#212): each day column's background is a button behind its events. A tap adds at that half-hour;
@@ -230,10 +212,8 @@ ol {
   white-space: nowrap;
 }
 
-// The pointer-only layer behind the all-day row and each day of the list (#212). What's above it lets taps through,
-// except its own buttons.
-.allday,
-.agenda__day {
+// The pointer-only layer behind the all-day row (#212).
+.allday {
   position: relative;
 }
 .tap-add {
@@ -250,13 +230,11 @@ ol {
   background: transparent;
   cursor: pointer;
 }
-.allday > li:not(.tap-add),
-.agenda__day > :not(.tap-add__button) {
+.allday > li:not(.tap-add) {
   position: relative;
   pointer-events: none;
 }
-.allday > li:not(.tap-add) button,
-.agenda__day > :not(.tap-add__button) button {
+.allday > li:not(.tap-add) button {
   pointer-events: auto;
 }
 
@@ -270,11 +248,106 @@ ol {
 .allday > li.slot-pick {
   grid-column: auto;
 }
-.agenda__day.is-picked {
-  border-radius: var(--radius-control);
-  outline: 2px solid var(--color-action);
-  outline-offset: 2px;
-}
-.slot-pick--day {
-  grid-column: 2;
+@container (width < 720px) {
+  .grid {
+    --time-gutter: 2.5rem;
+    --half-hour: 48px;
+    --hour-lines: 2;
+    --week-item-details: none;
+  }
+
+  .grid__head {
+    padding-block: var(--space-1);
+    font-size: 0.75rem;
+  }
+  .grid__date {
+    display: none;
+  }
+  .grid__day-number,
+  .grid__hour--extra {
+    display: block;
+  }
+  .grid__day-number {
+    min-inline-size: 1.5em;
+    text-align: center;
+  }
+  .grid__head.is-today .grid__day-number {
+    background: var(--color-action);
+    color: var(--color-on-action);
+    border-radius: var(--radius-pill);
+  }
+  .grid__allday-label,
+  .grid__hours span {
+    font-size: 0.625rem;
+    padding-inline: 2px;
+  }
+  .grid__hours span {
+    line-height: 1;
+    transform: none;
+  }
+
+  // Keep the all-day lanes aligned with the headers and the timed columns.
+  .allday {
+    grid-auto-rows: 32px;
+    gap: 2px 0;
+    padding: 2px 0;
+    min-height: 36px;
+  }
+  .allday > li:not(.tap-add) {
+    min-width: 0;
+    padding-inline: 1px;
+  }
+  .item--span {
+    min-height: 0;
+  }
+  .item {
+    padding: 1px 2px;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    line-height: 1.1;
+  }
+  .item:focus-visible {
+    outline-offset: -3px;
+  }
+
+  // Only the hours scroll. Avoid a scrollbar gutter that shifts the columns away from the headers.
+  .grid__body {
+    height: clamp(12rem, 60dvh, 35rem);
+    scrollbar-width: none;
+  }
+  .daycol {
+    padding: 0;
+    gap: 0;
+  }
+  .daycol li.timed-slot {
+    position: absolute;
+    grid-area: auto;
+    inset-block-start: var(--slot-top);
+    inset-inline-start: var(--slot-left);
+    block-size: var(--slot-height);
+    inline-size: var(--slot-width);
+    min-width: 0;
+    padding: 0 1px 1px;
+  }
+  .daycol li.marker {
+    transition: none;
+  }
+  .daycol li.marker:hover,
+  .daycol li.marker:focus-within {
+    width: var(--slot-width);
+  }
+  .item--marker {
+    min-height: 0;
+  }
+  .item--marker span {
+    padding: 0;
+    opacity: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .slot-add__label,
+  .slot-pick__button {
+    overflow-wrap: anywhere;
+    font-size: 0.6875rem;
+  }
 }
