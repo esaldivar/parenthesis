@@ -438,6 +438,8 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [ ] #547: verify the desktop Calendar legend in Week, Month and List on Development at 125% browser zoom with Messages minimized and expanded.
+
 - [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted
   titles from explicitly empty/whitespace titles. Required titles are rejected without saving other fields;
   omitted/null titles keep their values and Unavailable time retains its generic label and private notes.

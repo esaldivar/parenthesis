@@ -235,6 +235,10 @@ a.is-active {
     grid-template-rows: auto 1fr;
   }
 
+  .shell--chat-open {
+    --chat-dock-clearance: var(--chat-dock-open-height);
+  }
+
   .sidebar {
     grid-area: sidebar;
     position: sticky;
