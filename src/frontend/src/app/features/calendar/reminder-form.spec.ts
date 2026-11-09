@@ -198,6 +198,7 @@ describe('Add and edit a reminder', () => {
       startsAt: '2026-10-20T13:00:00.000Z',
       allDay: false,
       childId: null,
+      childIds: [],
       details: 'Wear a blue shirt',
       repeat: 'None',
       repeatCount: undefined,
@@ -218,10 +219,14 @@ describe('Add and edit a reminder', () => {
     expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
 
     type('input[formcontrolname="repeatCount"]', '3');
-    await pick('childId', 'Kai');
+    for (const name of ['Kai', 'Aurora']) {
+      [...form().querySelectorAll('app-calendar-note-children mat-checkbox')]
+        .find(control => text(control) === name)!.querySelector<HTMLInputElement>('input')!.click();
+      await settle();
+    }
     await submit();
     const create = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST'));
-    expect(create.request.body).toEqual(expect.objectContaining({ repeat: 'Weekly', repeatCount: 3, repeatUntil: undefined, childId: 'kai' }));
+    expect(create.request.body).toEqual(expect.objectContaining({ repeat: 'Weekly', repeatCount: 3, repeatUntil: undefined, childIds: ['kai', 'aurora'], childId: null }));
   });
 
   it('lets a reminder repeat up to 2 years, counting February 29 as the server does', () => {
@@ -274,7 +279,7 @@ describe('Add and edit a reminder', () => {
 
     const save = await vi.waitFor(() => http.expectOne((r) => r.method === 'PUT' && r.url === `${F}/calendar/reminders/r1`));
     expect(save.request.body).toEqual(
-      expect.objectContaining({ title: 'Spirit Day: blue', startsAt: '2026-10-20T13:00:00.000Z', repeat: 'Weekly', repeatCount: 3, childId: 'kai' }),
+      expect.objectContaining({ title: 'Spirit Day: blue', startsAt: '2026-10-20T13:00:00.000Z', repeat: 'Weekly', repeatCount: 3, childIds: ['kai'], childId: 'kai' }),
     );
     save.flush(reminder({ title: 'Spirit Day: blue' }));
     await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20'));

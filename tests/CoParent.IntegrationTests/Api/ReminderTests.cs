@@ -16,6 +16,56 @@ public sealed class ReminderTests(ApiFactory api) : IAsyncLifetime
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Notes_round_trip_multiple_children_and_reject_another_familys_child(bool recurringReminder)
+    {
+        using var f = await FamilyAsync();
+        var family = $"/api/families/{f.FamilyId}";
+        var ids = new List<Guid> { f.KaiId };
+        foreach (var name in new[] { "Aurora", "Avery" })
+        {
+            var child = await JsonAsync(await f.Dad.PostAsync($"{family}/children", new { firstName = name }));
+            var approval = await f.Mom.PostAsync($"{family}/approvals/{child.GetProperty("changeRequestId").GetGuid()}/approve");
+            approval.EnsureSuccessStatusCode();
+            ids.Add(child.GetProperty("id").GetGuid());
+        }
+
+        var path = recurringReminder ? Reminders(f) : $"{family}/calendar/tasks";
+        object Payload(Guid[] childIds, uint? version = null) => recurringReminder
+            ? new { title = "Pack water", startsAt = _friday, allDay = true, childIds, repeat = "Daily", repeatCount = 3 }
+            : new { title = "Pack water", dueDate = "2026-10-16", childIds, version };
+
+        var createdResponse = await f.Dad.PostAsync(path, Payload([.. ids]));
+        Assert.Equal(HttpStatusCode.Created, createdResponse.StatusCode);
+        var created = await JsonAsync(createdResponse);
+        var notePath = $"{path}/{created.GetProperty("id").GetGuid()}";
+        var view = await JsonAsync(await f.Mom.GetAsync(notePath));
+        Assert.Equal(ids, view.GetProperty("childIds").EnumerateArray().Select(child => child.GetGuid()));
+        if (recurringReminder)
+        {
+            var occurrences = (await WeekAsync(f.Mom, f)).Where(item => item.GetProperty("id").GetGuid() == created.GetProperty("id").GetGuid()).ToList();
+            Assert.Equal(3, occurrences.Count);
+            Assert.All(occurrences, item => Assert.Equal(ids, item.GetProperty("childIds").EnumerateArray().Select(child => child.GetGuid())));
+        }
+
+        using var outsider = await ApiSession.SignedInAsync(api, displayName: "Other Parent");
+        var otherFamily = await outsider.CreateFamilyAsync("Other Synthetic Family");
+        var otherChild = await JsonAsync(await outsider.PostAsync($"/api/families/{otherFamily}/children", new { firstName = "Riley" }));
+        uint? Version(JsonElement value) => recurringReminder ? null : value.GetProperty("version").GetUInt32();
+        var rejected = await f.Mom.SendAsync(HttpMethod.Put, notePath,
+            Payload([f.KaiId, otherChild.GetProperty("id").GetGuid()], Version(view)));
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+        Assert.True((await JsonAsync(rejected)).GetProperty("errors").TryGetProperty("childIds", out _));
+
+        var reduced = await JsonAsync(await f.Mom.SendAsync(HttpMethod.Put, notePath, Payload([ids[1], ids[2]], Version(view))));
+        Assert.Equal(ids.Skip(1), reduced.GetProperty("childIds").EnumerateArray().Select(child => child.GetGuid()));
+        var cleared = await JsonAsync(await f.Dad.SendAsync(HttpMethod.Put, notePath, Payload([], Version(reduced))));
+        Assert.Empty(cleared.GetProperty("childIds").EnumerateArray());
+        Assert.Equal(JsonValueKind.Null, cleared.GetProperty("childId").ValueKind);
+    }
+
     [Fact]
     public async Task Either_parent_creates_edits_and_deletes_at_once_and_history_says_who()
     {

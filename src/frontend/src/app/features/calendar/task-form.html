@@ -35,19 +35,13 @@
     }
   </mat-form-field>
 
-  @if (activeChildren().length > 0) {
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>{{ 'feature.about.optional' | tr }}</mat-label>
-      <mat-select formControlName="childId">
-        <mat-option value="">{{ 'feature.no.one.in.particular' | tr }}</mat-option>
-        @for (child of activeChildren(); track child.id) {
-          <mat-option [value]="child.id">{{ child.firstName }}</mat-option>
-        }
-      </mat-select>
-      @if (fieldError('childId'); as e) {
-        <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
-      }
-    </mat-form-field>
+  @if (activeChildren().length > 0 || selectedChildIds().length > 0) {
+    <app-calendar-note-children
+      [children]="activeChildren()"
+      [selected]="selectedChildIds()"
+      [error]="fieldError('childIds') ?? fieldError('childId')"
+      (changed)="form.controls.childIds.setValue($event)"
+    />
   }
 
   <mat-form-field appearance="outline" subscriptSizing="dynamic">

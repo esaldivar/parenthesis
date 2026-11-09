@@ -35,9 +35,9 @@
   <dl class="facts">
     <dt>{{ 'feature.due' | tr }}</dt>
     <dd>{{ due() }}</dd>
-    @if (item().children[0]; as child) {
+    @if (childNames(); as names) {
       <dt>{{ 'feature.about' | tr }}</dt>
-      <dd>{{ child.name }}</dd>
+      <dd>{{ names }}</dd>
     }
     @if (current().details; as details) {
       <dt>{{ 'feature.details' | tr }}</dt>

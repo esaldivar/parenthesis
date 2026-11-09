@@ -20,6 +20,8 @@ import { revealFirstProblem } from './reveal-problem';
 import { PAST_DATE, UNREADABLE_DATE, choosable } from './date-rules';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';
 import { fromFamilyLocal, toFamilyLocal } from './time';
+import { CalendarNoteChildren } from './calendar-note-children';
+import { associatedChildIds } from './calendar-items';
 import { CalendarHeader } from './calendar-header';
 
 export const TITLE_MAX = 80;
@@ -54,6 +56,7 @@ const REPEATS: readonly { id: RepeatFrequency; label: string }[] = [
   imports: [
     TranslatePipe,
     LoadingIndicator,
+    CalendarNoteChildren,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
@@ -99,13 +102,14 @@ export class ReminderForm implements OnInit {
     allDay: [false],
     date: ['', Validators.required],
     time: ['08:00'],
-    childId: [''],
+    childIds: [[] as string[]],
     details: ['', Validators.maxLength(DETAILS_MAX)],
     repeat: ['None' as RepeatFrequency],
     ends: ['count' as 'count' | 'date'],
     repeatCount: [4],
     repeatUntil: [''],
   });
+  protected readonly selectedChildIds = toSignal(this.form.controls.childIds.valueChanges, { initialValue: [] });
   protected readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   protected readonly allDay = computed(() => this.value().allDay ?? false);
   /** Today in the family's time zone (#232): a new date is from today on. */
@@ -137,7 +141,7 @@ export class ReminderForm implements OnInit {
         allDay: reminder.allDay,
         date: start.slice(0, 10),
         time: reminder.allDay ? '08:00' : start.slice(11),
-        childId: reminder.childId ?? '',
+        childIds: [...associatedChildIds(reminder)],
         details: reminder.details ?? '',
         repeat: reminder.repeat,
         ends: reminder.repeatUntil ? 'date' : 'count',
@@ -250,7 +254,8 @@ export class ReminderForm implements OnInit {
       title: v.title.trim(),
       startsAt: fromFamilyLocal(v.allDay ? `${v.date}T00:00` : `${v.date}T${v.time}`, this.timeZone()),
       allDay: v.allDay,
-      childId: v.childId || null,
+      childIds: v.childIds,
+      childId: v.childIds.length === 1 ? v.childIds[0] : null,
       details: v.details.trim() || undefined,
       repeat: v.repeat,
       repeatCount: repeats && v.ends === 'count' ? v.repeatCount : undefined,

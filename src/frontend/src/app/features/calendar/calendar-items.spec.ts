@@ -1,6 +1,6 @@
 import { CalendarEvent } from '../../core/api/api';
-import { CHILDREN, MEMBERS, event, reminder } from '../../../testing/calendar-fixtures';
-import { FORMER_PARENT, forChild, onDate, reminderItems, toItems } from './calendar-items';
+import { CHILDREN, MEMBERS, event, reminder, task } from '../../../testing/calendar-fixtures';
+import { FORMER_PARENT, forChild, onDate, reminderItems, taskItems, toItems } from './calendar-items';
 import { itemSummary, statusText, whenText } from './item-text';
 
 const ZONE = 'America/Chicago';
@@ -16,6 +16,19 @@ describe('calendar items', () => {
     expect(item.spansDays).toBe(false);
     expect(item.isMine).toBe(true);
     expect(statusText(item)).toBeNull();
+  });
+
+  it('keeps one task or reminder per occurrence and matches either associated child', () => {
+    const children = ['kai', 'aurora'];
+    const schedule = [
+      ...taskItems([task({ childIds: children })], MEMBERS, CHILDREN),
+      ...reminderItems([reminder({ childIds: children })], MEMBERS, CHILDREN, ZONE),
+    ];
+    expect(forChild(schedule, null)).toHaveLength(2);
+    expect(forChild(schedule, 'kai')).toEqual(schedule);
+    expect(forChild(schedule, 'aurora')).toEqual(schedule);
+    expect(forChild(schedule, 'someone-else')).toEqual([]);
+    expect(schedule.map(item => item.children.map(child => child.name))).toEqual([['Kai', 'Aurora'], ['Kai', 'Aurora']]);
   });
 
   it('never shows a pending item as confirmed', () => {
