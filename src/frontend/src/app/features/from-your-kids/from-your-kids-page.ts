@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, isDevMode, signal, untracked } from '@angular/core';
 import { Api, Child } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { KidsGallery } from './kids-gallery';
 import { KidsDiary } from './kids-diary';
+import { previewDiary, previewGallery } from './from-your-kids-preview';
 
 /**
- * M4 parent-facing presentation shell (#531). No synthetic child data is exposed to parents.
+ * M4 parent-facing presentation shell (#531). Sample content is opt-in in development builds.
  * M5 will supply parent-authorized entries, artwork and photos through an API.
  */
 @Component({
@@ -42,29 +43,40 @@ import { KidsDiary } from './kids-diary';
           (click)="section.set('photos')"><span class="section-icon" aria-hidden="true">📷</span><span class="section-copy"><strong>Photos</strong><small>Photo adventures from your kid</small></span><span aria-hidden="true">›</span></button>
       </nav>
 
-      <p class="sharing-note">Only things {{ selectedChild()?.firstName }} chooses to share with you will appear here.</p>
+      @if (developmentBuild) {
+        <label class="preview-toggle">
+          <input type="checkbox" [checked]="previewAt() !== null" (change)="setPreview($event)" />
+          Development preview with sample content
+        </label>
+      }
+      @if (previewAt() !== null) {
+        <p role="status">Showing synthetic examples for UI testing.</p>
+      } @else {
+        <p class="sharing-note">Only things {{ selectedChild()?.firstName }} chooses to share with you will appear here.</p>
+      }
       @switch (section()) {
         @case ('diary') {
-          <div class="section-heading"><h2>{{ selectedChild()?.firstName }}'s Diary</h2><span aria-hidden="true">✧ ♡</span></div>
-          <app-kids-diary />
+          <div class="section-heading"><h2>{{ contentName() }}'s Diary</h2><span aria-hidden="true">✧ ♡</span></div>
+          <app-kids-diary [entries]="diaryEntries()" />
         }
         @case ('artwork') {
           <section class="gallery" aria-labelledby="artwork-title">
-            <h2 id="artwork-title">{{ selectedChild()?.firstName }}'s Artwork</h2>
-            <div class="artwork-display"><div class="fridge" role="img" aria-label="Empty closed refrigerator, ready for your child's shared drawings">
+            <h2 id="artwork-title">{{ contentName() }}'s Artwork</h2>
+            <div class="fridge" role="group" aria-label="Artwork on the closed refrigerator">
               <div class="fridge-door fridge-door--upper"><span class="fridge-handle" aria-hidden="true"></span></div>
-              <div class="fridge-door fridge-door--lower"><span class="fridge-handle" aria-hidden="true"></span></div>
+              <div class="fridge-door fridge-door--lower">
+                <span class="fridge-handle" aria-hidden="true"></span>
+                <app-kids-gallery kind="Artwork" [items]="artwork()" />
+              </div>
             </div>
-            <app-kids-gallery kind="Artwork" />
-            </div>
-            <p>No artwork shared with you yet.</p>
+            @if (!artwork().length) { <p>No artwork shared with you yet.</p> }
             <p class="hint">Drawings will appear on the outside of the fridge, held up by magnets.</p>
           </section>
         }
         @case ('photos') {
           <section class="gallery" aria-labelledby="photos-title">
-            <h2 id="photos-title">{{ selectedChild()?.firstName }}'s Photos</h2>
-            <div class="corkboard"><h3>{{ selectedChild()?.firstName }}'s photos</h3><app-kids-gallery kind="Photo" /><p>No photos shared with you yet.</p></div>
+            <h2 id="photos-title">{{ contentName() }}'s Photos</h2>
+            <div class="corkboard"><h3>{{ contentName() }}'s photos</h3><app-kids-gallery kind="Photo" [items]="photos()" />@if (!photos().length) { <p>No photos shared with you yet.</p> }</div>
             <p class="hint">Your child's photos will be pinned here like little memories.</p>
           </section>
         }
@@ -74,7 +86,7 @@ import { KidsDiary } from './kids-diary';
   `,
   styles: `
     :host { display: block; color: var(--color-text); }
-    .kids { display: grid; gap: var(--space-4); max-width: 75rem; }
+    .kids { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); max-width: 75rem; }
     h1,h2,p { margin: 0; }
     .intro { position: relative; overflow: hidden; padding: clamp(1.25rem, 3vw, 2.5rem); border-radius: 1.25rem; background: var(--color-surface-soft); border: 1px solid var(--color-divider); }
     .intro::after { content: '✦  ♡  ✧'; position: absolute; right: 1rem; top: 1rem; font-size: 1.4rem; color: #5e8f7e; opacity: .75; }
@@ -97,15 +109,15 @@ import { KidsDiary } from './kids-diary';
     .sections button[aria-current='page'] { border: 2px solid var(--color-focus); background: var(--color-surface-soft); }
     .sections .section-icon { display: grid; place-items: center; flex: 0 0 3.5rem; width: 3.5rem; height: 3.5rem; border-radius: .85rem; background: var(--color-surface-soft); font-size: 2rem; }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-    .gallery { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 1.25rem; text-align: center; }
+    .gallery { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 1.25rem; text-align: center; }
     .gallery h2 { font-family: Georgia,serif; font-size: clamp(1.4rem,2.5vw,2rem); }
-    .artwork-display { display: grid; grid-template-columns: minmax(12rem, 19rem) minmax(0, 1fr); align-items: center; gap: clamp(1rem,3vw,2rem); width: min(100%, 58rem); }
-    .fridge { display: grid; width: min(100%, 18rem); height: 24rem; padding: 0.65rem; gap: 0.5rem; border: 3px solid var(--color-outline); border-radius: 1.5rem; background: var(--color-surface-soft); box-shadow: 0 8px 15px #0002; }
+    .fridge { display: grid; width: min(100%, 18rem); min-height: 24rem; padding: 0.65rem; gap: 0.5rem; border: 3px solid var(--color-outline); border-radius: 1.5rem; background: var(--color-surface-soft); box-shadow: 0 8px 15px #0002; }
     .fridge-door { position: relative; border: 2px solid var(--color-divider); border-radius: 0.75rem; background: var(--color-surface); }
     .fridge-door--upper { min-height: 9rem; }
-    .fridge-door--lower { min-height: 11rem; }
+    .fridge-door--lower { min-height: 11rem; padding: 1rem .65rem 1rem 2rem; }
+    .preview-toggle { display: flex; align-items: center; gap: .5rem; min-height: var(--target-min); }
     .fridge-handle { position: absolute; left: 0.8rem; top: 20%; width: 0.55rem; height: 45%; border-radius: 0.4rem; background: var(--color-outline); }
-    .corkboard { display: grid; place-items: center; width: min(100%,58rem); min-height: 20rem; border: 12px solid #996638; border-radius: 12px; background: #c48c55; color: #20303F; box-shadow: inset 0 0 12px #56351855; }
+    .corkboard { display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; width: min(100%,58rem); min-height: 20rem; border: 12px solid #996638; border-radius: 12px; background: #c48c55; color: #20303F; box-shadow: inset 0 0 12px #56351855; }
     .corkboard { gap: var(--space-3); padding: var(--space-3); }
     .corkboard h3 { margin: 0; font-family: Georgia, serif; }
     .corkboard p { padding: 1rem; background: #F7F5ED; transform: rotate(-2deg); }
@@ -113,7 +125,6 @@ import { KidsDiary } from './kids-diary';
     @media (max-width: 40rem) {
       .sections button { padding: var(--space-2); }
       .gallery { padding: var(--space-2); }
-      .artwork-display { grid-template-columns: 1fr; justify-items: center; }
       .fridge { width: min(100%, 16rem); }
       .corkboard { width: 100%; border-width: 8px; }
     }
@@ -125,10 +136,25 @@ export class FromYourKidsPage {
   private readonly auth = inject(AuthStore);
   private readonly destroy = inject(DestroyRef);
   private requestId = 0;
+  protected readonly developmentBuild = isDevMode();
+  protected readonly previewAt = signal<number | null>(null);
+  protected readonly diaryEntries = computed(() => {
+    const now = this.previewAt();
+    return now === null ? [] : previewDiary(now);
+  });
+  protected readonly artwork = computed(() => {
+    const now = this.previewAt();
+    return now === null ? [] : previewGallery('Artwork', now);
+  });
+  protected readonly photos = computed(() => {
+    const now = this.previewAt();
+    return now === null ? [] : previewGallery('Photo', now);
+  });
   protected readonly section = signal<'diary' | 'artwork' | 'photos'>('diary');
   protected readonly children = signal<readonly Child[]>([]);
   protected readonly selectedChildId = signal<string | null>(null);
   protected readonly selectedChild = computed(() => this.children().find(child => child.id === this.selectedChildId()) ?? null);
+  protected readonly contentName = computed(() => this.previewAt() === null ? this.selectedChild()?.firstName : 'Sample child');
   protected readonly loading = signal(true);
   protected readonly failed = signal(false);
 
@@ -145,12 +171,18 @@ export class FromYourKidsPage {
     this.section.set('diary');
   }
 
+  protected setPreview(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.previewAt.set(this.developmentBuild && checked ? Date.now() : null);
+  }
+
   protected retry(): void {
     void this.loadChildren(this.auth.currentFamily()?.id);
   }
 
   private async loadChildren(familyId: string | undefined): Promise<void> {
     const request = ++this.requestId;
+    this.previewAt.set(null);
     this.children.set([]);
     this.selectedChildId.set(null);
     this.loading.set(!!familyId);

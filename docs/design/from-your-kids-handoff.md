@@ -21,6 +21,9 @@ Status: **implementation in progress**. Source branch: `feature/531-from-your-ki
 M4 owns parent-facing layout, accessible state machine and content contracts. M5 owns child authoring, consent, parent-specific sharing, real storage, retention, and API integration. **Do not display synthetic child content as if real**: only show fixtures behind a clearly labeled development preview. Default to honest empty state until the API is ready.
 
 ## QA
+- In a local development build, select an active child and enable **Development preview with sample content**.
+  Open Diary, Artwork, and Photos to exercise the populated states. The toggle is off by default and unavailable
+  in production builds. Preview images and entries are synthetic, and the parent actions remain unavailable.
 - Viewports 320/390/768/1280+, both themes, keyboard and screen reader.
 - Closed fridge visible at all sizes; no open-door animation.
 - Confirm child selection, diary page controls, empty states, privacy placeholders, no parent creation affordances.

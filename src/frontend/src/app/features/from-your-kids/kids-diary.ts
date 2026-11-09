@@ -1,6 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { KidsDiaryEntry } from './from-your-kids-contract';
+import { KidsDiaryEntry, KidsMood } from './from-your-kids-contract';
+
+const MOOD_CHARACTER: Record<KidsMood, string> = {
+  Happy: '🌞',
+  Excited: '🤩',
+  Calm: '😌',
+  Sad: '😢',
+  Worried: '😟',
+  Proud: '😊',
+  Other: '🙂',
+};
 
 /** Parent-only, read-only diary: newest first; no reactions or editing. */
 @Component({
@@ -29,7 +39,7 @@ import { KidsDiaryEntry } from './from-your-kids-contract';
         <article class="paper" aria-live="polite">
           @if (current(); as entry) {
             <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
-            <p class="mood">{{ entry.mood }}</p>
+            <p class="mood"><span aria-hidden="true">{{ moodCharacter[entry.mood] }}</span> {{ entry.mood }}</p>
             @if (entry.title) { <h3>{{ entry.title }}</h3> }
             <p class="entry">{{ entry.body }}</p>
           }
@@ -50,12 +60,13 @@ import { KidsDiaryEntry } from './from-your-kids-contract';
     .paper + .paper { border-left: 2px solid #d6cbb9; }
     .cover { display: grid; align-content: center; justify-items: center; text-align: center; }
     .index-page nav { display: grid; gap: .6rem; margin-top: 1rem; }
-    .entry-choice { display: grid; gap: .3rem; width: 100%; text-align: left; background: #fff9ed; border: 1px solid #e2d4c5; }
-    .entry-choice[aria-current="page"] { background: #e8d9f1; border-color: #a38aba; }
+    .entry-choice { display: grid; gap: .3rem; width: 100%; text-align: left; background: var(--color-surface); border: 1px solid var(--color-divider); }
+    .entry-choice[aria-current="page"] { background: var(--color-selected); border-color: var(--color-action); }
     .entry-choice time { font-size: .8rem; }
     h2,h3 { font-family: Georgia,serif; }
     h2 { font-size: clamp(1.5rem,3vw,2.3rem); }
-    .mood { font-weight: 700; color: #5e8f7e; }
+    .mood { display: flex; align-items: center; gap: .4rem; font-weight: 700; }
+    .mood span { font-size: 1.5rem; }
     .entry { white-space: pre-wrap; overflow-wrap: anywhere; }
     .pager { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 1rem; }
     button { min-height: 44px; border: 1px solid var(--color-outline); border-radius: .5rem; padding: .5rem 1rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; }
@@ -66,6 +77,7 @@ import { KidsDiaryEntry } from './from-your-kids-contract';
 })
 export class KidsDiary {
   readonly entries = input<readonly KidsDiaryEntry[]>([]);
+  protected readonly moodCharacter = MOOD_CHARACTER;
   protected readonly index = signal(0);
   protected readonly ordered = computed(() => [...this.entries()].sort((a,b) => b.createdAt.localeCompare(a.createdAt)));
   protected readonly current = computed(() => this.ordered()[Math.min(this.index(), this.ordered().length - 1)] ?? null);
