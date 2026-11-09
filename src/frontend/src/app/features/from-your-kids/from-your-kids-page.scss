@@ -1,0 +1,119 @@
+:host { display: block; color: var(--color-text); }
+
+.kids {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  max-width: 68rem;
+  margin-inline: auto;
+}
+h1, h2, p { margin: 0; }
+h1, h2, .section-copy strong { font-family: Georgia, serif; }
+.intro {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: clamp(3.5rem, 10vw, 6.5rem);
+  padding: var(--space-2);
+}
+.intro::before, .intro::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  width: min(22%, 6rem);
+  z-index: -1;
+  background: url('/art/from-your-kids/leaves.webp') left center / contain no-repeat;
+}
+.intro::before { inset-inline-start: max(0px, calc(50% - 17rem)); }
+.intro::after { inset-inline-end: max(0px, calc(50% - 17rem)); transform: scaleX(-1); }
+.corkboard h2 {
+  padding: .35em .65em;
+  border: 1px solid #c89c61;
+  border-radius: .65rem .85rem .55rem .9rem;
+  background: linear-gradient(165deg, #fff1d7, #f6d9a6);
+  color: #20303f;
+  box-shadow: 0 .2rem .35rem #0003;
+  text-align: center;
+}
+.title-ribbon { width: min(78%, 24rem); }
+.title-ribbon img { display: block; width: 100%; height: auto; filter: drop-shadow(0 .14rem .14rem #0003); }
+h2 span { color: #a9384f; }
+.section-heading span { color: var(--color-action); }
+.child-tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); }
+.child-tabs button, .retry {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: var(--target-min);
+  padding: .35rem .8rem;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.child-tabs button[aria-pressed='true'], .sections button[aria-current='page'] {
+  background: var(--color-selected);
+  border-color: var(--color-action);
+}
+.child-tabs button[aria-pressed='true'] { font-weight: 700; }
+.sections { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+.sections button {
+  display: flex;
+  align-items: center;
+  gap: clamp(.4rem, 1.25vw, .9rem);
+  min-height: 6.75rem;
+  min-width: 0;
+  padding: clamp(.5rem, 1.5vw, 1rem);
+  border: 2px solid var(--color-divider);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 .2rem .45rem #0002;
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+}
+.sections img { width: clamp(2.75rem, 8vw, 6rem); aspect-ratio: 1.1; object-fit: contain; }
+.section-copy { display: grid; gap: .3rem; min-width: 0; overflow-wrap: anywhere; }
+.section-copy strong { font-size: clamp(1rem, 2vw, 1.35rem); }
+.section-copy small { color: var(--color-text-secondary); line-height: 1.4; }
+.section-heading { font-size: clamp(1.25rem, 3vw, 2rem); }
+button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.gallery { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+.corkboard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: var(--space-3);
+  border: clamp(14px, 2.25vw, 28px) solid transparent;
+  border-image: url('/art/from-your-kids/corkboard-illustration.webp') 56 fill stretch;
+  padding: clamp(.6rem, 2vw, 1.2rem);
+  color: #20303f;
+}
+.corkboard::before, .corkboard::after {
+  content: '';
+  position: absolute;
+  width: clamp(1.75rem, 6vw, 3.5rem);
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+.corkboard::before { top: .45rem; left: .45rem; background: url('/art/from-your-kids/sample-rainbow.webp') center / contain no-repeat; }
+.corkboard::after { bottom: .4rem; right: .45rem; background: url('/art/from-your-kids/sample-star.webp') center / contain no-repeat; }
+.corkboard h2 { font-size: clamp(1.15rem, 3vw, 1.9rem); }
+.empty { justify-self: center; text-align: center; }
+.corkboard .empty { padding: .65rem 1rem; border-radius: .5rem; background: #f7f5ed; }
+.sharing-note { color: var(--color-text-secondary); text-align: center; }
+.preview-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; column-gap: 1rem; font-size: .85rem; }
+.preview-toggle { display: flex; align-items: center; gap: .5rem; min-height: var(--target-min); }
+
+@media (max-width: 48rem) {
+  .sections button { display: grid; justify-items: center; align-content: center; gap: .3rem; min-height: 5rem; text-align: center; }
+  .sections img { width: clamp(2.35rem, 10vw, 3.5rem); }
+  .section-copy small { display: none; }
+  .corkboard::before, .corkboard::after { display: none; }
+}
