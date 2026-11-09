@@ -17,7 +17,7 @@
   </button>
 </mat-menu>
 
-<div class="shell" [class.shell--full-screen]="fullScreen()">
+<div class="shell" [class.shell--full-screen]="fullScreen()" [class.shell--chat-open]="chat.dock() === 'open'">
   <aside class="sidebar">
     <a class="brand" routerLink="/" aria-label="{{ 'feature.parenthesis.home' | tr }}">
       <app-logo [decorative]="true" />

@@ -62,8 +62,8 @@ import { ChatConversation } from './chat-conversation';
       z-index: 15;
     }
     .dock {
-      width: min(24rem, calc(100vw - 2 * var(--space-6)));
-      height: min(36rem, calc(100dvh - 6rem));
+      width: min(var(--chat-dock-open-width), calc(100vw - 2 * var(--space-6)));
+      height: var(--chat-dock-open-height);
       border: 1px solid var(--color-outline);
       border-bottom: 0;
       border-radius: var(--radius-card) var(--radius-card) 0 0;

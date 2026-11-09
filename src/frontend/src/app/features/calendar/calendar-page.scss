@@ -247,3 +247,40 @@
     display: flex;
   }
 }
+
+@media (min-width: 1024px) {
+  // Give the final schedule row room to scroll above the expanded Messages dock.
+  app-calendar-week,
+  app-calendar-month,
+  app-calendar-list {
+    display: block;
+    padding-block-end: var(--chat-dock-clearance, 0px);
+  }
+
+  .key {
+    display: flex;
+    position: sticky;
+    inset-block-end: var(--space-4);
+    // Over the calendar bars and slot highlights, below the chat dock and detail dialogs.
+    z-index: 4;
+    inline-size: min(60%, calc(100% - var(--chat-dock-open-width) - var(--space-4)));
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-outline);
+    border-radius: var(--radius-control);
+    font-size: 1rem;
+  }
+
+  .key li {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .swatch {
+    flex: none;
+    width: 1.5rem;
+    height: 1.125rem;
+  }
+}
