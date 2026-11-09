@@ -261,7 +261,7 @@ export const STORED_ITEMS: readonly StoredItem[] = [
               </p>
               <p class="muted">{{ item.kind }}</p>
               <p>{{ item.purpose }}</p>
-              <p class="muted">Lasts: {{ item.lasts }}</p>
+              <p class="muted">{{ 'feature.lasts' | tr }} {{ item.lasts }}</p>
             </li>
           }
         </ul>

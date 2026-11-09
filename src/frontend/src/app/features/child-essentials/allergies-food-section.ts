@@ -32,7 +32,7 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
           </select>
         </label>
         <button type="button" [disabled]="exporting()" (click)="downloadPdf(exportChild.value)">
-          {{ exporting() ? 'Preparing PDF…' : 'Download PDF' }}
+          {{ exporting() ? ('feature.preparing.pdf' | tr) : ('feature.download.pdf' | tr) }}
         </button>
         <p role="status">{{ exportNotice() }}</p>
       </div>
@@ -60,7 +60,7 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
               <label>{{ 'feature.dietary.restrictions.and.food.preferences.optional' | tr }} <textarea formControlName="foodPreferences" maxlength="1000"></textarea></label>
               <div class="actions">
                 <button type="submit" [disabled]="form.invalid">
-                  {{ saving() ? 'Saving…' : conflict() ? 'Save my draft' : 'Save' }}
+                  {{ saving() ? ('feature.saving' | tr) : conflict() ? ('feature.save.my.draft' | tr) : ('feature.save' | tr) }}
                 </button>
                 <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>
@@ -69,7 +69,7 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
         } @else {
           <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           @if (saved.recordedAt; as recordedAt) {
-            <p>Recorded by {{ saved.recordedBy }} · <time [attr.datetime]="recordedAt">{{ recordedAt | appDate: 'medium' }}</time></p>
+            <p>{{ 'feature.recorded.by' | tr }} {{ saved.recordedBy }} · <time [attr.datetime]="recordedAt">{{ recordedAt | appDate: 'medium' }}</time></p>
           }
           <div class="actions">
             <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ 'feature.allergies.food' | tr }}</span></button>

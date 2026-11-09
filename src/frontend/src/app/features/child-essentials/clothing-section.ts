@@ -39,7 +39,7 @@ import { ClothingHistoryPage, ClothingView } from '../../core/api/api';
               <label>{{ 'feature.fit.notes.optional' | tr }} <textarea formControlName="fitNotes" maxlength="1000"></textarea></label>
               <div class="actions">
                 <button type="submit" [disabled]="form.invalid">
-                  {{ saving() ? 'Saving…' : conflict() ? 'Save my draft' : 'Save' }}
+                  {{ saving() ? ('feature.saving' | tr) : conflict() ? ('feature.save.my.draft' | tr) : ('feature.save' | tr) }}
                 </button>
                 <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>

@@ -44,11 +44,11 @@ const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
 
       <div class="shares">
         <label>
-          Your share ({{ currency() }})
+          {{ 'feature.your.share' | tr }}{{ currency() }})
           <input name="yourShare" type="text" inputmode="decimal" required [(ngModel)]="yourShare" />
         </label>
         <label>
-          Co-parent share ({{ currency() }})
+          {{ 'feature.co.parent.share' | tr }}{{ currency() }})
           <input name="coParentShare" type="text" inputmode="decimal" required [(ngModel)]="coParentShare" />
         </label>
       </div>

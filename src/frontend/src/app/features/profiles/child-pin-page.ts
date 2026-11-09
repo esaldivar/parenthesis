@@ -27,7 +27,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
   template: `
     <div class="who">
       <app-avatar [name]="name()" [size]="72" [src]="tile()?.photoUrl" />
-      <h1>Hi, {{ name() }}</h1>
+      <h1>{{ 'feature.hi' | tr }} {{ name() }}</h1>
     </div>
 
     @if (state() === 'locked') {
@@ -42,7 +42,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
       <div class="status" role="status">
         <p class="status__title">{{ 'feature.let.s.take.a.short.break' | tr }}</p>
         <p>
-          That was a few wrong tries. Ask a parent for help, or try again after
+          {{ 'feature.that.was.a.few.wrong.tries.ask' | tr }}
           {{ retryAt() | appDate: 'shortTime' }}.
         </p>
         <div class="actions">
@@ -77,7 +77,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
         </mat-form-field>
 
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Checking…' : 'Go' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.checking' | tr) : 'Go' }}</button>
         </div>
       </form>
     }

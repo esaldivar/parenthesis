@@ -42,8 +42,7 @@ import {
       <span class="memories-header__art" aria-hidden="true"></span>
     </header>
     <p class="intro">
-      Photos from your events. Each photo is deleted {{ retentionDays }} days after it’s added, so
-      download the ones you want to keep.
+      {{ 'feature.photos.from.your.events.each.photo.is' | tr }} {{ retentionDays }} {{ 'feature.days.after.it.s.added.so.download' | tr }}
     </p>
 
     @switch (state()) {

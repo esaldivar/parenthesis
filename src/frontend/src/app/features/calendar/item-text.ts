@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
@@ -65,13 +66,13 @@ export function itemSummary(item: CalendarItem): string {
 @Component({
   selector: 'app-item-text',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Icon],
+  imports: [TranslatePipe, Avatar, Icon],
   template: `
     <span class="visually-hidden">{{ summary() }}</span>
     <span class="row" aria-hidden="true">
       <app-icon class="icon" [name]="item().icon" [size]="18" />
       <span class="title" [class.title--declined]="item().status === 'declined'">{{
-        item().concealed ? 'Hidden: unavailable' : item().title
+        item().concealed ? ('feature.hidden.unavailable' | tr) : item().title
       }}</span>
     </span>
     @if (!compact()) {

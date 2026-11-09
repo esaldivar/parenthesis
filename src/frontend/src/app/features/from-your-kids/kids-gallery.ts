@@ -15,7 +15,7 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
     <div class="gallery-items" [class.artwork]="kind() === 'Artwork'" [class.photos]="kind() === 'Photo'">
       @for (item of ordered(); track item.id) {
         <button type="button" class="memory" (click)="open(item.id, thumbnail)" #thumbnail
-          [attr.aria-label]="'View ' + item.altText + ', ' + item.retention">
+          [attr.aria-label]="('feature.view' | tr) + item.altText + ', ' + item.retention">
           <span class="pin" aria-hidden="true"></span>
           <img [src]="item.thumbnailUrl" [alt]="item.altText" loading="lazy" />
           <span class="retention">{{ item.retention }}</span>
@@ -27,7 +27,7 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
       <section class="detail" role="dialog" aria-modal="true" aria-labelledby="memory-title"
         cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown.escape)="close()">
         <header>
-          <h3 id="memory-title">{{ item.kind === 'Artwork' ? 'Artwork' : 'Photo' }} from your child</h3>
+          <h3 id="memory-title">{{ item.kind === 'Artwork' ? ('feature.artwork' | tr) : ('feature.photo' | tr) }} {{ 'feature.from.your.child' | tr }}</h3>
           <button type="button" (click)="close()" cdkFocusInitial aria-label="{{ 'feature.close.preview' | tr }}">✕</button>
         </header>
         <img class="full" [src]="item.imageUrl" [alt]="item.altText" />
@@ -36,11 +36,11 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
         <div class="actions">
           <button type="button" [attr.aria-pressed]="item.heartedByViewer"
             (click)="heart.emit({ id: item.id, value: !item.heartedByViewer })">
-            {{ item.heartedByViewer ? '♥ Hearted' : '♡ Heart' }}
+            {{ item.heartedByViewer ? ('feature.hearted' | tr) : ('feature.heart' | tr) }}
           </button>
           <button type="button" [attr.aria-pressed]="item.bookmarked"
             (click)="bookmark.emit({ id: item.id, value: !item.bookmarked })">
-            {{ item.bookmarked ? 'Saved' : 'Save' }}
+            {{ item.bookmarked ? ('feature.saved' | tr) : ('feature.save' | tr) }}
           </button>
           @if (item.downloadUrl) {
             <a [href]="item.downloadUrl" download rel="noopener noreferrer">{{ 'feature.download' | tr }}</a>

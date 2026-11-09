@@ -73,16 +73,16 @@ export function photoErrorMessage(error: unknown): string {
     <div class="actions" role="group" [attr.aria-labelledby]="headingId">
       @if (preview()) {
         <button mat-flat-button type="button" [disabled]="busy()" (click)="save()">
-          {{ busy() ? 'Saving…' : error() ? 'Try again' : 'Save photo' }}
+          {{ busy() ? ('feature.saving' | tr) : error() ? ('feature.try.again' | tr) : ('feature.save.photo' | tr) }}
         </button>
         <button mat-button type="button" [disabled]="busy()" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
       } @else {
         <button mat-stroked-button type="button" [disabled]="busy()" (click)="choose()">
-          {{ current() ? 'Change photo' : 'Choose a photo' }}<span class="visually-hidden"> {{ forWhom() }}</span>
+          {{ current() ? ('feature.change.photo' | tr) : ('feature.choose.a.photo' | tr) }}<span class="visually-hidden"> {{ forWhom() }}</span>
         </button>
         @if (current()) {
           <button mat-button type="button" [disabled]="busy()" (click)="remove()">
-            {{ busy() ? 'Removing…' : 'Remove photo' }}<span class="visually-hidden"> {{ forWhom() }}</span>
+            {{ busy() ? ('feature.removing' | tr) : ('feature.remove.photo' | tr) }}<span class="visually-hidden"> {{ forWhom() }}</span>
           </button>
         }
       }
@@ -91,7 +91,7 @@ export function photoErrorMessage(error: unknown): string {
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
     }
-    <app-loading-indicator [idleMessage]="announcement()" [active]="busy()" [label]="preview() ? 'Uploading photo…' : 'Removing photo…'" />
+    <app-loading-indicator [idleMessage]="announcement()" [active]="busy()" [label]="preview() ? ('feature.uploading.photo' | tr) : ('feature.removing.photo' | tr)" />
   `,
   styles: `
     :host {

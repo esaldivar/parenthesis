@@ -1,5 +1,5 @@
 <form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="reminder-heading">
-  <h2 id="reminder-heading" class="step">{{ editing() ? 'Reminder' : 'Reminder details' }}</h2>
+  <h2 id="reminder-heading" class="step">{{ editing() ? ('feature.reminder' | tr) : ('feature.reminder.details' | tr) }}</h2>
   <p class="note">
     @if (editing() && reminder()!.repeat !== 'None') {
       {{ 'feature.changes.apply.to.every.repeat.it.s' | tr }}
@@ -121,7 +121,7 @@
   <app-loading-indicator [active]="busy()" label="{{ 'feature.saving' | tr }}" />
   <div class="actions">
     <button mat-flat-button type="submit" [disabled]="busy()">
-      {{ busy() ? 'Saving…' : editing() ? 'Save changes' : 'Add to calendar' }}
+      {{ busy() ? ('feature.saving' | tr) : editing() ? ('feature.save.changes' | tr) : ('feature.add.to.calendar' | tr) }}
     </button>
     <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">{{ 'feature.cancel' | tr }}</a>
   </div>

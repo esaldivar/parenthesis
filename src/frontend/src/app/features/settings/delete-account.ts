@@ -36,7 +36,7 @@ import { FORM_STYLES } from '../auth/form-styles';
                 {{ 'feature.leaves' | tr }} <strong>{{ family.name }}</strong> {{ 'feature.with' | tr }} <strong>{{ coParent }}</strong>{{ 'feature.the.family.your.children.and.your.shared' | tr }}
               </li>
               <li>{{ 'feature.withdraws.requests.you.re.waiting.on.and' | tr }}</li>
-              <li>Sends {{ coParent }} an email that a parent has left. It doesn't include your name.</li>
+              <li>{{ 'feature.sends' | tr }} {{ coParent }} {{ 'feature.an.email.that.a.parent.has.left' | tr }}</li>
             } @else {
               <li>
                 {{ 'feature.deletes' | tr }} <strong>{{ family.name }}</strong> {{ 'feature.too.because.you.re.its.only.parent' | tr }}
@@ -61,7 +61,7 @@ import { FORM_STYLES } from '../auth/form-styles';
           </mat-form-field>
           <div class="actions">
             <button mat-flat-button class="danger-fill" type="submit" [disabled]="busy()">
-              {{ busy() ? 'Deleting…' : 'Delete my account' }}
+              {{ busy() ? ('feature.deleting' | tr) : ('feature.delete.my.account' | tr) }}
             </button>
             <button mat-button type="button" [disabled]="busy()" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
           </div>

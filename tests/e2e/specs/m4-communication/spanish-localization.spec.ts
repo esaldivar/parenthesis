@@ -29,7 +29,7 @@ for (const theme of ['light', 'dark'] as const) {
       ['/memories', 'Recuerdos familiares'],
       ['/shared-records', 'Registros compartidos'],
       ['/notifications', 'Notificaciones'],
-    ]) {
+    ] as const) {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
       await expect(page.locator('html')).toHaveAttribute('lang', 'es-419');

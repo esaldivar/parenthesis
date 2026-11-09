@@ -3,7 +3,7 @@
   <div class="grid__corner" aria-hidden="true"></div>
   @for (day of days(); track day.date) {
     <div class="grid__head" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
-      <span class="visually-hidden">{{ day.longLabel }}{{ day.isToday ? ', today' : '' }}</span>
+      <span class="visually-hidden">{{ day.longLabel }}{{ day.isToday ? ('feature.today.4b1201' | tr) : '' }}</span>
       <span aria-hidden="true" class="grid__weekday">{{ day.weekday }}</span>
       <span aria-hidden="true" class="grid__date">{{ day.monthDay }}</span>
     </div>
@@ -46,11 +46,11 @@
       }
     </div>
     @for (day of timed(); track day.date) {
-      <ul class="daycol" [attr.aria-label]="'Timed events on ' + day.label" [style.--lanes]="day.lanes">
+      <ul class="daycol" [attr.aria-label]="('feature.timed.events.on' | tr) + day.label" [style.--lanes]="day.lanes">
         <!-- Behind the events: a tap adds at that half-hour; from the keyboard it adds on that day (#212). -->
         <li class="slot-add">
           <button type="button" class="slot-add__button" (click)="addInColumn($event, day.date)">
-            <span class="slot-add__label">Add on {{ day.label }}</span>
+            <span class="slot-add__label">{{ 'feature.add.on' | tr }} {{ day.label }}</span>
           </button>
         </li>
         @if (pick.at(); as at) {

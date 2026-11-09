@@ -59,7 +59,7 @@ const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;
       </mat-form-field>
 
       <div class="actions">
-        <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Setting up…' : 'Set up this tablet' }}</button>
+        <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.setting.up' | tr) : ('feature.set.up.this.tablet' | tr) }}</button>
       </div>
     </form>
 

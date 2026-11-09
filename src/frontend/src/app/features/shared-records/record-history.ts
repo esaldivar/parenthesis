@@ -14,7 +14,7 @@ export type EntryResponse = 'acknowledge' | 'dispute';
  */
 @Component({
   selector: 'app-record-progress',
-  imports: [AppCurrencyPipe],
+  imports: [TranslatePipe, AppCurrencyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="progress">
@@ -28,17 +28,17 @@ export type EntryResponse = 'acknowledge' | 'dispute';
         <p class="eyebrow">{{ doneLabel() }}</p>
         <p class="amount">{{ totals().acknowledgedMinor / 100 | appCurrency: currency() : 'symbol' }}</p>
         @if (target(); as goal) {
-          <p>of {{ goal / 100 | appCurrency: currency() : 'symbol' }} {{ targetLabel() }}</p>
+          <p>{{ 'feature.of' | tr }} {{ goal / 100 | appCurrency: currency() : 'symbol' }} {{ targetLabel() }}</p>
         }
         @if (totals().pendingMinor) {
           <p class="pill pending">{{ totals().pendingMinor / 100 | appCurrency: currency() : 'symbol' }} {{ pendingLabel() }}</p>
         }
         @if (totals().disputedMinor) {
-          <p class="muted">{{ totals().disputedMinor / 100 | appCurrency: currency() : 'symbol' }} flagged as a mismatch, not counted</p>
+          <p class="muted">{{ totals().disputedMinor / 100 | appCurrency: currency() : 'symbol' }} {{ 'feature.flagged.as.a.mismatch.not.counted' | tr }}</p>
         }
         @if (target(); as goal) {
           @if (goal > totals().acknowledgedMinor) {
-            <p class="muted">{{ (goal - totals().acknowledgedMinor) / 100 | appCurrency: currency() : 'symbol' }} to reach {{ shortTarget() }}</p>
+            <p class="muted">{{ (goal - totals().acknowledgedMinor) / 100 | appCurrency: currency() : 'symbol' }} {{ 'feature.to.reach' | tr }} {{ shortTarget() }}</p>
           } @else {
             <p class="reached">{{ reachedLabel() }}</p>
           }
@@ -118,18 +118,18 @@ export class RecordProgress {
         @for (entry of entries(); track entry.id) {
           <li>
             <div class="row">
-              <strong>{{ entry.yours ? 'You' : 'Co-parent' }}</strong>
+              <strong>{{ entry.yours ? ('feature.you.08b041' | tr) : ('feature.co.parent' | tr) }}</strong>
               <strong>{{ entry.amountMinor / 100 | appCurrency: currency() : 'symbol' }}</strong>
             </div>
             <p class="meta">
-              Paid {{ entry.paidOn | appDate: 'MMM d' : 'UTC' }}@if (kind() === 'fund') { {{ entry.paidTo === 'Vendor' ? ' to a vendor' : ' to co-parent' }}}
-              · Submitted {{ entry.submittedAt | appDate: 'MMM d, h:mm a' }}
+              {{ 'feature.paid' | tr }} {{ entry.paidOn | appDate: 'MMM d' : 'UTC' }}@if (kind() === 'fund') { {{ entry.paidTo === 'Vendor' ? ('feature.to.a.vendor' | tr) : ('feature.to.co.parent' | tr) }}}
+              {{ 'feature.submitted' | tr }} {{ entry.submittedAt | appDate: 'MMM d, h:mm a' }}
               @if (entry.respondedAt) { · {{ responded(entry) }} {{ entry.respondedAt | appDate: 'MMM d, h:mm a' }} }
             </p>
             <div class="row">
               <a class="file" [href]="attachmentUrl()(entry.id)" download>
                 <app-icon name="note" [size]="18" />
-                Payment attachment · {{ entry.attachmentType === 'application/pdf' ? 'PDF' : 'Image' }}
+                {{ 'feature.payment.attachment' | tr }} {{ entry.attachmentType === 'application/pdf' ? 'PDF' : ('feature.image' | tr) }}
                 <span class="visually-hidden">{{ 'feature.download.884677' | tr }}</span>
               </a>
               <span class="status" [class]="entry.status.toLowerCase()">{{ status(entry) }}</span>
@@ -137,12 +137,12 @@ export class RecordProgress {
             @if (entry.canRespond) {
               <div class="actions">
                 <button type="button" class="primary" [disabled]="busy()" (click)="respond.emit({ entry, response: 'acknowledge' })">
-                  {{ entry.paidTo === 'Vendor' ? 'Acknowledge contribution' : 'Confirm receipt' }}
-                  <span class="visually-hidden">of {{ entry.amountMinor / 100 | appCurrency: currency() : 'symbol' }}</span>
+                  {{ entry.paidTo === 'Vendor' ? ('feature.acknowledge.contribution' | tr) : ('feature.confirm.receipt' | tr) }}
+                  <span class="visually-hidden">{{ 'feature.of' | tr }} {{ entry.amountMinor / 100 | appCurrency: currency() : 'symbol' }}</span>
                 </button>
                 <button type="button" [disabled]="busy()" (click)="respond.emit({ entry, response: 'dispute' })">
                   {{ 'feature.flag.a.mismatch' | tr }}
-                  <span class="visually-hidden">for {{ entry.amountMinor / 100 | appCurrency: currency() : 'symbol' }}</span>
+                  <span class="visually-hidden">{{ 'feature.for' | tr }} {{ entry.amountMinor / 100 | appCurrency: currency() : 'symbol' }}</span>
                 </button>
               </div>
             }
@@ -150,7 +150,7 @@ export class RecordProgress {
         }
       </ul>
     } @else {
-      <p class="empty">{{ kind() === 'fund' ? 'No contributions reported yet.' : 'No payments reported yet.' }}</p>
+      <p class="empty">{{ kind() === 'fund' ? ('feature.no.contributions.reported.yet' | tr) : ('feature.no.payments.reported.yet' | tr) }}</p>
     }
   `,
   styles: `

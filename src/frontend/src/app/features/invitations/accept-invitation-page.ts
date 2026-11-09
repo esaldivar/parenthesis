@@ -44,7 +44,7 @@ const RETURN_URL = '/invitations/accept';
         @case ('joined') {
           <div class="state">
             <span class="state__icon"><app-icon name="approvals" [size]="28" /></span>
-            <h1>You've joined {{ familyName() }}</h1>
+            <h1>{{ 'feature.you.ve.joined' | tr }} {{ familyName() }}</h1>
             <p class="lead">{{ 'feature.you.and.your.co.parent.now.share' | tr }}</p>
           </div>
           <div class="actions">
@@ -61,7 +61,7 @@ const RETURN_URL = '/invitations/accept';
           </div>
           <div class="actions">
             <a mat-flat-button [routerLink]="auth.status() === 'signed-in' ? '/' : '/sign-in'">
-              {{ auth.status() === 'signed-in' ? 'Go to Parenthesis' : 'Return to sign in' }}
+              {{ auth.status() === 'signed-in' ? ('feature.go.to.parenthesis' | tr) : ('feature.return.to.sign.in' | tr) }}
             </a>
           </div>
         }
@@ -89,7 +89,7 @@ const RETURN_URL = '/invitations/accept';
           </ul>
           <div class="actions">
             <button mat-flat-button type="button" [disabled]="busy()" (click)="accept(true)">
-              {{ busy() ? 'Joining…' : 'Join as a separate family' }}
+              {{ busy() ? ('feature.joining' | tr) : ('feature.join.as.a.separate.family' | tr) }}
             </button>
             <button mat-button type="button" (click)="notNow()">{{ 'feature.not.now' | tr }}</button>
           </div>

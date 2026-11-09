@@ -123,7 +123,7 @@ type Step = 'choose' | 'preview';
       >
         <div class="dialog-head">
           <h2 [id]="id + '-dialog-title'" tabindex="-1" #dialogTitle>
-            {{ current === 'choose' ? 'Save transcript' : 'Transcript preview' }}
+            {{ current === 'choose' ? ('feature.save.transcript' | tr) : ('feature.transcript.preview' | tr) }}
           </h2>
           <button class="icon-button" type="button" aria-label="{{ 'feature.close' | tr }}" (click)="close()">
             <app-icon name="close" [size]="22" />
@@ -197,12 +197,12 @@ type Step = 'choose' | 'preview';
             </div>
           </form>
         } @else if (document(); as doc) {
-          <article class="paper" [attr.aria-label]="'Preview of ' + doc.fileName" tabindex="0">
+          <article class="paper" [attr.aria-label]="('feature.preview.of' | tr) + doc.fileName" tabindex="0">
             <h3>{{ doc.title }}</h3>
             <p class="paper-range">{{ doc.rangeLabel }}</p>
             <p class="paper-meta">{{ doc.preparedLabel }}</p>
             <p class="paper-meta">
-              {{ doc.messageCount === 1 ? '1 message' : doc.messageCount + ' messages' }}
+              {{ doc.messageCount === 1 ? ('feature.1.message' | tr) : doc.messageCount + ('feature.messages.6e2fd2' | tr) }}
             </p>
             @for (day of doc.days; track day.date) {
               <h4>{{ day.label }}</h4>

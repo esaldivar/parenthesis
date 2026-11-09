@@ -47,7 +47,7 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
               <label>{{ 'feature.parent.concerns.optional' | tr }} <textarea formControlName="parentConcerns" maxlength="1000"></textarea></label>
               <div class="actions">
                 <button type="submit" [disabled]="form.invalid">
-                  {{ saving() ? 'Saving…' : conflict() ? 'Save my draft' : 'Save' }}
+                  {{ saving() ? ('feature.saving' | tr) : conflict() ? ('feature.save.my.draft' | tr) : ('feature.save' | tr) }}
                 </button>
                 <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>

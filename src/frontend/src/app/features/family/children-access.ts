@@ -60,7 +60,7 @@ interface Panel {
               @if (child.status === 'Active') {
                 <div class="child__actions">
                   <button mat-stroked-button type="button" (click)="open(child, 'pin')">
-                    {{ child.signIn.enabled ? 'Reset PIN' : 'Set a PIN' }}
+                    {{ child.signIn.enabled ? ('feature.reset.pin' | tr) : ('feature.set.a.pin' | tr) }}
                   </button>
                   @if (child.signIn.enabled) {
                     <button mat-stroked-button type="button" (click)="open(child, 'pair')">{{ 'feature.pair.a.tablet' | tr }}</button>
@@ -74,11 +74,11 @@ interface Panel {
                       @if (child.signIn.enabled) {
                         {{ 'feature.the.new.pin.works.straight.away.and' | tr }}
                       } @else {
-                        {{ child.firstName }} uses this PIN on your family’s devices.
+                        {{ child.firstName }} {{ 'feature.uses.this.pin.on.your.family.s' | tr }}
                       }
                     </p>
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>New PIN for {{ child.firstName }}</mat-label>
+                      <mat-label>{{ 'feature.new.pin.for' | tr }} {{ child.firstName }}</mat-label>
                       <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="pin" required />
                       <mat-hint>{{ 'feature.4.to.6.numbers' | tr }}</mat-hint>
                       @if (pinForm.controls.pin.hasError('required')) {
@@ -100,7 +100,7 @@ interface Panel {
                     </mat-form-field>
                     <div class="panel__actions">
                       <button mat-flat-button type="submit" [disabled]="busy()">
-                        {{ child.signIn.enabled ? 'Reset PIN now' : 'Save PIN' }}
+                        {{ child.signIn.enabled ? ('feature.reset.pin.now' | tr) : ('feature.save.pin' | tr) }}
                       </button>
                       <button mat-button type="button" (click)="close()">{{ 'feature.cancel' | tr }}</button>
                     </div>
@@ -110,8 +110,8 @@ interface Panel {
                 @if (isOpen(child, 'disable')) {
                   <div class="panel">
                     <p>
-                      {{ child.firstName }} won’t be able to sign in until a parent sets a new PIN, and anyone signed in as
-                      {{ child.firstName }} is signed out now. This doesn’t need your co-parent’s approval.
+                      {{ child.firstName }} {{ 'feature.won.t.be.able.to.sign.in' | tr }}
+                      {{ child.firstName }} {{ 'feature.is.signed.out.now.this.doesn.t' | tr }}
                     </p>
                     <div class="panel__actions">
                       <button mat-flat-button type="button" [disabled]="busy()" (click)="disable(child)">{{ 'feature.turn.off.sign.in' | tr }}</button>
@@ -124,20 +124,20 @@ interface Panel {
                   <div class="panel">
                     @if (pairing(); as pairing) {
                       @if (minutesLeft() > 0) {
-                        <p>On {{ child.firstName }}’s tablet, go to <strong>{{ pairUrl }}</strong> {{ 'feature.and.enter.this.code' | tr }}</p>
+                        <p>{{ 'feature.on.130011' | tr }} {{ child.firstName }}{{ 'feature.s.tablet.go.to' | tr }} <strong>{{ pairUrl }}</strong> {{ 'feature.and.enter.this.code' | tr }}</p>
                         <p class="code" [attr.aria-label]="spelled(pairing.code)">{{ pairing.code }}</p>
                         <p class="muted" aria-live="polite">
-                          Works once, for {{ minutesLeft() === 1 ? 'about 1 more minute' : 'about ' + minutesLeft() + ' more minutes' }}.
+                          {{ 'feature.works.once.for' | tr }} {{ minutesLeft() === 1 ? ('feature.about.1.more.minute' | tr) : ('feature.about.eae942' | tr) + minutesLeft() + ('feature.more.minutes' | tr) }}.
                         </p>
                       } @else {
                         <p role="status">{{ 'feature.this.code.has.expired.get.a.new' | tr }}</p>
                       }
                     } @else {
-                      <p class="muted">You’ll get a code that works once, for 10 minutes. Only {{ child.firstName }} can use the tablet you pair.</p>
+                      <p class="muted">{{ 'feature.you.ll.get.a.code.that.works' | tr }} {{ child.firstName }} {{ 'feature.can.use.the.tablet.you.pair' | tr }}</p>
                     }
                     <div class="panel__actions">
                       <button mat-flat-button type="button" [disabled]="busy()" (click)="pair(child)">
-                        {{ pairing() ? 'Get a new code' : 'Get a code' }}
+                        {{ pairing() ? ('feature.get.a.new.code' | tr) : ('feature.get.a.code' | tr) }}
                       </button>
                       <button mat-button type="button" (click)="close()">{{ 'feature.done' | tr }}</button>
                     </div>

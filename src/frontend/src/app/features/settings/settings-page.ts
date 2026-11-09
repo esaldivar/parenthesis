@@ -62,7 +62,7 @@ import { MemorySettingsSection } from './memory-settings';
             <p role="alert">{{ error }}</p>
           } @else if (details(); as details) {
             @if (coParent(details); as coParent) {
-              <p>You share {{ details.name }} with <strong>{{ coParent }}</strong>{{ 'feature.you.both.have.the.same.say' | tr }}</p>
+              <p>{{ 'feature.you.share' | tr }} {{ details.name }} {{ 'feature.with' | tr }} <strong>{{ coParent }}</strong>{{ 'feature.you.both.have.the.same.say' | tr }}</p>
             } @else {
               <p class="muted">{{ 'settings.invite' | tr }}</p>
               <app-invite-co-parent [familyId]="current.id" [pending]="pending()" />

@@ -25,7 +25,7 @@ import { FORM_STYLES } from '../auth/form-styles';
       <div class="alert" role="alert">{{ error() }}</div>
       <div class="actions">
         <button mat-flat-button type="button" [disabled]="loading()" (click)="load()">
-          {{ loading() ? 'Trying again…' : 'Try again' }}
+          {{ loading() ? ('feature.trying.again' | tr) : ('feature.try.again' | tr) }}
         </button>
       </div>
       <div class="links">

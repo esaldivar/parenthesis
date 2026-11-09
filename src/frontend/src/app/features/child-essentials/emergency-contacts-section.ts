@@ -32,7 +32,7 @@ export const RELATIONSHIPS = [
               @if (marks.updated(contact.id ?? 'contact-' + index)) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</h4>
             <p>{{ contact.relationship }} · {{ contact.phone }}</p>
             <div class="actions">
-              <a class="call" [href]="phoneLink(contact.phone)" [attr.aria-label]="'Call ' + contact.name">{{ 'feature.call' | tr }}</a>
+              <a class="call" [href]="phoneLink(contact.phone)" [attr.aria-label]="('feature.call.14e218' | tr) + contact.name">{{ 'feature.call' | tr }}</a>
               @if (contact.address; as address) {
                 <a [href]="mapLink(address)" target="_blank" rel="noopener noreferrer">{{ 'feature.open.in.maps' | tr }}</a>
               }
@@ -40,12 +40,12 @@ export const RELATIONSHIPS = [
               <button type="button" [disabled]="busy() || editing() !== null" (click)="confirmRemove.set(index)">{{ 'feature.remove' | tr }}</button>
             </div>
             @if (confirmRemove() === index) {
-              <p>Remove {{ contact.name }} from this child’s emergency contacts?</p>
+              <p>{{ 'feature.remove' | tr }} {{ contact.name }} {{ 'feature.from.this.child.s.emergency.contacts' | tr }}</p>
               <button type="button" [disabled]="busy()" (click)="remove(index)">{{ 'feature.confirm.removal' | tr }}</button>
               <button type="button" [disabled]="busy()" (click)="confirmRemove.set(null)">{{ 'feature.cancel.removal' | tr }}</button>
             }
             @if (otherChildren().length) {
-              <label>Copy {{ contact.name }} to
+              <label>{{ 'feature.copy' | tr }} {{ contact.name }} {{ 'feature.to' | tr }}
                 <select #target [disabled]="busy()">
                   @for (child of otherChildren(); track child.id) {
                     <option [value]="child.id">{{ child.firstName }}</option>
@@ -61,7 +61,7 @@ export const RELATIONSHIPS = [
         } @else {
           <form [formGroup]="form" (ngSubmit)="save()">
             <fieldset [disabled]="busy()">
-              <legend>{{ editing() === -1 ? 'Add emergency contact' : 'Edit emergency contact' }}</legend>
+              <legend>{{ editing() === -1 ? ('feature.add.emergency.contact' | tr) : ('feature.edit.emergency.contact' | tr) }}</legend>
               <label>{{ 'feature.name' | tr }} <input formControlName="name" maxlength="100" required /></label>
               <label>{{ 'feature.relationship' | tr }}
                 <select formControlName="relationshipKind" required>

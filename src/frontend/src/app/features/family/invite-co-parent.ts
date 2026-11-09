@@ -32,7 +32,7 @@ import { FORM_STYLES } from '../auth/form-styles';
         <span class="sent__icon"><app-icon name="send" [size]="28" /></span>
         <p class="sent__title">{{ 'feature.invitation.sent' | tr }}</p>
         <p class="sent__body">
-          {{ 'feature.we.sent.an.invitation.to' | tr }} <strong>{{ sent.email }}</strong>. It works once and expires on
+          {{ 'feature.we.sent.an.invitation.to' | tr }} <strong>{{ sent.email }}</strong>{{ 'feature.it.works.once.and.expires.on' | tr }}
           {{ expires(sent.expiresAt) }}.
         </p>
       </div>
@@ -51,7 +51,7 @@ import { FORM_STYLES } from '../auth/form-styles';
           }
         </mat-form-field>
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Sending…' : 'Send invitation' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.sending' | tr) : ('feature.send.invitation' | tr) }}</button>
         </div>
       </form>
     }

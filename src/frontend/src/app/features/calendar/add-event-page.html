@@ -59,7 +59,7 @@
 
       @if (current !== 'unavailable') {
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Title{{ current === 'parenting' ? ' (optional)' : '' }}</mat-label>
+          <mat-label>{{ 'feature.title' | tr }}{{ current === 'parenting' ? ('feature.optional.edbfc3' | tr) : '' }}</mat-label>
           <input matInput formControlName="title" maxlength="120" [required]="current !== 'parenting'" />
           @if (current === 'parenting') {
             <mat-hint>{{ 'feature.leave.blank.for.time.with' | tr }}</mat-hint>
@@ -163,9 +163,9 @@
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
                   <mat-label>{{ 'feature.unit' | tr }}</mat-label>
                   <select matNativeControl formControlName="unit" (change)="chooseUnit()">
-                    <option value="Daily">{{ value().every === 1 ? 'day' : 'days' }}</option>
-                    <option value="Weekly">{{ value().every === 1 ? 'week' : 'weeks' }}</option>
-                    <option value="Monthly">{{ value().every === 1 ? 'month' : 'months' }}</option>
+                    <option value="Daily">{{ value().every === 1 ? ('feature.day' | tr) : ('feature.days' | tr) }}</option>
+                    <option value="Weekly">{{ value().every === 1 ? ('feature.week.6df37d' | tr) : ('feature.weeks' | tr) }}</option>
+                    <option value="Monthly">{{ value().every === 1 ? ('feature.month.a5c7d1' | tr) : ('feature.months' | tr) }}</option>
                   </select>
                 </mat-form-field>
               </div>
@@ -230,17 +230,17 @@
             }
             @if (preview().total > 0) {
               <p class="preview" aria-live="polite">
-                <span class="preview__count">{{ preview().total }} {{ preview().total === 1 ? 'date' : 'dates' }}:</span>
+                <span class="preview__count">{{ preview().total }} {{ preview().total === 1 ? ('feature.date.0e8763' | tr) : ('feature.dates.f18e48' | tr) }}:</span>
                 {{ preview().shown.join(' · ') }}
                 @if (preview().more > 0) {
-                  <span> · +{{ preview().more }} more</span>
+                  <span> · +{{ preview().more }} {{ 'feature.more' | tr }}</span>
                 }
               </p>
             }
             <p class="legend-hint">
               {{ 'feature.each.date.is.one.day.so.the' | tr }}
               @if (current === 'parenting') {
-                {{ coParent() ?? 'Your co-parent' }} approves or declines every date at once.
+                {{ coParent() ?? 'Your co-parent' }} {{ 'feature.approves.or.declines.every.date.at.once' | tr }}
               }
             </p>
           }
@@ -281,8 +281,7 @@
           <legend>{{ 'feature.children' | tr }}</legend>
           <p class="note">
             @if (pendingChildren()) {
-              Your children are waiting for {{ coParent() ?? 'your co-parent' }}’s approval. Parenting time can include them
-              once they’re approved.
+              {{ 'feature.your.children.are.waiting.for' | tr }} {{ coParent() ?? 'your co-parent' }}{{ 'feature.s.approval.parenting.time.can.include.them' | tr }}
             } @else {
               {{ 'feature.parenting.time.is.for.your.children.add' | tr }} <a routerLink="/settings">{{ 'feature.settings' | tr }}</a>.
             }
@@ -298,7 +297,7 @@
       }
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>{{ current === 'unavailable' ? 'Private note (optional)' : 'Notes (optional)' }}</mat-label>
+        <mat-label>{{ current === 'unavailable' ? ('feature.private.note.optional' | tr) : ('feature.notes.optional' | tr) }}</mat-label>
         <textarea matInput formControlName="notes" rows="3" maxlength="1000"></textarea>
         @if (current === 'unavailable') {
           <mat-hint>{{ 'feature.only.you.can.see.this.your.co' | tr }}</mat-hint>
@@ -310,7 +309,7 @@
 
       @if (availabilityWarning()) {
         <section class="alert" aria-labelledby="availability-heading">
-          <h2 id="availability-heading" tabindex="-1">{{ coParent() }} marked that time as unavailable</h2>
+          <h2 id="availability-heading" tabindex="-1">{{ coParent() }} {{ 'feature.marked.that.time.as.unavailable' | tr }}</h2>
           <p>{{ 'feature.they.may.still.approve.your.request.you' | tr }}</p>
           <div class="actions">
             <button mat-flat-button type="button" [disabled]="busy()" (click)="sendAnyway()">{{ 'feature.send.anyway' | tr }}</button>
@@ -318,12 +317,12 @@
           </div>
         </section>
       }
-      <app-loading-indicator [active]="busy()" [label]="checkingAvailability() ? 'Checking availability…' : 'Saving…'" />
+      <app-loading-indicator [active]="busy()" [label]="checkingAvailability() ? ('feature.checking.availability' | tr) : ('feature.saving' | tr)" />
       <div class="actions">
         @if (!availabilityWarning()) {
         <button mat-flat-button type="submit" [disabled]="busy()">
           @if (busy()) {
-            {{ checkingAvailability() ? 'Checking…' : 'Saving…' }}
+            {{ checkingAvailability() ? ('feature.checking' | tr) : ('feature.saving' | tr) }}
           } @else if (current === 'family' || (current === 'parenting' && coParent())) {
             {{ 'feature.send.for.approval' | tr }}
           } @else {

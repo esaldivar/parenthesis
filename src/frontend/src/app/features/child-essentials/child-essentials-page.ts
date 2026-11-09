@@ -50,7 +50,7 @@ const MEDICAL_TINT = {
           <svg class="banner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="banner.art" /></svg>
           <p>{{ banner.text }}</p>
-          <button type="button" class="dismiss" [attr.aria-label]="'Dismiss: ' + banner.text" (click)="dismiss(banner.key)">
+          <button type="button" class="dismiss" [attr.aria-label]="('feature.dismiss' | tr) + banner.text" (click)="dismiss(banner.key)">
             <app-icon name="close" [size]="20" />
           </button>
         </div>
@@ -87,11 +87,11 @@ const MEDICAL_TINT = {
           }
         </div>
         <section aria-labelledby="essentials-heading">
-          <h2 id="essentials-heading">{{ child.firstName }}’s essentials</h2>
+          <h2 id="essentials-heading">{{ child.firstName }}{{ 'feature.s.essentials' | tr }}</h2>
           @if (openSection() !== null) {
             <button type="button" class="back" (click)="closeSection()">
               <app-icon name="chevron-left" [size]="20" />
-              All of {{ child.firstName }}’s essentials
+              {{ 'feature.all.of' | tr }} {{ child.firstName }}{{ 'feature.s.essentials' | tr }}
             </button>
           }
           @if (familyId(); as family) {

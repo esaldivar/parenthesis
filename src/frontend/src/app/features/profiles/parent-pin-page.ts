@@ -26,15 +26,14 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
   template: `
     <div class="who">
       <app-avatar [name]="name()" kind="parent" [size]="72" [src]="tile()?.photoUrl" />
-      <h1>Hi, {{ name() }}</h1>
+      <h1>{{ 'feature.hi' | tr }} {{ name() }}</h1>
     </div>
 
     @if (state() === 'paused') {
       <div class="status" role="status">
         <p class="status__title">{{ 'feature.your.parent.pin.is.paused' | tr }}</p>
         <p>
-          Too many wrong tries. You can try again after {{ retryAt() | appDate: 'shortTime' }}, or sign in with your email
-          and password to reset your PIN.
+          {{ 'feature.too.many.wrong.tries.you.can.try' | tr }} {{ retryAt() | appDate: 'shortTime' }}{{ 'feature.or.sign.in.with.your.email.and' | tr }}
         </p>
         @if (notified() === true) {
           <p>{{ 'feature.we.ve.emailed.you.about.this' | tr }}</p>
@@ -85,7 +84,7 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
         </mat-form-field>
 
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Checking…' : 'Continue' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.checking' | tr) : ('feature.continue' | tr) }}</button>
         </div>
       </form>
     }
@@ -95,7 +94,7 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
         <p role="status">{{ message }}</p>
       }
       <button mat-stroked-button type="button" [disabled]="resetBusy()" (click)="requestReset()">
-        {{ resetBusy() ? 'Sending…' : 'Forgot your PIN? Email me a reset link' }}
+        {{ resetBusy() ? ('feature.sending' | tr) : ('feature.forgot.your.pin.email.me.a.reset' | tr) }}
       </button>
     </div>
 

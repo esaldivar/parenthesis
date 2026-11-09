@@ -28,7 +28,7 @@
     </button>
   </div>
 
-  <p class="status" [attr.data-done]="done() ? 'true' : null">{{ done() ? 'Done' : 'To do' }}</p>
+  <p class="status" [attr.data-done]="done() ? 'true' : null">{{ done() ? ('feature.done' | tr) : ('feature.to.do' | tr) }}</p>
 
   <p class="notice" role="status">{{ notice() }}</p>
 
@@ -45,12 +45,12 @@
     }
     <dt>{{ 'feature.added.by' | tr }}</dt>
     <dd>
-      {{ item().isMine ? 'You' : item().ownerName }}
+      {{ item().isMine ? ('feature.you.08b041' | tr) : item().ownerName }}
       @if (editedBy(); as editor) {
-        <span class="hint"> Edited by {{ editor }}</span>
+        <span class="hint"> {{ 'feature.edited.by' | tr }} {{ editor }}</span>
       }
       @if (seenBy(); as seen) {
-        <span class="hint"> Seen by {{ seen }}</span>
+        <span class="hint"> {{ 'feature.seen.by' | tr }} {{ seen }}</span>
       }
     </dd>
   </dl>
@@ -81,7 +81,7 @@
               <span class="checklist__text">
                 {{ entry.text }}
                 @if (anyRequired()) {
-                  <span class="tag">{{ entry.required ? 'Required' : 'Optional' }}</span>
+                  <span class="tag">{{ entry.required ? ('feature.required' | tr) : ('feature.optional.59be71' | tr) }}</span>
                 }
                 @if (tickedText(entry); as ticked) {
                   <span class="hint"> {{ ticked }}</span>
@@ -115,7 +115,7 @@
           @if (!done()) {
             <app-icon name="check" [size]="20" />
           }
-          {{ done() ? 'Undo done' : 'Mark done' }}
+          {{ done() ? ('feature.undo.done' | tr) : ('feature.mark.done' | tr) }}
         </button>
       }
       <a mat-stroked-button [routerLink]="['/calendar/tasks', current().id, 'edit']">{{ 'feature.edit.task' | tr }}</a>
@@ -124,7 +124,7 @@
       <p class="explain" id="task-delete-explanation">{{ 'feature.this.deletes.the.task.and.its.checklist' | tr }}</p>
       <div class="actions__row">
         <button mat-flat-button type="button" class="danger" [disabled]="busy()" disabledInteractive aria-describedby="task-delete-explanation" (click)="remove()">
-          {{ busy() ? 'Deleting…' : 'Yes, delete' }}
+          {{ busy() ? ('feature.deleting' | tr) : ('feature.yes.delete' | tr) }}
         </button>
         <button #keepButton mat-button type="button" [disabled]="busy()" aria-describedby="task-delete-explanation" (click)="confirmDelete(false)">{{ 'feature.keep.it' | tr }}</button>
       </div>

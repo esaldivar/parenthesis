@@ -22,8 +22,7 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
       <div class="unavailable">
         <p class="notice" role="status">
           <app-icon name="cloud-upload" />
-          <span>Attachments can’t be saved yet, so {{ kind() === 'fund' ? 'contributions' : 'payments' }} can’t be reported.
-            Please try again later.</span>
+          <span>{{ 'feature.attachments.can.t.be.saved.yet.so' | tr }} {{ kind() === 'fund' ? ('feature.contributions' | tr) : ('feature.payments' | tr) }} {{ 'feature.can.t.be.reported.please.try.again' | tr }}</span>
         </p>
         <div class="actions">
           <button type="button" (click)="cancelled.emit()">{{ 'feature.close' | tr }}</button>
@@ -32,7 +31,7 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
     } @else {
       <form (ngSubmit)="submit()">
         <label>
-          Amount ({{ currency() }})
+          {{ 'feature.amount' | tr }}{{ currency() }})
           <input name="amount" type="text" inputmode="decimal" required autocomplete="off" [(ngModel)]="amount" />
         </label>
         <label>
@@ -57,7 +56,7 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
           @if (file(); as chosen) {
             <div class="file">
               <app-icon name="note" />
-              <span><strong>{{ chosen.name }}</strong><small>{{ describe(chosen) }} attached</small></span>
+              <span><strong>{{ chosen.name }}</strong><small>{{ describe(chosen) }} {{ 'feature.attached' | tr }}</small></span>
               <button type="button" class="link" (click)="picker.click()">{{ 'feature.replace' | tr }}</button>
             </div>
           } @else {
@@ -72,11 +71,11 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
         @if (problem(); as message) {
           <p class="error" role="alert">{{ message }}</p>
         } @else if (error()) {
-          <p class="error" role="alert">{{ error() }} Your entries are still here.</p>
+          <p class="error" role="alert">{{ error() }} {{ 'feature.your.entries.are.still.here' | tr }}</p>
         }
         <div class="actions">
           <button type="submit" class="primary" [disabled]="submitting()">
-            {{ submitting() ? 'Sending…' : kind() === 'fund' ? 'Submit contribution' : 'Submit payment' }}
+            {{ submitting() ? ('feature.sending' | tr) : kind() === 'fund' ? ('feature.submit.contribution' | tr) : ('feature.submit.payment' | tr) }}
           </button>
           <button type="button" [disabled]="submitting()" (click)="cancelled.emit()">{{ 'feature.cancel' | tr }}</button>
         </div>

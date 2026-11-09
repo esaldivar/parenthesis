@@ -96,5 +96,12 @@ Milestone releases (owner decision, October 18, 2026). Full rules, release windo
 - No secrets in the repo. Use `dotnet user-secrets` locally and Key Vault in Azure.
 - **Only synthetic data** in seeds, fixtures, screenshots and issues. Never real family or children's information.
 
+## English and Spanish copy
+
+For parent-facing changes, add app-owned text to the English and neutral Latin American Spanish catalogs in the same PR.
+Include labels, accessible names, validation, notifications, and empty and error states. Use placeholders for names and
+other values. Format dates and amounts in the selected locale. System emails use the recipient's saved language.
+Keep user-entered content as entered, and check the affected workflow in both languages.
+
 ## Code style
 `.editorconfig` and the .NET analyzers are enforced at build time. Run `dotnet format` before pushing.

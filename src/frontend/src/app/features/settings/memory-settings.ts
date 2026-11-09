@@ -33,7 +33,7 @@ import { sizeText } from '../memories/photo-text';
     @if (settings(); as s) {
       <div class="storage">
         <p id="storage-label">
-          <strong>{{ 'feature.your.photo.storage' | tr }}</strong> {{ used() }} of {{ limit() }} used
+          <strong>{{ 'feature.your.photo.storage' | tr }}</strong> {{ used() }} {{ 'feature.of' | tr }} {{ limit() }} {{ 'feature.used' | tr }}
         </p>
         <div
           class="meter"
@@ -58,9 +58,7 @@ import { sizeText } from '../memories/photo-text';
         >{{ 'feature.allow.co.parent.to.download.my.shared' | tr }}</mat-slide-toggle
       >
       <p id="memory-download-help" class="muted">
-        When this is on, {{ coParent() ?? 'your co-parent' }} can download the photos you’ve shared
-        with them. When it’s off, they can still view them. This controls Parenthesis’s download
-        features only: copies already saved can’t be recalled, and screenshots can’t be prevented.
+        {{ 'feature.when.this.is.on' | tr }} {{ coParent() ?? 'your co-parent' }} {{ 'feature.can.download.the.photos.you.ve.shared' | tr }}
       </p>
     } @else if (!error()) {
       <p class="muted">{{ 'feature.loading' | tr }}</p>

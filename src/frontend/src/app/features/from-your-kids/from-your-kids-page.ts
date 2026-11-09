@@ -53,16 +53,16 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
       @if (previewAt() !== null) {
         <p role="status">{{ 'feature.showing.synthetic.examples.for.ui.testing' | tr }}</p>
       } @else {
-        <p class="sharing-note">Only things {{ selectedChild()?.firstName }} chooses to share with you will appear here.</p>
+        <p class="sharing-note">{{ 'feature.only.things' | tr }} {{ selectedChild()?.firstName }} {{ 'feature.chooses.to.share.with.you.will.appear' | tr }}</p>
       }
       @switch (section()) {
         @case ('diary') {
-          <div class="section-heading"><h2>{{ contentName() }}'s Diary</h2><span aria-hidden="true">✧ ♡</span></div>
+          <div class="section-heading"><h2>{{ contentName() }}{{ 'feature.s.diary' | tr }}</h2><span aria-hidden="true">✧ ♡</span></div>
           <app-kids-diary [entries]="diaryEntries()" />
         }
         @case ('artwork') {
           <section class="gallery" aria-labelledby="artwork-title">
-            <h2 id="artwork-title">{{ contentName() }}'s Artwork</h2>
+            <h2 id="artwork-title">{{ contentName() }}{{ 'feature.s.artwork' | tr }}</h2>
             <div class="fridge" role="group" aria-label="{{ 'feature.artwork.on.the.closed.refrigerator' | tr }}">
               <div class="fridge-door fridge-door--upper"><span class="fridge-handle" aria-hidden="true"></span></div>
               <div class="fridge-door fridge-door--lower">
@@ -76,8 +76,8 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
         }
         @case ('photos') {
           <section class="gallery" aria-labelledby="photos-title">
-            <h2 id="photos-title">{{ contentName() }}'s Photos</h2>
-            <div class="corkboard"><h3>{{ contentName() }}'s photos</h3><app-kids-gallery kind="Photo" [items]="photos()" />@if (!photos().length) { <p>{{ 'feature.no.photos.shared.with.you.yet' | tr }}</p> }</div>
+            <h2 id="photos-title">{{ contentName() }}{{ 'feature.s.photos.8cd4e2' | tr }}</h2>
+            <div class="corkboard"><h3>{{ contentName() }}{{ 'feature.s.photos' | tr }}</h3><app-kids-gallery kind="Photo" [items]="photos()" />@if (!photos().length) { <p>{{ 'feature.no.photos.shared.with.you.yet' | tr }}</p> }</div>
             <p class="hint">{{ 'feature.your.child.s.photos.will.be.pinned' | tr }}</p>
           </section>
         }

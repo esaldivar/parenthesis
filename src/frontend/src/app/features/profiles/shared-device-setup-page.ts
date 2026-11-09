@@ -95,7 +95,7 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
         }
 
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Setting up…' : 'Set up sharing' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.setting.up' | tr) : ('feature.set.up.sharing' | tr) }}</button>
           <button mat-stroked-button type="button" [disabled]="busy()" (click)="continuePrivately()">
             {{ 'feature.no.continue.to.my.account' | tr }}
           </button>

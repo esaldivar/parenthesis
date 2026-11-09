@@ -21,7 +21,7 @@
         <div class="card">
           <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: current }" />
         </div>
-        <p class="note">This parenting time can’t be swapped right now. {{ why }}</p>
+        <p class="note">{{ 'feature.this.parenting.time.can.t.be.swapped' | tr }} {{ why }}</p>
       } @else {
         @switch (step()) {
           @case ('choose') {
@@ -87,7 +87,7 @@
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>{{ 'feature.reason.optional' | tr }}</mat-label>
                 <textarea id="swap-reason" matInput formControlName="reason" rows="3" [maxlength]="reasonMax"></textarea>
-                <mat-hint>{{ otherParent() }} sees this with your request.</mat-hint>
+                <mat-hint>{{ otherParent() }} {{ 'feature.sees.this.with.your.request' | tr }}</mat-hint>
                 <mat-hint align="end">{{ reasonLength() }} / {{ reasonMax }}</mat-hint>
                 @if (reasonError(); as e) {
                   <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
@@ -112,7 +112,7 @@
               } @else {
                 <div class="buttons">
                   <a mat-stroked-button routerLink="/calendar" [queryParams]="{ date: current.firstDate }">{{ 'feature.cancel' | tr }}</a>
-                  <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Checking…' : 'Continue' }}</button>
+                  <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.checking' | tr) : ('feature.continue' | tr) }}</button>
                 </div>
               }
             </form>
@@ -150,8 +150,7 @@
             }
             <p class="note">
               <app-icon name="note" [size]="18" />
-              This goes to {{ otherParent() }}, who can approve or decline it. Your current schedule stays on the
-              calendar until they approve.
+              {{ 'feature.this.goes.to' | tr }} {{ otherParent() }}{{ 'feature.who.can.approve.or.decline.it.your' | tr }}
             </p>
             @if (error(); as message) {
               <div class="alert" role="alert">{{ message }}</div>
@@ -159,7 +158,7 @@
             <div class="buttons">
               <button mat-stroked-button type="button" [disabled]="busy()" (click)="back()">{{ 'feature.back' | tr }}</button>
               <button mat-flat-button type="button" [disabled]="busy()" (click)="send()">
-                {{ busy() ? 'Sending…' : 'Send request' }}
+                {{ busy() ? ('feature.sending' | tr) : ('feature.send.request' | tr) }}
               </button>
             </div>
           }
@@ -169,12 +168,12 @@
               <span class="sent__icon"><app-icon name="check" [size]="40" /></span>
               <h1 tabindex="-1">{{ 'feature.swap.request.sent' | tr }}</h1>
               <p>
-                {{ otherParent() }} can approve or decline it. Until then, your current schedule stays on the calendar.
+                {{ otherParent() }} {{ 'feature.can.approve.or.decline.it.until.then' | tr }}
               </p>
               @if (proposed(); as next) {
                 <div class="card">
                   <p class="card__title">{{ current.title }}</p>
-                  <p>New date: {{ describe(next) }}</p>
+                  <p>{{ 'feature.new.date' | tr }} {{ describe(next) }}</p>
                   <p class="status">{{ 'feature.pending.approval' | tr }}</p>
                 </div>
               }

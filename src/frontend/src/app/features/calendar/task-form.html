@@ -1,8 +1,7 @@
 <form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="task-heading">
-  <h2 id="task-heading" class="step">{{ editing() ? 'Task' : 'Task details' }}</h2>
+  <h2 id="task-heading" class="step">{{ editing() ? ('feature.task' | tr) : ('feature.task.details' | tr) }}</h2>
   <p class="note">
-    A shared to-do for both of you, with no assignee. It {{ editing() ? 'is updated' : 'goes on the calendar' }} at once, with no
-    approval.
+    {{ 'feature.a.shared.to.do.for.both.of' | tr }} {{ editing() ? ('feature.is.updated' | tr) : ('feature.goes.on.the.calendar' | tr) }} {{ 'feature.at.once.with.no.approval' | tr }}
   </p>
   @if (conflict()) {
     <div class="alert" role="alert">
@@ -66,7 +65,7 @@
         @for (row of items.controls; track row; let i = $index; let first = $first; let last = $last) {
           <li class="item" [formGroupName]="i">
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item__text">
-              <mat-label>Item {{ i + 1 }}</mat-label>
+              <mat-label>{{ 'feature.item' | tr }} {{ i + 1 }}</mat-label>
               <input matInput type="text" formControlName="text" [maxlength]="itemMax" required />
             </mat-form-field>
             <mat-checkbox formControlName="required" class="item__required">{{ 'feature.required' | tr }}</mat-checkbox>
@@ -76,7 +75,7 @@
                 type="button"
                 class="move-up"
                 [disabled]="first"
-                [attr.aria-label]="'Move ' + itemLabel(i) + ' up'"
+                [attr.aria-label]="('feature.move' | tr) + itemLabel(i) + ('feature.up' | tr)"
                 (click)="moveItem(i, -1)"
               >
                 <app-icon name="chevron-up" />
@@ -86,12 +85,12 @@
                 type="button"
                 class="move-down"
                 [disabled]="last"
-                [attr.aria-label]="'Move ' + itemLabel(i) + ' down'"
+                [attr.aria-label]="('feature.move' | tr) + itemLabel(i) + ('feature.down' | tr)"
                 (click)="moveItem(i, 1)"
               >
                 <app-icon name="chevron-down" />
               </button>
-              <button mat-icon-button type="button" [attr.aria-label]="'Remove ' + itemLabel(i)" (click)="removeItem(i)">
+              <button mat-icon-button type="button" [attr.aria-label]="('feature.remove.594895' | tr) + itemLabel(i)" (click)="removeItem(i)">
                 <app-icon name="close" />
               </button>
             </span>
@@ -107,14 +106,14 @@
         <app-icon name="plus" [size]="20" /> {{ 'feature.add.item' | tr }}
       </button>
     } @else {
-      <p class="legend-hint">A checklist can have up to {{ itemsMax }} items.</p>
+      <p class="legend-hint">{{ 'feature.a.checklist.can.have.up.to' | tr }} {{ itemsMax }} {{ 'feature.items' | tr }}</p>
     }
   </fieldset>
 
   <app-loading-indicator [active]="busy()" label="{{ 'feature.saving' | tr }}" />
   <div class="actions">
     <button mat-flat-button type="submit" [disabled]="busy()">
-      {{ busy() ? 'Saving…' : editing() ? 'Save changes' : 'Add to calendar' }}
+      {{ busy() ? ('feature.saving' | tr) : editing() ? ('feature.save.changes' | tr) : ('feature.add.to.calendar' | tr) }}
     </button>
     <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">{{ 'feature.cancel' | tr }}</a>
   </div>

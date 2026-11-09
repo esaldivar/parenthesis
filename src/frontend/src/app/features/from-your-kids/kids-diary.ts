@@ -48,7 +48,7 @@ const MOOD_CHARACTER: Record<KidsMood, string> = {
       </section>
       <nav class="pager" aria-label="{{ 'feature.diary.pages' | tr }}">
         <button type="button" (click)="previous()" [disabled]="index() === 0" aria-label="{{ 'feature.previous.diary.page' | tr }}">{{ 'feature.previous' | tr }}</button>
-        <span aria-live="polite">Page {{ index() + 1 }} of {{ ordered().length }}</span>
+        <span aria-live="polite">{{ 'feature.page' | tr }} {{ index() + 1 }} {{ 'feature.of' | tr }} {{ ordered().length }}</span>
         <button type="button" (click)="next()" [disabled]="index() >= ordered().length - 1" aria-label="{{ 'feature.next.diary.page' | tr }}">{{ 'feature.next' | tr }}</button>
       </nav>
     }

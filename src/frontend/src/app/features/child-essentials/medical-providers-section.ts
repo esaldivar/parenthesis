@@ -29,7 +29,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
     <section aria-labelledby="medical-heading">
       <button type="button" class="back" #backButton (click)="editing() ? cancel() : back.emit()" [disabled]="saving()">
         <app-icon name="chevron-left" [size]="20" />
-        {{ editing() ? 'Medical' : 'Child Essentials' }}
+        {{ editing() ? ('feature.medical' | tr) : ('feature.child.essentials' | tr) }}
       </button>
       @if (!editing()) {
         <div class="hero">
@@ -45,7 +45,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
         </div>
       } @else {
         <h2 id="medical-heading" tabindex="-1" #editorHeading>
-          {{ removing() ? 'Remove provider' : existing() ? 'Edit provider' : 'Add provider' }}
+          {{ removing() ? ('feature.remove.provider' | tr) : existing() ? ('feature.edit.provider' | tr) : ('feature.add.provider' | tr) }}
         </h2>
       }
       @if (error()) { <p role="alert">{{ error() }}</p> }
@@ -65,16 +65,16 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
               </div>
               <div class="contact-actions">
                 @if (provider.phone) {
-                  <a class="primary" [href]="callUrl(provider.phone)" [attr.aria-label]="'Call ' + provider.name"><app-icon name="phone" [size]="18" /> {{ 'feature.call' | tr }}</a>
+                  <a class="primary" [href]="callUrl(provider.phone)" [attr.aria-label]="('feature.call.14e218' | tr) + provider.name"><app-icon name="phone" [size]="18" /> {{ 'feature.call' | tr }}</a>
                 }
                 @if (directionsUrl(provider.address); as url) {
                   <a [href]="url" target="_blank" rel="noopener noreferrer"
-                    [attr.aria-label]="'Directions to ' + provider.name + ' (opens in a new tab)'"><app-icon name="map-pin" [size]="18" /> {{ 'feature.directions' | tr }}</a>
+                    [attr.aria-label]="('feature.directions.to' | tr) + provider.name + ('feature.opens.in.a.new.tab.708573' | tr)"><app-icon name="map-pin" [size]="18" /> {{ 'feature.directions' | tr }}</a>
                 }
               </div>
               <div class="actions management">
-                <button type="button" [attr.aria-label]="'Edit ' + provider.name" (click)="edit(provider)">{{ 'feature.edit' | tr }}</button>
-                <button type="button" [attr.aria-label]="'Remove ' + provider.name" (click)="remove(provider)">{{ 'feature.remove' | tr }}</button>
+                <button type="button" [attr.aria-label]="('feature.edit.4a683d' | tr) + provider.name" (click)="edit(provider)">{{ 'feature.edit' | tr }}</button>
+                <button type="button" [attr.aria-label]="('feature.remove.594895' | tr) + provider.name" (click)="remove(provider)">{{ 'feature.remove' | tr }}</button>
               </div>
             </article>
           }
@@ -85,7 +85,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
             <ng-container *ngTemplateOutlet="providerList; context: { $implicit: latest.providers }" />
           }
           @if (removing()) {
-            <p>Remove {{ removing()?.name }} from this child’s medical providers?</p>
+            <p>{{ 'feature.remove' | tr }} {{ removing()?.name }} {{ 'feature.from.this.child.s.medical.providers' | tr }}</p>
             <button type="button" [disabled]="saving()" (click)="save()">{{ 'feature.confirm.removal' | tr }}</button>
             <button type="button" [disabled]="saving()" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
           } @else {
@@ -101,17 +101,17 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
                 }
                 <label>{{ 'feature.provider.name' | tr }} <input formControlName="name" maxlength="100" required /></label>
                 <label>{{ 'feature.practice.name.optional' | tr }} <input formControlName="practice" maxlength="100" /></label>
-                <label>Phone number {{ contactRequired() ? '(required)' : '(optional)' }}
+                <label>{{ 'feature.phone.number' | tr }} {{ contactRequired() ? ('feature.required.89db19' | tr) : ('feature.optional' | tr) }}
                   <input type="tel" formControlName="phone" maxlength="32" [required]="contactRequired()" />
                 </label>
                 @if (form.controls.phone.touched && form.controls.phone.invalid) {
-                  <p role="alert">{{ form.controls.phone.hasError('required') ? 'Enter a phone number for a doctor or dentist.' : 'Enter a phone number with 7 to 15 digits.' }}</p>
+                  <p role="alert">{{ form.controls.phone.hasError('required') ? ('feature.enter.a.phone.number.for.a.doctor' | tr) : ('feature.enter.a.phone.number.with.7.to' | tr) }}</p>
                 }
-                <label>Practice address {{ contactRequired() ? '(required)' : '(optional)' }}
+                <label>{{ 'feature.practice.address' | tr }} {{ contactRequired() ? ('feature.required.89db19' | tr) : ('feature.optional' | tr) }}
                   <input formControlName="address" [maxLength]="addressLimit" [required]="contactRequired()" />
                 </label>
                 @if (form.controls.address.touched && form.controls.address.invalid) {
-                  <p role="alert">{{ form.controls.address.hasError('required') ? 'Enter a practice address for a doctor or dentist.' : 'Enter a practice address.' }}</p>
+                  <p role="alert">{{ form.controls.address.hasError('required') ? ('feature.enter.a.practice.address.for.a.doctor' | tr) : ('feature.enter.a.practice.address' | tr) }}</p>
                 }
                 @if (!existing()) {
                   <fieldset class="child-picker">
@@ -130,7 +130,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
                 }
                 <button class="primary" type="submit"
                   [disabled]="form.invalid || (!existing() && !targetIds().length)">
-                  {{ saving() ? 'Saving…' : 'Save provider' }}
+                  {{ saving() ? ('feature.saving' | tr) : ('feature.save.provider' | tr) }}
                 </button>
               </fieldset>
             </form>

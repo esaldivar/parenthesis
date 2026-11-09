@@ -40,8 +40,7 @@
     @if (view(); as v) {
       @if (deletedOn(); as on) {
         <p class="muted">
-          The photos from this event were deleted on {{ on }}, {{ retentionDays }} days after they
-          were added.
+          {{ 'feature.the.photos.from.this.event.were.deleted' | tr }} {{ on }}, {{ retentionDays }} {{ 'feature.days.after.they.were.added' | tr }}
         </p>
       }
       @if (uploadsText(); as text) {
@@ -62,10 +61,10 @@
           >
             {{
               sheet() === 'review'
-                ? 'Add photos to ' + v.title
+                ? ('feature.add.photos.to' | tr) + v.title
                 : sheet() === 'uploading'
-                  ? 'Adding photos…'
-                  : 'Photos added'
+                  ? ('feature.adding.photos' | tr)
+                  : ('feature.photos.added' | tr)
             }}
           </p>
           <app-loading-indicator
@@ -119,28 +118,27 @@
               <p class="error" role="alert">{{ message }}</p>
             } @else if (ready().length > 0) {
               <p>
-                {{ ready().length === 1 ? '1 photo' : ready().length + ' photos' }} will be added.
+                {{ ready().length === 1 ? ('feature.1.photo' | tr) : ready().length + ('feature.photos.349059' | tr) }} {{ 'feature.will.be.added' | tr }}
                 @if (coParent()) {
-                  Only you will see {{ ready().length === 1 ? 'it' : 'them' }} until you turn on
-                  Visible to Co-Parent.
+                  {{ 'feature.only.you.will.see' | tr }} {{ ready().length === 1 ? 'it' : 'them' }} {{ 'feature.until.you.turn.on.visible.to.co' | tr }}
                 } @else {
-                  Only you will see {{ ready().length === 1 ? 'it' : 'them' }}.
+                  {{ 'feature.only.you.will.see' | tr }} {{ ready().length === 1 ? 'it' : 'them' }}.
                 }
-                {{ ready().length === 1 ? 'It’s' : 'They’re' }} deleted on
+                {{ ready().length === 1 ? 'It’s' : 'They’re' }} {{ 'feature.deleted.on' | tr }}
                 <strong>{{ deletedOnIfAdded() }}</strong
-                >, {{ retentionDays }} days after upload.
+                >, {{ retentionDays }} {{ 'feature.days.after.upload' | tr }}
               </p>
             } @else {
               <p class="error" role="alert">{{ 'feature.none.of.these.can.be.added.choose' | tr }}</p>
             }
             <p class="hint">
-              Up to {{ v.uploads.maxPerUpload }} at a time · You can add
-              {{ v.uploads.remaining }} more to this event · {{ storageLeft() }}
+              {{ 'feature.up.to' | tr }} {{ v.uploads.maxPerUpload }} {{ 'feature.at.a.time.you.can.add' | tr }}
+              {{ v.uploads.remaining }} {{ 'feature.more.to.this.event' | tr }} {{ storageLeft() }}
             </p>
             <div class="actions__row">
               @if (ready().length > 0 && !tooMany()) {
                 <button mat-flat-button type="button" (click)="upload()">
-                  Add {{ ready().length === 1 ? '1 photo' : ready().length + ' photos' }}
+                  {{ 'feature.add' | tr }} {{ ready().length === 1 ? ('feature.1.photo' | tr) : ready().length + ('feature.photos.349059' | tr) }}
                 </button>
               } @else {
                 <button mat-flat-button type="button" (click)="choose()">{{ 'feature.choose.photos' | tr }}</button>
@@ -179,7 +177,7 @@
                 [checked]="shown.batch.visibleToCoParent"
                 [disabled]="busy()"
                 (change)="toggleSharing(shown.batch, $event.checked, $event.source)"
-                [aria-label]="'Visible to Co-Parent, your ' + shown.date + ' photos'"
+                [aria-label]="'Visible to Co-Parent, your ' + shown.date + ('feature.photos.349059' | tr)"
                 >{{ 'feature.visible.to.co.parent' | tr }}</mat-slide-toggle
               >
             }
@@ -189,17 +187,16 @@
             <div
               class="confirm"
               role="group"
-              [attr.aria-label]="'Stop sharing your ' + shown.date + ' photos'"
+              [attr.aria-label]="'Stop sharing your ' + shown.date + ('feature.photos.349059' | tr)"
             >
               <p [id]="'unshare-explain-' + shown.batch.id">
-                Stop sharing
+                {{ 'feature.stop.sharing' | tr }}
                 {{
                   shown.batch.photos.length === 1
                     ? 'this photo'
-                    : 'these ' + shown.batch.photos.length + ' photos'
-                }}? {{ coParent() }} won’t see
-                {{ shown.batch.photos.length === 1 ? 'it' : 'them' }} in Parenthesis any more.
-                Copies already downloaded can’t be recalled.
+                    : 'these ' + shown.batch.photos.length + ('feature.photos.349059' | tr)
+                }}? {{ coParent() }} {{ 'feature.won.t.see' | tr }}
+                {{ shown.batch.photos.length === 1 ? 'it' : 'them' }} {{ 'feature.in.parenthesis.any.more.copies.already.downloaded' | tr }}
               </p>
               <div class="actions__row">
                 <button
@@ -208,7 +205,7 @@
                   [disabled]="busy()"
                   (click)="share(shown.batch, false)"
                 >
-                  {{ busy() ? 'Stopping…' : 'Stop sharing' }}
+                  {{ busy() ? ('feature.stopping' | tr) : ('feature.stop.sharing' | tr) }}
                 </button>
                 <button
                   mat-button
@@ -254,7 +251,7 @@
           <p class="hint">
             {{ shown.expiry }}
             @if (!shown.batch.yours && !shown.batch.downloadsAllowed) {
-              · {{ coParent() ?? 'Your co-parent' }} hasn’t allowed downloads
+              · {{ coParent() ?? 'Your co-parent' }} {{ 'feature.hasn.t.allowed.downloads' | tr }}
             }
           </p>
         </section>
@@ -298,7 +295,7 @@
               id="export-sheet-heading"
               tabindex="-1"
             >
-              {{ mode === 'progress' ? 'Exporting to Google Photos' : 'Export to Google Photos' }}
+              {{ mode === 'progress' ? ('feature.exporting.to.google.photos' | tr) : ('feature.export.to.google.photos' | tr) }}
             </p>
             <button mat-icon-button type="button" (click)="closeExport()" aria-label="{{ 'feature.close.export' | tr }}">
               <app-icon name="close" />
@@ -326,7 +323,7 @@
                   (click)="exports.connect()"
                 >
                   <app-icon name="cloud-upload" [size]="18" />
-                  {{ exports.busy() ? 'Opening Google…' : 'Connect Google Photos' }}
+                  {{ exports.busy() ? ('feature.opening.google' | tr) : ('feature.connect.google.photos' | tr) }}
                 </button>
                 <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.cancel' | tr }}</button>
               </div>
@@ -338,7 +335,7 @@
               <p class="error" role="alert">
                 <strong>{{ 'feature.google.photos.needs.you.to.reconnect' | tr }}</strong>
                 @if (exports.view()?.waiting; as waiting) {
-                  {{ waiting === 1 ? '1 photo is' : waiting + ' photos are' }} waiting.
+                  {{ waiting === 1 ? '1 photo is' : waiting + ' photos are' }} {{ 'feature.waiting.3778f2' | tr }}
                 }
               </p>
               <div class="actions__row">
@@ -348,7 +345,7 @@
                   [disabled]="exports.busy()"
                   (click)="exports.connect()"
                 >
-                  {{ exports.busy() ? 'Opening Google…' : 'Reconnect Google Photos' }}
+                  {{ exports.busy() ? ('feature.opening.google' | tr) : ('feature.reconnect.google.photos' | tr) }}
                 </button>
                 <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.cancel' | tr }}</button>
               </div>
@@ -367,9 +364,9 @@
                 <strong>{{
                   exportCount() === 1
                     ? exportSheet()?.photoId
-                      ? 'This photo'
-                      : '1 photo'
-                    : exportCount() + ' photos'
+                      ? ('feature.this.photo' | tr)
+                      : ('feature.1.photo' | tr)
+                    : exportCount() + ('feature.photos.349059' | tr)
                 }}</strong>
                 {{ 'feature.will.go.to.the.album' | tr }} <strong>“{{ exports.view()?.albumTitle }}”</strong> {{ 'feature.in.your.google.photos' | tr }}
               </p>
@@ -386,10 +383,10 @@
                 >
                   {{
                     exports.busy()
-                      ? 'Starting…'
+                      ? ('feature.starting' | tr)
                       : exportCount() === 1
-                        ? 'Export 1 photo'
-                        : 'Export ' + exportCount() + ' photos'
+                        ? ('feature.export.1.photo' | tr)
+                        : ('feature.export' | tr) + exportCount() + ('feature.photos.349059' | tr)
                   }}
                 </button>
                 <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.cancel' | tr }}</button>
@@ -432,7 +429,7 @@
                     [disabled]="exports.busy()"
                     (click)="retryExport()"
                   >
-                    Try again ({{ sheetRetryable().length }})
+                    {{ 'feature.try.again.a1aa1a' | tr }}{{ sheetRetryable().length }})
                   </button>
                 }
                 <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.close' | tr }}</button>
@@ -472,7 +469,7 @@
           @if (photoExport(photo); as mark) {
             <p class="hint" [class.error]="mark.kind === 'failed' || mark.kind === 'skipped'">
               @if (mark.kind === 'done') {
-                <app-icon name="check" [size]="16" /> In your Google Photos, album “{{
+                <app-icon name="check" [size]="16" /> {{ 'feature.in.your.google.photos.album' | tr }}{{
                   exports.view()?.albumTitle
                 }}”
               } @else {
@@ -506,8 +503,7 @@
             </div>
           } @else {
             <p id="photo-delete-explain">
-              Deleting removes it{{ coParent() ? ' for both of you' : '' }} now and frees its spot
-              and storage. Copies already downloaded aren’t affected.
+              {{ 'feature.deleting.removes.it' | tr }}{{ coParent() ? ' for both of you' : '' }} {{ 'feature.now.and.frees.its.spot.and.storage' | tr }}
             </p>
             <div class="actions__row">
               <button
@@ -517,7 +513,7 @@
                 [disabled]="busy()"
                 (click)="deletePhoto()"
               >
-                {{ busy() ? 'Deleting…' : 'Delete photo' }}
+                {{ busy() ? ('feature.deleting' | tr) : ('feature.delete.photo.3a89d7' | tr) }}
               </button>
               <button
                 mat-button

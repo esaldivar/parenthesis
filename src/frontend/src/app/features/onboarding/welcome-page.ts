@@ -60,7 +60,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
     InviteCoParent,
   ],
   template: `
-    <p class="step-count">Step {{ stepNumber() }} of {{ steps.length }}</p>
+    <p class="step-count">{{ 'feature.step' | tr }} {{ stepNumber() }} {{ 'feature.of' | tr }} {{ steps.length }}</p>
 
     @if (error(); as error) {
       <div class="alert" role="alert">{{ error }}</div>
@@ -68,7 +68,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
 
     @switch (step()) {
       @case ('family') {
-        <h1 #heading tabindex="-1">Welcome, {{ auth.user()?.displayName }}</h1>
+        <h1 #heading tabindex="-1">{{ 'feature.welcome' | tr }} {{ auth.user()?.displayName }}</h1>
         <p class="lead">
           {{ 'feature.set.up.your.family.space.you.ll' | tr }}
         </p>
@@ -101,7 +101,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
           </mat-form-field>
 
           <div class="actions">
-            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Creating…' : 'Create family' }}</button>
+            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.creating' | tr) : ('feature.create.family' | tr) }}</button>
             <button mat-button type="button" (click)="signOut()">{{ 'feature.sign.out' | tr }}</button>
           </div>
         </form>
@@ -123,7 +123,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
           >
             <app-icon name="minus" />
           </button>
-          <output class="counter__value" aria-live="polite" [attr.aria-label]="count() + ' children'">{{ count() }}</output>
+          <output class="counter__value" aria-live="polite" [attr.aria-label]="count() + ('feature.children.a3a781' | tr)">{{ count() }}</output>
           <button
             mat-stroked-button
             class="counter__button"
@@ -151,16 +151,16 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
         <form [formGroup]="childrenForm" (ngSubmit)="addChildren()" novalidate>
           @for (control of names.controls; track control; let i = $index) {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Child {{ i + 1 }}’s first name</mat-label>
+              <mat-label>{{ 'feature.child' | tr }} {{ i + 1 }}{{ 'feature.s.first.name' | tr }}</mat-label>
               <input matInput [formControl]="control" required [attr.maxlength]="firstNameMax" autocomplete="off" />
               @if (control.invalid) {
-                <mat-error>Enter a first name of up to {{ firstNameMax }} characters.</mat-error>
+                <mat-error>{{ 'feature.enter.a.first.name.of.up.to' | tr }} {{ firstNameMax }} {{ 'feature.characters' | tr }}</mat-error>
               }
             </mat-form-field>
           }
           <p class="hint">{{ 'feature.first.names.only.parenthesis.doesn.t.ask' | tr }}</p>
           <div class="actions">
-            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Adding…' : 'Continue' }}</button>
+            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.adding' | tr) : ('feature.continue' | tr) }}</button>
           </div>
         </form>
       }

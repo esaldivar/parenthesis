@@ -52,7 +52,7 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
             <h4>
               <span class="caregiver-name">{{ caregiver.details.name }}</span>
               <span class="stars" role="img"
-                    [attr.aria-label]="caregiver.averageRating === null ? 'Unrated' : caregiver.averageRating + ' out of 3 stars'">
+                    [attr.aria-label]="caregiver.averageRating === null ? ('feature.unrated' | tr) : caregiver.averageRating + ('feature.out.of.3.stars' | tr)">
                 @for (star of [0, 1, 2]; track star) {
                   <span class="star" aria-hidden="true">☆<span class="filled" [style.width.%]="fill(caregiver.averageRating, star)">★</span></span>
                 }
@@ -61,25 +61,25 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
             </h4>
             @if (caregiver.details.schoolPickup) { <p><span class="tag">{{ 'feature.school.pickup' | tr }}</span></p> }
             <p class="contact-line"><span>{{ displayPhone(caregiver.details.phone) }}</span>
-              <a class="call" [href]="phoneLink(caregiver.details.phone)" [attr.aria-label]="'Call ' + caregiver.details.name">{{ 'feature.call' | tr }}</a>
+              <a class="call" [href]="phoneLink(caregiver.details.phone)" [attr.aria-label]="('feature.call.14e218' | tr) + caregiver.details.name">{{ 'feature.call' | tr }}</a>
             </p>
-            @if (caregiver.details.city) { <p>City: {{ caregiver.details.city }}</p> }
+            @if (caregiver.details.city) { <p>{{ 'feature.city' | tr }} {{ caregiver.details.city }}</p> }
             @if (caregiver.details.hourlyRate !== null) {
-              <p>Hourly rate: {{ caregiver.details.hourlyRate | appCurrency: 'USD' }}</p>
+              <p>{{ 'feature.hourly.rate' | tr }} {{ caregiver.details.hourlyRate | appCurrency: 'USD' }}</p>
             }
-            <p class="added-by">Added by {{ caregiver.addedBy }}</p>
+            <p class="added-by">{{ 'feature.added.by' | tr }} {{ caregiver.addedBy }}</p>
             <div class="actions management">
               <button type="button" [disabled]="busy()" (click)="edit(caregiver)">{{ 'feature.edit' | tr }}</button>
               <button type="button" [disabled]="busy()" (click)="removing.set(caregiver.id)">{{ 'feature.remove' | tr }}</button>
               <button type="button" [disabled]="busy()" (click)="ratingId.set(caregiver.id)" aria-label="{{ 'feature.rate.caregiver' | tr }}">{{ 'feature.rate' | tr }}</button>
             </div>
             @if (removing() === caregiver.id) {
-              <p>Remove {{ caregiver.details.name }} from this child’s caregiver list?</p>
+              <p>{{ 'feature.remove' | tr }} {{ caregiver.details.name }} {{ 'feature.from.this.child.s.caregiver.list' | tr }}</p>
               <button type="button" [disabled]="busy()" (click)="remove(caregiver.id, current.version)">{{ 'feature.confirm.removal' | tr }}</button>
               <button type="button" [disabled]="busy()" (click)="removing.set(null)">{{ 'feature.cancel.removal' | tr }}</button>
             }
             @if (ratingId() === caregiver.id) {
-              <label>Your rating for {{ caregiver.details.name }}
+              <label>{{ 'feature.your.rating.for' | tr }} {{ caregiver.details.name }}
                 <select #rating [value]="caregiver.myRating?.toString() ?? ''" [disabled]="busy()">
                   <option value="">{{ 'feature.unrated' | tr }}</option>
                   <option value="1">{{ 'feature.1.star' | tr }}</option>
@@ -97,7 +97,7 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
         } @else {
           <form [formGroup]="form" (ngSubmit)="save()">
             <fieldset [disabled]="busy()">
-              <legend>{{ editId() ? 'Edit caregiver' : 'Add caregiver' }}</legend>
+              <legend>{{ editId() ? ('feature.edit.caregiver' | tr) : ('feature.add.caregiver' | tr) }}</legend>
               <label>{{ 'feature.name' | tr }} <input formControlName="name" maxlength="100" required /></label>
               <label>{{ 'feature.phone' | tr }} <input type="tel" formControlName="phone" maxlength="32" required /></label>
               <label>{{ 'feature.town.or.city.optional' | tr }} <input formControlName="city" maxlength="100" /></label>
@@ -107,7 +107,7 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
                 <label><input type="checkbox" formControlName="addToAll" /> {{ 'feature.add.to.all.children' | tr }}</label>
               }
               @if (duplicate()) {
-                <p role="alert">{{ duplicate() }} already uses that number.</p>
+                <p role="alert">{{ duplicate() }} {{ 'feature.already.uses.that.number' | tr }}</p>
                 <button type="button" [disabled]="form.invalid" (click)="save(true)">{{ 'feature.continue.for.a.different.person' | tr }}</button>
               }
               <div class="actions">

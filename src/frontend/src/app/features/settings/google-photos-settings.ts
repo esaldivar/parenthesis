@@ -49,7 +49,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
               <li>
                 {{ 'feature.copies.use.your.google.storage.and.stay' | tr }}
               </li>
-              <li>Connecting changes nothing for {{ coParent() ?? 'your co-parent' }}.</li>
+              <li>{{ 'feature.connecting.changes.nothing.for' | tr }} {{ coParent() ?? 'your co-parent' }}.</li>
             </ul>
           }
           @case ('Connected') {
@@ -61,7 +61,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
                 {{ 'feature.export.photos.from.any.family.memory' | tr }}
               }
               @if (status.waitingCount > 0) {
-                {{ photos(status.waitingCount) }} waiting to export.
+                {{ photos(status.waitingCount) }} {{ 'feature.waiting.to.export' | tr }}
               }
             </p>
           }
@@ -80,7 +80,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
             <p>
               {{ 'feature.albums.and.photos.already.in.your.google' | tr }}
               @if (status.waitingCount > 0) {
-                {{ photos(status.waitingCount) }} waiting to export won’t be sent.
+                {{ photos(status.waitingCount) }} {{ 'feature.waiting.to.export.won.t.be.sent' | tr }}
               }
             </p>
             <p class="muted">
@@ -88,7 +88,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
             </p>
             <div class="actions">
               <button mat-flat-button type="button" [disabled]="busy()" (click)="disconnect()">
-                {{ busy() ? 'Disconnecting…' : 'Disconnect' }}
+                {{ busy() ? ('feature.disconnecting' | tr) : ('feature.disconnect.acfc5b' | tr) }}
               </button>
               <button mat-button type="button" [disabled]="busy()" (click)="cancelDisconnect()">
                 {{ 'feature.cancel' | tr }}
@@ -102,10 +102,10 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
                 <app-icon name="cloud-upload" [size]="18" />
                 {{
                   busy()
-                    ? 'Opening Google…'
+                    ? ('feature.opening.google' | tr)
                     : status.state === 'NeedsReconnect'
-                      ? 'Reconnect Google Photos'
-                      : 'Connect Google Photos'
+                      ? ('feature.reconnect.google.photos' | tr)
+                      : ('feature.connect.google.photos' | tr)
                 }}
               </button>
             }

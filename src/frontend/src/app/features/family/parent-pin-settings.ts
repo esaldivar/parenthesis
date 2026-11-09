@@ -33,7 +33,7 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
         @if (status.locked) {
           {{ 'feature.your.parent.pin.is.locked.after.too' | tr }}
         } @else if (status.pausedUntil) {
-          Your parent PIN is paused until {{ status.pausedUntil | appDate: 'shortTime' }}. You can also choose a new one now.
+          {{ 'feature.your.parent.pin.is.paused.until' | tr }} {{ status.pausedUntil | appDate: 'shortTime' }}{{ 'feature.you.can.also.choose.a.new.one' | tr }}
         } @else if (status.isSet) {
           {{ 'feature.you.use.your.parent.pin.to.get' | tr }}
         } @else {
@@ -44,7 +44,7 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
       @if (!open()) {
         <div class="actions">
           <button mat-stroked-button type="button" (click)="open.set(true)">
-            {{ status.isSet ? 'Change parent PIN' : 'Choose a parent PIN' }}
+            {{ status.isSet ? ('feature.change.parent.pin' | tr) : ('feature.choose.a.parent.pin' | tr) }}
           </button>
         </div>
       } @else {
@@ -78,7 +78,7 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
             }
           </mat-form-field>
           <div class="actions">
-            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Save PIN' }}</button>
+            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.saving' | tr) : ('feature.save.pin' | tr) }}</button>
             <button mat-button type="button" [disabled]="busy()" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
           </div>
         </form>

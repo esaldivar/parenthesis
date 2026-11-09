@@ -49,9 +49,9 @@ import { Toasts } from '../../shared/toast/toasts';
                     <span class="this">{{ 'feature.this.device' | tr }}</span>
                   }
                 </p>
-                <p class="muted">{{ kind(device) }} · Last used {{ device.lastSeenAt | appDate: 'mediumDate' }}</p>
+                <p class="muted">{{ kind(device) }} {{ 'feature.last.used' | tr }} {{ device.lastSeenAt | appDate: 'mediumDate' }}</p>
                 @if (device.expiresAt) {
-                  <p class="muted">Sharing ends {{ device.expiresAt | appDate: 'mediumDate' }}</p>
+                  <p class="muted">{{ 'feature.sharing.ends' | tr }} {{ device.expiresAt | appDate: 'mediumDate' }}</p>
                 }
               </div>
               @if (confirming() === device.id) {
@@ -66,8 +66,7 @@ import { Toasts } from '../../shared/toast/toasts';
                     </div>
                   } @else {
                     <p>
-                      Remove {{ device.name }}? Everyone using it is signed out at once, and it stops showing your family’s
-                      profiles until a parent signs in there and sets it up again.
+                      {{ 'feature.remove' | tr }} {{ device.name }}{{ 'feature.everyone.using.it.is.signed.out.at' | tr }}
                     </p>
                     <div class="actions">
                       <button mat-flat-button type="button" [disabled]="busy()" (click)="remove(device)">{{ 'feature.remove.device' | tr }}</button>
@@ -82,7 +81,7 @@ import { Toasts } from '../../shared/toast/toasts';
                     <button mat-stroked-button type="button" (click)="switchProfile()">{{ 'feature.switch.profile' | tr }}</button>
                     <button mat-stroked-button type="button" (click)="confirming.set(device.id)">{{ 'feature.stop.sharing.this.device' | tr }}</button>
                   } @else {
-                    <button mat-stroked-button type="button" (click)="confirming.set(device.id)" [attr.aria-label]="'Remove ' + device.name">
+                    <button mat-stroked-button type="button" (click)="confirming.set(device.id)" [attr.aria-label]="('feature.remove.594895' | tr) + device.name">
                       {{ 'feature.remove' | tr }}
                     </button>
                   }

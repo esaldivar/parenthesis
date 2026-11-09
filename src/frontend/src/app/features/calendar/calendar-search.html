@@ -67,7 +67,7 @@
           </ul>
           @if (upcoming().hasMore) {
             <button type="button" class="more" data-stop [disabled]="upcoming().loadingMore" (click)="more(false)">
-              {{ upcoming().loadingMore ? 'Loading…' : 'Show more upcoming' }}
+              {{ upcoming().loadingMore ? ('feature.loading' | tr) : ('feature.show.more.upcoming' | tr) }}
             </button>
           }
         }
@@ -82,7 +82,7 @@
           </ul>
           @if (past().hasMore) {
             <button type="button" class="more" data-stop [disabled]="past().loadingMore" (click)="more(true)">
-              {{ past().loadingMore ? 'Loading…' : 'Show more past events' }}
+              {{ past().loadingMore ? ('feature.loading' | tr) : ('feature.show.more.past.events' | tr) }}
             </button>
           }
         }

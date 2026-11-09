@@ -22,7 +22,7 @@
                 <li>
                   <button type="button" class="record-link" [class.support]="entry.kind === 'support'"
                     [attr.aria-pressed]="entry.key === item.key" (click)="select(entry)">
-                    <span>{{ entry.kind === 'fund' ? 'Shared Fund' : 'Child Support' }}</span> {{ entry.title }}
+                    <span>{{ entry.kind === 'fund' ? ('feature.shared.fund' | tr) : ('feature.child.support' | tr) }}</span> {{ entry.title }}
                   </button>
                 </li>
               }
@@ -40,10 +40,10 @@
                 @let mine = fund.proposerId === data.membershipId;
                 <p class="muted">@if (childrenOf(fund); as names) { {{ names }} · }{{ fund.currency }}</p>
                 <p class="split">
-                  <strong>{{ fund.status === 'Open' ? 'Agreed split' : 'Proposed split' }}</strong>
-                  <span>You {{ (mine ? fund.proposerShareMinor : fund.coParentShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</span>
+                  <strong>{{ fund.status === 'Open' ? ('feature.agreed.split' | tr) : ('feature.proposed.split' | tr) }}</strong>
+                  <span>{{ 'feature.you.08b041' | tr }} {{ (mine ? fund.proposerShareMinor : fund.coParentShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</span>
                   <span aria-hidden="true">/</span>
-                  <span>Co-parent {{ (mine ? fund.coParentShareMinor : fund.proposerShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</span>
+                  <span>{{ 'feature.co.parent' | tr }} {{ (mine ? fund.coParentShareMinor : fund.proposerShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</span>
                 </p>
                 @if (fund.status === 'Open') {
                   <app-record-progress [totals]="fund.totals ?? { acknowledgedMinor: 0, pendingMinor: 0, disputedMinor: 0 }"
@@ -79,7 +79,7 @@
                   <span class="badge support">{{ 'feature.child.support' | tr }}</span>
                 </div>
                 <h2 #recordHeading id="record-title" tabindex="-1">{{ record.title }}</h2>
-                <p class="muted">One-time record · {{ record.currency }} · {{ record.youPay ? 'You pay' : 'Your co-parent pays' }}</p>
+                <p class="muted">{{ 'feature.one.time.record' | tr }} {{ record.currency }} · {{ record.youPay ? ('feature.you.pay' | tr) : ('feature.your.co.parent.pays' | tr) }}</p>
                 <app-record-progress [totals]="record.totals" [currency]="record.currency" [target]="record.referenceMinor" kind="support" />
                 <h3>{{ 'feature.payment.history' | tr }}</h3>
                 <app-record-history [entries]="record.entries" [currency]="record.currency" kind="support" [busy]="busy()"
@@ -105,7 +105,7 @@
         <header class="heading">
           <div>
             <h2 #composerHeading id="composer-title" tabindex="-1">
-              @if (reporting(); as target) { {{ target.kind === 'fund' ? 'Report contribution' : 'Report payment' }} } @else { {{ 'feature.new.request' | tr }} }
+              @if (reporting(); as target) { {{ target.kind === 'fund' ? ('feature.report.contribution' | tr) : ('feature.report.payment' | tr) }} } @else { {{ 'feature.new.request' | tr }} }
             </h2>
             <p class="muted mobile-subtitle">{{ 'feature.shared.records' | tr }}</p>
           </div>
@@ -116,7 +116,7 @@
         <app-loading-indicator [active]="busy()" [label]="savingLabel()" />
         @if (reporting(); as target) {
           <div class="badges">
-            <span class="badge" [class.support]="target.kind === 'support'">{{ target.kind === 'fund' ? 'Shared Fund' : 'Child Support' }}</span>
+            <span class="badge" [class.support]="target.kind === 'support'">{{ target.kind === 'fund' ? ('feature.shared.fund' | tr) : ('feature.child.support' | tr) }}</span>
           </div>
           <p class="muted">{{ target.title }}</p>
           <app-report-form [kind]="target.kind" [currency]="target.kind === 'fund' ? target.fund.currency : target.record.currency"

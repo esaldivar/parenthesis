@@ -50,7 +50,7 @@
 @if (activeFilters().length) {
   <div class="active-filters" role="group" aria-label="{{ 'feature.active.filters' | tr }}">
     @for (f of activeFilters(); track f.id) {
-      <button type="button" class="chip chip--active" [attr.aria-label]="'Remove ' + f.label + ' filter: ' + f.text" (click)="clearFilter(f.id)">
+      <button type="button" class="chip chip--active" [attr.aria-label]="('feature.remove.594895' | tr) + f.label + ('feature.filter' | tr) + f.text" (click)="clearFilter(f.id)">
         {{ f.label }}: {{ f.text }} <app-icon name="close" [size]="16" />
       </button>
     }

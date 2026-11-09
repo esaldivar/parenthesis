@@ -14,10 +14,10 @@
     @if (repeats(); as repeats) {
       @if (parenting()) {
         <!-- Repeating parenting time changes one date at a time for now, each through approval (#239). -->
-        <p class="legend-hint">This repeats: {{ repeats }}. A change applies to this date only.</p>
+        <p class="legend-hint">{{ 'feature.this.repeats' | tr }} {{ repeats }}{{ 'feature.a.change.applies.to.this.date.only' | tr }}</p>
       } @else {
       <fieldset class="when scope">
-        <legend>This repeats: {{ repeats }}. Change which dates?</legend>
+        <legend>{{ 'feature.this.repeats' | tr }} {{ repeats }}{{ 'feature.change.which.dates' | tr }}</legend>
         @for (option of scopes; track option.id) {
           <label class="scope__option">
             <input type="radio" name="scope" [checked]="scope() === option.id" (change)="setScope(option.id)" />
@@ -105,7 +105,7 @@
     }
 
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>{{ unavailable() ? 'Private note (optional)' : 'Notes (optional)' }}</mat-label>
+      <mat-label>{{ unavailable() ? ('feature.private.note.optional' | tr) : ('feature.notes.optional' | tr) }}</mat-label>
       <textarea matInput formControlName="notes" rows="3" maxlength="1000"></textarea>
       @if (fieldError('notes'); as e) {
         <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
@@ -117,7 +117,7 @@
     <app-loading-indicator [active]="busy()" label="{{ 'feature.saving' | tr }}" />
     <div class="actions">
       <button mat-flat-button type="submit" [disabled]="busy()">
-        {{ busy() ? 'Saving…' : needsApproval() && materialChange() ? 'Send for approval' : 'Save changes' }}
+        {{ busy() ? ('feature.saving' | tr) : needsApproval() && materialChange() ? ('feature.send.for.approval' | tr) : ('feature.save.changes' | tr) }}
       </button>
       <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">{{ 'feature.cancel' | tr }}</a>
     </div>

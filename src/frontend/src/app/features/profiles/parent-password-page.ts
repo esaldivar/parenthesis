@@ -18,7 +18,7 @@ import { FORM_STYLES } from '../auth/form-styles';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
   template: `
-    <h1>Hi, {{ name() }}</h1>
+    <h1>{{ 'feature.hi' | tr }} {{ name() }}</h1>
     <p class="lead">
       {{ 'feature.enter.your.email.and.password.to.continue' | tr }}
     </p>
@@ -47,7 +47,7 @@ import { FORM_STYLES } from '../auth/form-styles';
       </mat-form-field>
 
       <div class="actions">
-        <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Signing in…' : 'Continue' }}</button>
+        <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.signing.in' | tr) : ('feature.continue' | tr) }}</button>
       </div>
     </form>
 

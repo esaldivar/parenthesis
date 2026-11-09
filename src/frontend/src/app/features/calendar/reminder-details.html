@@ -37,12 +37,12 @@
     }
     <dt>{{ 'feature.added.by' | tr }}</dt>
     <dd>
-      {{ item().isMine ? 'You' : item().ownerName }}
+      {{ item().isMine ? ('feature.you.08b041' | tr) : item().ownerName }}
       @if (editedBy(); as editor) {
-        <span class="hint"> Edited by {{ editor }}</span>
+        <span class="hint"> {{ 'feature.edited.by' | tr }} {{ editor }}</span>
       }
       @if (seenBy(); as seen) {
-        <span class="hint"> Seen by {{ seen }}</span>
+        <span class="hint"> {{ 'feature.seen.by' | tr }} {{ seen }}</span>
       }
     </dd>
   </dl>
@@ -64,7 +64,7 @@
       }
       <div class="actions__row">
         <button mat-flat-button type="button" class="danger" [disabled]="busy()" disabledInteractive aria-describedby="reminder-delete-explanation" (click)="remove()">
-          {{ busy() ? 'Deleting…' : 'Yes, delete' }}
+          {{ busy() ? ('feature.deleting' | tr) : ('feature.yes.delete' | tr) }}
         </button>
         <button #keepButton mat-button type="button" [disabled]="busy()" aria-describedby="reminder-delete-explanation" (click)="confirmDelete(false)">{{ 'feature.keep.it' | tr }}</button>
       </div>

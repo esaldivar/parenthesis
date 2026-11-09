@@ -23,7 +23,7 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
         <button type="button" [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">{{ 'feature.shared' | tr }}</button>
         @for (home of households(); track home.ownerId) {
           <button type="button" [attr.aria-pressed]="selectedOwner() === home.ownerId"
-            (click)="openHousehold(home)">{{ home.isMine ? 'My routines' : home.ownerName + '’s routines' }}@if (
+            (click)="openHousehold(home)">{{ home.isMine ? ('feature.my.routines' | tr) : home.ownerName + ('feature.s.routines' | tr) }}@if (
               !home.isMine && updates.unopened(childId(), 'householdRoutines')
             ) {<span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span><span class="updated-dot tab-dot" aria-hidden="true"></span>}</button>
         }
@@ -60,7 +60,7 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
       } @else {
         @for (home of households(); track home.ownerId) {
           @if (home.shared; as agreed) {
-            <h4>{{ home.isMine ? 'My shared routine' : home.ownerName + '’s shared routine' }}</h4>
+            <h4>{{ home.isMine ? ('feature.my.shared.routine' | tr) : home.ownerName + ('feature.s.shared.routine' | tr) }}</h4>
             <ng-container *ngTemplateOutlet="values; context: { $implicit: agreed.values }" />
             <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}</button>
           }
@@ -85,7 +85,7 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
               <label>{{ 'feature.naps.optional' | tr }} <textarea formControlName="naps" maxlength="1000"></textarea></label>
               <div class="actions">
                 <button type="submit" [disabled]="form.invalid">
-                  {{ saving() ? 'Saving…' : conflict() ? 'Save my draft' : 'Save' }}
+                  {{ saving() ? ('feature.saving' | tr) : conflict() ? ('feature.save.my.draft' | tr) : ('feature.save' | tr) }}
                 </button>
                 <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>

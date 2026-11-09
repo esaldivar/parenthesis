@@ -64,15 +64,15 @@ const COMMENT_MAX = 500;
               <li #requestRow class="request" tabindex="-1" [attr.data-request]="request.id">
                 <div class="request__head">
                   <p class="request__summary">{{ request.summary }}</p>
-                  <span class="chip chip--pending">{{ request.canDecide ? 'Waiting for you' : 'Waiting for your co-parent' }}</span>
+                  <span class="chip chip--pending">{{ request.canDecide ? ('feature.waiting.for.you' | tr) : ('feature.waiting.for.your.co.parent' | tr) }}</span>
                 </div>
                 <p class="muted">
-                  Proposed by {{ proposer(request) }} on {{ request.createdAt | appDate: 'mediumDate' }} ·
-                  {{ request.approvals }} of {{ request.requiredApprovals }} approvals
+                  {{ 'feature.proposed.by' | tr }} {{ proposer(request) }} {{ 'feature.on' | tr }} {{ request.createdAt | appDate: 'mediumDate' }} ·
+                  {{ request.approvals }} {{ 'feature.of' | tr }} {{ request.requiredApprovals }} {{ 'feature.approvals.4481c8' | tr }}
                 </p>
                 <p>{{ explain(request) }}</p>
                 @if (request.reason) {
-                  <p class="comment"><span class="visually-hidden">{{ 'feature.reason.from' | tr }}</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
+                  <p class="comment"><span class="visually-hidden">{{ 'feature.reason.from' | tr }}</span> {{ request.proposedByYou ? ('feature.you.08b041' | tr) : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
                 }
 
                 @if (request.canDecide) {
@@ -130,10 +130,10 @@ const COMMENT_MAX = 500;
                   <span class="chip" [attr.data-status]="request.status">{{ outcome(request) }}</span>
                 </div>
                 <p class="muted">
-                  Proposed by {{ proposer(request) }} · {{ outcome(request) }} {{ request.resolvedAt | appDate: 'mediumDate' }}
+                  {{ 'feature.proposed.by' | tr }} {{ proposer(request) }} · {{ outcome(request) }} {{ request.resolvedAt | appDate: 'mediumDate' }}
                 </p>
                 @if (request.reason) {
-                  <p class="comment"><span class="visually-hidden">{{ 'feature.reason.from' | tr }}</span> {{ request.proposedByYou ? 'You' : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
+                  <p class="comment"><span class="visually-hidden">{{ 'feature.reason.from' | tr }}</span> {{ request.proposedByYou ? ('feature.you.08b041' | tr) : nameOf(request.proposerMembershipId) }}: “{{ request.reason }}”</p>
                 }
                 @for (decision of request.decisions; track decision.decidedAt) {
                   @if (decision.comment) {

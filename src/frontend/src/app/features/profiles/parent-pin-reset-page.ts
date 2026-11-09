@@ -101,7 +101,7 @@ type Step = 'checking' | 'sign-in' | 'form' | 'saved' | 'unusable' | 'wrong-acco
             }
           </mat-form-field>
           <div class="actions">
-            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Save PIN' }}</button>
+            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.saving' | tr) : ('feature.save.pin' | tr) }}</button>
           </div>
         </form>
       }
