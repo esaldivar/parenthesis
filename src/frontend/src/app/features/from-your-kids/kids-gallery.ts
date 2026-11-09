@@ -120,7 +120,6 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
     }
     .artwork-grid .memory { padding: .25rem; }
     .artwork-grid .memory img { aspect-ratio: 1; object-fit: contain; background: #fff8e8; }
-    .artwork-grid .retention { display: none; }
     @media (min-width: 56rem) {
       .artwork-display {
         width: min(100%, 42rem);
@@ -137,12 +136,10 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
         margin: 0;
       }
       .artwork-grid .memory { padding: .5rem; }
-      .artwork-grid .retention { display: block; }
     }
     .on-door .memory { --card-tilt: -6deg; padding: clamp(.18rem, .5vw, .36rem); }
     .on-door .memory:nth-child(even) { --card-tilt: 5deg; }
     .on-door .memory img { aspect-ratio: 1; object-fit: contain; background: #fff8e8; }
-    .on-door .retention { display: none; }
     .on-door .memory:nth-child(even) .pin { background: radial-gradient(circle at 35% 25%, #b5d7ec, #38688c 70%); }
     .on-door .memory:nth-child(3n) .pin { background: radial-gradient(circle at 35% 25%, #ffeda3, #b87924 70%); }
     .artwork-pager { display: flex; align-items: center; gap: .75rem; }
@@ -171,6 +168,10 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
     }
     .memory img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
     .retention { display: block; margin-top: .25rem; color: #20303f; font-size: .8rem; overflow-wrap: anywhere; }
+    .on-door .retention { font-size: .7rem; line-height: 1.15; }
+    @media (width < 56rem) {
+      .artwork-grid .retention { font-size: .7rem; line-height: 1.15; }
+    }
     .backdrop { position: fixed; inset: 0; z-index: 1000; background: #000a; }
     .detail { position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%); z-index: 1001; width: min(calc(100% - 2rem), 42rem); max-height: 90dvh; overflow: auto; display: grid; gap: 1rem; padding: 1rem; border-radius: 1rem; background: var(--color-surface); color: var(--color-text); }
     header { display: flex; justify-content: space-between; align-items: center; }

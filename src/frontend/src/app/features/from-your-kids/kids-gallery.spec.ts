@@ -4,7 +4,7 @@ import { KidsGalleryItem } from './from-your-kids-contract';
 import { KidsGallery } from './kids-gallery';
 
 describe('KidsGallery (#531)', () => {
-  function render() {
+  function render(includeSecondPage = false) {
     const fixture = TestBed.createComponent(KidsGallery);
     const now = Date.now();
     const item = (id: string, offset: number, expiresAt: string | null, bookmarked = false): KidsGalleryItem => ({
@@ -19,6 +19,7 @@ describe('KidsGallery (#531)', () => {
       item('expired drawing', -10000, new Date(now - 1000).toISOString()),
       item('unsaved drawing without an expiry', -15000, null),
       item('two-day drawing', -20000, new Date(now + 90_000_000).toISOString()),
+      ...(includeSecondPage ? [item('oldest drawing', -25000, null)] : []),
     ]);
     fixture.detectChanges();
     return { fixture, host: fixture.nativeElement as HTMLElement };
@@ -34,6 +35,34 @@ describe('KidsGallery (#531)', () => {
       'View unsaved drawing without an expiry, Unsaved',
       'View two-day drawing, Expires in 2 days',
     ]);
+    expect([...host.querySelectorAll('.fridge-door .retention')].map(label => label.textContent?.trim()))
+      .toEqual(['Expires in 1 day', 'Saved']);
+    expect([...host.querySelectorAll('.artwork-grid .retention')].map(label => label.textContent?.trim()))
+      .toEqual(['Expired', 'Unsaved', 'Expires in 2 days']);
+    expect(host.querySelector('.artwork-pager')).toBeNull();
+  });
+
+  it('shows older drawings on the next page and returns to the newest drawings', () => {
+    const { fixture, host } = render(true);
+    const pager = host.querySelector('.artwork-pager')!;
+    const [previous, next] = pager.querySelectorAll('button');
+    expect(previous.disabled).toBe(true);
+    expect(next.disabled).toBe(false);
+    expect(host.querySelectorAll('.memory')).toHaveLength(5);
+
+    next.click();
+    fixture.detectChanges();
+    expect(pager.textContent).toContain('2 / 2');
+    expect(previous.disabled).toBe(false);
+    expect(next.disabled).toBe(true);
+    expect(host.querySelectorAll('.memory')).toHaveLength(1);
+    expect(host.querySelector('.fridge-door .memory')?.getAttribute('aria-label')).toBe('View oldest drawing, Unsaved');
+
+    previous.click();
+    fixture.detectChanges();
+    expect(pager.textContent).toContain('1 / 2');
+    expect(host.querySelectorAll('.memory')).toHaveLength(5);
+    expect(host.querySelector('.fridge-door .memory')?.getAttribute('aria-label')).toBe('View newer drawing, Expires in 1 day');
   });
 
   it('focuses the preview, closes on Escape, and restores focus to the originating thumbnail', async () => {

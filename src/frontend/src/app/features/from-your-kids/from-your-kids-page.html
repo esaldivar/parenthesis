@@ -60,6 +60,10 @@
       }
       @case ('photos') {
         <section class="corkboard" aria-labelledby="photos-title">
+          @if (previewAt() !== null) {
+            <img class="corkboard-sticker rainbow" src="/art/from-your-kids/sample-rainbow.webp" alt="" />
+            <img class="corkboard-sticker star" src="/art/from-your-kids/sample-star.webp" alt="" />
+          }
           <h2 id="photos-title">{{ contentName() }}'s Photos <span aria-hidden="true">♡</span></h2>
           <app-kids-gallery kind="Photo" [items]="photos()" />
           @if (!photos().length) { <p class="empty">No photos shared with you yet.</p> }
