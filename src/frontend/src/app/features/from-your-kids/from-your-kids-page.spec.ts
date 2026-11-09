@@ -58,8 +58,8 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     const [, artwork, photos] = host.querySelectorAll<HTMLButtonElement>('.sections button');
     artwork.click();
     fixture.detectChanges();
-    expect(host.querySelectorAll('.fridge-door .memory')).toHaveLength(1);
-    expect(host.querySelectorAll('.drawings .memory')).toHaveLength(4);
+    expect(host.querySelectorAll('.fridge-door .memory')).toHaveLength(2);
+    expect(host.querySelectorAll('.artwork-grid .memory')).toHaveLength(3);
     expect(host.textContent).not.toContain('No artwork shared with you yet');
     photos.click();
     fixture.detectChanges();

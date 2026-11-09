@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal, viewChild } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { KidsDiaryEntry, KidsMood } from './from-your-kids-contract';
 
@@ -24,18 +24,20 @@ const MOOD_CHARACTER: Record<Exclude<KidsMood, 'Happy'>, string> = {
         </div>
       </div>
     } @else {
-      <section class="book" aria-label="Shared diary" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
+      <section class="book" [class.reading]="reading()" aria-label="Shared diary" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
         <div class="paper index-page"><h2>Diary Entries</h2>
           <nav aria-label="Choose diary entry">
             @for (entry of ordered(); track entry.id; let i = $index) {
-              <button type="button" class="entry-choice" [attr.aria-current]="index() === i ? 'page' : null" (click)="index.set(i)">
-                <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
+              <button type="button" class="entry-choice" [attr.aria-current]="index() === i ? 'page' : null" (click)="selectEntry(i)">
                 <strong>{{ entry.title || 'A diary entry' }}</strong>
+                <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
+                <span class="entry-chevron" aria-hidden="true">›</span>
               </button>
             }
           </nav>
         </div>
         <article class="paper" aria-live="polite">
+          <button type="button" class="back-to-entries" #backToEntries (click)="showEntries()">‹ All diary entries</button>
           @if (current(); as entry) {
             <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
             <p class="mood">
@@ -51,7 +53,7 @@ const MOOD_CHARACTER: Record<Exclude<KidsMood, 'Happy'>, string> = {
           }
         </article>
       </section>
-      <nav class="pager" aria-label="Diary pages">
+      <nav class="pager" [class.reading]="reading()" aria-label="Diary pages">
         <button type="button" (click)="previous()" [disabled]="index() === 0" aria-label="Previous diary page">← Previous</button>
         <span aria-live="polite">Page {{ index() + 1 }} of {{ ordered().length }}</span>
         <button type="button" (click)="next()" [disabled]="index() >= ordered().length - 1" aria-label="Next diary page">Next →</button>
@@ -60,53 +62,80 @@ const MOOD_CHARACTER: Record<Exclude<KidsMood, 'Happy'>, string> = {
   `,
   imports: [DatePipe],
   styles: `
-    :host { display: grid; gap: 1rem; --journal-ink: #20303f; --journal-paper: #fffaeb; --journal-edge: #eed9b6;
-      --journal-line: #c9a97b; --journal-date: #f2dfb9; }
-    :host-context([data-theme='dark']) { --journal-ink: #f7f5ed; --journal-paper: #223c31;
-      --journal-edge: #152a22; --journal-line: #57796b; --journal-date: #345244; }
-    @media (prefers-color-scheme: dark) {
-      :host-context(html:not([data-theme])) { --journal-ink: #f7f5ed; --journal-paper: #223c31;
-        --journal-edge: #152a22; --journal-line: #57796b; --journal-date: #345244; }
+    :host { display: grid; gap: .85rem; }
+    .book {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      min-height: clamp(21rem, 48vw, 33rem);
+      padding: clamp(2.5rem, 6%, 4rem) 6%;
+      background: url('/art/from-your-kids/journal-spread.webp') center / 100% 100% no-repeat;
+      color: #20303f;
     }
-    .book { position: relative; display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
-      padding: .3rem; border: .25rem solid var(--color-outline); border-radius: 1.45rem 1.2rem 1.4rem 1.15rem;
-      background: var(--color-selected); box-shadow: 0 .45rem .85rem #0003; color: var(--journal-ink); }
-    .book::after { content: ''; position: absolute; inset: 1.5rem auto 1.5rem 50%; width: 2.4rem;
-      transform: translateX(-50%); background: url('/art/from-your-kids/journal-rings.webp') top center / 100% auto repeat-y;
-      pointer-events: none; }
-    .paper { min-height: 19rem; padding: clamp(1.25rem,3vw,2.65rem);
-      border-radius: 1rem .35rem .5rem 1rem; border: 1px solid var(--journal-line);
-      background: radial-gradient(ellipse at center, var(--journal-paper) 52%, var(--journal-edge)); }
-    .paper + .paper { border-radius: .35rem 1rem 1rem .5rem; }
-    article.paper { overflow-wrap: anywhere; }
+    .paper { min-width: 0; }
+    .paper:first-child { padding-inline-end: 13%; }
+    .paper + .paper { padding-inline-start: 13%; }
+    .cover { align-self: center; text-align: center; }
     .cover img { width: 3rem; }
+    .empty-book .paper + .paper { align-self: center; }
+    .empty-book p { margin: .55rem 0; }
+    .index-page nav { display: grid; gap: .5rem; max-height: 19rem; overflow: auto; padding: .2rem; }
+    .entry-choice { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .18rem .6rem; align-items: center;
+      width: 100%; text-align: left; background: #fff8e8; border: 1px solid #c9ae8a; color: #20303f; }
+    .entry-choice[aria-current="page"] { background: #dce8d7; border-color: #4f7669; }
+    .entry-choice time { grid-column: 1; font-size: .8rem; }
+    .entry-chevron { grid-column: 2; grid-row: 1 / span 2; font-size: 1.35rem; }
+    article time { display: inline-block; justify-self: start; border-radius: var(--radius-pill); padding: .25rem .65rem; background: #f0dcb1; }
+    article h3 { font-size: clamp(1.2rem, 2.8vw, 1.8rem); margin: .65rem 0 .55rem; }
+    h2, h3 { font-family: Georgia, serif; overflow-wrap: anywhere; }
+    h2 { font-size: clamp(1.2rem, 3vw, 1.85rem); margin: 0 0 .5rem; }
+    .mood { display: flex; align-items: center; gap: .4rem; font-weight: 700; margin: .5rem 0; }
     .mood img { width: 1.85rem; height: 1.85rem; object-fit: contain; }
-    article.paper::after { content: ''; display: block; width: 2.5rem; height: 2.5rem; margin-block-start: 1.15rem;
+    .entry { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }
+    article.paper::after { content: ''; display: block; width: 2.25rem; height: 2.25rem; margin-top: .75rem;
       background: url('/art/from-your-kids/journal-heart.webp') center / contain no-repeat; }
-    .cover { display: grid; align-content: center; justify-items: center; text-align: center; }
-    .index-page nav { display: grid; gap: .6rem; margin-top: 1rem; }
-    .entry-choice { display: grid; gap: .3rem; width: 100%; text-align: left; background: var(--color-surface); border: 1px solid var(--color-divider); }
-    .entry-choice[aria-current="page"] { background: var(--color-selected); border-color: var(--color-action); }
-    .entry-choice time { font-size: .8rem; }
-    article time { display: inline-block; border-radius: var(--radius-pill); padding: .25rem .65rem; background: var(--journal-date); }
-    article h3 { font-size: clamp(1.15rem, 2.8vw, 1.7rem); margin-block: .75rem .5rem; }
-    .entry { line-height: 1.65; }
-    h2,h3 { font-family: Georgia,serif; }
-    h2 { font-size: clamp(1.5rem,3vw,2.3rem); }
-    .mood { display: flex; align-items: center; gap: .4rem; font-weight: 700; }
-    .mood span { font-size: 1.5rem; }
-    .entry { white-space: pre-wrap; overflow-wrap: anywhere; }
-    .pager { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 1rem; }
-    button { min-height: 44px; border: 1px solid var(--color-outline); border-radius: .5rem; padding: .5rem 1rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; }
+    .pager { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: .65rem; }
+    button { min-height: 44px; border: 1px solid var(--color-outline); border-radius: .65rem; padding: .5rem .8rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; }
     button:disabled { opacity: .5; cursor: default; }
     button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
-    @media (max-width: 40rem) { .book { grid-template-columns: 1fr; } .book::after,.cover,.index-page { display: none; } .paper { min-height: 14rem; } .paper + .paper { border-radius: .9rem; } }
+    .back-to-entries { display: none; }
+    @media (max-width: 40rem) {
+      .book { grid-template-columns: minmax(0, 1fr); min-height: 0; padding: 0; background: none; color: var(--color-text); }
+      .book .paper { padding: 0; }
+      .cover, article.paper, .pager, .reading .index-page { display: none; }
+      .reading article.paper, .pager.reading { display: grid; }
+      .pager.reading { display: flex; }
+      .index-page nav { max-height: none; }
+      .entry-choice { background: var(--color-surface); border-color: var(--color-divider); color: var(--color-text); }
+      .entry-choice[aria-current="page"] { background: var(--color-surface); border-color: var(--color-divider); }
+      .book article.paper, .empty-book .paper + .paper { padding: 1rem; border-radius: .85rem; background: #fff3d6 url('/art/from-your-kids/journal-page.webp') center / cover; color: #20303f; }
+      .back-to-entries { display: block; justify-self: start; margin-bottom: .75rem; }
+    }
   `,
 })
 export class KidsDiary {
   readonly entries = input<readonly KidsDiaryEntry[]>([]);
   protected readonly moodCharacter = MOOD_CHARACTER;
   protected readonly index = signal(0);
+  protected readonly reading = signal(false);
+  private readonly injector = inject(Injector);
+  private readonly backToEntries = viewChild<ElementRef<HTMLButtonElement>>('backToEntries');
+  private lastEntryButton: HTMLElement | null = null;
+
+  protected selectEntry(index: number): void {
+    this.lastEntryButton = typeof document === 'undefined' ? null : document.activeElement as HTMLElement | null;
+    this.index.set(index);
+    this.reading.set(true);
+    afterNextRender(() => {
+      const back = this.backToEntries()?.nativeElement;
+      if (back?.getClientRects().length) back.focus();
+    }, { injector: this.injector });
+  }
+
+  protected showEntries(): void {
+    this.reading.set(false);
+    afterNextRender(() => this.lastEntryButton?.focus(), { injector: this.injector });
+  }
+
   protected readonly ordered = computed(() => [...this.entries()].sort((a,b) => b.createdAt.localeCompare(a.createdAt)));
   protected readonly current = computed(() => this.ordered()[Math.min(this.index(), this.ordered().length - 1)] ?? null);
   private touchStartX: number | null = null;

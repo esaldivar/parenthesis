@@ -21,13 +21,13 @@ h1, h2, .section-copy strong { font-family: Georgia, serif; }
   content: '';
   position: absolute;
   inset-block: 0;
-  width: min(22%, 11rem);
+  width: min(22%, 6rem);
   z-index: -1;
   background: url('/art/from-your-kids/leaves.webp') left center / contain no-repeat;
 }
-.intro::before { inset-inline-start: 0; }
-.intro::after { inset-inline-end: 0; transform: scaleX(-1); }
-.title-ribbon, .corkboard h2 {
+.intro::before { inset-inline-start: max(0px, calc(50% - 17rem)); }
+.intro::after { inset-inline-end: max(0px, calc(50% - 17rem)); transform: scaleX(-1); }
+.corkboard h2 {
   padding: .35em .65em;
   border: 1px solid #c89c61;
   border-radius: .65rem .85rem .55rem .9rem;
@@ -36,9 +36,9 @@ h1, h2, .section-copy strong { font-family: Georgia, serif; }
   box-shadow: 0 .2rem .35rem #0003;
   text-align: center;
 }
-.title-ribbon { display: inline-flex; align-items: center; gap: .35em; font-size: clamp(1.3rem, 4vw, 2.65rem); }
-.title-ribbon h1 { font-size: inherit; }
-.title-ribbon span, h2 span { color: #a9384f; }
+.title-ribbon { width: min(78%, 24rem); }
+.title-ribbon img { display: block; width: 100%; height: auto; filter: drop-shadow(0 .14rem .14rem #0003); }
+h2 span { color: #a9384f; }
 .section-heading span { color: var(--color-action); }
 .child-tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); }
 .child-tabs button, .retry {
@@ -90,10 +90,9 @@ button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3p
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   gap: var(--space-3);
-  border: clamp(12px, 2vw, 24px) solid #996638;
-  border-image: url('/art/from-your-kids/cork-frame.webp') 24 stretch;
-  padding: clamp(.65rem, 2vw, 1.1rem);
-  background: #c48c55 url('/art/from-your-kids/cork-texture.webp') repeat;
+  border: clamp(14px, 2.25vw, 28px) solid transparent;
+  border-image: url('/art/from-your-kids/corkboard-illustration.webp') 56 fill stretch;
+  padding: clamp(.6rem, 2vw, 1.2rem);
   color: #20303f;
 }
 .corkboard::before, .corkboard::after {

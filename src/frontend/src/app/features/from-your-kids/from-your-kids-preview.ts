@@ -6,9 +6,11 @@ const previewSource = { childId: 'preview', visibleToViewer: true } as const;
 export function previewDiary(now: number): readonly KidsDiaryEntry[] {
   return [
     { ...previewSource, kind: 'Diary', id: 'garden', createdAt: new Date(now).toISOString(),
-      title: 'A little garden', body: 'I planted a seed and drew a picture of what it might grow into.', mood: 'Happy' },
+      title: 'A little garden', body: 'I planted a sunflower seed in a little pot today. I drew a picture of how tall it might get and put the picture on the fridge. I want to check it every morning and draw the first leaf when it comes up.', mood: 'Happy' },
     { ...previewSource, kind: 'Diary', id: 'clouds', createdAt: new Date(now - day).toISOString(),
       title: 'Watching clouds', body: 'One cloud looked like a giant rabbit.', mood: 'Calm' },
+    { ...previewSource, kind: 'Diary', id: 'rain', createdAt: new Date(now - 2 * day).toISOString(),
+      title: 'Rainy day drawings', body: 'I drew a rocket while the rain tapped on the window.', mood: 'Proud' },
   ];
 }
 

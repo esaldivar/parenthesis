@@ -22,17 +22,28 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
     </ng-template>
     @if (kind() === 'Artwork') {
       <div class="artwork">
-        <div class="fridge-door" role="group" aria-label="Closed refrigerator">
-          @if (ordered()[0]; as first) {
-            <div class="on-door"><ng-container *ngTemplateOutlet="card; context: { $implicit: first }" /></div>
-          }
-        </div>
-        @if (ordered().length > 1) {
-          <div class="gallery-items drawings">
-            @for (item of ordered().slice(1); track item.id) {
+        <div class="artwork-display">
+          <div class="fridge-door" role="group" aria-label="Closed refrigerator with magnet-pinned artwork">
+            <div class="on-door">
+              @for (item of artworkCards().slice(0, 2); track item.id) {
+                <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
+              }
+            </div>
+          </div>
+          <div class="artwork-grid">
+            @for (item of artworkCards().slice(2); track item.id) {
               <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
             }
           </div>
+        </div>
+        @if (artworkPageCount() > 1) {
+          <nav class="artwork-pager" aria-label="Artwork pages">
+            <button type="button" [disabled]="currentArtworkPage() === 0"
+              (click)="artworkPage.set(currentArtworkPage() - 1)">Previous</button>
+            <span aria-live="polite">{{ currentArtworkPage() + 1 }} / {{ artworkPageCount() }}</span>
+            <button type="button" [disabled]="currentArtworkPage() + 1 === artworkPageCount()"
+              (click)="artworkPage.set(currentArtworkPage() + 1)">Next</button>
+          </nav>
         }
       </div>
     } @else {
@@ -79,32 +90,62 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
     }
   `,
   styles: `
-    :host { display: block; width: 100%; min-width: 0; --kids-fridge: url('/art/from-your-kids/fridge-light.webp'); }
-    :host-context([data-theme='dark']) { --kids-fridge: url('/art/from-your-kids/fridge-dark.webp'); }
-    @media (prefers-color-scheme: dark) {
-      :host-context(html:not([data-theme])) { --kids-fridge: url('/art/from-your-kids/fridge-dark.webp'); }
-    }
-    .artwork {
-      display: grid;
-      grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr);
-      gap: clamp(.75rem, 3vw, 2rem);
-      align-items: center;
-      justify-items: center;
-      padding: var(--space-4);
-      border: 1px solid var(--color-divider);
-      border-radius: var(--radius-card);
-      background: var(--color-surface-soft);
-    }
-    .artwork:has(.fridge-door:only-child) { grid-template-columns: minmax(0, 1fr); }
+    :host { display: block; width: 100%; min-width: 0; }
+    .artwork { display: grid; justify-items: center; gap: var(--space-3); }
+    .artwork-display { display: grid; width: min(100%, 18rem); }
+    .artwork-display > * { grid-area: 1 / 1; }
     .fridge-door {
       position: relative;
-      width: min(100%, 12rem);
-      aspect-ratio: 70 / 108;
-      background: var(--kids-fridge) center / 100% 100% no-repeat;
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      background: url('/art/from-your-kids/fridge-illustration.webp') center / 100% 100% no-repeat;
     }
-    .on-door { position: absolute; inset: 17% 15% auto 33%; }
-    .on-door .memory { --card-tilt: -6deg; padding: .25rem; }
-    .on-door .retention { font-size: .7rem; }
+    .on-door {
+      position: absolute;
+      inset-inline: 24% 12%;
+      display: grid;
+      align-items: center;
+      justify-items: center;
+      gap: clamp(.25rem, 1vw, .65rem);
+    }
+    .on-door { top: 13%; bottom: 61%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .artwork-grid {
+      position: relative;
+      align-self: start;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: .35rem;
+      margin: 94% 12% 0 24%;
+    }
+    .artwork-grid .memory { padding: .25rem; }
+    .artwork-grid .memory img { aspect-ratio: 1; object-fit: contain; background: #fff8e8; }
+    .artwork-grid .retention { display: none; }
+    @media (min-width: 56rem) {
+      .artwork-display {
+        width: min(100%, 42rem);
+        grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+        align-items: center;
+        gap: clamp(1.75rem, 4vw, 3.5rem);
+      }
+      .artwork-display > * { grid-area: auto; }
+      .artwork-display:has(.artwork-grid:empty) { width: min(100%, 16rem); grid-template-columns: minmax(0, 1fr); }
+      .artwork-grid {
+        align-self: center;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.25rem;
+        margin: 0;
+      }
+      .artwork-grid .memory { padding: .5rem; }
+      .artwork-grid .retention { display: block; }
+    }
+    .on-door .memory { --card-tilt: -6deg; padding: clamp(.18rem, .5vw, .36rem); }
+    .on-door .memory:nth-child(even) { --card-tilt: 5deg; }
+    .on-door .memory img { aspect-ratio: 1; object-fit: contain; background: #fff8e8; }
+    .on-door .retention { display: none; }
+    .on-door .memory:nth-child(even) .pin { background: radial-gradient(circle at 35% 25%, #b5d7ec, #38688c 70%); }
+    .on-door .memory:nth-child(3n) .pin { background: radial-gradient(circle at 35% 25%, #ffeda3, #b87924 70%); }
+    .artwork-pager { display: flex; align-items: center; gap: .75rem; }
     .gallery-items {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
@@ -112,7 +153,6 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
       width: 100%;
       padding: .55rem .2rem;
     }
-    .drawings { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 27rem; }
     .pin { position: absolute; top: -.4rem; left: 50%; width: .85rem; height: .85rem; border-radius: 50%;
       background: radial-gradient(circle at 35% 25%, #f8aaa0, #ae374d 70%);
       box-shadow: 0 2px 3px #0006; transform: translateX(-50%); z-index: 1; }
@@ -130,7 +170,6 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
       }
     }
     .memory img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
-    .drawings .memory img, .on-door .memory img { object-fit: contain; background: #fff8e8; }
     .retention { display: block; margin-top: .25rem; color: #20303f; font-size: .8rem; overflow-wrap: anywhere; }
     .backdrop { position: fixed; inset: 0; z-index: 1000; background: #000a; }
     .detail { position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%); z-index: 1001; width: min(calc(100% - 2rem), 42rem); max-height: 90dvh; overflow: auto; display: grid; gap: 1rem; padding: 1rem; border-radius: 1rem; background: var(--color-surface); color: var(--color-text); }
@@ -143,10 +182,11 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
     .privacy { color: var(--color-text-secondary); font-size: .85rem; }
     :is(button,a,textarea):focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
     @media (max-width: 40rem) {
-      .artwork { grid-template-columns: minmax(0, 1fr); }
-      .fridge-door { width: min(100%, 9.5rem); }
+      .gallery-items.photos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .photos .memory { padding: .3rem; }
+      .photos .memory img { aspect-ratio: 1; }
+      .photos .retention { font-size: .7rem; }
     }
-    @media (max-width: 40rem) { .gallery-items.photos { grid-auto-flow: column; grid-auto-columns: minmax(9rem,70%); grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; padding: .75rem .25rem; justify-items: stretch; } .memory { scroll-snap-align: center; } .memory img { width: 100%; } }
     @media (prefers-reduced-motion: reduce) { .memory { transform: none !important; } }
   `,
 })
@@ -165,6 +205,13 @@ export class KidsGallery {
     return [...this.items()]
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
       .map(item => ({ ...item, retention: this.retentionLabel(item, now) }));
+  });
+  protected readonly artworkPage = signal(0);
+  protected readonly artworkPageCount = computed(() => Math.ceil(this.ordered().length / 5));
+  protected readonly currentArtworkPage = computed(() => Math.min(this.artworkPage(), Math.max(0, this.artworkPageCount() - 1)));
+  protected readonly artworkCards = computed(() => {
+    const start = this.currentArtworkPage() * 5;
+    return this.ordered().slice(start, start + 5);
   });
   protected readonly active = computed(() => this.ordered().find(item => item.id === this.activeId()) ?? null);
 
