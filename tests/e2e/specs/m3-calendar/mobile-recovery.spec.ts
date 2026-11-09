@@ -144,7 +144,7 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
     test(`moving and clearing a slot never creates an event, ${theme} (#237)`, async ({ page, family }, info) => {
       await page.emulateMedia({ colorScheme: theme });
       const path = `/api/families/${family.familyId}/calendar/events`;
-      // A completely empty calendar shows an empty state, not the interactive week grid.
+      // Seed a timed item so the interactive week is also shown on desktop.
       const existing = await family.dad.json<{ id: string }>(family.dad.post(path, {
         category: 'Activity', title: 'Slot fixture', childIds: [family.kaiId], startsAt: at(40), endsAt: at(41),
       }));

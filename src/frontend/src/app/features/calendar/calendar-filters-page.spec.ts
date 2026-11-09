@@ -135,7 +135,7 @@ describe('calendar filters on the page', () => {
     button('Week', main().querySelector('.segmented')!).click();
     await settle();
     await answerLoad();
-    expect([...main().querySelectorAll('app-calendar-week .agenda button.item .title')].map(text)).toEqual(['School play']);
+    expect([...main().querySelectorAll('app-calendar-week .grid button.item .title')].map(text)).toEqual(['School play']);
   });
 
   it('says plainly when nothing matches, and Reset filters shows everything again and forgets the choice', async () => {

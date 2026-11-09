@@ -150,6 +150,8 @@ export const translations = {
   'appearance.dark': ["Dark","Oscuro"],
   'appearance.system': ["System","Sistema"],
   'pin.go': ["Go","Continuar"],
+  'calendar.addAt': ['Add on {date} at {time}', 'Agregar el {date} a las {time}'],
+  'calendar.addOn': ['Add on {date}', 'Agregar el {date}'],
   'calendar.previous.week': ['Previous week', 'Semana anterior'],
   'calendar.previous.month': ['Previous month', 'Mes anterior'],
   'calendar.previous.list': ['Previous list', 'Lista anterior'],

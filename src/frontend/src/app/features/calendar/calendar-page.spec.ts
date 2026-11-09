@@ -106,8 +106,7 @@ describe('the calendar page', () => {
         event({ id: 'piano', title: 'Piano lesson', startsAt: '2026-10-21T21:00:00Z', endsAt: '2026-10-21T22:00:00Z' }),
       ]);
 
-      // Week: its day list, which narrow screens (and this test's page) show; the grid's buttons do the same.
-      const where = view === 'week' ? 'app-calendar-week .agenda' : 'app-calendar-month';
+      const where = view === 'week' ? 'app-calendar-week .grid' : 'app-calendar-month';
       const piano = [...main().querySelectorAll<HTMLElement>(`${where} button.item`)].find((b) => text(b).includes('Piano lesson'))!;
       piano.focus();
       piano.click();
@@ -385,7 +384,7 @@ describe('the calendar page', () => {
     await settle(harness);
 
     expect(TestBed.inject(Router).url).toContain('child=aurora');
-    const titles = [...main().querySelectorAll('app-calendar-week .agenda .title')].map((t) => text(t));
+    const titles = [...main().querySelectorAll('app-calendar-week .grid .title')].map((t) => text(t));
     expect(titles).toEqual(['Aurora’s recital']);
   });
 
@@ -497,7 +496,7 @@ describe('the calendar page', () => {
   it('ignores an older details response when another event has been selected', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [event(), event({ id: 'e2', title: 'Second event' })]);
     autoDetails = false;
-    const blocks = main().querySelectorAll<HTMLElement>('app-calendar-week .agenda button.item');
+    const blocks = main().querySelectorAll<HTMLElement>('app-calendar-week .grid button.item');
     [...blocks].find((b) => text(b).includes('Soccer practice'))!.click();
     const first = await vi.waitFor(() => http.expectOne(`${F}/calendar/events/e1`));
     [...blocks].find((b) => text(b).includes('Second event'))!.click();
@@ -529,7 +528,7 @@ describe('the calendar page', () => {
       event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex', allDay: true, startsAt: '2026-10-20T05:00:00Z', endsAt: '2026-10-21T05:00:00Z' }),
     ]);
 
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item') as HTMLElement).click();
     await settle(harness);
     const dialog = document.querySelector('[role="dialog"]')!;
     expect(text(dialog.querySelector('h2'))).toBe('Time with Alex');
@@ -566,7 +565,7 @@ describe('the calendar page', () => {
       event({ id: 'pt', title: 'Time with Alex', category: 'ParentingTime', caregiverMembershipId: 'm-alex' }),
     ]);
 
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item') as HTMLElement).click();
     await settle(harness);
     const swap = [...document.querySelectorAll('[role="dialog"] a')].find((a) => text(a) === 'Request swap')!;
 
@@ -677,7 +676,7 @@ describe('the calendar page', () => {
       event({ id: 'u', title: 'Unavailable', category: 'Unavailable', childIds: [], ownerMembershipId: 'm-sam' }),
     ]);
 
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item') as HTMLElement).click();
     await settle(harness);
     const dialog = document.querySelector('[role="dialog"]')!;
 
@@ -692,9 +691,9 @@ describe('the calendar page', () => {
       reminder({ id: 'r2', title: 'Pack lunches', childId: null, allDay: true, startsAt: '2026-10-21T05:00:00Z' }),
     ]);
 
-    const agenda = () => [...main().querySelectorAll('app-calendar-week .agenda .title')].map((t) => text(t));
-    expect(agenda()).toEqual(['Spirit Day', 'Pack lunches']);
-    const item = main().querySelector('app-calendar-week .agenda button.item')!;
+    const weekTitles = () => [...main().querySelectorAll('app-calendar-week .grid .title')].map((t) => text(t));
+    expect(weekTitles()).toEqual(['Pack lunches', 'Spirit Day']);
+    const item = main().querySelector('app-calendar-week .item--timed[data-kind="reminder"]')!;
     expect(item.getAttribute('data-kind')).toBe('reminder');
     expect(text(item)).toContain('Spirit Day, Reminder, 8:00 AM');
     expect(text(main().querySelector('.key'))).toContain('Reminder');
@@ -703,7 +702,7 @@ describe('the calendar page', () => {
     await settle(harness);
     (await eventsRequest().catch(() => null))?.flush([]);
     await settle(harness);
-    expect(agenda()).toEqual(['Pack lunches']); // A reminder about no child stays for everyone.
+    expect(weekTitles()).toEqual(['Pack lunches']); // A reminder about no child stays for everyone.
 
     click('List', main().querySelector('.segmented')!);
     await settle(harness);
@@ -722,7 +721,7 @@ describe('the calendar page', () => {
     ]);
     expect(http.match((r) => r.url.endsWith('/seen'))).toHaveLength(0);
 
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item') as HTMLElement).click();
     await settle(harness);
     const dialog = document.querySelector('[role="dialog"]')!;
     const seen = await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/reminders/r1/seen`));
@@ -766,7 +765,7 @@ describe('the calendar page', () => {
 
   it('moves reminder confirmation focus to Keep it and restores Delete after cancelling (#172)', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [], [reminder()]);
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item') as HTMLElement).click();
     await settle(harness);
     http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
     const dialog = document.querySelector('[role="dialog"]')!;
@@ -784,7 +783,7 @@ describe('the calendar page', () => {
 
   it('keeps confirmation focus through a failed reminder deletion and blocks duplicate requests (#172)', async () => {
     const { harness } = await open('/calendar?date=2026-10-20', [], [reminder()]);
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item') as HTMLElement).click();
     await settle(harness);
     http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
     const dialog = document.querySelector('[role="dialog"]')!;
@@ -810,7 +809,7 @@ describe('the calendar page', () => {
     const { harness } = await open('/calendar?date=2026-10-20', [], [reminder()]);
     expect(await axeViolations(document.body)).toEqual([]);
 
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item') as HTMLElement).click();
     await settle(harness);
     http.match((r) => r.url.endsWith('/seen')).forEach((r) => r.flush(null));
     expect(await axeViolations(document.body)).toEqual([]);
@@ -823,7 +822,7 @@ describe('the calendar page', () => {
     ]);
     expect(await axeViolations(document.body)).toEqual([]);
 
-    (main().querySelector('app-calendar-week .agenda button.item') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item') as HTMLElement).click();
     await settle(harness);
     expect(await axeViolations(document.body)).toEqual([]);
   });

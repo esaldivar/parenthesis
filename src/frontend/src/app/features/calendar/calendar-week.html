@@ -1,11 +1,11 @@
-<!-- Wide screens: the week grid. -->
-<div class="grid" [style.--span-lanes]="spanLanes()">
+<div class="grid">
   <div class="grid__corner" aria-hidden="true"></div>
   @for (day of days(); track day.date) {
     <div class="grid__head" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
       <span class="visually-hidden">{{ day.longLabel }}{{ day.isToday ? ('feature.today.4b1201' | tr) : '' }}</span>
       <span aria-hidden="true" class="grid__weekday">{{ day.weekday }}</span>
       <span aria-hidden="true" class="grid__date">{{ day.monthDay }}</span>
+      <span aria-hidden="true" class="grid__day-number">{{ day.dayOfMonth }}</span>
     </div>
   }
 
@@ -42,7 +42,7 @@
   <div #scroller class="grid__body" tabindex="0" role="region" aria-label="{{ 'feature.events.by.time.of.day.scrollable' | tr }}">
     <div class="grid__hours" aria-hidden="true">
       @for (mark of hourMarks(); track mark.row) {
-        <span [style.grid-row]="mark.row">{{ mark.label }}</span>
+        <span [class.grid__hour--extra]="mark.row % 4 === 3" [style.grid-row]="mark.row">{{ mark.label }}</span>
       }
     </div>
     @for (day of timed(); track day.date) {
@@ -63,7 +63,15 @@
           }
         }
         @for (slot of day.placed; track slot.item.id) {
-          <li [style.grid-row]="slot.row + ' / span ' + slot.span" [style.grid-column]="slot.lane">
+          <li
+            class="timed-slot"
+            [style.--slot-row]="slot.row + ' / span ' + slot.span"
+            [style.--slot-column]="slot.lane"
+            [style.--slot-top]="slot.narrow.top + '%'"
+            [style.--slot-height]="slot.narrow.height + '%'"
+            [style.--slot-left]="slot.narrow.left + '%'"
+            [style.--slot-width]="slot.narrow.width + '%'"
+          >
             <button
               type="button"
               class="item item--timed"
@@ -78,7 +86,14 @@
           </li>
         }
         @for (marker of day.markers; track marker.item.id) {
-          <li class="marker" [style.grid-row]="marker.row + ' / span ' + marker.span">
+          <li
+            class="timed-slot marker"
+            [style.--slot-row]="marker.row + ' / span ' + marker.span"
+            [style.--slot-top]="marker.narrow.top + '%'"
+            [style.--slot-height]="marker.narrow.height + '%'"
+            [style.--slot-left]="marker.narrow.left + '%'"
+            [style.--slot-width]="marker.narrow.width + '%'"
+          >
             <button
               type="button"
               class="item item--marker"
@@ -95,47 +110,3 @@
     }
   </div>
 </div>
-
-<!-- Narrow screens: day by day. -->
-<ol class="agenda" aria-label="{{ 'feature.this.week.day.by.day' | tr }}">
-  @for (day of days(); track day.date) {
-    <li class="agenda__day" [class.is-today]="day.isToday" [class.is-picked]="pick.onDay(day.date) && !pick.at()!.time">
-      <!-- A tap on the day's empty space adds on that day (#212); pointer only, beside the page's Add button. -->
-      <button type="button" class="tap-add__button" tabindex="-1" aria-hidden="true" (click)="addOnDay(day.date)"></button>
-      <h3 class="agenda__date">
-        <span>{{ day.weekday }}</span> <span>{{ day.monthDay }}</span>
-        @if (day.isToday) {
-          <span class="visually-hidden">{{ 'feature.today.4b1201' | tr }}</span>
-        }
-      </h3>
-      @if (day.items.length === 0) {
-        <p class="agenda__none">{{ 'feature.nothing.scheduled' | tr }}</p>
-      } @else {
-        <ul class="agenda__items">
-          @for (item of day.items; track item.id) {
-            <li>
-              <button
-                type="button"
-                class="item item--row"
-                [attr.data-kind]="item.kind" [appCalendarPalette]="item.concealed ? 'concealed' : (item.palette ?? item.kind)"
-                [attr.data-category]="item.category"
-                [attr.data-status]="item.status"
-                [attr.data-concealed]="item.concealed ? 'true' : null"
-                (click)="selected.emit(item)"
-              >
-                <app-item-text [item]="item" />
-              </button>
-            </li>
-          }
-        </ul>
-      }
-      @if (pick.onDay(day.date) && !pick.at()!.time) {
-        <div class="slot-pick slot-pick--day">
-          <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
-            {{ pickText(pick.at()!) }}
-          </button>
-        </div>
-      }
-    </li>
-  }
-</ol>

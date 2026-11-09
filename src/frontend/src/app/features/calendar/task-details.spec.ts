@@ -89,7 +89,7 @@ describe('tasks on the calendar', () => {
     [...dialog().querySelectorAll('label')].find((l) => text(l).startsWith(label))!.querySelector('input') as HTMLInputElement;
 
   async function openDetails() {
-    (main().querySelector('app-calendar-week .agenda button.item[data-kind="task"]') as HTMLElement).click();
+    (main().querySelector('app-calendar-week .grid button.item[data-kind="task"]') as HTMLElement).click();
     await settle();
     (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/tasks/t1/seen`))).flush(null);
     await settle();
@@ -102,7 +102,7 @@ describe('tasks on the calendar', () => {
 
     expect(request.request.params.get('from')).toBe('2026-10-18');
     expect(request.request.params.get('to')).toBe('2026-10-25');
-    const items = [...main().querySelectorAll<HTMLElement>('app-calendar-week .agenda button.item[data-kind="task"]')];
+    const items = [...main().querySelectorAll<HTMLElement>('app-calendar-week .grid button.item[data-kind="task"]')];
     // Both are due Thursday, so they sort by title.
     expect(items.map((i) => text(i.querySelector('.title')))).toEqual(['Return library books', 'Science fair poster']);
     expect(text(items[0])).toContain('Return library books, Task, Due, Done');
@@ -115,7 +115,7 @@ describe('tasks on the calendar', () => {
     await settle();
     // Child filtering uses the loaded items. Waiting for a nonexistent reload hid errors and made this test time out.
     expect(http.match((r) => r.url === `${F}/calendar/tasks`)).toHaveLength(0);
-    expect([...main().querySelectorAll('app-calendar-week .agenda button.item[data-kind="task"] .title')].map(text)).toEqual([
+    expect([...main().querySelectorAll('app-calendar-week .grid button.item[data-kind="task"] .title')].map(text)).toEqual([
       'Return library books',
     ]);
   });
@@ -171,7 +171,7 @@ describe('tasks on the calendar', () => {
     expect(text(dialog())).toContain('Ticked by you · Oct 21, 9:00 AM');
     expect(text(dialog())).toContain('Done by you · Oct 21, 9:00 AM');
     // The calendar shows it done too, without closing the details.
-    expect(text(main().querySelector('app-calendar-week .agenda button.item[data-kind="task"]'))).toContain('Done');
+    expect(text(main().querySelector('app-calendar-week .grid button.item[data-kind="task"]'))).toContain('Done');
   });
 
   it('never celebrates on opening a task that is already done', async () => {

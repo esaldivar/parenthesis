@@ -110,6 +110,7 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
       min-width: 0;
     }
     .icon {
+      display: var(--week-item-details, inline-flex);
       flex: none;
     }
     .title {
@@ -119,6 +120,7 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
       white-space: nowrap;
     }
     .when {
+      display: var(--week-item-details, block);
       font-size: 0.8125rem;
       color: var(--color-text-secondary);
       overflow: hidden;
@@ -126,7 +128,7 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
       white-space: nowrap;
     }
     .people {
-      display: flex;
+      display: var(--week-item-details, flex);
       gap: 2px;
       flex-wrap: wrap;
     }
@@ -138,6 +140,9 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
       border-radius: var(--radius-pill);
       border: 1px dashed var(--color-outline);
       background: var(--color-surface);
+      max-inline-size: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
     /* Declined (#199): struck through and labelled, so it never reads as a confirmed plan. */
