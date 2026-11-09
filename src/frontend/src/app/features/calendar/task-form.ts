@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, signal } from '@angular/core';
@@ -39,6 +40,7 @@ type ItemGroup = FormGroup<{ id: FormControl<string>; text: FormControl<string>;
   selector: 'app-task-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    TranslatePipe,
     LoadingIndicator,
     ReactiveFormsModule,
     RouterLink,

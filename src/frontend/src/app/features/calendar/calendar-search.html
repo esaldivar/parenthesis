@@ -11,7 +11,7 @@
 >
   <!-- The visible word is the accessible name (WCAG 2.5.3, label in name); today's date is its description. -->
   <app-icon name="search" [size]="20" />
-  <span class="search-pill__text">Search</span>
+  <span class="search-pill__text">{{ 'feature.search' | tr }}</span>
   <span class="visually-hidden" id="calendar-search-today">{{ todayLabel() }}</span>
   <span class="glyph" aria-hidden="true">
     <span class="glyph__day">{{ todayDay() }}</span>
@@ -29,8 +29,8 @@
   (detach)="close(false)"
   (overlayOutsideClick)="outsideClick($event)"
 >
-  <div #panel class="panel" role="dialog" aria-label="Search events" [style.max-height.px]="maxHeight()" (keydown)="keydown($event)">
-    <label class="visually-hidden" for="calendar-search-field">Search events by title, type or date</label>
+  <div #panel class="panel" role="dialog" aria-label="{{ 'feature.search.events' | tr }}" [style.max-height.px]="maxHeight()" (keydown)="keydown($event)">
+    <label class="visually-hidden" for="calendar-search-field">{{ 'feature.search.events.by.title.type.or.date' | tr }}</label>
     <div class="field">
       <app-icon name="search" [size]="20" />
       <input
@@ -40,7 +40,7 @@
         autocomplete="off"
         enterkeyhint="search"
         maxlength="120"
-        placeholder="Search events"
+        placeholder="{{ 'feature.search.events' | tr }}"
         aria-describedby="calendar-search-status"
         [value]="text()"
         (input)="typed($any($event.target).value)"
@@ -51,13 +51,13 @@
       {{ status() }}
     </p>
     @if (state() === 'error') {
-      <button type="button" class="more" data-stop (click)="retry()">Try again</button>
+      <button type="button" class="more" data-stop (click)="retry()">{{ 'feature.try.again' | tr }}</button>
     }
 
     @if (state() === 'ready' && total() > 0) {
       <div class="results">
         @if (upcoming().items.length) {
-          <h3 class="visually-hidden">Upcoming and ongoing</h3>
+          <h3 class="visually-hidden">{{ 'feature.upcoming.and.ongoing' | tr }}</h3>
           <ul class="list">
             @for (item of upcoming().items; track item.id) {
               <li>
@@ -67,12 +67,12 @@
           </ul>
           @if (upcoming().hasMore) {
             <button type="button" class="more" data-stop [disabled]="upcoming().loadingMore" (click)="more(false)">
-              {{ upcoming().loadingMore ? 'Loading…' : 'Show more upcoming' }}
+              {{ upcoming().loadingMore ? ('feature.loading' | tr) : ('feature.show.more.upcoming' | tr) }}
             </button>
           }
         }
         @if (past().items.length) {
-          <h3 class="divider"><span>Past events</span></h3>
+          <h3 class="divider"><span>{{ 'feature.past.events' | tr }}</span></h3>
           <ul class="list">
             @for (item of past().items; track item.id) {
               <li>
@@ -82,7 +82,7 @@
           </ul>
           @if (past().hasMore) {
             <button type="button" class="more" data-stop [disabled]="past().loadingMore" (click)="more(true)">
-              {{ past().loadingMore ? 'Loading…' : 'Show more past events' }}
+              {{ past().loadingMore ? ('feature.loading' | tr) : ('feature.show.more.past.events' | tr) }}
             </button>
           }
         }

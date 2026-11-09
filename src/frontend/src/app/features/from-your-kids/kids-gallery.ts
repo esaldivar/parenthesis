@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { A11yModule } from '@angular/cdk/a11y';
@@ -10,11 +11,11 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
 @Component({
   selector: 'app-kids-gallery',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [A11yModule, NgTemplateOutlet],
+  imports: [A11yModule, NgTemplateOutlet, TranslatePipe],
   template: `
     <ng-template #card let-item>
       <button type="button" class="memory" (click)="open(item.id, thumbnail)" #thumbnail
-        [attr.aria-label]="'View ' + item.altText + ', ' + item.retention">
+        [attr.aria-label]="('feature.view' | tr) + item.altText + ', ' + item.retention">
         <span class="pin" aria-hidden="true"></span>
         <img [src]="item.thumbnailUrl" [alt]="item.altText" loading="lazy" />
         <span class="retention">{{ item.retention }}</span>
@@ -23,7 +24,7 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
     @if (kind() === 'Artwork') {
       <div class="artwork">
         <div class="artwork-display">
-          <div class="fridge-door" role="group" aria-label="Closed refrigerator with magnet-pinned artwork">
+          <div class="fridge-door" role="group" aria-label="{{ 'feature.fridge.pinned.artwork' | tr }}">
             <div class="on-door">
               @for (item of artworkCards().slice(0, 2); track item.id) {
                 <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
@@ -37,12 +38,12 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
           </div>
         </div>
         @if (artworkPageCount() > 1) {
-          <nav class="artwork-pager" aria-label="Artwork pages">
+          <nav class="artwork-pager" aria-label="{{ 'feature.artwork.pages' | tr }}">
             <button type="button" [disabled]="currentArtworkPage() === 0"
-              (click)="artworkPage.set(currentArtworkPage() - 1)">Previous</button>
+              (click)="artworkPage.set(currentArtworkPage() - 1)">{{ 'feature.previous' | tr }}</button>
             <span aria-live="polite">{{ currentArtworkPage() + 1 }} / {{ artworkPageCount() }}</span>
             <button type="button" [disabled]="currentArtworkPage() + 1 === artworkPageCount()"
-              (click)="artworkPage.set(currentArtworkPage() + 1)">Next</button>
+              (click)="artworkPage.set(currentArtworkPage() + 1)">{{ 'feature.next' | tr }}</button>
           </nav>
         }
       </div>
@@ -58,8 +59,8 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
       <section class="detail" role="dialog" aria-modal="true" aria-labelledby="memory-title"
         cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown.escape)="close()">
         <header>
-          <h3 id="memory-title">{{ item.kind === 'Artwork' ? 'Artwork' : 'Photo' }} from your child</h3>
-          <button type="button" (click)="close()" cdkFocusInitial aria-label="Close preview">✕</button>
+          <h3 id="memory-title">{{ item.kind === 'Artwork' ? ('feature.artwork' | tr) : ('feature.photo' | tr) }} {{ 'feature.from.your.child' | tr }}</h3>
+          <button type="button" (click)="close()" cdkFocusInitial aria-label="{{ 'feature.close.preview' | tr }}">✕</button>
         </header>
         <img class="full" [src]="item.imageUrl" [alt]="item.altText" />
         <p>{{ item.retention }}</p>
@@ -67,24 +68,24 @@ import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
         <div class="actions">
           <button type="button" [attr.aria-pressed]="item.heartedByViewer"
             (click)="heart.emit({ id: item.id, value: !item.heartedByViewer })">
-            {{ item.heartedByViewer ? '♥ Hearted' : '♡ Heart' }}
+            {{ item.heartedByViewer ? ('feature.hearted' | tr) : ('feature.heart' | tr) }}
           </button>
           <button type="button" [attr.aria-pressed]="item.bookmarked"
             (click)="bookmark.emit({ id: item.id, value: !item.bookmarked })">
-            {{ item.bookmarked ? 'Saved' : 'Save' }}
+            {{ item.bookmarked ? ('feature.saved' | tr) : ('feature.save' | tr) }}
           </button>
           @if (item.downloadUrl) {
-            <a [href]="item.downloadUrl" download rel="noopener noreferrer">Download</a>
+            <a [href]="item.downloadUrl" download rel="noopener noreferrer">{{ 'feature.download' | tr }}</a>
           }
-          <button type="button" (click)="exportRequested.emit(item.id)">Export to Google Photos</button>
+          <button type="button" (click)="exportRequested.emit(item.id)">{{ 'feature.export.to.google.photos' | tr }}</button>
         </div>
-        <label for="child-memory-comment">Your message to your child (one-way)</label>
+        <label for="child-memory-comment">{{ 'feature.your.message.to.your.child.one.way' | tr }}</label>
         <textarea id="child-memory-comment" maxlength="500" rows="3"
           [value]="item.viewerComment ?? ''" #commentText></textarea>
         <button type="button" (click)="comment.emit({ id: item.id, text: commentText.value })">
-          Save message
+          {{ 'feature.save.message' | tr }}
         </button>
-        <p class="privacy">Your child can read your message but cannot reply here.</p>
+        <p class="privacy">{{ 'feature.your.child.can.read.your.message.but' | tr }}</p>
         }
       </section>
     }

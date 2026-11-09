@@ -19,7 +19,7 @@
 
 <div class="shell" [class.shell--full-screen]="fullScreen()">
   <aside class="sidebar">
-    <a class="brand" routerLink="/" aria-label="Parenthesis home">
+    <a class="brand" routerLink="/" aria-label="{{ 'feature.parenthesis.home' | tr }}">
       <app-logo [decorative]="true" />
     </a>
 
@@ -66,7 +66,7 @@
   </aside>
 
   <header class="topbar">
-    <a class="brand brand--compact" routerLink="/" aria-label="Parenthesis home">
+    <a class="brand brand--compact" routerLink="/" aria-label="{{ 'feature.parenthesis.home' | tr }}">
       <app-logo [decorative]="true" />
     </a>
     <div class="topbar__actions">

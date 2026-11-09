@@ -16,4 +16,4 @@ public interface IUserDirectory
     Task<DirectoryUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken = default);
 }
 
-public sealed record DirectoryUser(Guid Id, string DisplayName, string Email, bool EmailConfirmed);
+public sealed record DirectoryUser(Guid Id, string DisplayName, string Email, bool EmailConfirmed, bool Spanish = false);

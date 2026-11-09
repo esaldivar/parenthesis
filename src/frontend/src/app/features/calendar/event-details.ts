@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { EventDecoration } from './event-decoration';
 import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
@@ -47,12 +49,13 @@ export const COMMENT_MAX = 500;
 @Component({
   selector: 'app-event-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EventDecoration, CalendarPalette, PanelTint, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
+  imports: [TranslatePipe, EventDecoration, CalendarPalette, PanelTint, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './event-details.html',
   styleUrl: './event-details.scss',
 })
 export class EventDetails {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -88,9 +91,9 @@ export class EventDetails {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly status = computed(() => statusText(this.item()) ?? 'Confirmed');
-  protected readonly date = computed(() => dayLong(this.item().firstDate));
-  protected readonly when = computed(() => whenText(this.item()));
+  protected readonly status = computed(() => statusText(this.item(), this.locale.locale()) ?? translate('calendar.filter.confirmed', this.locale.locale()));
+  protected readonly date = computed(() => dayLong(this.item().firstDate, this.locale.locale()));
+  protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
   protected readonly coParent = computed(
     () => this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null,
   );
@@ -105,7 +108,7 @@ export class EventDetails {
 
   protected readonly swapTargetWhen = computed(() => {
     const target = this.swapTarget();
-    return target ? `${dayLong(target.firstDate)} · ${whenText(target)}` : null;
+    return target ? `${dayLong(target.firstDate, this.locale.locale())} · ${whenText(target, this.locale.locale())}` : null;
   });
 
   /** A swap changes confirmed parenting time's dates, with the co-parent's approval. */
@@ -114,7 +117,7 @@ export class EventDetails {
   );
   protected readonly sentAt = computed(() => {
     const request = this.request();
-    return request ? dateTimeLabel(toFamilyLocal(request.createdAt, this.timeZone())) : null;
+    return request ? dateTimeLabel(toFamilyLocal(request.createdAt, this.timeZone()), this.locale.locale()) : null;
   });
   protected readonly answerLabel = computed(() =>
     this.request()?.canDecide ? 'Your answer' : `${this.coParent() ?? 'Your co-parent'}’s answer`,
@@ -204,7 +207,7 @@ export class EventDetails {
     // Keep weekday ordering anchored to the series, even when a later occurrence is opened.
     // Older responses may omit the first dates; fall back to the opened occurrence.
     return event?.repeat
-      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10))
+      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10), this.locale.locale())
       : null;
   });
 
@@ -212,7 +215,7 @@ export class EventDetails {
   protected readonly seriesDates = computed(() => {
     const repeat = this.event()?.repeat;
     const zone = this.timeZone();
-    return repeat ? datesText(repeat.dateCount, (repeat.firstStarts ?? []).map((s) => toFamilyLocal(s, zone).slice(0, 10))) : null;
+    return repeat ? datesText(repeat.dateCount, (repeat.firstStarts ?? []).map((s) => toFamilyLocal(s, zone).slice(0, 10)), this.locale.locale()) : null;
   });
 
   /** Editing/cancelling another parent's parenting time is never offered (#260). */

@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -65,18 +67,18 @@ const TRANSIENT_STATUSES = new Set([0, 502, 503, 504]);
 const isTransient = (error: unknown) => error instanceof HttpErrorResponse && TRANSIENT_STATUSES.has(error.status);
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-const VIEWS: readonly { id: CalendarView; label: string }[] = [
-  { id: 'week', label: 'Week' },
-  { id: 'month', label: 'Month' },
-  { id: 'list', label: 'List' },
+const VIEWS: readonly { id: CalendarView; label: TranslationKey }[] = [
+  { id: 'week', label: 'feature.week' },
+  { id: 'month', label: 'feature.month' },
+  { id: 'list', label: 'feature.list' },
 ];
 
 const isDate = (value: string | undefined): value is PlainDate => !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 /** "October 2026" */
-function monthLabel(date: PlainDate): string {
+function monthLabel(date: PlainDate, locale: string): string {
   const [y, m] = date.split('-').map(Number);
-  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, 1)));
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, 1)));
 }
 
 /** The first day of the next month. */
@@ -95,7 +97,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
 @Component({
   selector: 'app-calendar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette,
+  imports: [TranslatePipe, CalendarPalette,
     MatButtonModule,
     RouterLink,
     EmptyState,
@@ -114,6 +116,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
   styleUrl: './calendar-page.scss',
 })
 export class CalendarPage {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -164,8 +167,16 @@ export class CalendarPage {
     }
   });
 
+  protected periodLabel(direction: 'previous' | 'next'): TranslationKey {
+    const labels = {
+      previous: { week: 'calendar.previous.week', month: 'calendar.previous.month', list: 'calendar.previous.list' },
+      next: { week: 'calendar.next.week', month: 'calendar.next.month', list: 'calendar.next.list' },
+    } as const;
+    return labels[direction][this.current()];
+  }
+
   protected readonly heading = computed(() =>
-    this.current() === 'week' ? weekLabelLong(startOfWeek(this.anchor())) : monthLabel(this.anchor()),
+    this.current() === 'week' ? weekLabelLong(startOfWeek(this.anchor()), this.locale.locale()) : monthLabel(this.anchor(), this.locale.locale()),
   );
   protected readonly isCurrentPeriod = computed(() => {
     const { from, to } = this.range();
@@ -465,14 +476,14 @@ export class CalendarPage {
       if ([403, 404].includes(toProblem(error).status ?? 0)) {
         this.unavailable(item.id);
       } else {
-        this.toasts.show('We couldn’t open that event. Try again.');
+        this.toasts.show(translate('feedback.we.couldn.t.open.that.event.try.again', this.locale.locale()));
       }
     }
   }
 
   private unavailable(eventId: string): void {
     this.events.update((events) => events.filter((e) => e.id !== eventId));
-    this.toasts.show('That event isn’t available on the calendar any more. The calendar has been refreshed.');
+    this.toasts.show(translate('feedback.that.event.isn.t.available.on.the.calendar.any.more.the.calendar.has.been.refreshed', this.locale.locale()));
     this.retry();
   }
 

@@ -1,3 +1,6 @@
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, HostListener, computed, effect, input, output, untracked } from '@angular/core';
 import { AddAt, SlotPick, clearsPick, pickLabel } from './slot';
@@ -24,7 +27,7 @@ export function monthGrid(date: PlainDate): PlainDate[] {
 @Component({
   selector: 'app-calendar-month',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette],
+  imports: [TranslatePipe, CalendarPalette],
   template: `
     <section class="month" [attr.aria-label]="label()">
       <div class="month__head" aria-hidden="true">
@@ -51,7 +54,7 @@ export function monthGrid(date: PlainDate): PlainDate[] {
               @if (pick.onDay(day.date)) {
                 <div class="slot-pick">
                   <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
-                    Add
+                    {{ 'feature.add' | tr }}
                   </button>
                 </div>
               }
@@ -79,7 +82,7 @@ export function monthGrid(date: PlainDate): PlainDate[] {
                 <span class="bar__status" aria-hidden="true">{{ status }}{{ ' ' }}</span>
               }
               <span class="bar__title" [class.bar__title--declined]="bar.item.status === 'declined'" aria-hidden="true">{{
-                bar.item.concealed ? 'Hidden: unavailable' : bar.item.title
+                bar.item.concealed ? ('feature.hidden.unavailable' | tr) : bar.item.title
               }}</span>
               @if (bar.continuesAfter) {
                 <span class="bar__cut bar__cut--after" aria-hidden="true">›</span>
@@ -95,7 +98,7 @@ export function monthGrid(date: PlainDate): PlainDate[] {
               [attr.aria-label]="more.label"
               (click)="openDay.emit(more.date)"
             >
-              +{{ more.count }}<span class="more__word"> more</span>
+              +{{ more.count }}<span class="more__word"> {{ 'feature.more' | tr }}</span>
             </button>
           }
         </div>
@@ -105,6 +108,7 @@ export function monthGrid(date: PlainDate): PlainDate[] {
   styleUrl: './calendar-month.scss',
 })
 export class CalendarMonth {
+  private readonly locale = inject(LocaleService);
   readonly date = input.required<PlainDate>();
   readonly today = input.required<PlainDate>();
   readonly items = input.required<readonly CalendarItem[]>();
@@ -139,9 +143,10 @@ export class CalendarMonth {
     this.pick.clear();
   }
 
-  protected readonly weekdays = computed(() => monthGrid(this.date()).slice(0, 7).map(weekdayShort));
+  protected readonly weekdays = computed(() => monthGrid(this.date()).slice(0, 7).map((date) => weekdayShort(date, this.locale.locale())));
 
   protected readonly weeks = computed(() => {
+    const locale = this.locale.locale();
     const month = this.date().slice(0, 7);
     const all = monthGrid(this.date());
     return Array.from({ length: 6 }, (_, w) => {
@@ -151,7 +156,9 @@ export class CalendarMonth {
         return {
           date,
           number: dayOfMonth(date),
-          label: `${dayLong(date)}${count ? `, ${count} ${count === 1 ? 'event' : 'events'}` : ''}. Open this week.`,
+          label: translate(count === 0 ? 'calendar.month.openWeek' : count === 1 ? 'calendar.month.openWeekOne' : 'calendar.month.openWeekMany', locale, {
+            date: dayLong(date, locale), count,
+          }),
           inMonth: date.startsWith(month),
           isToday: date === this.today(),
         };

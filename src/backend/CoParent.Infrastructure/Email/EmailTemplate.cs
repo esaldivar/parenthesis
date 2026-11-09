@@ -15,6 +15,7 @@ public sealed record EmailAction(string Label, Uri Url);
 /// <param name="Greeting">"Hi Sam," or null for a plain "Hi,".</param>
 /// <param name="Paragraphs">The message, one entry per paragraph.</param>
 /// <param name="Action">The single call to action. It's the only link in the email.</param>
+/// <param name="Spanish">Whether the message uses neutral Latin American Spanish.</param>
 /// <param name="Footer">Why the person got this email and what to do if they didn't expect it.</param>
 public sealed record EmailContent(
     string Subject,
@@ -22,7 +23,8 @@ public sealed record EmailContent(
     string? Greeting,
     IReadOnlyList<string> Paragraphs,
     EmailAction Action,
-    string Footer);
+    string Footer,
+    bool Spanish = false);
 
 /// <summary>
 /// Renders every Parenthesis email the same way: an HTML version (table layout and inline styles, so it holds up in
@@ -73,7 +75,9 @@ public static class EmailTemplate
     }
 
     private static string Hello(EmailContent content) =>
-        string.IsNullOrWhiteSpace(content.Greeting) ? "Hi," : $"Hi {content.Greeting.Trim()},";
+        string.IsNullOrWhiteSpace(content.Greeting)
+            ? (content.Spanish ? "Hola," : "Hi,")
+            : $"{(content.Spanish ? "Hola" : "Hi")} {content.Greeting.Trim()},";
 
     private static string RenderText(EmailContent content)
     {
@@ -103,7 +107,7 @@ public static class EmailTemplate
 
         return $"""
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="{(content.Spanish ? "es-419" : "en")}">
             <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -131,11 +135,11 @@ public static class EmailTemplate
             <a href="{url}" class="pt-btn-text" style="display:inline-block;padding:14px 24px;font-size:16px;font-weight:600;line-height:1.25;color:{OnAction};text-decoration:none;border-radius:8px;">{e.Encode(content.Action.Label)}</a>
             </td></tr>
             </table>
-            <p class="pt-muted" style="margin:0 0 8px;font-size:14px;line-height:1.5;color:{TextSecondary};">If the button doesn't work, copy this link into your browser:</p>
+            <p class="pt-muted" style="margin:0 0 8px;font-size:14px;line-height:1.5;color:{TextSecondary};">{e.Encode(content.Spanish ? "Si el botón no funciona, copia este enlace en tu navegador:" : "If the button doesn't work, copy this link into your browser:")}</p>
             <p style="margin:0 0 24px;font-size:14px;line-height:1.5;word-break:break-all;"><a href="{url}" class="pt-link" style="color:{Action};">{url}</a></p>
             <p class="pt-muted" style="margin:0;font-size:14px;line-height:1.5;color:{TextSecondary};">{e.Encode(content.Footer)}</p>
             </td></tr>
-            <tr><td class="pt-muted" style="padding:16px 4px 0;font-size:12px;line-height:1.5;color:{TextSecondary};">Parenthesis, a shared space for co-parents. This is an automatic message, so replies aren't read.</td></tr>
+            <tr><td class="pt-muted" style="padding:16px 4px 0;font-size:12px;line-height:1.5;color:{TextSecondary};">{e.Encode(content.Spanish ? "Parenthesis, un espacio compartido para padres. Este es un mensaje automático. No se leen las respuestas." : "Parenthesis, a shared space for co-parents. This is an automatic message, so replies aren't read.")}</td></tr>
             </table>
             </td></tr>
             </table>

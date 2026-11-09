@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,36 +32,35 @@ import {
 @Component({
   selector: 'app-memories-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, RouterLink, EmptyState, Icon],
+  imports: [TranslatePipe, MatButtonModule, RouterLink, EmptyState, Icon],
   template: `
     <header class="memories-header">
       <div>
-        <h1>Family Memories</h1>
-        <p class="tagline">The little things are worth remembering.</p>
+        <h1>{{ 'feature.family.memories' | tr }}</h1>
+        <p class="tagline">{{ 'feature.the.little.things.are.worth.remembering' | tr }}</p>
       </div>
       <span class="memories-header__art" aria-hidden="true"></span>
     </header>
     <p class="intro">
-      Photos from your events. Each photo is deleted {{ retentionDays }} days after it’s added, so
-      download the ones you want to keep.
+      {{ 'feature.photos.from.your.events.each.photo.is' | tr }} {{ retentionDays }} {{ 'feature.days.after.it.s.added.so.download' | tr }}
     </p>
 
     @switch (state()) {
       @case ('loading') {
-        <p class="muted" role="status">Loading memories…</p>
+        <p class="muted" role="status">{{ 'feature.loading.memories' | tr }}</p>
       }
       @case ('error') {
         <p class="error" role="alert">{{ error() }}</p>
-        <button mat-stroked-button type="button" (click)="load()">Try again</button>
+        <button mat-stroked-button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       }
       @case ('ready') {
         @if (rows().length === 0) {
           <app-empty-state
             icon="album"
-            title="No memories yet"
-            body="Add photos to a confirmed event on the calendar and they’ll show here."
+            title="{{ 'feature.no.memories.yet' | tr }}"
+            body="{{ 'feature.add.photos.to.a.confirmed.event.on' | tr }}"
           >
-            <a mat-stroked-button routerLink="/calendar">Open calendar</a>
+            <a mat-stroked-button routerLink="/calendar">{{ 'feature.open.calendar' | tr }}</a>
           </app-empty-state>
         } @else {
           <ul class="memories">

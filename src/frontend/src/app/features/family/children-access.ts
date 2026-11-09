@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,7 +36,7 @@ interface Panel {
 @Component({
   selector: 'app-children-access',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatFormFieldModule, MatInputModule, Avatar],
+  imports: [TranslatePipe, ReactiveFormsModule, RouterLink, MatButtonModule, MatFormFieldModule, MatInputModule, Avatar],
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
@@ -43,7 +44,7 @@ interface Panel {
 
     @if (children(); as children) {
       @if (children.length === 0) {
-        <p class="muted">No children yet.</p>
+        <p class="muted">{{ 'feature.no.children.yet' | tr }}</p>
       } @else {
         <ul class="children">
           @for (child of children; track child.id) {
@@ -59,11 +60,11 @@ interface Panel {
               @if (child.status === 'Active') {
                 <div class="child__actions">
                   <button mat-stroked-button type="button" (click)="open(child, 'pin')">
-                    {{ child.signIn.enabled ? 'Reset PIN' : 'Set a PIN' }}
+                    {{ child.signIn.enabled ? ('feature.reset.pin' | tr) : ('feature.set.a.pin' | tr) }}
                   </button>
                   @if (child.signIn.enabled) {
-                    <button mat-stroked-button type="button" (click)="open(child, 'pair')">Pair a tablet</button>
-                    <button mat-button type="button" (click)="open(child, 'disable')">Turn off sign-in</button>
+                    <button mat-stroked-button type="button" (click)="open(child, 'pair')">{{ 'feature.pair.a.tablet' | tr }}</button>
+                    <button mat-button type="button" (click)="open(child, 'disable')">{{ 'feature.turn.off.sign.in' | tr }}</button>
                   }
                 </div>
 
@@ -71,38 +72,37 @@ interface Panel {
                   <form class="panel" [formGroup]="pinForm" (ngSubmit)="savePin(child)" novalidate>
                     <p class="muted">
                       @if (child.signIn.enabled) {
-                        The new PIN works straight away and clears any pause or lock. We’ll let your co-parent know
-                        you reset it, without sharing the PIN.
+                        {{ 'feature.the.new.pin.works.straight.away.and' | tr }}
                       } @else {
-                        {{ child.firstName }} uses this PIN on your family’s devices.
+                        {{ child.firstName }} {{ 'feature.uses.this.pin.on.your.family.s' | tr }}
                       }
                     </p>
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>New PIN for {{ child.firstName }}</mat-label>
+                      <mat-label>{{ 'feature.new.pin.for' | tr }} {{ child.firstName }}</mat-label>
                       <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="pin" required />
-                      <mat-hint>4 to 6 numbers</mat-hint>
+                      <mat-hint>{{ 'feature.4.to.6.numbers' | tr }}</mat-hint>
                       @if (pinForm.controls.pin.hasError('required')) {
-                        <mat-error>Enter a PIN.</mat-error>
+                        <mat-error>{{ 'feature.enter.a.pin' | tr }}</mat-error>
                       } @else if (pinForm.controls.pin.hasError('pattern')) {
-                        <mat-error>Use 4 to 6 numbers.</mat-error>
+                        <mat-error>{{ 'feature.use.4.to.6.numbers' | tr }}</mat-error>
                       } @else if (pinForm.controls.pin.hasError('guessable')) {
-                        <mat-error>Choose numbers that aren’t all the same or in a simple run like 1234.</mat-error>
+                        <mat-error>{{ 'feature.choose.numbers.that.aren.t.all.the' | tr }}</mat-error>
                       }
                     </mat-form-field>
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>Type it again</mat-label>
+                      <mat-label>{{ 'feature.type.it.again' | tr }}</mat-label>
                       <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="confirm" required />
                       @if (pinForm.controls.confirm.hasError('required')) {
-                        <mat-error>Type the PIN again.</mat-error>
+                        <mat-error>{{ 'feature.type.the.pin.again' | tr }}</mat-error>
                       } @else if (pinForm.controls.confirm.hasError('mismatch')) {
-                        <mat-error>The two PINs don’t match.</mat-error>
+                        <mat-error>{{ 'feature.the.two.pins.don.t.match' | tr }}</mat-error>
                       }
                     </mat-form-field>
                     <div class="panel__actions">
                       <button mat-flat-button type="submit" [disabled]="busy()">
-                        {{ child.signIn.enabled ? 'Reset PIN now' : 'Save PIN' }}
+                        {{ child.signIn.enabled ? ('feature.reset.pin.now' | tr) : ('feature.save.pin' | tr) }}
                       </button>
-                      <button mat-button type="button" (click)="close()">Cancel</button>
+                      <button mat-button type="button" (click)="close()">{{ 'feature.cancel' | tr }}</button>
                     </div>
                   </form>
                 }
@@ -110,12 +110,12 @@ interface Panel {
                 @if (isOpen(child, 'disable')) {
                   <div class="panel">
                     <p>
-                      {{ child.firstName }} won’t be able to sign in until a parent sets a new PIN, and anyone signed in as
-                      {{ child.firstName }} is signed out now. This doesn’t need your co-parent’s approval.
+                      {{ child.firstName }} {{ 'feature.won.t.be.able.to.sign.in' | tr }}
+                      {{ child.firstName }} {{ 'feature.is.signed.out.now.this.doesn.t' | tr }}
                     </p>
                     <div class="panel__actions">
-                      <button mat-flat-button type="button" [disabled]="busy()" (click)="disable(child)">Turn off sign-in</button>
-                      <button mat-button type="button" (click)="close()">Cancel</button>
+                      <button mat-flat-button type="button" [disabled]="busy()" (click)="disable(child)">{{ 'feature.turn.off.sign.in' | tr }}</button>
+                      <button mat-button type="button" (click)="close()">{{ 'feature.cancel' | tr }}</button>
                     </div>
                   </div>
                 }
@@ -124,22 +124,22 @@ interface Panel {
                   <div class="panel">
                     @if (pairing(); as pairing) {
                       @if (minutesLeft() > 0) {
-                        <p>On {{ child.firstName }}’s tablet, go to <strong>{{ pairUrl }}</strong> and enter this code:</p>
+                        <p>{{ 'feature.on.130011' | tr }} {{ child.firstName }}{{ 'feature.s.tablet.go.to' | tr }} <strong>{{ pairUrl }}</strong> {{ 'feature.and.enter.this.code' | tr }}</p>
                         <p class="code" [attr.aria-label]="spelled(pairing.code)">{{ pairing.code }}</p>
                         <p class="muted" aria-live="polite">
-                          Works once, for {{ minutesLeft() === 1 ? 'about 1 more minute' : 'about ' + minutesLeft() + ' more minutes' }}.
+                          {{ 'feature.works.once.for' | tr }} {{ minutesLeft() === 1 ? ('feature.about.1.more.minute' | tr) : ('feature.about.eae942' | tr) + minutesLeft() + ('feature.more.minutes' | tr) }}.
                         </p>
                       } @else {
-                        <p role="status">This code has expired. Get a new one when the tablet is ready.</p>
+                        <p role="status">{{ 'feature.this.code.has.expired.get.a.new' | tr }}</p>
                       }
                     } @else {
-                      <p class="muted">You’ll get a code that works once, for 10 minutes. Only {{ child.firstName }} can use the tablet you pair.</p>
+                      <p class="muted">{{ 'feature.you.ll.get.a.code.that.works' | tr }} {{ child.firstName }} {{ 'feature.can.use.the.tablet.you.pair' | tr }}</p>
                     }
                     <div class="panel__actions">
                       <button mat-flat-button type="button" [disabled]="busy()" (click)="pair(child)">
-                        {{ pairing() ? 'Get a new code' : 'Get a code' }}
+                        {{ pairing() ? ('feature.get.a.new.code' | tr) : ('feature.get.a.code' | tr) }}
                       </button>
-                      <button mat-button type="button" (click)="close()">Done</button>
+                      <button mat-button type="button" (click)="close()">{{ 'feature.done' | tr }}</button>
                     </div>
                   </div>
                 }
@@ -148,11 +148,11 @@ interface Panel {
           }
         </ul>
         @if (hasActive()) {
-          <p class="preview"><a routerLink="/kid">Preview the children’s space</a></p>
+          <p class="preview"><a routerLink="/kid">{{ 'feature.preview.the.children.s.space' | tr }}</a></p>
         }
       }
     } @else if (!error()) {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
     }
   `,
   styles: `

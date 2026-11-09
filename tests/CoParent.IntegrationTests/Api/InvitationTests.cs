@@ -52,6 +52,33 @@ public sealed class InvitationTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Invitations_follow_the_recipient_language_and_keep_user_names()
+    {
+        using var inviter = await ApiSession.SignedInAsync(api, displayName: "Alex");
+        var familyId = await inviter.CreateFamilyAsync("Rivera Family");
+        var spanishEmail = ApiSession.NewEmail();
+        using var recipient = await ApiSession.SignedInAsync(api, email: spanishEmail);
+        var saved = await recipient.SendAsync(HttpMethod.Put, "/api/me/language", new { language = "es-419" });
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        var profile = await JsonAsync(await recipient.GetAsync("/api/me"));
+        Assert.Equal("es-419", profile.GetProperty("language").GetString());
+
+        var invitation = await inviter.PostAsync($"/api/families/{familyId}/invitations", new { email = spanishEmail });
+        Assert.Equal(HttpStatusCode.Accepted, invitation.StatusCode);
+        var spanish = recipient.Emails.SentTo(spanishEmail)[^1];
+        Assert.Equal("Alex te invitó a unirte a Rivera Family en Parenthesis", spanish.Subject);
+        Assert.Contains("Hola,", spanish.TextBody, StringComparison.Ordinal);
+        Assert.Contains("Aceptar y unirme", spanish.TextBody, StringComparison.Ordinal);
+        Assert.Contains("lang=\"es-419\"", spanish.HtmlBody, StringComparison.Ordinal);
+
+        var unknownEmail = ApiSession.NewEmail();
+        await inviter.PostAsync($"/api/families/{familyId}/invitations", new { email = unknownEmail });
+        var english = Assert.Single(inviter.Emails.SentTo(unknownEmail));
+        Assert.Equal("Alex invited you to Parenthesis", english.Subject);
+        Assert.Contains("lang=\"en\"", english.HtmlBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task The_invitee_accepts_and_both_are_equal_parents()
     {
         var momEmail = ApiSession.NewEmail();

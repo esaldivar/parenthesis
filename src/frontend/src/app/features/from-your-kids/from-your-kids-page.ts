@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, isDevMode, signal, untracked } from '@angular/core';
 import { Api, Child } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -13,11 +15,12 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
 @Component({
   selector: 'app-from-your-kids-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, KidsGallery, KidsDiary],
+  imports: [Avatar, KidsGallery, KidsDiary, TranslatePipe],
   templateUrl: './from-your-kids-page.html',
   styleUrl: './from-your-kids-page.scss',
 })
 export class FromYourKidsPage {
+  protected readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly destroy = inject(DestroyRef);
@@ -37,9 +40,9 @@ export class FromYourKidsPage {
     return now === null ? [] : previewGallery('Photo', now);
   });
   protected readonly sections = [
-    { id: 'diary', title: 'Diary', description: 'Thoughts, stories, and daily adventures' },
-    { id: 'artwork', title: 'Artwork', description: 'Creative drawings, projects, and more' },
-    { id: 'photos', title: 'Photos', description: 'Photo adventures from your kid' },
+    { id: 'diary', title: 'feature.diary', description: 'feature.thoughts.stories.and.daily.adventures' },
+    { id: 'artwork', title: 'feature.artwork', description: 'feature.creative.drawings.projects.and.more' },
+    { id: 'photos', title: 'feature.photos', description: 'feature.photo.adventures.from.your.kid' },
   ] as const;
   protected readonly section = signal<(typeof this.sections)[number]['id']>('diary');
   protected readonly children = signal<readonly Child[]>([]);

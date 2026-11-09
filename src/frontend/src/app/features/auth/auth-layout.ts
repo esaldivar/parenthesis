@@ -37,7 +37,7 @@ import { Logo } from '../../shared/brand/logo';
         routerLinkActive
         #privacy="routerLinkActive"
         [attr.aria-current]="privacy.isActive ? 'page' : null"
-        >Privacy</a
+        >{{ 'feature.privacy' | tr }}</a
       >
     </footer>
   `,
@@ -49,7 +49,9 @@ import { Logo } from '../../shared/brand/logo';
     }
     .auth-header {
       display: flex;
+      flex-wrap: wrap;
       justify-content: center;
+      gap: var(--space-2) var(--space-3);
       margin-bottom: var(--space-6);
       font-size: 1.125rem;
     }
@@ -57,7 +59,6 @@ import { Logo } from '../../shared/brand/logo';
       display: flex;
       align-items: center;
       gap: var(--space-2);
-      margin-inline-start: var(--space-3);
       font-size: 0.875rem;
     }
     .language-picker select {

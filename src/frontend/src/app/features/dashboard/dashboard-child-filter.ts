@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Icon } from '../../shared/icon/icon';
 import { ChildRef } from './model';
@@ -6,7 +7,7 @@ import { ChildRef } from './model';
 @Component({
   selector: 'app-dashboard-child-filter',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [TranslatePipe, Icon],
   templateUrl: './dashboard-child-filter.html',
   styleUrl: './dashboard-child-filter.scss',
 })

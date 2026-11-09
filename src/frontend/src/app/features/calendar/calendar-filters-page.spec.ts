@@ -1,3 +1,4 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -74,6 +75,20 @@ describe('calendar filters on the page', () => {
   }
 
   beforeEach(() => localStorage.clear());
+
+  it('switches calendar controls and period to Spanish without changing event titles', async () => {
+    await open();
+    const locale = TestBed.inject(LocaleService);
+    locale.setLocale('es-419');
+    await settle();
+    expect(text(main().querySelector('h1'))).toBe('Calendario');
+    expect(text(main().querySelector('.period__label'))).toBe('octubre de 2026');
+    expect(button('Semana', main())).toBeTruthy();
+    expect(shownTitles()).toContain('School play');
+    locale.setLocale('en');
+    await settle();
+    expect(text(main().querySelector('h1'))).toBe('Calendar');
+  });
 
   it('shows both parent colors for Parenting time and keeps Unavailable separate', async () => {
     await open();

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal,
   untracked, viewChild, viewChildren,
@@ -38,9 +39,9 @@ const MEDICAL_TINT = {
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, MedicalProvidersSection, RoutinesSection, SchoolSection, WhatHelpsSection],
+  imports: [TranslatePipe, Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, MedicalProvidersSection, RoutinesSection, SchoolSection, WhatHelpsSection],
   template: `
-    <h1 tabindex="-1" #heading>Child Essentials</h1>
+    <h1 tabindex="-1" #heading>{{ 'feature.child.essentials' | tr }}</h1>
     <!-- The other parent's saves since the last visit (#128): shown once, then gone after about ten seconds or on X. -->
     <div class="banners" aria-live="polite" (mouseenter)="pause()" (mouseleave)="resume()" (focusin)="pause()"
       (focusout)="resume()">
@@ -49,17 +50,17 @@ const MEDICAL_TINT = {
           <svg class="banner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="banner.art" /></svg>
           <p>{{ banner.text }}</p>
-          <button type="button" class="dismiss" [attr.aria-label]="'Dismiss: ' + banner.text" (click)="dismiss(banner.key)">
+          <button type="button" class="dismiss" [attr.aria-label]="('feature.dismiss' | tr) + banner.text" (click)="dismiss(banner.key)">
             <app-icon name="close" [size]="20" />
           </button>
         </div>
       }
     </div>
     @if (loading()) {
-      <p role="status">Loading child profiles…</p>
+      <p role="status">{{ 'feature.loading.child.profiles' | tr }}</p>
     } @else if (failed()) {
-      <p role="alert">Child profiles couldn’t be loaded.</p>
-      <button type="button" (click)="retryLoad()">Try again</button>
+      <p role="alert">{{ 'feature.child.profiles.couldn.t.be.loaded' | tr }}</p>
+      <button type="button" (click)="retryLoad()">{{ 'feature.try.again' | tr }}</button>
     } @else if (selectedChild(); as child) {
       @if (medicalOpen()) {
         @if (familyId(); as family) {
@@ -70,14 +71,14 @@ const MEDICAL_TINT = {
         }
       } @else {
       <div class="layout" [class.focused]="openSection() !== null">
-        <div class="children" role="group" aria-label="Choose a child">
+        <div class="children" role="group" aria-label="{{ 'feature.choose.a.child' | tr }}">
           @for (item of children(); track item.id) {
             <button type="button" [attr.aria-pressed]="child.id === item.id" (click)="selectChild(item.id)">
               <app-avatar [name]="item.firstName" [personId]="item.id" />
               <span class="child-name">{{ item.firstName }}</span>
               @if (updates.unopened(item.id)) {
                 <span class="child-dot" aria-hidden="true"></span>
-                <span class="visually-hidden">, has updates</span>
+                <span class="visually-hidden">{{ 'feature.has.updates' | tr }}</span>
               }
               @if (child.id === item.id) {
                 <app-icon class="child-check" name="check" [size]="20" />
@@ -86,11 +87,11 @@ const MEDICAL_TINT = {
           }
         </div>
         <section aria-labelledby="essentials-heading">
-          <h2 id="essentials-heading">{{ child.firstName }}’s essentials</h2>
+          <h2 id="essentials-heading">{{ child.firstName }}{{ 'feature.s.essentials' | tr }}</h2>
           @if (openSection() !== null) {
             <button type="button" class="back" (click)="closeSection()">
               <app-icon name="chevron-left" [size]="20" />
-              All of {{ child.firstName }}’s essentials
+              {{ 'feature.all.of' | tr }} {{ child.firstName }}{{ 'feature.s.essentials' | tr }}
             </button>
           }
           @if (familyId(); as family) {
@@ -108,7 +109,7 @@ const MEDICAL_TINT = {
                       </span>
                       @if (!disclosure.open && tileHasUpdate(child.id, tile.section)) {
                         <span class="child-dot" aria-hidden="true"></span>
-                        <span class="visually-hidden">, updated</span>
+                        <span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span>
                       }
                       <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
                     </summary>
@@ -132,12 +133,12 @@ const MEDICAL_TINT = {
                   </details>
                 }
                 <button type="button" #medicalTile class="medical-tile" (click)="openMedical(child.id)">
-                  <span class="tile-text"><span class="tile-name">Medical</span>
-                    <span class="tile-about">Doctors, dentists, and other providers</span>
+                  <span class="tile-text"><span class="tile-name">{{ 'feature.medical' | tr }}</span>
+                    <span class="tile-about">{{ 'feature.doctors.dentists.and.other.providers' | tr }}</span>
                   </span>
                   @if (tileHasUpdate(child.id, 'medical')) {
                     <span class="child-dot" aria-hidden="true"></span>
-                    <span class="visually-hidden">, updated</span>
+                    <span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span>
                   }
                   <img class="tile-art" src="art/child-essentials/medical.webp" alt="" />
                   <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
@@ -149,7 +150,7 @@ const MEDICAL_TINT = {
       </div>
       }
     } @else {
-      <p>No active child profiles yet.</p>
+      <p>{{ 'feature.no.active.child.profiles.yet' | tr }}</p>
     }
   `,
   styles: `

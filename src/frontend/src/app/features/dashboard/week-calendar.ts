@@ -1,3 +1,6 @@
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { CalendarPalette } from '../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -69,11 +72,12 @@ const inAllDayRow = (event: FamilyEvent) => !event.time || !!event.endDate;
 @Component({
   selector: 'app-week-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey, DashboardChildFilter],
+  imports: [TranslatePipe, CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey, DashboardChildFilter],
   templateUrl: './week-calendar.html',
   styleUrl: './week-calendar.scss',
 })
 export class WeekCalendar {
+  private readonly locale = inject(LocaleService);
   readonly weekStart = input.required<PlainDate>();
   readonly today = input.required<PlainDate>();
   readonly isCurrentWeek = input.required<boolean>();
@@ -142,7 +146,7 @@ export class WeekCalendar {
 
   private readonly expanded = signal<ReadonlySet<string>>(new Set());
 
-  protected readonly label = computed(() => weekLabelLong(this.weekStart()));
+  protected readonly label = computed(() => weekLabelLong(this.weekStart(), this.locale.locale()));
   private readonly events = computed(() => (this.week()?.events ?? []).map(event => ({ ...event, palette: eventPalette(event.category) })));
   /** The whole day is in the grid; it scrolls (see constructor) to where this week's activities begin. */
   protected readonly hours = computed(() => ({ startHour: 0, endHour: 24 }));
@@ -172,7 +176,7 @@ export class WeekCalendar {
     const { startHour, endHour } = this.hours();
     const marks: { label: string; row: number }[] = [];
     for (let hour = startHour; hour < endHour; hour += 2) {
-      marks.push({ label: hourLabel(hour), row: (hour - startHour) * 2 + 1 });
+      marks.push({ label: hourLabel(hour, this.locale.locale()), row: (hour - startHour) * 2 + 1 });
     }
     return marks;
   });
@@ -190,9 +194,9 @@ export class WeekCalendar {
       );
       return {
         date,
-        weekday: weekdayShort(date),
-        monthDay: monthDay(date),
-        longLabel: dayLong(date),
+        weekday: weekdayShort(date, this.locale.locale()),
+        monthDay: monthDay(date, this.locale.locale()),
+        longLabel: dayLong(date, this.locale.locale()),
         isToday: date === this.today(),
         events,
         placements,
@@ -230,21 +234,23 @@ export class WeekCalendar {
 
   protected readonly childNames = childNames;
   protected readonly parentNames = (event: FamilyEvent) => (event.parents ?? []).map((p) => p.displayName).join(' and ');
-  protected readonly timeLabel = timeLabel;
+  protected readonly timeLabel = (time: string) => timeLabel(time, this.locale.locale());
   /** "All day", "Oct 23 – Oct 24 · All day", or "Oct 23, 8:00 AM – Oct 24" for a timed multi-day event. */
   protected readonly allDayWhen = (event: FamilyEvent) => {
+    const locale = this.locale.locale();
     const last = event.endDate ?? event.date;
-    const days = last > event.date ? `${monthDay(event.date)} – ${monthDay(last)}` : '';
+    const days = last > event.date ? `${monthDay(event.date, locale)} – ${monthDay(last, locale)}` : '';
     if (event.time) {
-      return `${monthDay(event.date)}, ${timeLabel(event.time)} – ${monthDay(last)}`;
+      return `${monthDay(event.date, locale)}, ${this.timeLabel(event.time)} – ${monthDay(last, locale)}`;
     }
-    return days ? `${days} · All day` : 'All day';
+    const allDay = translate('feature.all.day', locale);
+    return days ? `${days} · ${allDay}` : allDay;
   };
 
   /** "5:00 PM · Kai · with Alex and Sam" (or when an all-day event is), leaving out whatever an event doesn't have (no stray separators). */
   protected readonly actMeta = (event: FamilyEvent) =>
     [
-      inAllDayRow(event) ? this.allDayWhen(event) : timeLabel(event.time!),
+      inAllDayRow(event) ? this.allDayWhen(event) : this.timeLabel(event.time!),
       event.children.length ? childNames(event.children) : null,
       event.parents?.length ? `with ${this.parentNames(event)}` : null,
     ]

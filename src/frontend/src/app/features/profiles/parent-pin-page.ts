@@ -1,4 +1,5 @@
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormGroupDirective, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,44 +22,42 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
 @Component({
   selector: 'app-parent-pin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
+  imports: [TranslatePipe, AppDatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
   template: `
     <div class="who">
       <app-avatar [name]="name()" kind="parent" [size]="72" [src]="tile()?.photoUrl" />
-      <h1>Hi, {{ name() }}</h1>
+      <h1>{{ 'feature.hi' | tr }} {{ name() }}</h1>
     </div>
 
     @if (state() === 'paused') {
       <div class="status" role="status">
-        <p class="status__title">Your parent PIN is paused.</p>
+        <p class="status__title">{{ 'feature.your.parent.pin.is.paused' | tr }}</p>
         <p>
-          Too many wrong tries. You can try again after {{ retryAt() | date: 'shortTime' }}, or sign in with your email
-          and password to reset your PIN.
+          {{ 'feature.too.many.wrong.tries.you.can.try' | tr }} {{ retryAt() | appDate: 'shortTime' }}{{ 'feature.or.sign.in.with.your.email.and' | tr }}
         </p>
         @if (notified() === true) {
-          <p>We’ve emailed you about this.</p>
+          <p>{{ 'feature.we.ve.emailed.you.about.this' | tr }}</p>
         } @else if (notified() === false) {
-          <p>We couldn’t send you an email about this right now.</p>
+          <p>{{ 'feature.we.couldn.t.send.you.an.email' | tr }}</p>
         }
         <div class="actions">
-          <button mat-stroked-button type="button" (click)="tryAgain()">Try again</button>
+          <button mat-stroked-button type="button" (click)="tryAgain()">{{ 'feature.try.again' | tr }}</button>
         </div>
       </div>
     } @else if (state() === 'locked') {
       <div class="status" role="status">
-        <p class="status__title">Your parent PIN is locked.</p>
+        <p class="status__title">{{ 'feature.your.parent.pin.is.locked' | tr }}</p>
         <p>
-          Sign in with your email and password, then choose a new PIN in Settings. Your account isn’t locked, and other
-          profiles on this device still work.
+          {{ 'feature.sign.in.with.your.email.and.password' | tr }}
         </p>
         @if (notified() === true) {
-          <p>We’ve emailed you instructions.</p>
+          <p>{{ 'feature.we.ve.emailed.you.instructions' | tr }}</p>
         } @else if (notified() === false) {
-          <p>We couldn’t send you an email about this right now.</p>
+          <p>{{ 'feature.we.couldn.t.send.you.an.email' | tr }}</p>
         }
       </div>
     } @else {
-      <p class="lead">Enter your parent PIN to continue.</p>
+      <p class="lead">{{ 'feature.enter.your.parent.pin.to.continue' | tr }}</p>
 
       @if (error(); as error) {
         <div class="alert" role="alert">{{ error }}</div>
@@ -66,7 +65,7 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
 
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Parent PIN</mat-label>
+          <mat-label>{{ 'feature.parent.pin' | tr }}</mat-label>
           <input
             matInput
             type="password"
@@ -76,16 +75,16 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
             formControlName="pin"
             required
           />
-          <mat-hint>6 numbers</mat-hint>
+          <mat-hint>{{ 'feature.6.numbers' | tr }}</mat-hint>
           @if (form.controls.pin.hasError('required')) {
-            <mat-error>Enter your parent PIN.</mat-error>
+            <mat-error>{{ 'feature.enter.your.parent.pin' | tr }}</mat-error>
           } @else if (form.controls.pin.hasError('pattern')) {
-            <mat-error>Your parent PIN is 6 numbers.</mat-error>
+            <mat-error>{{ 'feature.your.parent.pin.is.6.numbers' | tr }}</mat-error>
           }
         </mat-form-field>
 
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Checking…' : 'Continue' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.checking' | tr) : ('feature.continue' | tr) }}</button>
         </div>
       </form>
     }
@@ -95,14 +94,14 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
         <p role="status">{{ message }}</p>
       }
       <button mat-stroked-button type="button" [disabled]="resetBusy()" (click)="requestReset()">
-        {{ resetBusy() ? 'Sending…' : 'Forgot your PIN? Email me a reset link' }}
+        {{ resetBusy() ? ('feature.sending' | tr) : ('feature.forgot.your.pin.email.me.a.reset' | tr) }}
       </button>
     </div>
 
     <div class="links">
-      <a routerLink="/profiles" [replaceUrl]="true">Back to profiles</a>
+      <a routerLink="/profiles" [replaceUrl]="true">{{ 'feature.back.to.profiles' | tr }}</a>
       <a [routerLink]="['/profiles', 'parent', id(), 'password']">
-        Sign in with your password
+        {{ 'feature.sign.in.with.your.password' | tr }}
       </a>
     </div>
   `,

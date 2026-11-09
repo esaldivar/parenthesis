@@ -246,5 +246,8 @@ describe('calendar search (#253)', () => {
     expect(resultWhen(camp)).toBe('Jul 6, 2026 – Jul 8, 2026');
     expect(resultType(sams)).toBe('Parenting time · Sam');
     expect(resultType(final)).toBe('Activity');
+    expect(resultWhen({ ...final, allDay: true }, 'es-419')).toMatch(/6.*mar.*2027 · Todo el día/i);
+    expect(resultType(sams, 'es-419')).toBe('Tiempo con los hijos · Sam');
+    expect(resultType(final, 'es-419')).toBe('Actividad');
   });
 });

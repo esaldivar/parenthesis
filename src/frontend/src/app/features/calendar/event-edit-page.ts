@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -39,6 +41,7 @@ const NEEDS_BOTH: readonly CalendarCategory[] = ['ParentingTime', 'Holiday', 'Jo
   selector: 'app-event-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    TranslatePipe,
     LoadingIndicator,
     DateField,
     LocationField,
@@ -57,6 +60,7 @@ const NEEDS_BOTH: readonly CalendarCategory[] = ['ParentingTime', 'Holiday', 'Jo
   styles: [FORM_STYLES],
 })
 export class EventEditPage implements OnInit {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -157,7 +161,7 @@ export class EventEditPage implements OnInit {
     // Keep weekday ordering anchored to the series, even when a later occurrence is opened.
     // Older responses may omit the first dates; fall back to the opened occurrence.
     return event?.repeat
-      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10))
+      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10), this.locale.locale())
       : null;
   });
 

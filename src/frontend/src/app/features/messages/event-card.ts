@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CalendarEvent, ChatEventCard } from '../../core/api/api';
@@ -49,14 +50,14 @@ export function cardStatus(card: ChatEventCard): string | null {
 @Component({
   selector: 'app-chat-event-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon],
+  imports: [TranslatePipe, RouterLink, Icon],
   template: `
     @if (card().available) {
       @if (link()) {
         <a class="card" routerLink="/calendar" [queryParams]="query()">
           <app-icon name="calendar" [size]="24" />
           <span class="text">
-            <span class="visually-hidden">Open in calendar: </span>
+            <span class="visually-hidden">{{ 'feature.open.in.calendar' | tr }} </span>
             <span class="title">{{ card().title }}<span class="visually-hidden">, </span></span>
             <span class="when">{{ when() }}</span>
             @if (status(); as s) {
@@ -80,7 +81,7 @@ export function cardStatus(card: ChatEventCard): string | null {
     } @else {
       <span class="card card--gone">
         <app-icon name="calendar" [size]="24" />
-        <span class="text">This event isn’t on your calendar any more.</span>
+        <span class="text">{{ 'feature.this.event.isn.t.on.your.calendar' | tr }}</span>
       </span>
     }
   `,

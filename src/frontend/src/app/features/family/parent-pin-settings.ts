@@ -1,4 +1,5 @@
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,7 +22,7 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
 @Component({
   selector: 'app-parent-pin-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [TranslatePipe, AppDatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
@@ -30,60 +31,60 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
     @if (status(); as status) {
       <p>
         @if (status.locked) {
-          Your parent PIN is locked after too many wrong tries. Choose a new PIN to use it again.
+          {{ 'feature.your.parent.pin.is.locked.after.too' | tr }}
         } @else if (status.pausedUntil) {
-          Your parent PIN is paused until {{ status.pausedUntil | date: 'shortTime' }}. You can also choose a new one now.
+          {{ 'feature.your.parent.pin.is.paused.until' | tr }} {{ status.pausedUntil | appDate: 'shortTime' }}{{ 'feature.you.can.also.choose.a.new.one' | tr }}
         } @else if (status.isSet) {
-          You use your parent PIN to get back into your profile on a shared family device.
+          {{ 'feature.you.use.your.parent.pin.to.get' | tr }}
         } @else {
-          You don’t have a parent PIN yet. You’ll need one to use a shared family device.
+          {{ 'feature.you.don.t.have.a.parent.pin' | tr }}
         }
       </p>
 
       @if (!open()) {
         <div class="actions">
           <button mat-stroked-button type="button" (click)="open.set(true)">
-            {{ status.isSet ? 'Change parent PIN' : 'Choose a parent PIN' }}
+            {{ status.isSet ? ('feature.change.parent.pin' | tr) : ('feature.choose.a.parent.pin' | tr) }}
           </button>
         </div>
       } @else {
         <form class="panel" [formGroup]="form" (ngSubmit)="save()" novalidate>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Your account password</mat-label>
+            <mat-label>{{ 'feature.your.account.password' | tr }}</mat-label>
             <input matInput type="password" autocomplete="current-password" formControlName="currentPassword" required />
             @if (form.controls.currentPassword.hasError('wrong')) {
-              <mat-error>That password isn’t right.</mat-error>
+              <mat-error>{{ 'feature.that.password.isn.t.right' | tr }}</mat-error>
             } @else if (form.controls.currentPassword.invalid) {
-              <mat-error>Enter your password to confirm it’s you.</mat-error>
+              <mat-error>{{ 'feature.enter.your.password.to.confirm.it.s' | tr }}</mat-error>
             }
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>New parent PIN</mat-label>
+            <mat-label>{{ 'feature.new.parent.pin' | tr }}</mat-label>
             <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="pin" required />
-            <mat-hint>6 numbers, not all the same or in a run like 123456</mat-hint>
+            <mat-hint>{{ 'feature.6.numbers.not.all.the.same.or' | tr }}</mat-hint>
             @if (form.controls.pin.hasError('required')) {
-              <mat-error>Choose a six-digit PIN.</mat-error>
+              <mat-error>{{ 'feature.choose.a.six.digit.pin' | tr }}</mat-error>
             } @else if (form.controls.pin.hasError('pattern')) {
-              <mat-error>Your parent PIN is 6 numbers.</mat-error>
+              <mat-error>{{ 'feature.your.parent.pin.is.6.numbers' | tr }}</mat-error>
             } @else if (form.controls.pin.hasError('trivial')) {
-              <mat-error>Choose numbers that aren’t all the same or in a simple run.</mat-error>
+              <mat-error>{{ 'feature.choose.numbers.that.aren.t.all.the.769c2b' | tr }}</mat-error>
             }
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Type the new PIN again</mat-label>
+            <mat-label>{{ 'feature.type.the.new.pin.again' | tr }}</mat-label>
             <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="confirm" required />
             @if (form.controls.confirm.invalid) {
-              <mat-error>The two PINs don’t match.</mat-error>
+              <mat-error>{{ 'feature.the.two.pins.don.t.match' | tr }}</mat-error>
             }
           </mat-form-field>
           <div class="actions">
-            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Save PIN' }}</button>
-            <button mat-button type="button" [disabled]="busy()" (click)="cancel()">Cancel</button>
+            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.saving' | tr) : ('feature.save.pin' | tr) }}</button>
+            <button mat-button type="button" [disabled]="busy()" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
           </div>
         </form>
       }
     } @else if (!error()) {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
     }
   `,
   styles: `

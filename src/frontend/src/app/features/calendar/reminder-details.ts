@@ -1,3 +1,5 @@
+import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
@@ -11,15 +13,21 @@ import { CalendarItem, FORMER_PARENT } from './calendar-items';
 import { whenText } from './item-text';
 
 /** "Every week, 3 times" or "Every day until Oct 22, 2026"; null for a one-off. */
-export function repeatText(reminder: Reminder): string | null {
-  const every = { Daily: 'Every day', Weekly: 'Every week', Monthly: 'Every month', None: null }[reminder.repeat];
-  if (!every) {
+export function repeatText(reminder: Reminder, locale: AppLocale = 'en'): string | null {
+  const key = { Daily: 'feature.every.day', Weekly: 'calendar.reminder.weekly', Monthly: 'calendar.reminder.monthly', None: null } as const;
+  const interval = key[reminder.repeat];
+  if (!interval) {
     return null;
   }
+  const every = translate(interval, locale);
   if (reminder.repeatCount) {
-    return `${every}, ${reminder.repeatCount} times`;
+    return translate(reminder.repeatCount === 1 ? 'calendar.reminder.once' : 'calendar.reminder.count', locale, {
+      every, count: reminder.repeatCount,
+    });
   }
-  return reminder.repeatUntil ? `${every} until ${dateMedium(reminder.repeatUntil)}` : every;
+  return reminder.repeatUntil
+    ? translate('calendar.reminder.until', locale, { every, date: dateMedium(reminder.repeatUntil, locale) })
+    : every;
 }
 
 /**
@@ -30,12 +38,13 @@ export function repeatText(reminder: Reminder): string | null {
 @Component({
   selector: 'app-reminder-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, PanelTint, A11yModule, MatButtonModule, RouterLink, Icon],
+  imports: [TranslatePipe, CalendarPalette, PanelTint, A11yModule, MatButtonModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './reminder-details.html',
   styleUrl: './event-details.scss',
 })
 export class ReminderDetails implements OnInit {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly injector = inject(Injector);
   private readonly deleteButton = viewChild('deleteButton', { read: ElementRef<HTMLButtonElement> });
@@ -53,9 +62,9 @@ export class ReminderDetails implements OnInit {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly date = computed(() => dayLong(this.item().firstDate));
-  protected readonly when = computed(() => whenText(this.item()));
-  protected readonly repeats = computed(() => repeatText(this.reminder()));
+  protected readonly date = computed(() => dayLong(this.item().firstDate, this.locale.locale()));
+  protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
+  protected readonly repeats = computed(() => repeatText(this.reminder(), this.locale.locale()));
   private readonly me = computed(() => this.members().find((m) => m.isYou)?.membershipId);
   private readonly name = (membershipId: string) =>
     this.members().find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;

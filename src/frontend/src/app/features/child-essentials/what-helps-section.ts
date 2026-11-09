@@ -1,4 +1,8 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Icon } from '../../shared/icon/icon';
@@ -9,10 +13,10 @@ import { WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
 @Component({
   selector: 'app-what-helps-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
+  imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
   template: `
     <section aria-labelledby="what-helps-heading">
-      <h3 id="what-helps-heading">What Helps
+      <h3 id="what-helps-heading">{{ 'feature.what.helps' | tr }}
       </h3>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
@@ -22,73 +26,72 @@ import { WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
           <form [formGroup]="form" (ngSubmit)="save()">
             @if (conflict(); as latest) {
               <div class="latest">
-                <p role="alert">Your co-parent saved changes first. Review the latest saved values below.
-                  Your draft is still in the form.</p>
-                <h4>Latest saved values</h4>
+                <p role="alert">{{ 'feature.your.co.parent.saved.changes.first.review' | tr }}</p>
+                <h4>{{ 'feature.latest.saved.values' | tr }}</h4>
                 <ng-container *ngTemplateOutlet="values; context: { $implicit: latest.values }" />
               </div>
             }
             <fieldset [disabled]="saving()">
-              <legend>Comfort items and calming strategies</legend>
-              <label>Comfort items <textarea formControlName="comfortItems" maxlength="1000"></textarea></label>
-              <label>Calming strategies (optional) <textarea formControlName="calmingStrategies" maxlength="1000"></textarea></label>
+              <legend>{{ 'feature.comfort.items.and.calming.strategies' | tr }}</legend>
+              <label>{{ 'feature.comfort.items' | tr }} <textarea formControlName="comfortItems" maxlength="1000"></textarea></label>
+              <label>{{ 'feature.calming.strategies.optional' | tr }} <textarea formControlName="calmingStrategies" maxlength="1000"></textarea></label>
               <div class="actions">
                 <button type="submit" [disabled]="form.invalid">
-                  {{ saving() ? 'Saving…' : conflict() ? 'Save my draft' : 'Save' }}
+                  {{ saving() ? ('feature.saving' | tr) : conflict() ? ('feature.save.my.draft' | tr) : ('feature.save' | tr) }}
                 </button>
-                <button type="button" (click)="cancel()">Cancel</button>
+                <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>
             </fieldset>
           </form>
         } @else {
           <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           <div class="actions">
-            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />Edit<span class="visually-hidden"> What Helps</span></button>
+            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ 'feature.what.helps' | tr }}</span></button>
             <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="what-helps-history"
-              (click)="toggleHistory()"><app-icon name="history" [size]="18" />History</button>
+              (click)="toggleHistory()"><app-icon name="history" [size]="18" />{{ 'feature.history' | tr }}</button>
           </div>
           <p role="status">{{ notice() }}</p>
         }
         <div id="what-helps-history" [hidden]="!historyOpen() || editing()">
-          <h4>What Helps history</h4>
+          <h4>{{ 'feature.what.helps.history' | tr }}</h4>
           @if (historyError()) {
-            <p role="alert">History couldn’t be loaded.</p>
-            <button type="button" (click)="loadHistory(nextRevision())">Try again</button>
+            <p role="alert">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
+            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
           } @else if (historyLoading()) {
-            <p role="status">Loading history…</p>
+            <p role="status">{{ 'feature.loading.history' | tr }}</p>
           } @else if (!history().length) {
-            <p>No changes yet.</p>
+            <p>{{ 'feature.no.changes.yet' | tr }}</p>
           }
           @for (entry of history(); track entry.revision) {
             <article>
-              <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | date: 'medium' }}</time></h5>
+              <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | appDate: 'medium' }}</time></h5>
               <div class="comparison">
-                <div><strong>Previous values</strong>
+                <div><strong>{{ 'feature.previous.values' | tr }}</strong>
                   <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.previous }" />
                 </div>
-                <div><strong>Saved values</strong>
+                <div><strong>{{ 'feature.saved.values' | tr }}</strong>
                   <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.current }" />
                 </div>
               </div>
             </article>
           }
           @if (nextRevision() !== null && !historyLoading() && !historyError()) {
-            <button type="button" (click)="loadHistory(nextRevision())">Show older changes</button>
+            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
           }
         </div>
       } @else if (error()) {
-        <button type="button" (click)="load()">Try again</button>
+        <button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       } @else {
-        <p role="status">Loading What Helps…</p>
+        <p role="status">{{ 'feature.loading.what.helps' | tr }}</p>
       }
     </section>
     <ng-template #values let-entry let-current="current">
       <dl>
         <div class="row" [class.row--updated]="current && marks.updated('comfortItems')" (appOnScreen)="current && marks.rowOnScreen('comfortItems')">
-          <dt>Comfort items@if (current && marks.updated('comfortItems')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.comfortItems ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.comfort.items' | tr }}@if (current && marks.updated('comfortItems')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.comfortItems ?? 'Not set' }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('calmingStrategies')" (appOnScreen)="current && marks.rowOnScreen('calmingStrategies')">
-          <dt>Calming strategies@if (current && marks.updated('calmingStrategies')) { <span class="updated-pill">Updated</span> }</dt><dd>{{ entry.calmingStrategies ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.calming.strategies' | tr }}@if (current && marks.updated('calmingStrategies')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.calmingStrategies ?? 'Not set' }}</dd>
         </div>
       </dl>
     </ng-template>
@@ -103,6 +106,7 @@ import { WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
   `,
 })
 export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelpsView['values'], WhatHelpsHistoryPage['entries'][number]> {
+  private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('whatHelps', this.childId);
   protected readonly savedNotice = 'What Helps saved.';
   protected readonly form = new FormGroup({
@@ -120,7 +124,7 @@ export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelps
     try {
       this.current.set(await this.api.whatHelps(this.familyId(), this.childId()));
     } catch {
-      this.error.set('What Helps couldn’t be loaded.');
+      this.error.set(translate('feedback.what.helps.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

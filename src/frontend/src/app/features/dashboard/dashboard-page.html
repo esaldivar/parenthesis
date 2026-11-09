@@ -80,7 +80,7 @@
                 <span class="upcoming__title">{{ item.title }}</span>
                 <span class="upcoming__when">{{ item.when }}</span>
                 @if (item.people.length > 0) {
-                  <span class="visually-hidden">, with {{ childNames(item.people) }}</span>
+                  <span class="visually-hidden">{{ 'feature.with.5dc768' | tr }} {{ childNames(item.people) }}</span>
                 }
                 @if (item.status !== 'confirmed' || item.note) {
                   <span class="upcoming__status">
@@ -145,7 +145,7 @@
             <span class="kids__caption">
               <app-avatar [name]="share.child.name" [size]="32" />
               <span>
-                <span class="kids__what">{{ share.child.name }} shared a {{ share.kind }} with you</span>
+                <span class="kids__what">{{ share.child.name }} {{ 'feature.shared.a' | tr }} {{ share.kind }} {{ 'feature.with.you' | tr }}</span>
                 <span class="muted">{{ share.sharedAt }}</span>
               </span>
             </span>
@@ -189,7 +189,7 @@
               <span class="memory__title">{{ memory.title }}</span>
             }
             <span class="muted">{{ dateMedium(memory.date) }}</span>
-            <span class="visually-hidden">, memory {{ memoryIndex() + 1 }} of {{ memories().length }}</span>
+            <span class="visually-hidden">{{ 'feature.memory' | tr }} {{ memoryIndex() + 1 }} {{ 'feature.of' | tr }} {{ memories().length }}</span>
           </figcaption>
         </figure>
         <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(1)" [attr.aria-label]="'dash.next' | tr">

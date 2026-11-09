@@ -1,3 +1,6 @@
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PlainDate } from '../dashboard/model';
@@ -9,12 +12,12 @@ import { ItemText } from './item-text';
 @Component({
   selector: 'app-calendar-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, ItemText],
+  imports: [TranslatePipe, CalendarPalette, ItemText],
   template: `
     <ol class="days">
       @for (day of days(); track day.date) {
         <li>
-          <h3 [class.is-today]="day.isToday">{{ day.label }}@if (day.isToday) {<span class="today"> · Today</span>}</h3>
+          <h3 [class.is-today]="day.isToday">{{ day.label }}@if (day.isToday) {<span class="today"> {{ 'feature.today' | tr }}</span>}</h3>
           <ul class="items">
             @for (item of day.items; track item.id) {
               <li>
@@ -39,6 +42,7 @@ import { ItemText } from './item-text';
   styleUrl: './calendar-list.scss',
 })
 export class CalendarList {
+  private readonly locale = inject(LocaleService);
   /** First date shown (inclusive) and the date after the last. */
   readonly from = input.required<PlainDate>();
   readonly to = input.required<PlainDate>();
@@ -48,7 +52,7 @@ export class CalendarList {
 
   protected readonly days = computed(() =>
     Array.from({ length: daysBetween(this.from(), this.to()) }, (_, i) => addDays(this.from(), i))
-      .map((date) => ({ date, label: dayLong(date), isToday: date === this.today(), items: onDate(this.items(), date).sort(byStart) }))
+      .map((date) => ({ date, label: dayLong(date, this.locale.locale()), isToday: date === this.today(), items: onDate(this.items(), date).sort(byStart) }))
       .filter((d) => d.items.length > 0),
   );
 }

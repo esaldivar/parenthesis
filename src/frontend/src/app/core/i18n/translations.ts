@@ -1,7 +1,9 @@
+import { featureTranslations } from './feature-translations';
 import { inject, Pipe, PipeTransform } from '@angular/core';
 import { LocaleService } from './locale.service';
 
 export const translations = {
+  ...featureTranslations,
   'signIn.title': ['Sign in', 'Iniciar sesión'],
   'signIn.welcome': ['Welcome back.', 'Te damos la bienvenida de nuevo.'],
   'signIn.deleted': ["Your account has been deleted. We've sent a confirmation to your email. You're welcome back any time.", 'Tu cuenta se eliminó. Enviamos una confirmación a tu correo electrónico. Puedes volver cuando quieras.'],
@@ -55,7 +57,7 @@ export const translations = {
   'register.already': ["Already have an account? Sign in","¿Ya tienes una cuenta? Inicia sesión"],
   'settings.title': ['Settings', 'Configuración'],
   'settings.languageHeading': ['Language', 'Idioma'],
-  'settings.languageHelp': ['Choose the language used in Parenthesis on this device.', 'Elige el idioma que se usa en Parenthesis en este dispositivo.'],
+  'settings.languageHelp': ['Choose the language used in Parenthesis for your account.', 'Elige el idioma de Parenthesis para tu cuenta.'],
   'settings.languageLabel': ['Display language', 'Idioma de la aplicación'],
   'nav.home': ["Home","Inicio"],
   'nav.calendar': ["Calendar","Calendario"],
@@ -123,18 +125,84 @@ export const translations = {
   'dash.memoriesEmptyBody': ["Photos added to confirmed events will show here. Each photo is kept for 28 days.","Aquí aparecerán las fotos agregadas a eventos confirmados. Cada foto se conserva durante 28 días."],
   'dash.sample': ["Sample data","Datos de ejemplo"],
   'dash.sampleHelp': ["fictional people and events (development builds only). This is not your family’s schedule, and nothing here can be changed.","personas y eventos ficticios (solo en versiones de desarrollo). Este no es el calendario de tu familia y aquí no se puede modificar nada."],
+  'calendar.month.openWeek': ["{date}. Open this week.","{date}. Abrir esta semana."],
+  'calendar.month.openWeekOne': ["{date}, {count} event. Open this week.","{date}, {count} evento. Abrir esta semana."],
+  'calendar.month.openWeekMany': ["{date}, {count} events. Open this week.","{date}, {count} eventos. Abrir esta semana."],
+  'calendar.reminder.weekly': ["Every week","Cada semana"],
+  'calendar.reminder.monthly': ["Every month","Cada mes"],
+  'calendar.reminder.once': ["{every}, {count} time","{every}, {count} vez"],
+  'calendar.reminder.count': ["{every}, {count} times","{every}, {count} veces"],
+  'calendar.reminder.until': ["{every} until {date}","{every} hasta el {date}"],
+  'calendar.type.family': ["Family event","Evento familiar"],
+  'calendar.type.medical': ["Medical","Médico"],
+  'calendar.type.dental': ["Dental","Dental"],
+  'calendar.type.birthday': ["Birthday","Cumpleaños"],
+  'calendar.type.holiday': ["Holiday","Día festivo"],
+  'calendar.type.other': ["Other","Otro"],
+  'calendar.search.today': ["Search events. Today is {date}","Buscar eventos. Hoy es {date}"],
+  'calendar.search.loading': ["Searching…","Buscando…"],
+  'calendar.search.error': ["We couldn’t search the calendar.","No pudimos buscar en el calendario."],
+  'calendar.search.empty': ["No events match.","No hay eventos que coincidan."],
+  'calendar.search.results': ["{upcoming} upcoming and {past} past events found.","Eventos encontrados: {upcoming} próximos y {past} pasados."],
+  'calendar.search.resultsMore': ["{upcoming} upcoming and {past} past events or more found.","Eventos encontrados hasta ahora: {upcoming} próximos y {past} pasados. Hay más resultados."],
+  'calendar.search.hint': ["Search by title, event type or date, such as “soccer”, “parenting time” or “Oct 12”.","Busca por título, tipo de evento o fecha."],
+  'appearance.light': ["Light","Claro"],
+  'appearance.dark': ["Dark","Oscuro"],
+  'appearance.system': ["System","Sistema"],
+  'pin.go': ["Go","Continuar"],
+  'calendar.previous.week': ['Previous week', 'Semana anterior'],
+  'calendar.previous.month': ['Previous month', 'Mes anterior'],
+  'calendar.previous.list': ['Previous list', 'Lista anterior'],
+  'calendar.next.week': ['Next week', 'Semana siguiente'],
+  'calendar.next.month': ['Next month', 'Mes siguiente'],
+  'calendar.next.list': ['Next list', 'Lista siguiente'],
+  'calendar.loading': ['Loading your calendar…', 'Cargando tu calendario…'],
+  'calendar.loadingSlow': [
+    'Still loading. Parenthesis may be starting up after a quiet spell, which can take a few seconds.',
+    'Aún está cargando. Si Parenthesis estuvo inactivo, puede tardar unos segundos en iniciar.',
+  ],
+  'calendar.filtersActive': ['Filters, {count} active', 'Filtros: {count} activos'],
+  'calendar.filter.types': ['Type', 'Tipo'],
+  'calendar.filter.parents': ['Parents', 'Padres'],
+  'calendar.filter.approval': ['Approval', 'Aprobación'],
+  'calendar.filter.parenting': ['Parenting time', 'Tiempo con los hijos'],
+  'calendar.filter.family': ['Family event', 'Evento familiar'],
+  'calendar.filter.activity': ['Activity', 'Actividad'],
+  'calendar.filter.unavailable': ['Unavailable', 'No disponible'],
+  'calendar.filter.task': ['Task', 'Tarea'],
+  'calendar.filter.reminder': ['Reminder', 'Recordatorio'],
+  'calendar.filter.created-by-me': ['Created by me', 'Creado por mí'],
+  'calendar.filter.created-by-co-parent': ['Created by co-parent', 'Creado por el otro padre o madre'],
+  'calendar.filter.involves-me': ['Involving me', 'Me incluye'],
+  'calendar.filter.involves-co-parent': ['Involving co-parent', 'Incluye al otro padre o madre'],
+  'calendar.filter.confirmed': ['Confirmed', 'Confirmado'],
+  'calendar.filter.pending': ['Pending approval', 'Pendiente de aprobación'],
+  'calendar.filter.change-pending': ['Change pending', 'Cambio pendiente'],
+  'calendar.filter.declined': ['Declined', 'Rechazado'],
+  'route.googlePhotos': ['Google Photos', 'Google Fotos'],
+  'route.joinFamily': ['Join your co-parent’s family', 'Únete a la familia del otro padre o madre'],
+  'route.parentPin': ['Enter your parent PIN', 'Ingresa tu PIN de adulto'],
+  'route.password': ['Enter your password', 'Ingresa tu contraseña'],
+  'route.pin': ['Enter your PIN', 'Ingresa tu PIN'],
+  'route.setUpFamily': ['Set up your family', 'Configura tu familia'],
 } as const;
 
 export type TranslationKey = keyof typeof translations;
 
-export function translate(key: TranslationKey, locale: 'en' | 'es-419'): string {
-  return translations[key][locale === 'es-419' ? 1 : 0];
+type TranslationParams = Readonly<Record<string, string | number>>;
+
+export function translate(key: TranslationKey, locale: 'en' | 'es-419', params?: TranslationParams): string {
+  const entry = translations[key];
+  const template = (locale === 'es-419' ? entry[1] : entry[0]) || entry[0];
+  return params ? template.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+    Object.hasOwn(params, name) ? String(params[name]) : placeholder,
+  ) : template;
 }
 
 @Pipe({ name: 'tr', standalone: true, pure: false })
 export class TranslatePipe implements PipeTransform {
   private readonly locale = inject(LocaleService);
-  transform(key: TranslationKey): string {
-    return translate(key, this.locale.locale());
+  transform(key: TranslationKey, params?: TranslationParams): string {
+    return translate(key, this.locale.locale(), params);
   }
 }

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ChatStore } from '../../core/chat/chat.store';
@@ -17,17 +18,17 @@ export { MESSAGE_MAX_LENGTH } from './chat-conversation';
 @Component({
   selector: 'app-messages-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, ChatConversation, ChatTranscripts],
+  imports: [TranslatePipe, RouterLink, Icon, ChatConversation, ChatTranscripts],
   template: `
-    <aside class="transcripts" aria-label="Transcripts">
+    <aside class="transcripts" aria-label="{{ 'feature.transcripts' | tr }}">
       <app-chat-transcripts [level]="2" />
     </aside>
     <app-chat-conversation class="conversation" [level]="1">
-      <a chatLead class="round" routerLink="/" aria-label="Back to Home"><app-icon name="chevron-left" [size]="26" /></a>
-      <a chatActions class="round transcripts-link" routerLink="/messages/transcripts" aria-label="Transcripts">
+      <a chatLead class="round" routerLink="/" aria-label="{{ 'feature.back.to.home' | tr }}"><app-icon name="chevron-left" [size]="26" /></a>
+      <a chatActions class="round transcripts-link" routerLink="/messages/transcripts" aria-label="{{ 'feature.transcripts' | tr }}">
         <app-icon name="note" [size]="24" />
       </a>
-      <button chatActions class="round minimize" type="button" aria-label="Minimize to compact chat" (click)="minimize()">
+      <button chatActions class="round minimize" type="button" aria-label="{{ 'feature.minimize.to.compact.chat' | tr }}" (click)="minimize()">
         <app-icon name="minus" [size]="24" />
       </button>
     </app-chat-conversation>

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,7 +16,7 @@ import { FORM_STYLES } from '../auth/form-styles';
 @Component({
   selector: 'app-invite-co-parent',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, Icon],
+  imports: [TranslatePipe, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, Icon],
   template: `
     @if (error(); as error) {
       <div class="alert" role="alert">{{ error }}</div>
@@ -29,28 +30,28 @@ import { FORM_STYLES } from '../auth/form-styles';
     @if (sent(); as sent) {
       <div class="sent">
         <span class="sent__icon"><app-icon name="send" [size]="28" /></span>
-        <p class="sent__title">Invitation sent</p>
+        <p class="sent__title">{{ 'feature.invitation.sent' | tr }}</p>
         <p class="sent__body">
-          We sent an invitation to <strong>{{ sent.email }}</strong>. It works once and expires on
+          {{ 'feature.we.sent.an.invitation.to' | tr }} <strong>{{ sent.email }}</strong>{{ 'feature.it.works.once.and.expires.on' | tr }}
           {{ expires(sent.expiresAt) }}.
         </p>
       </div>
       <div class="actions">
-        <button mat-stroked-button type="button" [disabled]="busy()" (click)="resend(sent.email)">Resend invitation</button>
-        <button mat-button type="button" [disabled]="busy()" (click)="revoke(sent)">Cancel invitation</button>
+        <button mat-stroked-button type="button" [disabled]="busy()" (click)="resend(sent.email)">{{ 'feature.resend.invitation' | tr }}</button>
+        <button mat-button type="button" [disabled]="busy()" (click)="revoke(sent)">{{ 'feature.cancel.invitation' | tr }}</button>
       </div>
     } @else {
       <form [formGroup]="form" (ngSubmit)="send()" novalidate>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Co-parent's email</mat-label>
+          <mat-label>{{ 'feature.co.parent.s.email' | tr }}</mat-label>
           <input matInput type="email" formControlName="email" autocomplete="off" required />
-          <mat-hint>They'll get an email with a link to join. It expires in 7 days.</mat-hint>
+          <mat-hint>{{ 'feature.they.ll.get.an.email.with.a' | tr }}</mat-hint>
           @if (form.controls.email.invalid) {
             <mat-error>{{ fieldError() ?? 'Enter a valid email address.' }}</mat-error>
           }
         </mat-form-field>
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Sending…' : 'Send invitation' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.sending' | tr) : ('feature.send.invitation' | tr) }}</button>
         </div>
       </form>
     }

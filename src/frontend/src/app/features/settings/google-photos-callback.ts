@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,15 +15,15 @@ import { Toasts } from '../../shared/toast/toasts';
 @Component({
   selector: 'app-google-photos-callback',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule],
+  imports: [TranslatePipe, RouterLink, MatButtonModule],
   template: `
     <h1>Google Photos</h1>
     <section class="card">
       @if (message(); as message) {
         <p role="alert">{{ message }}</p>
-        <a mat-stroked-button routerLink="/settings">Back to Settings</a>
+        <a mat-stroked-button routerLink="/settings">{{ 'feature.back.to.settings' | tr }}</a>
       } @else {
-        <p role="status">Connecting Google Photos…</p>
+        <p role="status">{{ 'feature.connecting.google.photos' | tr }}</p>
       }
     </section>
   `,

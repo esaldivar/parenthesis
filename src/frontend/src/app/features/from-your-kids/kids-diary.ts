@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal, viewChild } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { KidsDiaryEntry, KidsMood } from './from-your-kids-contract';
 
 const MOOD_CHARACTER: Record<Exclude<KidsMood, 'Happy'>, string> = {
@@ -17,29 +18,29 @@ const MOOD_CHARACTER: Record<Exclude<KidsMood, 'Happy'>, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ordered().length === 0) {
-      <div class="book empty-book" aria-label="Empty diary">
-        <div class="paper cover"><h2>Dear Diary</h2><p>Little stories, big feelings.</p><img src="/art/from-your-kids/journal-heart.webp" alt="" /></div>
-        <div class="paper"><p>No diary entries shared with you yet.</p>
-          <p>When your child shares an entry, you'll be able to turn its pages here.</p>
+      <div class="book empty-book" aria-label="{{ 'feature.empty.diary' | tr }}">
+        <div class="paper cover"><h2>{{ 'feature.dear.diary' | tr }}</h2><p>{{ 'feature.little.stories.big.feelings' | tr }}</p><img src="/art/from-your-kids/journal-heart.webp" alt="" /></div>
+        <div class="paper"><p>{{ 'feature.no.diary.entries.shared.with.you.yet' | tr }}</p>
+          <p>{{ 'feature.when.your.child.shares.an.entry.you' | tr }}</p>
         </div>
       </div>
     } @else {
-      <section class="book" [class.reading]="reading()" aria-label="Shared diary" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
-        <div class="paper index-page"><h2>Diary Entries</h2>
-          <nav aria-label="Choose diary entry">
+      <section class="book" [class.reading]="reading()" aria-label="{{ 'feature.shared.diary' | tr }}" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
+        <div class="paper index-page"><h2>{{ 'feature.diary.entries' | tr }}</h2>
+          <nav aria-label="{{ 'feature.choose.diary.entry' | tr }}">
             @for (entry of ordered(); track entry.id; let i = $index) {
               <button type="button" class="entry-choice" [attr.aria-current]="index() === i ? 'page' : null" (click)="selectEntry(i)">
-                <strong>{{ entry.title || 'A diary entry' }}</strong>
-                <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
+                <strong>{{ entry.title || ('feature.diary.entry.fallback' | tr) }}</strong>
+                <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | appDate:'mediumDate' }}</time>
                 <span class="entry-chevron" aria-hidden="true">›</span>
               </button>
             }
           </nav>
         </div>
         <article class="paper" aria-live="polite">
-          <button type="button" class="back-to-entries" #backToEntries (click)="showEntries()">‹ All diary entries</button>
+          <button type="button" class="back-to-entries" #backToEntries (click)="showEntries()">‹ {{ 'feature.diary.all.entries' | tr }}</button>
           @if (current(); as entry) {
-            <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | date:'mediumDate' }}</time>
+            <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | appDate:'mediumDate' }}</time>
             <p class="mood">
               @if (entry.mood === 'Happy') {
                 <img src="/art/from-your-kids/journal-sun.webp" alt="" />
@@ -53,14 +54,14 @@ const MOOD_CHARACTER: Record<Exclude<KidsMood, 'Happy'>, string> = {
           }
         </article>
       </section>
-      <nav class="pager" [class.reading]="reading()" aria-label="Diary pages">
-        <button type="button" (click)="previous()" [disabled]="index() === 0" aria-label="Previous diary page">← Previous</button>
-        <span aria-live="polite">Page {{ index() + 1 }} of {{ ordered().length }}</span>
-        <button type="button" (click)="next()" [disabled]="index() >= ordered().length - 1" aria-label="Next diary page">Next →</button>
+      <nav class="pager" [class.reading]="reading()" aria-label="{{ 'feature.diary.pages' | tr }}">
+        <button type="button" (click)="previous()" [disabled]="index() === 0" aria-label="{{ 'feature.previous.diary.page' | tr }}">← {{ 'feature.previous' | tr }}</button>
+        <span aria-live="polite">{{ 'feature.diary.page.count' | tr: { page: index() + 1, total: ordered().length } }}</span>
+        <button type="button" (click)="next()" [disabled]="index() >= ordered().length - 1" aria-label="{{ 'feature.next.diary.page' | tr }}">{{ 'feature.next' | tr }} →</button>
       </nav>
     }
   `,
-  imports: [DatePipe],
+  imports: [TranslatePipe, AppDatePipe],
   styles: `
     :host { display: grid; gap: .85rem; }
     .book {

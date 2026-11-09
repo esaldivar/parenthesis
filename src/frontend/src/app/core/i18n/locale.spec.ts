@@ -28,6 +28,17 @@ describe('localization foundation (#534)', () => {
     expect(service.locale()).toBe('es-419');
   });
 
+  it('keeps the signed-out choice when an existing account has never saved a language', () => {
+    const service = new LocaleService();
+    service.setLocale('es-419');
+    service.useAccount('existing-parent', null);
+    expect(service.locale()).toBe('es-419');
+    service.useAccount('other-parent', 'en');
+    expect(service.locale()).toBe('en');
+    service.useAccount(null);
+    expect(service.locale()).toBe('es-419');
+  });
+
   it('detects Spanish variants and otherwise falls back to English', () => {
     expect(detectLocale(['es-MX', 'en-US'])).toBe('es-419');
     expect(detectLocale(['en-US', 'es-MX'])).toBe('en');

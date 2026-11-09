@@ -1,3 +1,4 @@
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { NgTemplateOutlet } from '@angular/common';
 import {
@@ -13,6 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Api, CalendarEvent, CalendarSearch as SearchCriteria, Child, FamilyMember } from '../../core/api/api';
+import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
 import { Icon } from '../../shared/icon/icon';
 import { dateMedium, dayOfMonth, dayLong, timeLabel, todayIn } from '../dashboard/week';
 import { CalendarItem, toItems } from './calendar-items';
@@ -45,18 +47,26 @@ const POSITIONS: ConnectedPosition[] = [
 ];
 
 /** "Mon, Oct 12, 2026 · 5:00 PM – 6:00 PM", "Oct 12 – Oct 14, 2026" or "Oct 12, 2026 · All day". */
-export function resultWhen(item: CalendarItem): string {
+export function resultWhen(item: CalendarItem, locale: AppLocale = 'en'): string {
   if (item.lastDate > item.firstDate) {
-    const span = `${dateMedium(item.firstDate)} – ${dateMedium(item.lastDate)}`;
-    return item.allDay ? span : `${span} · ${timeLabel(item.start.slice(11))} – ${timeLabel(item.end.slice(11))}`;
+    const span = `${dateMedium(item.firstDate, locale)} – ${dateMedium(item.lastDate, locale)}`;
+    return item.allDay ? span : `${span} · ${timeLabel(item.start.slice(11), locale)} – ${timeLabel(item.end.slice(11), locale)}`;
   }
-  const day = dateMedium(item.firstDate);
-  return item.allDay ? `${day} · All day` : `${day} · ${timeLabel(item.start.slice(11))} – ${timeLabel(item.end.slice(11))}`;
+  const day = dateMedium(item.firstDate, locale);
+  return item.allDay ? `${day} · ${translate('feature.all.day', locale)}` : `${day} · ${timeLabel(item.start.slice(11), locale)} – ${timeLabel(item.end.slice(11), locale)}`;
 }
 
+const RESULT_TYPE_KEYS = {
+  ParentingTime: 'feature.parenting.time', Joint: 'calendar.type.family', School: 'feature.school',
+  Medical: 'calendar.type.medical', Dental: 'calendar.type.dental', Activity: 'feature.activity',
+  Birthday: 'calendar.type.birthday', Holiday: 'calendar.type.holiday', Unavailable: 'feature.unavailable',
+  Other: 'calendar.type.other', Reminder: 'feature.reminder', Task: 'feature.task',
+} as const satisfies Record<CalendarItem['category'], TranslationKey>;
+
 /** "Parenting time · Sam": the event type, with whose time it is when that's part of it. */
-export function resultType(item: CalendarItem): string {
-  return item.kind === 'parenting' && item.parents[0] ? `${item.categoryLabel} · ${item.parents[0].name}` : item.categoryLabel;
+export function resultType(item: CalendarItem, locale: AppLocale = 'en'): string {
+  const label = translate(RESULT_TYPE_KEYS[item.category], locale);
+  return item.kind === 'parenting' && item.parents[0] ? `${label} · ${item.parents[0].name}` : label;
 }
 
 /**
@@ -68,12 +78,13 @@ export function resultType(item: CalendarItem): string {
 @Component({
   selector: 'app-calendar-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkConnectedOverlay, CdkOverlayOrigin, Icon, NgTemplateOutlet],
+  imports: [TranslatePipe, CdkConnectedOverlay, CdkOverlayOrigin, Icon, NgTemplateOutlet],
   templateUrl: './calendar-search.html',
   styleUrl: './calendar-search.scss',
 })
 export class CalendarSearch {
   private readonly api = inject(Api);
+  private readonly locale = inject(LocaleService);
 
   readonly familyId = input.required<string>();
   readonly timeZone = input.required<string>();
@@ -90,7 +101,10 @@ export class CalendarSearch {
   private readonly now = signal(new Date());
   protected readonly today = computed(() => todayIn(this.timeZone(), this.now()));
   protected readonly todayDay = computed(() => dayOfMonth(this.today()));
-  protected readonly todayLabel = computed(() => `Search events. Today is ${dayLong(this.today())}`);
+  protected readonly todayLabel = computed(() => {
+    const locale = this.locale.locale();
+    return translate('calendar.search.today', locale, { date: dayLong(this.today(), locale) });
+  });
 
   protected readonly open = signal(false);
   protected readonly text = signal('');
@@ -103,19 +117,21 @@ export class CalendarSearch {
 
   protected readonly total = computed(() => this.upcoming().items.length + this.past().items.length);
   protected readonly status = computed(() => {
+    const locale = this.locale.locale();
     switch (this.state()) {
       case 'loading':
-        return 'Searching…';
+        return translate('calendar.search.loading', locale);
       case 'error':
-        return 'We couldn’t search the calendar.';
+        return translate('calendar.search.error', locale);
       case 'ready': {
         const [u, p] = [this.upcoming(), this.past()];
-        if (this.total() === 0) return 'No events match.';
-        const more = u.hasMore || p.hasMore ? ' or more' : '';
-        return `${u.items.length} upcoming and ${p.items.length} past events${more} found.`;
+        if (this.total() === 0) return translate('calendar.search.empty', locale);
+        return translate(u.hasMore || p.hasMore ? 'calendar.search.resultsMore' : 'calendar.search.results', locale, {
+          upcoming: u.items.length, past: p.items.length,
+        });
       }
       default:
-        return 'Search by title, event type or date, such as “soccer”, “parenting time” or “Oct 12”.';
+        return translate('calendar.search.hint', locale);
     }
   });
 
@@ -233,9 +249,9 @@ export class CalendarSearch {
     this.picked.emit(item);
   }
 
-  protected readonly when = resultWhen;
-  protected readonly type = resultType;
-  protected readonly statusOf = statusText;
+  protected readonly when = (item: CalendarItem) => resultWhen(item, this.locale.locale());
+  protected readonly type = (item: CalendarItem) => resultType(item, this.locale.locale());
+  protected readonly statusOf = (item: CalendarItem) => statusText(item, this.locale.locale());
 
   /** Arrow keys move between the field, the results and "Show more"; Escape closes. */
   protected keydown(event: KeyboardEvent): void {

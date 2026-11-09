@@ -26,6 +26,7 @@ internal sealed partial class AccountEmails(
         var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
+            spanish,
             spanish ? "Confirma tu correo electrónico de Parenthesis" : "Confirm your email for Parenthesis",
             spanish ? "Solo falta un paso: confirma tu correo electrónico" : "One step left: confirm your email",
             [spanish ? "Confirma tu correo electrónico para terminar de configurar tu cuenta. El enlace solo se puede usar una vez." : "Confirm your email address to finish setting up your Parenthesis account. The link works once."],
@@ -41,6 +42,7 @@ internal sealed partial class AccountEmails(
         var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
+            spanish,
             spanish ? "Ya tienes una cuenta de Parenthesis" : "You already have a Parenthesis account",
             spanish ? "Inicia sesión con este correo electrónico" : "Sign in with this email address",
             [
@@ -63,10 +65,11 @@ internal sealed partial class AccountEmails(
         var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
+            spanish,
             spanish ? "Restablece tu contraseña de Parenthesis" : "Reset your Parenthesis password",
             spanish ? "Elige una nueva contraseña" : "Choose a new password",
             [spanish ? "Recibimos una solicitud para restablecer tu contraseña. El enlace solo se puede usar una vez." : "We received a request to reset your Parenthesis password. The link works once."],
-            new EmailAction("Choose a new password", link),
+            new EmailAction(spanish ? "Elegir una nueva contraseña" : "Choose a new password", link),
             spanish ? "Si no solicitaste esto, puedes ignorar el mensaje. Tu contraseña no cambiará." : "If you didn't ask for this, you can ignore this email. Your password won't change."), cancellationToken);
     }
 
@@ -94,8 +97,8 @@ internal sealed partial class AccountEmails(
     }
 
     private static EmailMessage Compose(
-        AppUser user, string subject, string preview, IReadOnlyList<string> paragraphs, EmailAction action, string footer) =>
-        EmailTemplate.Render(user.Email!, new EmailContent(subject, preview, user.DisplayName, paragraphs, action, footer));
+        AppUser user, bool spanish, string subject, string preview, IReadOnlyList<string> paragraphs, EmailAction action, string footer) =>
+        EmailTemplate.Render(user.Email!, new EmailContent(subject, preview, user.DisplayName, paragraphs, action, footer, spanish));
 
     private async Task TrySendAsync(EmailMessage message, CancellationToken cancellationToken)
     {
