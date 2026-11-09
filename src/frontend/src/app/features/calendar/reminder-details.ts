@@ -51,6 +51,7 @@ export class ReminderDetails implements OnInit {
   private readonly keepButton = viewChild('keepButton', { read: ElementRef<HTMLButtonElement> });
 
   readonly item = input.required<CalendarItem>();
+  protected readonly childNames = computed(() => this.item().children.map(child => child.name).join(', '));
   readonly reminder = input.required<Reminder>();
   readonly members = input.required<readonly FamilyMember[]>();
   readonly familyId = input.required<string>();

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember, Memory } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { parentPalette } from '../calendar/calendar-palette';
-import { FORMER_PARENT } from '../calendar/calendar-items';
+import { associatedChildIds, FORMER_PARENT } from '../calendar/calendar-items';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from '../calendar/time';
 import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from './model';
 import { addDays } from './week';
@@ -91,12 +91,12 @@ export class LiveDashboardDataSource extends DashboardDataSource {
             title: r.title,
             date: local.slice(0, 10),
             time: r.allDay ? undefined : local.slice(11),
-            children: kids([r.childId]),
+            children: kids(associatedChildIds(r)),
           };
         }),
         ...tasks
           .filter((t) => t.completedAt === null)
-          .map((t) => ({ id: `task:${t.id}`, kind: 'task' as const, title: t.title, date: t.dueDate, children: kids([t.childId]) })),
+          .map((t) => ({ id: `task:${t.id}`, kind: 'task' as const, title: t.title, date: t.dueDate, children: kids(associatedChildIds(t)) })),
       ],
     };
   }

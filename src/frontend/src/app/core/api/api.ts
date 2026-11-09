@@ -622,6 +622,7 @@ export interface Reminder {
   readonly startsAt: string;
   readonly allDay: boolean;
   readonly childId: string | null;
+  readonly childIds?: readonly string[];
   readonly details: string | null;
   readonly createdByMembershipId: string;
   readonly createdAt: string;
@@ -656,6 +657,7 @@ export interface SharedTask {
   /** `YYYY-MM-DD` in the family's time zone. */
   readonly dueDate: string;
   readonly childId: string | null;
+  readonly childIds?: readonly string[];
   readonly details: string | null;
   readonly createdByMembershipId: string;
   readonly createdAt: string;
@@ -681,6 +683,7 @@ export interface TaskInput {
   readonly title: string;
   readonly dueDate: string;
   readonly childId?: string | null;
+  readonly childIds?: readonly string[];
   readonly details?: string;
   readonly items: readonly { id?: string; text: string; required: boolean }[];
   readonly version?: number;
@@ -692,6 +695,7 @@ export interface ReminderInput {
   readonly startsAt: string;
   readonly allDay: boolean;
   readonly childId?: string | null;
+  readonly childIds?: readonly string[];
   readonly details?: string;
   readonly repeat: RepeatFrequency;
   /** `YYYY-MM-DD`, inclusive. Exactly one of repeatUntil or repeatCount when it repeats. */

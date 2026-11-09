@@ -19,8 +19,11 @@ internal sealed class SharedTask : Entity, IFamilyScoped
     /// <summary>The day it's due, in the family's time zone.</summary>
     public DateOnly DueDate { get; set; }
 
-    /// <summary>Optional: one child it's about.</summary>
+    /// <summary>Legacy single-child association.</summary>
     public Guid? ChildProfileId { get; set; }
+
+    /// <summary>Explicit selection for new writes. Null uses the original single-child field.</summary>
+    public Guid[]? ChildProfileIds { get; set; }
 
     public string? Details { get; set; }
 

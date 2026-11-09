@@ -15,7 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CoParent.Modules.Calendar.Endpoints;
 
 /// <summary>
-/// Create and edit. Edits replace the whole task, checklist included, so clearing the child, the details or the
+/// Create and edit. Edits replace the whole task, checklist included, so clearing the children, the details or the
 /// checklist is explicit. An edit must carry the <c>Version</c> the parent saw (#175).
 /// </summary>
 internal sealed record TaskRequest(
@@ -24,7 +24,11 @@ internal sealed record TaskRequest(
     Guid? ChildId,
     string? Details,
     IReadOnlyList<ChecklistItemRequest>? Items = null,
-    uint? Version = null);
+    uint? Version = null,
+    IReadOnlyList<Guid>? ChildIds = null)
+{
+    internal IReadOnlyList<Guid> SelectedChildren => ChildSelection.Resolve(ChildId, ChildIds);
+}
 
 /// <summary>A checklist line. <c>Id</c> keeps an existing item (and its tick); without one, it's a new item.</summary>
 internal sealed record ChecklistItemRequest(Guid? Id, string? Text, bool Required);
@@ -57,6 +61,7 @@ internal sealed record TaskView(
     int ProgressDone,
     int ProgressTotal,
     uint Version,
+    IReadOnlyList<Guid> ChildIds,
     bool JustCompleted = false);
 
 internal sealed record TaskHistoryView(Guid ActorMembershipId, string Action, string? Changes, DateTimeOffset At);
@@ -165,7 +170,8 @@ internal static class TaskEndpoints
             FamilyId = tenant.FamilyId,
             Title = request.Title!.Trim(),
             DueDate = request.DueDate!.Value,
-            ChildProfileId = request.ChildId,
+            ChildProfileId = ChildSelection.Single(request.SelectedChildren),
+            ChildProfileIds = request.SelectedChildren.ToArray(),
             Details = Clean(request.Details),
             CreatedByMembershipId = tenant.MembershipId,
             CreatedAt = now,
@@ -257,7 +263,7 @@ internal static class TaskEndpoints
             changes.Add("dueDate");
         }
 
-        if (request.ChildId != task.ChildProfileId)
+        if (!request.SelectedChildren.ToHashSet().SetEquals(ChildSelection.Resolve(task.ChildProfileId, task.ChildProfileIds)))
         {
             changes.Add("child");
         }
@@ -283,7 +289,9 @@ internal static class TaskEndpoints
         }
 
         var now = clock.GetUtcNow();
-        (task.Title, task.DueDate, task.ChildProfileId, task.Details) = (title, dueDate, request.ChildId, details);
+        (task.Title, task.DueDate, task.Details) = (title, dueDate, details);
+        task.ChildProfileId = ChildSelection.Single(request.SelectedChildren);
+        task.ChildProfileIds = request.SelectedChildren.ToArray();
         (task.LastEditedByMembershipId, task.LastEditedAt, task.UpdatedAt) = (tenant.MembershipId, now, now);
         var history = new List<SharedTaskHistory> { History(task, tenant, SharedTaskAction.Edited, string.Join(", ", changes), now) };
         var removed = items.Where(i => wanted.All(r => r.Id != i.Id)).ToList();
@@ -615,9 +623,16 @@ internal static class TaskEndpoints
             errors["details"] = [$"Keep the details under {SharedTask.DetailsMaxLength} characters."];
         }
 
-        if (request.ChildId is { } child && !(await roster.ActiveChildIdsAsync(cancellationToken)).Contains(child))
+        if (request.SelectedChildren.Count > 0)
         {
-            errors["childId"] = ["Choose a child who's in this family (and approved by both parents)."];
+            var eligible = await roster.ActiveChildIdsAsync(cancellationToken);
+            if (request.SelectedChildren.Any(child => !eligible.Contains(child))
+                || request.SelectedChildren.Distinct().Count() != request.SelectedChildren.Count)
+            {
+                errors[request.ChildIds is null ? "childId" : "childIds"] = request.ChildIds is null
+                    ? ["Choose a child who's in this family (and approved by both parents)."]
+                    : ["Choose children who are in this family (and approved by both parents)."];
+            }
         }
 
         var items = request.Items ?? [];
@@ -687,6 +702,7 @@ internal static class TaskEndpoints
             deciding.Count(i => i.CompletedAt.HasValue),
             deciding.Count,
             t.Version,
+            ChildSelection.Resolve(t.ChildProfileId, t.ChildProfileIds),
             justCompleted);
     }
 
