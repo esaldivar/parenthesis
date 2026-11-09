@@ -33,7 +33,7 @@
               @let fund = item.fund;
               <article aria-labelledby="record-title">
                 <div class="badges">
-                  <span class="badge">Shared Fund</span>
+                  <span class="badge">{{ 'feature.shared.fund' | tr }}</span>
                   <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] }}</span>
                 </div>
                 <h2 #recordHeading id="record-title" tabindex="-1">{{ fund.title }}</h2>
@@ -48,24 +48,24 @@
                 @if (fund.status === 'Open') {
                   <app-record-progress [totals]="fund.totals ?? { acknowledgedMinor: 0, pendingMinor: 0, disputedMinor: 0 }"
                     [currency]="fund.currency" [target]="fund.proposerShareMinor + fund.coParentShareMinor" kind="fund" />
-                  <h3>Contribution history</h3>
+                  <h3>{{ 'feature.contribution.history' | tr }}</h3>
                   <app-record-history [entries]="fund.entries ?? []" [currency]="fund.currency" kind="fund" [busy]="busy()"
                     [attachmentUrl]="attachmentUrl" (respond)="respond(item, $event.entry, $event.response)" />
                   <div class="actions">
-                    <button class="primary" type="button" [disabled]="busy() || composer() !== null" (click)="startReport(item)">Report contribution</button>
+                    <button class="primary" type="button" [disabled]="busy() || composer() !== null" (click)="startReport(item)">{{ 'feature.report.contribution' | tr }}</button>
                   </div>
                 } @else {
                   <div class="panel target">
-                    <strong>Proposed target</strong>
+                    <strong>{{ 'feature.proposed.target' | tr }}</strong>
                     <strong>{{ (fund.proposerShareMinor + fund.coParentShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</strong>
                   </div>
                   @if (fund.status === 'AwaitingAgreement') {
                     @if (mine) {
-                      <p class="muted">Waiting for your co-parent to agree.</p>
+                      <p class="muted">{{ 'feature.waiting.for.your.co.parent.to.agree' | tr }}</p>
                     } @else {
                       <div class="actions">
-                        <button class="primary" type="button" [disabled]="busy()" (click)="decide(fund, true)">Agree to proposal</button>
-                        <button class="secondary" type="button" [disabled]="busy()" (click)="decide(fund, false)">Request changes</button>
+                        <button class="primary" type="button" [disabled]="busy()" (click)="decide(fund, true)">{{ 'feature.agree.to.proposal' | tr }}</button>
+                        <button class="secondary" type="button" [disabled]="busy()" (click)="decide(fund, false)">{{ 'feature.request.changes' | tr }}</button>
                       </div>
                     }
                   }
@@ -76,19 +76,18 @@
               @let record = item.record;
               <article aria-labelledby="record-title">
                 <div class="badges">
-                  <span class="badge support">Child Support</span>
+                  <span class="badge support">{{ 'feature.child.support' | tr }}</span>
                 </div>
                 <h2 #recordHeading id="record-title" tabindex="-1">{{ record.title }}</h2>
                 <p class="muted">One-time record · {{ record.currency }} · {{ record.youPay ? 'You pay' : 'Your co-parent pays' }}</p>
                 <app-record-progress [totals]="record.totals" [currency]="record.currency" [target]="record.referenceMinor" kind="support" />
-                <h3>Payment history</h3>
+                <h3>{{ 'feature.payment.history' | tr }}</h3>
                 <app-record-history [entries]="record.entries" [currency]="record.currency" kind="support" [busy]="busy()"
                   [attachmentUrl]="attachmentUrl" (respond)="respond(item, $event.entry, $event.response)" />
-                <p class="note">This is a shared record of payments. Use your required payment channel. Confirming receipt
-                  doesn’t verify bank settlement or compliance with an order.</p>
+                <p class="note">{{ 'feature.this.is.a.shared.record.of.payments.2a1a06' | tr }}</p>
                 @if (record.youPay) {
                   <div class="actions">
-                    <button class="primary" type="button" [disabled]="busy() || composer() !== null" (click)="startReport(item)">Report payment</button>
+                    <button class="primary" type="button" [disabled]="busy() || composer() !== null" (click)="startReport(item)">{{ 'feature.report.payment' | tr }}</button>
                   </div>
                 }
               </article>

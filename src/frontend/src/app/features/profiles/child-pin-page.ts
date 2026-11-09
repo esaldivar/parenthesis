@@ -32,15 +32,15 @@ export const PIN_PATTERN = /^\d{4,6}$/;
 
     @if (state() === 'locked') {
       <div class="status" role="status">
-        <p class="status__title">Your PIN is locked.</p>
-        <p>Ask a parent to help you choose a new PIN.</p>
+        <p class="status__title">{{ 'feature.your.pin.is.locked' | tr }}</p>
+        <p>{{ 'feature.ask.a.parent.to.help.you.choose' | tr }}</p>
         @if (notified() === true) {
-          <p>We’ve let your parents know.</p>
+          <p>{{ 'feature.we.ve.let.your.parents.know' | tr }}</p>
         }
       </div>
     } @else if (state() === 'paused') {
       <div class="status" role="status">
-        <p class="status__title">Let’s take a short break.</p>
+        <p class="status__title">{{ 'feature.let.s.take.a.short.break' | tr }}</p>
         <p>
           That was a few wrong tries. Ask a parent for help, or try again after
           {{ retryAt() | appDate: 'shortTime' }}.
@@ -50,7 +50,7 @@ export const PIN_PATTERN = /^\d{4,6}$/;
         </div>
       </div>
     } @else {
-      <p class="lead">Type your PIN.</p>
+      <p class="lead">{{ 'feature.type.your.pin' | tr }}</p>
 
       @if (error(); as error) {
         <div class="alert" role="alert">{{ error }}</div>
@@ -70,9 +70,9 @@ export const PIN_PATTERN = /^\d{4,6}$/;
           />
           <mat-hint>{{ 'feature.4.to.6.numbers' | tr }}</mat-hint>
           @if (form.controls.pin.hasError('required')) {
-            <mat-error>Type your PIN.</mat-error>
+            <mat-error>{{ 'feature.type.your.pin' | tr }}</mat-error>
           } @else if (form.controls.pin.hasError('pattern')) {
-            <mat-error>Your PIN is 4 to 6 numbers.</mat-error>
+            <mat-error>{{ 'feature.your.pin.is.4.to.6.numbers' | tr }}</mat-error>
           }
         </mat-form-field>
 

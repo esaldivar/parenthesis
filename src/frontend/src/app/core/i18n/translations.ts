@@ -57,7 +57,7 @@ export const translations = {
   'register.already': ["Already have an account? Sign in","¿Ya tienes una cuenta? Inicia sesión"],
   'settings.title': ['Settings', 'Configuración'],
   'settings.languageHeading': ['Language', 'Idioma'],
-  'settings.languageHelp': ['Choose the language used in Parenthesis on this device.', 'Elige el idioma que se usa en Parenthesis en este dispositivo.'],
+  'settings.languageHelp': ['Choose the language used in Parenthesis for your account.', 'Elige el idioma de Parenthesis para tu cuenta.'],
   'settings.languageLabel': ['Display language', 'Idioma de la aplicación'],
   'nav.home': ["Home","Inicio"],
   'nav.calendar': ["Calendar","Calendario"],
@@ -154,6 +154,12 @@ export const translations = {
   'calendar.filter.pending': ['Pending approval', 'Pendiente de aprobación'],
   'calendar.filter.change-pending': ['Change pending', 'Cambio pendiente'],
   'calendar.filter.declined': ['Declined', 'Rechazado'],
+  'route.googlePhotos': ['Google Photos', 'Google Fotos'],
+  'route.joinFamily': ['Join your co-parent’s family', 'Únete a la familia del otro padre o madre'],
+  'route.parentPin': ['Enter your parent PIN', 'Ingresa tu PIN de adulto'],
+  'route.password': ['Enter your password', 'Ingresa tu contraseña'],
+  'route.pin': ['Enter your PIN', 'Ingresa tu PIN'],
+  'route.setUpFamily': ['Set up your family', 'Configura tu familia'],
 } as const;
 
 export type TranslationKey = keyof typeof translations;

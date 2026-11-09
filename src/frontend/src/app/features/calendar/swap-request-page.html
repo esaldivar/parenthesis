@@ -4,20 +4,20 @@
 
 @switch (state()) {
   @case ('loading') {
-    <h1 tabindex="-1">Request swap</h1>
-    <p class="muted" role="status">Loading…</p>
+    <h1 tabindex="-1">{{ 'feature.request.swap' | tr }}</h1>
+    <p class="muted" role="status">{{ 'feature.loading' | tr }}</p>
   }
   @case ('error') {
-    <h1 tabindex="-1">Request swap</h1>
+    <h1 tabindex="-1">{{ 'feature.request.swap' | tr }}</h1>
     <div class="alert" role="alert">
       <p>{{ loadError() }}</p>
-      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+      <button mat-stroked-button type="button" (click)="retry()">{{ 'feature.try.again' | tr }}</button>
     </div>
   }
   @default {
     @if (item(); as current) {
       @if (blocked(); as why) {
-        <h1 tabindex="-1">Request swap</h1>
+        <h1 tabindex="-1">{{ 'feature.request.swap' | tr }}</h1>
         <div class="card">
           <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: current }" />
         </div>
@@ -25,25 +25,25 @@
       } @else {
         @switch (step()) {
           @case ('choose') {
-            <h1 tabindex="-1">Request parenting time swap</h1>
+            <h1 tabindex="-1">{{ 'feature.request.parenting.time.swap' | tr }}</h1>
             <div class="card">
               <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: current }" />
             </div>
 
             <form [formGroup]="form" (ngSubmit)="continue()" novalidate aria-labelledby="change-heading">
-              <h2 id="change-heading" class="step">Proposed change</h2>
+              <h2 id="change-heading" class="step">{{ 'feature.proposed.change' | tr }}</h2>
               @if (error(); as message) {
                 <div class="alert" role="alert">{{ message }}</div>
               }
 
               <fieldset class="when">
-                <legend>New date and time</legend>
-                <mat-slide-toggle formControlName="allDay">All day</mat-slide-toggle>
+                <legend>{{ 'feature.new.date.and.time' | tr }}</legend>
+                <mat-slide-toggle formControlName="allDay">{{ 'feature.all.day' | tr }}</mat-slide-toggle>
                 <!-- Start and End as separate fields, each opening its own calendar (#249). Only past days are greyed
                      out; an invalid date turns red, with its reason for screen readers, and blocks sending (#248). -->
                 <div class="when__row dates">
                   <app-date-field
-                    label="Start date"
+                    label="{{ 'feature.start.date' | tr }}"
                     name="startDate"
                     inputId="swap-start-date"
                     [control]="form.controls.startDate"
@@ -51,7 +51,7 @@
                     [issue]="dateCheck.issues().start"
                   />
                   <app-date-field
-                    label="End date"
+                    label="{{ 'feature.end.date' | tr }}"
                     name="endDate"
                     inputId="swap-end-date"
                     [control]="form.controls.endDate"
@@ -63,11 +63,11 @@
                 @if (!allDay()) {
                   <div class="when__row">
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>Start time</mat-label>
+                      <mat-label>{{ 'feature.start.time' | tr }}</mat-label>
                       <input matInput type="time" formControlName="startTime" required />
                     </mat-form-field>
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>End time</mat-label>
+                      <mat-label>{{ 'feature.end.time' | tr }}</mat-label>
                       <input
                         matInput
                         type="time"
@@ -85,7 +85,7 @@
               </fieldset>
 
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Reason (optional)</mat-label>
+                <mat-label>{{ 'feature.reason.optional' | tr }}</mat-label>
                 <textarea id="swap-reason" matInput formControlName="reason" rows="3" [maxlength]="reasonMax"></textarea>
                 <mat-hint>{{ otherParent() }} sees this with your request.</mat-hint>
                 <mat-hint align="end">{{ reasonLength() }} / {{ reasonMax }}</mat-hint>
@@ -98,20 +98,20 @@
                 <section class="clash" aria-labelledby="swap-clash-heading">
                   <h3 id="swap-clash-heading" tabindex="-1">
                     <app-icon name="alert" [size]="20" />
-                    Some of that time is marked unavailable
+                    {{ 'feature.some.of.that.time.is.marked.unavailable' | tr }}
                   </h3>
                   @for (text of clashText(); track text) {
                     <p>{{ text }}</p>
                   }
-                  <p>They may still approve your request. What would you like to do?</p>
+                  <p>{{ 'feature.they.may.still.approve.your.request.what' | tr }}</p>
                   <div class="choices">
-                    <button mat-flat-button type="button" (click)="sendAnyway()">Send anyway</button>
-                    <button mat-stroked-button type="button" (click)="chooseDifferentDates()">Choose different dates</button>
+                    <button mat-flat-button type="button" (click)="sendAnyway()">{{ 'feature.send.anyway' | tr }}</button>
+                    <button mat-stroked-button type="button" (click)="chooseDifferentDates()">{{ 'feature.choose.different.dates' | tr }}</button>
                   </div>
                 </section>
               } @else {
                 <div class="buttons">
-                  <a mat-stroked-button routerLink="/calendar" [queryParams]="{ date: current.firstDate }">Cancel</a>
+                  <a mat-stroked-button routerLink="/calendar" [queryParams]="{ date: current.firstDate }">{{ 'feature.cancel' | tr }}</a>
                   <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Checking…' : 'Continue' }}</button>
                 </div>
               }
@@ -119,16 +119,16 @@
           }
 
           @case ('review') {
-            <h1 tabindex="-1">Review and send request</h1>
+            <h1 tabindex="-1">{{ 'feature.review.and.send.request' | tr }}</h1>
             @if (proposed(); as next) {
               <div class="compare">
                 <section class="card" aria-labelledby="current-heading">
-                  <h2 id="current-heading" class="step">Current schedule</h2>
+                  <h2 id="current-heading" class="step">{{ 'feature.current.schedule' | tr }}</h2>
                   <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: current }" />
                 </section>
                 <app-icon class="compare__arrow" name="arrow-right" [size]="24" />
                 <section class="card card--proposed" aria-labelledby="proposed-heading">
-                  <h2 id="proposed-heading" class="step">Proposed schedule</h2>
+                  <h2 id="proposed-heading" class="step">{{ 'feature.proposed.schedule' | tr }}</h2>
                   <ng-container [ngTemplateOutlet]="summary" [ngTemplateOutletContext]="{ $implicit: next }" />
                 </section>
               </div>
@@ -136,11 +136,11 @@
 
             <dl class="facts">
               @if (current.children.length > 0) {
-                <dt>Children</dt>
-                <dd>{{ childNames(current) }} <span class="hint">(a swap keeps the same children)</span></dd>
+                <dt>{{ 'feature.children' | tr }}</dt>
+                <dd>{{ childNames(current) }} <span class="hint">{{ 'feature.a.swap.keeps.the.same.children' | tr }}</span></dd>
               }
               @if (form.controls.reason.value.trim(); as reason) {
-                <dt>Reason</dt>
+                <dt>{{ 'feature.reason' | tr }}</dt>
                 <dd>{{ reason }}</dd>
               }
             </dl>
@@ -157,7 +157,7 @@
               <div class="alert" role="alert">{{ message }}</div>
             }
             <div class="buttons">
-              <button mat-stroked-button type="button" [disabled]="busy()" (click)="back()">Back</button>
+              <button mat-stroked-button type="button" [disabled]="busy()" (click)="back()">{{ 'feature.back' | tr }}</button>
               <button mat-flat-button type="button" [disabled]="busy()" (click)="send()">
                 {{ busy() ? 'Sending…' : 'Send request' }}
               </button>
@@ -167,7 +167,7 @@
           @case ('sent') {
             <div class="sent">
               <span class="sent__icon"><app-icon name="check" [size]="40" /></span>
-              <h1 tabindex="-1">Swap request sent</h1>
+              <h1 tabindex="-1">{{ 'feature.swap.request.sent' | tr }}</h1>
               <p>
                 {{ otherParent() }} can approve or decline it. Until then, your current schedule stays on the calendar.
               </p>
@@ -175,13 +175,13 @@
                 <div class="card">
                   <p class="card__title">{{ current.title }}</p>
                   <p>New date: {{ describe(next) }}</p>
-                  <p class="status">Pending approval</p>
+                  <p class="status">{{ 'feature.pending.approval' | tr }}</p>
                 </div>
               }
               <div class="buttons buttons--stack">
-                <a mat-flat-button routerLink="/calendar" [queryParams]="{ date: current.firstDate }">View in calendar</a>
+                <a mat-flat-button routerLink="/calendar" [queryParams]="{ date: current.firstDate }">{{ 'feature.view.in.calendar' | tr }}</a>
                 <a mat-stroked-button routerLink="/calendar" [queryParams]="{ date: current.firstDate, event: current.id }">
-                  View request details
+                  {{ 'feature.view.request.details' | tr }}
                 </a>
               </div>
             </div>

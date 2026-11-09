@@ -39,28 +39,26 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
         @switch (status.state) {
           @case ('NotConnected') {
             <p>
-              Save copies of Family Memories photos to your own Google Photos, one album per event.
+              {{ 'feature.save.copies.of.family.memories.photos.to' | tr }}
             </p>
             <ul class="facts">
-              <li>Only photos you choose are sent, as the version stored in Parenthesis.</li>
+              <li>{{ 'feature.only.photos.you.choose.are.sent.as' | tr }}</li>
               <li>
-                Parenthesis can add photos and make albums. It can’t see anything else in your
-                Google Photos.
+                {{ 'feature.parenthesis.can.add.photos.and.make.albums.9b1c6e' | tr }}
               </li>
               <li>
-                Copies use your Google storage and stay yours: Parenthesis can’t recall or delete
-                them.
+                {{ 'feature.copies.use.your.google.storage.and.stay' | tr }}
               </li>
               <li>Connecting changes nothing for {{ coParent() ?? 'your co-parent' }}.</li>
             </ul>
           }
           @case ('Connected') {
             <p class="state" role="status">
-              <strong>Connected.</strong>
+              <strong>{{ 'feature.connected' | tr }}</strong>
               @if (status.exportedCount > 0) {
                 {{ exported(status) }}
               } @else {
-                Export photos from any Family Memory.
+                {{ 'feature.export.photos.from.any.family.memory' | tr }}
               }
               @if (status.waitingCount > 0) {
                 {{ photos(status.waitingCount) }} waiting to export.
@@ -69,7 +67,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
           }
           @case ('NeedsReconnect') {
             <p class="alert" role="alert">
-              <strong>Google Photos needs you to reconnect.</strong> {{ reconnect(status) }}
+              <strong>{{ 'feature.google.photos.needs.you.to.reconnect' | tr }}</strong> {{ reconnect(status) }}
             </p>
           }
         }

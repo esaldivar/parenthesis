@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
@@ -154,6 +155,7 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
   `,
 })
 export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesView['values'], RoutinesHistoryPage['entries'][number]> {
+  private readonly locale = inject(LocaleService);
   protected readonly updates = inject(EssentialsUpdatesStore);
   /** The shared routine's changes, and the co-parent's own routine's changes shown in their tab (#128). */
   protected readonly marks = sectionUpdates('routines', this.childId);
@@ -249,7 +251,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVie
     try {
       this.current.set(await this.api.routines(this.familyId(), this.childId()));
     } catch {
-      this.error.set('Routines couldn’t be loaded.');
+      this.error.set(translate('feedback.routines.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

@@ -1,6 +1,8 @@
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom, filter, tap } from 'rxjs';
+import { catchError, firstValueFrom, filter, tap } from 'rxjs';
+import { LocaleService } from '../i18n/locale.service';
+import { rememberProblemLocale } from './problem';
 
 // Hand-written to match the API's OpenAPI document for the endpoints Milestones 1 and 2 use. Generating these from the
 // document is planned once the surface grows.
@@ -957,6 +959,7 @@ export interface NotificationItem {
 @Injectable({ providedIn: 'root' })
 export class Api {
   private readonly http = inject(HttpClient);
+  private readonly locale = inject(LocaleService);
 
   antiforgery = () => this.call(this.http.get<void>('/api/antiforgery'));
   me = () => this.call(this.http.get<Me>('/api/me'));
@@ -1457,7 +1460,11 @@ export class Api {
   typing = (familyId: string) => this.call(this.http.post<void>(`/api/families/${familyId}/chat/typing`, {}));
 
   private call<T>(request: import('rxjs').Observable<T>): Promise<T> {
-    return firstValueFrom(request);
+    const locale = this.locale.locale();
+    return firstValueFrom(request.pipe(catchError((error: unknown) => {
+      rememberProblemLocale(error, locale);
+      throw error;
+    })));
   }
 }
 

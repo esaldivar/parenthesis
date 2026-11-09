@@ -1,5 +1,7 @@
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -117,6 +119,7 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
   `,
 })
 export class SchoolSection extends RevisionedSection<SchoolView, SchoolView['values'], SchoolHistoryPage['entries'][number]> {
+  private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('school', this.childId);
   protected readonly savedNotice = 'School saved.';
   protected readonly grades = ['Pre-K', 'Kindergarten', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -136,7 +139,7 @@ export class SchoolSection extends RevisionedSection<SchoolView, SchoolView['val
     try {
       this.current.set(await this.api.school(this.familyId(), this.childId()));
     } catch {
-      this.error.set('School couldn’t be loaded.');
+      this.error.set(translate('feedback.school.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

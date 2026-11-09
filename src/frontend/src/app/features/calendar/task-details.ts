@@ -1,5 +1,5 @@
 import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { DOCUMENT } from '@angular/common';
@@ -195,7 +195,7 @@ export class TaskDetails implements OnInit {
     const problem = toProblem(error);
     if (problem.status === 400 && problem.title === 'Invalid or missing antiforgery token.') {
       this.sessionChanged.set(true);
-      this.error.set('Your session needs to be refreshed. Reload the calendar, then check the task and try again. This action wasn’t saved.');
+      this.error.set(translate('feedback.your.session.needs.to.be.refreshed.reload.the.calendar.then.check.the.task.and.try.again.this.action.wasn.t.saved', this.locale.locale()));
       afterNextRender(() => this.window?.document.getElementById('task-session-error')?.focus(), { injector: this.injector });
     } else {
       this.error.set(generalMessage(problem));
@@ -206,7 +206,7 @@ export class TaskDetails implements OnInit {
   private async refresh(): Promise<void> {
     try {
       this.show(await this.api.task(this.familyId(), this.current().id));
-      this.notice.set('The other parent just changed this task. It’s up to date now, so check it and try again.');
+      this.notice.set(translate('feedback.the.other.parent.just.changed.this.task.it.s.up.to.date.now.so.check.it.and.try.again', this.locale.locale()));
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
     }
@@ -219,7 +219,7 @@ export class TaskDetails implements OnInit {
 
   /** Only on the change the server says completed the task. With reduced motion, just the message. */
   private celebrate(): void {
-    this.notice.set('Great teamwork! This task is done.');
+    this.notice.set(translate('feedback.great.teamwork.this.task.is.done', this.locale.locale()));
     if (this.window?.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       return;
     }

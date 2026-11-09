@@ -48,20 +48,20 @@ import {
 
     @switch (state()) {
       @case ('loading') {
-        <p class="muted" role="status">Loading memories…</p>
+        <p class="muted" role="status">{{ 'feature.loading.memories' | tr }}</p>
       }
       @case ('error') {
         <p class="error" role="alert">{{ error() }}</p>
-        <button mat-stroked-button type="button" (click)="load()">Try again</button>
+        <button mat-stroked-button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       }
       @case ('ready') {
         @if (rows().length === 0) {
           <app-empty-state
             icon="album"
-            title="No memories yet"
-            body="Add photos to a confirmed event on the calendar and they’ll show here."
+            title="{{ 'feature.no.memories.yet' | tr }}"
+            body="{{ 'feature.add.photos.to.a.confirmed.event.on' | tr }}"
           >
-            <a mat-stroked-button routerLink="/calendar">Open calendar</a>
+            <a mat-stroked-button routerLink="/calendar">{{ 'feature.open.calendar' | tr }}</a>
           </app-empty-state>
         } @else {
           <ul class="memories">

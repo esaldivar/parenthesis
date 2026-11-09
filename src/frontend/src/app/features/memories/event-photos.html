@@ -29,11 +29,11 @@
   } @else {
     @switch (state()) {
       @case ('loading') {
-        <p class="muted" role="status">Loading photos…</p>
+        <p class="muted" role="status">{{ 'feature.loading.photos' | tr }}</p>
       }
       @case ('error') {
         <p class="error" role="alert">{{ loadError() }}</p>
-        <button mat-stroked-button type="button" (click)="load()">Try again</button>
+        <button mat-stroked-button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       }
     }
 
@@ -89,13 +89,13 @@
                       {{ size(pick.file.size) }}
                     }
                     @case ('waiting') {
-                      Waiting
+                      {{ 'feature.waiting' | tr }}
                     }
                     @case ('uploading') {
-                      Adding…
+                      {{ 'feature.adding' | tr }}
                     }
                     @case ('added') {
-                      <app-icon name="check" [size]="16" /> Added
+                      <app-icon name="check" [size]="16" /> {{ 'feature.added' | tr }}
                     }
                   }
                 </span>
@@ -311,13 +311,12 @@
 
           @switch (mode) {
             @case ('unavailable') {
-              <p>Exporting to Google Photos isn’t available yet.</p>
+              <p>{{ 'feature.exporting.to.google.photos.isn.t.available' | tr }}</p>
             }
             @case ('connect') {
-              <p>Connect your Google Photos first. You’ll come back here to export.</p>
+              <p>{{ 'feature.connect.your.google.photos.first.you.ll' | tr }}</p>
               <p class="hint">
-                Parenthesis can add photos and make albums, and can’t see anything else in your
-                Google Photos. Copies use your Google storage.
+                {{ 'feature.parenthesis.can.add.photos.and.make.albums' | tr }}
               </p>
               <div class="actions__row">
                 <button
@@ -329,15 +328,15 @@
                   <app-icon name="cloud-upload" [size]="18" />
                   {{ exports.busy() ? 'Opening Google…' : 'Connect Google Photos' }}
                 </button>
-                <button mat-stroked-button type="button" (click)="closeExport()">Cancel</button>
+                <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.cancel' | tr }}</button>
               </div>
               @if (downloadAll()) {
-                <p class="hint">Or use Download all to save them to this device.</p>
+                <p class="hint">{{ 'feature.or.use.download.all.to.save.them' | tr }}</p>
               }
             }
             @case ('reconnect') {
               <p class="error" role="alert">
-                <strong>Google Photos needs you to reconnect.</strong>
+                <strong>{{ 'feature.google.photos.needs.you.to.reconnect' | tr }}</strong>
                 @if (exports.view()?.waiting; as waiting) {
                   {{ waiting === 1 ? '1 photo is' : waiting + ' photos are' }} waiting.
                 }
@@ -351,16 +350,16 @@
                 >
                   {{ exports.busy() ? 'Opening Google…' : 'Reconnect Google Photos' }}
                 </button>
-                <button mat-stroked-button type="button" (click)="closeExport()">Cancel</button>
+                <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.cancel' | tr }}</button>
               </div>
             }
             @case ('nothing') {
               <p class="note">
-                <strong>No photos here can be exported.</strong>
+                <strong>{{ 'feature.no.photos.here.can.be.exported' | tr }}</strong>
                 {{ exportSkipped() ?? 'There are no photos you can download here.' }}
               </p>
               <div class="actions__row">
-                <button mat-stroked-button type="button" (click)="closeExport()">Close</button>
+                <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.close' | tr }}</button>
               </div>
             }
             @case ('confirm') {
@@ -372,8 +371,7 @@
                       : '1 photo'
                     : exportCount() + ' photos'
                 }}</strong>
-                will go to the album <strong>“{{ exports.view()?.albumTitle }}”</strong> in your
-                Google Photos.
+                {{ 'feature.will.go.to.the.album' | tr }} <strong>“{{ exports.view()?.albumTitle }}”</strong> {{ 'feature.in.your.google.photos' | tr }}
               </p>
               @if (exportSkipped(); as skipped) {
                 <p class="note">{{ skipped }}</p>
@@ -394,7 +392,7 @@
                         : 'Export ' + exportCount() + ' photos'
                   }}
                 </button>
-                <button mat-stroked-button type="button" (click)="closeExport()">Cancel</button>
+                <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.cancel' | tr }}</button>
               </div>
             }
             @case ('progress') {
@@ -410,7 +408,7 @@
                     }
                     <span class="files__name">
                       @if (shown.kind === 'failed' || shown.kind === 'skipped') {
-                        <span class="badge badge--bad">Not exported</span>
+                        <span class="badge badge--bad">{{ 'feature.not.exported' | tr }}</span>
                       }
                       {{ photoName(record.photoId) }}
                     </span>
@@ -437,10 +435,10 @@
                     Try again ({{ sheetRetryable().length }})
                   </button>
                 }
-                <button mat-stroked-button type="button" (click)="closeExport()">Close</button>
+                <button mat-stroked-button type="button" (click)="closeExport()">{{ 'feature.close' | tr }}</button>
               </div>
               <p class="hint">
-                You can close this. Exporting continues, and the memory shows each photo’s result.
+                {{ 'feature.you.can.close.this.exporting.continues.and' | tr }}
               </p>
             }
           }

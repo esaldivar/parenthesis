@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -131,6 +132,7 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
   `,
 })
 export class AllergiesFoodSection extends RevisionedSection<AllergiesFoodView, AllergiesFoodView['values'], AllergiesFoodHistoryPage['entries'][number]> {
+  private readonly locale = inject(LocaleService);
   readonly children = input<readonly Child[]>([]);
   protected readonly marks = sectionUpdates('allergiesFood', this.childId);
   protected readonly savedNotice = 'Allergies & Food saved.';
@@ -180,7 +182,7 @@ export class AllergiesFoodSection extends RevisionedSection<AllergiesFoodView, A
     try {
       this.current.set(await this.api.allergiesFood(this.familyId(), this.childId()));
     } catch {
-      this.error.set('Allergies & Food couldn’t be loaded.');
+      this.error.set(translate('feedback.allergies.food.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -80,12 +81,12 @@ const BOTTOM_SLACK_PX = 48;
 
     @switch (state()) {
       @case ('loading') {
-        <p class="note muted" role="status">Loading messages…</p>
+        <p class="note muted" role="status">{{ 'feature.loading.messages' | tr }}</p>
       }
       @case ('error') {
         <div class="note">
           <p class="alert" role="alert">{{ error() }}</p>
-          <button mat-stroked-button type="button" (click)="load()">Try again</button>
+          <button mat-stroked-button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
         </div>
       }
       @case ('ready') {
@@ -93,54 +94,54 @@ const BOTTOM_SLACK_PX = 48;
           <div class="note">
             <app-empty-state
               icon="messages"
-              title="No one to message yet"
-              body="Messages are just between you and your co-parent. Invite them from Settings to start talking here."
+              title="{{ 'feature.no.one.to.message.yet' | tr }}"
+              body="{{ 'feature.messages.are.just.between.you.and.your' | tr }}"
             >
-              <a mat-stroked-button routerLink="/settings">Open Settings</a>
+              <a mat-stroked-button routerLink="/settings">{{ 'feature.open.settings' | tr }}</a>
             </app-empty-state>
           </div>
         } @else {
-          <div class="log" #log tabindex="0" role="region" [attr.aria-label]="'Conversation with ' + name()" (scroll)="onScroll()">
+          <div class="log" #log tabindex="0" role="region" [attr.aria-label]="('chat.conversation' | tr: { name: name() })" (scroll)="onScroll()">
             @if (hasOlder()) {
               <button mat-button type="button" class="older" [disabled]="loadingOlder()" (click)="loadOlder()">
-                {{ loadingOlder() ? 'Loading…' : 'Load earlier messages' }}
+                {{ loadingOlder() ? ('feature.loading' | tr) : ('chat.earlier' | tr) }}
               </button>
             }
             @if (olderError(); as message) {
               <p class="alert" role="alert">{{ message }}</p>
             }
             @if (messages().length === 0 && pending().length === 0) {
-              <p class="muted start">No messages yet. Say hello to {{ name() }}.</p>
+              <p class="muted start">{{ 'chat.empty' | tr: { name: name() } }}</p>
             }
             <ol class="messages">
               @for (message of messages(); track message.id) {
                 @if (message.id === dividerBefore()) {
-                  <li class="divider"><span>New messages</span></li>
+                  <li class="divider"><span>{{ 'feature.new.messages' | tr }}</span></li>
                 }
                 <li class="message" [class.message--yours]="message.yours">
                   @if (!message.yours && message.senderMembershipId !== coParent()?.membershipId) {
-                    <span class="sender">Former parent</span>
+                    <span class="sender">{{ 'feature.former.parent' | tr }}</span>
                   }
                   <div class="bubble">
-                    <span class="visually-hidden">{{ message.yours ? 'You' : senderName(message.senderMembershipId) }}, {{ message.sentAt | appDate: 'MMM d, h:mm a' }}: </span>
+                    <span class="visually-hidden">{{ message.yours ? ('chat.you' | tr) : senderName(message.senderMembershipId) }}, {{ message.sentAt | appDate: 'MMM d, h:mm a' }}: </span>
                     @if (message.text) {
                       <p class="text">{{ message.text }}</p>
                     }
                     @if (message.event; as card) {
                       <app-chat-event-card [card]="card" [timeZone]="timeZone()" />
                     } @else if (message.eventId) {
-                      <p class="muted">Loading the event…</p>
+                      <p class="muted">{{ 'feature.loading.the.event' | tr }}</p>
                     }
                   </div>
                   @if (message.id === readReceipt()) {
-                    <p class="status">Read</p>
+                    <p class="status">{{ 'feature.read' | tr }}</p>
                   }
                 </li>
               }
               @for (message of pending(); track message.clientMessageId) {
                 <li class="message message--yours" [class.message--failed]="message.state === 'failed'">
                   <div class="bubble">
-                    <span class="visually-hidden">You: </span>
+                    <span class="visually-hidden">{{ 'feature.you' | tr }} </span>
                     @if (message.text) {
                       <p class="text">{{ message.text }}</p>
                     }
@@ -150,26 +151,26 @@ const BOTTOM_SLACK_PX = 48;
                   </div>
                   @if (message.state === 'failed' && message.eventGone) {
                     <p class="status status--failed">
-                      <span class="not-sent"><app-icon name="alert" [size]="20" />Not sent. That event isn’t on your calendar any more.</span>
+                      <span class="not-sent"><app-icon name="alert" [size]="20" />{{ 'feature.not.sent.that.event.isn.t.on' | tr }}</span>
                       @if (message.text) {
-                        <button mat-stroked-button type="button" (click)="sendWithoutEvent(message.clientMessageId)">Send without it</button>
+                        <button mat-stroked-button type="button" (click)="sendWithoutEvent(message.clientMessageId)">{{ 'feature.send.without.it' | tr }}</button>
                       }
-                      <button mat-button type="button" (click)="discard(message.clientMessageId)">Discard</button>
+                      <button mat-button type="button" (click)="discard(message.clientMessageId)">{{ 'feature.discard' | tr }}</button>
                     </p>
                   } @else if (message.state === 'failed') {
                     <p class="status status--failed">
-                      <span class="not-sent"><app-icon name="alert" [size]="20" />Not sent</span>
+                      <span class="not-sent"><app-icon name="alert" [size]="20" />{{ 'feature.not.sent' | tr }}</span>
                       <button
                         mat-stroked-button
                         type="button"
-                        [attr.aria-label]="'Retry sending: ' + describe(message)"
+                        [attr.aria-label]="('chat.retry' | tr: { message: describe(message) })"
                         (click)="retry(message.clientMessageId)"
                       >
-                        Retry
+                        {{ 'feature.retry' | tr }}
                       </button>
                     </p>
                   } @else {
-                    <p class="status">Sending…</p>
+                    <p class="status">{{ 'feature.sending' | tr }}</p>
                   }
                 </li>
               }
@@ -177,13 +178,13 @@ const BOTTOM_SLACK_PX = 48;
           </div>
 
           @if (newBelow()) {
-            <button mat-stroked-button type="button" class="jump" (click)="scrollToLatest(true)">New messages below</button>
+            <button mat-stroked-button type="button" class="jump" (click)="scrollToLatest(true)">{{ 'feature.new.messages.below' | tr }}</button>
           }
 
           <p class="typing" aria-live="polite">
             @if (typing()) {
               <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
-              {{ name() }} is typing…
+              {{ 'chat.typing' | tr: { name: name() } }}
             }
           </p>
           <p class="visually-hidden" aria-live="polite">{{ announcement() }}</p>
@@ -191,25 +192,25 @@ const BOTTOM_SLACK_PX = 48;
           <form class="composer" (submit)="send($event)">
             @if (draftEvent(); as card) {
               <div class="draft-event">
-                <span class="visually-hidden">Sharing this event with your message: </span>
+                <span class="visually-hidden">{{ 'feature.sharing.this.event.with.your.message' | tr }} </span>
                 <app-chat-event-card [card]="card" [timeZone]="timeZone()" [link]="false" />
                 <button
                   #removeEvent
                   class="icon-button"
                   type="button"
-                  [attr.aria-label]="'Remove ' + card.title + ' from the message'"
+                  [attr.aria-label]="('chat.removeEvent' | tr: { event: card.title ?? '' })"
                   (click)="removeDraftEvent()"
                 >
                   <app-icon name="close" [size]="22" />
                 </button>
               </div>
             }
-            <label class="visually-hidden" [for]="id + '-draft'">Message {{ name() }}</label>
+            <label class="visually-hidden" [for]="id + '-draft'">{{ 'chat.message' | tr: { name: name() } }}</label>
             <textarea
               [id]="id + '-draft'"
               #composer
               rows="1"
-              placeholder="Type a message"
+              placeholder="{{ 'feature.type.a.message' | tr }}"
               enterkeyhint="send"
               autocomplete="off"
               [attr.maxlength]="maxLength"
@@ -218,11 +219,11 @@ const BOTTOM_SLACK_PX = 48;
               (input)="edit($event)"
               (keydown.enter)="enter($event)"
             ></textarea>
-            <button class="send" type="submit" aria-label="Send" [disabled]="!canSend()">
+            <button class="send" type="submit" aria-label="{{ 'feature.send' | tr }}" [disabled]="!canSend()">
               <app-icon name="send" [size]="24" />
             </button>
             @if (nearLimit()) {
-              <p [id]="id + '-count'" class="count muted">{{ draft().length }} of {{ maxLength }} characters</p>
+              <p [id]="id + '-count'" class="count muted">{{ 'chat.characters' | tr: { count: draft().length, max: maxLength } }}</p>
             }
           </form>
 
@@ -242,6 +243,7 @@ const BOTTOM_SLACK_PX = 48;
   styleUrl: './chat-conversation.scss',
 })
 export class ChatConversation implements OnInit {
+  private readonly locale = inject(LocaleService);
   /** Whether messages may be marked read: false while the compact chat is minimized. */
   readonly active = input(true);
   /** The heading level for the co-parent's name: 1 on the Messages page, 2 in the compact chat. */
@@ -350,7 +352,7 @@ export class ChatConversation implements OnInit {
   protected async load(): Promise<void> {
     const familyId = this.auth.currentFamily()?.id;
     if (!familyId) {
-      this.error.set('We couldn’t find your family.');
+      this.error.set(translate('feedback.we.couldn.t.find.your.family', this.locale.locale()));
       this.state.set('error');
       return;
     }
@@ -391,7 +393,7 @@ export class ChatConversation implements OnInit {
   }
 
   protected senderName(membershipId: string): string {
-    return membershipId === this.coParent()?.membershipId ? this.name() : 'Former parent';
+    return membershipId === this.coParent()?.membershipId ? this.name() : translate('feedback.former.parent', this.locale.locale());
   }
 
   protected onScroll(): void {
@@ -453,7 +455,7 @@ export class ChatConversation implements OnInit {
 
   /** The words for a message: its text, or the event it shares. */
   protected describe(message: Pick<ChatMessage, 'text' | 'event'>): string {
-    return message.text || (message.event?.available && message.event.title ? `Shared ${message.event.title}` : 'Shared an event');
+    return message.text || (message.event?.available && message.event.title ? translate('chat.sharedEvent', this.locale.locale(), { event: message.event.title }) : translate('feedback.shared.an.event', this.locale.locale()));
   }
 
   /** The chosen event goes in the draft, to review before sending; focus goes to the message box. */

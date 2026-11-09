@@ -24,12 +24,12 @@
 
   @switch (state()) {
     @case ('loading') {
-      <p class="note">Loading this week…</p>
+      <p class="note">{{ 'feature.loading.this.week' | tr }}</p>
     }
     @case ('error') {
       <div class="note note--error" role="alert">
-        We couldn’t load this week.
-        <button mat-button type="button" (click)="retry.emit()">Try again</button>
+        {{ 'feature.we.couldn.t.load.this.week' | tr }}
+        <button mat-button type="button" (click)="retry.emit()">{{ 'feature.try.again' | tr }}</button>
       </div>
     }
   }

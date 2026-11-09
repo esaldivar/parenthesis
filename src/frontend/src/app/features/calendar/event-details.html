@@ -29,7 +29,7 @@
         @if (item().isMine) {
           Waiting for {{ coParent() ?? 'your co-parent' }}’s approval. It isn’t on the schedule until they accept.
         } @else {
-          Waiting for your approval. It isn’t on the schedule until you accept.
+          {{ 'feature.waiting.for.your.approval.it.isn.t' | tr }}
         }
       </p>
     }
@@ -38,13 +38,13 @@
         @if (declineInfo(); as decline) {
           {{ decline.by }} declined this request on {{ decline.on }}.
         } @else {
-          This request was declined.
+          {{ 'feature.this.request.was.declined' | tr }}
         }
-        It isn’t on the schedule.
+        {{ 'feature.it.isn.t.on.the.schedule' | tr }}
       </p>
       @if (declineInfo()?.comment; as comment) {
         <dl class="change">
-          <dt>Comment</dt>
+          <dt>{{ 'feature.comment' | tr }}</dt>
           <dd>{{ comment }}</dd>
         </dl>
       }
@@ -52,9 +52,9 @@
     @case ('change-pending') {
       <p class="explain">
         @if (item().pendingChange === 'Cancel') {
-          A cancellation is waiting for approval. The event stays as it is until then.
+          {{ 'feature.a.cancellation.is.waiting.for.approval.the' | tr }}
         } @else {
-          A change is waiting for approval. The event stays as it is until then.
+          {{ 'feature.a.change.is.waiting.for.approval.the' | tr }}
         }
       </p>
     }

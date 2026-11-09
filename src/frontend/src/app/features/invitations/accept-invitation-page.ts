@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
@@ -22,41 +23,40 @@ const RETURN_URL = '/invitations/accept';
 @Component({
   selector: 'app-accept-invitation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, Icon],
+  imports: [TranslatePipe, RouterLink, MatButtonModule, Icon],
   template: `
     <div aria-live="polite">
       @switch (state()) {
         @case ('working') {
-          <h1>Join your co-parent's family</h1>
-          <p class="lead">Checking your invitation…</p>
+          <h1>{{ 'feature.join.your.co.parent.s.family' | tr }}</h1>
+          <p class="lead">{{ 'feature.checking.your.invitation' | tr }}</p>
         }
         @case ('signed-out') {
-          <h1>Join your co-parent's family</h1>
+          <h1>{{ 'feature.join.your.co.parent.s.family' | tr }}</h1>
           <p class="lead">
-            Sign in to accept the invitation. New to Parenthesis? Create an account with the email address the
-            invitation was sent to.
+            {{ 'feature.sign.in.to.accept.the.invitation.new' | tr }}
           </p>
           <div class="actions">
-            <a mat-flat-button [routerLink]="['/sign-in']" [queryParams]="{ returnUrl: returnUrl }">Sign in to accept</a>
-            <a mat-stroked-button routerLink="/register">Create your account</a>
+            <a mat-flat-button [routerLink]="['/sign-in']" [queryParams]="{ returnUrl: returnUrl }">{{ 'feature.sign.in.to.accept' | tr }}</a>
+            <a mat-stroked-button routerLink="/register">{{ 'feature.create.your.account' | tr }}</a>
           </div>
         }
         @case ('joined') {
           <div class="state">
             <span class="state__icon"><app-icon name="approvals" [size]="28" /></span>
             <h1>You've joined {{ familyName() }}</h1>
-            <p class="lead">You and your co-parent now share this family, with the same say in every decision.</p>
+            <p class="lead">{{ 'feature.you.and.your.co.parent.now.share' | tr }}</p>
           </div>
           <div class="actions">
-            <a mat-flat-button routerLink="/">Continue</a>
+            <a mat-flat-button routerLink="/">{{ 'feature.continue' | tr }}</a>
           </div>
         }
         @case ('invalid') {
           <div class="state">
             <span class="state__icon"><app-icon name="link" [size]="28" /></span>
-            <h1>This link isn't valid any more</h1>
+            <h1>{{ 'feature.this.link.isn.t.valid.any.more' | tr }}</h1>
             <p class="lead">
-              It may have expired, already been used, or been cancelled. Ask your co-parent to send you a new invitation.
+              {{ 'feature.it.may.have.expired.already.been.used' | tr }}
             </p>
           </div>
           <div class="actions">
@@ -66,45 +66,42 @@ const RETURN_URL = '/invitations/accept';
           </div>
         }
         @case ('wrong-email') {
-          <h1>Join your co-parent's family</h1>
-          <div class="alert" role="alert">This invitation was sent to a different email address.</div>
+          <h1>{{ 'feature.join.your.co.parent.s.family' | tr }}</h1>
+          <div class="alert" role="alert">{{ 'feature.this.invitation.was.sent.to.a.different' | tr }}</div>
           <p>
-            Sign in with the email address the invitation was sent to, or create an account with it. This device keeps
-            the invitation until then.
+            {{ 'feature.sign.in.with.the.email.address.the' | tr }}
           </p>
           <div class="actions">
-            <button mat-flat-button type="button" (click)="switchAccount()">Sign in with another account</button>
-            <button mat-button type="button" (click)="notNow()">Not now</button>
+            <button mat-flat-button type="button" (click)="switchAccount()">{{ 'feature.sign.in.with.another.account' | tr }}</button>
+            <button mat-button type="button" (click)="notNow()">{{ 'feature.not.now' | tr }}</button>
           </div>
         }
         @case ('existing-family') {
-          <h1>You already have a family on Parenthesis</h1>
-          <p class="lead">Families are never merged, so nothing in your current family will change.</p>
+          <h1>{{ 'feature.you.already.have.a.family.on.parenthesis' | tr }}</h1>
+          <p class="lead">{{ 'feature.families.are.never.merged.so.nothing.in' | tr }}</p>
           <ul class="choices">
             <li>
-              <strong>Same children?</strong> Leave your current family first, then open this link again. That keeps
-              each child's history in one place.
+              <strong>{{ 'feature.same.children' | tr }}</strong> {{ 'feature.leave.your.current.family.first.then.open' | tr }}
             </li>
             <li>
-              <strong>A different family?</strong> You can join this one as well. The two families stay completely
-              separate.
+              <strong>{{ 'feature.a.different.family' | tr }}</strong> {{ 'feature.you.can.join.this.one.as.well' | tr }}
             </li>
           </ul>
           <div class="actions">
             <button mat-flat-button type="button" [disabled]="busy()" (click)="accept(true)">
               {{ busy() ? 'Joining…' : 'Join as a separate family' }}
             </button>
-            <button mat-button type="button" (click)="notNow()">Not now</button>
+            <button mat-button type="button" (click)="notNow()">{{ 'feature.not.now' | tr }}</button>
           </div>
         }
         @case ('error') {
-          <h1>Join your co-parent's family</h1>
+          <h1>{{ 'feature.join.your.co.parent.s.family' | tr }}</h1>
           <div class="alert" role="alert">{{ error() }}</div>
           <div class="actions">
             @if (canRetry()) {
-              <button mat-flat-button type="button" [disabled]="busy()" (click)="accept(false)">Try again</button>
+              <button mat-flat-button type="button" [disabled]="busy()" (click)="accept(false)">{{ 'feature.try.again' | tr }}</button>
             } @else {
-              <a mat-flat-button routerLink="/">Go to Parenthesis</a>
+              <a mat-flat-button routerLink="/">{{ 'feature.go.to.parenthesis' | tr }}</a>
             }
           </div>
         }

@@ -36,19 +36,19 @@ import { familyDate } from './photo-text';
     >
     @switch (state()) {
       @case ('loading') {
-        <h1>Family Memory</h1>
-        <p class="muted" role="status">Loading…</p>
+        <h1>{{ 'feature.family.memory' | tr }}</h1>
+        <p class="muted" role="status">{{ 'feature.loading' | tr }}</p>
       }
       @case ('missing') {
-        <h1>Memory not found</h1>
+        <h1>{{ 'feature.memory.not.found' | tr }}</h1>
         <p>
-          This memory isn’t here. Its photos may have been deleted, or they aren’t shared with you.
+          {{ 'feature.this.memory.isn.t.here.its.photos' | tr }}
         </p>
       }
       @case ('error') {
-        <h1>Family Memory</h1>
+        <h1>{{ 'feature.family.memory' | tr }}</h1>
         <p class="error" role="alert">{{ error() }}</p>
-        <button mat-stroked-button type="button" (click)="load()">Try again</button>
+        <button mat-stroked-button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       }
       @case ('ready') {
         @if (summary(); as s) {
@@ -74,7 +74,7 @@ import { familyDate } from './photo-text';
           mat-stroked-button
           [routerLink]="['/calendar']"
           [queryParams]="{ date: eventDate(), event: eventId() }"
-          >Open the event</a
+          >{{ 'feature.open.the.event' | tr }}</a
         >
       }
     }

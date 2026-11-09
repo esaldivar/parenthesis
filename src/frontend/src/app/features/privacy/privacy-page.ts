@@ -109,7 +109,7 @@ export const STORED_ITEMS: readonly StoredItem[] = [
   template: `
     <article class="notice">
       <h1>{{ 'feature.privacy.notice' | tr }}</h1>
-      <p class="muted">Last updated November 4, 2026</p>
+      <p class="muted">{{ 'feature.last.updated.november.4.2026' | tr }}</p>
 
       <p>
         {{ 'feature.parenthesis.helps.separated.parents.share.a.family' | tr }}

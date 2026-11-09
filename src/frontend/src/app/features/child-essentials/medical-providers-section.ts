@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -189,6 +190,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
   `,
 })
 export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersView, ProviderFields, MedicalProvidersHistoryEntry> {
+  private readonly locale = inject(LocaleService);
   readonly children = input.required<readonly Child[]>();
   readonly childSelected = output<string>();
   readonly back = output<void>();
@@ -267,7 +269,7 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
       const saved = await this.api.medicalProviders(this.familyId(), childId);
       if (!this.destroyRef.destroyed && childId === this.childId()) this.current.set(saved);
     } catch {
-      if (childId === this.childId()) this.error.set('Medical providers couldn’t be loaded.');
+      if (childId === this.childId()) this.error.set(translate('feedback.medical.providers.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

@@ -62,11 +62,11 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
         @switch (status.state) {
           @case ('Connected') {
             <p class="state" role="status">
-              <strong>Connected.</strong>
+              <strong>{{ 'feature.connected' | tr }}</strong>
               @if (status.lastSyncedAt) {
                 Last updated {{ status.lastSyncedAt | appDate: 'MMM d, h:mm a' }}.
               } @else {
-                Your events will appear in Google Calendar in a minute or two.
+                {{ 'feature.your.events.will.appear.in.google.calendar' | tr }}
               }
             </p>
           }
@@ -76,8 +76,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
                 The “{{ status.calendarName }}” calendar was deleted in Google Calendar, so events
                 aren’t being copied. Reconnect to make it again.
               } @else {
-                Parenthesis can’t reach your Google Calendar any more, so events aren’t being
-                copied. Reconnect to start again.
+                {{ 'feature.parenthesis.can.t.reach.your.google.calendar' | tr }}
               }
             </p>
           }

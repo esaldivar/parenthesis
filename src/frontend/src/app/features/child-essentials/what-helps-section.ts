@@ -1,5 +1,7 @@
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -104,6 +106,7 @@ import { WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
   `,
 })
 export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelpsView['values'], WhatHelpsHistoryPage['entries'][number]> {
+  private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('whatHelps', this.childId);
   protected readonly savedNotice = 'What Helps saved.';
   protected readonly form = new FormGroup({
@@ -121,7 +124,7 @@ export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelps
     try {
       this.current.set(await this.api.whatHelps(this.familyId(), this.childId()));
     } catch {
-      this.error.set('What Helps couldn’t be loaded.');
+      this.error.set(translate('feedback.what.helps.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

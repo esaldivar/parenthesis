@@ -21,7 +21,7 @@ import { NotificationsStore } from '../../core/notifications/notifications.store
             <li [class.cancelled]="item.kind === 'Cancelled'">
               <span class="icon" aria-hidden="true">{{ icons[item.kind] }}</span>
               <div>
-                <strong>{{ labels[item.kind] }}</strong>
+                <strong>{{ labels[item.kind] | tr }}</strong>
                 <time [attr.datetime]="item.createdAt">{{ item.createdAt | appDate: 'medium' }}</time>
                 @if (item.eventId) {
                   <a routerLink="/calendar" [queryParams]="{ date: item.eventDate, event: item.eventId }">{{ 'feature.view.calendar.event' | tr }}</a>
@@ -95,10 +95,10 @@ export class NotificationsPage {
   protected readonly hasMore = signal(false);
   protected readonly icons = { Added: '+', Updated: '↻', Cancelled: '×' };
   protected readonly labels = {
-    Added: 'Shared calendar event added',
-    Updated: 'Shared calendar event updated',
-    Cancelled: 'Shared calendar event cancelled',
-  };
+    Added: 'notification.added',
+    Updated: 'notification.updated',
+    Cancelled: 'notification.cancelled',
+  } as const;
 
   constructor() {
     void this.load(false);

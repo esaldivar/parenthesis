@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -94,6 +95,7 @@ export const RELATIONSHIPS = [
   `,
 })
 export class EmergencyContactsSection {
+  private readonly locale = inject(LocaleService);
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
   protected readonly marks = sectionUpdates('emergencyContacts', this.childId);
@@ -132,7 +134,7 @@ export class EmergencyContactsSection {
     try {
       this.view.set(await this.api.emergencyContacts(this.familyId(), this.childId()));
     } catch {
-      this.error.set('Emergency contacts couldn’t be loaded.');
+      this.error.set(translate('feedback.emergency.contacts.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

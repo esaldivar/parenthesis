@@ -73,12 +73,12 @@ export class BottomNav {
     const update = () => root.style.setProperty('--bottom-nav-clearance', `${bottomNavClearance()}px`);
     afterNextRender(() => {
       update();
-      const observer = new ResizeObserver(update);
-      observer.observe(this.host.nativeElement);
+      const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+      observer?.observe(this.host.nativeElement);
       window.addEventListener('resize', update);
       window.visualViewport?.addEventListener('resize', update);
       destroyRef.onDestroy(() => {
-        observer.disconnect();
+        observer?.disconnect();
         window.removeEventListener('resize', update);
         window.visualViewport?.removeEventListener('resize', update);
         root.style.removeProperty('--bottom-nav-clearance');

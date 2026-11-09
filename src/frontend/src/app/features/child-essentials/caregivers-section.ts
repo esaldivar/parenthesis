@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -125,6 +126,7 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
   `,
 })
 export class CaregiversSection {
+  private readonly locale = inject(LocaleService);
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
   readonly children = input<readonly Child[]>([]);
@@ -159,7 +161,7 @@ export class CaregiversSection {
       this.list.set(await this.api.caregivers(this.familyId(), this.childId()));
       this.error.set('');
     } catch {
-      this.error.set('Shared caregivers couldn’t be loaded.');
+      this.error.set(translate('feedback.shared.caregivers.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

@@ -1,5 +1,7 @@
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -112,6 +114,7 @@ import { ClothingHistoryPage, ClothingView } from '../../core/api/api';
   `,
 })
 export class ClothingSection extends RevisionedSection<ClothingView, ClothingView['values'], ClothingHistoryPage['entries'][number]> {
+  private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('clothing', this.childId);
   protected readonly savedNotice = 'Clothing and shoes saved.';
   protected readonly form = new FormGroup({
@@ -131,7 +134,7 @@ export class ClothingSection extends RevisionedSection<ClothingView, ClothingVie
     try {
       this.current.set(await this.api.clothing(this.familyId(), this.childId()));
     } catch {
-      this.error.set('Clothing and shoes couldn’t be loaded.');
+      this.error.set(translate('feedback.clothing.and.shoes.couldn.t.be.loaded', this.locale.locale()));
     }
   }
 

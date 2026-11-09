@@ -35,37 +35,36 @@ type Step = 'checking' | 'sign-in' | 'form' | 'saved' | 'unusable' | 'wrong-acco
 
     @switch (step()) {
       @case ('checking') {
-        <p class="lead" role="status">Checking your link…</p>
+        <p class="lead" role="status">{{ 'feature.checking.your.link' | tr }}</p>
       }
       @case ('sign-in') {
-        <p class="lead">Sign in with the email and password of the parent this link was sent to. Then you can choose a new PIN.</p>
+        <p class="lead">{{ 'feature.sign.in.with.the.email.and.password' | tr }}</p>
         <div class="links">
-          <a routerLink="/sign-in" [queryParams]="{ returnUrl: '/parent-pin/reset' }">Sign in</a>
-          <a routerLink="/forgot-password">Forgot your password?</a>
+          <a routerLink="/sign-in" [queryParams]="{ returnUrl: '/parent-pin/reset' }">{{ 'feature.sign.in' | tr }}</a>
+          <a routerLink="/forgot-password">{{ 'feature.forgot.your.password' | tr }}</a>
         </div>
       }
       @case ('unusable') {
         <div class="alert" role="alert">
-          This reset link has expired or was already used. Ask for a new link from your parent PIN screen, or choose a
-          new PIN in Settings after signing in.
+          {{ 'feature.this.reset.link.has.expired.or.was' | tr }}
         </div>
         <div class="links">
-          <a routerLink="/">Go to Parenthesis</a>
+          <a routerLink="/">{{ 'feature.go.to.parenthesis' | tr }}</a>
         </div>
       }
       @case ('wrong-account') {
-        <div class="alert" role="alert">Use the parent account this reset link was sent to.</div>
+        <div class="alert" role="alert">{{ 'feature.use.the.parent.account.this.reset.link' | tr }}</div>
         <div class="actions">
-          <button mat-stroked-button type="button" (click)="switchAccount()">Switch account</button>
+          <button mat-stroked-button type="button" (click)="switchAccount()">{{ 'feature.switch.account' | tr }}</button>
         </div>
         <div class="links">
-          <a routerLink="/">Cancel</a>
+          <a routerLink="/">{{ 'feature.cancel' | tr }}</a>
         </div>
       }
       @case ('saved') {
-        <div class="status" role="status">Your new parent PIN works now. Any pause or lock on it is cleared.</div>
+        <div class="status" role="status">{{ 'feature.your.new.parent.pin.works.now.any' | tr }}</div>
         <div class="links">
-          <a routerLink="/">Continue</a>
+          <a routerLink="/">{{ 'feature.continue' | tr }}</a>
         </div>
       }
       @case ('form') {
@@ -74,31 +73,31 @@ type Step = 'checking' | 'sign-in' | 'form' | 'saved' | 'unusable' | 'wrong-acco
         }
         <form [formGroup]="form" (ngSubmit)="save()" novalidate>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Your account password</mat-label>
+            <mat-label>{{ 'feature.your.account.password' | tr }}</mat-label>
             <input matInput type="password" autocomplete="current-password" formControlName="currentPassword" required />
             @if (form.controls.currentPassword.hasError('wrong')) {
-              <mat-error>That password isn’t right.</mat-error>
+              <mat-error>{{ 'feature.that.password.isn.t.right' | tr }}</mat-error>
             } @else if (form.controls.currentPassword.invalid) {
-              <mat-error>Enter your password to confirm it’s you.</mat-error>
+              <mat-error>{{ 'feature.enter.your.password.to.confirm.it.s' | tr }}</mat-error>
             }
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>New parent PIN</mat-label>
+            <mat-label>{{ 'feature.new.parent.pin' | tr }}</mat-label>
             <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="pin" required />
-            <mat-hint>6 numbers, not all the same or in a run like 123456</mat-hint>
+            <mat-hint>{{ 'feature.6.numbers.not.all.the.same.or' | tr }}</mat-hint>
             @if (form.controls.pin.hasError('required')) {
-              <mat-error>Choose a six-digit PIN.</mat-error>
+              <mat-error>{{ 'feature.choose.a.six.digit.pin' | tr }}</mat-error>
             } @else if (form.controls.pin.hasError('pattern')) {
-              <mat-error>Your parent PIN is 6 numbers.</mat-error>
+              <mat-error>{{ 'feature.your.parent.pin.is.6.numbers' | tr }}</mat-error>
             } @else if (form.controls.pin.hasError('trivial')) {
-              <mat-error>Choose numbers that aren’t all the same or in a simple run.</mat-error>
+              <mat-error>{{ 'feature.choose.numbers.that.aren.t.all.the.769c2b' | tr }}</mat-error>
             }
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Type the new PIN again</mat-label>
+            <mat-label>{{ 'feature.type.the.new.pin.again' | tr }}</mat-label>
             <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="confirm" required />
             @if (form.controls.confirm.invalid) {
-              <mat-error>The two PINs don’t match.</mat-error>
+              <mat-error>{{ 'feature.the.two.pins.don.t.match' | tr }}</mat-error>
             }
           </mat-form-field>
           <div class="actions">

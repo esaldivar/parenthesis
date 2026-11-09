@@ -1,5 +1,5 @@
 import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, TranslationKey } from '../../core/i18n/translations';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -472,14 +472,14 @@ export class CalendarPage {
       if ([403, 404].includes(toProblem(error).status ?? 0)) {
         this.unavailable(item.id);
       } else {
-        this.toasts.show('We couldn’t open that event. Try again.');
+        this.toasts.show(translate('feedback.we.couldn.t.open.that.event.try.again', this.locale.locale()));
       }
     }
   }
 
   private unavailable(eventId: string): void {
     this.events.update((events) => events.filter((e) => e.id !== eventId));
-    this.toasts.show('That event isn’t available on the calendar any more. The calendar has been refreshed.');
+    this.toasts.show(translate('feedback.that.event.isn.t.available.on.the.calendar.any.more.the.calendar.has.been.refreshed', this.locale.locale()));
     this.retry();
   }
 

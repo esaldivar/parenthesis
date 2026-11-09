@@ -63,22 +63,22 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
         @case ('artwork') {
           <section class="gallery" aria-labelledby="artwork-title">
             <h2 id="artwork-title">{{ contentName() }}'s Artwork</h2>
-            <div class="fridge" role="group" aria-label="Artwork on the closed refrigerator">
+            <div class="fridge" role="group" aria-label="{{ 'feature.artwork.on.the.closed.refrigerator' | tr }}">
               <div class="fridge-door fridge-door--upper"><span class="fridge-handle" aria-hidden="true"></span></div>
               <div class="fridge-door fridge-door--lower">
                 <span class="fridge-handle" aria-hidden="true"></span>
                 <app-kids-gallery kind="Artwork" [items]="artwork()" />
               </div>
             </div>
-            @if (!artwork().length) { <p>No artwork shared with you yet.</p> }
-            <p class="hint">Drawings will appear on the outside of the fridge, held up by magnets.</p>
+            @if (!artwork().length) { <p>{{ 'feature.no.artwork.shared.with.you.yet' | tr }}</p> }
+            <p class="hint">{{ 'feature.drawings.will.appear.on.the.outside.of' | tr }}</p>
           </section>
         }
         @case ('photos') {
           <section class="gallery" aria-labelledby="photos-title">
             <h2 id="photos-title">{{ contentName() }}'s Photos</h2>
-            <div class="corkboard"><h3>{{ contentName() }}'s photos</h3><app-kids-gallery kind="Photo" [items]="photos()" />@if (!photos().length) { <p>No photos shared with you yet.</p> }</div>
-            <p class="hint">Your child's photos will be pinned here like little memories.</p>
+            <div class="corkboard"><h3>{{ contentName() }}'s photos</h3><app-kids-gallery kind="Photo" [items]="photos()" />@if (!photos().length) { <p>{{ 'feature.no.photos.shared.with.you.yet' | tr }}</p> }</div>
+            <p class="hint">{{ 'feature.your.child.s.photos.will.be.pinned' | tr }}</p>
           </section>
         }
       }

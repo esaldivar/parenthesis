@@ -74,15 +74,15 @@ type Step = 'choose' | 'preview';
       }
       @switch (listState()) {
         @case ('loading') {
-          <p class="muted" role="status">Loading saved transcripts…</p>
+          <p class="muted" role="status">{{ 'feature.loading.saved.transcripts' | tr }}</p>
         }
         @case ('error') {
           <p class="alert" role="alert">{{ listError() }}</p>
-          <button mat-stroked-button type="button" (click)="loadSaved()">Try again</button>
+          <button mat-stroked-button type="button" (click)="loadSaved()">{{ 'feature.try.again' | tr }}</button>
         }
         @default {
           @if (saved().length === 0) {
-            <p class="muted">No saved transcripts yet.</p>
+            <p class="muted">{{ 'feature.no.saved.transcripts.yet' | tr }}</p>
           } @else {
             <ul class="saved-list">
               @for (transcript of saved(); track transcript.id) {
@@ -99,7 +99,7 @@ type Step = 'choose' | 'preview';
                     <span class="saved-text">
                       <span class="file">{{ transcript.fileName }}</span>
                       <span class="range">{{ transcript.rangeLabel }}</span>
-                      <span class="visually-hidden">(opens in a new tab)</span>
+                      <span class="visually-hidden">{{ 'feature.opens.in.a.new.tab' | tr }}</span>
                     </span>
                     <app-icon name="chevron-right" [size]="20" />
                   </a>

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,31 +22,31 @@ import { ChatConversation } from './chat-conversation';
 @Component({
   selector: 'app-chat-dock',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, ChatConversation],
+  imports: [TranslatePipe, Icon, ChatConversation],
   template: `
     @switch (chat.dock()) {
       @case ('open') {
-        <section class="dock" aria-label="Compact chat">
+        <section class="dock" aria-label="{{ 'feature.compact.chat' | tr }}">
           <app-chat-conversation [level]="2" [active]="true" [focusOnReady]="true">
-            <button chatActions class="round" type="button" aria-label="Expand to full chat" (click)="expand()">
+            <button chatActions class="round" type="button" aria-label="{{ 'feature.expand.to.full.chat' | tr }}" (click)="expand()">
               <app-icon name="expand" [size]="22" />
             </button>
-            <button chatActions class="round" type="button" aria-label="Minimize chat" (click)="minimize()">
+            <button chatActions class="round" type="button" aria-label="{{ 'feature.minimize.chat' | tr }}" (click)="minimize()">
               <app-icon name="minus" [size]="22" />
             </button>
           </app-chat-conversation>
         </section>
       }
       @case ('minimized') {
-        <section class="bar" aria-label="Compact chat, minimized">
+        <section class="bar" aria-label="{{ 'feature.compact.chat.minimized' | tr }}">
           <button class="restore" type="button" (click)="restore()">
             <app-icon name="messages" [size]="22" />
-            <span>Messages</span>
+            <span>{{ 'feature.messages' | tr }}</span>
             @if (chat.hasUnread()) {
               <span class="dot" aria-hidden="true"></span>
-              <span class="visually-hidden">, unread messages</span>
+              <span class="visually-hidden">{{ 'feature.unread.messages' | tr }}</span>
             }
-            <span class="visually-hidden">. Open the compact chat</span>
+            <span class="visually-hidden">{{ 'feature.open.the.compact.chat' | tr }}</span>
             <app-icon class="chevron" name="chevron-up" [size]="20" />
           </button>
         </section>
