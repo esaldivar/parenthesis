@@ -552,6 +552,8 @@ that points back here.
 - Implemented: loading the latest task after a version conflict focuses Title after the conflict controls disappear, alongside the existing announcement. Regression verifies current content/checklist/version, focus, and no automatic overwrite/resubmit.
 - Still required: owner stale-tab keyboard retest after deployment and remaining phone/theme/actual-screen-reader acceptance.
 
+- [ ] #551: verify the embedded Home Month, cross-month week selection, child filters and phone fallback on Development.
+
 ### #250 — Month occurrence accessible dates
 - Implemented: every Month bar names its full occurrence date (or full start/end range with years), including single-day repeats and continuations. Layout and rendered-DOM regressions distinguish November 7/14 and preserve pending status; year-boundary coverage names both years.
 - Still required: owner phone and actual screen-reader retest after deployment; rendered names are not a real screen-reader certification.
