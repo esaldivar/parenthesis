@@ -744,5 +744,8 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 
 - [ ] Verify Home Quick Add saves and cancellation from all four shortcuts on the development site (#515).
 
+### #546 — Desktop Home greeting overlap
+- [ ] After promotion, verify the greeting and calendar toolbar on Development with the original browser and 125% browser zoom.
+
 ### #552 — Seven-day mobile Calendar Week grid
 - [ ] Retest on Development with physical iPhone Safari and Android Chrome in both themes, including touch scrolling, dense overlap, event details and bottom navigation.

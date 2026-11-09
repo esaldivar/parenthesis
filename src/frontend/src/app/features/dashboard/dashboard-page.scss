@@ -442,7 +442,8 @@ a.quick__btn {
   @media (min-height: 760px) {
     .dashboard {
       height: calc(100dvh - 5.75rem); // Window minus the top bar and the page's bottom padding.
-      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      // Reserve the full greeting before distributing the remaining height to the calendar.
+      grid-template-rows: max-content auto auto minmax(0, 1fr) auto;
     }
 
     .area-calendar {
