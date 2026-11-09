@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import {
   ChangeDetectionStrategy,
@@ -66,7 +67,7 @@ interface ShownBatch {
 @Component({
   selector: 'app-event-photos',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatSlideToggleModule, RouterLink, Icon, LoadingIndicator],
+  imports: [TranslatePipe, MatButtonModule, MatSlideToggleModule, RouterLink, Icon, LoadingIndicator],
   providers: [MemoryExport],
   // Escape closes an open photo first, before the event details around it.
   host: { '(keydown.escape)': 'escape($event)' },

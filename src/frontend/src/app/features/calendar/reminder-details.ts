@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
@@ -30,12 +32,13 @@ export function repeatText(reminder: Reminder): string | null {
 @Component({
   selector: 'app-reminder-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, PanelTint, A11yModule, MatButtonModule, RouterLink, Icon],
+  imports: [TranslatePipe, CalendarPalette, PanelTint, A11yModule, MatButtonModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './reminder-details.html',
   styleUrl: './event-details.scss',
 })
 export class ReminderDetails implements OnInit {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly injector = inject(Injector);
   private readonly deleteButton = viewChild('deleteButton', { read: ElementRef<HTMLButtonElement> });
@@ -53,8 +56,8 @@ export class ReminderDetails implements OnInit {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly date = computed(() => dayLong(this.item().firstDate));
-  protected readonly when = computed(() => whenText(this.item()));
+  protected readonly date = computed(() => dayLong(this.item().firstDate, this.locale.locale()));
+  protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
   protected readonly repeats = computed(() => repeatText(this.reminder()));
   private readonly me = computed(() => this.members().find((m) => m.isYou)?.membershipId);
   private readonly name = (membershipId: string) =>

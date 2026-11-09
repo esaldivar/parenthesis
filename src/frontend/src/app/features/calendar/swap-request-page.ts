@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -56,7 +57,7 @@ const ASK_FIRST: readonly CalendarWarning[] = ['OverlapsCoParentUnavailable'];
 @Component({
   selector: 'app-swap-request-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette,
+  imports: [TranslatePipe, CalendarPalette,
     DateField,
     NgTemplateOutlet,
     ReactiveFormsModule,

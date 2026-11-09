@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,18 +22,18 @@ import { sizeText } from '../memories/photo-text';
 @Component({
   selector: 'app-memory-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatSlideToggleModule],
+  imports: [TranslatePipe, MatButtonModule, MatSlideToggleModule],
   template: `
     @if (error(); as error) {
       <p class="error" role="alert">{{ error }}</p>
       @if (!settings()) {
-        <button mat-stroked-button type="button" (click)="load()">Try again</button>
+        <button mat-stroked-button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       }
     }
     @if (settings(); as s) {
       <div class="storage">
         <p id="storage-label">
-          <strong>Your photo storage</strong> {{ used() }} of {{ limit() }} used
+          <strong>{{ 'feature.your.photo.storage' | tr }}</strong> {{ used() }} {{ 'feature.of' | tr }} {{ limit() }} {{ 'feature.used' | tr }}
         </p>
         <div
           class="meter"
@@ -46,7 +47,7 @@ import { sizeText } from '../memories/photo-text';
           <span [style.width.%]="percent()"></span>
         </div>
         <p class="muted">
-          Includes thumbnails. Space comes back when photos are deleted or expire.
+          {{ 'feature.includes.thumbnails.space.comes.back.when.photos' | tr }}
         </p>
       </div>
       <mat-slide-toggle
@@ -54,15 +55,13 @@ import { sizeText } from '../memories/photo-text';
         [disabled]="busy()"
         (change)="save($event)"
         aria-describedby="memory-download-help"
-        >Allow co-parent to download my shared memories</mat-slide-toggle
+        >{{ 'feature.allow.co.parent.to.download.my.shared' | tr }}</mat-slide-toggle
       >
       <p id="memory-download-help" class="muted">
-        When this is on, {{ coParent() ?? 'your co-parent' }} can download the photos you’ve shared
-        with them. When it’s off, they can still view them. This controls Parenthesis’s download
-        features only: copies already saved can’t be recalled, and screenshots can’t be prevented.
+        {{ 'feature.when.this.is.on' | tr }} {{ coParent() ?? 'your co-parent' }} {{ 'feature.can.download.the.photos.you.ve.shared' | tr }}
       </p>
     } @else if (!error()) {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
     }
   `,
   styles: `

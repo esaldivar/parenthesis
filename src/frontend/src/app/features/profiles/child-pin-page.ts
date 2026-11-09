@@ -1,4 +1,5 @@
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormGroupDirective, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,34 +23,34 @@ export const PIN_PATTERN = /^\d{4,6}$/;
 @Component({
   selector: 'app-child-pin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
+  imports: [TranslatePipe, AppDatePipe, ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, Avatar],
   template: `
     <div class="who">
       <app-avatar [name]="name()" [size]="72" [src]="tile()?.photoUrl" />
-      <h1>Hi, {{ name() }}</h1>
+      <h1>{{ 'feature.hi' | tr }} {{ name() }}</h1>
     </div>
 
     @if (state() === 'locked') {
       <div class="status" role="status">
-        <p class="status__title">Your PIN is locked.</p>
-        <p>Ask a parent to help you choose a new PIN.</p>
+        <p class="status__title">{{ 'feature.your.pin.is.locked' | tr }}</p>
+        <p>{{ 'feature.ask.a.parent.to.help.you.choose' | tr }}</p>
         @if (notified() === true) {
-          <p>We’ve let your parents know.</p>
+          <p>{{ 'feature.we.ve.let.your.parents.know' | tr }}</p>
         }
       </div>
     } @else if (state() === 'paused') {
       <div class="status" role="status">
-        <p class="status__title">Let’s take a short break.</p>
+        <p class="status__title">{{ 'feature.let.s.take.a.short.break' | tr }}</p>
         <p>
-          That was a few wrong tries. Ask a parent for help, or try again after
-          {{ retryAt() | date: 'shortTime' }}.
+          {{ 'feature.that.was.a.few.wrong.tries.ask' | tr }}
+          {{ retryAt() | appDate: 'shortTime' }}.
         </p>
         <div class="actions">
-          <button mat-stroked-button type="button" (click)="tryAgain()">Try again</button>
+          <button mat-stroked-button type="button" (click)="tryAgain()">{{ 'feature.try.again' | tr }}</button>
         </div>
       </div>
     } @else {
-      <p class="lead">Type your PIN.</p>
+      <p class="lead">{{ 'feature.type.your.pin' | tr }}</p>
 
       @if (error(); as error) {
         <div class="alert" role="alert">{{ error }}</div>
@@ -67,23 +68,23 @@ export const PIN_PATTERN = /^\d{4,6}$/;
             formControlName="pin"
             required
           />
-          <mat-hint>4 to 6 numbers</mat-hint>
+          <mat-hint>{{ 'feature.4.to.6.numbers' | tr }}</mat-hint>
           @if (form.controls.pin.hasError('required')) {
-            <mat-error>Type your PIN.</mat-error>
+            <mat-error>{{ 'feature.type.your.pin' | tr }}</mat-error>
           } @else if (form.controls.pin.hasError('pattern')) {
-            <mat-error>Your PIN is 4 to 6 numbers.</mat-error>
+            <mat-error>{{ 'feature.your.pin.is.4.to.6.numbers' | tr }}</mat-error>
           }
         </mat-form-field>
 
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Checking…' : 'Go' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.checking' | tr) : 'Go' }}</button>
         </div>
       </form>
     }
 
     <div class="links">
       @if (!pairedTablet()) {
-        <a routerLink="/profiles" [replaceUrl]="true">Back to profiles</a>
+        <a routerLink="/profiles" [replaceUrl]="true">{{ 'feature.back.to.profiles' | tr }}</a>
       }
     </div>
   `,

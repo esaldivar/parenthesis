@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,17 +26,14 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
 @Component({
   selector: 'app-shared-device-setup-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [TranslatePipe, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   template: `
-    <h1>Is this a shared family device?</h1>
+    <h1>{{ 'feature.is.this.a.shared.family.device' | tr }}</h1>
     <p class="lead">
-      On a shared family device, like a kitchen tablet, your family chooses their profile from “Who’s using
-      Parenthesis?”. Only you and your approved children appear. You’ll use a six-digit parent PIN to get back into
-      your profile, and your children use their own PINs.
+      {{ 'feature.on.a.shared.family.device.like.a' | tr }}
     </p>
     <p class="note">
-      Sharing lasts 30 days, then a parent signs in to set it up again. Don’t choose this on a public, work or
-      borrowed device.
+      {{ 'feature.sharing.lasts.30.days.then.a.parent' | tr }}
     </p>
 
     @if (error(); as error) {
@@ -44,23 +42,23 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
 
     @if (!choosingYes()) {
       <div class="actions">
-        <button mat-flat-button type="button" (click)="choosingYes.set(true)">Yes, set up sharing</button>
-        <button mat-stroked-button type="button" (click)="continuePrivately()">No, continue to my account</button>
+        <button mat-flat-button type="button" (click)="choosingYes.set(true)">{{ 'feature.yes.set.up.sharing' | tr }}</button>
+        <button mat-stroked-button type="button" (click)="continuePrivately()">{{ 'feature.no.continue.to.my.account' | tr }}</button>
       </div>
     } @else {
       <form [formGroup]="form" (ngSubmit)="setUp()" novalidate>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Name this device</mat-label>
+          <mat-label>{{ 'feature.name.this.device' | tr }}</mat-label>
           <input matInput formControlName="name" autocomplete="off" maxlength="60" required />
-          <mat-hint>Like “Kitchen iPad”. Parents see it in their device list.</mat-hint>
+          <mat-hint>{{ 'feature.like.kitchen.ipad.parents.see.it.in' | tr }}</mat-hint>
           @if (form.controls.name.invalid) {
-            <mat-error>Give this device a name.</mat-error>
+            <mat-error>{{ 'feature.give.this.device.a.name' | tr }}</mat-error>
           }
         </mat-form-field>
 
         @if (needsPin()) {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Choose your parent PIN</mat-label>
+            <mat-label>{{ 'feature.choose.your.parent.pin' | tr }}</mat-label>
             <input
               matInput
               type="password"
@@ -70,17 +68,17 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
               formControlName="pin"
               required
             />
-            <mat-hint>6 numbers, not all the same or in a run like 123456</mat-hint>
+            <mat-hint>{{ 'feature.6.numbers.not.all.the.same.or' | tr }}</mat-hint>
             @if (form.controls.pin.hasError('required')) {
-              <mat-error>Choose a six-digit PIN.</mat-error>
+              <mat-error>{{ 'feature.choose.a.six.digit.pin' | tr }}</mat-error>
             } @else if (form.controls.pin.hasError('pattern')) {
-              <mat-error>Your parent PIN is 6 numbers.</mat-error>
+              <mat-error>{{ 'feature.your.parent.pin.is.6.numbers' | tr }}</mat-error>
             } @else if (form.controls.pin.hasError('trivial')) {
-              <mat-error>Choose numbers that aren’t all the same or in a simple run.</mat-error>
+              <mat-error>{{ 'feature.choose.numbers.that.aren.t.all.the.769c2b' | tr }}</mat-error>
             }
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Type your parent PIN again</mat-label>
+            <mat-label>{{ 'feature.type.your.parent.pin.again' | tr }}</mat-label>
             <input
               matInput
               type="password"
@@ -91,15 +89,15 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
               required
             />
             @if (form.controls.confirm.invalid) {
-              <mat-error>The two PINs don’t match.</mat-error>
+              <mat-error>{{ 'feature.the.two.pins.don.t.match' | tr }}</mat-error>
             }
           </mat-form-field>
         }
 
         <div class="actions">
-          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Setting up…' : 'Set up sharing' }}</button>
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.setting.up' | tr) : ('feature.set.up.sharing' | tr) }}</button>
           <button mat-stroked-button type="button" [disabled]="busy()" (click)="continuePrivately()">
-            No, continue to my account
+            {{ 'feature.no.continue.to.my.account' | tr }}
           </button>
         </div>
       </form>

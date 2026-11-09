@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -25,7 +26,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
 @Component({
   selector: 'app-google-photos-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, Icon],
+  imports: [TranslatePipe, MatButtonModule, Icon],
   template: `
     @if (error(); as error) {
       <p class="alert" role="alert">{{ error }}</p>
@@ -33,42 +34,40 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
 
     @if (status(); as status) {
       @if (!status.available) {
-        <p class="muted">Exporting to Google Photos isn’t available yet.</p>
+        <p class="muted">{{ 'feature.exporting.to.google.photos.isn.t.available' | tr }}</p>
       } @else {
         @switch (status.state) {
           @case ('NotConnected') {
             <p>
-              Save copies of Family Memories photos to your own Google Photos, one album per event.
+              {{ 'feature.save.copies.of.family.memories.photos.to' | tr }}
             </p>
             <ul class="facts">
-              <li>Only photos you choose are sent, as the version stored in Parenthesis.</li>
+              <li>{{ 'feature.only.photos.you.choose.are.sent.as' | tr }}</li>
               <li>
-                Parenthesis can add photos and make albums. It can’t see anything else in your
-                Google Photos.
+                {{ 'feature.parenthesis.can.add.photos.and.make.albums.9b1c6e' | tr }}
               </li>
               <li>
-                Copies use your Google storage and stay yours: Parenthesis can’t recall or delete
-                them.
+                {{ 'feature.copies.use.your.google.storage.and.stay' | tr }}
               </li>
-              <li>Connecting changes nothing for {{ coParent() ?? 'your co-parent' }}.</li>
+              <li>{{ 'feature.connecting.changes.nothing.for' | tr }} {{ coParent() ?? 'your co-parent' }}.</li>
             </ul>
           }
           @case ('Connected') {
             <p class="state" role="status">
-              <strong>Connected.</strong>
+              <strong>{{ 'feature.connected' | tr }}</strong>
               @if (status.exportedCount > 0) {
                 {{ exported(status) }}
               } @else {
-                Export photos from any Family Memory.
+                {{ 'feature.export.photos.from.any.family.memory' | tr }}
               }
               @if (status.waitingCount > 0) {
-                {{ photos(status.waitingCount) }} waiting to export.
+                {{ photos(status.waitingCount) }} {{ 'feature.waiting.to.export' | tr }}
               }
             </p>
           }
           @case ('NeedsReconnect') {
             <p class="alert" role="alert">
-              <strong>Google Photos needs you to reconnect.</strong> {{ reconnect(status) }}
+              <strong>{{ 'feature.google.photos.needs.you.to.reconnect' | tr }}</strong> {{ reconnect(status) }}
             </p>
           }
         }
@@ -76,24 +75,23 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
         @if (confirming()) {
           <div class="panel" role="group" aria-labelledby="photos-disconnect-heading">
             <h3 id="photos-disconnect-heading" #confirmHeading tabindex="-1">
-              Disconnect Google Photos?
+              {{ 'feature.disconnect.google.photos' | tr }}
             </h3>
             <p>
-              Albums and photos already in your Google Photos stay there.
+              {{ 'feature.albums.and.photos.already.in.your.google' | tr }}
               @if (status.waitingCount > 0) {
-                {{ photos(status.waitingCount) }} waiting to export won’t be sent.
+                {{ photos(status.waitingCount) }} {{ 'feature.waiting.to.export.won.t.be.sent' | tr }}
               }
             </p>
             <p class="muted">
-              Parenthesis can’t see your Google Photos, so after you reconnect, photos show as not
-              exported and new exports make new albums.
+              {{ 'feature.parenthesis.can.t.see.your.google.photos' | tr }}
             </p>
             <div class="actions">
               <button mat-flat-button type="button" [disabled]="busy()" (click)="disconnect()">
-                {{ busy() ? 'Disconnecting…' : 'Disconnect' }}
+                {{ busy() ? ('feature.disconnecting' | tr) : ('feature.disconnect.acfc5b' | tr) }}
               </button>
               <button mat-button type="button" [disabled]="busy()" (click)="cancelDisconnect()">
-                Cancel
+                {{ 'feature.cancel' | tr }}
               </button>
             </div>
           </div>
@@ -104,10 +102,10 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
                 <app-icon name="cloud-upload" [size]="18" />
                 {{
                   busy()
-                    ? 'Opening Google…'
+                    ? ('feature.opening.google' | tr)
                     : status.state === 'NeedsReconnect'
-                      ? 'Reconnect Google Photos'
-                      : 'Connect Google Photos'
+                      ? ('feature.reconnect.google.photos' | tr)
+                      : ('feature.connect.google.photos' | tr)
                 }}
               </button>
             }
@@ -119,14 +117,14 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
                 [disabled]="busy()"
                 (click)="askToDisconnect()"
               >
-                Disconnect…
+                {{ 'feature.disconnect' | tr }}
               </button>
             }
           </div>
         }
       }
     } @else if (!error()) {
-      <p class="muted">Loading…</p>
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
     }
   `,
   styles: `

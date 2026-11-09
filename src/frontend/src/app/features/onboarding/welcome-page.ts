@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -47,6 +48,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
   selector: 'app-welcome-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    TranslatePipe,
     ReactiveFormsModule,
     RouterLink,
     MatFormFieldModule,
@@ -58,7 +60,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
     InviteCoParent,
   ],
   template: `
-    <p class="step-count">Step {{ stepNumber() }} of {{ steps.length }}</p>
+    <p class="step-count">{{ 'feature.step' | tr }} {{ stepNumber() }} {{ 'feature.of' | tr }} {{ steps.length }}</p>
 
     @if (error(); as error) {
       <div class="alert" role="alert">{{ error }}</div>
@@ -66,132 +68,130 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
 
     @switch (step()) {
       @case ('family') {
-        <h1 #heading tabindex="-1">Welcome, {{ auth.user()?.displayName }}</h1>
+        <h1 #heading tabindex="-1">{{ 'feature.welcome' | tr }} {{ auth.user()?.displayName }}</h1>
         <p class="lead">
-          Set up your family space. You’ll be able to invite your co-parent next; you’ll both have the same say.
+          {{ 'feature.set.up.your.family.space.you.ll' | tr }}
         </p>
 
         @if (invited) {
           <div class="status">
-            <p class="status__text">You have an invitation waiting. If your co-parent invited you, join their family instead.</p>
-            <a mat-stroked-button routerLink="/invitations/accept">Go to my invitation</a>
+            <p class="status__text">{{ 'feature.you.have.an.invitation.waiting.if.your' | tr }}</p>
+            <a mat-stroked-button routerLink="/invitations/accept">{{ 'feature.go.to.my.invitation' | tr }}</a>
           </div>
         }
 
         <form [formGroup]="familyForm" (ngSubmit)="createFamily()" novalidate>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Family name</mat-label>
+            <mat-label>{{ 'feature.family.name' | tr }}</mat-label>
             <input matInput formControlName="name" required maxlength="80" />
-            <mat-hint>For example, “Rivera Family”. Only your family sees it.</mat-hint>
+            <mat-hint>{{ 'feature.for.example.rivera.family.only.your.family' | tr }}</mat-hint>
             @if (familyForm.controls.name.invalid) {
-              <mat-error>Enter a family name.</mat-error>
+              <mat-error>{{ 'feature.enter.a.family.name' | tr }}</mat-error>
             }
           </mat-form-field>
 
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Time zone</mat-label>
+            <mat-label>{{ 'feature.time.zone' | tr }}</mat-label>
             <mat-select formControlName="timeZone" required>
               @for (zone of timeZones; track zone) {
                 <mat-option [value]="zone">{{ zone }}</mat-option>
               }
             </mat-select>
-            <mat-hint>Used to show family events at the right local time.</mat-hint>
+            <mat-hint>{{ 'feature.used.to.show.family.events.at.the' | tr }}</mat-hint>
           </mat-form-field>
 
           <div class="actions">
-            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Creating…' : 'Create family' }}</button>
-            <button mat-button type="button" (click)="signOut()">Sign out</button>
+            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.creating' | tr) : ('feature.create.family' | tr) }}</button>
+            <button mat-button type="button" (click)="signOut()">{{ 'feature.sign.out' | tr }}</button>
           </div>
         </form>
       }
 
       @case ('count') {
-        <h1 #heading tabindex="-1">Let’s set up your family</h1>
-        <p class="lead">How many children do you share with your co-parent?</p>
+        <h1 #heading tabindex="-1">{{ 'feature.let.s.set.up.your.family' | tr }}</h1>
+        <p class="lead">{{ 'feature.how.many.children.do.you.share.with' | tr }}</p>
 
         <div class="counter" role="group" aria-labelledby="count-label">
-          <span id="count-label" class="visually-hidden">Number of children</span>
+          <span id="count-label" class="visually-hidden">{{ 'feature.number.of.children' | tr }}</span>
           <button
             mat-stroked-button
             class="counter__button"
             type="button"
-            aria-label="One fewer child"
+            aria-label="{{ 'feature.one.fewer.child' | tr }}"
             [disabled]="count() === 0"
             (click)="setCount(count() - 1)"
           >
             <app-icon name="minus" />
           </button>
-          <output class="counter__value" aria-live="polite" [attr.aria-label]="count() + ' children'">{{ count() }}</output>
+          <output class="counter__value" aria-live="polite" [attr.aria-label]="count() + ('feature.children.a3a781' | tr)">{{ count() }}</output>
           <button
             mat-stroked-button
             class="counter__button"
             type="button"
-            aria-label="One more child"
+            aria-label="{{ 'feature.one.more.child' | tr }}"
             [disabled]="count() === maxChildren"
             (click)="setCount(count() + 1)"
           >
             <app-icon name="plus" />
           </button>
         </div>
-        <p class="hint">You can add more children later.</p>
+        <p class="hint">{{ 'feature.you.can.add.more.children.later' | tr }}</p>
 
         <div class="actions">
-          <button mat-flat-button type="button" (click)="confirmCount()">Continue</button>
+          <button mat-flat-button type="button" (click)="confirmCount()">{{ 'feature.continue' | tr }}</button>
         </div>
       }
 
       @case ('children') {
-        <h1 #heading tabindex="-1">Add your children</h1>
+        <h1 #heading tabindex="-1">{{ 'feature.add.your.children' | tr }}</h1>
         <p class="lead">
-          Add each child you share with your co-parent. Your co-parent needs to approve each child before their profile
-          can be used.
+          {{ 'feature.add.each.child.you.share.with.your' | tr }}
         </p>
 
         <form [formGroup]="childrenForm" (ngSubmit)="addChildren()" novalidate>
           @for (control of names.controls; track control; let i = $index) {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Child {{ i + 1 }}’s first name</mat-label>
+              <mat-label>{{ 'feature.child' | tr }} {{ i + 1 }}{{ 'feature.s.first.name' | tr }}</mat-label>
               <input matInput [formControl]="control" required [attr.maxlength]="firstNameMax" autocomplete="off" />
               @if (control.invalid) {
-                <mat-error>Enter a first name of up to {{ firstNameMax }} characters.</mat-error>
+                <mat-error>{{ 'feature.enter.a.first.name.of.up.to' | tr }} {{ firstNameMax }} {{ 'feature.characters' | tr }}</mat-error>
               }
             </mat-form-field>
           }
-          <p class="hint">First names only. Parenthesis doesn’t ask for birthdays or photos.</p>
+          <p class="hint">{{ 'feature.first.names.only.parenthesis.doesn.t.ask' | tr }}</p>
           <div class="actions">
-            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? 'Adding…' : 'Continue' }}</button>
+            <button mat-flat-button type="submit" [disabled]="busy()">{{ busy() ? ('feature.adding' | tr) : ('feature.continue' | tr) }}</button>
           </div>
         </form>
       }
 
       @case ('pending') {
-        <h1 #heading tabindex="-1">Children pending approval</h1>
+        <h1 #heading tabindex="-1">{{ 'feature.children.pending.approval' | tr }}</h1>
         <p class="lead">
-          Your co-parent needs to approve the children you added. Their profiles can be used once both of you have said
-          yes.
+          {{ 'feature.your.co.parent.needs.to.approve.the' | tr }}
         </p>
 
-        <ul class="children" aria-label="Children you added">
+        <ul class="children" aria-label="{{ 'feature.children.you.added' | tr }}">
           @for (child of added(); track child.id) {
             <li class="child">
               <app-avatar [name]="child.firstName" kind="child" [size]="40" />
               <span class="child__name">{{ child.firstName }}</span>
-              <span class="chip">Waiting for approval</span>
+              <span class="chip">{{ 'feature.waiting.for.approval' | tr }}</span>
             </li>
           }
         </ul>
 
         <div class="actions">
-          <button mat-flat-button type="button" (click)="go('invite')">Continue</button>
+          <button mat-flat-button type="button" (click)="go('invite')">{{ 'feature.continue' | tr }}</button>
         </div>
       }
 
       @case ('invite') {
-        <h1 #heading tabindex="-1">Invite your co-parent</h1>
+        <h1 #heading tabindex="-1">{{ 'feature.invite.your.co.parent' | tr }}</h1>
         <p class="lead">
-          Enter their email to invite them to join your family on Parenthesis.
+          {{ 'feature.enter.their.email.to.invite.them.to' | tr }}
           @if (added().length > 0) {
-            They’ll approve the children you added when they join.
+            {{ 'feature.they.ll.approve.the.children.you.added' | tr }}
           }
         </p>
 
@@ -200,7 +200,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
         }
 
         <div class="links">
-          <a routerLink="/">Continue to Parenthesis</a>
+          <a routerLink="/">{{ 'feature.continue.to.parenthesis' | tr }}</a>
         </div>
       }
     }

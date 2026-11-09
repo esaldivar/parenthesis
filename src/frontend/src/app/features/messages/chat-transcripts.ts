@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
@@ -41,15 +42,15 @@ type Step = 'choose' | 'preview';
 @Component({
   selector: 'app-chat-transcripts',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkTrapFocus, ReactiveFormsModule, MatButtonModule, Icon, DateField],
+  imports: [TranslatePipe, CdkTrapFocus, ReactiveFormsModule, MatButtonModule, Icon, DateField],
   providers: [providePlainDates()],
   template: `
     <header class="head">
       <ng-content select="[transcriptsLead]" />
       @if (level() === 1) {
-        <h1>Transcripts</h1>
+        <h1>{{ 'feature.transcripts' | tr }}</h1>
       } @else {
-        <h2>Transcripts</h2>
+        <h2>{{ 'feature.transcripts' | tr }}</h2>
       }
     </header>
 
@@ -62,26 +63,26 @@ type Step = 'choose' | 'preview';
       (click)="open()"
     >
       <app-icon name="download" [size]="20" />
-      Save transcript
+      {{ 'feature.save.transcript' | tr }}
     </button>
 
     <section class="saved" [attr.aria-labelledby]="id + '-saved'">
       @if (level() === 1) {
-        <h2 [id]="id + '-saved'">Saved transcripts</h2>
+        <h2 [id]="id + '-saved'">{{ 'feature.saved.transcripts' | tr }}</h2>
       } @else {
-        <h3 [id]="id + '-saved'">Saved transcripts</h3>
+        <h3 [id]="id + '-saved'">{{ 'feature.saved.transcripts' | tr }}</h3>
       }
       @switch (listState()) {
         @case ('loading') {
-          <p class="muted" role="status">Loading saved transcripts…</p>
+          <p class="muted" role="status">{{ 'feature.loading.saved.transcripts' | tr }}</p>
         }
         @case ('error') {
           <p class="alert" role="alert">{{ listError() }}</p>
-          <button mat-stroked-button type="button" (click)="loadSaved()">Try again</button>
+          <button mat-stroked-button type="button" (click)="loadSaved()">{{ 'feature.try.again' | tr }}</button>
         }
         @default {
           @if (saved().length === 0) {
-            <p class="muted">No saved transcripts yet.</p>
+            <p class="muted">{{ 'feature.no.saved.transcripts.yet' | tr }}</p>
           } @else {
             <ul class="saved-list">
               @for (transcript of saved(); track transcript.id) {
@@ -98,7 +99,7 @@ type Step = 'choose' | 'preview';
                     <span class="saved-text">
                       <span class="file">{{ transcript.fileName }}</span>
                       <span class="range">{{ transcript.rangeLabel }}</span>
-                      <span class="visually-hidden">(opens in a new tab)</span>
+                      <span class="visually-hidden">{{ 'feature.opens.in.a.new.tab' | tr }}</span>
                     </span>
                     <app-icon name="chevron-right" [size]="20" />
                   </a>
@@ -122,9 +123,9 @@ type Step = 'choose' | 'preview';
       >
         <div class="dialog-head">
           <h2 [id]="id + '-dialog-title'" tabindex="-1" #dialogTitle>
-            {{ current === 'choose' ? 'Save transcript' : 'Transcript preview' }}
+            {{ current === 'choose' ? ('feature.save.transcript' | tr) : ('feature.transcript.preview' | tr) }}
           </h2>
-          <button class="icon-button" type="button" aria-label="Close" (click)="close()">
+          <button class="icon-button" type="button" aria-label="{{ 'feature.close' | tr }}" (click)="close()">
             <app-icon name="close" [size]="22" />
           </button>
         </div>
@@ -132,7 +133,7 @@ type Step = 'choose' | 'preview';
         @if (current === 'choose') {
           <form class="choose" novalidate (submit)="$event.preventDefault(); preview()">
             <fieldset>
-              <legend class="visually-hidden">Messages to include</legend>
+              <legend class="visually-hidden">{{ 'feature.messages.to.include' | tr }}</legend>
               <label class="radio">
                 <input
                   type="radio"
@@ -141,7 +142,7 @@ type Step = 'choose' | 'preview';
                   [checked]="scope() === 'all'"
                   (change)="setScope('all')"
                 />
-                All messages
+                {{ 'feature.all.messages' | tr }}
               </label>
               <label class="radio">
                 <input
@@ -151,14 +152,14 @@ type Step = 'choose' | 'preview';
                   [checked]="scope() === 'range'"
                   (change)="setScope('range')"
                 />
-                Date range
+                {{ 'feature.date.range' | tr }}
               </label>
             </fieldset>
 
             @if (scope() === 'range') {
               <div class="dates">
                 <app-date-field
-                  label="Start date"
+                  label="{{ 'feature.start.date' | tr }}"
                   name="from"
                   [inputId]="id + '-from'"
                   [control]="from"
@@ -169,7 +170,7 @@ type Step = 'choose' | 'preview';
                   <p class="field-error" [id]="id + '-from-error'">{{ message }}</p>
                 }
                 <app-date-field
-                  label="End date"
+                  label="{{ 'feature.end.date' | tr }}"
                   name="to"
                   [inputId]="id + '-to'"
                   [control]="to"
@@ -191,17 +192,17 @@ type Step = 'choose' | 'preview';
             }
 
             <div class="actions">
-              <button mat-stroked-button type="button" (click)="close()">Cancel</button>
-              <button mat-flat-button type="submit" [disabled]="busy()">Preview PDF</button>
+              <button mat-stroked-button type="button" (click)="close()">{{ 'feature.cancel' | tr }}</button>
+              <button mat-flat-button type="submit" [disabled]="busy()">{{ 'feature.preview.pdf' | tr }}</button>
             </div>
           </form>
         } @else if (document(); as doc) {
-          <article class="paper" [attr.aria-label]="'Preview of ' + doc.fileName" tabindex="0">
+          <article class="paper" [attr.aria-label]="('feature.preview.of' | tr) + doc.fileName" tabindex="0">
             <h3>{{ doc.title }}</h3>
             <p class="paper-range">{{ doc.rangeLabel }}</p>
             <p class="paper-meta">{{ doc.preparedLabel }}</p>
             <p class="paper-meta">
-              {{ doc.messageCount === 1 ? '1 message' : doc.messageCount + ' messages' }}
+              {{ doc.messageCount === 1 ? ('feature.1.message' | tr) : doc.messageCount + ('feature.messages.6e2fd2' | tr) }}
             </p>
             @for (day of doc.days; track day.date) {
               <h4>{{ day.label }}</h4>
@@ -233,14 +234,14 @@ type Step = 'choose' | 'preview';
           <div class="actions">
             <button mat-flat-button type="button" [disabled]="busy()" (click)="save()">
               <app-icon name="download" [size]="20" />
-              Save transcript
+              {{ 'feature.save.transcript' | tr }}
             </button>
             <a mat-stroked-button [href]="downloadUrl()" [attr.download]="doc.fileName">
               <app-icon name="note" [size]="20" />
-              Download PDF
+              {{ 'feature.download.pdf' | tr }}
             </a>
           </div>
-          <button class="link-button" type="button" (click)="backToDates()">Change dates</button>
+          <button class="link-button" type="button" (click)="backToDates()">{{ 'feature.change.dates' | tr }}</button>
         }
       </div>
     }

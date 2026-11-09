@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatRadioChange, MatRadioModule } from '@angular/material/radio';
 import { AppearancePreference, AppearanceService } from '../../core/theme/appearance.service';
@@ -11,11 +12,11 @@ interface AppearanceOption {
 @Component({
   selector: 'app-appearance-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatRadioModule],
+  imports: [TranslatePipe, MatRadioModule],
   template: `
-    <h2 id="appearance-heading">Appearance</h2>
+    <h2 id="appearance-heading">{{ 'feature.appearance' | tr }}</h2>
     <p id="appearance-help" class="help">
-      This only changes how Parenthesis looks for you. System follows your device's light or dark setting.
+      {{ 'feature.this.only.changes.how.parenthesis.looks.for' | tr }}
     </p>
     <mat-radio-group
       class="options"

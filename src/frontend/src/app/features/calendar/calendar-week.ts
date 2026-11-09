@@ -1,3 +1,6 @@
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -57,11 +60,12 @@ function lanes<T extends { start: number; end: number }>(entries: readonly T[]):
 @Component({
   selector: 'app-calendar-week',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, ItemText],
+  imports: [TranslatePipe, CalendarPalette, ItemText],
   templateUrl: './calendar-week.html',
   styleUrl: './calendar-week.scss',
 })
 export class CalendarWeek {
+  private readonly locale = inject(LocaleService);
   readonly weekStart = input.required<PlainDate>();
   readonly today = input.required<PlainDate>();
   readonly items = input.required<readonly CalendarItem[]>();
@@ -113,9 +117,9 @@ export class CalendarWeek {
   protected readonly days = computed(() =>
     weekDays(this.weekStart()).map((date) => ({
       date,
-      weekday: weekdayShort(date),
+      weekday: weekdayShort(date, this.locale.locale()),
       monthDay: monthDay(date),
-      longLabel: dayLong(date),
+      longLabel: dayLong(date, this.locale.locale()),
       isToday: date === this.today(),
       items: onDate(this.items(), date).sort(byStart),
     })),

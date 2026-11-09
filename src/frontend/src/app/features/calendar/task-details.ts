@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { CalendarPalette, PanelTint } from './calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { DOCUMENT } from '@angular/common';
@@ -40,12 +42,13 @@ const CONFETTI_PIECES = 14;
 @Component({
   selector: 'app-task-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, PanelTint, A11yModule, MatButtonModule, RouterLink, Icon],
+  imports: [TranslatePipe, CalendarPalette, PanelTint, A11yModule, MatButtonModule, RouterLink, Icon],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './task-details.html',
   styleUrls: ['./event-details.scss', './task-details.scss'],
 })
 export class TaskDetails implements OnInit {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly window = inject(DOCUMENT).defaultView;
   private readonly injector = inject(Injector);
@@ -75,7 +78,7 @@ export class TaskDetails implements OnInit {
   protected readonly confetti = signal(false);
   protected readonly pieces = Array.from({ length: CONFETTI_PIECES }, (_, i) => i);
 
-  protected readonly due = computed(() => dayLong(this.current().dueDate));
+  protected readonly due = computed(() => dayLong(this.current().dueDate, this.locale.locale()));
   protected readonly hasChecklist = computed(() => this.current().items.length > 0);
   protected readonly anyRequired = computed(() => this.current().items.some((i) => i.required));
   protected readonly done = computed(() => this.current().completedAt !== null);
@@ -192,7 +195,7 @@ export class TaskDetails implements OnInit {
     const problem = toProblem(error);
     if (problem.status === 400 && problem.title === 'Invalid or missing antiforgery token.') {
       this.sessionChanged.set(true);
-      this.error.set('Your session needs to be refreshed. Reload the calendar, then check the task and try again. This action wasn’t saved.');
+      this.error.set(translate('feedback.your.session.needs.to.be.refreshed.reload.the.calendar.then.check.the.task.and.try.again.this.action.wasn.t.saved', this.locale.locale()));
       afterNextRender(() => this.window?.document.getElementById('task-session-error')?.focus(), { injector: this.injector });
     } else {
       this.error.set(generalMessage(problem));
@@ -203,7 +206,7 @@ export class TaskDetails implements OnInit {
   private async refresh(): Promise<void> {
     try {
       this.show(await this.api.task(this.familyId(), this.current().id));
-      this.notice.set('The other parent just changed this task. It’s up to date now, so check it and try again.');
+      this.notice.set(translate('feedback.the.other.parent.just.changed.this.task.it.s.up.to.date.now.so.check.it.and.try.again', this.locale.locale()));
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
     }
@@ -216,7 +219,7 @@ export class TaskDetails implements OnInit {
 
   /** Only on the change the server says completed the task. With reduced motion, just the message. */
   private celebrate(): void {
-    this.notice.set('Great teamwork! This task is done.');
+    this.notice.set(translate('feedback.great.teamwork.this.task.is.done', this.locale.locale()));
     if (this.window?.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       return;
     }

@@ -1,61 +1,65 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
 import { monthDay, timeLabel } from '../dashboard/week';
 import { CalendarItem } from './calendar-items';
 
 /** "All day", "8:00 AM – 3:00 PM", or "Oct 20 – Oct 22" for an item over several dates. */
-export function whenText(item: CalendarItem): string {
+export function whenText(item: CalendarItem, locale: AppLocale = 'en'): string {
+  const formatLocale = locale === 'en' ? 'en-US' : locale;
   if (item.lastDate > item.firstDate) {
-    const range = `${monthDay(item.firstDate)} – ${monthDay(item.lastDate)}`;
-    return item.allDay ? range : `${monthDay(item.firstDate)}, ${timeLabel(item.start.slice(11))} – ${monthDay(item.lastDate)}, ${timeLabel(item.end.slice(11))}`;
+    const range = `${monthDay(item.firstDate, formatLocale)} – ${monthDay(item.lastDate, formatLocale)}`;
+    return item.allDay ? range : `${monthDay(item.firstDate, formatLocale)}, ${timeLabel(item.start.slice(11), formatLocale)} – ${monthDay(item.lastDate, formatLocale)}, ${timeLabel(item.end.slice(11), formatLocale)}`;
   }
   if (item.kind === 'task') {
-    return 'Due';
+    return translate('feature.due', locale);
   }
   if (item.allDay) {
-    return 'All day';
+    return translate('feature.all.day', locale);
   }
   // A reminder is for a moment, not a span.
   return item.kind === 'reminder'
-    ? timeLabel(item.start.slice(11))
-    : `${timeLabel(item.start.slice(11))} – ${timeLabel(item.end.slice(11))}`;
+    ? timeLabel(item.start.slice(11), formatLocale)
+    : `${timeLabel(item.start.slice(11), formatLocale)} – ${timeLabel(item.end.slice(11), formatLocale)}`;
 }
 
 /**
  * The status in words. Pending and declined items are not on the schedule; a pending change leaves the event as it is
  * for now.
  */
-export function statusText(item: CalendarItem): string | null {
+export function statusText(item: CalendarItem, locale: AppLocale = 'en'): string | null {
   if (item.kind === 'task') {
-    return item.done ? 'Done' : null;
+    return item.done ? translate('feature.done', locale) : null;
   }
   switch (item.status) {
     case 'pending':
-      return 'Pending approval';
+      return translate('calendar.filter.pending', locale);
     case 'change-pending':
-      return item.pendingChange === 'Cancel' ? 'Cancellation pending' : 'Change pending';
+      return item.pendingChange === 'Cancel' ? (locale === 'es-419' ? 'Cancelación pendiente' : 'Cancellation pending') : translate('calendar.filter.change-pending', locale);
     case 'declined':
-      return 'Declined';
+      return translate('calendar.filter.declined', locale);
     default:
       return null;
   }
 }
 
 /** Everything a screen reader needs from one item, in one sentence. */
-export function itemSummary(item: CalendarItem): string {
+export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): string {
   if (item.concealed) {
     // Who and when only: a private note never appears here.
+    if (locale === 'es-419') return `Horario no disponible oculto, ${item.parents[0]?.name ?? item.ownerName}, ${whenText(item, locale)}. Abre sus detalles.`;
     return `Hidden unavailable time, ${item.parents[0]?.name ?? item.ownerName}, ${whenText(item)}. Opens its details.`;
   }
   const people = [...item.parents.map((p) => p.name), ...item.children.map((c) => c.name)].join(', ');
   return [
     item.title,
     item.kind === 'unavailable' ? null : item.categoryLabel,
-    whenText(item),
+    whenText(item, locale),
     people || null,
-    statusText(item) ?? (item.kind === 'task' ? null : 'Confirmed'),
-    item.beforeCoParentJoined ? 'Confirmed before your co-parent joined' : null,
+    statusText(item, locale) ?? (item.kind === 'task' ? null : translate('calendar.filter.confirmed', locale)),
+    item.beforeCoParentJoined ? (locale === 'es-419' ? 'Confirmado antes de que se uniera el otro padre o madre' : 'Confirmed before your co-parent joined') : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -65,13 +69,13 @@ export function itemSummary(item: CalendarItem): string {
 @Component({
   selector: 'app-item-text',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Icon],
+  imports: [TranslatePipe, Avatar, Icon],
   template: `
     <span class="visually-hidden">{{ summary() }}</span>
     <span class="row" aria-hidden="true">
       <app-icon class="icon" [name]="item().icon" [size]="18" />
       <span class="title" [class.title--declined]="item().status === 'declined'">{{
-        item().concealed ? 'Hidden: unavailable' : item().title
+        item().concealed ? ('feature.hidden.unavailable' | tr) : item().title
       }}</span>
     </span>
     @if (!compact()) {
@@ -152,12 +156,13 @@ export function itemSummary(item: CalendarItem): string {
   `,
 })
 export class ItemText {
+  private readonly locale = inject(LocaleService);
   readonly item = input.required<CalendarItem>();
   /** Title only (and status), for small month cells. */
   readonly compact = input(false);
   readonly avatars = input(true);
 
-  protected readonly when = computed(() => whenText(this.item()));
-  protected readonly status = computed(() => statusText(this.item()));
-  protected readonly summary = computed(() => itemSummary(this.item()));
+  protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
+  protected readonly status = computed(() => statusText(this.item(), this.locale.locale()));
+  protected readonly summary = computed(() => itemSummary(this.item(), this.locale.locale()));
 }

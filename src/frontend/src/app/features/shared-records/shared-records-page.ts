@@ -1,4 +1,5 @@
-import { CurrencyPipe } from '@angular/common';
+import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender,
   computed, effect, inject, input, signal, viewChild,
@@ -41,7 +42,7 @@ type Composer = { readonly mode: 'new' } | { readonly mode: 'report'; readonly k
 @Component({
   selector: 'app-shared-records-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, Icon, LoadingIndicator, RouterLink, RecordHistory, RecordProgress, ReportForm, SharedFundProposalForm, SupportForm],
+  imports: [TranslatePipe, AppCurrencyPipe, Icon, LoadingIndicator, RouterLink, RecordHistory, RecordProgress, ReportForm, SharedFundProposalForm, SupportForm],
   templateUrl: './shared-records-page.html',
   styleUrl: './shared-records-page.scss',
 })

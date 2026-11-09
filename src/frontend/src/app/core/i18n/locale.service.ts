@@ -19,7 +19,7 @@ export function resolveLocale(saved: string | null, languages: readonly string[]
   return detectLocale(languages);
 }
 
-/** Runtime language state for the signed-out experience; account preferences will follow in phase B. */
+/** Runtime locale shared by signed-out and authenticated screens. */
 @Injectable({ providedIn: 'root' })
 export class LocaleService {
   private readonly selected = signal<AppLocale>(this.initialLocale());
@@ -31,11 +31,12 @@ export class LocaleService {
   }
 
   /** Isolate each parent's choice on a shared device, including after switching profiles. */
-  useAccount(accountId: string | null, serverLanguage?: AppLocale): void {
+  useAccount(accountId: string | null, serverLanguage?: AppLocale | null): void {
     this.accountId = accountId;
     let saved: string | null = null;
     try {
-      saved = localStorage.getItem(accountId ? ACCOUNT_LOCALE_PREFIX + accountId : LOCALE_KEY);
+      saved = accountId ? localStorage.getItem(ACCOUNT_LOCALE_PREFIX + accountId) : null;
+      saved ??= localStorage.getItem(LOCALE_KEY);
     } catch {
       // Browser storage is optional.
     }

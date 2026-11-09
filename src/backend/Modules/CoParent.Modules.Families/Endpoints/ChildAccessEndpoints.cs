@@ -386,7 +386,7 @@ internal static class ChildAccessEndpoints
         }
 
         // Read before the unit of work commits (its transaction finishes with it): every currently active parent.
-        List<(string Email, string Name)> parents = [];
+        List<(string Email, string Name, bool Spanish)> parents = [];
         if (failure == PinFailure.LockedNow)
         {
             var parentIds = await db.Memberships.IgnoreQueryFilters(filter)
@@ -562,15 +562,15 @@ internal static class ChildAccessEndpoints
             : TypedResults.Unauthorized();
 
     /// <summary>Email and display name for each user, skipping accounts that no longer exist.</summary>
-    internal static async Task<List<(string Email, string Name)>> ParentContactsAsync(
+    internal static async Task<List<(string Email, string Name, bool Spanish)>> ParentContactsAsync(
         IUserDirectory directory, IEnumerable<Guid> userIds, CancellationToken cancellationToken)
     {
-        var contacts = new List<(string, string)>();
+        var contacts = new List<(string, string, bool)>();
         foreach (var id in userIds)
         {
             if (await directory.FindByIdAsync(id, cancellationToken) is { } parent)
             {
-                contacts.Add((parent.Email, parent.DisplayName));
+                contacts.Add((parent.Email, parent.DisplayName, parent.Spanish));
             }
         }
 

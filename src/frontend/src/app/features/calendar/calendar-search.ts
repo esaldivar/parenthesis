@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { NgTemplateOutlet } from '@angular/common';
 import {
@@ -68,7 +69,7 @@ export function resultType(item: CalendarItem): string {
 @Component({
   selector: 'app-calendar-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkConnectedOverlay, CdkOverlayOrigin, Icon, NgTemplateOutlet],
+  imports: [TranslatePipe, CdkConnectedOverlay, CdkOverlayOrigin, Icon, NgTemplateOutlet],
   templateUrl: './calendar-search.html',
   styleUrl: './calendar-search.scss',
 })

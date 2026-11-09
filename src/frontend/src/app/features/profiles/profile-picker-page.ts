@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
@@ -17,23 +18,23 @@ import { FORM_STYLES } from '../auth/form-styles';
 @Component({
   selector: 'app-profile-picker-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, Avatar],
+  imports: [TranslatePipe, RouterLink, MatButtonModule, Avatar],
   template: `
-    <h1>Who’s using Parenthesis?</h1>
+    <h1>{{ 'feature.who.s.using.parenthesis' | tr }}</h1>
     @if (loadFailed()) {
       <div class="alert" role="alert">{{ error() }}</div>
       <div class="actions">
         <button mat-flat-button type="button" [disabled]="loading()" (click)="load()">
-          {{ loading() ? 'Trying again…' : 'Try again' }}
+          {{ loading() ? ('feature.trying.again' | tr) : ('feature.try.again' | tr) }}
         </button>
       </div>
       <div class="links">
-        <a routerLink="/sign-in">Sign in with email and password</a>
+        <a routerLink="/sign-in">{{ 'feature.sign.in.with.email.and.password' | tr }}</a>
       </div>
     } @else if (auth.device(); as device) {
       <p class="lead">{{ device.familyName }}</p>
 
-      <ul class="tiles" aria-label="Profiles">
+      <ul class="tiles" aria-label="{{ 'feature.profiles' | tr }}">
         @for (tile of device.profiles; track tile.id) {
           <li>
             @if (tile.kind === 'parent' || tile.canSignIn) {
@@ -41,9 +42,9 @@ import { FORM_STYLES } from '../auth/form-styles';
                 <app-avatar [name]="tile.name" [kind]="tile.kind" [size]="72" [src]="tile.photoUrl" />
                 <span class="tile__name">{{ tile.name }}</span>
                 @if (tile.locked) {
-                  <span class="chip">PIN locked</span>
+                  <span class="chip">{{ 'feature.pin.locked' | tr }}</span>
                 } @else if (tile.pausedUntil) {
-                  <span class="chip">PIN paused</span>
+                  <span class="chip">{{ 'feature.pin.paused' | tr }}</span>
                 }
               </a>
             } @else {
@@ -51,7 +52,7 @@ import { FORM_STYLES } from '../auth/form-styles';
               <div class="tile tile--off" [attr.aria-describedby]="'off-' + tile.id">
                 <app-avatar [name]="tile.name" [size]="72" [src]="tile.photoUrl" />
                 <span class="tile__name">{{ tile.name }}</span>
-                <span class="tile__note" [id]="'off-' + tile.id">A parent needs to set up a PIN first</span>
+                <span class="tile__note" [id]="'off-' + tile.id">{{ 'feature.a.parent.needs.to.set.up.a' | tr }}</span>
               </div>
             }
           </li>
@@ -60,18 +61,17 @@ import { FORM_STYLES } from '../auth/form-styles';
 
       @if (device.deviceKind === 'Household') {
         <div class="links">
-          <a routerLink="/sign-in">Sign in with another account</a>
+          <a routerLink="/sign-in">{{ 'feature.sign.in.with.another.account' | tr }}</a>
         </div>
       }
     } @else {
       <!-- Removed, expired after 30 days, or signed out: no picker until a parent sets it up again. -->
       <p class="lead">
-        This device isn’t set up for sharing right now. A parent needs to sign in with their email and password and
-        set it up again.
+        {{ 'feature.this.device.isn.t.set.up.for' | tr }}
       </p>
       <div class="links">
-        <a routerLink="/sign-in">Sign in</a>
-        <a routerLink="/pair">Pair a child’s tablet</a>
+        <a routerLink="/sign-in">{{ 'feature.sign.in' | tr }}</a>
+        <a routerLink="/pair">{{ 'feature.pair.a.child.s.tablet' | tr }}</a>
       </div>
     }
   `,

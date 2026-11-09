@@ -1,3 +1,4 @@
+import { TranslatePipe } from './i18n/translations';
 import { Dialog, DialogRef } from '@angular/cdk/dialog';
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Injectable, inject } from '@angular/core';
@@ -35,17 +36,18 @@ export class NavigationRecovery {
 }
 
 @Component({
+  imports: [TranslatePipe],
   selector: 'app-navigation-recovery-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 id="navigation-recovery-title">This page couldn’t load</h2>
+    <h2 id="navigation-recovery-title">{{ 'feature.this.page.couldn.t.load' | tr }}</h2>
     <div id="navigation-recovery-explanation">
-      <p>Your current page is still here. Reload Parenthesis, then try opening the page again.</p>
-      <p>Reloading will discard any unsaved changes on your current page.</p>
+      <p>{{ 'feature.your.current.page.is.still.here.reload' | tr }}</p>
+      <p>{{ 'feature.reloading.will.discard.any.unsaved.changes.on' | tr }}</p>
     </div>
     <div class="actions">
-      <button type="button" class="keep-working" (click)="dialog.close()">Keep working</button>
-      <button type="button" class="reload" (click)="recovery.reload()">Reload Parenthesis</button>
+      <button type="button" class="keep-working" (click)="dialog.close()">{{ 'feature.keep.working' | tr }}</button>
+      <button type="button" class="reload" (click)="recovery.reload()">{{ 'feature.reload.parenthesis' | tr }}</button>
     </div>
   `,
   styles: `

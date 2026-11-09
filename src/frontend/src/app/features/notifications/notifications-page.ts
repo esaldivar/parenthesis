@@ -1,4 +1,5 @@
-import { DatePipe } from '@angular/common';
+import { AppDatePipe } from '../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, NotificationItem } from '../../core/api/api';
@@ -8,11 +9,11 @@ import { NotificationsStore } from '../../core/notifications/notifications.store
 @Component({
   selector: 'app-notifications-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink],
+  imports: [TranslatePipe, AppDatePipe, RouterLink],
   template: `
     <section aria-labelledby="notifications-title">
-      <h1 id="notifications-title">Notifications</h1>
-      <p>Updates from your family.</p>
+      <h1 id="notifications-title">{{ 'feature.notifications' | tr }}</h1>
+      <p>{{ 'feature.updates.from.your.family' | tr }}</p>
 
       @if (items().length) {
         <ol role="list">
@@ -20,27 +21,27 @@ import { NotificationsStore } from '../../core/notifications/notifications.store
             <li [class.cancelled]="item.kind === 'Cancelled'">
               <span class="icon" aria-hidden="true">{{ icons[item.kind] }}</span>
               <div>
-                <strong>{{ labels[item.kind] }}</strong>
-                <time [attr.datetime]="item.createdAt">{{ item.createdAt | date: 'medium' }}</time>
+                <strong>{{ labels[item.kind] | tr }}</strong>
+                <time [attr.datetime]="item.createdAt">{{ item.createdAt | appDate: 'medium' }}</time>
                 @if (item.eventId) {
-                  <a routerLink="/calendar" [queryParams]="{ date: item.eventDate, event: item.eventId }">View calendar event</a>
+                  <a routerLink="/calendar" [queryParams]="{ date: item.eventDate, event: item.eventId }">{{ 'feature.view.calendar.event' | tr }}</a>
                 }
               </div>
             </li>
           }
         </ol>
       } @else if (!loading() && !error()) {
-        <p class="panel">You’re all caught up. New family updates will appear here.</p>
+        <p class="panel">{{ 'feature.you.re.all.caught.up.new.family' | tr }}</p>
       }
 
       @if (loading()) {
-        <p role="status">Loading notifications…</p>
+        <p role="status">{{ 'feature.loading.notifications' | tr }}</p>
       }
       @if (error()) {
-        <p role="alert">We couldn’t load notifications. Please try again.</p>
-        <button type="button" (click)="load(items().length > 0)">Try again</button>
+        <p role="alert">{{ 'feature.we.couldn.t.load.notifications.please.try' | tr }}</p>
+        <button type="button" (click)="load(items().length > 0)">{{ 'feature.try.again' | tr }}</button>
       } @else if (hasMore() && !loading()) {
-        <button type="button" (click)="load(true)">Load older notifications</button>
+        <button type="button" (click)="load(true)">{{ 'feature.load.older.notifications' | tr }}</button>
       }
     </section>
   `,
@@ -94,10 +95,10 @@ export class NotificationsPage {
   protected readonly hasMore = signal(false);
   protected readonly icons = { Added: '+', Updated: '↻', Cancelled: '×' };
   protected readonly labels = {
-    Added: 'Shared calendar event added',
-    Updated: 'Shared calendar event updated',
-    Cancelled: 'Shared calendar event cancelled',
-  };
+    Added: 'notification.added',
+    Updated: 'notification.updated',
+    Cancelled: 'notification.cancelled',
+  } as const;
 
   constructor() {
     void this.load(false);

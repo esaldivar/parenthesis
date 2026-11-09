@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
@@ -32,7 +33,7 @@ export const PICKER_DEBOUNCE_MS = 250;
 @Component({
   selector: 'app-chat-event-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkTrapFocus, Icon, ChatEventCardView],
+  imports: [TranslatePipe, CdkTrapFocus, Icon, ChatEventCardView],
   template: `
     <div
       class="picker"
@@ -43,17 +44,17 @@ export const PICKER_DEBOUNCE_MS = 250;
       (keydown.escape)="closed.emit()"
     >
       <div class="head">
-        <h2 [id]="id + '-title'">Find a calendar event</h2>
-        <button class="icon-button" type="button" aria-label="Close" (click)="closed.emit()">
+        <h2 [id]="id + '-title'">{{ 'feature.find.a.calendar.event' | tr }}</h2>
+        <button class="icon-button" type="button" aria-label="{{ 'feature.close' | tr }}" (click)="closed.emit()">
           <app-icon name="close" [size]="22" />
         </button>
       </div>
       <label class="field">
-        <span class="visually-hidden">Search by event or date</span>
+        <span class="visually-hidden">{{ 'feature.search.by.event.or.date' | tr }}</span>
         <app-icon name="search" [size]="20" />
         <input
           type="search"
-          placeholder="Search by event or date"
+          placeholder="{{ 'feature.search.by.event.or.date' | tr }}"
           autocomplete="off"
           #search
           [attr.aria-describedby]="id + '-status'"

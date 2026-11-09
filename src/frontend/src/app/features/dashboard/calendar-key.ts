@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CalendarPalette } from '../calendar/calendar-palette';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Icon } from '../../shared/icon/icon';
@@ -6,18 +7,18 @@ import { Icon } from '../../shared/icon/icon';
 @Component({
   selector: 'app-calendar-key',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, Icon],
+  imports: [TranslatePipe, CalendarPalette, Icon],
   template: `
-    <ul class="legend" aria-label="Calendar key">
-      <li><span class="legend__swatch" appCalendarPalette="parent-a" aria-hidden="true"></span><span class="legend__swatch" appCalendarPalette="parent-b" aria-hidden="true"></span>Parenting time · parent colors</li>
-      <li><span class="legend__swatch legend__swatch--family" appCalendarPalette="family" aria-hidden="true"></span>Family event (both parents)</li>
-      <li><span class="legend__swatch" appCalendarPalette="activity" aria-hidden="true"></span>Activity</li>
-      <li><span class="legend__swatch" appCalendarPalette="task" aria-hidden="true"></span>Task</li>
-      <li><span class="legend__swatch" appCalendarPalette="reminder" aria-hidden="true"></span>Reminder</li>
-      <li><span class="legend__swatch legend__swatch--proposed" aria-hidden="true"></span>Proposed</li>
+    <ul class="legend" aria-label="{{ 'feature.calendar.key' | tr }}">
+      <li><span class="legend__swatch" appCalendarPalette="parent-a" aria-hidden="true"></span><span class="legend__swatch" appCalendarPalette="parent-b" aria-hidden="true"></span>{{ 'feature.parenting.time.parent.colors' | tr }}</li>
+      <li><span class="legend__swatch legend__swatch--family" appCalendarPalette="family" aria-hidden="true"></span>{{ 'feature.family.event.both.parents' | tr }}</li>
+      <li><span class="legend__swatch" appCalendarPalette="activity" aria-hidden="true"></span>{{ 'feature.activity' | tr }}</li>
+      <li><span class="legend__swatch" appCalendarPalette="task" aria-hidden="true"></span>{{ 'feature.task' | tr }}</li>
+      <li><span class="legend__swatch" appCalendarPalette="reminder" aria-hidden="true"></span>{{ 'feature.reminder' | tr }}</li>
+      <li><span class="legend__swatch legend__swatch--proposed" aria-hidden="true"></span>{{ 'feature.proposed' | tr }}</li>
       <li>
         <span class="legend__swatch legend__swatch--unavailable" appCalendarPalette="unavailable" aria-hidden="true"><app-icon name="block" [size]="12" /></span>
-        Unavailable
+        {{ 'feature.unavailable' | tr }}
       </li>
     </ul>
   `,

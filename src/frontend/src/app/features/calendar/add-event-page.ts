@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked, ElementRef, Injector, afterNextRender } from '@angular/core';
@@ -95,6 +96,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
   selector: 'app-add-event-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    TranslatePipe,
     LoadingIndicator,
     CalendarPalette, LocationField,
     DateField,

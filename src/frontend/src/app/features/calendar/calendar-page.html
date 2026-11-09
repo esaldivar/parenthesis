@@ -1,9 +1,9 @@
 <header class="head">
-  <h1 #calendarHeading tabindex="-1">Calendar</h1>
+  <h1 #calendarHeading tabindex="-1">{{ 'feature.calendar.d5d0a3' | tr }}</h1>
   <div class="head__actions">
-    <a mat-stroked-button class="add" routerLink="/approvals">Approvals</a>
+    <a mat-stroked-button class="add" routerLink="/approvals">{{ 'feature.approvals' | tr }}</a>
     <a mat-flat-button class="add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">
-      <app-icon name="plus" [size]="20" /> Add
+      <app-icon name="plus" [size]="20" /> {{ 'feature.add' | tr }}
     </a>
   </div>
 </header>
@@ -12,23 +12,23 @@
 <div class="toolbar">
   <div class="period">
     <span class="period__nav">
-      <button mat-icon-button type="button" (click)="step(-1)" [attr.aria-label]="'Previous ' + current()">
+      <button mat-icon-button type="button" (click)="step(-1)" [attr.aria-label]="periodLabel('previous') | tr">
         <app-icon name="chevron-left" />
       </button>
       <h2 class="period__label" aria-live="polite">{{ heading() }}</h2>
-      <button mat-icon-button type="button" (click)="step(1)" [attr.aria-label]="'Next ' + current()">
+      <button mat-icon-button type="button" (click)="step(1)" [attr.aria-label]="periodLabel('next') | tr">
         <app-icon name="chevron-right" />
       </button>
     </span>
-    <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">Today</button>
+    <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">{{ 'feature.today.2b065c' | tr }}</button>
     @if (family(); as f) {
       <app-calendar-search [familyId]="f.id" [timeZone]="f.timeZone" [members]="members()" [children]="children()" (picked)="openFound($event)" />
     }
   </div>
   <div class="toolbar__end">
-    <div class="segmented" role="group" aria-label="Calendar view">
+    <div class="segmented" role="group" aria-label="{{ 'feature.calendar.view' | tr }}">
       @for (v of views; track v.id) {
-        <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label }}</button>
+        <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label | tr }}</button>
       }
     </div>
     <button
@@ -36,10 +36,10 @@
       class="pill filters-button"
       aria-haspopup="dialog"
       [attr.aria-expanded]="filtersOpen()"
-      [attr.aria-label]="activeFilters().length ? 'Filters, ' + activeFilters().length + ' active' : 'Filters'"
+      [attr.aria-label]="activeFilters().length ? ('calendar.filtersActive' | tr: { count: activeFilters().length }) : ('feature.filters' | tr)"
       (click)="openFilters()"
     >
-      <app-icon name="filter" [size]="18" /> Filters
+      <app-icon name="filter" [size]="18" /> {{ 'feature.filters' | tr }}
       @if (activeFilters().length; as count) {
         <span class="count" aria-hidden="true">{{ count }}</span>
       }
@@ -48,19 +48,19 @@
 </div>
 
 @if (activeFilters().length) {
-  <div class="active-filters" role="group" aria-label="Active filters">
+  <div class="active-filters" role="group" aria-label="{{ 'feature.active.filters' | tr }}">
     @for (f of activeFilters(); track f.id) {
-      <button type="button" class="chip chip--active" [attr.aria-label]="'Remove ' + f.label + ' filter: ' + f.text" (click)="clearFilter(f.id)">
+      <button type="button" class="chip chip--active" [attr.aria-label]="('feature.remove.594895' | tr) + f.label + ('feature.filter' | tr) + f.text" (click)="clearFilter(f.id)">
         {{ f.label }}: {{ f.text }} <app-icon name="close" [size]="16" />
       </button>
     }
-    <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+    <button mat-button type="button" (click)="resetFilters()">{{ 'feature.reset.filters' | tr }}</button>
   </div>
 }
 
 @if (activeChildren().length > 0) {
-  <div class="filters" role="group" aria-label="Show events for">
-    <button type="button" class="chip" [attr.aria-pressed]="childFilter() === null" (click)="setChild(null)">All</button>
+  <div class="filters" role="group" aria-label="{{ 'feature.show.events.for' | tr }}">
+    <button type="button" class="chip" [attr.aria-pressed]="childFilter() === null" (click)="setChild(null)">{{ 'feature.all' | tr }}</button>
     @for (child of activeChildren(); track child.id) {
       <button type="button" class="chip" [attr.aria-pressed]="childFilter() === child.id" (click)="setChild(child.id)">
         {{ child.firstName }}
@@ -74,7 +74,7 @@
     @case ('loading') {
       <app-loading-indicator
         class="loading"
-        [label]="slow() ? 'Still loading. Parenthesis may be starting up after a quiet spell, which can take a few seconds.' : 'Loading your calendar…'"
+        [label]="(slow() ? 'calendar.loadingSlow' : 'calendar.loading') | tr"
       />
       <div class="skeleton" aria-hidden="true">
         @for (n of [1, 2, 3, 4, 5, 6]; track n) {
@@ -84,42 +84,42 @@
     }
     @case ('error') {
       <div class="error" role="alert">
-        <p class="error__title">We couldn’t load your calendar.</p>
+        <p class="error__title">{{ 'feature.we.couldn.t.load.your.calendar' | tr }}</p>
         <p class="error__body">{{ loadError() }}</p>
         <div class="error__actions">
-          <button mat-flat-button type="button" (click)="retry()">Try again</button>
-          <button mat-stroked-button type="button" (click)="goToToday()">Go to today</button>
+          <button mat-flat-button type="button" (click)="retry()">{{ 'feature.try.again' | tr }}</button>
+          <button mat-stroked-button type="button" (click)="goToToday()">{{ 'feature.go.to.today' | tr }}</button>
         </div>
       </div>
     }
     @default {
       <!-- A period seen earlier in this tab is shown while its current version loads (#415). -->
-      <app-loading-indicator class="refreshing" [class.refreshing--on]="refreshing()" [active]="refreshing()" label="Updating…" />
+      <app-loading-indicator class="refreshing" [class.refreshing--on]="refreshing()" [active]="refreshing()" label="{{ 'feature.updating' | tr }}" />
       @if (items().length === 0) {
         <app-empty-state
           icon="calendar"
-          title="No events yet"
-          body="Start by adding an event or time you’re unavailable. Your co-parent sees it here too."
+          title="{{ 'feature.no.events.yet' | tr }}"
+          body="{{ 'feature.start.by.adding.an.event.or.time' | tr }}"
         >
-          <a mat-flat-button class="empty-add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">Add to Calendar</a>
+          <a mat-flat-button class="empty-add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">{{ 'feature.add.to.calendar.f5d6ae' | tr }}</a>
         </app-empty-state>
       } @else if (shown().length === 0) {
         @if (childShown().length === 0) {
           <p class="filtered-out">
-            Nothing for this child here.
-            <button mat-button type="button" (click)="setChild(null)">Show everyone</button>
+            {{ 'feature.nothing.for.this.child.here' | tr }}
+            <button mat-button type="button" (click)="setChild(null)">{{ 'feature.show.everyone' | tr }}</button>
           </p>
         } @else {
           <p class="filtered-out">
-            No items match your filters.
-            <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+            {{ 'feature.no.items.match.your.filters' | tr }}
+            <button mat-button type="button" (click)="resetFilters()">{{ 'feature.reset.filters' | tr }}</button>
           </p>
         }
       } @else {
         @if (visibleCount() === 0) {
           <p class="filtered-out">
-            No items match your filters. Hidden unavailable time is marked.
-            <button mat-button type="button" (click)="resetFilters()">Reset filters</button>
+            {{ 'feature.no.items.match.your.filters.hidden.unavailable' | tr }}
+            <button mat-button type="button" (click)="resetFilters()">{{ 'feature.reset.filters' | tr }}</button>
           </p>
         }
         @switch (current()) {
@@ -147,15 +147,15 @@
             <app-calendar-list [from]="range().from" [to]="range().to" [today]="today()" [items]="shown()" (selected)="open($event)" />
           }
         }
-        <ul class="key" aria-label="Calendar key">
-          <li><span class="swatch" appCalendarPalette="parent-a"></span><span class="swatch" appCalendarPalette="parent-b"></span>Parenting time</li>
-          <li><span class="swatch" appCalendarPalette="family" data-kind="family"></span>Family event (both parents)</li>
-          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-category="Activity"></span>Activity</li>
-          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="pending"></span>Pending approval</li>
-          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="declined"></span>Declined</li>
-          <li><span class="swatch" appCalendarPalette="unavailable" data-kind="unavailable"></span>Unavailable</li>
-          <li><span class="swatch" appCalendarPalette="reminder" data-kind="reminder"></span>Reminder</li>
-          <li><span class="swatch" appCalendarPalette="task" data-kind="task"></span>Task</li>
+        <ul class="key" aria-label="{{ 'feature.calendar.key' | tr }}">
+          <li><span class="swatch" appCalendarPalette="parent-a"></span><span class="swatch" appCalendarPalette="parent-b"></span>{{ 'feature.parenting.time' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="family" data-kind="family"></span>{{ 'feature.family.event.both.parents' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-category="Activity"></span>{{ 'feature.activity' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="pending"></span>{{ 'feature.pending.approval' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="declined"></span>{{ 'feature.declined' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="unavailable" data-kind="unavailable"></span>{{ 'feature.unavailable' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="reminder" data-kind="reminder"></span>{{ 'feature.reminder' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="task" data-kind="task"></span>{{ 'feature.task' | tr }}</li>
         </ul>
       }
     }

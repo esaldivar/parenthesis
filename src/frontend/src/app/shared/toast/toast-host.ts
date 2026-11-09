@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -27,9 +28,9 @@ type Hold = 'hover' | 'focus' | 'hidden';
 @Component({
   selector: 'app-toast-host',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [TranslatePipe, Icon],
   template: `
-    <section class="toasts" aria-label="Notifications">
+    <section class="toasts" aria-label="{{ 'feature.notifications' | tr }}">
       <div role="status" aria-live="polite" aria-relevant="additions text">
         <ol>
           @for (toast of toasts.shown(); track toast.id) {
@@ -40,7 +41,7 @@ type Hold = 'hover' | 'focus' | 'hidden';
                 type="button"
                 class="toast__close"
                 (click)="close(toast)"
-                aria-label="Close notification"
+                aria-label="{{ 'feature.close.notification' | tr }}"
               >
                 <app-icon name="close" [size]="20" />
               </button>

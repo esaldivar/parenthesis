@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -13,22 +14,22 @@ const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
  */
 @Component({
   selector: 'app-support-form',
-  imports: [FormsModule, Icon],
+  imports: [TranslatePipe, FormsModule, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form (ngSubmit)="submit()">
       <label>
-        Record title
-        <input name="supportTitle" type="text" maxlength="120" required placeholder="November 2026" [(ngModel)]="title" />
+        {{ 'feature.record.title' | tr }}
+        <input name="supportTitle" type="text" maxlength="120" required placeholder="{{ 'feature.november.2026' | tr }}" [(ngModel)]="title" />
       </label>
       <fieldset>
-        <legend>Who pays</legend>
-        <label class="choice"><input type="radio" name="youPay" [value]="true" [(ngModel)]="youPay" /> I pay</label>
-        <label class="choice"><input type="radio" name="youPay" [value]="false" [(ngModel)]="youPay" /> My co-parent pays</label>
+        <legend>{{ 'feature.who.pays' | tr }}</legend>
+        <label class="choice"><input type="radio" name="youPay" [value]="true" [(ngModel)]="youPay" /> {{ 'feature.i.pay' | tr }}</label>
+        <label class="choice"><input type="radio" name="youPay" [value]="false" [(ngModel)]="youPay" /> {{ 'feature.my.co.parent.pays' | tr }}</label>
       </fieldset>
       <div class="pair">
         <label>
-          Currency
+          {{ 'feature.currency' | tr }}
           <select name="supportCurrency" [(ngModel)]="currency">
             @for (code of currencyOptions; track code) {
               <option [value]="code">{{ code }}</option>
@@ -36,19 +37,18 @@ const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
           </select>
         </label>
         <label>
-          Reference amount · optional
+          {{ 'feature.reference.amount.optional' | tr }}
           <input name="reference" type="text" inputmode="decimal" autocomplete="off" [(ngModel)]="reference" />
         </label>
       </div>
       <p class="note">
-        This is a shared record of payments you report, not a request for payment or an official record. Pay through
-        the channel your order or agency requires. Confirming receipt doesn’t verify bank settlement or compliance.
+        {{ 'feature.this.is.a.shared.record.of.payments' | tr }}
       </p>
       @if (showError()) {
-        <p class="error" role="alert">Enter a title and who pays. A reference amount, if you add one, must be above zero.</p>
+        <p class="error" role="alert">{{ 'feature.enter.a.title.and.who.pays.a' | tr }}</p>
       }
-      <button type="submit" class="primary" [disabled]="submitting()">Create record</button>
-      <p class="privacy"><app-icon name="lock" /> Visible to authorized parents only</p>
+      <button type="submit" class="primary" [disabled]="submitting()">{{ 'feature.create.record' | tr }}</button>
+      <p class="privacy"><app-icon name="lock" /> {{ 'feature.visible.to.authorized.parents.only' | tr }}</p>
     </form>
   `,
   styles: `

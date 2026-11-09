@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, Reminder } from '../../core/api/api';
@@ -10,16 +11,16 @@ import { ReminderForm } from './reminder-form';
 @Component({
   selector: 'app-reminder-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ReminderForm],
+  imports: [TranslatePipe, RouterLink, ReminderForm],
   template: `
-    <p class="back"><a routerLink="/calendar">← Calendar</a></p>
-    <h1>Edit reminder</h1>
+    <p class="back"><a routerLink="/calendar">{{ 'feature.calendar' | tr }}</a></p>
+    <h1>{{ 'feature.edit.reminder' | tr }}</h1>
     @if (reminder(); as reminder) {
       <app-reminder-form [reminder]="reminder" />
     } @else if (error(); as message) {
       <div class="alert" role="alert">{{ message }}</div>
     } @else {
-      <p role="status">Loading…</p>
+      <p role="status">{{ 'feature.loading' | tr }}</p>
     }
   `,
   styleUrl: './add-event-page.scss',

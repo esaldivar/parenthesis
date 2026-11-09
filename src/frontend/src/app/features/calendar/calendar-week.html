@@ -3,14 +3,14 @@
   <div class="grid__corner" aria-hidden="true"></div>
   @for (day of days(); track day.date) {
     <div class="grid__head" [class.is-today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
-      <span class="visually-hidden">{{ day.longLabel }}{{ day.isToday ? ', today' : '' }}</span>
+      <span class="visually-hidden">{{ day.longLabel }}{{ day.isToday ? ('feature.today.4b1201' | tr) : '' }}</span>
       <span aria-hidden="true" class="grid__weekday">{{ day.weekday }}</span>
       <span aria-hidden="true" class="grid__date">{{ day.monthDay }}</span>
     </div>
   }
 
-  <div class="grid__allday-label" aria-hidden="true">All day</div>
-  <ul class="allday" aria-label="All-day and multi-day">
+  <div class="grid__allday-label" aria-hidden="true">{{ 'feature.all.day' | tr }}</div>
+  <ul class="allday" aria-label="{{ 'feature.all.day.and.multi.day' | tr }}">
     <!-- A tap on the row's empty space adds on that day (#212): pointer only, as the day columns below do it for keyboards. -->
     <li class="tap-add" aria-hidden="true">
       <button type="button" class="tap-add__button" tabindex="-1" (click)="addInAllDayRow($event)"></button>
@@ -39,18 +39,18 @@
     }
   </ul>
 
-  <div #scroller class="grid__body" tabindex="0" role="region" aria-label="Events by time of day, scrollable">
+  <div #scroller class="grid__body" tabindex="0" role="region" aria-label="{{ 'feature.events.by.time.of.day.scrollable' | tr }}">
     <div class="grid__hours" aria-hidden="true">
       @for (mark of hourMarks; track mark.row) {
         <span [style.grid-row]="mark.row">{{ mark.label }}</span>
       }
     </div>
     @for (day of timed(); track day.date) {
-      <ul class="daycol" [attr.aria-label]="'Timed events on ' + day.label" [style.--lanes]="day.lanes">
+      <ul class="daycol" [attr.aria-label]="('feature.timed.events.on' | tr) + day.label" [style.--lanes]="day.lanes">
         <!-- Behind the events: a tap adds at that half-hour; from the keyboard it adds on that day (#212). -->
         <li class="slot-add">
           <button type="button" class="slot-add__button" (click)="addInColumn($event, day.date)">
-            <span class="slot-add__label">Add on {{ day.label }}</span>
+            <span class="slot-add__label">{{ 'feature.add.on' | tr }} {{ day.label }}</span>
           </button>
         </li>
         @if (pick.at(); as at) {
@@ -87,7 +87,7 @@
               [attr.aria-label]="markerLabel(marker.item)"
               (click)="selected.emit(marker.item)"
             >
-              <span aria-hidden="true">Hidden</span>
+              <span aria-hidden="true">{{ 'feature.hidden' | tr }}</span>
             </button>
           </li>
         }
@@ -97,7 +97,7 @@
 </div>
 
 <!-- Narrow screens: day by day. -->
-<ol class="agenda" aria-label="This week, day by day">
+<ol class="agenda" aria-label="{{ 'feature.this.week.day.by.day' | tr }}">
   @for (day of days(); track day.date) {
     <li class="agenda__day" [class.is-today]="day.isToday" [class.is-picked]="pick.onDay(day.date) && !pick.at()!.time">
       <!-- A tap on the day's empty space adds on that day (#212); pointer only, beside the page's Add button. -->
@@ -105,11 +105,11 @@
       <h3 class="agenda__date">
         <span>{{ day.weekday }}</span> <span>{{ day.monthDay }}</span>
         @if (day.isToday) {
-          <span class="visually-hidden">, today</span>
+          <span class="visually-hidden">{{ 'feature.today.4b1201' | tr }}</span>
         }
       </h3>
       @if (day.items.length === 0) {
-        <p class="agenda__none">Nothing scheduled</p>
+        <p class="agenda__none">{{ 'feature.nothing.scheduled' | tr }}</p>
       } @else {
         <ul class="agenda__items">
           @for (item of day.items; track item.id) {

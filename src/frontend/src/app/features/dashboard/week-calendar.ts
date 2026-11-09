@@ -1,3 +1,6 @@
+import { inject } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { CalendarPalette } from '../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -69,11 +72,12 @@ const inAllDayRow = (event: FamilyEvent) => !event.time || !!event.endDate;
 @Component({
   selector: 'app-week-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey, DashboardChildFilter],
+  imports: [TranslatePipe, CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey, DashboardChildFilter],
   templateUrl: './week-calendar.html',
   styleUrl: './week-calendar.scss',
 })
 export class WeekCalendar {
+  private readonly locale = inject(LocaleService);
   readonly weekStart = input.required<PlainDate>();
   readonly today = input.required<PlainDate>();
   readonly isCurrentWeek = input.required<boolean>();
@@ -142,7 +146,7 @@ export class WeekCalendar {
 
   private readonly expanded = signal<ReadonlySet<string>>(new Set());
 
-  protected readonly label = computed(() => weekLabelLong(this.weekStart()));
+  protected readonly label = computed(() => weekLabelLong(this.weekStart(), this.locale.locale()));
   private readonly events = computed(() => (this.week()?.events ?? []).map(event => ({ ...event, palette: eventPalette(event.category) })));
   /** The whole day is in the grid; it scrolls (see constructor) to where this week's activities begin. */
   protected readonly hours = computed(() => ({ startHour: 0, endHour: 24 }));
@@ -190,9 +194,9 @@ export class WeekCalendar {
       );
       return {
         date,
-        weekday: weekdayShort(date),
+        weekday: weekdayShort(date, this.locale.locale()),
         monthDay: monthDay(date),
-        longLabel: dayLong(date),
+        longLabel: dayLong(date, this.locale.locale()),
         isToday: date === this.today(),
         events,
         placements,
