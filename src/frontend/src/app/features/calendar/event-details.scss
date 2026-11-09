@@ -21,7 +21,7 @@
   overflow-y: auto;
   padding: var(--space-4);
   // The item's category colour (#431), set by appPanelTint; the plain surface when it has none.
-  background: var(--panel-tint, var(--color-surface));
+  background-color: var(--panel-tint, var(--color-surface));
   color: var(--color-text);
   box-shadow: var(--shadow-card);
   display: grid;
@@ -166,6 +166,11 @@ button[mat-flat-button],
 button[mat-button] {
   min-height: var(--target-min);
   justify-self: start;
+}
+
+// The usual light outline dips below 3:1 on the darker hatch stripes.
+.panel[data-tint='unavailable'] [mat-stroked-button] {
+  --mat-button-outlined-outline-color: var(--color-text-secondary);
 }
 
 // On a tinted panel the artwork is fainter, so text over its strokes keeps AA contrast (#431).
