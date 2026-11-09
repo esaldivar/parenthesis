@@ -74,6 +74,7 @@ export const translations = {
   'nav.accountMenu': ["account menu","menú de cuenta"],
   'nav.unread': ["unread messages","mensajes sin leer"],
   'nav.updated': ["updated by your co-parent","actualizado por el otro padre o madre"],
+  'nav.recordsWaiting': ['Shared records waiting on your response', 'Registros compartidos pendientes de tu respuesta'],
   'nav.waiting': ["waiting on your response","esperando tu respuesta"],
   'nav.tagline': ["Different homes. Same love.","Hogares diferentes. El mismo amor."],
   'settings.themes': ["Add themes to events","Agregar temas a los eventos"],

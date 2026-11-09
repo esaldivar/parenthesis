@@ -3,6 +3,8 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../app.routes';
 import { CHAT_CONNECTION, ChatStore } from '../core/chat/chat.store';
+import { LocaleService } from '../core/i18n/locale.service';
+import { SharedRecordsAttentionStore } from '../core/shared-records/shared-records-attention.store';
 import { EssentialsUpdatesStore } from '../core/essentials/essentials-updates.store';
 import { axeViolations } from '../../testing/axe';
 import { fakeAuth } from '../../testing/fake-auth';
@@ -152,6 +154,34 @@ describe('application shells', () => {
       expect(more.querySelector('.dot')).not.toBeNull();
       expect(more.querySelector('.visually-hidden')!.textContent).toBe(', Child Essentials updated');
       expect(await axeViolations(body)).toEqual([]);
+    });
+
+    it('announces what needs attention from More in both supported languages', async () => {
+      const body = await open('/');
+      const more = body.querySelector('nav.bottomnav a[href="/more"]')!;
+      const records = TestBed.inject(SharedRecordsAttentionStore);
+      const locale = TestBed.inject(LocaleService);
+      const originalLocale = locale.locale();
+
+      expect(more.querySelector('.visually-hidden')).toBeNull();
+      try {
+        records.count.set(1);
+        locale.setLocale('en');
+        TestBed.tick();
+        expect(more.querySelector('.dot')).not.toBeNull();
+        expect(more.querySelector('.visually-hidden')?.textContent).toBe(', Shared records waiting on your response');
+
+        locale.setLocale('es-419');
+        TestBed.tick();
+        expect(more.querySelector('.visually-hidden')?.textContent).toBe(', Registros compartidos pendientes de tu respuesta');
+
+        records.count.set(0);
+        TestBed.tick();
+        expect(more.querySelector('.visually-hidden')).toBeNull();
+        expect(more.querySelector('.dot')).toBeNull();
+      } finally {
+        locale.setLocale(originalLocale);
+      }
     });
 
     it.each(['/', '/calendar', '/settings', '/more', '/messages'])('has no automatically detectable accessibility issues at %s', async (url) => {
