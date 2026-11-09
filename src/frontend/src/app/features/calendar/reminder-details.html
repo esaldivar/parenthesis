@@ -27,9 +27,9 @@
       <dt>{{ 'feature.repeats' | tr }}</dt>
       <dd>{{ repeats }}</dd>
     }
-    @if (item().children[0]; as child) {
+    @if (childNames(); as names) {
       <dt>{{ 'feature.about' | tr }}</dt>
-      <dd>{{ child.name }}</dd>
+      <dd>{{ names }}</dd>
     }
     @if (reminder().details; as details) {
       <dt>{{ 'feature.details' | tr }}</dt>

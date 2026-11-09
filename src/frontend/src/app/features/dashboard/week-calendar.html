@@ -1,34 +1,41 @@
-<section class="cal" aria-labelledby="week-heading" [attr.aria-busy]="state() === 'loading'">
+<section class="cal" aria-labelledby="week-heading" [attr.aria-busy]="displayState() === 'loading'">
   <header class="toolbar">
     <div class="toolbar__nav">
       <div class="toolbar__week">
-        <button mat-icon-button type="button" class="nav-btn" (click)="previousWeek.emit()" aria-label="{{ 'feature.previous.week' | tr }}">
+        <button mat-icon-button type="button" class="nav-btn" (click)="previousWeek.emit()" aria-label="{{ (currentMonth() ? 'calendar.previous.month' : 'feature.previous.week') | tr }}">
           <app-icon name="chevron-left" />
         </button>
       <h2 id="week-heading" class="toolbar__label">
-        <span class="visually-hidden">{{ isCurrentWeek() ? ('feature.this.week' | tr) : ('feature.week.of' | tr) }}</span>{{ label() }}
+        @if (!currentMonth()) {
+          <span class="visually-hidden">{{ isCurrentWeek() ? ('feature.this.week' | tr) : ('feature.week.of' | tr) }}</span>
+        }
+        {{ label() }}
       </h2>
-        <button mat-icon-button type="button" class="nav-btn" (click)="nextWeek.emit()" aria-label="{{ 'feature.next.week' | tr }}">
+        <button mat-icon-button type="button" class="nav-btn" (click)="nextWeek.emit()" aria-label="{{ (currentMonth() ? 'calendar.next.month' : 'feature.next.week') | tr }}">
           <app-icon name="chevron-right" />
         </button>
       </div>
-      <button type="button" class="pill" (click)="goToToday.emit()" [attr.aria-disabled]="isCurrentWeek()">{{ 'feature.today.2b065c' | tr }}</button>
+      <button type="button" class="pill" (click)="goToToday.emit()" [attr.aria-disabled]="isCurrentPeriod()">{{ 'feature.today.2b065c' | tr }}</button>
     </div>
     <div class="segmented" role="group" aria-label="{{ 'feature.calendar.view' | tr }}">
       <button type="button" [attr.aria-pressed]="view() === 'week'" (click)="viewChange.emit('week')">{{ 'feature.week' | tr }}</button>
-      <a routerLink="/calendar" [queryParams]="{ view: 'month', week: weekStart() }">{{ 'feature.month' | tr }}</a>
+      @if (desktopMonth()) {
+        <button type="button" [attr.aria-pressed]="view() === 'month'" (click)="viewChange.emit('month')">{{ 'feature.month' | tr }}</button>
+      } @else {
+        <a routerLink="/calendar" [queryParams]="{ view: 'month', week: weekStart() }">{{ 'feature.month' | tr }}</a>
+      }
       <button type="button" [attr.aria-pressed]="view() === 'list'" (click)="viewChange.emit('list')">{{ 'feature.list' | tr }}</button>
     </div>
   </header>
   <p class="visually-hidden" aria-live="polite">{{ label() }}</p>
 
-  @switch (state()) {
+  @switch (displayState()) {
     @case ('loading') {
-      <p class="note">{{ 'feature.loading.this.week' | tr }}</p>
+      <p class="note">{{ (currentMonth() ? 'calendar.loading' : 'feature.loading.this.week') | tr }}</p>
     }
     @case ('error') {
       <div class="note note--error" role="alert">
-        {{ 'feature.we.couldn.t.load.this.week' | tr }}
+        {{ (currentMonth() ? 'feature.we.couldn.t.load.your.calendar' : 'feature.we.couldn.t.load.this.week') | tr }}
         <button mat-button type="button" (click)="retry.emit()">{{ 'feature.try.again' | tr }}</button>
       </div>
     }
@@ -246,7 +253,21 @@
   }
 
   <!-- Agenda: List view, and Week view on narrow screens. -->
-  @if (state() === 'ready') {
+  @if (currentMonth(); as month) {
+    @if (monthState() === 'ready') {
+      <div class="month-body">
+        <app-calendar-month
+          [date]="month"
+          [today]="today()"
+          [items]="monthItems()"
+          [label]="label()"
+          (selected)="openEvent.emit($event.id)"
+          (openDay)="openMonthDay.emit($event)"
+          (add)="add.emit($event)"
+        />
+      </div>
+    }
+  } @else if (state() === 'ready') {
     <div class="agenda" [class.agenda--always]="view() === 'list'">
       <h3 id="allday-heading">{{ 'feature.all.day' | tr }}</h3>
       @if (allDay().length === 0) {
@@ -362,6 +383,9 @@
       </ol>
     </div>
 
+  }
+
+  @if (displayState() === 'ready' || (currentMonth() && week())) {
     <footer class="cal__footer">
       <app-dashboard-child-filter [children]="week()?.children ?? []" [selectedChild]="selectedChild()" (changed)="childChange.emit($event)" />
       <app-calendar-key />

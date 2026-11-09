@@ -178,6 +178,9 @@
   --radius-pill: 999px;
   --content-max-width: 72rem;
   --target-min: 44px;
+  // The compact chat and desktop pages that need to clear it share these dimensions.
+  --chat-dock-open-width: 24rem;
+  --chat-dock-open-height: min(36rem, calc(100dvh - 6rem));
   --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-size-body: 1rem;
   --line-height-body: 1.5;

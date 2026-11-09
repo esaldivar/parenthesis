@@ -5,7 +5,7 @@
     'topbar'
     'main'
     'bottomnav';
-  // minmax(0, …) so the five navigation labels can't widen the page past a 320px screen.
+  // minmax(0, …) so navigation labels can't widen the page past a 320px screen.
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
   min-height: 100dvh;
@@ -200,7 +200,7 @@ a.is-active {
 
   ul {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   a {
@@ -233,6 +233,10 @@ a.is-active {
     --shell-sidebar-width: 19.5rem;
     grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr);
     grid-template-rows: auto 1fr;
+  }
+
+  .shell--chat-open {
+    --chat-dock-clearance: var(--chat-dock-open-height);
   }
 
   .sidebar {

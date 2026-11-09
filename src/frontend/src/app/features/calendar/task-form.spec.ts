@@ -6,7 +6,7 @@ import { Router, provideRouter, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
 import { axeViolations } from '../../../testing/axe';
-import { CHILDREN, MEMBERS, checklistItem, task } from '../../../testing/calendar-fixtures';
+import { CHILDREN, MEMBERS, checklistItem, child, task } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
 
 const F = '/api/families/family-1';
@@ -33,24 +33,24 @@ describe('Add and edit a task', () => {
     });
   }
 
-  const flushChildren = async () => {
+  const flushChildren = async (children = CHILDREN) => {
     for (const r of await vi.waitFor(() => {
       const found = http.match(`${F}/children`);
       expect(found.length).toBeGreaterThan(0);
       return found;
     })) {
-      r.flush(CHILDREN);
+      r.flush(children);
     }
     await settle();
   };
 
   /** The Add page on Tuesday, October 20, 2026, with Task chosen. */
-  async function openAdd() {
+  async function openAdd(children = CHILDREN) {
     configure();
     harness = await RouterTestingHarness.create('/calendar/new?date=2026-10-20&kind=task');
     http = TestBed.inject(HttpTestingController);
     await vi.waitFor(() => http.expectOne(F)).then((r) => r.flush(FAMILY));
-    await flushChildren();
+    await flushChildren(children);
   }
 
   async function openEdit(current = task()) {
@@ -124,6 +124,7 @@ describe('Add and edit a task', () => {
       title: 'Prepare for soccer tournament',
       dueDate: '2026-10-20',
       childId: null,
+      childIds: [],
       details: undefined,
       items: [
         { text: 'Pack uniforms', required: true },
@@ -133,6 +134,27 @@ describe('Add and edit a task', () => {
     });
     create.flush(task({ title: 'Prepare for soccer tournament', dueDate: '2026-10-20' }));
     await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/calendar?date=2026-10-20'));
+  });
+
+  it('selects all eligible children, supports clearing, and saves only the checked children', async () => {
+    await openAdd([...CHILDREN, child('avery', 'Avery')]);
+    const checkbox = (label: string) => [...form().querySelectorAll('app-calendar-note-children mat-checkbox')]
+      .find(control => text(control) === label)!.querySelector<HTMLInputElement>('input')!;
+    checkbox('All').click();
+    await settle();
+    expect(['Kai', 'Aurora', 'Avery'].every(name => checkbox(name).checked)).toBe(true);
+    button('No one in particular').click();
+    await settle();
+    expect(['Kai', 'Aurora', 'Avery'].some(name => checkbox(name).checked)).toBe(false);
+    checkbox('All').click();
+    await settle();
+    checkbox('Aurora').click();
+    await settle();
+    expect(checkbox('All').indeterminate).toBe(true);
+    type(field('title'), 'Pack water');
+    await submit();
+    const create = await vi.waitFor(() => http.expectOne(r => r.method === 'POST'));
+    expect(create.request.body.childIds).toEqual(['kai', 'avery']);
   });
 
   it('checks the title, due date and items before sending', async () => {

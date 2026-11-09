@@ -1,6 +1,8 @@
 import { inject } from '@angular/core';
 import { LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { CalendarItem } from '../calendar/calendar-items';
+import { CalendarMonth } from '../calendar/calendar-month';
 import { CalendarPalette } from '../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -39,7 +41,7 @@ import {
 } from './week';
 
 export type WeekState = 'loading' | 'unavailable' | 'error' | 'ready';
-export type InlineView = 'week' | 'list';
+export type InlineView = 'week' | 'month' | 'list';
 
 interface DayView {
   readonly date: PlainDate;
@@ -72,7 +74,7 @@ const inAllDayRow = (event: FamilyEvent) => !event.time || !!event.endDate;
 @Component({
   selector: 'app-week-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey, DashboardChildFilter],
+  imports: [TranslatePipe, CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey, DashboardChildFilter, CalendarMonth],
   templateUrl: './week-calendar.html',
   styleUrl: './week-calendar.scss',
 })
@@ -85,11 +87,23 @@ export class WeekCalendar {
   readonly week = input<DashboardWeek | null>(null);
   readonly selectedChild = input<string | null>(null);
   readonly view = input<InlineView>('week');
+  readonly desktopMonth = input(false);
+  readonly monthDate = input<PlainDate | null>(null);
+  readonly monthState = input<WeekState>('loading');
+  readonly monthItems = input<readonly CalendarItem[]>([]);
+
+  protected readonly currentMonth = computed(() => this.view() === 'month' ? this.monthDate() : null);
+  protected readonly displayState = computed(() => this.currentMonth() ? this.monthState() : this.state());
+  protected readonly isCurrentPeriod = computed(() => {
+    const month = this.currentMonth();
+    return month ? month.slice(0, 7) === this.today().slice(0, 7) : this.isCurrentWeek();
+  });
 
   readonly previousWeek = output();
   readonly nextWeek = output();
   readonly goToToday = output();
   readonly viewChange = output<InlineView>();
+  readonly openMonthDay = output<PlainDate>();
   readonly childChange = output<string | null>();
   readonly retry = output();
   /** Opens an event's details over the page (#213), with the calendar event's id. */
@@ -146,7 +160,13 @@ export class WeekCalendar {
 
   private readonly expanded = signal<ReadonlySet<string>>(new Set());
 
-  protected readonly label = computed(() => weekLabelLong(this.weekStart(), this.locale.locale()));
+  protected readonly label = computed(() => {
+    const month = this.currentMonth();
+    const locale = this.locale.locale();
+    return month
+      ? new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month))
+      : weekLabelLong(this.weekStart(), locale);
+  });
   private readonly events = computed(() => (this.week()?.events ?? []).map(event => ({ ...event, palette: eventPalette(event.category) })));
   /** The whole day is in the grid; it scrolls (see constructor) to where this week's activities begin. */
   protected readonly hours = computed(() => ({ startHour: 0, endHour: 24 }));

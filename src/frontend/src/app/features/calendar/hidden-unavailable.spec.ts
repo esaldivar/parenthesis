@@ -97,9 +97,9 @@ describe('hidden unavailable time', () => {
     // Monday's parenting time keeps the whole day: the marker isn't a second lane.
     const monday = main().querySelectorAll<HTMLElement>('app-calendar-week .daycol')[1];
     expect(monday.style.getPropertyValue('--lanes')).toBe('1');
-    // The phone list and the key words show it as hidden, not as ordinary unavailable time.
-    const rows = [...main().querySelectorAll('app-calendar-week .agenda button.item[data-concealed="true"]')];
-    expect(rows.map((r) => text(r.querySelector('.title')))).toEqual(['Hidden: unavailable', 'Hidden: unavailable']);
+    // On phones the marker has a lane of its own when it overlaps another item.
+    expect(markers[0].closest('li')!.style.getPropertyValue('--slot-width')).toBe('50%');
+    expect(markers[1].closest('li')!.style.getPropertyValue('--slot-width')).toBe('100%');
   });
 
   it('opens the details, and offers a swap only when it overlaps that parent’s parenting time', async () => {

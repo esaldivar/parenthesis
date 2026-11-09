@@ -1,11 +1,10 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { RouterLink } from '@angular/router';
 import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
 import { Icon } from '../../shared/icon/icon';
-import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation';
+import { PARENT_MORE_NAV } from '../../layout/navigation';
 
 /** On phones: the destinations that don't fit in the bottom navigation. */
 @Component({
@@ -19,7 +18,7 @@ import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation'
         <li>
           <a [routerLink]="item.path">
             <app-icon [name]="item.icon" />
-            <span>{{ label(item) }}</span>
+            <span>{{ item.labelKey | tr }}</span>
             @if (item.path === '/child-essentials' && essentials.newUpdates()) {
               <span class="dot" aria-hidden="true"></span>
               <span class="visually-hidden">, {{ 'nav.updated' | tr }}</span>
@@ -75,18 +74,7 @@ import { NavItem, PARENT_MOBILE_NAV, PARENT_NAV } from '../../layout/navigation'
   `,
 })
 export class MorePage {
-  private readonly locale = inject(LocaleService);
-  protected label(item: NavItem): string {
-    const keys: Record<string, TranslationKey> = {
-      '/from-your-kids': 'nav.fromKids',
-      '/child-essentials': 'nav.essentials',
-      '/shared-records': 'nav.records',
-      '/settings': 'settings.title',
-    };
-    return keys[item.path] ? translate(keys[item.path], this.locale.locale()) : item.label;
-  }
   protected readonly essentials = inject(EssentialsUpdatesStore);
   protected readonly records = inject(SharedRecordsAttentionStore);
-  private readonly inBottomNav = new Set(PARENT_MOBILE_NAV.map((item) => item.path));
-  protected readonly items: NavItem[] = PARENT_NAV.filter((item) => !this.inBottomNav.has(item.path));
+  protected readonly items = PARENT_MORE_NAV;
 }

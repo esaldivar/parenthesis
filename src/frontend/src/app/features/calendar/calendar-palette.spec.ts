@@ -86,6 +86,11 @@ describe('Details panel tint (#431)', () => {
       expect(panel.style.getPropertyValue('--panel-tint')).toBe(`var(--color-calendar-${kind}-bg)`);
       expect(panel.getAttribute('data-tint')).toBe(kind);
       expect(panel.style.color).toBe('');
+      if (kind === 'unavailable') {
+        expect(panel.style.backgroundImage).toContain('repeating-linear-gradient');
+      } else {
+        expect(panel.style.backgroundImage).toBe('');
+      }
     }
     expect(render('event').style.getPropertyValue('--panel-tint')).toBe('var(--color-calendar-family-bg)');
   });
@@ -95,6 +100,7 @@ describe('Details panel tint (#431)', () => {
       const panel = render(kind);
       expect(panel.style.getPropertyValue('--panel-tint')).toBe('');
       expect(panel.hasAttribute('data-tint')).toBe(false);
+      expect(panel.style.backgroundImage).toBe('');
     }
   });
 });

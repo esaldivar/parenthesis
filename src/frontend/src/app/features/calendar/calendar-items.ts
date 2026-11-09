@@ -46,7 +46,7 @@ export interface CalendarItem {
   /** Auto-confirmed while the family had one parent; shown so the co-parent can review it (decision 7). */
   readonly beforeCoParentJoined: boolean;
   readonly children: readonly Person[];
-  /** The parents shown on it: the caregiver for parenting time, both parents for a family event, the owner otherwise. */
+  /** The caregiver for parenting time, both parents for family events, and the owner for unavailable time. */
   readonly parents: readonly Person[];
   readonly ownerName: string;
   readonly isMine: boolean;
@@ -64,6 +64,8 @@ export interface CalendarItem {
    * details. Hiding never changes availability or conflict checks, which stay on the server.
    */
   readonly concealed?: boolean;
+  /** Saved child IDs for tasks and reminders, including children no longer shown. */
+  readonly childIds?: readonly string[];
 }
 
 export const CATEGORY_LABELS: Record<CalendarCategory, string> = {
@@ -142,7 +144,7 @@ export function toItems(
     const shownParents: Person[] =
       kind === 'family'
         ? parents.map((p) => ({ id: p.membershipId, name: p.displayName }))
-        : kind === 'parenting'
+        : event.category === 'ParentingTime'
           ? [{ id: event.caregiverMembershipId ?? '', name: name(event.caregiverMembershipId) }]
           : kind === 'unavailable'
             ? [{ id: event.ownerMembershipId, name: name(event.ownerMembershipId) }]
@@ -182,6 +184,10 @@ export function toItems(
 /** A timed reminder is a moment; it takes one half-hour slot on the week grid. */
 const REMINDER_SLOT_MINUTES = 30;
 
+/** Notes created before multiple associations still carry a single child ID. */
+export const associatedChildIds = (item: Pick<Reminder | SharedTask, 'childId' | 'childIds'>): readonly string[] =>
+  item.childIds ?? (item.childId ? [item.childId] : []);
+
 /** Builds the calendar's items from reminders (one per occurrence). A child who isn't active is left out. */
 export function reminderItems(
   reminders: readonly Reminder[],
@@ -197,7 +203,7 @@ export function reminderItems(
     const end = reminder.allDay
       ? `${addDays(date, 1)}T00:00`
       : toFamilyLocal(new Date(Date.parse(reminder.startsAt) + REMINDER_SLOT_MINUTES * 60_000).toISOString(), timeZone);
-    const child = children.find((c) => c.id === reminder.childId);
+    const childIds = associatedChildIds(reminder);
     return {
       id: `reminder:${reminder.id}:${reminder.startsAt}`,
       reminderId: reminder.id,
@@ -215,7 +221,8 @@ export function reminderItems(
       status: 'confirmed',
       pendingChange: 'None',
       beforeCoParentJoined: false,
-      children: child ? [{ id: child.id, name: child.firstName }] : [],
+      childIds,
+      children: children.filter(c => c.status === 'Active' && childIds.includes(c.id)).map(c => ({ id: c.id, name: c.firstName })),
       parents: [],
       ownerName: name(reminder.createdByMembershipId),
       isMine: reminder.createdByMembershipId === me,
@@ -235,7 +242,7 @@ export function taskItems(
   const name = (membershipId: string) => members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
   const me = members.find((m) => m.isYou)?.membershipId;
   return tasks.map((task) => {
-    const child = children.find((c) => c.id === task.childId);
+    const childIds = associatedChildIds(task);
     const done = task.completedAt !== null;
     return {
       id: `task:${task.id}`,
@@ -255,7 +262,8 @@ export function taskItems(
       status: 'confirmed',
       pendingChange: 'None',
       beforeCoParentJoined: false,
-      children: child ? [{ id: child.id, name: child.firstName }] : [],
+      childIds,
+      children: children.filter(c => c.status === 'Active' && childIds.includes(c.id)).map(c => ({ id: c.id, name: c.firstName })),
       parents: [],
       ownerName: name(task.createdByMembershipId),
       isMine: task.createdByMembershipId === me,
@@ -272,7 +280,10 @@ export const onDate = (items: readonly CalendarItem[], date: PlainDate) =>
 
 /** Child filter: "all", or one child's id. An item with no children (unavailable time, a parents-only event) always shows. */
 export function forChild(items: readonly CalendarItem[], childId: string | null): CalendarItem[] {
-  return childId ? items.filter((i) => i.children.length === 0 || i.children.some((c) => c.id === childId)) : [...items];
+  return childId ? items.filter((item) => {
+    const ids = item.childIds ?? item.children.map(child => child.id);
+    return ids.length === 0 || ids.includes(childId);
+  }) : [...items];
 }
 
 /** How many dates an item covers (at least 1). */

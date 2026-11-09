@@ -447,8 +447,8 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       ] as const) {
         await test.step(where, async () => {
           await page.goto(url);
-          if (page.viewportSize()!.width < 720) {
-            // Phones use a two-tap day target in the agenda instead of the desktop time grid.
+          if (where === 'home' && page.viewportSize()!.width < 720) {
+            // Home still uses a two-tap day target in its phone agenda.
             const tuesdayAgenda = page.locator('.agenda__day').filter({ hasText: /Tue(?:sday)?/ });
             await tuesdayAgenda.locator('.tap-add__button')
               .tap({ position: { x: 12, y: 12 } });

@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
+import { isDependabotUpdate } from './dependabot-release-target.mjs';
 
 // Only this explicit section is evidence. Examples, comments and code are not links.
 // Drops each fenced code block (``` or ~~~ up to a line starting with the same marker). An unclosed fence stays.
@@ -63,7 +65,7 @@ export async function validate({ body, repository, getIssue }) {
   return numbers;
 }
 
-export async function run({ env = process.env, fetchImpl = fetch } = {}) {
+export async function run({ env = process.env, fetchImpl = fetch, wait = delay } = {}) {
   const event = JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
   const repository = env.GITHUB_REPOSITORY;
   const number = event.pull_request?.number;
@@ -80,13 +82,35 @@ export async function run({ env = process.env, fetchImpl = fetch } = {}) {
   };
   // Read the current body, never a stale event body. Check both ends of the read
   // so a concurrent head/body/base change cannot receive this run's success.
-  const pr = await get(`pulls/${number}`);
+  const pullPath = `pulls/${number}`;
+  let pr = await get(pullPath);
   const same = (a, b) => a.head?.sha === b.head?.sha && a.base?.ref === b.base?.ref && a.body === b.body && a.state === b.state;
-  if (pr.head?.sha !== event.pull_request.head?.sha || pr.base?.ref !== event.pull_request.base?.ref || pr.state !== 'open') {
+  const checkHead = current => {
+    if (current.head?.sha !== event.pull_request.head?.sha || current.state !== 'open') {
+      throw new Error('PR changed since this event. Rerun the latest PR event.');
+    }
+  };
+  checkHead(pr);
+  if (isDependabotUpdate(pr, repository)) {
+    // The trusted writer runs after branch policy and can retarget the same head.
+    // An Actions-token body edit does not schedule a fresh pull_request_target run.
+    for (let attempt = 0; attempt < 30; attempt++) {
+      try {
+        if (/^release\/\d+\.\d+\.\d+$/.test(pr.base?.ref) && references(pr.body, repository).length) break;
+      } catch {
+        // An untouched Dependabot body has no tracking section yet.
+      }
+      if (attempt === 29) throw new Error('Dependabot tracking issue was not ready. Check the Dependabot tracking issues workflow.');
+      await wait(5_000);
+      pr = await get(pullPath);
+      checkHead(pr);
+      if (!isDependabotUpdate(pr, repository)) throw new Error('Dependabot PR identity changed during verification.');
+    }
+  } else if (pr.base?.ref !== event.pull_request.base?.ref) {
     throw new Error('PR changed since this event. Rerun the latest PR event.');
   }
   const numbers = await validate({ body: pr.body, repository, getIssue: n => get(`issues/${n}`) });
-  if (!same(pr, await get(`pulls/${number}`))) throw new Error('PR changed during verification. Rerun the latest PR event.');
+  if (!same(pr, await get(pullPath))) throw new Error('PR changed during verification. Rerun the latest PR event.');
   console.log(`Verified ${numbers.length} tracking issue(s): ${numbers.map(n => `#${n}`).join(', ')}.`);
   return numbers;
 }

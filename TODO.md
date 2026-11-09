@@ -192,6 +192,9 @@ that points back here.
     routing corrects PR bases in the interim, but cannot change which manifests Dependabot scanned.
   - [ ] Security updates still start on main under GitHub's platform behavior before routing; alerts stay enabled.
 
+- [ ] **Dependabot tracking issues (#544).** After normal promotion to `main`, verify a real Dependabot PR gets
+  one issue and passes the required tracking check. Rerun the writer to verify that it reuses the issue and link.
+
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
   - [ ] Review required PR checks and promote through the normal release route to `main` (scheduled workflows run there).
@@ -435,6 +438,8 @@ that points back here.
 
 ## Calendar follow-ups
 
+- [ ] #547: verify the desktop Calendar legend in Week, Month and List on Development at 125% browser zoom with Messages minimized and expanded.
+
 - [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted
   titles from explicitly empty/whitespace titles. Required titles are rejected without saving other fields;
   omitted/null titles keep their values and Unavailable time retains its generic label and private notes.
@@ -443,11 +448,15 @@ that points back here.
   - [ ] Run backend build/format/integration and frontend lint/test/build in PR CI; this workspace has no .NET SDK
     or Docker. After promotion, retest mobile/desktop, both themes and screen-reader behavior before acceptance.
 
+- [ ] #554: verify the Unavailable details pattern and private-note visibility on Development from Home and Calendar, on desktop and phone in both themes.
+
 - [x] **Reminder delete confirmation focus (#172).** Opening confirmation focuses Keep it with the deletion
   explanation; cancelling restores Delete reminder. The pending delete action keeps focus and blocks duplicate
   requests, including error/retry. Regression tests cover the observed BODY-focus failure and error-state axe.
   - [ ] After promotion, manually retest the confirmation, cancellation, failed and successful deletion by keyboard
     and screen reader on development, phone/desktop and both themes. Independent-parent checks remain open.
+
+- [ ] #553: verify desktop Calendar Week attendee photos, initials and overflow with synthetic profiles on Development in both themes.
 
 - [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
   29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
@@ -487,6 +496,8 @@ that points back here.
   excluded, and the API no longer suggests choosing another caregiver. Backend recurrence/DST/privacy/rollback
   and frontend message-preservation regressions pass.
   - [ ] After merge/promotion, retest the dated conflict feedback on Development before closing #259.
+
+- [ ] #549: verify parent navigation order, routes, active states and badges on Development in English and Spanish.
 
 ## Backend features the dashboard is waiting on
 - [ ] Calendar and parenting-time endpoints, including change requests and approvals.
@@ -543,9 +554,13 @@ that points back here.
 - Implemented: successful calendar detail actions focus the stable Calendar heading while the removed trigger/grid reload disappear. Closing details also falls back there if its opener has gone. Week/Month/List reminder-deletion regressions verify focus after the complete refresh and retain Seen/approval behavior. This shared path also covers task deletion (#176).
 - Still required: owner live deletion keyboard retest after deployment and outstanding mobile/screen-reader/Seen/privacy acceptance; #176 session recovery remains separate.
 
+- [ ] #555: verify task and reminder child selection, recurrence, and filters on Development with three synthetic children on phone and desktop.
+
 ### #177 — Task conflict reload focus
 - Implemented: loading the latest task after a version conflict focuses Title after the conflict controls disappear, alongside the existing announcement. Regression verifies current content/checklist/version, focus, and no automatic overwrite/resubmit.
 - Still required: owner stale-tab keyboard retest after deployment and remaining phone/theme/actual-screen-reader acceptance.
+
+- [ ] #551: verify the embedded Home Month, cross-month week selection, child filters and phone fallback on Development.
 
 ### #250 — Month occurrence accessible dates
 - Implemented: every Month bar names its full occurrence date (or full start/end range with years), including single-day repeats and continuations. Layout and rendered-DOM regressions distinguish November 7/14 and preserve pending status; year-boundary coverage names both years.
@@ -728,3 +743,9 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 - [ ] Verify the updated workflow on a work PR into the active release: controlled browser failure produces a red gate, then restored full desktop/mobile matrix passes; retain run links in #341.
 
 - [ ] Verify Home Quick Add saves and cancellation from all four shortcuts on the development site (#515).
+
+### #546 — Desktop Home greeting overlap
+- [ ] After promotion, verify the greeting and calendar toolbar on Development with the original browser and 125% browser zoom.
+
+### #552 — Seven-day mobile Calendar Week grid
+- [ ] Retest on Development with physical iPhone Safari and Android Chrome in both themes, including touch scrolling, dense overlap, event details and bottom navigation.

@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CoParent.Modules.Calendar.Endpoints;
 
-/// <summary>Create and edit (edits replace the whole reminder, so clearing the child or details is explicit).</summary>
+/// <summary>Create and edit (edits replace the whole reminder, so clearing the children or details is explicit).</summary>
 internal sealed record ReminderRequest(
     string? Title,
     DateTimeOffset? StartsAt,
@@ -23,7 +23,11 @@ internal sealed record ReminderRequest(
     string? Details,
     RepeatFrequency? Repeat = null,
     DateOnly? RepeatUntil = null,
-    int? RepeatCount = null);
+    int? RepeatCount = null,
+    IReadOnlyList<Guid>? ChildIds = null)
+{
+    internal IReadOnlyList<Guid> SelectedChildren => ChildSelection.Resolve(ChildId, ChildIds);
+}
 
 internal sealed record ReminderSeenView(Guid MembershipId, DateTimeOffset SeenAt);
 
@@ -47,7 +51,8 @@ internal sealed record ReminderView(
     RepeatFrequency Repeat,
     DateOnly? RepeatUntil,
     int? RepeatCount,
-    DateTimeOffset SeriesStartsAt);
+    DateTimeOffset SeriesStartsAt,
+    IReadOnlyList<Guid> ChildIds);
 
 internal sealed record ReminderHistoryView(Guid ActorMembershipId, string Action, string? Changes, DateTimeOffset At);
 
@@ -158,7 +163,8 @@ internal static class ReminderEndpoints
             Title = request.Title!.Trim(),
             StartsAt = request.StartsAt!.Value.ToUniversalTime(),
             AllDay = request.AllDay,
-            ChildProfileId = request.ChildId,
+            ChildProfileId = ChildSelection.Single(request.SelectedChildren),
+            ChildProfileIds = request.SelectedChildren.ToArray(),
             Details = Clean(request.Details),
             CreatedByMembershipId = tenant.MembershipId,
             CreatedAt = now,
@@ -237,7 +243,7 @@ internal static class ReminderEndpoints
             changes.Add("date");
         }
 
-        if (request.ChildId != reminder.ChildProfileId)
+        if (!request.SelectedChildren.ToHashSet().SetEquals(ChildSelection.Resolve(reminder.ChildProfileId, reminder.ChildProfileIds)))
         {
             changes.Add("child");
         }
@@ -259,8 +265,10 @@ internal static class ReminderEndpoints
         }
 
         var now = clock.GetUtcNow();
-        (reminder.Title, reminder.StartsAt, reminder.AllDay, reminder.ChildProfileId, reminder.Details) =
-            (title, startsAt, request.AllDay, request.ChildId, details);
+        (reminder.Title, reminder.StartsAt, reminder.AllDay, reminder.Details) =
+            (title, startsAt, request.AllDay, details);
+        reminder.ChildProfileId = ChildSelection.Single(request.SelectedChildren);
+        reminder.ChildProfileIds = request.SelectedChildren.ToArray();
         (reminder.Repeat, reminder.RepeatUntil, reminder.RepeatCount) = repeat;
         reminder.SeriesEndsAt = SeriesEnd(reminder, zone);
         (reminder.LastEditedByMembershipId, reminder.LastEditedAt) = (tenant.MembershipId, now);
@@ -399,9 +407,16 @@ internal static class ReminderEndpoints
             errors["details"] = [$"Keep the details under {Reminder.DetailsMaxLength} characters."];
         }
 
-        if (request.ChildId is { } child && !(await roster.ActiveChildIdsAsync(cancellationToken)).Contains(child))
+        if (request.SelectedChildren.Count > 0)
         {
-            errors["childId"] = ["Choose a child who's in this family (and approved by both parents)."];
+            var eligible = await roster.ActiveChildIdsAsync(cancellationToken);
+            if (request.SelectedChildren.Any(child => !eligible.Contains(child))
+                || request.SelectedChildren.Distinct().Count() != request.SelectedChildren.Count)
+            {
+                errors[request.ChildIds is null ? "childId" : "childIds"] = request.ChildIds is null
+                    ? ["Choose a child who's in this family (and approved by both parents)."]
+                    : ["Choose children who are in this family (and approved by both parents)."];
+            }
         }
 
         if (request.Repeat is { } repeat && repeat != RepeatFrequency.None)
@@ -465,5 +480,6 @@ internal static class ReminderEndpoints
         r.Repeat,
         r.RepeatUntil,
         r.RepeatCount,
-        r.StartsAt);
+        r.StartsAt,
+        ChildSelection.Resolve(r.ChildProfileId, r.ChildProfileIds));
 }
