@@ -2,7 +2,9 @@ using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
 using CoParent.IntegrationTests.Infrastructure;
 using CoParent.Modules.Calendar;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -133,6 +135,12 @@ public sealed class ApiFactory(PostgresFixture postgres, AzuriteFixture azurite)
             // The real clock, which a test can move forward (PIN pauses, shared-device expiry). Reset between tests.
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(Clock);
+            // Keep cookie issuance and security-stamp validation on the browser's clock. Business time jumps
+            // otherwise expire new cookies or trigger a renewal that replaces the endpoint's cache headers.
+            services.PostConfigure<CookieAuthenticationOptions>(
+                IdentityConstants.ApplicationScheme,
+                options => options.TimeProvider = TimeProvider.System);
+            services.PostConfigure<SecurityStampValidatorOptions>(options => options.TimeProvider = TimeProvider.System);
 
             // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
             // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
