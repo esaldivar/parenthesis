@@ -159,7 +159,9 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVie
   protected readonly updates = inject(EssentialsUpdatesStore);
   /** The shared routine's changes, and the co-parent's own routine's changes shown in their tab (#128). */
   protected readonly marks = sectionUpdates('routines', this.childId);
-  protected readonly savedNotice = 'Routines saved.';
+  protected get savedNotice(): string {
+    return translate('essentials.routines.saved', this.locale.locale());
+  }
   protected readonly homeMarks = sectionUpdates('householdRoutines', this.childId);
   protected readonly form = new FormGroup({
     bedtime: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
@@ -203,7 +205,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVie
       this.households.set(await this.api.householdRoutines(this.familyId(), this.childId()));
       this.householdError.set('');
     } catch {
-      this.householdError.set('Household routines couldn’t be loaded.');
+      this.householdError.set(translate('essentials.routines.loadError', this.locale.locale()));
     }
   }
 
@@ -232,9 +234,9 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVie
           this.householdDraftRevision = latest?.latest.revision ?? this.householdDraftRevision;
         }
         this.householdConflict.set(action === 'save');
-        this.householdError.set('The routine was updated. Review the latest values before trying again.');
+        this.householdError.set(translate('essentials.routines.conflict', this.locale.locale()));
       } else {
-        this.householdError.set('The routine couldn’t be updated. Try again.');
+        this.householdError.set(translate('essentials.routines.saveError', this.locale.locale()));
       }
     } finally {
       this.householdSaving.set(false);

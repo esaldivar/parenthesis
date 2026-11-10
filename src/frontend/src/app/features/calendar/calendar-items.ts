@@ -1,3 +1,5 @@
+import { AppLocale } from '../../core/i18n/locale.service';
+import { TranslationKey, translate } from '../../core/i18n/translations';
 import { CalendarCategory, CalendarEvent, CalendarWarning, Child, FamilyMember, Reminder, SharedTask } from '../../core/api/api';
 import { CalendarPaletteKey, parentPalette } from './calendar-palette';
 import { IconName } from '../../shared/icon/icon';
@@ -68,17 +70,19 @@ export interface CalendarItem {
   readonly childIds?: readonly string[];
 }
 
-export const CATEGORY_LABELS: Record<CalendarCategory, string> = {
-  ParentingTime: 'Parenting time',
-  Joint: 'Family event',
-  School: 'School',
-  Medical: 'Medical',
-  Dental: 'Dental',
-  Activity: 'Activity',
-  Birthday: 'Birthday',
-  Holiday: 'Holiday',
-  Unavailable: 'Unavailable',
-  Other: 'Other',
+export const CATEGORY_LABELS: Record<CalendarCategory | 'Reminder' | 'Task', TranslationKey> = {
+  ParentingTime: 'feature.parenting.time',
+  Joint: 'calendar.type.family',
+  School: 'feature.school',
+  Medical: 'calendar.type.medical',
+  Dental: 'calendar.type.dental',
+  Activity: 'feature.activity',
+  Birthday: 'calendar.type.birthday',
+  Holiday: 'calendar.type.holiday',
+  Unavailable: 'feature.unavailable',
+  Other: 'calendar.type.other',
+  Reminder: 'feature.reminder',
+  Task: 'feature.task',
 };
 
 const ICONS: Record<CalendarCategory, IconName> = {
@@ -127,9 +131,10 @@ export function toItems(
   members: readonly FamilyMember[],
   children: readonly Child[],
   timeZone: string,
+  locale: AppLocale = 'en',
 ): CalendarItem[] {
   const name = (membershipId: string | null) =>
-    members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
+    members.find((m) => m.membershipId === membershipId)?.displayName ?? translate('feature.former.parent', locale);
   const parents = members.filter((m) => m.role === 'Parent');
   const me = members.find((m) => m.isYou)?.membershipId;
 
@@ -151,11 +156,11 @@ export function toItems(
             : [];
     return {
       id: event.id,
-      title: hidden ? 'Unavailable' : event.title,
+      title: hidden || (kind === 'unavailable' && event.title === 'Unavailable') ? translate('feature.unavailable', locale) : event.title,
       kind,
       palette: kind === 'parenting' ? parentPalette(event.caregiverMembershipId, members) : kind,
       category: event.category,
-      categoryLabel: CATEGORY_LABELS[event.category],
+      categoryLabel: translate(CATEGORY_LABELS[event.category], locale),
       icon: ICONS[event.category],
       start,
       end,
@@ -194,8 +199,9 @@ export function reminderItems(
   members: readonly FamilyMember[],
   children: readonly Child[],
   timeZone: string,
+  locale: AppLocale = 'en',
 ): CalendarItem[] {
-  const name = (membershipId: string) => members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
+  const name = (membershipId: string) => members.find((m) => m.membershipId === membershipId)?.displayName ?? translate('feature.former.parent', locale);
   const me = members.find((m) => m.isYou)?.membershipId;
   return reminders.map((reminder) => {
     const start = toFamilyLocal(reminder.startsAt, timeZone);
@@ -210,7 +216,7 @@ export function reminderItems(
       title: reminder.title,
       kind: 'reminder',
       category: 'Reminder',
-      categoryLabel: 'Reminder',
+      categoryLabel: translate(CATEGORY_LABELS.Reminder, locale),
       icon: 'bell',
       start,
       end,
@@ -238,8 +244,9 @@ export function taskItems(
   tasks: readonly SharedTask[],
   members: readonly FamilyMember[],
   children: readonly Child[],
+  locale: AppLocale = 'en',
 ): CalendarItem[] {
-  const name = (membershipId: string) => members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
+  const name = (membershipId: string) => members.find((m) => m.membershipId === membershipId)?.displayName ?? translate('feature.former.parent', locale);
   const me = members.find((m) => m.isYou)?.membershipId;
   return tasks.map((task) => {
     const childIds = associatedChildIds(task);
@@ -251,7 +258,7 @@ export function taskItems(
       title: task.title,
       kind: 'task',
       category: 'Task',
-      categoryLabel: 'Task',
+      categoryLabel: translate(CATEGORY_LABELS.Task, locale),
       icon: 'note',
       start: `${task.dueDate}T00:00`,
       end: `${addDays(task.dueDate, 1)}T00:00`,

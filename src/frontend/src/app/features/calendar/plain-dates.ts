@@ -1,6 +1,8 @@
-import { Injectable, Provider, inject } from '@angular/core';
+import { Injectable, Provider, effect, inject } from '@angular/core';
 import { AbstractControl } from '@angular/forms';
 import { DateAdapter, MAT_DATE_FORMATS, MatDateFormats } from '@angular/material/core';
+import { MatDatepickerIntl } from '@angular/material/datepicker';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AuthStore } from '../../core/auth/auth.store';
 import { PlainDate } from '../dashboard/model';
 import { addDays, todayIn } from '../dashboard/week';
@@ -22,7 +24,7 @@ export function typedValues<T extends object>(form: { getRawValue(): T; readonly
 }
 
 const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
-const US = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/;
+const NUMERIC_DATE = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/;
 const pad = (n: number, width = 2) => String(n).padStart(width, '0');
 const utc = (date: PlainDate) => new Date(`${date}T00:00:00Z`);
 
@@ -43,7 +45,7 @@ export function isPlainDate(value: unknown): value is PlainDate {
 /**
  * The Material date pickers (#232) on the forms' own values: dates stay "YYYY-MM-DD" strings in the family's calendar,
  * as everywhere else, so nothing shifts with the device's time zone. "Today" is the family's today. Typed dates are read
- * as 10/27/2026 or 2026-10-27.
+ * using the selected language’s date order or as 2026-10-27.
  */
 @Injectable()
 export class PlainDateAdapter extends DateAdapter<PlainDate> {
@@ -51,11 +53,13 @@ export class PlainDateAdapter extends DateAdapter<PlainDate> {
 
   constructor() {
     super();
-    this.setLocale('en-US');
+    const locale = inject(LocaleService);
+    this.setLocale(locale.locale());
+    effect(() => this.setLocale(locale.locale()));
   }
 
   private intl(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-    return new Intl.DateTimeFormat('en-US', { ...options, timeZone: 'UTC' });
+    return new Intl.DateTimeFormat(this.locale, { ...options, timeZone: 'UTC' });
   }
 
   getYear(date: PlainDate): number {
@@ -132,9 +136,11 @@ export class PlainDateAdapter extends DateAdapter<PlainDate> {
     if (isPlainDate(text)) {
       return text;
     }
-    const us = US.exec(text);
-    if (us) {
-      const candidate = `${us[3]}-${pad(Number(us[1]))}-${pad(Number(us[2]))}`;
+    const numeric = NUMERIC_DATE.exec(text);
+    if (numeric) {
+      const [, first, second, year] = numeric;
+      const [month, day] = this.locale === 'es-419' ? [second, first] : [first, second];
+      const candidate = `${year}-${pad(Number(month))}-${pad(Number(day))}`;
       return isPlainDate(candidate) ? candidate : this.invalid();
     }
     return this.invalid();
@@ -186,7 +192,7 @@ export class PlainDateAdapter extends DateAdapter<PlainDate> {
   }
 }
 
-/** Shown as 10/27/2026 in the field; the calendar's headings and screen-reader labels in words. */
+/** Numeric in the field; the calendar's headings and screen-reader labels use words. */
 export const PLAIN_DATE_FORMATS: MatDateFormats = {
   parse: { dateInput: null },
   display: {
@@ -197,10 +203,48 @@ export const PLAIN_DATE_FORMATS: MatDateFormats = {
   },
 };
 
+const spanishPickerLabels = {
+  calendarLabel: 'Calendario',
+  openCalendarLabel: 'Abrir calendario',
+  closeCalendarLabel: 'Cerrar calendario',
+  prevMonthLabel: 'Mes anterior',
+  nextMonthLabel: 'Mes siguiente',
+  prevYearLabel: 'Año anterior',
+  nextYearLabel: 'Año siguiente',
+  prevMultiYearLabel: '24 años anteriores',
+  nextMultiYearLabel: '24 años siguientes',
+  switchToMonthViewLabel: 'Elegir fecha',
+  switchToMultiYearViewLabel: 'Elegir mes y año',
+  startDateLabel: 'Fecha de inicio',
+  endDateLabel: 'Fecha de finalización',
+  comparisonDateLabel: 'Intervalo de comparación',
+  formatYearRangeLabel: (start: string, end: string) => `${start} a ${end}`,
+};
+
+function datepickerIntl(): MatDatepickerIntl {
+  const locale = inject(LocaleService);
+  const intl = new MatDatepickerIntl();
+  const english = new MatDatepickerIntl();
+  const updateLabels = () => {
+    for (const key of Object.keys(spanishPickerLabels) as (keyof typeof spanishPickerLabels)[]) {
+      if (key === 'formatYearRangeLabel') {
+        intl.formatYearRangeLabel = locale.locale() === 'es-419' ? spanishPickerLabels[key] : english[key];
+      } else {
+        intl[key] = locale.locale() === 'es-419' ? spanishPickerLabels[key] : english[key];
+      }
+    }
+    intl.changes.next();
+  };
+  updateLabels();
+  effect(updateLabels);
+  return intl;
+}
+
 /** The providers a form with a date picker needs. */
 export function providePlainDates(): Provider[] {
   return [
     { provide: DateAdapter, useClass: PlainDateAdapter },
+    { provide: MatDatepickerIntl, useFactory: datepickerIntl },
     { provide: MAT_DATE_FORMATS, useValue: PLAIN_DATE_FORMATS },
   ];
 }

@@ -26,7 +26,7 @@ import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRo
 import { CalendarKey } from './calendar-key';
 import { DashboardChildFilter } from './dashboard-child-filter';
 import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from './grouping';
-import { DashboardWeek, FamilyEvent, PlainDate, eventPalette } from './model';
+import { ChildRef, DashboardWeek, FamilyEvent, PlainDate, eventPalette } from './model';
 import { StatusLabel } from './status-label';
 import { CATEGORY_ICONS, TimedPlacement, placeDay, visibleHours } from './timeline';
 import {
@@ -225,7 +225,7 @@ export class WeekCalendar {
     }),
   );
 
-  private readonly blocks = computed(() => groupParentingTime(this.week()?.parentingTime ?? [], { split: false }));
+  private readonly blocks = computed(() => groupParentingTime(this.week()?.parentingTime ?? [], { split: false, locale: this.locale.locale() }));
   /**
    * The all-day row: the schedule (confirmed and rejected arrangements) first, then proposals, which take their own
    * lane beneath it. Proposals are hatched, outlined and labelled "Proposed · Needs approval", so they never read as
@@ -252,8 +252,8 @@ export class WeekCalendar {
   protected readonly placements = computed(() => placeInWeek([...this.allDay(), ...this.allDayEvents()], this.weekStart()));
   protected readonly allDayLanes = computed(() => Math.max(1, ...[...this.placements().values()].map((p) => p.lane + 1)));
 
-  protected readonly childNames = childNames;
-  protected readonly parentNames = (event: FamilyEvent) => (event.parents ?? []).map((p) => p.displayName).join(' and ');
+  protected readonly childNames = (children: readonly ChildRef[]) => childNames(children, 3, this.locale.locale());
+  protected readonly parentNames = (event: FamilyEvent) => new Intl.ListFormat(this.locale.locale()).format((event.parents ?? []).map((p) => p.displayName));
   protected readonly timeLabel = (time: string) => timeLabel(time, this.locale.locale());
   /** "All day", "Oct 23 – Oct 24 · All day", or "Oct 23, 8:00 AM – Oct 24" for a timed multi-day event. */
   protected readonly allDayWhen = (event: FamilyEvent) => {
@@ -271,8 +271,8 @@ export class WeekCalendar {
   protected readonly actMeta = (event: FamilyEvent) =>
     [
       inAllDayRow(event) ? this.allDayWhen(event) : this.timeLabel(event.time!),
-      event.children.length ? childNames(event.children) : null,
-      event.parents?.length ? `with ${this.parentNames(event)}` : null,
+      event.children.length ? this.childNames(event.children) : null,
+      event.parents?.length ? translate('dash.withParents', this.locale.locale(), { names: this.parentNames(event) }) : null,
     ]
       .filter(Boolean)
       .join(' · ');
@@ -282,7 +282,7 @@ export class WeekCalendar {
     return this.placements().get(block.key);
   }
 
-  protected readonly range = blockRange;
+  protected readonly range = (block: ScheduleBlock) => blockRange(block, this.locale.locale());
 
   protected isExpanded(block: ScheduleBlock): boolean {
     return this.expanded().has(block.key);

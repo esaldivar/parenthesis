@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -38,11 +39,11 @@ export function lastReminderDay(first: PlainDate): PlainDate {
   return `${year + MAX_YEARS}-${pad(month)}-${pad(Math.min(day, daysInMonth))}`;
 }
 
-const REPEATS: readonly { id: RepeatFrequency; label: string }[] = [
-  { id: 'None', label: 'Doesn’t repeat' },
-  { id: 'Daily', label: 'Every day' },
-  { id: 'Weekly', label: 'Every week' },
-  { id: 'Monthly', label: 'Every month' },
+const REPEATS: readonly { id: RepeatFrequency; label: TranslationKey }[] = [
+  { id: 'None', label: 'calendar.repeat.none' },
+  { id: 'Daily', label: 'feature.every.day' },
+  { id: 'Weekly', label: 'calendar.repeat.weekly' },
+  { id: 'Monthly', label: 'calendar.repeat.monthly' },
 ];
 
 /**
@@ -72,6 +73,7 @@ const REPEATS: readonly { id: RepeatFrequency; label: string }[] = [
   styles: [FORM_STYLES],
 })
 export class ReminderForm implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   protected readonly calendarHeader = CalendarHeader;
   private readonly api = inject(Api);
   private readonly injector = inject(Injector);
@@ -199,7 +201,7 @@ export class ReminderForm implements OnInit {
         : await this.api.createReminder(family.id, input);
       await this.router.navigate(['/calendar'], {
         queryParams: { date: this.form.getRawValue().date },
-        state: { calendarNotice: existing ? `“${saved.title}” was updated.` : `“${saved.title}” is on the calendar.` },
+        state: { calendarNotice: existing ? translate('calendar.event.updated', this.copyLocale.locale(), { title: saved.title }) : translate('calendar.event.created', this.copyLocale.locale(), { title: saved.title }) },
       });
     } catch (error) {
       const problem = toProblem(error);
@@ -224,16 +226,16 @@ export class ReminderForm implements OnInit {
     if (v.date && !isPlainDate(v.date)) {
       errors['startsAt'] = UNREADABLE_DATE;
     } else if (!v.date) {
-      errors['startsAt'] = 'Choose a date for the reminder.';
+      errors['startsAt'] = translate('calendar.reminder.dateRequired', this.copyLocale.locale());
     } else if (v.date < this.today() && v.date !== this.ownDate()) {
       errors['startsAt'] = PAST_DATE;
     }
     if (!v.allDay && !v.time) {
-      errors['time'] = 'Choose a time for the reminder.';
+      errors['time'] = translate('calendar.reminder.timeRequired', this.copyLocale.locale());
     }
     if (v.repeat !== 'None') {
       if (v.ends === 'count' && !(Number.isInteger(v.repeatCount) && v.repeatCount >= 2 && v.repeatCount <= COUNT_MAX)) {
-        errors['repeatCount'] = `Repeat it 2 to ${COUNT_MAX} times.`;
+        errors['repeatCount'] = translate('calendar.repeat.countLimit', this.copyLocale.locale(), { max: COUNT_MAX });
       }
       if (v.ends === 'date' && v.repeatUntil && !isPlainDate(v.repeatUntil)) {
         errors['repeatUntil'] = UNREADABLE_DATE;
@@ -241,7 +243,7 @@ export class ReminderForm implements OnInit {
         v.ends === 'date' &&
         (!v.repeatUntil || (isPlainDate(v.date) && (v.repeatUntil <= v.date || v.repeatUntil > lastReminderDay(v.date))))
       ) {
-        errors['repeatUntil'] = `Choose an end date after the first day and within ${MAX_YEARS} years.`;
+        errors['repeatUntil'] = translate('calendar.reminder.endLimit', this.copyLocale.locale(), { max: MAX_YEARS });
       }
     }
     return errors;

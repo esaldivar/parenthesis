@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -110,6 +111,7 @@ type Step = 'checking' | 'sign-in' | 'form' | 'saved' | 'unusable' | 'wrong-acco
   styles: FORM_STYLES,
 })
 export class ParentPinResetPage implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -207,7 +209,7 @@ export class ParentPinResetPage implements OnInit {
     } else {
       // Never claim the PIN was saved when the result is uncertain.
       this.step.set('form');
-      this.error.set(`We couldn’t confirm your PIN was saved. ${generalMessage(toProblem(error))}`);
+      this.error.set(translate('profile.pin.saveError', this.copyLocale.locale(), { reason: generalMessage(toProblem(error)) }));
     }
   }
 }

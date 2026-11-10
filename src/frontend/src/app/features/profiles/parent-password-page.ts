@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -59,6 +60,7 @@ import { FORM_STYLES } from '../auth/form-styles';
   styles: FORM_STYLES,
 })
 export class ParentPasswordPage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
 
@@ -93,7 +95,7 @@ export class ParentPasswordPage {
     } catch (error) {
       const problem = toProblem(error);
       this.error.set(
-        problem.status === 401 ? 'We couldn’t sign you in with that email and password.' : generalMessage(problem),
+        problem.status === 401 ? translate('profile.password.invalid', this.copyLocale.locale()) : generalMessage(problem),
       );
     } finally {
       this.busy.set(false);

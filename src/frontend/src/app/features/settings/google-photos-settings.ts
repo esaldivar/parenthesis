@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -177,6 +178,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
   `,
 })
 export class GooglePhotosSettings implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
   private readonly openExternal = inject(OPEN_EXTERNAL);
@@ -215,10 +217,10 @@ export class GooglePhotosSettings implements OnInit {
   protected reconnect(status: GooglePhotosStatus): string {
     const n = status.waitingCount;
     return n === 0
-      ? 'Access was removed in your Google account.'
+      ? translate('google.photos.accessRemoved', this.copyLocale.locale())
       : n === 1
-        ? 'Access was removed in your Google account, so 1 photo is waiting. It’ll wait until it expires.'
-        : `Access was removed in your Google account, so ${n} photos are waiting. They’ll wait until they expire.`;
+        ? translate('google.photos.waitingOne', this.copyLocale.locale())
+        : translate('google.photos.waitingMany', this.copyLocale.locale(), { count: n });
   }
 
   protected async connect(): Promise<void> {
@@ -265,7 +267,7 @@ export class GooglePhotosSettings implements OnInit {
       );
       this.confirming.set(false);
       this.toasts.show(
-        'Google Photos is disconnected. What’s already there stays in your Google Photos.',
+        translate('google.photos.disconnected', this.copyLocale.locale()),
       );
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));

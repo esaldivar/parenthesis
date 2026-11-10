@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormGroupDirective, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -143,6 +144,7 @@ import { PARENT_PIN_PATTERN } from './pin-rules';
   ],
 })
 export class ParentPinPage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly auth = inject(AuthStore);
   private readonly api = inject(Api);
   private readonly router = inject(Router);
@@ -186,16 +188,16 @@ export class ParentPinPage {
       const { notified } = await this.api.requestParentPinReset(this.id());
       this.resetMessage.set(
         notified
-          ? 'We’ve emailed you a reset link. It works once, for 15 minutes, and you’ll sign in with your password first.'
-          : 'We couldn’t send the email right now. You can sign in with your password and choose a new PIN in Settings.',
+          ? translate('profile.pin.resetSent', this.copyLocale.locale())
+          : translate('profile.pin.resetSendError', this.copyLocale.locale()),
       );
     } catch (error) {
       const problem = toProblem(error);
       this.resetMessage.set(
         problem.status === 429
-          ? 'We sent you a reset link recently. Check your email, or ask again in a few minutes.'
+          ? translate('profile.pin.resetRecent', this.copyLocale.locale())
           : problem.status === 403
-            ? 'Sign in with your email and password, then choose a new PIN in Settings.'
+            ? translate('profile.pin.usePassword', this.copyLocale.locale())
             : generalMessage(problem),
       );
     } finally {
@@ -228,11 +230,14 @@ export class ParentPinPage {
         await this.router.navigate(['/profiles', 'parent', this.id(), 'password'], { replaceUrl: true });
       } else if (problem.status === 401) {
         const left = problem.triesLeft;
-        this.error.set(`That PIN didn’t work.${left ? ` ${left === 1 ? '1 try' : `${left} tries`} left.` : ''}`);
+        this.error.set([
+          translate('profile.pin.wrong', this.copyLocale.locale()),
+          left ? translate(left === 1 ? 'profile.pin.tryOne' : 'profile.pin.tryMany', this.copyLocale.locale(), { count: left }) : null,
+        ].filter(Boolean).join(' '));
       } else if (problem.status === 403) {
-        this.error.set('Your profile can’t use a PIN on this device. Sign in with your email and password.');
+        this.error.set(translate('profile.pin.unavailable', this.copyLocale.locale()));
       } else if (problem.status === 409) {
-        this.error.set('We couldn’t check that PIN. Please try again.');
+        this.error.set(translate('profile.pin.checkError', this.copyLocale.locale()));
       } else {
         this.error.set(generalMessage(problem));
       }

@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -117,6 +118,7 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
   ],
 })
 export class SharedDeviceSetupPage implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -170,7 +172,7 @@ export class SharedDeviceSetupPage implements OnInit {
     }
     const family = this.auth.currentFamily();
     if (!family) {
-      this.error.set('We couldn’t set up sharing. Try again.');
+      this.error.set(translate('profile.sharing.setupError', this.copyLocale.locale()));
       return;
     }
     this.busy.set(true);
@@ -186,7 +188,7 @@ export class SharedDeviceSetupPage implements OnInit {
       const problem = toProblem(error);
       const fieldError = problem.errors['pin']?.join(' ') ?? problem.errors['name']?.join(' ');
       this.error.set(
-        fieldError ?? (problem.status === 0 || problem.status >= 500 ? 'We couldn’t set up sharing. Try again.' : generalMessage(problem)),
+        fieldError ?? (problem.status === 0 || problem.status >= 500 ? translate('profile.sharing.setupError', this.copyLocale.locale()) : generalMessage(problem)),
       );
     } finally {
       this.busy.set(false);

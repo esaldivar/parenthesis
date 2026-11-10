@@ -1,7 +1,8 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { inject, ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { FundCurrency, RecordEntry, RecordTotals } from '../../core/api/api';
 import { Icon } from '../../shared/icon/icon';
@@ -87,6 +88,7 @@ export type EntryResponse = 'acknowledge' | 'dispute';
   `,
 })
 export class RecordProgress {
+  private readonly copyLocale = inject(LocaleService);
   readonly totals = input.required<RecordTotals>();
   readonly currency = input.required<FundCurrency>();
   readonly target = input<number | null>(null);
@@ -96,12 +98,12 @@ export class RecordProgress {
     const goal = this.target();
     return goal ? Math.min(100, Math.round((this.totals().acknowledgedMinor / goal) * 100)) : 0;
   });
-  protected readonly doneLabel = computed(() => this.kind() === 'fund' ? 'Acknowledged' : 'Receipt confirmed');
-  protected readonly targetLabel = computed(() => this.kind() === 'fund' ? 'agreed target' : 'reference amount');
-  protected readonly shortTarget = computed(() => this.kind() === 'fund' ? 'target' : 'the reference amount');
-  protected readonly pendingLabel = computed(() => this.kind() === 'fund' ? 'awaiting acknowledgment' : 'awaiting confirmation');
+  protected readonly doneLabel = computed(() => this.kind() === 'fund' ? translate('records.history.acknowledged', this.copyLocale.locale()) : translate('records.history.received', this.copyLocale.locale()));
+  protected readonly targetLabel = computed(() => this.kind() === 'fund' ? translate('records.history.target', this.copyLocale.locale()) : translate('records.history.reference', this.copyLocale.locale()));
+  protected readonly shortTarget = computed(() => this.kind() === 'fund' ? translate('records.history.shortTarget', this.copyLocale.locale()) : translate('records.history.referenceAmount', this.copyLocale.locale()));
+  protected readonly pendingLabel = computed(() => this.kind() === 'fund' ? translate('records.history.awaitingAcknowledgment', this.copyLocale.locale()) : translate('records.history.awaitingConfirmation', this.copyLocale.locale()));
   protected readonly reachedLabel = computed(() =>
-    this.kind() === 'fund' ? 'Target reached' : 'Reference amount reached. This isn’t an official record of payment.');
+    this.kind() === 'fund' ? translate('records.history.targetReached', this.copyLocale.locale()) : translate('records.history.referenceReached', this.copyLocale.locale()));
 }
 
 /**
@@ -193,6 +195,7 @@ export class RecordProgress {
   `,
 })
 export class RecordHistory {
+  private readonly copyLocale = inject(LocaleService);
   readonly entries = input.required<readonly RecordEntry[]>();
   readonly currency = input.required<FundCurrency>();
   readonly kind = input<'fund' | 'support'>('fund');
@@ -201,14 +204,14 @@ export class RecordHistory {
   readonly respond = output<{ entry: RecordEntry; response: EntryResponse }>();
 
   protected status(entry: RecordEntry): string {
-    if (entry.status === 'Disputed') return 'Mismatch flagged';
+    if (entry.status === 'Disputed') return translate('records.history.mismatch', this.copyLocale.locale());
     const vendor = entry.paidTo === 'Vendor';
-    if (entry.status === 'Acknowledged') return vendor ? 'Acknowledged' : 'Receipt confirmed';
-    return vendor ? 'Awaiting acknowledgment' : 'Awaiting confirmation';
+    if (entry.status === 'Acknowledged') return vendor ? translate('records.history.acknowledged', this.copyLocale.locale()) : translate('records.history.received', this.copyLocale.locale());
+    return vendor ? translate('records.history.pendingAcknowledgment', this.copyLocale.locale()) : translate('records.history.pendingConfirmation', this.copyLocale.locale());
   }
 
   protected responded(entry: RecordEntry): string {
-    if (entry.status === 'Disputed') return 'Mismatch flagged';
-    return entry.paidTo === 'Vendor' ? 'Acknowledged' : 'Receipt confirmed';
+    if (entry.status === 'Disputed') return translate('records.history.mismatch', this.copyLocale.locale());
+    return entry.paidTo === 'Vendor' ? translate('records.history.acknowledged', this.copyLocale.locale()) : translate('records.history.received', this.copyLocale.locale());
   }
 }

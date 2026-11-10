@@ -54,7 +54,7 @@
       <mat-label>{{ 'feature.repeats' | tr }}</mat-label>
       <mat-select formControlName="repeat">
         @for (r of repeats; track r.id) {
-          <mat-option [value]="r.id">{{ r.label }}</mat-option>
+          <mat-option [value]="r.id">{{ r.label | tr }}</mat-option>
         }
       </mat-select>
       @if (fieldError('repeat'); as e) {

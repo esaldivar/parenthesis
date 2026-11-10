@@ -1,4 +1,6 @@
 import { CalendarCategory, CalendarSearch, FamilyMember } from '../../core/api/api';
+import { AppLocale } from '../../core/i18n/locale.service';
+import { translate } from '../../core/i18n/translations';
 import { PlainDate } from '../dashboard/model';
 import { CATEGORY_LABELS } from './calendar-items';
 
@@ -16,7 +18,10 @@ const SYNONYMS: readonly (readonly [string, CalendarCategory])[] = [
   ['sport', 'Activity'],
 ];
 
-const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+const MONTHS = {
+  en: ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'],
+  'es-419': ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
+};
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -32,30 +37,37 @@ const fullYear = (year: string | undefined, today: PlainDate) =>
   year === undefined ? Number(today.slice(0, 4)) : year.length === 2 ? 2000 + Number(year) : Number(year);
 
 /** 1 to 12 for a month's name or its first three or more letters ("oct", "sept"); otherwise 0. */
-const monthNumber = (name: string) => MONTHS.findIndex((month) => name.length >= 3 && month.startsWith(name)) + 1;
+const monthNumber = (name: string, locale: AppLocale) => MONTHS[locale].findIndex((month) => name.length >= 3 && month.startsWith(name)) + 1;
 
 /**
  * A date the text names, in the family's calendar: "2026-10-12", "10/12", "10/12/26", "Oct 12", "October 12, 2026" or
  * "12 Oct". Without a year it's this year. Anything else is null.
  */
-export function parseDate(text: string, today: PlainDate): PlainDate | null {
-  const t = text.trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');
+export function parseDate(text: string, today: PlainDate, locale: AppLocale = 'en'): PlainDate | null {
+  const normalized = text.trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');
+  const t = locale === 'es-419' ? normalized.replace(/ de /g, ' ') : normalized;
   let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
   if (m) return plainDate(Number(m[1]), Number(m[2]), Number(m[3]));
   m = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/.exec(t);
-  if (m) return plainDate(fullYear(m[3], today), Number(m[1]), Number(m[2]));
-  m = /^([a-z]{3,9})\.? (\d{1,2})(?:st|nd|rd|th)?(?: (\d{4}))?$/.exec(t);
-  if (m && monthNumber(m[1])) return plainDate(fullYear(m[3], today), monthNumber(m[1]), Number(m[2]));
-  m = /^(\d{1,2})(?:st|nd|rd|th)? ([a-z]{3,9})\.?(?: (\d{4}))?$/.exec(t);
-  if (m && monthNumber(m[2])) return plainDate(fullYear(m[3], today), monthNumber(m[2]), Number(m[1]));
+  if (m) {
+    const [first, second] = [Number(m[1]), Number(m[2])];
+    return locale === 'es-419'
+      ? plainDate(fullYear(m[3], today), second, first)
+      : plainDate(fullYear(m[3], today), first, second);
+  }
+  m = /^([a-z]{3,10})\.? (\d{1,2})(?:st|nd|rd|th)?(?: (\d{4}))?$/.exec(t);
+  if (m && monthNumber(m[1], locale)) return plainDate(fullYear(m[3], today), monthNumber(m[1], locale), Number(m[2]));
+  m = /^(\d{1,2})(?:st|nd|rd|th)? ([a-z]{3,10})\.?(?: (\d{4}))?$/.exec(t);
+  if (m && monthNumber(m[2], locale)) return plainDate(fullYear(m[3], today), monthNumber(m[2], locale), Number(m[1]));
   return null;
 }
 
 /** Event types the text names: a label it contains or that contains it ("school", "dad parenting time", "medi"). */
-function categoriesIn(text: string): CalendarCategory[] {
+function categoriesIn(text: string, locale: AppLocale): CalendarCategory[] {
   const found = new Set<CalendarCategory>();
-  for (const [category, label] of Object.entries(CATEGORY_LABELS) as [CalendarCategory, string][]) {
-    const name = label.toLowerCase();
+  for (const category of Object.keys(CATEGORY_LABELS) as (keyof typeof CATEGORY_LABELS)[]) {
+    if (category === 'Task' || category === 'Reminder') continue;
+    const name = translate(CATEGORY_LABELS[category], locale).toLowerCase();
     if (text.includes(name) || (text.length >= 3 && name.startsWith(text))) found.add(category);
   }
   for (const [word, category] of SYNONYMS) {
@@ -71,12 +83,12 @@ const words = (text: string) => text.split(/[^\p{L}\p{N}']+/u).filter(Boolean);
  * Parenting time can be narrowed to one parent by name ("Sam parenting time"). Null when there's nothing to search.
  * Plain matching only: no AI or guessing beyond these rules.
  */
-export function toSearch(text: string, members: readonly FamilyMember[], today: PlainDate): CalendarSearch | null {
+export function toSearch(text: string, members: readonly FamilyMember[], today: PlainDate, locale: AppLocale = 'en'): CalendarSearch | null {
   const trimmed = text.trim().replace(/\s+/g, ' ');
-  const on = parseDate(trimmed, today);
+  const on = parseDate(trimmed, today, locale);
   if (!on && trimmed.length < MIN_SEARCH_LENGTH) return null;
   const lower = trimmed.toLowerCase();
-  const categories = on ? [] : categoriesIn(lower);
+  const categories = on ? [] : categoriesIn(lower, locale);
   const said = words(lower);
   const named = (m: FamilyMember) => {
     const name = m.displayName.toLowerCase();

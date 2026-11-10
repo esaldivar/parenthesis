@@ -135,7 +135,9 @@ export class AllergiesFoodSection extends RevisionedSection<AllergiesFoodView, A
   private readonly locale = inject(LocaleService);
   readonly children = input<readonly Child[]>([]);
   protected readonly marks = sectionUpdates('allergiesFood', this.childId);
-  protected readonly savedNotice = 'Allergies & Food saved.';
+  protected get savedNotice(): string {
+    return translate('essentials.allergies.saved', this.locale.locale());
+  }
   private readonly document = inject(DOCUMENT);
   protected readonly exportOpen = signal(false);
   protected readonly exporting = signal(false);
@@ -166,12 +168,12 @@ export class AllergiesFoodSection extends RevisionedSection<AllergiesFoodView, A
       link.download = fileName;
       try {
         link.click();
-        this.exportNotice.set('Allergy PDF ready.');
+        this.exportNotice.set(translate('essentials.allergies.pdfReady', this.locale.locale()));
       } finally {
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     } catch {
-      this.exportNotice.set('The allergy PDF couldn’t be downloaded. Try again.');
+      this.exportNotice.set(translate('essentials.allergies.pdfError', this.locale.locale()));
     } finally {
       this.exporting.set(false);
     }

@@ -85,7 +85,10 @@ export class TaskDetails implements OnInit {
   protected readonly done = computed(() => this.current().completedAt !== null);
   protected readonly progressText = computed(() => {
     const t = this.current();
-    return `${t.progressDone} of ${t.progressTotal} ${this.anyRequired() ? 'required ' : ''}done`;
+    return translate(this.anyRequired() ? 'calendar.task.requiredProgress' : 'calendar.task.progress', this.locale.locale(), {
+      done: t.progressDone,
+      total: t.progressTotal,
+    });
   });
   private readonly me = computed(() => this.members().find((m) => m.isYou)?.membershipId);
   protected readonly editedBy = computed(() => {
@@ -100,7 +103,7 @@ export class TaskDetails implements OnInit {
   );
   protected readonly completedText = computed(() => {
     const t = this.current();
-    return t.completedBy && t.completedAt ? `Done by ${this.who(t.completedBy)} · ${this.at(t.completedAt)}` : null;
+    return t.completedBy && t.completedAt ? translate('calendar.task.completedBy', this.locale.locale(), { name: this.who(t.completedBy), date: this.at(t.completedAt) }) : null;
   });
 
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -115,7 +118,7 @@ export class TaskDetails implements OnInit {
   }
 
   protected tickedText(item: ChecklistItem): string | null {
-    return item.completedBy && item.completedAt ? `Ticked by ${this.who(item.completedBy)} · ${this.at(item.completedAt)}` : null;
+    return item.completedBy && item.completedAt ? translate('calendar.task.checkedBy', this.locale.locale(), { name: this.who(item.completedBy), date: this.at(item.completedAt) }) : null;
   }
 
   /** aria-disabled preserves keyboard focus; prevent the native checkbox toggle while a save is in flight. */
@@ -158,7 +161,7 @@ export class TaskDetails implements OnInit {
     this.error.set(null);
     try {
       await this.api.deleteTask(this.familyId(), this.current().id);
-      this.changed.emit(`“${this.current().title}” was deleted.`);
+      this.changed.emit(translate('calendar.event.deleted', this.locale.locale(), { title: this.current().title }));
     } catch (error) {
       this.fail(error);
     } finally {
@@ -240,6 +243,6 @@ export class TaskDetails implements OnInit {
   /** "Oct 20, 3:15 PM" in the family's time zone. */
   private at(instant: string): string {
     const local = toFamilyLocal(instant, this.timeZone());
-    return `${monthDay(local.slice(0, 10))}, ${timeLabel(local.slice(11))}`;
+    return `${monthDay(local.slice(0, 10), this.locale.locale())}, ${timeLabel(local.slice(11), this.locale.locale())}`;
   }
 }

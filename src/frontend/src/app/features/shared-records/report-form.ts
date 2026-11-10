@@ -1,5 +1,6 @@
-import { TranslatePipe } from '../../core/i18n/translations';
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { inject, ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { FundCurrency, PaidTo, ReportDraft } from '../../core/api/api';
@@ -145,6 +146,7 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
   `,
 })
 export class ReportForm {
+  private readonly copyLocale = inject(LocaleService);
   readonly kind = input.required<'fund' | 'support'>();
   readonly currency = input<FundCurrency>('USD');
   readonly submitting = input(false);
@@ -169,11 +171,11 @@ export class ReportForm {
     picker.value = '';
     if (!chosen) return;
     if (!TYPES.has(chosen.type) || chosen.size === 0) {
-      this.problem.set('Attach a PDF, PNG or JPEG file.');
+      this.problem.set(translate('records.attachment.format', this.copyLocale.locale()));
       return;
     }
     if (chosen.size > MAX_BYTES) {
-      this.problem.set('Attach a file of 10 MB or less.');
+      this.problem.set(translate('records.attachment.size', this.copyLocale.locale()));
       return;
     }
     this.problem.set('');
@@ -189,15 +191,15 @@ export class ReportForm {
     const amountMinor = parseMinor(this.amount());
     const file = this.file();
     if (!amountMinor) {
-      this.problem.set('Enter an amount above zero, using up to two decimal places.');
+      this.problem.set(translate('records.report.amount', this.copyLocale.locale()));
       return;
     }
     if (!this.paidOn() || this.paidOn() > this.today) {
-      this.problem.set('Enter the date the money moved. It can’t be in the future.');
+      this.problem.set(translate('records.report.date', this.copyLocale.locale()));
       return;
     }
     if (!file) {
-      this.problem.set('Attach a payment confirmation. A report can’t be sent without one.');
+      this.problem.set(translate('records.report.attachment', this.copyLocale.locale()));
       return;
     }
     this.problem.set('');

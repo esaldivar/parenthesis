@@ -9,9 +9,11 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
-- [ ] **English and Spanish localization (#534).** Finish coverage for app-generated dynamic messages, validation,
-  notifications, and accessibility announcements. Walk the parent routes on Development in both languages at phone
-  and desktop widths, including both themes, shared-device sign-in, and recipient-language email delivery.
+- [ ] **English and Spanish localization (#534).** Review remaining runtime copy, including API validation and
+  stored approval summaries, Family Memories export and quota messages, Child Essentials update announcements,
+  and the privacy notice storage table. Use structured codes or fields where an API response mixes app copy and
+  family-entered text. Walk the parent routes on Development in both languages at phone and desktop widths,
+  including both themes, shared-device sign-in, and recipient-language email delivery.
 - [ ] **From Your Kids (#531).** Verify the integrated release candidate in both themes and with a real screen reader.
   The owner approved the rendered artwork and photos preview on November 8, 2026. Connect parent-authorized
   content and actions once the M5 service is available.

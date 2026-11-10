@@ -121,7 +121,9 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
 export class SchoolSection extends RevisionedSection<SchoolView, SchoolView['values'], SchoolHistoryPage['entries'][number]> {
   private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('school', this.childId);
-  protected readonly savedNotice = 'School saved.';
+  protected get savedNotice(): string {
+    return translate('essentials.school.saved', this.locale.locale());
+  }
   protected readonly grades = ['Pre-K', 'Kindergarten', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
   protected readonly form = new FormGroup({
     homeroomTeacher: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),

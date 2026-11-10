@@ -1,3 +1,5 @@
+import { AppLocale } from '../../core/i18n/locale.service';
+import { translate } from '../../core/i18n/translations';
 import { Caregiver, ChildRef, LocalDateTime, ParentingTime, PlainDate, ScheduleStatus } from './model';
 import { addDays, dateTimeLabel, datePart, daysBetween } from './week';
 
@@ -27,7 +29,7 @@ const keyOf = (p: ParentingTime) =>
  * Groups parenting time for display. With `split`, every child gets their own block (the optional "split this
  * week" view). Order: by start time, then caregiver, then the children's names.
  */
-export function groupParentingTime(entries: readonly ParentingTime[], options: { split: boolean }): ScheduleBlock[] {
+export function groupParentingTime(entries: readonly ParentingTime[], options: { split: boolean; locale?: AppLocale }): ScheduleBlock[] {
   const groups = new Map<string, ParentingTime[]>();
   for (const entry of entries) {
     const key = options.split ? `${keyOf(entry)}|${entry.child.id}` : keyOf(entry);
@@ -46,7 +48,7 @@ export function groupParentingTime(entries: readonly ParentingTime[], options: {
         end: first.end,
         status: first.status,
         changePending: first.changePending ?? false,
-        title: first.title ?? `Time with ${first.caregiver.displayName}`,
+        title: first.title ?? translate('dash.timeWith', options.locale ?? 'en', { name: first.caregiver.displayName }),
         items,
       };
     })
@@ -59,12 +61,12 @@ export function groupParentingTime(entries: readonly ParentingTime[], options: {
 }
 
 /** "Kai", "Kai & Aurora", "Aurora, Kai & Mia", "Aurora, Kai & 2 more" */
-export function childNames(children: readonly ChildRef[], maxNamed = 3): string {
+export function childNames(children: readonly ChildRef[], maxNamed = 3, locale: AppLocale = 'en'): string {
   const names = children.map((c) => c.name);
   if (names.length <= 1) return names[0] ?? '';
-  if (names.length <= maxNamed) return `${names.slice(0, -1).join(', ')} & ${names.at(-1)}`;
+  if (names.length <= maxNamed) return locale === 'en' ? `${names.slice(0, -1).join(', ')} & ${names.at(-1)}` : new Intl.ListFormat(locale).format(names);
   const shown = names.slice(0, maxNamed - 1);
-  return `${shown.join(', ')} & ${names.length - shown.length} more`;
+  return translate('dash.childrenMore', locale, { names: shown.join(', '), count: names.length - shown.length });
 }
 
 export interface WeekPlacement {
@@ -110,12 +112,13 @@ export function placeInWeek(
 }
 
 /** "Sun, Oct 11 – Sat, Oct 17 · All day" for whole days, otherwise the exact times. */
-export function blockRange(block: Pick<ScheduleBlock, 'start' | 'end'>): string {
-  const dayOnly = (value: string) => dateTimeLabel(value).replace(/, \d.*$/, '');
+export function blockRange(block: Pick<ScheduleBlock, 'start' | 'end'>, locale: AppLocale = 'en'): string {
+  const dayOnly = (value: string) => dateTimeLabel(value, locale).split(', ').slice(0, -1).join(', ');
   if (block.start.endsWith('T00:00') && block.end.endsWith('T00:00')) {
     const first = dayOnly(block.start);
     const last = dayOnly(`${addDays(datePart(block.end), -1)}T00:00`);
-    return first === last ? `${first} · All day` : `${first} – ${last} · All day`;
+    const allDay = translate('feature.all.day', locale);
+    return first === last ? `${first} · ${allDay}` : `${first} – ${last} · ${allDay}`;
   }
-  return `${dateTimeLabel(block.start)} – ${dateTimeLabel(block.end)}`;
+  return `${dateTimeLabel(block.start, locale)} – ${dateTimeLabel(block.end, locale)}`;
 }

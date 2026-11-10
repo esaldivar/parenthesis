@@ -88,7 +88,7 @@ describe('SharedRecordsPage', () => {
     expect(api.sharedRecordsPdf).toHaveBeenCalledTimes(2);
     expect(api.sharedRecordsPdf).toHaveBeenLastCalledWith('family', '2026-11-07', '2026-11-09');
 
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     try {
       currentFamily.set({ id: 'family', name: 'Family', timeZone: 'UTC', role: 'Child' });
       resolve(new Blob(['%PDF'], { type: 'application/pdf' }));

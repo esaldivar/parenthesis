@@ -1,5 +1,5 @@
 import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -116,7 +116,7 @@ export class EventEditPage implements OnInit {
   /** "Your parenting time" or "Test mom's parenting time": whose time it is, which never changes (#246). */
   protected readonly caregiverLabel = computed(() => {
     const caregiver = this.parents().find((p) => p.membershipId === this.event()?.caregiverMembershipId);
-    return caregiver?.isYou ? 'Your parenting time.' : `${caregiver?.displayName ?? 'The other parent'}’s parenting time.`;
+    return caregiver?.isYou ? translate('calendar.edit.parentingOwn', this.locale.locale()) : translate('calendar.edit.parentingOther', this.locale.locale(), { name: caregiver?.displayName ?? translate('common.otherParent', this.locale.locale()) });
   });
   protected readonly parents = computed(() => this.members().filter((m) => m.role === 'Parent'));
   protected readonly coParent = computed(() => this.parents().find((m) => !m.isYou)?.displayName ?? null);
@@ -133,13 +133,13 @@ export class EventEditPage implements OnInit {
     }
     if (!canManageEvent(event, this.members())) {
       return event.category === 'ParentingTime'
-        ? 'You can view this event, but only the parent whose time it is can edit or cancel it. You can request a swap from its details.'
-        : 'Only the parent who added this unavailable time can edit or cancel it.';
+        ? translate('calendar.edit.readOnlyParenting', this.locale.locale())
+        : translate('calendar.edit.readOnlyUnavailable', this.locale.locale());
     }
     if (event.status === 'PendingApproval' || event.pendingChange !== 'None') {
-      return 'This event has a request waiting for an answer. Wait for it, or withdraw it, before changing the event again.';
+      return translate('calendar.edit.pending', this.locale.locale());
     }
-    return event.status === 'Confirmed' ? null : 'This event can’t be changed any more.';
+    return event.status === 'Confirmed' ? null : translate('calendar.edit.closed', this.locale.locale());
   });
   /** The form as loaded, to tell a change that needs approval from a notes-only one. */
   private readonly loaded = signal<Readonly<Record<string, unknown>> | null>(null);
@@ -151,10 +151,10 @@ export class EventEditPage implements OnInit {
   });
   /** A repeating event (#193): which dates the change applies to. */
   protected readonly scope = signal<EditScope>('this');
-  protected readonly scopes: readonly { id: EditScope; label: string }[] = [
-    { id: 'this', label: 'This event' },
-    { id: 'following', label: 'This and following' },
-    { id: 'all', label: 'All events' },
+  protected readonly scopes: readonly { id: EditScope; label: TranslationKey }[] = [
+    { id: 'this', label: 'feature.this.event' },
+    { id: 'following', label: 'calendar.scope.following' },
+    { id: 'all', label: 'feature.all.events' },
   ];
   protected readonly repeats = computed(() => {
     const event = this.event();
@@ -182,10 +182,10 @@ export class EventEditPage implements OnInit {
 
   protected readonly note = computed(() =>
     this.needsApproval()
-      ? `Changes to the title, date, time or place go to ${this.coParent()} for approval. Until they answer, the event stays as it is and shows “Change pending”. Notes change at once.`
+      ? translate('calendar.edit.approval', this.locale.locale(), { name: this.coParent() ?? translate('common.coParent', this.locale.locale()) })
       : this.unavailable()
-        ? `Changes apply at once. ${this.coParent() ?? 'Your co-parent'} sees only “Unavailable”; your note stays private to you.`
-        : 'Changes apply at once, for both of you.',
+        ? translate('calendar.edit.unavailable', this.locale.locale(), { name: this.coParent() ?? translate('common.coParent', this.locale.locale()) })
+        : translate('calendar.edit.immediate', this.locale.locale()),
   );
 
   ngOnInit(): void {
@@ -204,7 +204,7 @@ export class EventEditPage implements OnInit {
       this.event.set(event);
     } catch (error) {
       const problem = toProblem(error);
-      this.loadError.set(problem.status === 404 ? 'We couldn’t find that event. It may have been cancelled.' : generalMessage(problem));
+      this.loadError.set(problem.status === 404 ? translate('calendar.event.missing', this.locale.locale()) : generalMessage(problem));
     }
   }
 
@@ -239,15 +239,15 @@ export class EventEditPage implements OnInit {
     try {
       const scope = this.scope();
       const saved = await this.api.updateEvent(family.id, event.id, this.change(), scope);
-      const coParent = this.coParent() ?? 'your co-parent';
+      const coParent = this.coParent() ?? translate('common.coParentLower', this.locale.locale());
       const head =
         saved.pendingChange === 'Modify'
-          ? `Sent to ${coParent} for approval. “${event.title}” stays as it is until they answer.`
+          ? translate('calendar.edit.sent', this.locale.locale(), { name: coParent, title: event.title })
           : scope === 'all'
-            ? `Every date of “${saved.title}” was updated.`
+            ? translate('calendar.edit.updatedAll', this.locale.locale(), { title: saved.title })
             : scope === 'following'
-              ? `“${saved.title}” was updated from ${dayLong(this.form.getRawValue().startDate)} on.`
-              : `“${saved.title}” was updated.`;
+              ? translate('calendar.edit.updatedFollowing', this.locale.locale(), { title: saved.title, date: dayLong(this.form.getRawValue().startDate, this.locale.locale()) })
+              : translate('calendar.event.updated', this.locale.locale(), { title: saved.title });
       const notes = saved.warnings.map((w) => warningText(w, this.coParent()));
       await this.router.navigate(['/calendar'], {
         queryParams: { date: this.form.getRawValue().startDate },

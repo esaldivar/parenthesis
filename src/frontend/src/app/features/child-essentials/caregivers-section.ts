@@ -225,7 +225,7 @@ export class CaregiversSection {
         this.error.set(`Couldn’t save for ${failed.map(child => child.firstName).join(', ')}. Retry to add the missing caregiver.`);
         return;
       }
-      this.notice.set('Shared caregiver saved for all children.');
+      this.notice.set(translate('essentials.caregiver.savedAll', this.locale.locale()));
       this.editing.set(false);
     } finally {
       this.busy.set(false);
@@ -249,7 +249,7 @@ export class CaregiversSection {
     this.notice.set('');
     try {
       await update();
-      this.notice.set('Shared caregivers updated.');
+      this.notice.set(translate('essentials.caregiver.updated', this.locale.locale()));
       await this.load();
       return true;
     } catch (error) {
@@ -260,12 +260,12 @@ export class CaregiversSection {
           await this.load();
           this.editing.set(false);
           this.removing.set(null);
-          this.error.set('The caregiver list was updated. Review the current list before trying again.');
+          this.error.set(translate('essentials.caregiver.conflict', this.locale.locale()));
         }
       } else {
         const errors = error instanceof HttpErrorResponse && error.status === 400
           ? error.error?.errors as Record<string, string[]> | undefined : undefined;
-        this.error.set(errors ? Object.values(errors).flat().join(' ') : 'The caregiver update couldn’t be saved.');
+        this.error.set(errors ? Object.values(errors).flat().join(' ') : translate('essentials.caregiver.error', this.locale.locale()));
       }
       return false;
     } finally {

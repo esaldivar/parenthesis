@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -92,7 +93,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
             >
               <mat-select-trigger>{{ summary() }}</mat-select-trigger>
               @for (type of types; track type.value) {
-                <mat-option [value]="type.value">{{ type.label }}</mat-option>
+                <mat-option [value]="type.value">{{ type.label | tr }}</mat-option>
               }
             </mat-select>
             <mat-hint id="google-types-hint"
@@ -206,6 +207,7 @@ export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXT
   `,
 })
 export class GoogleCalendarSettings implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
   private readonly openExternal = inject(OPEN_EXTERNAL);
@@ -223,21 +225,21 @@ export class GoogleCalendarSettings implements OnInit {
   protected readonly selection = signal<readonly GoogleCopyType[]>([]);
 
   /** In the calendar's order and words; the co-parent's unavailable time is off until a parent ticks it. */
-  protected readonly types: readonly { value: GoogleCopyType; label: string; short?: string }[] = [
-    { value: 'ParentingTime', label: 'Parenting time' },
-    { value: 'Joint', label: 'Family events' },
-    { value: 'School', label: 'School' },
-    { value: 'Medical', label: 'Medical' },
-    { value: 'Dental', label: 'Dental' },
-    { value: 'Activity', label: 'Activities' },
-    { value: 'Birthday', label: 'Birthdays' },
-    { value: 'Holiday', label: 'Holidays' },
-    { value: 'Other', label: 'Other events' },
-    { value: 'MyUnavailable', label: 'My unavailable time' },
+  protected readonly types: readonly { value: GoogleCopyType; label: TranslationKey; short?: TranslationKey }[] = [
+    { value: 'ParentingTime', label: 'feature.parenting.time' },
+    { value: 'Joint', label: 'google.calendar.types.joint' },
+    { value: 'School', label: 'feature.school' },
+    { value: 'Medical', label: 'calendar.type.medical' },
+    { value: 'Dental', label: 'calendar.type.dental' },
+    { value: 'Activity', label: 'google.calendar.types.activities' },
+    { value: 'Birthday', label: 'google.calendar.types.birthdays' },
+    { value: 'Holiday', label: 'google.calendar.types.holidays' },
+    { value: 'Other', label: 'google.calendar.types.other' },
+    { value: 'MyUnavailable', label: 'google.calendar.types.ownUnavailable' },
     {
       value: 'CoParentUnavailable',
-      label: 'My co-parent’s unavailable time (shown only as “Unavailable”)',
-      short: 'my co-parent’s unavailable time',
+      label: 'google.calendar.types.parentUnavailable',
+      short: 'google.calendar.types.parentUnavailableShort',
     },
   ];
 
@@ -270,8 +272,8 @@ export class GoogleCalendarSettings implements OnInit {
   /** "All event types" or "10 of 11 event types", short enough for a phone. */
   protected readonly summary = computed(() => {
     const chosen = this.selection().length;
-    if (chosen === this.types.length) return 'All event types';
-    return chosen === 0 ? 'Nothing is copied' : `${chosen} of ${this.types.length} event types`;
+    if (chosen === this.types.length) return translate('google.calendar.typesAll', this.copyLocale.locale());
+    return chosen === 0 ? translate('google.calendar.typesNone', this.copyLocale.locale()) : translate('google.calendar.typesCount', this.copyLocale.locale(), { count: chosen, total: this.types.length });
   });
 
   /** What isn't copied, spelled out under the list while only a few are left out. */
@@ -279,10 +281,10 @@ export class GoogleCalendarSettings implements OnInit {
     const chosen = this.selection();
     const missing = this.types
       .filter((t) => !chosen.includes(t.value))
-      .map((t) => t.short ?? t.label.toLowerCase());
+      .map((t) => translate(t.short ?? t.label, this.copyLocale.locale()).toLocaleLowerCase(this.copyLocale.locale()));
     return missing.length === 0 || missing.length > 3 || chosen.length === 0
       ? ''
-      : `Not copied: ${missing.join(', ')}.`;
+      : translate('google.calendar.typesExcluded', this.copyLocale.locale(), { types: missing.join(', ') });
   });
 
   /** Saves when the list closes, if anything changed. */
@@ -302,7 +304,7 @@ export class GoogleCalendarSettings implements OnInit {
       const saved = await this.api.googleCalendarCopyTypes(this.familyId(), next);
       this.status.set(saved);
       this.selection.set(saved.copyTypes);
-      this.saved.set('Saved. Google Calendar updates within a minute or two.');
+      this.saved.set(translate('google.calendar.saved', this.copyLocale.locale()));
     } catch (error) {
       // Show the choice as it was last saved.
       this.selection.set(current.copyTypes);
@@ -334,7 +336,7 @@ export class GoogleCalendarSettings implements OnInit {
           },
       );
       this.confirming.set(false);
-      this.toasts.show('Google Calendar is disconnected.');
+      this.toasts.show(translate('google.calendar.disconnected', this.copyLocale.locale()));
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
     } finally {
