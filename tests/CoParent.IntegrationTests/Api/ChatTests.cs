@@ -389,13 +389,36 @@ public sealed class ChatTests(ApiFactory api) : IAsyncLifetime
         // Names and family-local times, and a file name with both dates.
         var preview = await JsonAsync(await f.Dad.GetAsync(f.Path("chat/transcripts/preview?from=2026-11-03&to=2026-11-04")));
         Assert.Equal("Chat_2026-11-03_to_2026-11-04.pdf", preview.GetProperty("fileName").GetString());
-        Assert.Equal("Chat with Mom", preview.GetProperty("title").GetString());
-        Assert.Equal("Nov 3–4, 2026", preview.GetProperty("rangeLabel").GetString());
+        Assert.Equal("Communication Transcript", preview.GetProperty("title").GetString());
+        Assert.Equal("November 3, 2026 – November 4, 2026", preview.GetProperty("rangeLabel").GetString());
         var first = preview.GetProperty("days")[0];
         Assert.Equal("Tuesday, November 3, 2026", first.GetProperty("label").GetString());
-        Assert.Equal("11:58 PM", first.GetProperty("messages")[0].GetProperty("time").GetString());
+        Assert.Equal("November 3, 2026 • 11:58:30 PM UTC-06:00", first.GetProperty("messages")[0].GetProperty("time").GetString());
         Assert.Equal("Mom", first.GetProperty("messages")[0].GetProperty("sender").GetString());
         Assert.Equal("Dad", preview.GetProperty("days")[1].GetProperty("messages")[0].GetProperty("sender").GetString());
+    }
+
+    [Fact]
+    public async Task Spanish_transcript_keeps_original_text_and_disambiguates_the_repeated_hour()
+    {
+        using var f = await FamilyAsync();
+        const string firstText = "Line one 👍🏽\n  Line two";
+        api.Clock.SetUtcNow(DateTimeOffset.Parse("2026-11-01T06:30:01Z", CultureInfo.InvariantCulture));
+        await SendAsync(f.Mom, f, firstText);
+        api.Clock.SetUtcNow(DateTimeOffset.Parse("2026-11-01T07:30:01Z", CultureInfo.InvariantCulture));
+        await SendAsync(f.Dad, f, "Same clock time, different offset");
+
+        using var response = await f.Dad.GetAsync(f.Path("chat/transcripts/preview?from=2026-11-01&to=2026-11-01&language=es-419"));
+        var preview = await JsonAsync(response);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        Assert.Equal("Transcripción de comunicaciones", preview.GetProperty("title").GetString());
+        Assert.Equal("Dad y Mom", preview.GetProperty("participants").GetString());
+        var day = preview.GetProperty("days")[0];
+        Assert.Equal("domingo, 1 de noviembre de 2026", day.GetProperty("label").GetString());
+        var messages = day.GetProperty("messages");
+        Assert.Equal(firstText, messages[0].GetProperty("text").GetString());
+        Assert.Equal("1 de noviembre de 2026 • 01:30:01 UTC-05:00", messages[0].GetProperty("time").GetString());
+        Assert.Equal("1 de noviembre de 2026 • 01:30:01 UTC-06:00", messages[1].GetProperty("time").GetString());
     }
 
     [Fact]
@@ -430,11 +453,11 @@ public sealed class ChatTests(ApiFactory api) : IAsyncLifetime
         var play = await EventAsync(f.Dad, f, new { category = "Joint", title = "School play", startsAt = start, endsAt = start.AddHours(1) });
         await SendEventAsync(f.Dad, f, "And this?", play);
 
-        // A shared proposal reads as one.
+        // A transcript records only the presence of a calendar link.
         var preview = await JsonAsync(await f.Mom.GetAsync(f.Path("chat/transcripts/preview")));
         var shared = preview.GetProperty("days").EnumerateArray().SelectMany(d => d.GetProperty("messages").EnumerateArray()).Last();
-        Assert.Contains("School play", shared.GetProperty("event").GetString(), StringComparison.Ordinal);
-        Assert.Contains("(pending approval)", shared.GetProperty("event").GetString(), StringComparison.Ordinal);
+        Assert.Equal("Linked Calendar Event", shared.GetProperty("event").GetString());
+        Assert.DoesNotContain("School play", preview.GetRawText(), StringComparison.Ordinal);
 
         // Download: a real PDF, never cached, named for the range.
         var download = await f.Mom.GetAsync(f.Path("chat/transcripts/pdf?download=true"));
