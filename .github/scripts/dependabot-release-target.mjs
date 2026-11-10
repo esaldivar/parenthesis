@@ -69,9 +69,13 @@ async function main() {
   const repository = process.env.GITHUB_REPOSITORY;
   const api = githubApi(repository, process.env.GH_TOKEN);
   const event = process.env.GITHUB_EVENT_PATH ? JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')) : {};
-  console.log(`Dependabot target: ${await routeUpdates(api, repository, event)}`);
+  await routeUpdates(api, repository, event);
+  console.log('Dependabot release routing completed.');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch(error => { console.error(error.message); process.exitCode = 1; });
+  main().catch(() => {
+    console.error('Dependabot release routing failed. Check the GitHub API permissions and active release milestone.');
+    process.exitCode = 1;
+  });
 }
