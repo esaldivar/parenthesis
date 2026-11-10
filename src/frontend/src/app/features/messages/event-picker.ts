@@ -228,7 +228,7 @@ export class ChatEventPicker {
 
   protected readonly statusText = computed(() => {
     if (this.searching()) {
-      return 'Searching…';
+      return translate('calendar.search.loading', this.copyLocale.locale());
     }
     if (this.error()) {
       return '';
@@ -238,7 +238,9 @@ export class ChatEventPicker {
       return translate('chat.eventSearch.hint', this.copyLocale.locale());
     }
     const count = found.length + this.earlier().length;
-    return count === 0 ? translate('chat.eventSearch.empty', this.copyLocale.locale()) : `${count} ${count === 1 ? 'event' : 'events'} found.`;
+    const locale = this.copyLocale.locale();
+    if (count === 0) return translate('chat.eventSearch.empty', locale);
+    return translate(count === 1 ? 'chat.eventSearch.foundOne' : 'chat.eventSearch.foundMany', locale, { count });
   });
 
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>('search');

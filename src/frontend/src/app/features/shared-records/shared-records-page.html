@@ -58,7 +58,7 @@
               <article aria-labelledby="record-title">
                 <div class="badges">
                   <span class="badge">{{ 'feature.shared.fund' | tr }}</span>
-                  <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] }}</span>
+                  <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] | tr }}</span>
                 </div>
                 <h2 #recordHeading id="record-title" tabindex="-1">{{ fund.title }}</h2>
                 @let mine = fund.proposerId === data.membershipId;

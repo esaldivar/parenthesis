@@ -231,9 +231,11 @@ export class EventPhotosSection {
       return translate('memory.upload.limitReached', this.copyLocale.locale(), { limit: u.cap });
     }
     if (u.used === 0 && this.total() === 0) {
-      return `No photos yet. Add up to ${u.cap} of your own, ${u.maxPerUpload} at a time. ${
-        this.coParent() ? translate('memory.upload.privateUntilShared', this.copyLocale.locale()) : translate('memory.upload.private', this.copyLocale.locale())
-      }`;
+      const locale = this.copyLocale.locale();
+      return translate(this.coParent() ? 'memory.upload.emptyWithCoParent' : 'memory.upload.empty', locale, {
+        limit: u.cap,
+        batch: u.maxPerUpload,
+      });
     }
     return translate('memory.upload.quota', this.copyLocale.locale(), { remaining: u.remaining, used: u.used, limit: u.cap, days: RETENTION_DAYS });
   });
@@ -248,7 +250,7 @@ export class EventPhotosSection {
     }
     const uploads = this.view()?.uploads;
     return uploads && room < uploads.maxPerUpload
-      ? `This event has room for ${room} more of your photos. Choose ${room === 1 ? '1 photo' : `${room} or fewer`}.`
+      ? translate(room === 1 ? 'memory.upload.roomOne' : 'memory.upload.roomMany', this.copyLocale.locale(), { room })
       : translate('memory.upload.batchLimit', this.copyLocale.locale(), { limit: room, max: room });
   });
   protected readonly storageLeft = computed(() => {
@@ -270,7 +272,7 @@ export class EventPhotosSection {
     }
     return failed
       ? translate('memory.upload.partial', this.copyLocale.locale(), { added: this.added(), total: picks.length, failed })
-      : `${this.added() === 1 ? 'Your photo was' : `All ${this.added()} photos were`} added.`;
+      : translate(this.added() === 1 ? 'memory.upload.addedOne' : 'memory.upload.addedMany', this.copyLocale.locale(), { count: this.added() });
   });
 
   protected readonly heading = computed(() => `photos-heading-${this.eventId()}`);
@@ -339,8 +341,11 @@ export class EventPhotosSection {
   }
 
   protected photoLabel(photo: EventPhoto, shown: ShownBatch, index: number): string {
-    const whose = shown.batch.yours ? 'yours' : translate('memory.photos.sharedBy', this.copyLocale.locale(), { name: this.coParent() ?? 'your co-parent' });
-    return translate('memory.photos.position', this.copyLocale.locale(), { position: shown.first + index, total: this.total(), owner: whose });
+    const locale = this.copyLocale.locale();
+    const whose = shown.batch.yours
+      ? translate('memory.photos.yours', locale)
+      : translate('memory.photos.sharedBy', locale, { name: this.coParent() ?? translate('common.coParentLower', locale) });
+    return translate('memory.photos.position', locale, { position: shown.first + index, total: this.total(), owner: whose });
   }
 
   // --- Adding photos -------------------------------------------------------------------------------------------------
