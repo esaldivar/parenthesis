@@ -29,10 +29,11 @@ public static class SharedRecordsModule
         services.AddSingleton<ISharedRecordsCleanup, AttachmentCleanup>();
         services.AddHostedService<AttachmentCleanupWorker>();
         // Each report uploads a file of up to 10 MB, so each parent gets a bounded hourly allowance.
-        services.Configure<RateLimiterOptions>(options => options.AddPolicy(RecordEndpoints.UploadRateLimitPolicy, context =>
-            RateLimitPartition.GetFixedWindowLimiter(
-                context.User.GetUserId()?.ToString() ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromHours(1) })));
+        services.Configure<RateLimiterOptions>(options =>
+        {
+            options.AddPolicy(RecordEndpoints.UploadRateLimitPolicy, context => Limit(context, 60, TimeSpan.FromHours(1)));
+            options.AddPolicy(RecordExport.RateLimitPolicy, context => Limit(context, 10, TimeSpan.FromMinutes(1)));
+        });
         return services;
     }
 
@@ -44,7 +45,13 @@ public static class SharedRecordsModule
         funds.MapGet("/", ListAsync);
         funds.MapPost("/", ProposeAsync);
         RecordEndpoints.Map(funds, support, records);
+        records.MapGet("/export/pdf", RecordExport.DownloadAsync).RequireRateLimiting(RecordExport.RateLimitPolicy);
     }
+
+    private static RateLimitPartition<string> Limit(HttpContext context, int permits, TimeSpan window) =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.GetUserId()?.ToString() ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = permits, Window = window });
 
     /// <summary>Only parents reach these routes; anyone else is told there's nothing here. Nothing is cached.</summary>
     private static RouteGroupBuilder ParentsOnly(RouteGroupBuilder group)

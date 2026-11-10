@@ -192,6 +192,15 @@ export const translations = {
   'route.password': ['Enter your password', 'Ingresa tu contraseña'],
   'route.pin': ['Enter your PIN', 'Ingresa tu PIN'],
   'route.setUpFamily': ['Set up your family', 'Configura tu familia'],
+  'records.export.title': ['Download transaction report', 'Descargar informe de transacciones'],
+  'records.export.rangeHelp': ['Choose the first and last submission dates to include. Dates use your family’s time zone.', 'Elige la primera y la última fecha de envío que quieres incluir. Las fechas usan la zona horaria de tu familia.'],
+  'records.export.generating': ['Preparing your transaction report…', 'Preparando tu informe de transacciones…'],
+  'records.export.ready': ['Your transaction report is ready.', 'Tu informe de transacciones está listo.'],
+  'records.export.invalidRange': ['Choose a valid start and end date in order.', 'Elige fechas válidas de inicio y fin en orden.'],
+  'records.export.empty': ['There are no submissions in this date range. Choose another range.', 'No hay envíos en este intervalo de fechas. Elige otro intervalo.'],
+  'records.export.tooLarge': ['This range has too many submissions. Choose a shorter range.', 'Este intervalo tiene demasiados envíos. Elige uno más corto.'],
+  'records.export.rateLimited': ['Too many downloads. Wait a minute and try again.', 'Hubo demasiadas descargas. Espera un minuto y vuelve a intentarlo.'],
+  'records.export.failed': ['We couldn’t prepare the report. Try again.', 'No pudimos preparar el informe. Inténtalo de nuevo.'],
 } as const;
 
 export type TranslationKey = keyof typeof translations;

@@ -5,5 +5,6 @@
     <ProjectReference Include="..\CoParent.Modules.Families\CoParent.Modules.Families.csproj" />
     <ProjectReference Include="..\CoParent.Modules.Approvals\CoParent.Modules.Approvals.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="NodaTime" />
   </ItemGroup>
 </Project>

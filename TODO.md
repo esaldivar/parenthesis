@@ -24,6 +24,10 @@ that points back here.
   for directly confirmed calendar event changes. Finish approval-gated and series changes, authorized Family Memories
   and Shared Records producers, live arrival updates, and responsive visual/accessibility acceptance.
   Child diary/artwork producers depend on M5 (#131).
+- [ ] **Shared Records transaction PDF (#497, design #566).** Decide how verified full names are captured and
+  retained at submission without retroactively substituting a current display name. Existing entries and original
+  requests have membership IDs only and report their historical names as unavailable. Review retention, export wording,
+  and privacy, then run Development acceptance for parent-only downloads, empty and invalid ranges, paging and print.
 - [ ] **Shared records (#477, M4).** Shared Fund proposals and agreement, contribution reports with required
   attachments, acknowledgment and mismatch history, the progress thermometer, one-time Child Support records, and the
   navigation link with a waiting-on-you dot are built (November 7, 2026; decisions in
