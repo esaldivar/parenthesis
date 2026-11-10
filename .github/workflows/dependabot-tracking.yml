@@ -23,7 +23,7 @@ jobs:
     steps:
       # workflow_run checks out the trusted default-branch commit that supplies this workflow.
       # Omit ref so checkout uses that event context. The triggering PR supplies no code or artifacts.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           sparse-checkout: .github/scripts
           persist-credentials: false
