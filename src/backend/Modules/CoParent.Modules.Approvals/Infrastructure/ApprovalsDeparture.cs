@@ -1,5 +1,6 @@
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Approvals.Domain;
+using CoParent.Modules.Approvals.Infrastructure.Persistence;
 using CoParent.SharedKernel.Accounts;
 using CoParent.SharedKernel.Auditing;
 using Microsoft.EntityFrameworkCore;

@@ -2,6 +2,7 @@ using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Approvals.Endpoints;
 using CoParent.Modules.Approvals.Infrastructure;
+using CoParent.Modules.Approvals.Infrastructure.Persistence;
 using CoParent.SharedKernel.Accounts;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
