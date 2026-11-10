@@ -254,7 +254,7 @@ export class MemoriesPage {
       return {
         memory,
         date: monthDay(familyDate(memory.startsAt, zone)),
-        count: memory.photoCount === 1 ? '1 photo' : translate('memory.photoCount', this.copyLocale.locale(), { count: memory.photoCount }),
+        count: translate(memory.photoCount === 1 ? 'memory.onePhoto' : 'memory.photoCount', this.copyLocale.locale(), { count: memory.photoCount }),
         whose: whoseText(memory, coParent),
         expiry: expiryChip(e),
         soon: e.soon,

@@ -106,9 +106,9 @@ export class SharedRecordsPage {
   protected readonly reportError = signal('');
   protected readonly announcement = signal('');
   protected readonly labels = {
-    AwaitingAgreement: translate('records.fund.pending', this.copyLocale.locale()),
-    Open: 'Agreed',
-    ProposalEnded: translate('records.fund.ended', this.copyLocale.locale()),
+    AwaitingAgreement: 'records.fund.pending',
+    Open: 'records.fund.openStatus',
+    ProposalEnded: 'records.fund.ended',
   } as const;
   protected readonly attachmentUrl = (entryId: string) => this.api.entryAttachmentUrl(this.scope()?.familyId ?? '', entryId);
 

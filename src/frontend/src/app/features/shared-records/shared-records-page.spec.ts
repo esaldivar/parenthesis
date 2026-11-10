@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Api, FamilySummary, Me, RecordEntry, SharedFund, SupportRecord } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { SharedRecordsPage } from './shared-records-page';
 
 describe('SharedRecordsPage', () => {
@@ -187,6 +188,34 @@ describe('SharedRecordsPage', () => {
     ],
     totals: { acknowledgedMinor: 16000, pendingMinor: 4000, disputedMinor: 0 },
   };
+
+  it('updates the fund status badges when the locale changes on the open page', async () => {
+    const { fixture, page } = await render([
+      fund,
+      { ...openFund, id: 'open-fund' },
+      { ...fund, id: 'ended-fund', status: 'ProposalEnded' },
+    ]);
+    const locale = TestBed.inject(LocaleService);
+    const badge = () => page.querySelector('.badges .badge:last-child')?.textContent?.trim();
+    const records = page.querySelectorAll<HTMLButtonElement>('.record-link');
+
+    expect(badge()).toBe('Awaiting agreement');
+    try {
+      locale.setLocale('es-419');
+      fixture.detectChanges();
+      expect(badge()).toBe('Pendiente de acuerdo');
+
+      records[1].click();
+      fixture.detectChanges();
+      expect(badge()).toBe('Aprobado');
+
+      records[2].click();
+      fixture.detectChanges();
+      expect(badge()).toBe('Propuesta finalizada');
+    } finally {
+      locale.setLocale('en');
+    }
+  });
 
   it('shows only acknowledged contributions as progress, with pending amounts in text', async () => {
     const { page } = await render([openFund]);

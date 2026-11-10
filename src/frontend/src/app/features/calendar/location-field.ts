@@ -1,4 +1,4 @@
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -22,6 +22,14 @@ export const LOCATION_OPTIONS: PositionOptions = { enableHighAccuracy: false, ti
 
 /** What "Use my location" is doing, shown under the field. */
 export type NearbyState = 'off' | 'asking' | 'on' | 'denied' | 'unavailable' | 'stopped';
+
+const NEARBY_MESSAGE = {
+  asking: 'calendar.location.asking',
+  on: 'calendar.location.on',
+  denied: 'calendar.location.denied',
+  unavailable: 'calendar.location.unavailable',
+  stopped: 'calendar.location.stopped',
+} as const satisfies Record<Exclude<NearbyState, 'off'>, TranslationKey>;
 
 /**
  * An event's optional location (#113, #354). As a parent types, it offers address suggestions from Google Maps,
@@ -147,7 +155,7 @@ export class LocationField implements OnInit, OnDestroy {
   private readonly locale = inject(LocaleService);
   protected readonly message = computed(() => {
     const state = this.nearby();
-    return state === 'off' ? '' : translate(`calendar.location.${state}`, this.locale.locale());
+    return state === 'off' ? '' : translate(NEARBY_MESSAGE[state], this.locale.locale());
   });
 
   /** The parent's position while "Use my location" is on. Kept in memory only, for this page. */
