@@ -119,7 +119,32 @@ jobs:
 
       # Integration tests start PostgreSQL with Testcontainers on the runner's Docker.
       - name: Test (unit, integration, architecture)
-        run: dotnet test --solution CoParent.slnx -c Release --no-build
+        run: >-
+          dotnet test --solution CoParent.slnx -c Release --no-build --
+          --report-xunit-xml --results-directory "$RUNNER_TEMP/backend-test-results"
+
+      - name: Annotate backend test failures
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          for report in (Path(os.environ["RUNNER_TEMP"]) / "backend-test-results").glob("*.xml"):
+              for test in ET.parse(report).iterfind(".//test[@result='Fail']"):
+                  name = test.attrib["name"].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                  print(f"::error::Backend test failed: {name}")
+          PY
+
+      - name: Upload backend test failure reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-results
+          path: ${{ runner.temp }}/backend-test-results/*.xml
+          if-no-files-found: ignore
+          retention-days: 7
 
   frontend:
     name: Frontend (lint, test, build)
