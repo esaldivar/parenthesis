@@ -1,12 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember, Memory } from '../../core/api/api';
-import { AuthStore } from '../../core/auth/auth.store';
-import { parentPalette } from '../calendar/calendar-palette';
-import { associatedChildIds, FORMER_PARENT } from '../calendar/calendar-items';
-import { fromFamilyLocal, lastDate, toFamilyLocal } from '../calendar/time';
-import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from './model';
-import { addDays } from './week';
-import { familyDate, whoseText } from '../memories/photo-text';
+import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember, Memory } from '../../../core/api/api';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { parentPalette } from '../../calendar/calendar-palette';
+import { associatedChildIds, FORMER_PARENT } from '../../calendar/calendar-items';
+import { fromFamilyLocal, lastDate, toFamilyLocal } from '../../calendar/time';
+import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from '../model';
+import { addDays } from '../week';
+import { familyDate, whoseText } from '../../memories/photo-text';
 
 /** Loads one week of dashboard data for a family. `null` means the feature isn't available yet. */
 export abstract class DashboardDataSource {

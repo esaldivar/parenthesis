@@ -47,6 +47,9 @@ flowchart LR
   `APPLICATIONINSIGHTS_CONNECTION_STRING` is set; no environment has it yet
   ([monitoring runbook, #86](runbooks/application-insights-monitoring.md)).
 
+The [frontend source layout](adr/0009-frontend-source-layout.md) describes where the Angular routes, feature UI,
+shared components, and app-wide services live.
+
 ## Delivery: from a work branch to production
 
 ```mermaid

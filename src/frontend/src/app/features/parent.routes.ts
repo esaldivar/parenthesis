@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 // Order follows the approved navigation (docs/design/APPROVED_DASHBOARD_2026-10-16.md).
 export const PARENT_ROUTES: Routes = [
-  { path: '', title: 'Home', loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage) },
+  { path: '', title: 'Home', loadComponent: () => import('./dashboard/pages/dashboard-page/dashboard-page.component').then((m) => m.DashboardPage) },
   {
     path: 'calendar/new',
     title: 'Add to calendar',

@@ -103,5 +103,11 @@ Include labels, accessible names, validation, notifications, and empty and error
 other values. Format dates and amounts in the selected locale. System emails use the recipient's saved language.
 Keep user-entered content as entered, and check the affected workflow in both languages.
 
+## Frontend source layout
+
+Use the [frontend source layout](docs/adr/0009-frontend-source-layout.md) to choose a home for Angular files.
+Keep feature components and their companion templates, styles, and specs together. Preserve lazy route imports,
+public asset URLs, and global style order during file moves.
+
 ## Code style
 `.editorconfig` and the .NET analyzers are enforced at build time. Run `dotnet format` before pushing.

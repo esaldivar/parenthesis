@@ -7,17 +7,17 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { ComingSoonPage } from '../../shared/coming-soon/coming-soon-page';
-import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
-import { axeViolations } from '../../../testing/axe';
-import { AuthStore } from '../../core/auth/auth.store';
-import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
-import { fakeAuth } from '../../../testing/fake-auth';
-import { LiveDashboardDataSource } from './dashboard-data';
-import { DashboardWeek } from './model';
-import { DashboardPage, NOW } from './dashboard-page';
-import { MIN_SLOTS } from './timeline';
-import { toastText } from '../../../testing/toasts';
+import { ComingSoonPage } from '../../../../shared/coming-soon/coming-soon-page';
+import { CHILDREN, MEMBERS, event } from '../../../../../testing/calendar-fixtures';
+import { axeViolations } from '../../../../../testing/axe';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { ProfilePhotos } from '../../../../core/profile-photos/profile-photos';
+import { fakeAuth } from '../../../../../testing/fake-auth';
+import { LiveDashboardDataSource } from '../../data/dashboard-data';
+import { DashboardWeek } from '../../model';
+import { DashboardPage, NOW } from './dashboard-page.component';
+import { MIN_SLOTS } from '../../timeline';
+import { toastText } from '../../../../../testing/toasts';
 
 // Wednesday, October 14, 2026, 9:00 AM in the fake family's time zone (America/Chicago).
 const WEDNESDAY_MORNING = new Date('2026-10-14T14:00:00Z');

@@ -1,9 +1,9 @@
 import { inject } from '@angular/core';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
-import { CalendarItem } from '../calendar/calendar-items';
-import { CalendarMonth } from '../calendar/calendar-month';
-import { CalendarPalette } from '../calendar/calendar-palette';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
+import { CalendarItem } from '../../../calendar/calendar-items';
+import { CalendarMonth } from '../../../calendar/calendar-month';
+import { CalendarPalette } from '../../../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -20,15 +20,15 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
-import { Avatar } from '../../shared/avatar/avatar';
-import { Icon } from '../../shared/icon/icon';
-import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRows, pickText } from '../calendar/slot';
-import { CalendarKey } from './calendar-key';
-import { DashboardChildFilter } from './dashboard-child-filter';
-import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from './grouping';
-import { ChildRef, DashboardWeek, FamilyEvent, PlainDate, eventPalette } from './model';
-import { StatusLabel } from './status-label';
-import { CATEGORY_ICONS, TimedPlacement, placeDay, visibleHours } from './timeline';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { Icon } from '../../../../shared/icon/icon';
+import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRows, pickText } from '../../../calendar/slot';
+import { CalendarKey } from '../calendar-key/calendar-key.component';
+import { DashboardChildFilter } from '../dashboard-child-filter/dashboard-child-filter.component';
+import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from '../../grouping';
+import { ChildRef, DashboardWeek, FamilyEvent, PlainDate, eventPalette } from '../../model';
+import { StatusLabel } from '../status-label/status-label.component';
+import { CATEGORY_ICONS, TimedPlacement, placeDay, visibleHours } from '../../timeline';
 import {
   addDays,
   dayLong,
@@ -38,7 +38,7 @@ import {
   weekDays,
   weekLabelLong,
   weekdayShort,
-} from './week';
+} from '../../week';
 
 export type WeekState = 'loading' | 'unavailable' | 'error' | 'ready';
 export type InlineView = 'week' | 'month' | 'list';
@@ -49,7 +49,7 @@ interface DayView {
   readonly monthDay: string;
   readonly longLabel: string;
   readonly isToday: boolean;
-  readonly events: readonly (FamilyEvent & { readonly palette: import('../calendar/calendar-palette').CalendarPaletteKey })[];
+  readonly events: readonly (FamilyEvent & { readonly palette: import('../../../calendar/calendar-palette').CalendarPaletteKey })[];
   readonly placements: Map<string, TimedPlacement>;
   readonly lanes: number;
 }
@@ -59,7 +59,7 @@ interface AllDayEvent {
   readonly key: string;
   readonly start: string;
   readonly end: string;
-  readonly event: FamilyEvent & { readonly palette: import('../calendar/calendar-palette').CalendarPaletteKey };
+  readonly event: FamilyEvent & { readonly palette: import('../../../calendar/calendar-palette').CalendarPaletteKey };
 }
 
 /** All-day events and events over several dates go in the all-day row; single-day timed ones in the hour grid. */
@@ -75,8 +75,8 @@ const inAllDayRow = (event: FamilyEvent) => !event.time || !!event.endDate;
   selector: 'app-week-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, CalendarPalette, MatButtonModule, RouterLink, Avatar, Icon, StatusLabel, CalendarKey, DashboardChildFilter, CalendarMonth],
-  templateUrl: './week-calendar.html',
-  styleUrl: './week-calendar.scss',
+  templateUrl: './week-calendar.component.html',
+  styleUrl: './week-calendar.component.scss',
 })
 export class WeekCalendar {
   private readonly locale = inject(LocaleService);
