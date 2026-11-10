@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { selectRelease, routeUpdates } from './dependabot-release-target.mjs';
 
 const branches = (...names) => names.map(name => ({ name }));
@@ -52,4 +56,23 @@ test('every configured ecosystem targets the active release, release/0.4.0', () 
   const config = readFileSync(new URL('../dependabot.yml', import.meta.url), 'utf8');
   assert.equal((config.match(/package-ecosystem:/g) || []).length, 5);
   assert.equal((config.match(/target-branch: release\/0\.4\.0/g) || []).length, 5);
+});
+
+
+test('routing failure logs do not echo malformed event data or workflow commands', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dependabot-log-'));
+  try {
+    const eventFile = join(directory, 'event.json');
+    writeFileSync(eventFile, '{"attack":"untrusted-marker\n::error::forged annotation"');
+    const result = spawnSync(process.execPath, [fileURLToPath(new URL('./dependabot-release-target.mjs', import.meta.url))], {
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_REPOSITORY: 'owner/repo', GH_TOKEN: 'synthetic-token', GITHUB_EVENT_PATH: eventFile },
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr, 'Dependabot release routing failed. Check the GitHub API permissions and active release milestone.\n');
+    assert.doesNotMatch(result.stderr, /untrusted-marker|::error::/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

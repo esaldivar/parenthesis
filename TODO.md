@@ -202,6 +202,8 @@ that points back here.
     routing corrects PR bases in the interim, but cannot change which manifests Dependabot scanned.
   - [ ] Security updates still start on main under GitHub's platform behavior before routing; alerts stay enabled.
 
+- [ ] **Dependabot Sonar findings (#394, #544).** Verify a fresh `develop` analysis closes
+  `githubactions:S7631` on the tracking checkout and `jssecurity:S5145` on routing error output after promotion.
 - [ ] **Dependabot tracking issues (#544).** After normal promotion to `main`, verify a real Dependabot PR gets
   one issue and passes the required tracking check. Rerun the writer to verify that it reuses the issue and link.
 
