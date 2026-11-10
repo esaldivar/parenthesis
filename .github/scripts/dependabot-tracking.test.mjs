@@ -121,7 +121,7 @@ test('fails closed when more than one generated issue matches the PR', async () 
 test('tracking uses the trusted workflow event checkout without a ref override or triggering artifacts', () => {
   const workflow = readFileSync(new URL('../workflows/dependabot-tracking.yml', import.meta.url), 'utf8');
   assert.match(workflow, /workflow_run:/);
-  assert.match(workflow, /uses: actions\/checkout@v7/);
+  assert.match(workflow, /uses: actions\/checkout@[0-9a-f]{40} # v7/);
   assert.doesNotMatch(workflow, /^\s+ref:/m);
   assert.doesNotMatch(workflow, /uses:.*download-artifact|workflow_run\.head_(sha|repository)/);
   assert.match(workflow, /persist-credentials: false/);
