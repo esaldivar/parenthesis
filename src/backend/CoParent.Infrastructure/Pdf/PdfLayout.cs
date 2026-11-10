@@ -1,10 +1,11 @@
+using System.Globalization;
 using SkiaSharp;
 
 namespace CoParent.Infrastructure.Pdf;
 
 /// <summary>One laid-out line: what to draw, where, and how far it moves down the page.</summary>
 public sealed record PdfLine(
-    string Text, SKTypeface Face, float Size, SKColor Color, float Indent, float Height, bool RuleBelow = false);
+    string Text, SKTypeface Face, float Size, SKColor Color, float Indent, float Height, bool RuleBelow = false, bool Emoji = false);
 
 /// <summary>
 /// The text layout every PDF the API makes shares (chat transcripts, the allergy reference): US Letter pages, embedded
@@ -22,6 +23,13 @@ public static class PdfLayout
     private static readonly Lazy<SKTypeface> _regular = new(() => Load("NotoSans-Regular.ttf"));
     private static readonly Lazy<SKTypeface> _bold = new(() => Load("NotoSans-Bold.ttf"));
 
+    private static readonly Lazy<SKTypeface> _serif = new(() => Load("TranscriptSerif.ttf"));
+    private static readonly Lazy<SKTypeface> _emoji = new(() => Load("NotoEmoji-Regular.ttf"));
+
+    public static SKTypeface Serif => _serif.Value;
+
+    internal static SKTypeface Emoji => _emoji.Value;
+
     public static SKTypeface Regular => _regular.Value;
 
     public static SKTypeface Bold => _bold.Value;
@@ -34,15 +42,23 @@ public static class PdfLayout
     /// Word-wraps text to the content width, keeping its line breaks and breaking words longer than a line. The last
     /// line also moves the page down by <paramref name="spaceAfter"/>.
     /// </summary>
-    public static List<PdfLine> Wrap(string text, SKTypeface face, float size, SKColor color, float indent, float spaceAfter)
+    public static List<PdfLine> Wrap(string text, SKTypeface face, float size, SKColor color, float indent, float spaceAfter,
+        float? maxWidth = null, bool preserveText = false)
     {
         ArgumentNullException.ThrowIfNull(text);
         using var font = Font(face, size);
-        var width = ContentWidth - indent;
+        var width = maxWidth ?? (ContentWidth - indent);
         var height = size * 1.4f;
+        using var emoji = preserveText ? new PdfEmoji(size) : null;
         var lines = new List<string>();
         foreach (var paragraph in text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'))
         {
+            if (emoji is not null)
+            {
+                WrapParagraph(paragraph, font, emoji, width, lines);
+                continue;
+            }
+
             var current = "";
             foreach (var word in paragraph.Split(' '))
             {
@@ -70,9 +86,46 @@ public static class PdfLayout
             lines.Add(current);
         }
 
-        var result = lines.Select(l => new PdfLine(l, face, size, color, indent, height)).ToList();
+        var result = lines.Select(l => new PdfLine(l, face, size, color, indent, height, Emoji: preserveText)).ToList();
         result[^1] = result[^1] with { Height = height + spaceAfter };
         return result;
+    }
+
+    // Break at a space when possible, or a grapheme boundary for long unbroken text. Preserve spaces and empty lines.
+    private static void WrapParagraph(string paragraph, SKFont font, PdfEmoji emoji, float width, List<string> lines)
+    {
+        var remaining = paragraph.AsSpan();
+        while (!remaining.IsEmpty)
+        {
+            var boundary = 0;
+            var space = 0;
+            var measured = 0f;
+            while (boundary < remaining.Length)
+            {
+                var length = StringInfo.GetNextTextElementLength(remaining[boundary..]);
+                measured += emoji.Measure(remaining.Slice(boundary, length), font);
+                if (measured > width && boundary > 0)
+                {
+                    break;
+                }
+
+                if (remaining[boundary] == ' ')
+                {
+                    space = boundary + length;
+                }
+
+                boundary += length;
+            }
+
+            var end = boundary < remaining.Length && space > 0 ? space : boundary;
+            lines.Add(remaining[..end].ToString());
+            remaining = remaining[end..];
+        }
+
+        if (paragraph.Length == 0)
+        {
+            lines.Add("");
+        }
     }
 
     /// <summary>
@@ -113,17 +166,27 @@ public static class PdfLayout
     }
 
     /// <summary>Draws a page's lines from the top margin, with a thin rule under any line that asks for one.</summary>
-    public static void Draw(SKCanvas canvas, IEnumerable<PdfLine> lines, SKColor rule)
+    public static void Draw(SKCanvas canvas, IEnumerable<PdfLine> lines, SKColor rule, float top = Margin)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(lines);
-        var y = Margin;
+        var y = top;
         foreach (var line in lines)
         {
             using var font = Font(line.Face, line.Size);
             using var paint = new SKPaint { Color = line.Color, IsAntialias = true };
             // Baseline: the line's top plus its ascent.
-            canvas.DrawText(line.Text, Margin + line.Indent, y - font.Metrics.Ascent, SKTextAlign.Left, font, paint);
+            var baseline = y - font.Metrics.Ascent;
+            if (line.Emoji)
+            {
+                using var emoji = new PdfEmoji(line.Size);
+                emoji.Draw(canvas, line.Text, Margin + line.Indent, baseline, font, paint);
+            }
+            else
+            {
+                canvas.DrawText(line.Text, Margin + line.Indent, baseline, SKTextAlign.Left, font, paint);
+            }
+
             y += line.Height;
             if (line.RuleBelow)
             {

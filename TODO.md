@@ -731,8 +731,10 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
     (revisit after trying it on develop).
   - [x] Slice 3 of `docs/design/m4-chat.md`: PDF transcripts (preview, Save, Download, saved list; ADR-0008
     decision 10).
-  - [ ] Transcript PDFs embed Noto Sans for Latin, Greek and Cyrillic only; add fonts if parents write in other
-    scripts (for example Chinese, Arabic or emoji).
+  - [ ] #125/#548: Confirm the profile-name policy for parents whose existing profile name is a nickname, and
+    review tagged PDF and screen-reader support. The account currently stores only the profile name.
+  - [ ] #125/#548: Verify exact text extraction for multi-codepoint emoji. Noto Emoji renders these sequences in
+    the PDF, but some extract as a base or private-use glyph. Extend font coverage for additional writing systems.
   - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
 
 ## Earlier Playwright feedback (#341)

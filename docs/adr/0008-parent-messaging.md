@@ -48,11 +48,11 @@ architecture already planned a `Messaging` module and SignalR, but no hub existe
     PDF holds. Downloads are made on request and not kept. A saved transcript is an unchanging snapshot belonging to the
     parent who saved it: only they can list or open it (another parent's, or another family's, reads as not found).
     Its PDF is stored in the Messaging schema (`messaging.transcripts`), goes when its parent leaves or the family
-    closes, and is always sent with `Cache-Control: no-store`. Shared events are described as that parent's calendar
-    shows them, so a proposal never reads as confirmed. Only sent messages are included; drafts and failed sends
+    closes, and is always sent with `Cache-Control: no-store`. The [approved transcript design](https://github.com/esaldivar/parenthesis/issues/548)
+    shows calendar links as a localized label without details or links. Only sent messages are included; drafts and failed sends
     never reach the server. A transcript holds at most 5,000 messages, and saving and rendering are rate limited. The
-    PDF is drawn with SkiaSharp and embedded Noto Sans (SIL Open Font License), whose Latin, Greek and Cyrillic glyphs
-    cover the app's text today; other scripts would need more fonts.
+    PDF is drawn with SkiaSharp and embedded Noto fonts (SIL Open Font License). Noto Sans covers Latin, Greek
+    and Cyrillic, and Noto Emoji renders monochrome emoji sequences. Additional writing systems need more fonts.
 
 ## Consequences
 - Group membership in the hub lasts until the connection closes. A parent who loses membership mid-connection stops

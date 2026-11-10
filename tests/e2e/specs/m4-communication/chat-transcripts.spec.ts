@@ -90,10 +90,10 @@ for (const theme of ['light', 'dark'] as const) {
     await pickDate(page, 'End date', today);
     await activate(dialog.getByRole('button', { name: 'Preview PDF' }), info);
     const preview = page.getByRole('dialog', { name: 'Transcript preview' });
-    await expect(preview.getByRole('heading', { name: 'Chat with Mom' })).toBeVisible();
-    await expect(preview.locator('.paper-messages li').first()).toContainText(/\d{1,2}:\d{2} [AP]M/);
-    await expect(preview.locator('.paper-messages li').first()).toContainText('Mom: Can you do the soccer pickup on Saturday?');
-    await expect(preview.locator('.paper-messages li').nth(1)).toContainText('Dad: Yes, I can. What time is it again?');
+    await expect(preview.getByRole('heading', { name: 'Communication Transcript' })).toBeVisible();
+    await expect(preview.locator('.paper-messages li').first()).toContainText(/\d{1,2}:\d{2}:\d{2} [AP]M UTC[+-]/);
+    await expect(preview.locator('.paper-messages li').first()).toContainText('Can you do the soccer pickup on Saturday?');
+    await expect(preview.locator('.paper-messages li').nth(1)).toContainText('Yes, I can. What time is it again?');
     const fileName = `Chat_${today}_to_${today}.pdf`;
     await expect(preview.locator('.file-name')).toHaveText(fileName);
     await fitsPage(page);

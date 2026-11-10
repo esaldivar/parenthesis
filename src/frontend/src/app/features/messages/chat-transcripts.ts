@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { translate, TranslatePipe } from '../../core/i18n/translations';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
@@ -185,7 +186,7 @@ type Step = 'choose' | 'preview';
             }
 
             @if (empty()) {
-              <p class="notice" role="status">{{ emptyText }}</p>
+              <p class="notice" role="status">{{ 'transcript.emptyRange' | tr }}</p>
             }
             @if (dialogError(); as message) {
               <p class="alert" role="alert">{{ message }}</p>
@@ -198,9 +199,18 @@ type Step = 'choose' | 'preview';
           </form>
         } @else if (document(); as doc) {
           <article class="paper" [attr.aria-label]="('feature.preview.of' | tr) + doc.fileName" tabindex="0">
+            <div class="paper-brand">
+              <img src="/brand/parenthesis-icon.svg" alt="" width="28" height="26" />
+              <span>Parenthesis</span>
+            </div>
             <h3>{{ doc.title }}</h3>
-            <p class="paper-range">{{ doc.rangeLabel }}</p>
-            <p class="paper-meta">{{ doc.preparedLabel }}</p>
+            <p class="paper-meta">{{ doc.labels.description }}</p>
+            <dl class="paper-facts">
+              <div><dt>{{ doc.labels.participants }}</dt><dd>{{ doc.participants }}</dd></div>
+              <div><dt>{{ doc.labels.inclusiveRange }}</dt><dd>{{ doc.rangeLabel }}</dd></div>
+              <div><dt>{{ doc.labels.displayTimeZone }}</dt><dd>{{ doc.timeZone }}</dd></div>
+              <div><dt>{{ doc.labels.generated }}</dt><dd>{{ doc.preparedLabel }}</dd></div>
+            </dl>
             <p class="paper-meta">
               {{ doc.messageCount === 1 ? ('feature.1.message' | tr) : doc.messageCount + ('feature.messages.6e2fd2' | tr) }}
             </p>
@@ -209,16 +219,16 @@ type Step = 'choose' | 'preview';
               <ol class="paper-messages">
                 @for (message of day.messages; track $index) {
                   <li>
-                    <span class="time">{{ message.time }}</span>
-                    <span class="body">
-                      <strong>{{ message.sender }}:</strong>
-                      @if (message.text) {
-                        <span class="text"> {{ message.text }}</span>
-                      }
-                      @if (message.event; as event) {
-                        <span class="event">{{ event }}</span>
-                      }
-                    </span>
+                    <div class="message-heading">
+                      <strong>{{ message.sender }}</strong>
+                      <span class="time">{{ message.time }}</span>
+                    </div>
+                    @if (message.text) {
+                      <p class="text">{{ message.text }}</p>
+                    }
+                    @if (message.event; as event) {
+                      <p class="event">{{ event }}</p>
+                    }
                   </li>
                 }
               </ol>
@@ -252,6 +262,7 @@ export class ChatTranscripts implements OnInit {
   private static next = 0;
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
+  private readonly locale = inject(LocaleService);
   private readonly toasts = inject(Toasts);
   private readonly injector = inject(Injector);
 
@@ -259,7 +270,6 @@ export class ChatTranscripts implements OnInit {
   readonly level = input<1 | 2>(2);
 
   protected readonly id = `transcripts-${ChatTranscripts.next++}`;
-  protected readonly emptyText = EMPTY_RANGE;
   protected readonly anyDay = () => true;
 
   protected readonly saved = signal<readonly SavedTranscript[]>([]);
@@ -298,7 +308,7 @@ export class ChatTranscripts implements OnInit {
   protected async loadSaved(): Promise<void> {
     const familyId = this.familyId();
     if (!familyId) {
-      this.listError.set('We couldn’t find your family.');
+      this.listError.set(translate('feedback.we.couldn.t.find.your.family', this.locale.locale()));
       this.listState.set('error');
       return;
     }
@@ -378,7 +388,7 @@ export class ChatTranscripts implements OnInit {
       const saved = await this.api.saveTranscript(this.familyId(), this.previewed());
       this.saved.update((list) => [saved, ...list.filter((t) => t.id !== saved.id)]);
       this.listState.set('ready');
-      this.toasts.show(`Saved ${saved.fileName}.`);
+      this.toasts.show(translate('transcript.saved', this.locale.locale(), { fileName: saved.fileName }));
       this.close();
     } catch (error) {
       this.showProblem(error);
@@ -395,11 +405,11 @@ export class ChatTranscripts implements OnInit {
     const from = this.from.value;
     const to = this.to.value;
     if (!from || !to) {
-      (from ? this.toError : this.fromError).set(HALF_RANGE);
+      (from ? this.toError : this.fromError).set(translate('transcript.halfRange', this.locale.locale()));
       return null;
     }
     if (from > to) {
-      this.toError.set(REVERSED_RANGE);
+      this.toError.set(translate('transcript.reversedRange', this.locale.locale()));
       return null;
     }
     return { from, to };
@@ -407,7 +417,15 @@ export class ChatTranscripts implements OnInit {
 
   private showProblem(error: unknown): void {
     const problem = toProblem(error);
-    const field = (name: string) => problem.errors[name]?.[0] ?? null;
+    const field = (name: string) => {
+      const message = problem.errors[name]?.[0];
+      if (message === HALF_RANGE) return translate('transcript.halfRange', this.locale.locale());
+      if (message === REVERSED_RANGE) return translate('transcript.reversedRange', this.locale.locale());
+      const limit = message?.match(/^That range has more than ([0-9,]+) messages\./)?.[1];
+      return limit
+        ? translate('transcript.rangeTooLarge', this.locale.locale(), { count: limit })
+        : (message ?? null);
+    };
     const fromMessage = field('from');
     const toMessage = field('to');
     if (problem.status === 400 && fromMessage === EMPTY_RANGE) {
