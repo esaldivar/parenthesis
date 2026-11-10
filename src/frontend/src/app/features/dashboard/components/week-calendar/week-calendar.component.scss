@@ -1,6 +1,6 @@
 // The approved weekly calendar. Wide containers show the week grid; narrow ones (phones) fall back to the
 // agenda, which is also the List view.
-@use 'proposed-fill' as *;
+@use '../../../../../styles/abstracts/proposed-fill' as *;
 
 :host {
   display: block;

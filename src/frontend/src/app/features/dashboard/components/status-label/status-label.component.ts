@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { ScheduleStatus } from './model';
+import { ScheduleStatus } from '../../model';
 
 const LABELS: Record<ScheduleStatus | 'change-pending', string> = {
   confirmed: 'Confirmed',

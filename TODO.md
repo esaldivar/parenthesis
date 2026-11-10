@@ -9,6 +9,10 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Angular source layout (#567).** Review the Dashboard pilot and [source move map](docs/adr/0009-frontend-source-layout.md).
+  Continue in feature slices, starting with the shared date and Calendar boundaries. Move app-wide layout, core
+  and shared code, and separate the global Sass layers. Verify lazy routes, assets and release Playwright coverage
+  before closing the migration.
 - [ ] **English and Spanish localization (#534).** Review remaining runtime copy, including API validation and
   stored approval summaries, Family Memories export and quota messages, Child Essentials update announcements,
   and the privacy notice storage table. Use structured codes or fields where an API response mixes app copy and

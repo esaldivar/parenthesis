@@ -185,21 +185,21 @@ Rules:
 - HTTP: an OpenAPI-generated typed client, an interceptor for antiforgery and `ProblemDetails` → user-friendly errors, and a `familyId` context service.
 - Real-time: one `@microsoft/signalr` connection per session that feeds the notification and approval signals.
 
-```
-src/frontend/src/app/
-├─ core/          auth, http interceptors, api client (generated), signalr, guards
-├─ shared/        ui components (avatar, status-chip, approval-card, media-tile, empty-state), pipes
-├─ layout/        parent-shell, kid-shell
-└─ features/
-   ├─ auth/       login, register, accept-invite, child-activation
-   ├─ dashboard/
-   ├─ calendar/
-   ├─ approvals/
-   ├─ children/
-   ├─ memories/
-   ├─ messages/   (post-MVP)
-   ├─ settings/
-   └─ kid/        my-artwork, my-diary, my-photos, my-memories
+The source layout and Dashboard move map are recorded in [ADR-0009](../adr/0009-frontend-source-layout.md).
+The arrows below show the target dependency direction for production code. Existing exceptions and migration
+order are recorded in that ADR.
+
+```mermaid
+flowchart LR
+  App["App composition"]
+  Features["Lazy feature slices"]
+  Shared["Shared UI"]
+  Core["Core contracts and services"]
+  App --> Features
+  App --> Core
+  Features --> Shared
+  Features --> Core
+  Shared --> Core
 ```
 
 ## 7. API conventions

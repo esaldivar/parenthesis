@@ -1,9 +1,9 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
-import { CalendarPalette, CalendarPaletteKey } from '../calendar/calendar-palette';
+import { CalendarPalette, CalendarPaletteKey } from '../../../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -20,26 +20,26 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
-import { Api, CalendarEvent, FamilyMember } from '../../core/api/api';
-import { toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { CalendarItem, swapTargetFor, toItems } from '../calendar/calendar-items';
-import { monthGrid, startOfMonth } from '../calendar/calendar-month';
-import { fromFamilyLocal } from '../calendar/time';
-import { EventDetails } from '../calendar/event-details';
-import { AddAt, addQuery } from '../calendar/slot';
-import { Avatar } from '../../shared/avatar/avatar';
-import { Leaves } from '../../shared/decor/leaves';
-import { EmptyState } from '../../shared/empty-state/empty-state';
-import { Icon, IconName } from '../../shared/icon/icon';
-import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from './dashboard-data';
-import { blockRange, childNames, groupParentingTime } from './grouping';
-import { DashboardWeek, PlainDate, ScheduleStatus, eventPalette } from './model';
-import { StatusLabel } from './status-label';
-import { CATEGORY_ICONS } from './timeline';
-import { InlineView, WeekCalendar, WeekState } from './week-calendar';
-import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
-import { Toasts } from '../../shared/toast/toasts';
+import { Api, CalendarEvent, FamilyMember } from '../../../../core/api/api';
+import { toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { CalendarItem, swapTargetFor, toItems } from '../../../calendar/calendar-items';
+import { monthGrid, startOfMonth } from '../../../calendar/calendar-month';
+import { fromFamilyLocal } from '../../../calendar/time';
+import { EventDetails } from '../../../calendar/event-details';
+import { AddAt, addQuery } from '../../../calendar/slot';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { Leaves } from '../../../../shared/decor/leaves';
+import { EmptyState } from '../../../../shared/empty-state/empty-state';
+import { Icon, IconName } from '../../../../shared/icon/icon';
+import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from '../../data/dashboard-data';
+import { blockRange, childNames, groupParentingTime } from '../../grouping';
+import { DashboardWeek, PlainDate, ScheduleStatus, eventPalette } from '../../model';
+import { StatusLabel } from '../../components/status-label/status-label.component';
+import { CATEGORY_ICONS } from '../../timeline';
+import { InlineView, WeekCalendar, WeekState } from '../../components/week-calendar/week-calendar.component';
+import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from '../../week';
+import { Toasts } from '../../../../shared/toast/toasts';
 
 /** The current time; replaced in tests. */
 export const NOW = new InjectionToken<() => Date>('NOW', { factory: () => () => new Date() });
@@ -72,8 +72,8 @@ interface UpcomingItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet, CalendarPalette, RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails, TranslatePipe],
   providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
-  templateUrl: './dashboard-page.html',
-  styleUrl: './dashboard-page.scss',
+  templateUrl: './dashboard-page.component.html',
+  styleUrl: './dashboard-page.component.scss',
 })
 export class DashboardPage {
   private readonly locale = inject(LocaleService);
