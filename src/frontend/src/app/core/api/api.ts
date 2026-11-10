@@ -1153,6 +1153,10 @@ export class Api {
   /** Whether payment attachments can be saved at all; until they can, no report can be sent. */
   sharedRecordsAttachmentStorage = (familyId: string) =>
     this.call(this.http.get<{ ready: boolean }>(`/api/families/${familyId}/shared-records/attachment-storage`));
+  sharedRecordsPdf = (familyId: string, from: string, to: string) =>
+    this.call(this.http.get(`/api/families/${familyId}/shared-records/export/pdf`, {
+      params: { from, to, language: this.locale.locale() }, responseType: 'blob',
+    }));
   sharedRecordsAttention = (familyId: string) =>
     this.call(this.http.get<{ count: number }>(`/api/families/${familyId}/shared-records/attention`));
   /** Same-origin link to a report's attachment; the server checks the parent's access on every read. */

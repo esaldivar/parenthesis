@@ -1,6 +1,7 @@
 import { LocaleService } from '../../core/i18n/locale.service';
 import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { DOCUMENT } from '@angular/common';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender,
   computed, effect, inject, input, signal, viewChild,
@@ -50,6 +51,7 @@ type Composer = { readonly mode: 'new' } | { readonly mode: 'report'; readonly k
 export class SharedRecordsPage {
   private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
+  private readonly document = inject(DOCUMENT);
   private readonly auth = inject(AuthStore);
   private readonly attention = inject(SharedRecordsAttentionStore, { optional: true });
   private readonly injector = inject(Injector);
@@ -97,6 +99,10 @@ export class SharedRecordsPage {
     return this.requestType() === 'fund' ? translate('records.fund.sending', this.copyLocale.locale()) : translate('records.support.creating', this.copyLocale.locale());
   });
   protected readonly error = signal('');
+  protected readonly exporting = signal(false);
+  protected readonly exportNotice = signal<TranslationKey | null>(null);
+  protected readonly exportError = signal<TranslationKey | null>(null);
+  protected readonly exportOpen = signal(false);
   protected readonly reportError = signal('');
   protected readonly announcement = signal('');
   protected readonly labels = {
@@ -116,6 +122,10 @@ export class SharedRecordsPage {
       this.error.set('');
       this.reportError.set('');
       this.announcement.set('');
+      this.exporting.set(false);
+      this.exportNotice.set(null);
+      this.exportError.set(null);
+      this.exportOpen.set(false);
       if (scope) void this.load(scope);
     });
     effect(() => {
@@ -126,6 +136,45 @@ export class SharedRecordsPage {
         this.start();
       }
     });
+  }
+
+  protected async downloadRecords(event: SubmitEvent, from: string, to: string): Promise<void> {
+    event.preventDefault();
+    const scope = this.scope();
+    if (!scope || this.exporting()) return;
+
+    this.exportNotice.set(null);
+    this.exportError.set(null);
+    if (!from || !to || from > to) {
+      this.exportError.set('records.export.invalidRange');
+      return;
+    }
+
+    this.exporting.set(true);
+    try {
+      const pdf = await this.api.sharedRecordsPdf(scope.familyId, from, to);
+      if (!this.isCurrent(scope)) return;
+      const url = URL.createObjectURL(pdf);
+      const link = this.document.createElement('a');
+      link.href = url;
+      link.download = `Shared_Records_${from}_to_${to}.pdf`;
+      try {
+        link.click();
+        this.exportNotice.set('records.export.ready');
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch (error) {
+      if (!this.isCurrent(scope)) return;
+      const status = toProblem(error).status;
+      this.exportError.set(status === 422 ? 'records.export.empty'
+        : status === 413 ? 'records.export.tooLarge'
+        : status === 400 ? 'records.export.invalidRange'
+        : status === 429 ? 'records.export.rateLimited'
+        : 'records.export.failed');
+    } finally {
+      if (this.isCurrent(scope)) this.exporting.set(false);
+    }
   }
 
   protected retry(): void {

@@ -30,6 +30,7 @@ describe('SharedRecordsPage', () => {
       reportContribution: vi.fn(),
       reportSupportPayment: vi.fn(),
       respondToEntry: vi.fn(),
+      sharedRecordsPdf: vi.fn(),
       sharedRecordsAttention: vi.fn().mockResolvedValue({ count: 0 }),
       sharedRecordsAttachmentStorage: vi.fn().mockResolvedValue({ ready: attachmentsReady }),
       entryAttachmentUrl: (familyId: string, id: string) => `/api/families/${familyId}/shared-records/entries/${id}/attachment`,
@@ -52,6 +53,53 @@ describe('SharedRecordsPage', () => {
     const button = (label: string) => Array.from(page.querySelectorAll('button')).find(item => item.textContent?.trim() === label);
     return { api, button, currentFamily, fixture, page };
   }
+
+  it('keeps the chosen range for a retry and drops a pending export on profile switch', async () => {
+    const { api, currentFamily, fixture, page } = await render();
+    const disclosure = page.querySelector<HTMLDetailsElement>('.records-export')!;
+    disclosure.open = true;
+    disclosure.dispatchEvent(new Event('toggle'));
+    fixture.detectChanges();
+    const form = disclosure.querySelector('form')!;
+    const from = form.querySelector<HTMLInputElement>('[name="exportFrom"]')!;
+    const to = form.querySelector<HTMLInputElement>('[name="exportTo"]')!;
+    from.value = '2026-11-07';
+    to.value = '2026-11-06';
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    expect(form.querySelector('[role="alert"]')?.textContent).toContain('in order');
+    expect(api.sharedRecordsPdf).not.toHaveBeenCalled();
+
+    to.value = '2026-11-09';
+    api.sharedRecordsPdf.mockRejectedValueOnce(new HttpErrorResponse({ status: 422 }));
+    form.dispatchEvent(new Event('submit'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(form.querySelector('[role="alert"]')?.textContent).toContain('no submissions');
+    expect(from.value).toBe('2026-11-07');
+    expect(to.value).toBe('2026-11-09');
+
+    let resolve!: (blob: Blob) => void;
+    api.sharedRecordsPdf.mockReturnValueOnce(new Promise<Blob>(done => { resolve = done; }));
+    form.dispatchEvent(new Event('submit'));
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    expect(form.querySelector('[role="status"]')?.textContent).toContain('Preparing');
+    expect(api.sharedRecordsPdf).toHaveBeenCalledTimes(2);
+    expect(api.sharedRecordsPdf).toHaveBeenLastCalledWith('family', '2026-11-07', '2026-11-09');
+
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    try {
+      currentFamily.set({ id: 'family', name: 'Family', timeZone: 'UTC', role: 'Child' });
+      resolve(new Blob(['%PDF'], { type: 'application/pdf' }));
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(page.querySelector('.records-export')).toBeNull();
+      expect(click).not.toHaveBeenCalled();
+    } finally {
+      click.mockRestore();
+    }
+  });
 
   it('opens the existing request form once when arriving from Quick Add', async () => {
     const { fixture, page } = await render([], [], true, '1');
