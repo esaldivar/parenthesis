@@ -199,9 +199,9 @@ export class CalendarPage {
   /** A message after adding or cancelling, read out politely. */
 
   protected readonly items = computed(() => [
-    ...toItems(this.events(), this.members(), this.children(), this.timeZone()),
-    ...reminderItems(this.reminders(), this.members(), this.children(), this.timeZone()),
-    ...taskItems(this.tasks(), this.members(), this.children()),
+    ...toItems(this.events(), this.members(), this.children(), this.timeZone(), this.locale.locale()),
+    ...reminderItems(this.reminders(), this.members(), this.children(), this.timeZone(), this.locale.locale()),
+    ...taskItems(this.tasks(), this.members(), this.children(), this.locale.locale()),
   ]);
   protected readonly childFilter = computed(() => {
     const child = this.child();
@@ -464,7 +464,7 @@ export class CalendarPage {
     try {
       const event = await this.api.calendarEvent(familyId, item.id);
       if (attempt !== this.opening || loaded !== this.loadToken || familyId !== this.family()?.id) return;
-      const fresh = toItems([event], this.members(), this.children(), this.timeZone()).find((i) => i.id === item.id);
+      const fresh = toItems([event], this.members(), this.children(), this.timeZone(), this.locale.locale()).find((i) => i.id === item.id);
       if (!fresh || event.status === 'Cancelled') {
         this.unavailable(item.id);
         return;

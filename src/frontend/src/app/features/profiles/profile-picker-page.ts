@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
@@ -138,6 +139,7 @@ import { FORM_STYLES } from '../auth/form-styles';
   ],
 })
 export class ProfilePickerPage implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   protected readonly auth = inject(AuthStore);
   protected readonly error = signal<string | null>(null);
   protected readonly loadFailed = signal(false);
@@ -167,7 +169,7 @@ export class ProfilePickerPage implements OnInit {
       this.error.set(null);
     } catch (error) {
       this.loadFailed.set(true);
-      this.error.set(`We couldn’t load the profiles. ${generalMessage(toProblem(error))}`);
+      this.error.set(translate('profile.picker.loadError', this.copyLocale.locale(), { reason: generalMessage(toProblem(error)) }));
     } finally {
       this.loading.set(false);
     }

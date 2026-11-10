@@ -181,7 +181,7 @@ export class CalendarSearch {
     this.text.set(value);
     clearTimeout(this.timer);
     const token = ++this.token;
-    const criteria = toSearch(value, this.members(), this.today());
+    const criteria = toSearch(value, this.members(), this.today(), this.locale.locale());
     this.criteria = criteria;
     if (!criteria) {
       this.state.set('idle');
@@ -274,6 +274,6 @@ export class CalendarSearch {
   }
 
   private items(events: readonly CalendarEvent[]): CalendarItem[] {
-    return toItems(events, this.members(), this.children(), this.timeZone());
+    return toItems(events, this.members(), this.children(), this.timeZone(), this.locale.locale());
   }
 }

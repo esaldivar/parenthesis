@@ -110,7 +110,7 @@ export class ReminderDetails implements OnInit {
     this.error.set(null);
     try {
       await this.api.deleteReminder(this.familyId(), this.reminder().id);
-      this.changed.emit(`“${this.reminder().title}” was deleted.`);
+      this.changed.emit(translate('calendar.event.deleted', this.locale.locale(), { title: this.reminder().title }));
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
     } finally {

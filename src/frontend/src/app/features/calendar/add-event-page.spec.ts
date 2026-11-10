@@ -1,3 +1,4 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { expectDateFormat } from '../../../testing/date-format';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -70,6 +71,26 @@ describe('Add event', () => {
     const chooser = card('Parenting time');
     expect(chooser.getAttribute('data-palette')).toBeNull();
     expect([...chooser.querySelectorAll('[data-palette]')].map(e => e.getAttribute('data-palette'))).toEqual(['parent-a', 'parent-b']);
+  });
+
+  it('switches the event chooser and validation to Spanish on the open form', async () => {
+    const harness = await open();
+    const locale = TestBed.inject(LocaleService);
+    try {
+      locale.setLocale('es-419');
+      await settle(harness);
+      expect(text(page().querySelector('.kind__label'))).toBe('Evento');
+      expect(text(page())).toContain('Entrenamiento, clase, cita o salida');
+      await choose(harness, 'Tiempo con los hijos');
+      await submit(harness);
+      expect(text(page().querySelector('fieldset.kids'))).toContain('Elige qué hijos participarán');
+      expect(http.match((r) => r.method === 'POST')).toHaveLength(0);
+    } finally {
+      locale.setLocale('en');
+      await settle(harness);
+    }
+    expect(text(page().querySelector('.kind__label'))).toBe('Event');
+    expect(card('Parenting time').getAttribute('aria-pressed')).toBe('true');
   });
 
   it('describes a repeat last day without a visible format hint (#236)', async () => {

@@ -120,7 +120,7 @@ export class EventDetails {
     return request ? dateTimeLabel(toFamilyLocal(request.createdAt, this.timeZone()), this.locale.locale()) : null;
   });
   protected readonly answerLabel = computed(() =>
-    this.request()?.canDecide ? 'Your answer' : `${this.coParent() ?? 'Your co-parent'}’s answer`,
+    this.request()?.canDecide ? translate('calendar.event.yourAnswer', this.locale.locale()) : translate('calendar.event.parentAnswer', this.locale.locale(), { name: this.coParent() ?? translate('common.coParent', this.locale.locale()) }),
   );
 
   constructor() {
@@ -186,7 +186,7 @@ export class EventDetails {
     try {
       await this.api.dismissEvent(this.familyId(), this.item().id);
       this.changed.emit(
-        `“${this.item().title}” was removed from your calendar. It’s still in the approvals history.`,
+        translate('calendar.event.removed', this.locale.locale(), { title: this.item().title }),
       );
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
@@ -224,8 +224,8 @@ export class EventDetails {
   );
   protected readonly cancelExplanation = computed(() =>
     this.needsBoth() && this.coParent()
-      ? `This asks ${this.coParent()} to approve cancelling it. It stays on the calendar until they do.`
-      : 'This removes it from the calendar for both of you.',
+      ? translate('calendar.event.requestCancel', this.locale.locale(), { name: this.coParent() ?? translate('common.coParent', this.locale.locale()) })
+      : translate('calendar.event.cancelBoth', this.locale.locale()),
   );
 
   /** The proposed change in words (before → after), when a change is waiting for approval. */
@@ -262,8 +262,8 @@ export class EventDetails {
       await this.api.withdraw(this.familyId(), request.id);
       this.changed.emit(
         this.item().status === 'pending'
-          ? `You withdrew “${this.item().title}”. It isn’t on the calendar.`
-          : `You withdrew your request. “${this.item().title}” stays as it was.`,
+          ? translate('calendar.event.withdrawn', this.locale.locale(), { title: this.item().title })
+          : translate('calendar.event.withdrawnChange', this.locale.locale(), { title: this.item().title }),
       );
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
@@ -316,12 +316,12 @@ export class EventDetails {
       (familyId, id) => this.api.approve(familyId, id),
       (result) =>
         result.status !== 'Approved'
-          ? `You approved “${title}”. It still needs the other approval.`
+          ? translate('calendar.event.approvedPending', this.locale.locale(), { title })
           : change === 'Cancel'
-            ? `You approved cancelling “${title}”. It’s off the calendar.`
+            ? translate('calendar.event.approvedCancellation', this.locale.locale(), { title })
             : change === 'Modify'
-              ? `You approved the change. “${title}” was updated on the calendar.`
-              : `You approved “${title}”. It’s on the calendar.`,
+              ? translate('calendar.event.approvedChange', this.locale.locale(), { title })
+              : translate('calendar.event.approved', this.locale.locale(), { title }),
     );
   }
 
@@ -337,10 +337,10 @@ export class EventDetails {
       (familyId, id) => this.api.reject(familyId, id, comment),
       () =>
         change === 'Cancel'
-          ? `You declined cancelling “${title}”. It stays on the calendar.`
+          ? translate('calendar.event.declinedCancellation', this.locale.locale(), { title })
           : change === 'Modify'
-            ? `You declined the change. “${title}” stays as it was.`
-            : `You declined “${title}”. It isn’t on the schedule.`,
+            ? translate('calendar.event.declinedChange', this.locale.locale(), { title })
+            : translate('calendar.event.declined', this.locale.locale(), { title }),
     );
   }
 
@@ -369,7 +369,7 @@ export class EventDetails {
 
   /** Reloads the calendar when the request was answered elsewhere. */
   protected refresh(): void {
-    this.changed.emit('The calendar is up to date.');
+    this.changed.emit(translate('calendar.event.current', this.locale.locale()));
   }
 
   protected async cancel(scope: EditScope = 'this'): Promise<void> {
@@ -380,12 +380,12 @@ export class EventDetails {
       const title = this.item().title;
       this.changed.emit(
         result && result.pendingChange === 'Cancel'
-          ? `Cancellation sent to ${this.coParent() ?? 'your co-parent'} for approval. “${title}” stays on the calendar until then.`
+          ? translate('calendar.event.cancelSent', this.locale.locale(), { name: this.coParent() ?? translate('common.coParentLower', this.locale.locale()), title })
           : scope === 'all'
-            ? `Every date of “${title}” was cancelled.`
+            ? translate('calendar.event.cancelledAll', this.locale.locale(), { title })
             : scope === 'following'
-              ? `“${title}” was cancelled from ${this.date()} on.`
-              : `“${title}” was cancelled.`,
+              ? translate('calendar.event.cancelledFollowing', this.locale.locale(), { title, date: this.date() })
+              : translate('calendar.event.cancelled', this.locale.locale(), { title }),
       );
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));

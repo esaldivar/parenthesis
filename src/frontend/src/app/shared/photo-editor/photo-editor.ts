@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,29 +12,29 @@ export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
 /** A friendly message for a refused or failed upload, from the server's `reason` or the HTTP status. */
-export function photoErrorMessage(error: unknown): string {
+export function photoErrorMessage(error: unknown, locale: AppLocale = 'en'): string {
   const problem = toProblem(error);
   const reason = (error as { error?: { reason?: unknown } } | null)?.error?.reason;
   switch (reason) {
     case 'too-large':
-      return 'That photo is too big. Choose one smaller than 8 MB.';
+      return translate('photo.editor.size', locale);
     case 'too-many-pixels':
-      return 'That picture is too big. Choose a smaller photo.';
+      return translate('photo.editor.dimensions', locale);
     case 'animated':
-      return 'Choose a still photo, not an animation.';
+      return translate('photo.editor.animated', locale);
     case 'unsupported':
-      return 'Choose a JPEG, PNG or WebP photo.';
+      return translate('photo.editor.format', locale);
     case 'damaged':
     case 'empty':
-      return 'That photo couldn’t be read. Try another one.';
+      return translate('photo.editor.unreadable', locale);
   }
   if (problem.status === 0) {
-    return 'We couldn’t reach Parenthesis. Your photo wasn’t changed. Check your connection and try again.';
+    return translate('photo.editor.offline', locale);
   }
   if (problem.status === 429) {
-    return 'That’s a lot of photo changes. Please wait a while and try again.';
+    return translate('photo.editor.rateLimit', locale);
   }
-  return 'Your photo wasn’t changed. Please try again.';
+  return translate('photo.editor.saveError', locale);
 }
 
 /**
@@ -55,7 +56,7 @@ export function photoErrorMessage(error: unknown): string {
         } @else if (current()) {
           <p class="muted">{{ hint() }}</p>
         } @else {
-          <p class="muted">No photo yet, so the initial {{ initial() }} shows. {{ hint() }}</p>
+          <p class="muted">{{ 'photo.editor.initial' | tr: { initial: initial() } }} {{ hint() }}</p>
         }
       </div>
     </div>
@@ -135,6 +136,7 @@ export function photoErrorMessage(error: unknown): string {
   `,
 })
 export class PhotoEditor {
+  private readonly copyLocale = inject(LocaleService);
   private static next = 0;
   private readonly photos = inject(ProfilePhotos);
   private readonly file = viewChild.required<ElementRef<HTMLInputElement>>('file');
@@ -180,22 +182,22 @@ export class PhotoEditor {
       return;
     }
     if (!(PHOTO_TYPES as readonly string[]).includes(file.type)) {
-      this.error.set('Choose a JPEG, PNG or WebP photo.');
+      this.error.set(translate('photo.editor.format', this.copyLocale.locale()));
       return;
     }
     if (file.size > MAX_PHOTO_BYTES) {
-      this.error.set('That photo is too big. Choose one smaller than 8 MB.');
+      this.error.set(translate('photo.editor.size', this.copyLocale.locale()));
       return;
     }
     this.clearPreview();
     this.pending = file;
     this.preview.set(URL.createObjectURL(file));
-    this.announcement.set('Preview ready. Save photo to use it, or Cancel.');
+    this.announcement.set(translate('photo.editor.preview', this.copyLocale.locale()));
   }
 
   protected cancel(): void {
     this.clearPreview();
-    this.announcement.set('Photo not changed.');
+    this.announcement.set(translate('photo.editor.unchanged', this.copyLocale.locale()));
   }
 
   protected async save(): Promise<void> {
@@ -208,14 +210,14 @@ export class PhotoEditor {
     try {
       await this.photos.save(this.familyId(), this.childId(), this.pending);
       this.clearPreview();
-      this.announcement.set('Photo saved.');
+      this.announcement.set(translate('photo.editor.saved', this.copyLocale.locale()));
     } catch (error) {
       // Keep the selected file for retryable transport failures; the preview stays explicitly unsaved.
       const status = toProblem(error).status;
       if (status !== 0 && status !== 429 && status < 500) {
         this.clearPreview();
       }
-      this.error.set(photoErrorMessage(error));
+      this.error.set(photoErrorMessage(error, this.copyLocale.locale()));
     } finally {
       this.busy.set(false);
     }
@@ -230,9 +232,9 @@ export class PhotoEditor {
     this.announcement.set('');
     try {
       await this.photos.remove(this.familyId(), this.subject(), this.childId());
-      this.announcement.set(`Photo removed. The initial ${this.initial()} shows instead.`);
+      this.announcement.set(translate('photo.editor.removed', this.copyLocale.locale(), { initial: this.initial() }));
     } catch (error) {
-      this.error.set(toProblem(error).status === 0 ? 'We couldn’t reach Parenthesis. Your photo is still there.' : 'Your photo is still there. Please try again.');
+      this.error.set(toProblem(error).status === 0 ? translate('photo.editor.removeOffline', this.copyLocale.locale()) : translate('photo.editor.removeError', this.copyLocale.locale()));
     } finally {
       this.busy.set(false);
     }

@@ -116,7 +116,9 @@ import { ClothingHistoryPage, ClothingView } from '../../core/api/api';
 export class ClothingSection extends RevisionedSection<ClothingView, ClothingView['values'], ClothingHistoryPage['entries'][number]> {
   private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('clothing', this.childId);
-  protected readonly savedNotice = 'Clothing and shoes saved.';
+  protected get savedNotice(): string {
+    return translate('essentials.clothing.saved', this.locale.locale());
+  }
   protected readonly form = new FormGroup({
     topSize: new FormControl('', { nonNullable: true, validators: Validators.maxLength(64) }),
     bottomSize: new FormControl('', { nonNullable: true, validators: Validators.maxLength(64) }),

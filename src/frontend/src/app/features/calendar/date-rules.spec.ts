@@ -1,3 +1,5 @@
+import { MatDatepickerIntl } from '@angular/material/datepicker';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { TestBed } from '@angular/core/testing';
 import { DateAdapter } from '@angular/material/core';
 import { fakeAuth } from '../../../testing/fake-auth';
@@ -132,6 +134,24 @@ describe('the date picker’s dates (#232)', () => {
     expect(adapter.getFirstDayOfWeek()).toBe(0);
     expect(adapter.getNumDaysInMonth('2028-02-10')).toBe(29);
     expect(adapter.addCalendarMonths('2026-01-31', 1)).toBe('2026-02-28');
+  });
+
+  it('switches picker labels and numeric dates without changing the stored date', () => {
+    const locale = TestBed.inject(LocaleService);
+    const intl = TestBed.inject(MatDatepickerIntl);
+    try {
+      locale.setLocale('es-419');
+      TestBed.tick();
+      expect(intl.nextMonthLabel).toBe('Mes siguiente');
+      expect(adapter.getMonthNames('long')[9]).toBe('octubre');
+      expect(adapter.parse('27/10/2026')).toBe('2026-10-27');
+      expect(adapter.format('2026-10-27', { month: 'numeric', day: 'numeric', year: 'numeric' })).toBe('27/10/2026');
+    } finally {
+      locale.setLocale('en');
+      TestBed.tick();
+    }
+    expect(intl.nextMonthLabel).toBe('Next month');
+    expect(adapter.parse('10/27/2026')).toBe('2026-10-27');
   });
 
   it('takes today from the family’s time zone, not the device’s', () => {

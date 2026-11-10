@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked, ElementRef, Injector, afterNextRender } from '@angular/core';
@@ -39,49 +40,49 @@ export type EventType = 'activity' | 'parenting' | 'family' | 'unavailable';
 /** What's being created (handoff: "What are you creating?"). */
 export type CreateKind = 'event' | 'task' | 'reminder';
 
-const KINDS: readonly { id: CreateKind; label: string; description: string; icon: IconName }[] = [
-  { id: 'event', label: 'Event', description: 'Something that happens at a time', icon: 'calendar' },
-  { id: 'task', label: 'Task', description: 'Something to get done together', icon: 'note' },
-  { id: 'reminder', label: 'Reminder', description: 'A note for a day, for both of you', icon: 'bell' },
+const KINDS: readonly { id: CreateKind; label: TranslationKey; description: TranslationKey; icon: IconName }[] = [
+  { id: 'event', label: 'calendar.create.event', description: 'calendar.create.eventHelp', icon: 'calendar' },
+  { id: 'task', label: 'feature.task', description: 'calendar.create.taskHelp', icon: 'note' },
+  { id: 'reminder', label: 'feature.reminder', description: 'calendar.create.reminderHelp', icon: 'bell' },
 ];
 
 interface TypeOption {
   readonly id: EventType;
-  readonly label: string;
-  readonly description: string;
+  readonly label: TranslationKey;
+  readonly description: TranslationKey;
   readonly icon: IconName;
 }
 
 const TYPES: readonly TypeOption[] = [
-  { id: 'activity', label: 'Activity', description: 'Practice, lesson, appointment, outing', icon: 'soccer' },
-  { id: 'parenting', label: 'Parenting time', description: 'Time with the kids', icon: 'calendar' },
-  { id: 'family', label: 'Family event', description: 'Both parents attend', icon: 'children' },
-  { id: 'unavailable', label: 'I’m unavailable', description: 'Only “Unavailable” is shared', icon: 'block' },
+  { id: 'activity', label: 'feature.activity', description: 'calendar.create.activityHelp', icon: 'soccer' },
+  { id: 'parenting', label: 'feature.parenting.time', description: 'calendar.create.parentingHelp', icon: 'calendar' },
+  { id: 'family', label: 'calendar.type.family', description: 'calendar.create.familyHelp', icon: 'children' },
+  { id: 'unavailable', label: 'calendar.create.unavailable', description: 'calendar.create.unavailableHelp', icon: 'block' },
 ];
 
 /** What an activity is, for its colour and icon. Holidays and family events have their own types. */
-const ACTIVITY_CATEGORIES: readonly { id: CalendarCategory; label: string }[] = [
-  { id: 'Activity', label: 'Activity' },
-  { id: 'School', label: 'School' },
-  { id: 'Medical', label: 'Medical' },
-  { id: 'Dental', label: 'Dental' },
-  { id: 'Birthday', label: 'Birthday' },
-  { id: 'Other', label: 'Other' },
+const ACTIVITY_CATEGORIES: readonly { id: CalendarCategory; label: TranslationKey }[] = [
+  { id: 'Activity', label: 'feature.activity' },
+  { id: 'School', label: 'feature.school' },
+  { id: 'Medical', label: 'calendar.type.medical' },
+  { id: 'Dental', label: 'calendar.type.dental' },
+  { id: 'Birthday', label: 'calendar.type.birthday' },
+  { id: 'Other', label: 'calendar.type.other' },
 ];
 
 const isDate = (value: string | undefined): value is PlainDate => !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 /** A gentle, non-blocking note for each warning the API can return. Nothing is blocked or reassigned. */
-export function warningText(warning: CalendarWarning, coParent: string | null): string {
+export function warningText(warning: CalendarWarning, coParent: string | null, locale: AppLocale = 'en'): string {
   switch (warning) {
     case 'OverlapsCoParentUnavailable':
-      return `${coParent ?? 'Your co-parent'} marked that time as unavailable, so it may be hard for them to accommodate.`;
+      return translate('calendar.add.overlapCoParent', locale, { parent: coParent ?? translate('common.coParent', locale) });
     case 'CaregiverUnavailable':
-      return 'The parent with the children marked that time as unavailable.';
+      return translate('calendar.add.overlapCaregiver', locale);
     case 'OverlapsParentingTime':
-      return 'It overlaps other parenting time.';
+      return translate('calendar.add.overlapOther', locale);
     default:
-      return 'It overlaps your own parenting time. You may want to arrange cover.';
+      return translate('calendar.add.overlapOwn', locale);
   }
 }
 
@@ -118,6 +119,7 @@ export function warningText(warning: CalendarWarning, coParent: string | null): 
   styles: [FORM_STYLES],
 })
 export class AddEventPage implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   protected readonly calendarHeader = CalendarHeader;
   private readonly api = inject(Api);
   private readonly injector = inject(Injector);
@@ -219,11 +221,17 @@ export class AddEventPage implements OnInit {
   /** The menu names the start's weekday and day of the month, as Google Calendar does. */
   protected readonly weeklyLabel = computed(() => {
     const start = this.value().startDate;
-    return isPlainDate(start) ? `Every week on ${weekdayOf(start)}` : 'Every week';
+    const locale = this.copyLocale.locale();
+    if (!isPlainDate(start)) return translate('calendar.repeat.weekly', locale);
+    const day = new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(start));
+    return translate('calendar.repeat.weeklyOn', locale, { day });
   });
   protected readonly monthlyLabel = computed(() => {
     const start = this.value().startDate;
-    return isPlainDate(start) ? `Every month on the ${ordinal(Number(start.slice(8)))}` : 'Every month';
+    const locale = this.copyLocale.locale();
+    if (!isPlainDate(start)) return translate('calendar.repeat.monthly', locale);
+    const day = Number(start.slice(8));
+    return translate('calendar.repeat.monthlyOn', locale, { day: locale === 'en' ? ordinal(day) : day });
   });
   /** How the series repeats, from the menu (or Custom's every/unit/days). */
   protected readonly rule = computed<RepeatRule>(() => {
@@ -294,14 +302,14 @@ export class AddEventPage implements OnInit {
     switch (this.type()) {
       case 'parenting':
         return coParent
-          ? `This is your parenting time. ${coParent} needs to approve it. Until they accept, it shows as pending and isn’t on the schedule.`
-          : 'You’re the only parent so far, so it’s confirmed now and marked for your co-parent to review when they join.';
+          ? translate('calendar.add.approval', this.copyLocale.locale(), { parent: coParent })
+          : translate('calendar.add.solo', this.copyLocale.locale());
       case 'family':
-        return `Both parents attend. ${coParent ?? 'Your co-parent'} needs to accept before it’s confirmed; your request counts as your approval.`;
+        return translate('calendar.add.joint', this.copyLocale.locale(), { parent: coParent ?? translate('common.coParent', this.copyLocale.locale()) });
       case 'unavailable':
-        return `${coParent ?? 'Your co-parent'} sees only “Unavailable”. Your note stays private to you. It doesn’t change who has the children.`;
+        return translate('calendar.add.unavailable', this.copyLocale.locale(), { parent: coParent ?? translate('common.coParent', this.copyLocale.locale()) });
       case 'activity':
-        return 'Activities go on the shared calendar straight away.';
+        return translate('calendar.add.activities', this.copyLocale.locale());
       default:
         return null;
     }
@@ -431,17 +439,17 @@ export class AddEventPage implements OnInit {
         }
       }
       const created = await this.api.createEvent(family.id, request);
-      const coParent = this.coParent() ?? 'your co-parent';
+      const coParent = this.coParent() ?? translate('common.coParentLower', this.copyLocale.locale());
       const count = this.repeats() ? this.dates().length : 1;
       const head =
         created.status === 'PendingApproval'
           ? count > 1
-            ? `Sent to ${coParent} for approval: “${created.title}” on ${count} dates. They show as pending until they accept.`
-            : `Sent to ${coParent} for approval. “${created.title}” shows as pending until they accept.`
+            ? translate('calendar.add.sentMultiple', this.copyLocale.locale(), { parent: coParent, title: created.title, count })
+            : translate('calendar.add.sent', this.copyLocale.locale(), { parent: coParent, title: created.title })
           : count > 1
-            ? `“${created.title}” is on the calendar on ${count} dates.`
-            : `“${created.title}” is on the calendar.`;
-      const notes = created.warnings.map((w) => warningText(w, this.coParent()));
+            ? translate('calendar.add.createdMultiple', this.copyLocale.locale(), { title: created.title, count })
+            : translate('calendar.event.created', this.copyLocale.locale(), { title: created.title });
+      const notes = created.warnings.map((w) => warningText(w, this.coParent(), this.copyLocale.locale()));
       await this.router.navigate(['/calendar'], {
         queryParams: { date: this.form.getRawValue().startDate },
         state: { calendarNotice: [head, ...notes].join(' ') },
@@ -490,24 +498,24 @@ export class AddEventPage implements OnInit {
     if (this.repeats()) {
       const rule = this.rule();
       if (!(Number.isInteger(rule.interval) && rule.interval >= 1 && rule.interval <= MAX_INTERVAL[rule.frequency])) {
-        errors['repeatInterval'] = `Choose every 1 to ${MAX_INTERVAL[rule.frequency]}.`;
+        errors['repeatInterval'] = translate('calendar.repeat.intervalError', this.copyLocale.locale(), { max: MAX_INTERVAL[rule.frequency] });
       } else if (rule.frequency === 'Weekly' && rule.days.length === 0) {
-        errors['repeat'] = 'Choose the days it repeats on.';
+        errors['repeat'] = translate('calendar.repeat.daysRequired', this.copyLocale.locale());
       } else if (v.ends === 'date' && v.repeatUntil && !isPlainDate(v.repeatUntil)) {
         errors['repeatUntil'] = UNREADABLE_DATE;
       } else if (v.ends === 'date' && (!v.repeatUntil || v.repeatUntil < v.startDate || v.repeatUntil > lastAllowed(v.startDate))) {
-        errors['repeatUntil'] = 'Choose an end date from the first day to a year later.';
+        errors['repeatUntil'] = translate('calendar.repeat.endLimit', this.copyLocale.locale());
       } else if (v.ends === 'count' && !(Number.isInteger(v.repeatCount) && v.repeatCount >= 2 && v.repeatCount <= MAX_DATES)) {
-        errors['repeatCount'] = `Repeat it 2 to ${MAX_DATES} times.`;
+        errors['repeatCount'] = translate('calendar.repeat.countLimit', this.copyLocale.locale(), { max: MAX_DATES });
       } else if (this.dates().length === 0) {
-        errors['repeat'] = 'None of the chosen days fall before the end date.';
+        errors['repeat'] = translate('calendar.repeat.noDates', this.copyLocale.locale());
       } else if (v.ends === 'count' && this.dates().length < v.repeatCount) {
-        errors['repeatCount'] = 'That many times goes past a year. Choose fewer, or an end date.';
+        errors['repeatCount'] = translate('calendar.repeat.tooLong', this.copyLocale.locale());
       }
     }
     if (type === 'parenting') {
       if (v.childIds.length === 0) {
-        errors['childIds'] = 'Choose which children this parenting time is for.';
+        errors['childIds'] = translate('calendar.add.childrenRequired', this.copyLocale.locale());
       }
     }
     return errors;

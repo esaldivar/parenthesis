@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -235,6 +236,7 @@ const COMMENT_MAX = 500;
   `,
 })
 export class ApprovalsPage implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
 
@@ -286,22 +288,22 @@ export class ApprovalsPage implements OnInit {
       case 'CalendarCreate':
         // A repeating parenting-time request covers every date at once (#239).
         return request.targetType === 'calendar_series'
-          ? 'Every date goes on the shared calendar once you both approve. Approving or declining answers them all. Until then they show as pending.'
-          : 'It goes on the shared calendar once you both approve. Until then it shows as pending.';
+          ? translate('approvals.series.help', this.copyLocale.locale())
+          : translate('approvals.event.help', this.copyLocale.locale());
       case 'JointEventCreate':
-        return 'A family event both parents attend. It’s confirmed once you both approve.';
+        return translate('approvals.joint.help', this.copyLocale.locale());
       case 'CalendarModify':
-        return 'The event stays as it is until you both approve the change.';
+        return translate('approvals.edit.help', this.copyLocale.locale());
       case 'CalendarCancel':
-        return 'The event stays on the calendar until you both approve cancelling it.';
+        return translate('approvals.cancel.help', this.copyLocale.locale());
     }
     const name = this.children().find((c) => c.id === request.targetId)?.firstName;
     if (request.type === 'ChildCreate') {
       return `${name ?? 'This child'} can start using Parenthesis once you both approve.`;
     }
     return name
-      ? `${name}’s current PIN keeps working until you both approve the new one.`
-      : 'The current PIN keeps working until you both approve the new one.';
+      ? translate('approvals.pin.childHelp', this.copyLocale.locale(), { name })
+      : translate('approvals.pin.help', this.copyLocale.locale());
   }
 
   protected outcome(request: ChangeRequest): string {
@@ -329,20 +331,20 @@ export class ApprovalsPage implements OnInit {
   }
 
   protected approve(request: ChangeRequest): Promise<void> {
-    return this.run((familyId) => this.api.approve(familyId, request.id), `You approved “${request.summary}”.`, `[data-approve="${request.id}"]`);
+    return this.run((familyId) => this.api.approve(familyId, request.id), translate('approvals.approved', this.copyLocale.locale(), { summary: request.summary }), `[data-approve="${request.id}"]`);
   }
 
   protected decline(request: ChangeRequest): Promise<void> {
     const comment = this.comment.value.trim() || undefined;
     return this.run(
       (familyId) => this.api.reject(familyId, request.id, comment),
-      `You declined “${request.summary}”.`,
+      translate('approvals.declined', this.copyLocale.locale(), { summary: request.summary }),
       `[data-decline-submit="${request.id}"]`,
     );
   }
 
   protected withdraw(request: ChangeRequest): Promise<void> {
-    return this.run((familyId) => this.api.withdraw(familyId, request.id), `You withdrew “${request.summary}”.`, `[data-withdraw="${request.id}"]`);
+    return this.run((familyId) => this.api.withdraw(familyId, request.id), translate('approvals.withdrawn', this.copyLocale.locale(), { summary: request.summary }), `[data-withdraw="${request.id}"]`);
   }
 
   /** `retry` is the button that started the action: after a failure, focus returns there so the person can try again. */

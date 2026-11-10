@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -50,6 +51,7 @@ import { Toasts } from '../../shared/toast/toasts';
   `,
 })
 export class GoogleCalendarCallback implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -72,20 +74,20 @@ export class GoogleCalendarCallback implements OnInit {
     if (denied || !code || !state) {
       this.message.set(
         denied === 'access_denied'
-          ? 'Google Calendar wasn’t connected, because access wasn’t allowed on Google’s page.'
-          : 'Google Calendar wasn’t connected. Start again from Settings.',
+          ? translate('google.calendar.denied', this.copyLocale.locale())
+          : translate('google.calendar.connectError', this.copyLocale.locale()),
       );
       return;
     }
     if (family?.role !== 'Parent') {
-      this.message.set('Only a parent can connect Google Calendar. Start again from Settings.');
+      this.message.set(translate('google.calendar.parentOnly', this.copyLocale.locale()));
       return;
     }
 
     try {
       const status = await this.api.googleCalendarConnect(family.id, code, state);
       this.toasts.show(
-        `Google Calendar is connected. Events will appear in “${status.calendarName}” in a minute or two.`,
+        translate('google.calendar.connected', this.copyLocale.locale(), { calendar: status.calendarName }),
       );
       await this.router.navigateByUrl('/settings', { replaceUrl: true });
     } catch (error) {

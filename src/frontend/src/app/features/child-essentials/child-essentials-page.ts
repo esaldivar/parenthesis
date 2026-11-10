@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal,
   untracked, viewChild, viewChildren,
@@ -322,6 +323,7 @@ const MEDICAL_TINT = {
   `,
 })
 export class ChildEssentialsPage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   protected readonly updates = inject(EssentialsUpdatesStore);
@@ -363,19 +365,19 @@ export class ChildEssentialsPage {
   );
 
   protected readonly tiles = [
-    { section: 'school', name: ESSENTIALS_SECTIONS.school.name, image: 'school', about: 'Grade, teacher, parent concerns', art: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6M12 7v3',
+    { section: 'school', name: ESSENTIALS_SECTIONS.school.name, image: 'school', about: translate('essentials.tile.school', this.copyLocale.locale()), art: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6M12 7v3',
       bg: '#e1edf9', fg: '#233f63', darkBg: '#263b54', darkFg: '#dbeaff' },
-    { section: 'allergiesFood', name: ESSENTIALS_SECTIONS.allergiesFood.name, image: 'allergies', about: 'Allergies and food preferences', art: 'M3 13h18c-1 5-4 7-9 7s-8-2-9-7zM12 12c0-5 3-8 8-8-1 5-4 8-8 8z',
+    { section: 'allergiesFood', name: ESSENTIALS_SECTIONS.allergiesFood.name, image: 'allergies', about: translate('essentials.tile.allergies', this.copyLocale.locale()), art: 'M3 13h18c-1 5-4 7-9 7s-8-2-9-7zM12 12c0-5 3-8 8-8-1 5-4 8-8 8z',
       bg: '#faedc5', fg: '#614718', darkBg: '#493b24', darkFg: '#fff0c7' },
-    { section: 'routines', name: ESSENTIALS_SECTIONS.routines.name, image: 'routines', about: 'Bedtime and naps, shared and at each home', art: 'M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5zM17 4v6m-3-3h6',
+    { section: 'routines', name: ESSENTIALS_SECTIONS.routines.name, image: 'routines', about: translate('essentials.tile.routines', this.copyLocale.locale()), art: 'M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5zM17 4v6m-3-3h6',
       bg: '#e0ebdb', fg: '#344f36', darkBg: '#2c4230', darkFg: '#dfefd9' },
-    { section: 'clothing', name: ESSENTIALS_SECTIONS.clothing.name, image: 'clothing', about: 'Sizes and fit notes', art: 'M9 4 4 6l-2 5 4 2 2-3v10h8V10l2 3 4-2-2-5-5-2c-1 4-5 4-6 0z',
+    { section: 'clothing', name: ESSENTIALS_SECTIONS.clothing.name, image: 'clothing', about: translate('essentials.tile.clothing', this.copyLocale.locale()), art: 'M9 4 4 6l-2 5 4 2 2-3v10h8V10l2 3 4-2-2-5-5-2c-1 4-5 4-6 0z',
       bg: '#ebe3fa', fg: '#4f386d', darkBg: '#403451', darkFg: '#f1e5ff' },
-    { section: 'whatHelps', name: ESSENTIALS_SECTIONS.whatHelps.name, image: 'what-helps', about: 'Comfort items and calming strategies', art: 'M12 20S3 15 3 9a4 4 0 0 1 9-1 4 4 0 0 1 9 1c0 6-9 11-9 11z',
+    { section: 'whatHelps', name: ESSENTIALS_SECTIONS.whatHelps.name, image: 'what-helps', about: translate('essentials.tile.whatHelps', this.copyLocale.locale()), art: 'M12 20S3 15 3 9a4 4 0 0 1 9-1 4 4 0 0 1 9 1c0 6-9 11-9 11z',
       bg: '#f8e2d4', fg: '#643d2b', darkBg: '#50382f', darkFg: '#ffe9de' },
-    { section: 'caregivers', name: ESSENTIALS_SECTIONS.caregivers.name, image: 'caregivers', about: 'Sitters and helpers, school pickup', art: 'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8 1a3 3 0 1 0 0-6M2 20v-2a6 6 0 0 1 12 0v2m2-6a5 5 0 0 1 6 5v1',
+    { section: 'caregivers', name: ESSENTIALS_SECTIONS.caregivers.name, image: 'caregivers', about: translate('essentials.tile.caregivers', this.copyLocale.locale()), art: 'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8 1a3 3 0 1 0 0-6M2 20v-2a6 6 0 0 1 12 0v2m2-6a5 5 0 0 1 6 5v1',
       bg: '#dcefeb', fg: '#24534c', darkBg: '#254542', darkFg: '#def7f1' },
-    { section: 'emergencyContacts', name: ESSENTIALS_SECTIONS.emergencyContacts.name, image: 'emergency', about: 'Who to call, and who first', art: 'M5 3h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 2-2 3-4 2C9 19 5 15 3 7c-1-2 0-4 2-4z',
+    { section: 'emergencyContacts', name: ESSENTIALS_SECTIONS.emergencyContacts.name, image: 'emergency', about: translate('essentials.tile.emergency', this.copyLocale.locale()), art: 'M5 3h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 2-2 3-4 2C9 19 5 15 3 7c-1-2 0-4 2-4z',
       bg: '#f7e0e8', fg: '#66384a', darkBg: '#503342', darkFg: '#ffe6ef' },
   ] as const;
 

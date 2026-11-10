@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -70,6 +71,7 @@ const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;
   styles: FORM_STYLES,
 })
 export class PairDevicePage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
 
@@ -95,7 +97,7 @@ export class PairDevicePage {
       const problem = toProblem(error);
       this.error.set(
         problem.status === 404
-          ? 'That code didn’t work. Codes work once and only for 10 minutes. Ask for a new one on the parent’s phone.'
+          ? translate('profile.pair.invalid', this.copyLocale.locale())
           : (problem.errors['deviceName']?.join(' ') ?? generalMessage(problem)),
       );
     } finally {
