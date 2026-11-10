@@ -51,6 +51,20 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Advancing_business_time_does_not_renew_a_fresh_sign_in_cookie()
+    {
+        var email = ApiSession.NewEmail();
+        await _session.RegisterConfirmedAsync(email);
+        Assert.Equal(HttpStatusCode.NoContent, (await _session.LoginAsync(email)).StatusCode);
+
+        api.Clock.Advance(TimeSpan.FromDays(2));
+        using var me = await _session.GetAsync("/api/me");
+
+        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+        Assert.Null(ApiSession.FindSetCookie(me, "__Host-parenthesis"));
+    }
+
+    [Fact]
     public async Task Session_cookie_is_host_prefixed_secure_httponly_and_samesite_strict()
     {
         var email = ApiSession.NewEmail();

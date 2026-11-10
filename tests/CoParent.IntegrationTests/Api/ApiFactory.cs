@@ -135,10 +135,12 @@ public sealed class ApiFactory(PostgresFixture postgres, AzuriteFixture azurite)
             // The real clock, which a test can move forward (PIN pauses, shared-device expiry). Reset between tests.
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(Clock);
-            // Fixed business clocks must not make new auth cookies appear expired relative to the runner's wall clock.
+            // Keep cookie issuance and security-stamp validation on the browser's clock. Business time jumps
+            // otherwise expire new cookies or trigger a renewal that replaces the endpoint's cache headers.
             services.PostConfigure<CookieAuthenticationOptions>(
                 IdentityConstants.ApplicationScheme,
                 options => options.TimeProvider = TimeProvider.System);
+            services.PostConfigure<SecurityStampValidatorOptions>(options => options.TimeProvider = TimeProvider.System);
 
             // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
             // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
