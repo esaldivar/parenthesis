@@ -39,6 +39,18 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_fixed_business_date_does_not_expire_a_fresh_sign_in_cookie()
+    {
+        // A date beyond the cookie lifetime would make the browser discard a cookie issued on the business clock.
+        api.Clock.SetUtcNow(DateTimeOffset.UtcNow.AddDays(-30));
+        var email = ApiSession.NewEmail();
+        await _session.RegisterConfirmedAsync(email);
+        Assert.Equal(HttpStatusCode.NoContent, (await _session.LoginAsync(email)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await _session.GetAsync("/api/me")).StatusCode);
+    }
+
+    [Fact]
     public async Task Session_cookie_is_host_prefixed_secure_httponly_and_samesite_strict()
     {
         var email = ApiSession.NewEmail();
