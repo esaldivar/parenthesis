@@ -135,11 +135,11 @@ internal sealed class TranscriptBuilder(MessagingDbContext db, IFamilyRoster ros
     {
         try
         {
-            return zone.AtStartOfDay(date).ToDateTimeOffset();
+            return zone.AtStartOfDay(date).ToInstant().ToDateTimeOffset();
         }
         catch (SkippedTimeException)
         {
-            return zone.AtStartOfDay(date.PlusDays(1)).ToDateTimeOffset();
+            return zone.AtStartOfDay(date.PlusDays(1)).ToInstant().ToDateTimeOffset();
         }
     }
 }
