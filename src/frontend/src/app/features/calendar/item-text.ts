@@ -37,7 +37,7 @@ export function statusText(item: CalendarItem, locale: AppLocale = 'en'): string
     case 'pending':
       return translate('calendar.filter.pending', locale);
     case 'change-pending':
-      return item.pendingChange === 'Cancel' ? (locale === 'es-419' ? 'Cancelación pendiente' : 'Cancellation pending') : translate('calendar.filter.change-pending', locale);
+      return item.pendingChange === 'Cancel' ? translate('calendar.cancel.pending', locale) : translate('calendar.filter.change-pending', locale);
     case 'declined':
       return translate('calendar.filter.declined', locale);
     default:

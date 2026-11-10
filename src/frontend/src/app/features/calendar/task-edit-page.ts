@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, SharedTask } from '../../core/api/api';
@@ -27,6 +28,7 @@ import { TaskForm } from './task-form';
   styles: [FORM_STYLES],
 })
 export class TaskEditPage implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly family = inject(AuthStore).currentFamily;
 
@@ -49,7 +51,7 @@ export class TaskEditPage implements OnInit {
       this.task.set(await this.api.task(family.id, this.taskId()));
     } catch (error) {
       const problem = toProblem(error);
-      this.error.set(problem.status === 404 ? 'We couldn’t find that task. It may have been deleted.' : generalMessage(problem));
+      this.error.set(problem.status === 404 ? translate('calendar.task.missing', this.copyLocale.locale()) : generalMessage(problem));
     }
   }
 }

@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -75,6 +76,7 @@ const ASK_FIRST: readonly CalendarWarning[] = ['OverlapsCoParentUnavailable'];
   styles: [FORM_STYLES],
 })
 export class SwapRequestPage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -137,7 +139,7 @@ export class SwapRequestPage {
 
   protected readonly item = computed<CalendarItem | null>(() => {
     const event = this.event();
-    return event ? toItems([event], this.members(), this.children(), this.timeZone())[0] : null;
+    return event ? toItems([event], this.members(), this.children(), this.timeZone(), this.copyLocale.locale())[0] : null;
   });
   /** The parent who has the children in this parenting time; a swap keeps them. */
   private readonly caregiver = computed(() => this.members().find((m) => m.membershipId === this.event()?.caregiverMembershipId));
@@ -154,13 +156,13 @@ export class SwapRequestPage {
       return null;
     }
     if (event.category !== 'ParentingTime') {
-      return 'Only parenting time can be swapped.';
+      return translate('calendar.swap.parentingOnly', this.copyLocale.locale());
     }
     if (event.status !== 'Confirmed' || event.pendingChange !== 'None') {
-      return 'It already has a request waiting for an answer. Withdraw it, or wait for the answer, before asking for a swap.';
+      return translate('calendar.swap.pending', this.copyLocale.locale());
     }
     if (!this.coParent()) {
-      return 'A swap needs your co-parent’s approval, so you can ask for one once they’ve joined.';
+      return translate('calendar.swap.requiresParent', this.copyLocale.locale());
     }
     return null;
   });
@@ -193,7 +195,9 @@ export class SwapRequestPage {
 
   /** "Sunday, October 19 · 8:00 AM – 3:00 PM", or just the range when it spans several dates. */
   protected describe(item: CalendarItem): string {
-    return item.lastDate > item.firstDate ? whenText(item) : `${dayLong(item.firstDate)} · ${whenText(item)}`;
+    const locale = this.copyLocale.locale();
+    const when = whenText(item, locale);
+    return item.lastDate > item.firstDate ? when : `${dayLong(item.firstDate, locale)} · ${when}`;
   }
 
   protected childNames(item: CalendarItem): string {
@@ -243,7 +247,7 @@ export class SwapRequestPage {
       this.state.set('ready');
     } catch (error) {
       const problem = toProblem(error);
-      this.loadError.set(problem.status === 404 ? 'We couldn’t find that parenting time. It may have been cancelled.' : generalMessage(problem));
+      this.loadError.set(problem.status === 404 ? translate('calendar.swap.missing', this.copyLocale.locale()) : generalMessage(problem));
       this.state.set('error');
     }
   }
@@ -340,7 +344,7 @@ export class SwapRequestPage {
         // Applied at once (the co-parent left meanwhile): say so plainly.
         await this.router.navigate(['/calendar'], {
           queryParams: { date: this.proposedTimes().start.slice(0, 10) },
-          state: { calendarNotice: `“${result.title}” was updated.` },
+          state: { calendarNotice: translate('calendar.event.updated', this.copyLocale.locale(), { title: result.title }) },
         });
       }
     } catch (error) {
@@ -391,10 +395,10 @@ export class SwapRequestPage {
 
   private validate(event: CalendarEvent): { dates: string | null; reason: string | null } {
     const v = typedValues(this.form);
-    const reason = v.reason.trim().length > REASON_MAX ? `Keep the reason under ${REASON_MAX} characters.` : null;
+    const reason = v.reason.trim().length > REASON_MAX ? translate('calendar.swap.reasonLimit', this.copyLocale.locale(), { max: REASON_MAX }) : null;
     // The dates themselves were checked before this (#248).
     if (!v.allDay && (!v.startTime || !v.endTime)) {
-      return { dates: 'Choose when the new time starts and ends.', reason };
+      return { dates: translate('calendar.swap.chooseTimes', this.copyLocale.locale()), reason };
     }
     const { startsAt, endsAt } = this.instants();
     if (
@@ -402,7 +406,7 @@ export class SwapRequestPage {
       new Date(endsAt).getTime() === new Date(event.endsAt).getTime() &&
       v.allDay === event.allDay
     ) {
-      return { dates: 'Choose dates or times that are different from the current ones.', reason };
+      return { dates: translate('calendar.swap.differentTimes', this.copyLocale.locale()), reason };
     }
     return { dates: null, reason };
   }

@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, signal } from '@angular/core';
@@ -60,6 +61,7 @@ type ItemGroup = FormGroup<{ id: FormControl<string>; text: FormControl<string>;
   styles: [FORM_STYLES],
 })
 export class TaskForm implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   protected readonly calendarHeader = CalendarHeader;
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
@@ -143,7 +145,7 @@ export class TaskForm implements OnInit {
   protected removeItem(index: number): void {
     const text = this.items.at(index).controls.text.value.trim() || 'Item';
     this.items.removeAt(index);
-    void this.announcer.announce(`${text} removed from the checklist.`);
+    void this.announcer.announce(translate('calendar.task.checklistRemoved', this.copyLocale.locale(), { item: text }));
     // Keep the keyboard on the list: the next item, or the Add item button when it was the last.
     afterNextRender(() => (this.items.length > 0 ? this.focusItem(Math.min(index, this.items.length - 1)) : this.focusAdd()), {
       injector: this.injector,
@@ -159,7 +161,7 @@ export class TaskForm implements OnInit {
     this.items.removeAt(index);
     this.items.insert(to, moving);
     const text = moving.controls.text.value.trim() || 'Item';
-    void this.announcer.announce(`${text} moved to position ${to + 1} of ${this.items.length}.`);
+    void this.announcer.announce(translate('calendar.task.checklistMoved', this.copyLocale.locale(), { item: text, position: to + 1, total: this.items.length }));
     afterNextRender(() => this.focusMove(to, by), { injector: this.injector });
   }
 
@@ -182,7 +184,7 @@ export class TaskForm implements OnInit {
       this.fill(await this.api.task(family.id, task.id));
       this.conflict.set(false);
       this.error.set(null);
-      void this.announcer.announce('Loaded the latest version of this task.');
+      void this.announcer.announce(translate('calendar.task.latest', this.copyLocale.locale()));
       afterNextRender(() => this.host.nativeElement.querySelector<HTMLInputElement>('[formcontrolname="title"]')?.focus(), { injector: this.injector });
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
@@ -220,7 +222,7 @@ export class TaskForm implements OnInit {
         : await this.api.createTask(family.id, this.request());
       await this.router.navigate(['/calendar'], {
         queryParams: { date: saved.dueDate },
-        state: { calendarNotice: existing ? `“${saved.title}” was updated.` : `“${saved.title}” is on the calendar.` },
+        state: { calendarNotice: existing ? translate('calendar.event.updated', this.copyLocale.locale(), { title: saved.title }) : translate('calendar.event.created', this.copyLocale.locale(), { title: saved.title }) },
       });
     } catch (error) {
       const problem = toProblem(error);
@@ -257,17 +259,17 @@ export class TaskForm implements OnInit {
     if (!v.title.trim()) {
       errors['title'] = 'Enter a title.';
     } else if (v.title.trim().length > TASK_TITLE_MAX) {
-      errors['title'] = `Keep the title to ${TASK_TITLE_MAX} characters.`;
+      errors['title'] = translate('calendar.task.titleLimit', this.copyLocale.locale(), { max: TASK_TITLE_MAX });
     }
     if (v.dueDate && !isPlainDate(v.dueDate)) {
       errors['dueDate'] = UNREADABLE_DATE;
     } else if (!v.dueDate) {
-      errors['dueDate'] = 'Choose the day it’s due.';
+      errors['dueDate'] = translate('calendar.task.dateRequired', this.copyLocale.locale());
     } else if (v.dueDate < this.today() && v.dueDate !== this.task()?.dueDate) {
       errors['dueDate'] = PAST_DATE;
     }
     if (v.items.some((i) => !i.text.trim() || i.text.trim().length > ITEM_TEXT_MAX)) {
-      errors['items'] = `Give each checklist item 1 to ${ITEM_TEXT_MAX} characters, or remove it.`;
+      errors['items'] = translate('calendar.task.checklistLimit', this.copyLocale.locale(), { max: ITEM_TEXT_MAX });
     }
     return errors;
   }

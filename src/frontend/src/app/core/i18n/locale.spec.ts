@@ -52,6 +52,13 @@ describe('localization foundation (#534)', () => {
     expect(resolveLocale('unsupported', ['es-AR'])).toBe('es-419');
   });
 
+  it('keeps interpolation parameters in both languages', () => {
+    const placeholders = (text: string) => [...new Set(text.match(/\{\w+\}/g) ?? [])].sort();
+    for (const [key, [english, spanish]] of Object.entries(translations)) {
+      expect(placeholders(spanish), key).toEqual(placeholders(english));
+    }
+  });
+
   it('provides nonempty English and Spanish strings for every catalog key', () => {
     for (const key of Object.keys(translations) as (keyof typeof translations)[]) {
       expect(translate(key, 'en').trim().length).toBeGreaterThan(0);

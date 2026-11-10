@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender,
   computed, effect, inject, input, signal, viewChild,
@@ -47,6 +48,7 @@ type Composer = { readonly mode: 'new' } | { readonly mode: 'report'; readonly k
   styleUrl: './shared-records-page.scss',
 })
 export class SharedRecordsPage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly attention = inject(SharedRecordsAttentionStore, { optional: true });
@@ -91,16 +93,16 @@ export class SharedRecordsPage {
   protected readonly busy = signal(false);
   protected readonly savingLabel = computed(() => {
     const report = this.reporting();
-    if (report) return report.kind === 'fund' ? 'Reporting contribution…' : 'Reporting payment…';
-    return this.requestType() === 'fund' ? 'Sending request…' : 'Creating record…';
+    if (report) return report.kind === 'fund' ? translate('records.contribution.reporting', this.copyLocale.locale()) : translate('records.payment.reporting', this.copyLocale.locale());
+    return this.requestType() === 'fund' ? translate('records.fund.sending', this.copyLocale.locale()) : translate('records.support.creating', this.copyLocale.locale());
   });
   protected readonly error = signal('');
   protected readonly reportError = signal('');
   protected readonly announcement = signal('');
   protected readonly labels = {
-    AwaitingAgreement: 'Awaiting agreement',
+    AwaitingAgreement: translate('records.fund.pending', this.copyLocale.locale()),
     Open: 'Agreed',
-    ProposalEnded: 'Proposal ended',
+    ProposalEnded: translate('records.fund.ended', this.copyLocale.locale()),
   } as const;
   protected readonly attachmentUrl = (entryId: string) => this.api.entryAttachmentUrl(this.scope()?.familyId ?? '', entryId);
 
@@ -199,7 +201,7 @@ export class SharedRecordsPage {
       }));
       this.selectedKey.set(`fund:${created.id}`);
       this.composer.set(null);
-      this.announcement.set('Shared Fund proposal sent for agreement.');
+      this.announcement.set(translate('records.fund.sent', this.copyLocale.locale()));
       this.focus(this.recordHeading);
     });
   }
@@ -210,7 +212,7 @@ export class SharedRecordsPage {
       this.update(scope, workspace => ({ ...workspace, support: [record, ...workspace.support] }));
       this.selectedKey.set(`support:${record.id}`);
       this.composer.set(null);
-      this.announcement.set('Child Support record created.');
+      this.announcement.set(translate('records.support.created', this.copyLocale.locale()));
       this.focus(this.recordHeading);
     });
   }
@@ -224,7 +226,7 @@ export class SharedRecordsPage {
       this.update(scope, workspace => ({
         ...workspace, funds: workspace.funds.map(item => item.id === fund.id ? { ...item, status } : item),
       }));
-      this.announcement.set(approve ? 'Shared Fund agreed.' : 'Changes requested. This proposal ended.');
+      this.announcement.set(approve ? translate('records.fund.agreed', this.copyLocale.locale()) : translate('records.fund.changesRequested', this.copyLocale.locale()));
       this.focus(this.recordHeading);
       // The proposal no longer waits on this parent: clear the navigation dot now, not at the next navigation.
       void this.attention?.refresh();
@@ -246,8 +248,8 @@ export class SharedRecordsPage {
       this.updateEntries(scope, item.key, entries => [entry, ...entries.filter(existing => existing.id !== entry.id)]);
       this.composer.set(null);
       this.announcement.set(item.kind === 'fund'
-        ? 'Contribution reported. Your co-parent can now acknowledge it.'
-        : 'Payment reported. Your co-parent can now confirm receipt.');
+        ? translate('records.contribution.reported', this.copyLocale.locale())
+        : translate('records.payment.reported', this.copyLocale.locale()));
       this.focus(this.recordHeading);
     } catch (error) {
       if (this.isCurrent(scope)) this.reportFailed(scope, toProblem(error));
@@ -270,8 +272,8 @@ export class SharedRecordsPage {
       const updated = await this.api.respondToEntry(scope.familyId, entry.id, response);
       this.updateEntries(scope, item.key, entries => entries.map(existing => existing.id === updated.id ? updated : existing));
       this.announcement.set(response === 'dispute'
-        ? 'Mismatch flagged. It doesn’t count toward the total.'
-        : entry.paidTo === 'Vendor' ? 'Contribution acknowledged.' : 'Receipt confirmed.');
+        ? translate('records.report.mismatch', this.copyLocale.locale())
+        : entry.paidTo === 'Vendor' ? translate('records.contribution.acknowledged', this.copyLocale.locale()) : translate('records.payment.confirmed', this.copyLocale.locale()));
       void this.attention?.refresh();
     });
   }

@@ -201,7 +201,9 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
   protected readonly targetIds = signal<readonly string[]>([]);
   protected readonly directionsUrl = mapsDirectionsUrl;
   protected readonly addressLimit = LOCATION_MAX_LENGTH;
-  protected readonly savedNotice = 'Medical providers saved.';
+  protected get savedNotice(): string {
+    return translate('essentials.medical.saved', this.locale.locale());
+  }
   protected readonly types = MEDICAL_PROVIDER_TYPES;
   protected readonly existing = signal<MedicalProvider | null>(null);
   protected readonly removing = signal<MedicalProvider | null>(null);

@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -229,6 +230,7 @@ interface Panel {
   `,
 })
 export class ChildrenAccess implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly fb = inject(NonNullableFormBuilder);
@@ -282,15 +284,15 @@ export class ChildrenAccess implements OnInit {
 
   protected state(child: Child): string {
     if (child.status === 'PendingApproval') {
-      return 'Waiting for approval';
+      return translate('family.childAccess.pending', this.copyLocale.locale());
     }
     if (child.signIn.locked) {
-      return 'PIN locked after too many wrong tries: choose a new PIN';
+      return translate('family.childAccess.locked', this.copyLocale.locale());
     }
     if (child.signIn.pausedUntil && new Date(child.signIn.pausedUntil).getTime() > this.now()) {
-      return 'PIN paused for a few minutes after 3 wrong tries';
+      return translate('family.childAccess.paused', this.copyLocale.locale());
     }
-    return child.signIn.enabled ? 'Signs in with a PIN' : 'No PIN yet, so can’t sign in';
+    return child.signIn.enabled ? translate('family.childAccess.enabled', this.copyLocale.locale()) : translate('family.childAccess.disabled', this.copyLocale.locale());
   }
 
   protected isOpen(child: Child, kind: Panel['kind']): boolean {
@@ -319,7 +321,7 @@ export class ChildrenAccess implements OnInit {
       await this.api.setChildPin(this.familyId(), child.id, this.pinForm.getRawValue().pin);
       this.close();
       this.toasts.show(
-        child.signIn.enabled ? `${child.firstName}’s new PIN works now.` : `${child.firstName} can now sign in with their PIN.`,
+        child.signIn.enabled ? translate('family.childAccess.newPin', this.copyLocale.locale(), { name: child.firstName }) : translate('family.childAccess.signInEnabled', this.copyLocale.locale(), { name: child.firstName }),
       );
     });
   }
@@ -328,7 +330,7 @@ export class ChildrenAccess implements OnInit {
     await this.run(async () => {
       await this.api.disableChildSignIn(this.familyId(), child.id);
       this.close();
-      this.toasts.show(`${child.firstName}’s sign-in is turned off.`);
+      this.toasts.show(translate('family.childAccess.signInDisabled', this.copyLocale.locale(), { name: child.firstName }));
     });
   }
 

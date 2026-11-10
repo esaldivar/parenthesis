@@ -21,7 +21,7 @@
         @for (option of scopes; track option.id) {
           <label class="scope__option">
             <input type="radio" name="scope" [checked]="scope() === option.id" (change)="setScope(option.id)" />
-            {{ option.label }}
+            {{ option.label | tr }}
           </label>
         }
         @if (scope() !== 'this') {

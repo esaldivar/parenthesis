@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -125,6 +126,7 @@ function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
   `,
 })
 export class ParentPinSettings implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly toasts = inject(Toasts);
@@ -168,7 +170,7 @@ export class ParentPinSettings implements OnInit {
     try {
       await this.api.setParentPin(this.familyId(), currentPassword, pin);
       this.cancel();
-      this.toasts.show('Your new parent PIN works now.');
+      this.toasts.show(translate('family.parentPin.saved', this.copyLocale.locale()));
       await this.reload();
       await this.auth.loadDevice().catch(() => undefined);
     } catch (error) {

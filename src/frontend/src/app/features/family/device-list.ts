@@ -1,5 +1,6 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
@@ -153,6 +154,7 @@ import { Toasts } from '../../shared/toast/toasts';
   `,
 })
 export class DeviceList implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   protected readonly auth = inject(AuthStore);
 
@@ -176,10 +178,10 @@ export class DeviceList implements OnInit {
 
   protected kind(device: Device): string {
     if (device.kind === 'Household') {
-      return 'Shared family device';
+      return translate('family.device.shared', this.copyLocale.locale());
     }
     const child = this.children().find((c) => c.id === device.childProfileId);
-    return child ? `${child.firstName}’s own device` : 'A child’s own device';
+    return child ? translate('family.device.childNamed', this.copyLocale.locale(), { name: child.firstName }) : translate('family.device.child', this.copyLocale.locale());
   }
 
   /**
@@ -199,7 +201,7 @@ export class DeviceList implements OnInit {
       await this.api.removeDevice(this.familyId(), device.id);
       this.confirming.set(null);
       await this.auth.loadDevice();
-      this.toasts.show(`${device.name} was removed.`);
+      this.toasts.show(translate('family.device.removed', this.copyLocale.locale(), { name: device.name }));
     });
   }
 
@@ -221,7 +223,7 @@ export class DeviceList implements OnInit {
       return;
     }
     await this.auth.signOut().catch(() => undefined);
-    this.toasts.show('This device is no longer shared.');
+    this.toasts.show(translate('family.device.unshared', this.copyLocale.locale()));
     await this.router.navigateByUrl('/sign-in', { replaceUrl: true });
   }
 
