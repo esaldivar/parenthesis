@@ -768,3 +768,7 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 
 - [ ] Complete CI build/full frontend and backend validation, including the new allergy PDF localization/tenant tests.
 - [ ] Verify Spanish section layouts on phone/desktop in light/dark, keyboard/screen-reader labels, Development language persistence/reload, and rendered allergy PDFs. See `docs/testing/child-essentials-spanish-577.md` for the audited inventory and local evidence.
+
+## Safari favicon fallbacks (#579)
+
+- [ ] After deploying the favicon fallback assets, verify the tab icon in Safari 16.6 on macOS 13, an SVG-capable browser, and Apple bookmarks/touch icons. Check image responses before clearing a stale favicon cache. Local exports and automated asset checks do not certify Safari acceptance.
