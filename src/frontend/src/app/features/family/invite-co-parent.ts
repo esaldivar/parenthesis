@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -92,6 +93,7 @@ import { FORM_STYLES } from '../auth/form-styles';
   ],
 })
 export class InviteCoParent {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
 
   readonly familyId = input.required<string>();
@@ -110,7 +112,7 @@ export class InviteCoParent {
   protected readonly sent = () => (this.sentNow() === undefined ? this.pending() : this.sentNow());
 
   protected expires(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    return new Date(iso).toLocaleDateString(this.copyLocale.locale(), { month: 'long', day: 'numeric' });
   }
 
   protected async send(): Promise<void> {
@@ -122,7 +124,7 @@ export class InviteCoParent {
   }
 
   protected async resend(email: string): Promise<void> {
-    await this.invite(email, 'A new invitation is on its way. The earlier link no longer works.');
+    await this.invite(email, translate('family.invitation.resent', this.copyLocale.locale()));
   }
 
   protected async revoke(invitation: InvitationSummary): Promise<void> {
@@ -133,7 +135,7 @@ export class InviteCoParent {
       await this.api.revokeInvitation(this.familyId(), invitation.id);
       this.sentNow.set(null);
       this.form.reset();
-      this.status.set('Invitation cancelled. That link no longer works.');
+      this.status.set(translate('family.invitation.cancelled', this.copyLocale.locale()));
     } catch (error) {
       this.error.set(generalMessage(toProblem(error)));
     } finally {

@@ -1,7 +1,7 @@
-import { TranslatePipe } from '../../core/i18n/translations';
-import { CalendarPalette } from '../calendar/calendar-palette';
+import { TranslatePipe } from '../../../../core/i18n/translations';
+import { CalendarPalette } from '../../../calendar/calendar-palette';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { Icon } from '../../shared/icon/icon';
+import { Icon } from '../../../../shared/icon/icon';
 
 /** The calendar key (bottom right of the week calendar): each style the calendar uses, named in text. */
 @Component({
@@ -22,6 +22,6 @@ import { Icon } from '../../shared/icon/icon';
       </li>
     </ul>
   `,
-  styleUrl: './calendar-key.scss',
+  styleUrl: './calendar-key.component.scss',
 })
 export class CalendarKey {}

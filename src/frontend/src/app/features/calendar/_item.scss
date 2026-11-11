@@ -1,4 +1,4 @@
-@use '../dashboard/proposed-fill' as *;
+@use '../../../styles/abstracts/proposed-fill' as *;
 
 // Both mixins take the item's selector and write complete rules, so they're included at the top level of a
 // component's styles (`@include item-colors('.item');`). Nothing in them depends on where they're included

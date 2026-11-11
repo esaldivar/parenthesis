@@ -1,9 +1,9 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
-import { CalendarPalette, CalendarPaletteKey } from '../calendar/calendar-palette';
+import { CalendarPalette, CalendarPaletteKey } from '../../../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -20,26 +20,26 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
-import { Api, CalendarEvent, FamilyMember } from '../../core/api/api';
-import { toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { CalendarItem, swapTargetFor, toItems } from '../calendar/calendar-items';
-import { monthGrid, startOfMonth } from '../calendar/calendar-month';
-import { fromFamilyLocal } from '../calendar/time';
-import { EventDetails } from '../calendar/event-details';
-import { AddAt, addQuery } from '../calendar/slot';
-import { Avatar } from '../../shared/avatar/avatar';
-import { Leaves } from '../../shared/decor/leaves';
-import { EmptyState } from '../../shared/empty-state/empty-state';
-import { Icon, IconName } from '../../shared/icon/icon';
-import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from './dashboard-data';
-import { blockRange, childNames, groupParentingTime } from './grouping';
-import { DashboardWeek, PlainDate, ScheduleStatus, eventPalette } from './model';
-import { StatusLabel } from './status-label';
-import { CATEGORY_ICONS } from './timeline';
-import { InlineView, WeekCalendar, WeekState } from './week-calendar';
-import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from './week';
-import { Toasts } from '../../shared/toast/toasts';
+import { Api, CalendarEvent, FamilyMember } from '../../../../core/api/api';
+import { toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { CalendarItem, swapTargetFor, toItems } from '../../../calendar/calendar-items';
+import { monthGrid, startOfMonth } from '../../../calendar/calendar-month';
+import { fromFamilyLocal } from '../../../calendar/time';
+import { EventDetails } from '../../../calendar/event-details';
+import { AddAt, addQuery } from '../../../calendar/slot';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { Leaves } from '../../../../shared/decor/leaves';
+import { EmptyState } from '../../../../shared/empty-state/empty-state';
+import { Icon, IconName } from '../../../../shared/icon/icon';
+import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from '../../data/dashboard-data';
+import { blockRange, childNames, groupParentingTime } from '../../grouping';
+import { DashboardWeek, PlainDate, ScheduleStatus, eventPalette } from '../../model';
+import { StatusLabel } from '../../components/status-label/status-label.component';
+import { CATEGORY_ICONS } from '../../timeline';
+import { InlineView, WeekCalendar, WeekState } from '../../components/week-calendar/week-calendar.component';
+import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from '../../week';
+import { Toasts } from '../../../../shared/toast/toasts';
 
 /** The current time; replaced in tests. */
 export const NOW = new InjectionToken<() => Date>('NOW', { factory: () => () => new Date() });
@@ -72,8 +72,8 @@ interface UpcomingItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet, CalendarPalette, RouterLink, MatButtonModule, EmptyState, Icon, Avatar, Leaves, StatusLabel, WeekCalendar, EventDetails, TranslatePipe],
   providers: [{ provide: DashboardDataSource, useExisting: LiveDashboardDataSource }],
-  templateUrl: './dashboard-page.html',
-  styleUrl: './dashboard-page.scss',
+  templateUrl: './dashboard-page.component.html',
+  styleUrl: './dashboard-page.component.scss',
 })
 export class DashboardPage {
   private readonly locale = inject(LocaleService);
@@ -160,19 +160,20 @@ export class DashboardPage {
     if (!data) {
       return [];
     }
+    const locale = this.locale.locale();
     const nowLocal = nowIn(this.timeZone(), this.now);
     const reviews: UpcomingItem[] = data.pendingReviews.map((r) => ({
       key: `review-${r.id}`,
       icon: 'approvals',
       category: 'review',
       title: r.summary,
-      when: `Proposed by ${r.proposedBy} · needs your review`,
+      when: translate('dash.proposedReview', this.locale.locale(), { name: r.proposedBy }),
       people: [],
       status: 'proposed',
       link: '/approvals',
       params: { request: r.id },
     }));
-    const parenting: UpcomingItem[] = groupParentingTime(data.parentingTime, { split: false })
+    const parenting: UpcomingItem[] = groupParentingTime(data.parentingTime, { split: false, locale })
       .filter((b) => b.status === 'confirmed' && b.end > nowLocal)
       .map((b) => ({
         key: `pt-${b.key}`,
@@ -180,13 +181,13 @@ export class DashboardPage {
         category: 'parenting',
         palette: b.caregiver.palette ?? 'parenting',
         title: b.title,
-        when: blockRange(b),
+        when: blockRange(b, locale),
         people: [
           { id: b.caregiver.membershipId, name: b.caregiver.displayName, kind: 'parent' },
           ...b.children.map((child) => ({ ...child, kind: 'child' as const })),
         ],
         status: b.status,
-        note: b.changePending ? 'Change pending' : undefined,
+        note: b.changePending ? this.t('calendar.filter.change-pending') : undefined,
         eventId: b.items[0].eventId && b.items.every((entry) => entry.eventId === b.items[0].eventId) ? b.items[0].eventId : undefined,
         link: '/calendar',
         params: { date: datePart(b.start) },
@@ -200,7 +201,7 @@ export class DashboardPage {
         category: e.category,
         palette: eventPalette(e.category),
         title: e.title,
-        when: e.time ? dateTimeLabel(`${e.date}T${e.time}`).replace(/, (\d)/, ' · $1') : dayLong(e.date),
+        when: e.time ? dateTimeLabel(`${e.date}T${e.time}`, locale).replace(/, (\d)/, ' · $1') : dayLong(e.date, locale),
         people: [
           ...(e.parents ?? []).map((p) => ({ id: p.membershipId, name: p.displayName, kind: 'parent' as const })),
           ...e.children.map((c) => ({ ...c, kind: 'child' as const })),
@@ -220,8 +221,10 @@ export class DashboardPage {
         title: n.title,
         when:
           n.kind === 'task'
-            ? `Task · due ${dayLong(n.date)}`
-            : `Reminder · ${n.time ? dateTimeLabel(`${n.date}T${n.time}`).replace(/, (\d)/, ' · $1') : dayLong(n.date)}`,
+            ? translate('dash.taskDue', locale, { date: dayLong(n.date, locale) })
+            : translate('dash.reminderWhen', locale, {
+                date: n.time ? dateTimeLabel(`${n.date}T${n.time}`, locale).replace(/, (\d)/, ' · $1') : dayLong(n.date, locale),
+              }),
         people: n.children.map((c) => ({ ...c, kind: 'child' as const })),
         status: 'confirmed',
         link: '/calendar',
@@ -254,7 +257,7 @@ export class DashboardPage {
     { label: 'Reminder', icon: 'bell', kind: 'reminder' },
   ] as const;
 
-  protected readonly childNames = childNames;
+  protected readonly childNames = (children: Parameters<typeof childNames>[0]) => childNames(children, 3, this.locale.locale());
   protected readonly dateMedium = dateMedium;
   protected readonly timeLabel = timeLabel;
 
@@ -310,7 +313,7 @@ export class DashboardPage {
       ]);
       if (request !== this.monthRequest) return;
       const schedule = events.filter(event => event.status === 'Confirmed' || event.status === 'PendingApproval');
-      this.monthItems.set(toItems(schedule, family.members, children, zone).map((item, index) => ({
+      this.monthItems.set(toItems(schedule, family.members, children, zone, this.locale.locale()).map((item, index) => ({
         ...item, childIds: schedule[index].childIds,
       })));
       this.monthState.set('ready');
@@ -367,23 +370,23 @@ export class DashboardPage {
       if (attempt !== this.opening) {
         return;
       }
-      const item = toItems([event], family.members, children, this.timeZone()).find((i) => i.id === eventId);
+      const item = toItems([event], family.members, children, this.timeZone(), this.locale.locale()).find((i) => i.id === eventId);
       if (!item) {
-        throw new Error('Not shown on the calendar');
+        throw new Error(translate('dash.notShown', this.locale.locale()));
       }
       // As on the Calendar page: unavailable time over that parent's parenting time offers a swap.
       const overlapping = item.kind === 'unavailable' ? await this.api.calendarEvents(familyId, event.startsAt, event.endsAt) : [];
       if (attempt !== this.opening) {
         return;
       }
-      const swapTarget = swapTargetFor(item, toItems(overlapping, family.members, children, this.timeZone()));
+      const swapTarget = swapTargetFor(item, toItems(overlapping, family.members, children, this.timeZone(), this.locale.locale()));
       this.details.set({ item, event, members: family.members, familyId, swapTarget });
     } catch (error) {
       if (attempt === this.opening) {
         this.toasts.show(
           toProblem(error).status === 404
-            ? 'That event isn’t on the calendar any more. The week has been refreshed.'
-            : 'We couldn’t open that event. Try again, or find it on the Calendar page.',
+            ? translate('dash.eventGone', this.locale.locale())
+            : translate('dash.openError', this.locale.locale()),
         );
         this.reload();
       }

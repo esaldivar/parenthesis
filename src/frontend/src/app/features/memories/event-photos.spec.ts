@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { EventPhoto, EventPhotos, PhotoBatch } from '../../core/api/api';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { Toasts } from '../../shared/toast/toasts';
 import { axeViolations } from '../../../testing/axe';
 import { EventPhotosSection } from './event-photos';
@@ -195,6 +196,23 @@ describe('event photos (#403)', () => {
       'You’ve added all 10 of your photos for this event. Delete one to add another.',
     );
     expect(el.querySelector('#photos-add')).toBeNull();
+  });
+
+  it('localizes the entire empty-state message and keeps both limits', async () => {
+    const { fixture, el } = await render(
+      view({ uploads: { ...view().uploads, used: 0, remaining: 10 } }),
+    );
+    const locale = TestBed.inject(LocaleService);
+    try {
+      locale.setLocale('es-419');
+      fixture.detectChanges();
+      expect(text(el)).toContain(
+        'Aún no hay fotos. Puedes agregar hasta 10 fotos tuyas, 5 a la vez. Solo tú puedes verlas hasta que las compartas.',
+      );
+      expect(text(el)).not.toContain('No photos yet');
+    } finally {
+      locale.setLocale('en');
+    }
   });
 
   it('checks files first, states privacy and retention, then reports each upload’s own result', async () => {

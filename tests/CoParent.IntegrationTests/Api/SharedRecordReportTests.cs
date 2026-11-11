@@ -178,6 +178,43 @@ public sealed class SharedRecordReportTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(0L, await CountAsync("entries", root));
     }
 
+    [Fact]
+    public async Task Transaction_export_requires_a_valid_range_and_an_authorized_parent()
+    {
+        var (dad, mom, root) = await FamilyAsync();
+        using var first = dad;
+        using var second = mom;
+        using var stranger = await ApiSession.SignedInAsync(api);
+
+        var route = $"{root}/shared-records/export/pdf";
+        using var missing = await dad.GetAsync(route);
+        using var reversed = await dad.GetAsync($"{route}?from=2026-11-02&to=2026-11-01");
+        using var empty = await dad.GetAsync($"{route}?from=2000-01-01&to=2000-01-01");
+        Assert.Equal(HttpStatusCode.BadRequest, missing.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, reversed.StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, empty.StatusCode);
+
+        var fund = await ConcertFundAsync(dad, root);
+        var approvalId = fund.GetProperty("approvalId").GetGuid();
+        var fundId = fund.GetProperty("id").GetGuid();
+        using var approved = await mom.PostAsync($"{root}/approvals/{approvalId}/approve");
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        var entry = await JsonAsync(await ReportAsync(dad, $"{root}/shared-funds/{fundId}/contributions", 15000, "Vendor", _pdf));
+        var submitted = entry.GetProperty("submittedAt").GetDateTimeOffset();
+        var familyDate = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(submitted, "America/Chicago");
+        var range = FormattableString.Invariant($"from={familyDate:yyyy-MM-dd}&to={familyDate:yyyy-MM-dd}");
+        using var exported = await mom.GetAsync($"{route}?{range}&language=es-419");
+        Assert.Equal(HttpStatusCode.OK, exported.StatusCode);
+        Assert.Equal("application/pdf", exported.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("attachment", exported.Content.Headers.ContentDisposition?.DispositionType);
+        Assert.True(exported.Headers.CacheControl?.NoStore);
+        var bytes = await exported.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("%PDF", Encoding.ASCII.GetString(bytes[..4]));
+
+        using var unauthorized = await stranger.GetAsync($"{route}?{range}");
+        Assert.Equal(HttpStatusCode.NotFound, unauthorized.StatusCode);
+    }
+
     private async Task<(ApiSession Dad, ApiSession Mom, string Root)> FamilyAsync(WebApplicationFactory<Program>? host = null)
     {
         host ??= api;

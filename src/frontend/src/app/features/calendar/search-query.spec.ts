@@ -46,6 +46,13 @@ describe('calendar search text (#253)', () => {
     expect(toSearch('Sam school', MEMBERS, TODAY)?.caregiver).toBeNull();
   });
 
+  it('recognizes Spanish dates and event types while preserving title search text', () => {
+    expect(parseDate('12/10', TODAY, 'es-419')).toBe('2026-10-12');
+    expect(parseDate('12 de septiembre de 2025', TODAY, 'es-419')).toBe('2025-09-12');
+    expect(toSearch('Evento familiar', MEMBERS, TODAY, 'es-419')?.categories).toEqual(['Joint']);
+    expect(toSearch('Soccer practice', MEMBERS, TODAY, 'es-419')?.q).toBe('Soccer practice');
+  });
+
   it('searches a date by day only', () => {
     expect(toSearch('Oct 12', MEMBERS, TODAY)).toEqual({ q: null, categories: [], caregiver: null, on: '2026-10-12' });
   });

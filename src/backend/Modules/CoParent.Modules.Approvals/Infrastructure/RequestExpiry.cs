@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Approvals.Domain;
+using CoParent.Modules.Approvals.Infrastructure.Persistence;
 using CoParent.SharedKernel.Auditing;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Tenancy;

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
 import { addTrackingReference, trackDependabotRun } from './dependabot-tracking.mjs';
 import { references } from './pr-issue-links.mjs';
 
@@ -114,4 +115,14 @@ test('fails closed when more than one generated issue matches the PR', async () 
   issues.push({ ...issues[0], number: 235 });
   await assert.rejects(trackDependabotRun(api, repository, run), /Multiple tracking issues/);
   assert.equal(writes.length, 2);
+});
+
+
+test('tracking uses the trusted workflow event checkout without a ref override or triggering artifacts', () => {
+  const workflow = readFileSync(new URL('../workflows/dependabot-tracking.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /workflow_run:/);
+  assert.match(workflow, /uses: actions\/checkout@[0-9a-f]{40} # v7/);
+  assert.doesNotMatch(workflow, /^\s+ref:/m);
+  assert.doesNotMatch(workflow, /uses:.*download-artifact|workflow_run\.head_(sha|repository)/);
+  assert.match(workflow, /persist-credentials: false/);
 });

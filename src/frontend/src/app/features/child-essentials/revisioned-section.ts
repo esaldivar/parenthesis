@@ -1,3 +1,5 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { translate } from '../../core/i18n/translations';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Directive, inject, input, signal } from '@angular/core';
 import { Api } from '../../core/api/api';
@@ -19,6 +21,7 @@ export abstract class RevisionedSection<
   TValues,
   TEntry,
 > {
+  private readonly copyLocale = inject(LocaleService);
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
   protected readonly api = inject(Api);
@@ -75,7 +78,7 @@ export abstract class RevisionedSection<
       if (error instanceof HttpErrorResponse && error.status === 409) {
         this.conflict.set(error.error as TView);
       } else {
-        this.error.set('Changes couldn’t be saved. Your draft is still here.');
+        this.error.set(translate('essentials.changes.error', this.copyLocale.locale()));
       }
     } finally {
       this.saving.set(false);

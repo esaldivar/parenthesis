@@ -4,7 +4,7 @@ using CoParent.Modules.Approvals.Domain;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParent.Modules.Approvals.Infrastructure;
+namespace CoParent.Modules.Approvals.Infrastructure.Persistence;
 
 /// <summary>Change requests and decisions in the <c>approvals</c> schema, filtered to the request's tenant.</summary>
 internal sealed class ApprovalsDbContext(DbContextOptions<ApprovalsDbContext> options, ITenantContext tenant)

@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -51,6 +52,7 @@ import { Toasts } from '../../shared/toast/toasts';
   `,
 })
 export class GooglePhotosCallback implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -73,19 +75,19 @@ export class GooglePhotosCallback implements OnInit {
     if (denied || !code || !state) {
       this.message.set(
         denied === 'access_denied'
-          ? 'Google Photos wasn’t connected, because access wasn’t allowed on Google’s page.'
-          : 'Google Photos wasn’t connected. Start again from Settings.',
+          ? translate('google.photos.denied', this.copyLocale.locale())
+          : translate('google.photos.connectError', this.copyLocale.locale()),
       );
       return;
     }
     if (family?.role !== 'Parent') {
-      this.message.set('Only a parent can connect Google Photos. Start again from Settings.');
+      this.message.set(translate('google.photos.parentOnly', this.copyLocale.locale()));
       return;
     }
 
     try {
       const status = await this.api.googlePhotosConnect(family.id, code, state);
-      this.toasts.show('Google Photos is connected.');
+      this.toasts.show(translate('google.photos.connected', this.copyLocale.locale()));
       await this.router.navigateByUrl(
         status.returnEventId
           ? `/memories/${encodeURIComponent(status.returnEventId)}`

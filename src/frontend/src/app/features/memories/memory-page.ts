@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -106,6 +107,7 @@ import { familyDate } from './photo-text';
   `,
 })
 export class MemoryPage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
 
@@ -146,11 +148,11 @@ export class MemoryPage {
       parts.push(`${shared} shared by ${co}`);
     }
     if (view.cancelled) {
-      parts.push('event cancelled');
+      parts.push(translate('memory.event.cancelled', this.copyLocale.locale()));
     }
     const blocked = view.batches.some((b) => !b.yours && !b.downloadsAllowed);
     const downloads = blocked
-      ? `${this.coParent() ?? 'Your co-parent'} hasn’t allowed downloads of their photos, so you can view them here but not download them.`
+      ? translate('memory.details.noDownload', this.copyLocale.locale(), { name: this.coParent() ?? translate('common.coParent', this.copyLocale.locale()) })
       : null;
     return { title: view.title, line: parts.join(' · '), downloads };
   });
@@ -186,7 +188,7 @@ export class MemoryPage {
       if (problem.status === 404) {
         this.state.set('missing');
       } else {
-        this.error.set(`This memory couldn’t load. ${generalMessage(problem)}`);
+        this.error.set(translate('memory.details.loadError', this.copyLocale.locale(), { reason: generalMessage(problem) }));
         this.state.set('error');
       }
     }

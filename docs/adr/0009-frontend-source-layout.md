@@ -1,0 +1,89 @@
+# ADR-0009: Frontend source ownership and feature layout
+
+- **Status:** Proposed with the Dashboard pilot (#567).
+- **Date:** 2026-11-10
+
+## Context
+
+The standalone Angular app is already organized by feature, but Dashboard mixes its routed page, leaf UI,
+data source, scheduling logic, and Sass in one directory. Core and shared code are organized mostly by
+responsibility, with shells in `app/layout`. Several features also import date types and helpers from Dashboard.
+Moving files incrementally lets us confirm that source boundaries and naming work without changing behavior.
+
+## Proposed structure
+
+```text
+src/frontend/
+  public/                          Direct-served assets with stable URLs
+  src/
+    app/
+      core/
+        guards/
+        interceptors/
+        services/                  App-wide singletons grouped by responsibility
+        models/                    App-wide contracts
+        layout/                    Parent and kid shells, navigation
+      shared/
+        components/
+        directives/
+        pipes/
+      features/
+        dashboard/
+          pages/dashboard-page/    Routed page and its template, style and spec
+          components/<name>/       Feature-owned UI and companion files
+          data/                    Dashboard data source and its spec
+      app.config.ts
+      app.routes.ts
+      app.component.ts             Root component and any companions
+    styles/
+      abstracts/                   Tokens and mixins
+      base/                        Global defaults and typography
+      themes/                      Theme definitions
+    testing/                       Cross-feature fixtures and helpers
+    index.html
+    main.ts
+    styles.scss
+```
+
+Keep global styles and test helpers under `src` alongside `app`, following their current entry points.
+The root component currently lives in `app.ts`. Its rename belongs to the app-shell slice. Keep inline
+templates and styles with small components that already use them. Create companion files or folders when they
+have a consumer. Introduce `src/assets` for build-managed assets and `src/environments` for non-secret build
+settings when needed. The existing workspace serves assets from `public` in both configurations and uses its
+dev proxy for same-origin API calls.
+
+### Import boundaries
+
+- Application composition owns route registration and shell composition. Preserve the standalone lazy route
+  loaders. When moving the shells, wire feature-owned UI such as the Messages dock at the composition boundary.
+- Core services, guards, interceptors, and models support features through stable contracts. They depend on
+  platform libraries or other core code. Core production code does not import a feature.
+- Shared UI can use core contracts and other shared primitives. It does not import features. Reuse across two
+  screens in the same feature is a reason to keep a component in that feature.
+- Feature pages compose feature-local components, data and domain code. Extract genuinely cross-feature
+  behavior at the narrowest shared boundary. When a feature intentionally hosts another feature's UI, import
+  its designated entry component directly and keep the dependency one-way.
+- Keep specs beside their source. Cross-feature fixtures such as `calendar-fixtures.ts`, `fake-auth.ts`,
+  `date-format.ts`, `axe.ts`, and `toasts.ts` stay in `src/testing`. Feature-only fixtures stay with their
+  consumers. Avoid new barrel exports and import cycles.
+
+## Inventory and move map
+
+Paths in this table are relative to `src/frontend/src` unless stated otherwise.
+
+| Existing entry or dependency | Pilot and follow-up |
+| --- | --- |
+| `app/app.routes.ts` and `app/features/parent.routes.ts` | Keep root routes and parent/child guards in place. Update the parent Home route's dynamic import to the moved page. |
+| `app/features/dashboard/dashboard-page.*` | Move to `app/features/dashboard/pages/dashboard-page/dashboard-page.component.*`, including the HTML, SCSS, and spec. |
+| `calendar-key`, `child-avatars`, `dashboard-child-filter`, `status-label`, `week-calendar` in Dashboard | Move each to `app/features/dashboard/components/<name>/<name>.component.*` with its existing companions. |
+| `dashboard/dashboard-data.ts` and its spec | Move both into `dashboard/data/`. |
+| `dashboard/_proposed-fill.scss` | Move the shared fill mixin to `styles/abstracts/` and update its two Dashboard consumers and Calendar’s item styles. |
+| `dashboard/week.ts`, `dashboard/model.ts`, and Calendar imports | Calendar uses Dashboard date types and helpers. Messages and Memories also use the date helpers. Dashboard hosts Calendar components and uses a Memories text helper. Keep these dependencies stable in the pilot. Separate feature-neutral date and calendar contracts before migrating Calendar. |
+| `app/layout` and root composition | Move the shells and navigation in a separate slice. Preserve route guards, scope, and providers. The parent shell currently imports the Messages dock, and the storage inventory spec reads the Privacy inventory. Keep that test dependency out of runtime imports. |
+| `styles.scss` and `styles/_tokens.scss` | Keep their current order in the pilot. Separate Sass abstracts, base and themes in a follow-up with a compiled CSS comparison. |
+| `public/brand` and `public/art` (workspace root) | Retain the CLI's `public` copy rule and verify the same output paths and file bytes. |
+| `src/testing` and `tests/e2e` (repository root) | Retain the test entry points, and update relative imports from relocated Dashboard specs. |
+
+The pilot relocates the Dashboard files and references. App-wide layout, styles, import boundaries, and the
+remaining feature moves proceed in focused PRs after the pilot. Track follow-up and release acceptance in
+[TODO.md](../../TODO.md).

@@ -39,6 +39,7 @@ RUN dotnet restore src/backend/CoParent.Api/CoParent.Api.csproj -r "$(cat /tmp/r
 
 COPY .editorconfig ./
 COPY src/backend/ src/backend/
+COPY src/frontend/public/brand/parenthesis-icon.svg src/frontend/public/brand/parenthesis-icon.svg
 RUN dotnet publish src/backend/CoParent.Api/CoParent.Api.csproj -c Release --no-restore -o /app \
     -r "$(cat /tmp/rid)" --self-contained false -p:PublishReadyToRun=true
 

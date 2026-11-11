@@ -245,7 +245,7 @@ fieldset {
   border: 1px solid var(--color-outline);
   border-radius: var(--radius-control);
   background: #fff;
-  color: #1f2a26;
+  color: #222;
 }
 
 .paper:focus-visible {
@@ -253,25 +253,65 @@ fieldset {
   outline-offset: 2px;
 }
 
+.paper-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid #4b4b4b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.paper-brand img {
+  filter: grayscale(1);
+}
+
 .paper h3 {
-  margin: 0;
-  font-size: 1.25rem;
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 1.5rem;
 }
 
 .paper h4 {
   margin: var(--space-3) 0 var(--space-1);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid #4b4b4b;
   font-size: 0.9375rem;
 }
 
-.paper-range {
-  margin: 0;
-  font-weight: 600;
+.paper-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: var(--space-2);
+  background: #f2f2f2;
+  overflow-wrap: anywhere;
+  font-size: 0.8125rem;
 }
 
+.paper-facts dt {
+  color: #4b4b4b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.paper-facts dd,
 .paper-meta {
   margin: 0;
-  color: #55605b;
+}
+
+.paper-meta,
+.time {
+  color: #4b4b4b;
   font-size: 0.8125rem;
+}
+
+.paper-facts + .paper-meta {
+  text-align: end;
 }
 
 .paper-messages {
@@ -283,29 +323,32 @@ fieldset {
 }
 
 .paper-messages li {
-  display: grid;
-  grid-template-columns: 4.5rem 1fr;
-  gap: var(--space-2);
-}
-
-.time {
-  color: #55605b;
-  font-size: 0.8125rem;
-  white-space: nowrap;
-}
-
-.body {
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid #ababab;
   overflow-wrap: anywhere;
 }
 
+.message-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  column-gap: var(--space-2);
+}
+
+.text,
+.event {
+  margin: var(--space-1) 0 0;
+}
+
 .text {
-  white-space: pre-line;
+  white-space: pre-wrap;
 }
 
 .event {
-  display: block;
-  color: #55605b;
-  font-size: 0.875rem;
+  color: #4b4b4b;
+  font-size: 0.8125rem;
+  font-weight: 700;
 }
 
 .file-name {

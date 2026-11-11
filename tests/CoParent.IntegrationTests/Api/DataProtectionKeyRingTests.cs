@@ -13,7 +13,7 @@ public sealed class DataProtectionKeyRingTests(ApiFactory api)
     [Fact]
     public async Task Keys_are_stored_in_the_database()
     {
-        await api.CreateClient().GetAsync("/api/antiforgery", TestContext.Current.CancellationToken);
+        using var session = await ApiSession.StartAsync(api);
 
         var keys = await api.QueryScalarAsync<long>("select count(*) from data_protection.keys");
 

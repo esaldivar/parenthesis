@@ -5,7 +5,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl } from '@angular/forms';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
-import { LOCATION_OPTIONS, LocationField, NEARBY_MESSAGES, SUGGESTION_DELAY_MS } from './location-field';
+import { translate } from '../../core/i18n/translations';
+import { LOCATION_OPTIONS, LocationField, SUGGESTION_DELAY_MS } from './location-field';
 
 // Synthetic addresses only. Google is never called: the API answers in its place.
 const URL = '/api/families/family-1/calendar/place-suggestions';
@@ -279,7 +280,7 @@ describe('“Use my location” for nearby suggestions (#414)', () => {
 
     button().click();
     succeed();
-    expect(status()).toBe(NEARBY_MESSAGES.on);
+    expect(status()).toBe(translate('calendar.location.on', 'en'));
     expect(button().getAttribute('aria-pressed')).toBe('true');
     vi.advanceTimersByTime(SUGGESTION_DELAY_MS);
 
@@ -301,16 +302,16 @@ describe('“Use my location” for nearby suggestions (#414)', () => {
     fixture.detectChanges();
 
     expect(button().getAttribute('aria-pressed')).toBe('false');
-    expect(status()).toBe(NEARBY_MESSAGES.stopped);
+    expect(status()).toBe(translate('calendar.location.stopped', 'en'));
     await type('Example Park');
     vi.advanceTimersByTime(SUGGESTION_DELAY_MS);
     expect(http.expectOne(URL).request.body.latitude).toBeUndefined();
   });
 
   it.each([
-    [1, NEARBY_MESSAGES.denied],
-    [2, NEARBY_MESSAGES.unavailable],
-    [3, NEARBY_MESSAGES.unavailable],
+    [1, translate('calendar.location.denied', 'en')],
+    [2, translate('calendar.location.unavailable', 'en')],
+    [3, translate('calendar.location.unavailable', 'en')],
   ])('explains the fallback when the browser answers error %i, and typing still works', async (code, message) => {
     button().click();
     fail(code);

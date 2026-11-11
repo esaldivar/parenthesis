@@ -11,6 +11,30 @@
         </div>
         <img class="records-hero__art" src="art/shared-records/paper-and-ribbon.webp" alt="" width="600" height="400" />
       </header>
+      <details #exportForm class="records-export" [open]="exportOpen()" (toggle)="exportOpen.set(exportForm.open)">
+        <summary>{{ 'records.export.title' | tr }}</summary>
+        @if (exportOpen()) {
+          <form (submit)="downloadRecords($event, from.value, to.value)" (input)="exportError.set(null); exportNotice.set(null)">
+            <p>{{ 'records.export.rangeHelp' | tr }}</p>
+            <div class="records-export__dates">
+              <label>{{ 'feature.start.date' | tr }}
+                <input #from type="date" name="exportFrom" min="1900-01-01" max="9998-12-31" required />
+              </label>
+              <label>{{ 'feature.end.date' | tr }}
+                <input #to type="date" name="exportTo" min="1900-01-01" max="9998-12-31" required />
+              </label>
+            </div>
+            <button type="submit" class="primary" [disabled]="exporting()">{{ 'feature.download.pdf' | tr }}</button>
+            <p role="status">
+              @if (exporting()) { {{ 'records.export.generating' | tr }} }
+              @else if (exportNotice(); as notice) { {{ notice | tr }} }
+            </p>
+            @if (exportError(); as error) {
+              <p role="alert">{{ error | tr }}</p>
+            }
+          </form>
+        }
+      </details>
       @if (workspace(); as data) {
         @if (!data.hasCoParent) {
           <p class="muted">{{ 'feature.your.co.parent.must.join.before.you' | tr }}</p>
@@ -34,7 +58,7 @@
               <article aria-labelledby="record-title">
                 <div class="badges">
                   <span class="badge">{{ 'feature.shared.fund' | tr }}</span>
-                  <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] }}</span>
+                  <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] | tr }}</span>
                 </div>
                 <h2 #recordHeading id="record-title" tabindex="-1">{{ fund.title }}</h2>
                 @let mine = fund.proposerId === data.membershipId;

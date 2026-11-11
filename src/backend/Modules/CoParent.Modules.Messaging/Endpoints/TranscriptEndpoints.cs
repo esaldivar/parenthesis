@@ -16,7 +16,7 @@ namespace CoParent.Modules.Messaging.Endpoints;
 internal sealed record SavedTranscriptView(
     Guid Id, string FileName, DateOnly? From, DateOnly? To, string RangeLabel, int MessageCount, DateTimeOffset CreatedAt);
 
-internal sealed record SaveTranscriptRequest(DateOnly? From, DateOnly? To);
+internal sealed record SaveTranscriptRequest(DateOnly? From, DateOnly? To, string? Language);
 
 /// <summary>
 /// PDF transcripts of the parents' conversation (#125, slice 3 of docs/design/m4-chat.md). A parent previews a range (or
@@ -40,27 +40,28 @@ internal static class TranscriptEndpoints
 
     /// <summary>What the PDF for this range will hold, for the in-app preview. An empty range has no days.</summary>
     private static async Task<Results<Ok<TranscriptDocument>, ValidationProblem, ForbidHttpResult>> PreviewAsync(
-        DateOnly? from, DateOnly? to, ITenantContext tenant, TranscriptBuilder builder, CancellationToken ct)
+        DateOnly? from, DateOnly? to, string? language, HttpContext http, ITenantContext tenant, TranscriptBuilder builder, CancellationToken ct)
     {
         if (tenant.Role != FamilyRole.Parent)
         {
             return TypedResults.Forbid();
         }
 
-        var (document, errors) = await BuildAsync(from, to, tenant, builder, ct);
+        http.Response.Headers.CacheControl = "no-store";
+        var (document, errors) = await BuildAsync(from, to, language, builder, ct);
         return document is null ? TypedResults.ValidationProblem(errors) : TypedResults.Ok(document);
     }
 
     /// <summary>The range as a PDF, shown in the browser or (<paramref name="download"/>) saved to the device. Nothing is stored.</summary>
     private static async Task<Results<FileContentHttpResult, ValidationProblem, ForbidHttpResult>> PdfAsync(
-        DateOnly? from, DateOnly? to, bool? download, HttpContext http, ITenantContext tenant, TranscriptBuilder builder, CancellationToken ct)
+        DateOnly? from, DateOnly? to, bool? download, string? language, HttpContext http, ITenantContext tenant, TranscriptBuilder builder, CancellationToken ct)
     {
         if (tenant.Role != FamilyRole.Parent)
         {
             return TypedResults.Forbid();
         }
 
-        var (document, errors) = await BuildAsync(from, to, tenant, builder, ct, requireMessages: true);
+        var (document, errors) = await BuildAsync(from, to, language, builder, ct, requireMessages: true);
         return document is null ? TypedResults.ValidationProblem(errors) : Pdf(http, TranscriptPdf.Render(document), document.FileName, download == true);
     }
 
@@ -73,7 +74,7 @@ internal static class TranscriptEndpoints
             return TypedResults.Forbid();
         }
 
-        var (document, errors) = await BuildAsync(request.From, request.To, tenant, builder, ct, requireMessages: true);
+        var (document, errors) = await BuildAsync(request.From, request.To, request.Language, builder, ct, requireMessages: true);
         if (document is null)
         {
             return TypedResults.ValidationProblem(errors);
@@ -128,7 +129,7 @@ internal static class TranscriptEndpoints
     }
 
     private static async Task<(TranscriptDocument? Document, Dictionary<string, string[]> Errors)> BuildAsync(
-        DateOnly? from, DateOnly? to, ITenantContext tenant, TranscriptBuilder builder, CancellationToken ct, bool requireMessages = false)
+        DateOnly? from, DateOnly? to, string? language, TranscriptBuilder builder, CancellationToken ct, bool requireMessages = false)
     {
         var errors = TranscriptRange.Validate(from, to);
         if (errors.Count > 0)
@@ -136,7 +137,7 @@ internal static class TranscriptEndpoints
             return (null, errors);
         }
 
-        var document = await builder.BuildAsync(tenant, new TranscriptRange(from, to), ct);
+        var document = await builder.BuildAsync(new TranscriptRange(from, to), language, ct);
         if (document is null)
         {
             return (null, new() { ["from"] = [$"That range has more than {TranscriptBuilder.MaxMessages:N0} messages. Choose a shorter range."] });
@@ -149,9 +150,7 @@ internal static class TranscriptEndpoints
 
     /// <summary>The list's dates: the chosen range, or for all messages the first and last message dates.</summary>
     private static string Label(TranscriptDocument document) =>
-        document is { From: { } from, To: { } to }
-            ? TranscriptBuilder.DateRange(from, to)
-            : TranscriptBuilder.DateRange(document.Days[0].Date, document.Days[^1].Date);
+        document.From.HasValue ? document.RangeLabel : document.Labels.Range(document.Days[0].Date, document.Days[^1].Date);
 
     private static SavedTranscriptView View(ChatTranscript t) =>
         new(t.Id, t.FileName, t.RangeFrom, t.RangeTo, t.RangeLabel, t.MessageCount, t.CreatedAt);

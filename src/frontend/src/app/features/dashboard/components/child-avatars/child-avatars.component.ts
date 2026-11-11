@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { ChildRef } from './model';
+import { ChildRef } from '../../model';
 
 /**
  * Children's avatars side by side. Abstract initials on a neutral fill: no photos, skin tones or gender cues, and

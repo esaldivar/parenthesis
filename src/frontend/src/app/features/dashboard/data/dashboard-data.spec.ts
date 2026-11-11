@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { CHILDREN, MEMBERS, child, event, reminder, task } from '../../../testing/calendar-fixtures';
-import { fakeAuth } from '../../../testing/fake-auth';
+import { CHILDREN, MEMBERS, child, event, reminder, task } from '../../../../testing/calendar-fixtures';
+import { fakeAuth } from '../../../../testing/fake-auth';
 import { LiveDashboardDataSource } from './dashboard-data';
 
 const F = '/api/families/family-1';

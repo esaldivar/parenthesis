@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, Reminder } from '../../core/api/api';
@@ -27,6 +28,7 @@ import { ReminderForm } from './reminder-form';
   styles: [FORM_STYLES],
 })
 export class ReminderEditPage implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly family = inject(AuthStore).currentFamily;
 
@@ -49,7 +51,7 @@ export class ReminderEditPage implements OnInit {
       this.reminder.set(await this.api.reminder(family.id, this.reminderId()));
     } catch (error) {
       const problem = toProblem(error);
-      this.error.set(problem.status === 404 ? 'We couldn’t find that reminder. It may have been deleted.' : generalMessage(problem));
+      this.error.set(problem.status === 404 ? translate('calendar.reminder.missing', this.copyLocale.locale()) : generalMessage(problem));
     }
   }
 }

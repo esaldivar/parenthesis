@@ -191,7 +191,7 @@ export class EmergencyContactsSection {
         this.error.set(`Couldn’t save for ${failed.map(child => child.firstName).join(', ')}. Retry to add the missing contact.`);
         return;
       }
-      this.notice.set('Emergency contact saved for all children.');
+      this.notice.set(translate('essentials.emergency.savedAll', this.locale.locale()));
       this.editing.set(null);
     } catch (error) {
       this.reportSaveError(error);
@@ -226,14 +226,14 @@ export class EmergencyContactsSection {
     this.notice.set('');
     try {
       this.view.set(await this.api.saveEmergencyContacts(this.familyId(), this.childId(), { version: saved.version, contacts }));
-      this.notice.set('Emergency contacts saved.');
+      this.notice.set(translate('essentials.emergency.saved', this.locale.locale()));
       return true;
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 409) {
         this.view.set(error.error as EmergencyContactsView);
         this.editing.set(null);
         this.confirmRemove.set(null);
-        this.error.set('The list was updated by your co-parent. Review the current contacts before making your edit again.');
+        this.error.set(translate('essentials.emergency.conflict', this.locale.locale()));
       } else {
         this.reportSaveError(error);
       }
@@ -253,7 +253,7 @@ export class EmergencyContactsSection {
       await this.api.saveEmergencyContacts(this.familyId(), childId, {
         version: target.version, contacts: [...target.contacts, { ...contact, id: null, callFirst: false }],
       });
-      this.notice.set('Emergency contact copied.');
+      this.notice.set(translate('essentials.emergency.copied', this.locale.locale()));
     } catch (error) {
       this.reportSaveError(error);
     } finally {
@@ -264,7 +264,7 @@ export class EmergencyContactsSection {
   private reportSaveError(error: unknown): void {
     const validation = error instanceof HttpErrorResponse && error.status === 400
       ? error.error?.errors as Record<string, string[]> | undefined : undefined;
-    this.error.set(validation ? Object.values(validation).flat().join(' ') : 'The contact couldn’t be saved. Try again.');
+    this.error.set(validation ? Object.values(validation).flat().join(' ') : translate('essentials.emergency.saveError', this.locale.locale()));
   }
 
   protected phoneLink(phone: string): string {

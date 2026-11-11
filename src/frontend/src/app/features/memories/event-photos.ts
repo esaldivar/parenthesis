@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import {
   ChangeDetectionStrategy,
@@ -75,6 +76,7 @@ interface ShownBatch {
   styleUrl: './event-photos.scss',
 })
 export class EventPhotosSection {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
   private readonly now = inject(PHOTOS_NOW);
@@ -223,17 +225,19 @@ export class EventPhotosSection {
       return blockedText(u.blocked, this.caregiver());
     }
     if (!u.available) {
-      return 'Adding photos isn’t available yet.';
+      return translate('memory.upload.unavailable', this.copyLocale.locale());
     }
     if (u.remaining === 0) {
-      return `You’ve added all ${u.cap} of your photos for this event. Delete one to add another.`;
+      return translate('memory.upload.limitReached', this.copyLocale.locale(), { limit: u.cap });
     }
     if (u.used === 0 && this.total() === 0) {
-      return `No photos yet. Add up to ${u.cap} of your own, ${u.maxPerUpload} at a time. ${
-        this.coParent() ? 'Only you see them unless you share them.' : 'Only you see them.'
-      }`;
+      const locale = this.copyLocale.locale();
+      return translate(this.coParent() ? 'memory.upload.emptyWithCoParent' : 'memory.upload.empty', locale, {
+        limit: u.cap,
+        batch: u.maxPerUpload,
+      });
     }
-    return `You can add ${u.remaining} more (${u.used} of your ${u.cap} used). Photos are deleted ${RETENTION_DAYS} days after upload.`;
+    return translate('memory.upload.quota', this.copyLocale.locale(), { remaining: u.remaining, used: u.used, limit: u.cap, days: RETENTION_DAYS });
   });
 
   protected readonly ready = computed(() => this.picks().filter((p) => p.state === 'ready'));
@@ -246,13 +250,13 @@ export class EventPhotosSection {
     }
     const uploads = this.view()?.uploads;
     return uploads && room < uploads.maxPerUpload
-      ? `This event has room for ${room} more of your photos. Choose ${room === 1 ? '1 photo' : `${room} or fewer`}.`
-      : `Add up to ${room} photos at a time. Choose ${room} or fewer.`;
+      ? translate(room === 1 ? 'memory.upload.roomOne' : 'memory.upload.roomMany', this.copyLocale.locale(), { room })
+      : translate('memory.upload.batchLimit', this.copyLocale.locale(), { limit: room, max: room });
   });
   protected readonly storageLeft = computed(() => {
     const u = this.view()?.uploads;
     return u
-      ? `${sizeText(Math.max(0, u.storageLimitBytes - u.storageUsedBytes))} of your ${sizeText(u.storageLimitBytes)} left`
+      ? translate('memory.upload.spaceLeft', this.copyLocale.locale(), { remaining: sizeText(Math.max(0, u.storageLimitBytes - u.storageUsedBytes)), limit: sizeText(u.storageLimitBytes) })
       : '';
   });
   protected readonly deletedOnIfAdded = computed(() =>
@@ -264,11 +268,11 @@ export class EventPhotosSection {
     const pending = picks.some((p) => p.state === 'waiting' || p.state === 'uploading');
     const failed = picks.filter((p) => p.state === 'failed').length;
     if (pending) {
-      return `Adding photos… ${this.added()} of ${picks.length} added.`;
+      return translate('memory.upload.progress', this.copyLocale.locale(), { added: this.added(), total: picks.length });
     }
     return failed
-      ? `${this.added()} of ${picks.length} photos added. ${failed} couldn’t be added.`
-      : `${this.added() === 1 ? 'Your photo was' : `All ${this.added()} photos were`} added.`;
+      ? translate('memory.upload.partial', this.copyLocale.locale(), { added: this.added(), total: picks.length, failed })
+      : translate(this.added() === 1 ? 'memory.upload.addedOne' : 'memory.upload.addedMany', this.copyLocale.locale(), { count: this.added() });
   });
 
   protected readonly heading = computed(() => `photos-heading-${this.eventId()}`);
@@ -315,7 +319,7 @@ export class EventPhotosSection {
       }
     } catch (error) {
       if (this.eventId() === eventId) {
-        this.loadError.set(`Photos couldn’t load. ${generalMessage(toProblem(error))}`);
+        this.loadError.set(translate('memory.photos.loadError', this.copyLocale.locale(), { reason: generalMessage(toProblem(error)) }));
         this.state.set('error');
       }
     }
@@ -323,22 +327,25 @@ export class EventPhotosSection {
 
   protected batchLabel(shown: ShownBatch): string {
     return shown.batch.yours
-      ? `Your photos · ${shown.date}`
-      : `${this.coParent() ?? 'Your co-parent'}’s photos · ${shown.date}`;
+      ? translate('memory.photos.ownBatch', this.copyLocale.locale(), { date: shown.date })
+      : translate('memory.photos.parentBatch', this.copyLocale.locale(), { name: this.coParent() ?? translate('common.coParent', this.copyLocale.locale()), date: shown.date });
   }
 
   protected sharingChip(batch: PhotoBatch): string {
     if (!batch.yours) {
-      return 'Shared with you';
+      return translate('memory.photos.sharedWithYou', this.copyLocale.locale());
     }
     return batch.visibleToCoParent && this.coParent()
-      ? `Shared with ${this.coParent()}`
-      : 'Only you';
+      ? translate('memory.photos.sharedWith', this.copyLocale.locale(), { name: this.coParent() ?? translate('common.coParent', this.copyLocale.locale()) })
+      : translate('memory.photos.onlyYou', this.copyLocale.locale());
   }
 
   protected photoLabel(photo: EventPhoto, shown: ShownBatch, index: number): string {
-    const whose = shown.batch.yours ? 'yours' : `shared by ${this.coParent() ?? 'your co-parent'}`;
-    return `Photo ${shown.first + index} of ${this.total()}, ${whose}`;
+    const locale = this.copyLocale.locale();
+    const whose = shown.batch.yours
+      ? translate('memory.photos.yours', locale)
+      : translate('memory.photos.sharedBy', locale, { name: this.coParent() ?? translate('common.coParentLower', locale) });
+    return translate('memory.photos.position', locale, { position: shown.first + index, total: this.total(), owner: whose });
   }
 
   // --- Adding photos -------------------------------------------------------------------------------------------------
@@ -496,8 +503,8 @@ export class EventPhotosSection {
       await this.load();
       this.toasts.show(
         visible
-          ? `${this.coParent() ?? 'Your co-parent'} can now see these photos.`
-          : `${this.coParent() ?? 'Your co-parent'} can’t see these photos any more.`,
+          ? translate('memory.photos.sharingEnabled', this.copyLocale.locale(), { name: this.coParent() ?? translate('common.coParent', this.copyLocale.locale()) })
+          : translate('memory.photos.sharingDisabled', this.copyLocale.locale(), { name: this.coParent() ?? translate('common.coParent', this.copyLocale.locale()) }),
       );
     } catch (error) {
       this.actionError.set(generalMessage(toProblem(error)));
@@ -583,7 +590,7 @@ export class EventPhotosSection {
       this.openPhoto.set(null);
       this.confirmingDelete.set(false);
       await this.load();
-      this.toasts.show('Photo deleted. Its spot and storage are free again.');
+      this.toasts.show(translate('memory.photos.deleted', this.copyLocale.locale()));
       this.focus(this.canAdd() ? '#photos-add' : `#${this.heading()}`);
     } catch (error) {
       this.actionError.set(generalMessage(toProblem(error)));
@@ -715,7 +722,7 @@ export class EventPhotosSection {
   /** "Photo 3", by its place among the photos here; a deleted photo has none. */
   protected photoName(photoId: string): string {
     const index = this.allPhotos().findIndex((p) => p.id === photoId);
-    return index < 0 ? 'A photo no longer here' : `Photo ${index + 1}`;
+    return index < 0 ? translate('memory.photos.missing', this.copyLocale.locale()) : `Photo ${index + 1}`;
   }
 
   protected thumbnail(photoId: string): string | null {

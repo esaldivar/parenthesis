@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
@@ -201,6 +202,7 @@ export const PICKER_DEBOUNCE_MS = 250;
   `,
 })
 export class ChatEventPicker {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
 
   readonly familyId = input.required<string>();
@@ -226,17 +228,19 @@ export class ChatEventPicker {
 
   protected readonly statusText = computed(() => {
     if (this.searching()) {
-      return 'Searching…';
+      return translate('calendar.search.loading', this.copyLocale.locale());
     }
     if (this.error()) {
       return '';
     }
     const found = this.upcoming();
     if (found === null) {
-      return 'Type an event’s name or a date, like “Soccer” or “Nov 7”.';
+      return translate('chat.eventSearch.hint', this.copyLocale.locale());
     }
     const count = found.length + this.earlier().length;
-    return count === 0 ? 'No events match. Try another name or date.' : `${count} ${count === 1 ? 'event' : 'events'} found.`;
+    const locale = this.copyLocale.locale();
+    if (count === 0) return translate('chat.eventSearch.empty', locale);
+    return translate(count === 1 ? 'chat.eventSearch.foundOne' : 'chat.eventSearch.foundMany', locale, { count });
   });
 
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>('search');
@@ -258,7 +262,7 @@ export class ChatEventPicker {
   /** Searches upcoming and earlier events at once; only the latest search's answer is shown. */
   async search(): Promise<void> {
     const generation = ++this.generation;
-    const criteria = toSearch(this.text(), this.members(), todayIn(this.timeZone(), new Date()));
+    const criteria = toSearch(this.text(), this.members(), todayIn(this.timeZone(), new Date()), this.copyLocale.locale());
     this.error.set(null);
     if (!criteria) {
       this.upcoming.set(null);

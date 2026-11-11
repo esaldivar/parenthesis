@@ -12,8 +12,8 @@
       <button type="button" class="type kind" [appCalendarPalette]="option.id" [attr.aria-pressed]="creating() === option.id" (click)="creating.set(option.id)">
         <span class="type__icon"><app-icon [name]="option.icon" [size]="24" /></span>
         <span class="type__text">
-          <span class="kind__label">{{ option.label }}</span>
-          <span class="type__desc">{{ option.description }}</span>
+          <span class="kind__label">{{ option.label | tr }}</span>
+          <span class="type__desc">{{ option.description | tr }}</span>
         </span>
       </button>
     }
@@ -38,8 +38,8 @@
             </span>
           }
           <span class="type__text">
-            <span class="type__label">{{ option.label }}</span>
-            <span class="type__desc">{{ option.description }}</span>
+            <span class="type__label">{{ option.label | tr }}</span>
+            <span class="type__desc">{{ option.description | tr }}</span>
           </span>
         </button>
       }
@@ -75,7 +75,7 @@
           <mat-label>{{ 'feature.category' | tr }}</mat-label>
           <mat-select formControlName="category">
             @for (c of categories; track c.id) {
-              <mat-option [value]="c.id">{{ c.label }}</mat-option>
+              <mat-option [value]="c.id">{{ c.label | tr }}</mat-option>
             }
           </mat-select>
         </mat-form-field>

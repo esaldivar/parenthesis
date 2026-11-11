@@ -108,7 +108,9 @@ import { WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
 export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelpsView['values'], WhatHelpsHistoryPage['entries'][number]> {
   private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('whatHelps', this.childId);
-  protected readonly savedNotice = 'What Helps saved.';
+  protected get savedNotice(): string {
+    return translate('essentials.whatHelps.saved', this.locale.locale());
+  }
   protected readonly form = new FormGroup({
     comfortItems: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
     calmingStrategies: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),

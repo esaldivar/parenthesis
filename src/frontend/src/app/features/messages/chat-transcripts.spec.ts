@@ -23,10 +23,18 @@ const preview = (range: TranscriptRange, count = 2): TranscriptPreview => ({
   fileName: range.from
     ? `Chat_${range.from}_to_${range.to}.pdf`
     : 'Chat_all_messages_2026-11-07.pdf',
-  title: 'Chat with Jamie Rivera',
+  title: 'Communication Transcript',
   rangeLabel: range.from ? 'Nov 1–6, 2026' : 'All messages · Nov 1–6, 2026',
   timeZone: 'America/Chicago',
-  preparedLabel: 'Prepared for Alex Rivera on November 7, 2026. Times are in America/Chicago.',
+  preparedLabel: 'November 7, 2026 • 11:14:00 AM UTC-06:00',
+  participants: 'Alex Rivera and Jamie Rivera',
+  labels: {
+    description: 'Parenthesis export of recorded messages',
+    participants: 'Participants',
+    inclusiveRange: 'Inclusive date range',
+    displayTimeZone: 'Display time zone',
+    generated: 'Generated',
+  },
   from: range.from,
   to: range.to,
   messageCount: count,
@@ -39,19 +47,16 @@ const preview = (range: TranscriptRange, count = 2): TranscriptPreview => ({
             label: 'Sunday, November 1, 2026',
             messages: [
               {
-                time: '11:12 AM',
+                time: 'November 1, 2026 • 11:12:00 AM UTC-06:00',
                 sender: 'Jamie Rivera',
-                yours: false,
                 text: 'Can you do the soccer pickup on Saturday?',
                 event: null,
               },
               {
-                time: '11:13 AM',
+                time: 'November 1, 2026 • 11:13:00 AM UTC-06:00',
                 sender: 'Alex Rivera',
-                yours: true,
                 text: 'Yes, I can.',
-                event:
-                  'Shared a calendar event: Soccer game, Sat, Nov 7, 2026, 10:30 AM (pending approval)',
+                event: 'Linked Calendar Event',
               },
             ],
           },
@@ -175,15 +180,15 @@ describe('Chat transcripts (#125, slice 3)', () => {
       to: '2026-11-06',
     });
     const paper = el.querySelector('.paper')!;
-    expect(text(paper.querySelector('h3'))).toBe('Chat with Jamie Rivera');
+    expect(text(paper.querySelector('h3'))).toBe('Communication Transcript');
     expect(text(paper)).toContain('Nov 1–6, 2026');
     const first = paper.querySelector('.paper-messages li')!;
-    expect(text(first.querySelector('.time'))).toBe('11:12 AM');
-    expect(text(first.querySelector('.body'))).toBe(
-      'Jamie Rivera: Can you do the soccer pickup on Saturday?',
-    );
+    expect(text(first.querySelector('.time'))).toBe('November 1, 2026 • 11:12:00 AM UTC-06:00');
+    expect(text(first.querySelector('strong'))).toBe('Jamie Rivera');
+    expect(text(first.querySelector('.text'))).toBe('Can you do the soccer pickup on Saturday?');
+    expect(text(paper)).toContain('Alex Rivera and Jamie Rivera');
     expect(text(paper.querySelector('h4'))).toBe('Sunday, November 1, 2026');
-    expect(text(paper)).toContain('(pending approval)');
+    expect(text(paper)).toContain('Linked Calendar Event');
     expect(text(el.querySelector('.file-name'))).toBe('Chat_2026-11-01_to_2026-11-06.pdf');
     const download = [...el.querySelectorAll<HTMLAnchorElement>('a')].find(
       (a) => text(a) === 'Download PDF',

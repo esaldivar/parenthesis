@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -101,6 +102,7 @@ import { sizeText } from '../memories/photo-text';
   `,
 })
 export class MemorySettingsSection implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
 
@@ -129,7 +131,7 @@ export class MemorySettingsSection implements OnInit {
     try {
       this.settings.set(await this.api.memorySettings(this.familyId()));
     } catch (error) {
-      this.error.set(`Your memory settings couldn’t load. ${generalMessage(toProblem(error))}`);
+      this.error.set(translate('memory.settings.loadError', this.copyLocale.locale(), { reason: generalMessage(toProblem(error)) }));
     }
   }
 
@@ -141,8 +143,8 @@ export class MemorySettingsSection implements OnInit {
       this.settings.set(await this.api.saveMemorySettings(this.familyId(), allow));
       this.toasts.show(
         allow
-          ? `${this.coParent() ?? 'Your co-parent'} can now download the photos you share.`
-          : `${this.coParent() ?? 'Your co-parent'} can no longer download your photos. They can still view the ones you share.`,
+          ? translate('memory.settings.downloadAllowed', this.copyLocale.locale(), { name: this.coParent() ?? translate('common.coParent', this.copyLocale.locale()) })
+          : translate('memory.settings.downloadRevoked', this.copyLocale.locale(), { name: this.coParent() ?? translate('common.coParent', this.copyLocale.locale()) }),
       );
     } catch (error) {
       change.source.checked = !allow;

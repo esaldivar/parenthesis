@@ -9,9 +9,15 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
-- [ ] **English and Spanish localization (#534).** Finish coverage for app-generated dynamic messages, validation,
-  notifications, and accessibility announcements. Walk the parent routes on Development in both languages at phone
-  and desktop widths, including both themes, shared-device sign-in, and recipient-language email delivery.
+- [ ] **Angular source layout (#567).** Review the Dashboard pilot and [source move map](docs/adr/0009-frontend-source-layout.md).
+  Continue in feature slices, starting with the shared date and Calendar boundaries. Move app-wide layout, core
+  and shared code, and separate the global Sass layers. Verify lazy routes, assets and release Playwright coverage
+  before closing the migration.
+- [ ] **English and Spanish localization (#534).** Review remaining runtime copy, including API validation and
+  stored approval summaries, Family Memories export and quota messages, Child Essentials update announcements,
+  and the privacy notice storage table. Use structured codes or fields where an API response mixes app copy and
+  family-entered text. Walk the parent routes on Development in both languages at phone and desktop widths,
+  including both themes, shared-device sign-in, and recipient-language email delivery.
 - [ ] **From Your Kids (#531).** Verify the integrated release candidate in both themes and with a real screen reader.
   The owner approved the rendered artwork and photos preview on November 8, 2026. Connect parent-authorized
   content and actions once the M5 service is available.
@@ -24,6 +30,10 @@ that points back here.
   for directly confirmed calendar event changes. Finish approval-gated and series changes, authorized Family Memories
   and Shared Records producers, live arrival updates, and responsive visual/accessibility acceptance.
   Child diary/artwork producers depend on M5 (#131).
+- [ ] **Shared Records transaction PDF (#497, design #566).** Decide how verified full names are captured and
+  retained at submission without retroactively substituting a current display name. Existing entries and original
+  requests have membership IDs only and report their historical names as unavailable. Review retention, export wording,
+  and privacy, then run Development acceptance for parent-only downloads, empty and invalid ranges, paging and print.
 - [ ] **Shared records (#477, M4).** Shared Fund proposals and agreement, contribution reports with required
   attachments, acknowledgment and mismatch history, the progress thermometer, one-time Child Support records, and the
   navigation link with a waiting-on-you dot are built (November 7, 2026; decisions in
@@ -192,6 +202,8 @@ that points back here.
     routing corrects PR bases in the interim, but cannot change which manifests Dependabot scanned.
   - [ ] Security updates still start on main under GitHub's platform behavior before routing; alerts stay enabled.
 
+- [ ] **Dependabot Sonar findings (#394, #544).** Verify a fresh `develop` analysis closes
+  `githubactions:S7631` on the tracking checkout and `jssecurity:S5145` on routing error output after promotion.
 - [ ] **Dependabot tracking issues (#544).** After normal promotion to `main`, verify a real Dependabot PR gets
   one issue and passes the required tracking check. Rerun the writer to verify that it reuses the issue and link.
 
@@ -731,8 +743,10 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
     (revisit after trying it on develop).
   - [x] Slice 3 of `docs/design/m4-chat.md`: PDF transcripts (preview, Save, Download, saved list; ADR-0008
     decision 10).
-  - [ ] Transcript PDFs embed Noto Sans for Latin, Greek and Cyrillic only; add fonts if parents write in other
-    scripts (for example Chinese, Arabic or emoji).
+  - [ ] #125/#548: Confirm the profile-name policy for parents whose existing profile name is a nickname, and
+    review tagged PDF and screen-reader support. The account currently stores only the profile name.
+  - [ ] #125/#548: Verify exact text extraction for multi-codepoint emoji. Noto Emoji renders these sequences in
+    the PDF, but some extract as a base or private-use glyph. Extend font coverage for additional writing systems.
   - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
 
 ## Earlier Playwright feedback (#341)

@@ -14,7 +14,7 @@
     <span class="panel__icon" [appCalendarPalette]="item().palette ?? item().kind"><app-icon [name]="item().icon" [size]="24" /></span>
     <div class="panel__titles">
       @let unavailable = item().kind === 'unavailable';
-      @let genericUnavailable = unavailable && item().title.trim().toLowerCase() === 'unavailable';
+      @let genericUnavailable = unavailable && (item().title === ('feature.unavailable' | tr) || item().title.trim().toLowerCase() === 'unavailable');
       <h2 id="event-details-title" tabindex="-1" cdkFocusInitial>
         {{ genericUnavailable ? ('feature.unavailable' | tr) : item().title }}
       </h2>

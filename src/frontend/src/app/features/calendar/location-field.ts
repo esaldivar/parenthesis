@@ -1,11 +1,12 @@
-import { TranslatePipe } from '../../core/i18n/translations';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Api, NearbyPosition } from '../../core/api/api';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon } from '../../shared/icon/icon';
 
@@ -22,16 +23,13 @@ export const LOCATION_OPTIONS: PositionOptions = { enableHighAccuracy: false, ti
 /** What "Use my location" is doing, shown under the field. */
 export type NearbyState = 'off' | 'asking' | 'on' | 'denied' | 'unavailable' | 'stopped';
 
-export const NEARBY_MESSAGES: Record<NearbyState, string> = {
-  off: '',
-  asking: 'Finding your location…',
-  on: 'Showing places near you first. Your location isn’t saved or shared.',
-  denied:
-    'Location is blocked for this site, so suggestions show places across the US. You can still type any address.',
-  unavailable:
-    'Couldn’t find your location, so suggestions show places across the US. You can still type any address.',
-  stopped: 'Stopped using your location. Suggestions show places across the US.',
-};
+const NEARBY_MESSAGE = {
+  asking: 'calendar.location.asking',
+  on: 'calendar.location.on',
+  denied: 'calendar.location.denied',
+  unavailable: 'calendar.location.unavailable',
+  stopped: 'calendar.location.stopped',
+} as const satisfies Record<Exclude<NearbyState, 'off'>, TranslationKey>;
 
 /**
  * An event's optional location (#113, #354). As a parent types, it offers address suggestions from Google Maps,
@@ -154,7 +152,11 @@ export class LocationField implements OnInit, OnDestroy {
   /** "Use my location" appears only when suggestions are on and the browser can tell us where it is. */
   protected readonly offerNearby = signal(false);
   protected readonly nearby = signal<NearbyState>('off');
-  protected readonly message = signal('');
+  private readonly locale = inject(LocaleService);
+  protected readonly message = computed(() => {
+    const state = this.nearby();
+    return state === 'off' ? '' : translate(NEARBY_MESSAGE[state], this.locale.locale());
+  });
 
   /** The parent's position while "Use my location" is on. Kept in memory only, for this page. */
   private position: NearbyPosition | null = null;
@@ -224,7 +226,6 @@ export class LocationField implements OnInit, OnDestroy {
 
   private show(state: NearbyState): void {
     this.nearby.set(state);
-    this.message.set(NEARBY_MESSAGES[state]);
   }
 
   /** Asks again for what's already typed, so the list re-sorts as soon as the location changes. */

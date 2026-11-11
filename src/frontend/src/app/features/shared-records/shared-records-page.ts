@@ -1,5 +1,7 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { DOCUMENT } from '@angular/common';
+import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender,
   computed, effect, inject, input, signal, viewChild,
@@ -47,7 +49,9 @@ type Composer = { readonly mode: 'new' } | { readonly mode: 'report'; readonly k
   styleUrl: './shared-records-page.scss',
 })
 export class SharedRecordsPage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
+  private readonly document = inject(DOCUMENT);
   private readonly auth = inject(AuthStore);
   private readonly attention = inject(SharedRecordsAttentionStore, { optional: true });
   private readonly injector = inject(Injector);
@@ -91,16 +95,20 @@ export class SharedRecordsPage {
   protected readonly busy = signal(false);
   protected readonly savingLabel = computed(() => {
     const report = this.reporting();
-    if (report) return report.kind === 'fund' ? 'Reporting contribution…' : 'Reporting payment…';
-    return this.requestType() === 'fund' ? 'Sending request…' : 'Creating record…';
+    if (report) return report.kind === 'fund' ? translate('records.contribution.reporting', this.copyLocale.locale()) : translate('records.payment.reporting', this.copyLocale.locale());
+    return this.requestType() === 'fund' ? translate('records.fund.sending', this.copyLocale.locale()) : translate('records.support.creating', this.copyLocale.locale());
   });
   protected readonly error = signal('');
+  protected readonly exporting = signal(false);
+  protected readonly exportNotice = signal<TranslationKey | null>(null);
+  protected readonly exportError = signal<TranslationKey | null>(null);
+  protected readonly exportOpen = signal(false);
   protected readonly reportError = signal('');
   protected readonly announcement = signal('');
   protected readonly labels = {
-    AwaitingAgreement: 'Awaiting agreement',
-    Open: 'Agreed',
-    ProposalEnded: 'Proposal ended',
+    AwaitingAgreement: 'records.fund.pending',
+    Open: 'records.fund.openStatus',
+    ProposalEnded: 'records.fund.ended',
   } as const;
   protected readonly attachmentUrl = (entryId: string) => this.api.entryAttachmentUrl(this.scope()?.familyId ?? '', entryId);
 
@@ -114,6 +122,10 @@ export class SharedRecordsPage {
       this.error.set('');
       this.reportError.set('');
       this.announcement.set('');
+      this.exporting.set(false);
+      this.exportNotice.set(null);
+      this.exportError.set(null);
+      this.exportOpen.set(false);
       if (scope) void this.load(scope);
     });
     effect(() => {
@@ -124,6 +136,45 @@ export class SharedRecordsPage {
         this.start();
       }
     });
+  }
+
+  protected async downloadRecords(event: SubmitEvent, from: string, to: string): Promise<void> {
+    event.preventDefault();
+    const scope = this.scope();
+    if (!scope || this.exporting()) return;
+
+    this.exportNotice.set(null);
+    this.exportError.set(null);
+    if (!from || !to || from > to) {
+      this.exportError.set('records.export.invalidRange');
+      return;
+    }
+
+    this.exporting.set(true);
+    try {
+      const pdf = await this.api.sharedRecordsPdf(scope.familyId, from, to);
+      if (!this.isCurrent(scope)) return;
+      const url = URL.createObjectURL(pdf);
+      const link = this.document.createElement('a');
+      link.href = url;
+      link.download = `Shared_Records_${from}_to_${to}.pdf`;
+      try {
+        link.click();
+        this.exportNotice.set('records.export.ready');
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch (error) {
+      if (!this.isCurrent(scope)) return;
+      const status = toProblem(error).status;
+      this.exportError.set(status === 422 ? 'records.export.empty'
+        : status === 413 ? 'records.export.tooLarge'
+        : status === 400 ? 'records.export.invalidRange'
+        : status === 429 ? 'records.export.rateLimited'
+        : 'records.export.failed');
+    } finally {
+      if (this.isCurrent(scope)) this.exporting.set(false);
+    }
   }
 
   protected retry(): void {
@@ -199,7 +250,7 @@ export class SharedRecordsPage {
       }));
       this.selectedKey.set(`fund:${created.id}`);
       this.composer.set(null);
-      this.announcement.set('Shared Fund proposal sent for agreement.');
+      this.announcement.set(translate('records.fund.sent', this.copyLocale.locale()));
       this.focus(this.recordHeading);
     });
   }
@@ -210,7 +261,7 @@ export class SharedRecordsPage {
       this.update(scope, workspace => ({ ...workspace, support: [record, ...workspace.support] }));
       this.selectedKey.set(`support:${record.id}`);
       this.composer.set(null);
-      this.announcement.set('Child Support record created.');
+      this.announcement.set(translate('records.support.created', this.copyLocale.locale()));
       this.focus(this.recordHeading);
     });
   }
@@ -224,7 +275,7 @@ export class SharedRecordsPage {
       this.update(scope, workspace => ({
         ...workspace, funds: workspace.funds.map(item => item.id === fund.id ? { ...item, status } : item),
       }));
-      this.announcement.set(approve ? 'Shared Fund agreed.' : 'Changes requested. This proposal ended.');
+      this.announcement.set(approve ? translate('records.fund.agreed', this.copyLocale.locale()) : translate('records.fund.changesRequested', this.copyLocale.locale()));
       this.focus(this.recordHeading);
       // The proposal no longer waits on this parent: clear the navigation dot now, not at the next navigation.
       void this.attention?.refresh();
@@ -246,8 +297,8 @@ export class SharedRecordsPage {
       this.updateEntries(scope, item.key, entries => [entry, ...entries.filter(existing => existing.id !== entry.id)]);
       this.composer.set(null);
       this.announcement.set(item.kind === 'fund'
-        ? 'Contribution reported. Your co-parent can now acknowledge it.'
-        : 'Payment reported. Your co-parent can now confirm receipt.');
+        ? translate('records.contribution.reported', this.copyLocale.locale())
+        : translate('records.payment.reported', this.copyLocale.locale()));
       this.focus(this.recordHeading);
     } catch (error) {
       if (this.isCurrent(scope)) this.reportFailed(scope, toProblem(error));
@@ -270,8 +321,8 @@ export class SharedRecordsPage {
       const updated = await this.api.respondToEntry(scope.familyId, entry.id, response);
       this.updateEntries(scope, item.key, entries => entries.map(existing => existing.id === updated.id ? updated : existing));
       this.announcement.set(response === 'dispute'
-        ? 'Mismatch flagged. It doesn’t count toward the total.'
-        : entry.paidTo === 'Vendor' ? 'Contribution acknowledged.' : 'Receipt confirmed.');
+        ? translate('records.report.mismatch', this.copyLocale.locale())
+        : entry.paidTo === 'Vendor' ? translate('records.contribution.acknowledged', this.copyLocale.locale()) : translate('records.payment.confirmed', this.copyLocale.locale()));
       void this.attention?.refresh();
     });
   }

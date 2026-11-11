@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -231,6 +232,7 @@ import {
   `,
 })
 export class MemoriesPage {
+  private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly now = inject(PHOTOS_NOW);
@@ -252,7 +254,7 @@ export class MemoriesPage {
       return {
         memory,
         date: monthDay(familyDate(memory.startsAt, zone)),
-        count: memory.photoCount === 1 ? '1 photo' : `${memory.photoCount} photos`,
+        count: translate(memory.photoCount === 1 ? 'memory.onePhoto' : 'memory.photoCount', this.copyLocale.locale(), { count: memory.photoCount }),
         whose: whoseText(memory, coParent),
         expiry: expiryChip(e),
         soon: e.soon,
@@ -287,7 +289,7 @@ export class MemoriesPage {
       this.members.set(family.members);
       this.state.set('ready');
     } catch (error) {
-      this.error.set(`Memories couldn’t load. ${generalMessage(toProblem(error))}`);
+      this.error.set(translate('memory.list.loadError', this.copyLocale.locale(), { reason: generalMessage(toProblem(error)) }));
       this.state.set('error');
     }
   }
