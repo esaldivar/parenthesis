@@ -1,3 +1,4 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal,
@@ -87,11 +88,11 @@ const MEDICAL_TINT = {
           }
         </div>
         <section aria-labelledby="essentials-heading">
-          <h2 id="essentials-heading">{{ child.firstName }}{{ 'feature.s.essentials' | tr }}</h2>
+          <h2 id="essentials-heading">{{ 'essentials.copy.childHeading' | tr: { name: child.firstName } }}</h2>
           @if (openSection() !== null) {
             <button type="button" class="back" (click)="closeSection()">
               <app-icon name="chevron-left" [size]="20" />
-              {{ 'feature.all.of' | tr }} {{ child.firstName }}{{ 'feature.s.essentials' | tr }}
+              {{ 'essentials.copy.allEssentials' | tr: { name: child.firstName } }}
             </button>
           }
           @if (familyId(); as family) {
@@ -104,7 +105,7 @@ const MEDICAL_TINT = {
                     <summary>
                       <img class="tile-art" [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
                       <span class="tile-text">
-                        <span class="tile-name">{{ tile.name }}</span><span class="visually-hidden">, </span>
+                        <span class="tile-name">{{ tile.name | tr }}</span><span class="visually-hidden">, </span>
                         <span class="tile-about">{{ tile.aboutKey | tr }}</span>
                       </span>
                       @if (!disclosure.open && tileHasUpdate(child.id, tile.section)) {
@@ -116,7 +117,7 @@ const MEDICAL_TINT = {
                     <div class="tile-content">
                       @if (openSection() === tile.section) {
                         <header class="section-hero">
-                          <h2 id="section-heading" tabindex="-1">{{ tile.name }}</h2>
+                          <h2 id="section-heading" tabindex="-1">{{ tile.name | tr }}</h2>
                           <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
                         </header>
                       }
@@ -322,6 +323,7 @@ const MEDICAL_TINT = {
   `,
 })
 export class ChildEssentialsPage {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   protected readonly updates = inject(EssentialsUpdatesStore);
@@ -347,7 +349,7 @@ export class ChildEssentialsPage {
       .filter((banner) => names.has(banner.childId) && ESSENTIALS_SECTIONS[banner.section])
       .map((banner) => ({
         key: `${banner.childId}:${banner.section}`,
-        text: bannerText(names.get(banner.childId)!, banner),
+        text: bannerText(names.get(banner.childId)!, banner, this.locale.locale()),
         ...this.bannerTint(banner.section),
       }))
       .filter((banner) => !this.dismissed().has(banner.key));

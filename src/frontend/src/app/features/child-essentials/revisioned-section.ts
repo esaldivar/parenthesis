@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { translate } from '../../core/i18n/translations';
+import { localizedMessage } from './localized-message';
+import { TranslationKey } from '../../core/i18n/translations';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Directive, inject, input, signal } from '@angular/core';
 import { Api } from '../../core/api/api';
@@ -21,7 +21,6 @@ export abstract class RevisionedSection<
   TValues,
   TEntry,
 > {
-  private readonly copyLocale = inject(LocaleService);
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
   protected readonly api = inject(Api);
@@ -30,8 +29,8 @@ export abstract class RevisionedSection<
   protected readonly conflict = signal<TView | null>(null);
   protected readonly editing = signal(false);
   protected readonly saving = signal(false);
-  protected readonly error = signal('');
-  protected readonly notice = signal('');
+  protected readonly error = localizedMessage();
+  protected readonly notice = localizedMessage();
   protected readonly historyOpen = signal(false);
   protected readonly historyLoading = signal(false);
   protected readonly historyError = signal(false);
@@ -40,7 +39,7 @@ export abstract class RevisionedSection<
 
   protected abstract readonly form: { readonly invalid: boolean; getRawValue(): TValues };
   /** Said once a save works ("Clothing and shoes saved."). */
-  protected abstract readonly savedNotice: string;
+  protected abstract readonly savedNoticeKey: TranslationKey;
 
   protected abstract store(revision: number, values: TValues): Promise<TView>;
 
@@ -73,12 +72,12 @@ export abstract class RevisionedSection<
       this.current.set(saved);
       this.conflict.set(null);
       this.editing.set(false);
-      this.notice.set(this.savedNotice);
+      this.notice.set(this.savedNoticeKey);
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 409) {
         this.conflict.set(error.error as TView);
       } else {
-        this.error.set(translate('essentials.changes.error', this.copyLocale.locale()));
+        this.error.set('essentials.changes.error');
       }
     } finally {
       this.saving.set(false);

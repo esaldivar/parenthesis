@@ -1,7 +1,8 @@
-import { inject } from '@angular/core';
 import { LocaleService } from '../../core/i18n/locale.service';
+import { essentialsOption } from './essentials-options';
+import { inject } from '@angular/core';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -36,7 +37,7 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
               <label>{{ 'feature.grade' | tr }} <select formControlName="grade">
                 <option value="">{{ 'feature.not.set' | tr }}</option>
                 @for (grade of grades; track grade) {
-                  <option [value]="grade">{{ grade }}</option>
+                  <option [value]="grade">{{ optionLabel(grade, locale.locale()) }}</option>
                 }
               </select></label>
               @if (canSetHomeroom()) {
@@ -98,13 +99,13 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
     <ng-template #values let-entry let-current="current">
       <dl>
         <div class="row" [class.row--updated]="current && marks.updated('grade')" (appOnScreen)="current && marks.rowOnScreen('grade')">
-          <dt>{{ 'feature.grade' | tr }}@if (current && marks.updated('grade')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.grade ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.grade' | tr }}@if (current && marks.updated('grade')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.grade ? optionLabel(entry.grade, locale.locale()) : ('essentials.copy.notSet' | tr) }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('homeroomTeacher')" (appOnScreen)="current && marks.rowOnScreen('homeroomTeacher')">
-          <dt>{{ 'feature.homeroom.teacher' | tr }}@if (current && marks.updated('homeroomTeacher')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.homeroomTeacher ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.homeroom.teacher' | tr }}@if (current && marks.updated('homeroomTeacher')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.homeroomTeacher ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('parentConcerns')" (appOnScreen)="current && marks.rowOnScreen('parentConcerns')">
-          <dt>{{ 'feature.parent.concerns' | tr }}@if (current && marks.updated('parentConcerns')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.parentConcerns ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.parent.concerns' | tr }}@if (current && marks.updated('parentConcerns')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.parentConcerns ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
       </dl>
     </ng-template>
@@ -119,11 +120,10 @@ import { SchoolHistoryPage, SchoolView } from '../../core/api/api';
   `,
 })
 export class SchoolSection extends RevisionedSection<SchoolView, SchoolView['values'], SchoolHistoryPage['entries'][number]> {
-  private readonly locale = inject(LocaleService);
+  protected readonly locale = inject(LocaleService);
+  protected readonly optionLabel = essentialsOption;
   protected readonly marks = sectionUpdates('school', this.childId);
-  protected get savedNotice(): string {
-    return translate('essentials.school.saved', this.locale.locale());
-  }
+  protected readonly savedNoticeKey = 'essentials.school.saved';
   protected readonly grades = ['Pre-K', 'Kindergarten', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
   protected readonly form = new FormGroup({
     homeroomTeacher: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
@@ -141,7 +141,7 @@ export class SchoolSection extends RevisionedSection<SchoolView, SchoolView['val
     try {
       this.current.set(await this.api.school(this.familyId(), this.childId()));
     } catch {
-      this.error.set(translate('feedback.school.couldn.t.be.loaded', this.locale.locale()));
+      this.error.set('feedback.school.couldn.t.be.loaded');
     }
   }
 

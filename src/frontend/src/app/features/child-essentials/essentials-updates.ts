@@ -1,3 +1,5 @@
+import { AppLocale } from '../../core/i18n/locale.service';
+import { translate, TranslationKey } from '../../core/i18n/translations';
 import {
   DestroyRef, Directive, ElementRef, Signal, afterNextRender, effect, inject, output, signal, untracked,
 } from '@angular/core';
@@ -7,54 +9,56 @@ import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates
 /** Each shared section's name and the label of each field a notice can name. */
 export const ESSENTIALS_SECTIONS: Record<
   EssentialsSectionId,
-  { readonly name: string; readonly fields: Readonly<Record<string, string>> }
+  { readonly name: TranslationKey; readonly fields: Readonly<Record<string, TranslationKey>> }
 > = {
   school: {
-    name: 'School',
-    fields: { grade: 'grade', homeroomTeacher: 'homeroom teacher', parentConcerns: 'parent concerns' },
+    name: 'essentials.section.school',
+    fields: { grade: 'essentials.field.grade', homeroomTeacher: 'essentials.field.homeroomTeacher', parentConcerns: 'essentials.field.parentConcerns' },
   },
   allergiesFood: {
-    name: 'Allergies & Food',
-    fields: { allergies: 'allergies', noKnownAllergies: 'allergy status', foodPreferences: 'food preferences' },
+    name: 'essentials.section.allergiesFood',
+    fields: { allergies: 'essentials.field.allergies', noKnownAllergies: 'essentials.field.noKnownAllergies', foodPreferences: 'essentials.field.foodPreferences' },
   },
   clothing: {
-    name: 'Clothing & Shoes',
-    fields: { topSize: 'top size', bottomSize: 'bottom size', shoeSize: 'shoe size', fitNotes: 'fit notes' },
+    name: 'essentials.section.clothing',
+    fields: { topSize: 'essentials.field.topSize', bottomSize: 'essentials.field.bottomSize', shoeSize: 'essentials.field.shoeSize', fitNotes: 'essentials.field.fitNotes' },
   },
   whatHelps: {
-    name: 'What Helps',
-    fields: { comfortItems: 'comfort items', calmingStrategies: 'calming strategies' },
+    name: 'essentials.section.whatHelps',
+    fields: { comfortItems: 'essentials.field.comfortItems', calmingStrategies: 'essentials.field.calmingStrategies' },
   },
   routines: {
-    name: 'Routines',
-    fields: { bedtime: 'shared bedtime', naps: 'shared naps' },
+    name: 'essentials.section.routines',
+    fields: { bedtime: 'essentials.field.bedtime', naps: 'essentials.field.naps' },
   },
   // The co-parent's own routines at their home: their Routines tab.
   householdRoutines: {
-    name: 'routines at your co-parent’s home',
-    fields: { bedtime: 'bedtime at your co-parent’s home', naps: 'naps at your co-parent’s home' },
+    name: 'essentials.section.householdRoutines',
+    fields: { bedtime: 'essentials.field.homeBedtime', naps: 'essentials.field.homeNaps' },
   },
   // Entries are named by position or id, never by their details, so the banner names the section.
   emergencyContacts: {
-    name: 'Emergency Contacts',
+    name: 'essentials.section.emergencyContacts',
     fields: {},
   },
   caregivers: {
-    name: 'Shared Caregivers',
+    name: 'essentials.section.caregivers',
     fields: {},
   },
   // Providers are named by id, never by their details, so the banner names the section.
   medical: {
-    name: 'Medical',
+    name: 'essentials.section.medical',
     fields: {},
   },
 };
 
 /** "Kai’s shoe size updated" for one field, otherwise "Kai’s Clothing & Shoes updated". Never a value. */
-export function bannerText(childName: string, banner: EssentialsBanner): string {
+export function bannerText(childName: string, banner: EssentialsBanner, locale: AppLocale = 'en'): string {
   const section = ESSENTIALS_SECTIONS[banner.section];
   const field = banner.fields.length === 1 ? section?.fields[banner.fields[0]] : undefined;
-  return `${childName}’s ${field ?? section?.name ?? 'Child Essentials'} updated`;
+  return translate('essentials.copy.updated', locale, {
+    name: childName, subject: translate(field ?? section?.name ?? 'feature.child.essentials', locale),
+  });
 }
 
 /** Half the element is on screen, or, for one taller than the screen, it fills at least half the screen. */

@@ -1,6 +1,6 @@
-import { LocaleService } from '../../core/i18n/locale.service';
+import { localizedMessage } from './localized-message';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -114,10 +114,10 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
     <ng-template #values let-entry let-current="current">
       <dl>
         <div class="row" [class.row--updated]="current && marks.updated('allergies', 'noKnownAllergies')" (appOnScreen)="current && marks.rowOnScreen('allergies', 'noKnownAllergies')">
-          <dt>{{ 'feature.allergies.and.notes' | tr }}@if (current && marks.updated('allergies', 'noKnownAllergies')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.allergies ?? (entry.noKnownAllergies ? 'No known allergies' : 'No allergies listed') }}</dd>
+          <dt>{{ 'feature.allergies.and.notes' | tr }}@if (current && marks.updated('allergies', 'noKnownAllergies')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.allergies ?? (entry.noKnownAllergies ? ('essentials.copy.noKnownAllergies' | tr) : ('essentials.copy.noAllergies' | tr)) }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('foodPreferences')" (appOnScreen)="current && marks.rowOnScreen('foodPreferences')">
-          <dt>{{ 'feature.dietary.restrictions.and.food.preferences' | tr }}@if (current && marks.updated('foodPreferences')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.foodPreferences ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.dietary.restrictions.and.food.preferences' | tr }}@if (current && marks.updated('foodPreferences')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.foodPreferences ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
       </dl>
     </ng-template>
@@ -132,16 +132,13 @@ import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../core/a
   `,
 })
 export class AllergiesFoodSection extends RevisionedSection<AllergiesFoodView, AllergiesFoodView['values'], AllergiesFoodHistoryPage['entries'][number]> {
-  private readonly locale = inject(LocaleService);
   readonly children = input<readonly Child[]>([]);
   protected readonly marks = sectionUpdates('allergiesFood', this.childId);
-  protected get savedNotice(): string {
-    return translate('essentials.allergies.saved', this.locale.locale());
-  }
+  protected readonly savedNoticeKey = 'essentials.allergies.saved';
   private readonly document = inject(DOCUMENT);
   protected readonly exportOpen = signal(false);
   protected readonly exporting = signal(false);
-  protected readonly exportNotice = signal('');
+  protected readonly exportNotice = localizedMessage();
   protected readonly form = new FormGroup({
     noKnownAllergies: new FormControl(false, { nonNullable: true }),
     allergies: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
@@ -168,12 +165,12 @@ export class AllergiesFoodSection extends RevisionedSection<AllergiesFoodView, A
       link.download = fileName;
       try {
         link.click();
-        this.exportNotice.set(translate('essentials.allergies.pdfReady', this.locale.locale()));
+        this.exportNotice.set('essentials.allergies.pdfReady');
       } finally {
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     } catch {
-      this.exportNotice.set(translate('essentials.allergies.pdfError', this.locale.locale()));
+      this.exportNotice.set('essentials.allergies.pdfError');
     } finally {
       this.exporting.set(false);
     }
@@ -184,7 +181,7 @@ export class AllergiesFoodSection extends RevisionedSection<AllergiesFoodView, A
     try {
       this.current.set(await this.api.allergiesFood(this.familyId(), this.childId()));
     } catch {
-      this.error.set(translate('feedback.allergies.food.couldn.t.be.loaded', this.locale.locale()));
+      this.error.set('feedback.allergies.food.couldn.t.be.loaded');
     }
   }
 

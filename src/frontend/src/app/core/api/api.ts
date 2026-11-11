@@ -1104,7 +1104,7 @@ export class Api {
       this.http.get(`/api/families/${encodeURIComponent(familyId)}/child-essentials/allergies/pdf`, {
         responseType: 'blob',
         observe: 'response',
-        params: childId ? { childId } : {},
+        params: { ...(childId ? { childId } : {}), language: this.locale.locale() },
       }),
     );
     return { pdf: response.body ?? new Blob(), fileName: attachmentName(response.headers.get('Content-Disposition')) ?? 'allergies.pdf' };

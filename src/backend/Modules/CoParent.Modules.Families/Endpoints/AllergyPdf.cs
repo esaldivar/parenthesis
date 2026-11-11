@@ -10,13 +10,15 @@ internal static class AllergyPdf
 {
     private static readonly SKColor _ink = new(0x1F, 0x2A, 0x26);
 
-    public static byte[] Render(IReadOnlyList<AllergyPdfSection> children, DateTimeOffset generatedAt, string date)
+    public static byte[] Render(IReadOnlyList<AllergyPdfSection> children, DateTimeOffset generatedAt, string date, bool spanish = false)
     {
         ArgumentNullException.ThrowIfNull(children);
+        var title = spanish ? "Referencia de alergias infantiles" : "Child allergy reference";
+        var generated = spanish ? $"Generado el {date} (UTC)" : $"Generated {date} (UTC)";
         var blocks = new List<IReadOnlyList<PdfLine>>
         {
-            PdfLayout.Wrap("Child allergy reference", PdfLayout.Bold, 18, _ink, 0, 4)
-                .Concat(PdfLayout.Wrap($"Generated {date} (UTC)", PdfLayout.Regular, 10, _ink, 0, 16)).ToList(),
+            PdfLayout.Wrap(title, PdfLayout.Bold, 18, _ink, 0, 4)
+                .Concat(PdfLayout.Wrap(generated, PdfLayout.Regular, 10, _ink, 0, 16)).ToList(),
         };
         foreach (var child in children)
         {
@@ -28,7 +30,7 @@ internal static class AllergyPdf
         using var stream = new MemoryStream();
         using var pdf = SKDocument.CreatePdf(stream, new SKDocumentPdfMetadata
         {
-            Title = "Child allergy reference",
+            Title = title,
             Creator = "Parenthesis",
             Creation = generatedAt.UtcDateTime,
         });
@@ -36,7 +38,7 @@ internal static class AllergyPdf
         {
             var canvas = pdf.BeginPage(PdfLayout.PageWidth, PdfLayout.PageHeight);
             PdfLayout.Draw(canvas, pages[page], _ink);
-            PdfLayout.Footer(canvas, $"Page {page + 1} of {pages.Count}", _ink);
+            PdfLayout.Footer(canvas, spanish ? $"Página {page + 1} de {pages.Count}" : $"Page {page + 1} of {pages.Count}", _ink);
             pdf.EndPage();
         }
 

@@ -1,6 +1,6 @@
-import { LocaleService } from '../../core/i18n/locale.service';
+import { localizedMessage } from './localized-message';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
@@ -23,7 +23,7 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
         <button type="button" [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">{{ 'feature.shared' | tr }}</button>
         @for (home of households(); track home.ownerId) {
           <button type="button" [attr.aria-pressed]="selectedOwner() === home.ownerId"
-            (click)="openHousehold(home)">{{ home.isMine ? ('feature.my.routines' | tr) : home.ownerName + ('feature.s.routines' | tr) }}@if (
+            (click)="openHousehold(home)">{{ home.isMine ? ('feature.my.routines' | tr) : ('essentials.copy.ownerRoutines' | tr: { name: home.ownerName }) }}@if (
               !home.isMine && updates.unopened(childId(), 'householdRoutines')
             ) {<span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span><span class="updated-dot tab-dot" aria-hidden="true"></span>}</button>
         }
@@ -60,7 +60,7 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
       } @else {
         @for (home of households(); track home.ownerId) {
           @if (home.shared; as agreed) {
-            <h4>{{ home.isMine ? ('feature.my.shared.routine' | tr) : home.ownerName + ('feature.s.shared.routine' | tr) }}</h4>
+            <h4>{{ home.isMine ? ('feature.my.shared.routine' | tr) : ('essentials.copy.ownerSharedRoutine' | tr: { name: home.ownerName }) }}</h4>
             <ng-container *ngTemplateOutlet="values; context: { $implicit: agreed.values }" />
             <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}</button>
           }
@@ -137,10 +137,10 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
     <ng-template #values let-entry let-rowMarks="rowMarks">
       <dl>
         <div class="row" [class.row--updated]="rowMarks?.updated('bedtime')" (appOnScreen)="rowMarks?.rowOnScreen('bedtime')">
-          <dt>{{ 'feature.bedtime' | tr }}@if (rowMarks?.updated('bedtime')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.bedtime ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.bedtime' | tr }}@if (rowMarks?.updated('bedtime')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.bedtime ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
         <div class="row" [class.row--updated]="rowMarks?.updated('naps')" (appOnScreen)="rowMarks?.rowOnScreen('naps')">
-          <dt>{{ 'feature.naps' | tr }}@if (rowMarks?.updated('naps')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.naps ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.naps' | tr }}@if (rowMarks?.updated('naps')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.naps ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
       </dl>
     </ng-template>
@@ -155,13 +155,10 @@ import { HouseholdRoutine, RoutinesHistoryPage, RoutinesView } from '../../core/
   `,
 })
 export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesView['values'], RoutinesHistoryPage['entries'][number]> {
-  private readonly locale = inject(LocaleService);
   protected readonly updates = inject(EssentialsUpdatesStore);
   /** The shared routine's changes, and the co-parent's own routine's changes shown in their tab (#128). */
   protected readonly marks = sectionUpdates('routines', this.childId);
-  protected get savedNotice(): string {
-    return translate('essentials.routines.saved', this.locale.locale());
-  }
+  protected readonly savedNoticeKey = 'essentials.routines.saved';
   protected readonly homeMarks = sectionUpdates('householdRoutines', this.childId);
   protected readonly form = new FormGroup({
     bedtime: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
@@ -174,7 +171,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVie
   protected readonly householdBedtime = signal('');
   protected readonly householdNaps = signal('');
   protected readonly householdSaving = signal(false);
-  protected readonly householdError = signal('');
+  protected readonly householdError = localizedMessage();
   protected readonly householdConflict = signal(false);
   private readonly householdDrafts = new Map<string, {
     bedtime: string; naps: string; revision: number; conflict: boolean;
@@ -205,7 +202,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVie
       this.households.set(await this.api.householdRoutines(this.familyId(), this.childId()));
       this.householdError.set('');
     } catch {
-      this.householdError.set(translate('essentials.routines.loadError', this.locale.locale()));
+      this.householdError.set('essentials.routines.loadError');
     }
   }
 
@@ -234,9 +231,9 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVie
           this.householdDraftRevision = latest?.latest.revision ?? this.householdDraftRevision;
         }
         this.householdConflict.set(action === 'save');
-        this.householdError.set(translate('essentials.routines.conflict', this.locale.locale()));
+        this.householdError.set('essentials.routines.conflict');
       } else {
-        this.householdError.set(translate('essentials.routines.saveError', this.locale.locale()));
+        this.householdError.set('essentials.routines.saveError');
       }
     } finally {
       this.householdSaving.set(false);
@@ -253,7 +250,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVie
     try {
       this.current.set(await this.api.routines(this.familyId(), this.childId()));
     } catch {
-      this.error.set(translate('feedback.routines.couldn.t.be.loaded', this.locale.locale()));
+      this.error.set('feedback.routines.couldn.t.be.loaded');
     }
   }
 

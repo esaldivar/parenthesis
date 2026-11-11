@@ -1,7 +1,5 @@
-import { inject } from '@angular/core';
-import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -90,16 +88,16 @@ import { ClothingHistoryPage, ClothingView } from '../../core/api/api';
     <ng-template #values let-entry let-current="current">
       <dl>
         <div class="row" [class.row--updated]="current && marks.updated('topSize')" (appOnScreen)="current && marks.rowOnScreen('topSize')">
-          <dt>{{ 'feature.top.size' | tr }}@if (current && marks.updated('topSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.topSize ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.top.size' | tr }}@if (current && marks.updated('topSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.topSize ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('bottomSize')" (appOnScreen)="current && marks.rowOnScreen('bottomSize')">
-          <dt>{{ 'feature.bottom.size' | tr }}@if (current && marks.updated('bottomSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.bottomSize ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.bottom.size' | tr }}@if (current && marks.updated('bottomSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.bottomSize ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('shoeSize')" (appOnScreen)="current && marks.rowOnScreen('shoeSize')">
-          <dt>{{ 'feature.shoe.size' | tr }}@if (current && marks.updated('shoeSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.shoeSize ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.shoe.size' | tr }}@if (current && marks.updated('shoeSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.shoeSize ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('fitNotes')" (appOnScreen)="current && marks.rowOnScreen('fitNotes')">
-          <dt>{{ 'feature.fit.notes' | tr }}@if (current && marks.updated('fitNotes')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.fitNotes ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.fit.notes' | tr }}@if (current && marks.updated('fitNotes')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.fitNotes ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
       </dl>
     </ng-template>
@@ -114,11 +112,8 @@ import { ClothingHistoryPage, ClothingView } from '../../core/api/api';
   `,
 })
 export class ClothingSection extends RevisionedSection<ClothingView, ClothingView['values'], ClothingHistoryPage['entries'][number]> {
-  private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('clothing', this.childId);
-  protected get savedNotice(): string {
-    return translate('essentials.clothing.saved', this.locale.locale());
-  }
+  protected readonly savedNoticeKey = 'essentials.clothing.saved';
   protected readonly form = new FormGroup({
     topSize: new FormControl('', { nonNullable: true, validators: Validators.maxLength(64) }),
     bottomSize: new FormControl('', { nonNullable: true, validators: Validators.maxLength(64) }),
@@ -136,7 +131,7 @@ export class ClothingSection extends RevisionedSection<ClothingView, ClothingVie
     try {
       this.current.set(await this.api.clothing(this.familyId(), this.childId()));
     } catch {
-      this.error.set(translate('feedback.clothing.and.shoes.couldn.t.be.loaded', this.locale.locale()));
+      this.error.set('feedback.clothing.and.shoes.couldn.t.be.loaded');
     }
   }
 

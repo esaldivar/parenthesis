@@ -1,9 +1,11 @@
+import { essentialsTranslations } from './essentials-translations';
 import { featureTranslations } from './feature-translations';
 import { inject, Pipe, PipeTransform } from '@angular/core';
 import { LocaleService } from './locale.service';
 
 export const translations = {
   ...featureTranslations,
+  ...essentialsTranslations,
   'signIn.title': ['Sign in', 'Iniciar sesión'],
   'signIn.welcome': ['Welcome back.', 'Te damos la bienvenida de nuevo.'],
   'signIn.deleted': ["Your account has been deleted. We've sent a confirmation to your email. You're welcome back any time.", 'Tu cuenta se eliminó. Enviamos una confirmación a tu correo electrónico. Puedes volver cuando quieras.'],
