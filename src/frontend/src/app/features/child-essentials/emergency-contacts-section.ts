@@ -1,5 +1,7 @@
 import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { localizedMessage } from './localized-message';
+import { essentialsOption } from './essentials-options';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -30,7 +32,7 @@ export const RELATIONSHIPS = [
             (appOnScreen)="marks.rowOnScreen(contact.id ?? 'contact-' + index)">
             <h4>@if (contact.callFirst) { <span class="call-first">{{ 'feature.call.first' | tr }}</span> }{{ contact.name }}
               @if (marks.updated(contact.id ?? 'contact-' + index)) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</h4>
-            <p>{{ contact.relationship }} · {{ contact.phone }}</p>
+            <p>{{ optionLabel(contact.relationship, locale.locale()) }} · {{ contact.phone }}</p>
             <div class="actions">
               <a class="call" [href]="phoneLink(contact.phone)" [attr.aria-label]="('feature.call.14e218' | tr) + contact.name">{{ 'feature.call' | tr }}</a>
               @if (contact.address; as address) {
@@ -66,8 +68,8 @@ export const RELATIONSHIPS = [
               <label>{{ 'feature.relationship' | tr }}
                 <select formControlName="relationshipKind" required>
                   <option value="" disabled>{{ 'feature.choose.a.relationship' | tr }}</option>
-                  @for (kind of relationships; track kind) { <option [value]="kind">{{ kind }}</option> }
-                  <option [value]="other">{{ other }}</option>
+                  @for (kind of relationships; track kind) { <option [value]="kind">{{ optionLabel(kind, locale.locale()) }}</option> }
+                  <option [value]="other">{{ 'essentials.option.Other' | tr }}</option>
                 </select>
               </label>
               @if (form.controls.relationshipKind.value === other) {
@@ -95,15 +97,16 @@ export const RELATIONSHIPS = [
   `,
 })
 export class EmergencyContactsSection {
-  private readonly locale = inject(LocaleService);
+  protected readonly locale = inject(LocaleService);
+  protected readonly optionLabel = essentialsOption;
   readonly familyId = input.required<string>();
   readonly childId = input.required<string>();
   protected readonly marks = sectionUpdates('emergencyContacts', this.childId);
   readonly children = input<readonly Child[]>([]);
   private readonly api = inject(Api);
   protected readonly view = signal<EmergencyContactsView | null>(null);
-  protected readonly error = signal('');
-  protected readonly notice = signal('');
+  protected readonly error = localizedMessage();
+  protected readonly notice = localizedMessage();
   protected readonly busy = signal(false);
   protected readonly editing = signal<number | null>(null);
   protected readonly confirmRemove = signal<number | null>(null);
@@ -134,7 +137,7 @@ export class EmergencyContactsSection {
     try {
       this.view.set(await this.api.emergencyContacts(this.familyId(), this.childId()));
     } catch {
-      this.error.set(translate('feedback.emergency.contacts.couldn.t.be.loaded', this.locale.locale()));
+      this.error.set('feedback.emergency.contacts.couldn.t.be.loaded');
     }
   }
 
@@ -188,10 +191,10 @@ export class EmergencyContactsSection {
       ));
       const failed = siblings.filter((_, index) => results[index].status === 'rejected');
       if (failed.length) {
-        this.error.set(`Couldn’t save for ${failed.map(child => child.firstName).join(', ')}. Retry to add the missing contact.`);
+        this.error.set('essentials.copy.contactPartial', { names: failed.map(child => child.firstName).join(', ') });
         return;
       }
-      this.notice.set(translate('essentials.emergency.savedAll', this.locale.locale()));
+      this.notice.set('essentials.emergency.savedAll');
       this.editing.set(null);
     } catch (error) {
       this.reportSaveError(error);
@@ -226,14 +229,14 @@ export class EmergencyContactsSection {
     this.notice.set('');
     try {
       this.view.set(await this.api.saveEmergencyContacts(this.familyId(), this.childId(), { version: saved.version, contacts }));
-      this.notice.set(translate('essentials.emergency.saved', this.locale.locale()));
+      this.notice.set('essentials.emergency.saved');
       return true;
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 409) {
         this.view.set(error.error as EmergencyContactsView);
         this.editing.set(null);
         this.confirmRemove.set(null);
-        this.error.set(translate('essentials.emergency.conflict', this.locale.locale()));
+        this.error.set('essentials.emergency.conflict');
       } else {
         this.reportSaveError(error);
       }
@@ -253,7 +256,7 @@ export class EmergencyContactsSection {
       await this.api.saveEmergencyContacts(this.familyId(), childId, {
         version: target.version, contacts: [...target.contacts, { ...contact, id: null, callFirst: false }],
       });
-      this.notice.set(translate('essentials.emergency.copied', this.locale.locale()));
+      this.notice.set('essentials.emergency.copied');
     } catch (error) {
       this.reportSaveError(error);
     } finally {
@@ -264,7 +267,7 @@ export class EmergencyContactsSection {
   private reportSaveError(error: unknown): void {
     const validation = error instanceof HttpErrorResponse && error.status === 400
       ? error.error?.errors as Record<string, string[]> | undefined : undefined;
-    this.error.set(validation ? Object.values(validation).flat().join(' ') : translate('essentials.emergency.saveError', this.locale.locale()));
+    this.error.set(validation ? 'essentials.copy.validation' : 'essentials.emergency.saveError');
   }
 
   protected phoneLink(phone: string): string {

@@ -1,7 +1,5 @@
-import { inject } from '@angular/core';
-import { LocaleService } from '../../core/i18n/locale.service';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -88,10 +86,10 @@ import { WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
     <ng-template #values let-entry let-current="current">
       <dl>
         <div class="row" [class.row--updated]="current && marks.updated('comfortItems')" (appOnScreen)="current && marks.rowOnScreen('comfortItems')">
-          <dt>{{ 'feature.comfort.items' | tr }}@if (current && marks.updated('comfortItems')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.comfortItems ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.comfort.items' | tr }}@if (current && marks.updated('comfortItems')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.comfortItems ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
         <div class="row" [class.row--updated]="current && marks.updated('calmingStrategies')" (appOnScreen)="current && marks.rowOnScreen('calmingStrategies')">
-          <dt>{{ 'feature.calming.strategies' | tr }}@if (current && marks.updated('calmingStrategies')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.calmingStrategies ?? 'Not set' }}</dd>
+          <dt>{{ 'feature.calming.strategies' | tr }}@if (current && marks.updated('calmingStrategies')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.calmingStrategies ?? ('essentials.copy.notSet' | tr) }}</dd>
         </div>
       </dl>
     </ng-template>
@@ -106,11 +104,8 @@ import { WhatHelpsHistoryPage, WhatHelpsView } from '../../core/api/api';
   `,
 })
 export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelpsView['values'], WhatHelpsHistoryPage['entries'][number]> {
-  private readonly locale = inject(LocaleService);
   protected readonly marks = sectionUpdates('whatHelps', this.childId);
-  protected get savedNotice(): string {
-    return translate('essentials.whatHelps.saved', this.locale.locale());
-  }
+  protected readonly savedNoticeKey = 'essentials.whatHelps.saved';
   protected readonly form = new FormGroup({
     comfortItems: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
     calmingStrategies: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
@@ -126,7 +121,7 @@ export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelps
     try {
       this.current.set(await this.api.whatHelps(this.familyId(), this.childId()));
     } catch {
-      this.error.set(translate('feedback.what.helps.couldn.t.be.loaded', this.locale.locale()));
+      this.error.set('feedback.what.helps.couldn.t.be.loaded');
     }
   }
 

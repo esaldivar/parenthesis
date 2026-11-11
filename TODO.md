@@ -763,3 +763,8 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 
 ### #552 — Seven-day mobile Calendar Week grid
 - [ ] Retest on Development with physical iPhone Safari and Android Chrome in both themes, including touch scrolling, dense overlap, event details and bottom navigation.
+
+## Child Essentials Spanish follow-up (#577)
+
+- [ ] Complete CI build/full frontend and backend validation, including the new allergy PDF localization/tenant tests.
+- [ ] Verify Spanish section layouts on phone/desktop in light/dark, keyboard/screen-reader labels, Development language persistence/reload, and rendered allergy PDFs. See `docs/testing/child-essentials-spanish-577.md` for the audited inventory and local evidence.

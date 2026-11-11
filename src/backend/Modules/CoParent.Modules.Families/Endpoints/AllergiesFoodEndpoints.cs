@@ -38,7 +38,7 @@ internal static class AllergiesFoodEndpoints
     }
 
     private static async Task<IResult> DownloadPdfAsync(
-        Guid? childId, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
+        Guid? childId, string? language, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
         TimeProvider clock, CancellationToken cancellationToken)
     {
         http.Response.Headers.CacheControl = "no-store";
@@ -48,6 +48,10 @@ internal static class AllergiesFoodEndpoints
             return TypedResults.Forbid();
         }
 
+        var spanish = string.Equals(language, "es-419", StringComparison.OrdinalIgnoreCase);
+        http.Response.Headers.ContentLanguage = spanish ? "es-419" : "en";
+        var noKnownAllergies = spanish ? "Sin alergias conocidas" : "No known allergies";
+        var noAllergies = spanish ? "No se han registrado alergias" : "No allergies listed";
         var children = await db.Children.AsNoTracking()
             .Where(child => child.Status == ChildStatus.Active && (childId == null || child.Id == childId))
             .OrderBy(child => child.FirstName).ThenBy(child => child.Id)
@@ -55,8 +59,8 @@ internal static class AllergiesFoodEndpoints
                 child.FirstName,
                 db.AllergiesFoodRevisions.Where(row => row.ChildProfileId == child.Id)
                     .OrderByDescending(row => row.Revision)
-                    .Select(row => row.Allergies ?? (row.NoKnownAllergies ? "No known allergies" : "No allergies listed"))
-                    .FirstOrDefault() ?? "No allergies listed"))
+                    .Select(row => row.Allergies ?? (row.NoKnownAllergies ? noKnownAllergies : noAllergies))
+                    .FirstOrDefault() ?? noAllergies))
             .ToListAsync(cancellationToken);
         if (children.Count == 0)
         {
@@ -65,7 +69,8 @@ internal static class AllergiesFoodEndpoints
 
         var generatedAt = clock.GetUtcNow();
         var date = generatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        return TypedResults.File(AllergyPdf.Render(children, generatedAt, date), MediaTypeNames.Application.Pdf, $"allergies-{date}.pdf");
+        var displayDate = generatedAt.ToString("d", CultureInfo.GetCultureInfo(spanish ? "es-419" : "en-US"));
+        return TypedResults.File(AllergyPdf.Render(children, generatedAt, displayDate, spanish), MediaTypeNames.Application.Pdf, $"allergies-{date}.pdf");
     }
 
     private static async Task<IResult> GetAsync(
