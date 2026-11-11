@@ -66,8 +66,8 @@ export function itemSummary(item: CalendarItem, locale: AppLocale = 'en'): strin
 }
 
 const WEEK_AVATAR_SIZE = 18;
-const WEEK_AVATAR_GAP = 4;
-const WEEK_OVERFLOW_WIDTH = 24;
+const WEEK_AVATAR_GAP = 2;
+const WEEK_OVERFLOW_WIDTH = 16;
 
 /** The visible content of an item button: icon, title, time, people and status. */
 @Component({
@@ -93,7 +93,7 @@ const WEEK_OVERFLOW_WIDTH = 24;
       @if (weekSlot() && attendees().length) {
         <span #weekPeople class="week-people" aria-hidden="true">
           @for (person of visibleAttendees(); track person.kind + ':' + person.id) {
-            <app-avatar [name]="person.name" [kind]="person.kind" [size]="weekAvatarSize" [personId]="person.id" photoOn="desktop" />
+            <app-avatar [name]="person.name" [kind]="person.kind" [size]="weekAvatarSize" [personId]="person.id" />
           }
           @if (extraAttendees(); as count) {
             <span class="people-more" [attr.title]="'calendar.moreAttendees' | tr: { count }">+{{ count }}</span>
@@ -103,10 +103,10 @@ const WEEK_OVERFLOW_WIDTH = 24;
       @if (avatars() && !peopleWidth()) {
         <span class="people" aria-hidden="true">
           @for (parent of item().parents; track parent.id) {
-            <app-avatar [name]="parent.name" kind="parent" [size]="22" [personId]="parent.id" photoOn="desktop" />
+            <app-avatar [name]="parent.name" kind="parent" [size]="22" [personId]="parent.id" />
           }
           @for (child of item().children; track child.id) {
-            <app-avatar [name]="child.name" [size]="22" [personId]="child.id" photoOn="desktop" />
+            <app-avatar [name]="child.name" [size]="22" [personId]="child.id" />
           }
         </span>
       }
@@ -202,14 +202,14 @@ const WEEK_OVERFLOW_WIDTH = 24;
           grid-row: 3;
           align-items: center;
           min-inline-size: 0;
-          gap: 4px;
+          gap: 2px;
           padding: 2px;
         }
         .people-more {
           display: inline-grid;
           place-items: center;
           flex: none;
-          inline-size: 24px;
+          inline-size: 16px;
           max-inline-size: 100%;
           block-size: 18px;
           border-radius: var(--radius-pill);
@@ -248,6 +248,36 @@ const WEEK_OVERFLOW_WIDTH = 24;
       }
     }
 
+    @container calendar-week (width < 720px) {
+      :host(.week-slot) {
+        container: week-item / inline-size;
+        gap: 1px;
+        line-height: 1.1;
+      }
+      :host(.week-slot) .week-people {
+        display: flex;
+        align-items: center;
+        min-inline-size: 0;
+        gap: 2px;
+        padding-block: 2px;
+        overflow: hidden;
+      }
+      :host(.week-slot) .people { display: none; }
+      :host(.week-slot) .people-more {
+        flex: none;
+        font-size: 0.625rem;
+        color: var(--color-text);
+      }
+      :host(.week-slot) .status {
+        padding-inline: 1px;
+        font-size: 0.5625rem;
+      }
+    }
+
+    @container week-item (width < 36px) {
+      .people-more { display: none; }
+    }
+
     /* Declined (#199): struck through and labelled, so it never reads as a confirmed plan. */
     .title--declined {
       text-decoration: line-through;
@@ -269,7 +299,7 @@ export class ItemText {
   /** Title only (and status), for small month cells. */
   readonly compact = input(false);
   readonly avatars = input(true);
-  /** The full desktop Week grid uses a single compact row measured to fit its slot. */
+  /** The full Week grid uses a single compact row measured to fit its slot. */
   readonly weekSlot = input(false);
 
   protected readonly weekAvatarSize = WEEK_AVATAR_SIZE;
@@ -286,7 +316,7 @@ export class ItemText {
     const width = this.peopleWidth();
     const stride = WEEK_AVATAR_SIZE + WEEK_AVATAR_GAP;
     if (people.length * stride - WEEK_AVATAR_GAP <= width) return people;
-    const count = Math.max(0, Math.floor((width - WEEK_OVERFLOW_WIDTH) / stride));
+    const count = Math.max(width >= WEEK_AVATAR_SIZE ? 1 : 0, Math.floor((width - WEEK_OVERFLOW_WIDTH) / stride));
     return people.slice(0, count);
   });
   protected readonly extraAttendees = computed(() => this.attendees().length - this.visibleAttendees().length);

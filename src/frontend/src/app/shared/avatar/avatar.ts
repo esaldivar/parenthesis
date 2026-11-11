@@ -7,8 +7,8 @@ import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
  * label next to them, never by colour alone. The circle's size and ring are the same with or without a photo.
  *
  * Which photo: `src` when given (the picker's and PIN screens' own photos, or a Settings preview); otherwise `personId`
- * looks up the photo this viewer sees for that parent (membership id) or child (child id). `photoOn="desktop"` keeps
- * the initial on phones and tablets (below 1024px), as calendar circles do (owner decision, October 30, 2026).
+ * looks up the photo this viewer sees for that parent (membership id) or child (child id). Photos show on every
+ * screen size by default. Callers may explicitly opt into `photoOn="desktop"` for a desktop-only presentation.
  * A photo that fails to load falls back to the initial.
  *
  * Decorative: the person's name is always available as text nearby.
@@ -60,7 +60,7 @@ import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
       /* Transparent parts of a photo show the circle's own fill, not the initial underneath. */
       background: inherit;
     }
-    /* Calendar circles: photos on desktop only; phones and tablets keep the initial. */
+    /* Optional caller-controlled desktop-only presentation; calendar attendees use the default at every size. */
     @media (max-width: 1023.98px) {
       :host([data-photo='desktop']) img {
         display: none;
@@ -78,7 +78,7 @@ export class Avatar {
   readonly src = input<string | null | undefined>(undefined);
   /** A parent's membership id or a child's id, to show the photo this viewer sees for them. */
   readonly personId = input<string | null | undefined>(undefined);
-  /** `desktop`: the photo shows only at 1024px and wider (calendar circles). */
+  /** `desktop`: the photo shows only at 1024px and wider when explicitly requested. */
   readonly photoOn = input<'any' | 'desktop'>('any');
 
   protected readonly initial = computed(() => this.name().trim().charAt(0).toUpperCase());
