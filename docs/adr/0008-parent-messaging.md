@@ -58,7 +58,9 @@ architecture already planned a `Messaging` module and SignalR, but no hub existe
 - Group membership in the hub lasts until the connection closes. A parent who loses membership mid-connection stops
   receiving updates at their next reconnect; their REST access ends at once. Their session also ends with account
   deletion.
-- More than one API instance would need a SignalR backplane (for example Azure SignalR); today the app runs one.
+- More than one API instance would need a SignalR backplane (for example Azure SignalR). Until one is added, the app
+  runs a single replica: the deploy workflow sets `--max-replicas 1` on every deployment (#125). With two replicas,
+  connections negotiated on one fail on the other, and pushes reach only the parents connected to the sending replica.
 - Slices 2 and 3 of the handoff (calendar cards, compact desktop chat, PDF transcripts) build on these tables and
   endpoints.
 

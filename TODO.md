@@ -748,6 +748,10 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   - [ ] #125/#548: Verify exact text extraction for multi-codepoint emoji. Noto Emoji renders these sequences in
     the PDF, but some extract as a base or private-use glyph. Extend font coverage for additional writing systems.
   - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
+    November 11, 2026: it failed because the app ran two replicas with no backplane (negotiate on one, connect on the
+    other: `404 No Connection with that ID`). The deploy workflow now sets `--max-replicas 1`; after the next deploy,
+    retest two-parent send/read, live read receipts and reconnect.
+  - [ ] Add a SignalR backplane (for example Azure SignalR) before the app ever needs more than one replica.
 
 ## Earlier Playwright feedback (#341)
 - [ ] Move the Playwright release gate to Ubuntu 26.04. `ubuntu-latest` switched on 2026-11-06, and there WebKit saved
