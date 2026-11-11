@@ -69,7 +69,8 @@ internal static class AllergiesFoodEndpoints
 
         var generatedAt = clock.GetUtcNow();
         var date = generatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        var displayDate = generatedAt.ToString("d", CultureInfo.GetCultureInfo(spanish ? "es-419" : "en-US"));
+        // The backend runs with invariant globalization; named cultures are unavailable.
+        var displayDate = generatedAt.ToString(spanish ? "dd/MM/yyyy" : "yyyy-MM-dd", CultureInfo.InvariantCulture);
         return TypedResults.File(AllergyPdf.Render(children, generatedAt, displayDate, spanish), MediaTypeNames.Application.Pdf, $"allergies-{date}.pdf");
     }
 
