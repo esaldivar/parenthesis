@@ -22,10 +22,12 @@ that points back here.
   The owner approved the rendered artwork and photos preview on November 8, 2026. Connect parent-authorized
   content and actions once the M5 service is available.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
-- [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523).
-- [ ] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514).
-- [ ] Verify viewer-authorized Home Upcoming avatars and initials fallback on the development site at phone and desktop widths (#529).
-- [ ] Verify Home Upcoming row destinations and keyboard focus on the development site (#517).
+- [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523). Morning
+  sunrise verified November 11, 2026; afternoon sun and evening moon still need a live check.
+- [x] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514). Verified November 11, 2026.
+- [x] Verify viewer-authorized Home Upcoming avatars and initials fallback on the development site at phone and desktop widths (#529). Verified November 11, 2026.
+- [ ] Verify Home Upcoming row destinations and keyboard focus on the development site (#517). Event, parenting-time,
+  task and reminder rows verified November 11, 2026; a pending proposal row is still unchecked.
 - [ ] **Unified Notifications (#178, M4).** First slice: parent inbox, real unseen dot, seen-item expiry and notices
   for directly confirmed calendar event changes. Finish approval-gated and series changes, authorized Family Memories
   and Shared Records producers, live arrival updates, and responsive visual/accessibility acceptance.
@@ -763,3 +765,25 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 
 ### #552 — Seven-day mobile Calendar Week grid
 - [ ] Retest on Development with physical iPhone Safari and Android Chrome in both themes, including touch scrolling, dense overlap, event details and bottom navigation.
+
+## UX test follow-ups (November 11, 2026)
+These issues stay in **Test** on Project #2. Everything checkable from one parent account in desktop Chrome passed
+(details in each issue's comment); these items remain before they can move to Awaiting Deployment.
+- [ ] #125 Parent messaging: send and read between two synthetic parents, live read receipts, reconnect without
+  duplicates.
+- [ ] #128 Child Essentials update indicators: make a shared update from a second parent and check banners, row
+  highlights and independent clearing.
+- [ ] #178 Notifications: from a second parent, check calendar triggers, dot clearing, seven-day ageing and safe
+  navigation.
+- [ ] #534 Spanish: switch a synthetic parent to Español and walk the parent screens, persistence across sign-out and
+  reload, and system emails (after open PR #578 merges).
+- [ ] #513 Favicon: check the tab icon in Safari on the sign-in page and an authenticated route.
+- [ ] #552 Mobile Week grid: physical-device retest above, plus a week with overlapping timed events.
+- [ ] #523 Greeting icons and #517 proposal rows: see the Big projects items above.
+- [ ] #544 Dependabot tracking: confirm on the next Dependabot batch that each PR gets exactly one tracking issue and
+  a valid reference.
+- [ ] #497 Shared Records PDF: confirm the PDF's embedded image is header artwork, not a payment attachment; legal and
+  privacy review of the export wording.
+- [ ] Owner design decisions: #548 chat transcript PDF layout, #566 Shared Records PDF layout, #477 shared funds design.
+- [ ] Remove the synthetic "UX TEST 555/504/500/499" task, provider, caregiver and emergency contact from the
+  Development family when they're no longer useful.
