@@ -188,8 +188,10 @@ jobs:
           done
           echo "::error::Migration job $run didn't finish in 10 minutes."; exit 1
 
+      # One replica: the live chat hub keeps its connections in memory and has no backplane (ADR-0008, #125). With two,
+      # the ingress alternates requests between them, so chat connections fail and pushes reach only half the parents.
       - name: Deploy the image
-        run: az containerapp update -n "$APP" -g "$RG" --image "$TARGET" --output none
+        run: az containerapp update -n "$APP" -g "$RG" --image "$TARGET" --max-replicas 1 --output none
 
       - name: Smoke tests
         id: smoke
