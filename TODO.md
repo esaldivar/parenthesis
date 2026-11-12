@@ -93,6 +93,10 @@ that points back here.
   - [ ] Before families outside the US: GDPR/UK GDPR wording, lawful bases and regulator contact.
   - [ ] Later, if wanted: self-service data export (today a copy is sent on request within 30 days).
   - [ ] Before public launch: a lawyer's review of the notice.
+  - [ ] **Owner:** decide D1 to D11 in `docs/privacy/medication-preflight-127.md` (draft, November 12, 2026)
+    before medication storage (#127) is built. Then move the approved flow into the data inventory and notice.
+  - [ ] Add allergies and medical providers (Child Essentials, v0.4.0) to the data inventory and notice before
+    v0.4.0 reaches production (preflight D11).
 - [ ] **Switch Profiles showed the other parent after account switching (#405, M3, November 5, 2026).** Cause:
   the phone was still Parent A's shared device, and Parent B's sign-out went to that device's picker. Owner decision:
   B goes to sign-in and the device stays A's; the tab keeps showing sign-in until someone signs in again. Server
