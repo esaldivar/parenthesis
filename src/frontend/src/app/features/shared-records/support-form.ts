@@ -47,6 +47,8 @@ const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
       @if (showError()) {
         <p class="error" role="alert">{{ 'feature.enter.a.title.and.who.pays.a' | tr }}</p>
       }
+      <!-- The page passes its loading indicator here, beside the submit action, so it stays in view (#496). -->
+      <ng-content select="app-loading-indicator" />
       <button type="submit" class="primary" [disabled]="submitting()">{{ 'feature.create.record' | tr }}</button>
       <p class="privacy"><app-icon name="lock" /> {{ 'feature.visible.to.authorized.parents.only' | tr }}</p>
     </form>

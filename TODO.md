@@ -780,3 +780,7 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 ## Safari favicon fallbacks (#579)
 
 - [ ] After deploying the favicon fallback assets, verify the tab icon in Safari 16.6 on macOS 13, an SVG-capable browser, and Apple bookmarks/touch icons. Check image responses before clearing a stale favicon cache. Local exports and automated asset checks do not certify Safari acceptance.
+
+## Shared Records submit indicator (#496)
+
+- [ ] After deploy, retest on Development with writes delayed or blocked: Report contribution, Shared fund request and Child support record each show the branded indicator just above Submit, in view at 1280×800 and phone width, both themes, keyboard and reduced motion.

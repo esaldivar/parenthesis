@@ -74,6 +74,8 @@ const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
         } @else if (error()) {
           <p class="error" role="alert">{{ error() }} {{ 'feature.your.entries.are.still.here' | tr }}</p>
         }
+        <!-- The page passes its loading indicator here, beside the submit action, so it stays in view (#496). -->
+        <ng-content select="app-loading-indicator" />
         <div class="actions">
           <button type="submit" class="primary" [disabled]="submitting()">
             {{ submitting() ? ('feature.sending' | tr) : kind() === 'fund' ? ('feature.submit.contribution' | tr) : ('feature.submit.payment' | tr) }}
