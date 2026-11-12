@@ -16,7 +16,8 @@ that points back here.
   - [x] Dashboard pilot (#569).
   - [x] Shells and navigation moved to `app/core/layout`; the Messages dock is wired in by `app/parent-app.ts`, so
     core imports no feature (`refactor/567-core-layout`, November 12, 2026).
-  - [ ] Separate the global Sass into `styles/abstracts`, `base` and `themes`, with a compiled CSS comparison.
+  - [x] Separate the global Sass into `styles/abstracts`, `base` and `themes`; compiled CSS byte-identical in
+    production and development builds (`refactor/567-sass-layers`, November 12, 2026).
   - [ ] Move the shared date types and helpers out of Dashboard (`dashboard/week.ts`, `model.ts`) before Calendar.
   - [ ] Remaining feature slices, then `shared/` into `components`, `directives` and `pipes`, and `core` services
     by responsibility. Each in its own PR.

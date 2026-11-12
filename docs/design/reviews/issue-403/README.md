@@ -3,7 +3,7 @@
 Static design boards for owner review, written before any implementation. They are not captures of the app and nothing
 in them works: no upload, sharing or download happens. Synthetic Rivera Family only (Dad is the viewer, Mom the
 co-parent, Kai the child); photo tiles are drawn shapes, not photos. Colors are the app's tokens from
-`src/frontend/src/styles/_tokens.scss`. Rules and board list: [EVENT_PHOTOS_403.md](../../handoffs/EVENT_PHOTOS_403.md).
+`src/frontend/src/styles/abstracts/_tokens.scss`. Rules and board list: [EVENT_PHOTOS_403.md](../../handoffs/EVENT_PHOTOS_403.md).
 
 | File | What it shows |
 |---|---|
