@@ -25,8 +25,8 @@ import { minutesOfDay } from './time';
 const SLOT = 30;
 const MIN_SLOTS = 2;
 const DAY_MINUTES = 24 * 60;
-// Allow a 24px-high button plus a gap for short events when there is space before midnight.
-const MOBILE_MIN_MINUTES = 16;
+// Leave room for a title, compact attendee photos and status in short mobile events.
+const MOBILE_MIN_MINUTES = 32;
 
 interface Span {
   readonly item: CalendarItem;
