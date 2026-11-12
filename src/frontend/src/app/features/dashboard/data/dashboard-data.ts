@@ -1,3 +1,4 @@
+import { LocaleService } from '../../../core/i18n/locale.service';
 import { Injectable, inject } from '@angular/core';
 import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember, Memory } from '../../../core/api/api';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -36,6 +37,7 @@ const CATEGORIES: Record<CalendarCategory, EventCategory> = {
 export class LiveDashboardDataSource extends DashboardDataSource {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
+  private readonly locale = inject(LocaleService);
 
   override async load(familyId: string, weekStart: PlainDate): Promise<DashboardWeek> {
     const zone = this.auth.currentFamily()?.timeZone ?? 'UTC';
@@ -77,7 +79,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
       recentMemories: memories.slice(0, 5).map((m) => ({
         id: m.eventId,
         title: m.title,
-        sharedBy: whoseText(m, members.find((x) => x.role === 'Parent' && !x.isYou)?.displayName ?? null),
+        sharedBy: whoseText(m, members.find((x) => x.role === 'Parent' && !x.isYou)?.displayName ?? null, this.locale.locale()),
         date: familyDate(m.startsAt, zone),
         coverUrl: m.coverThumbnailUrl,
         link: ['/memories', m.eventId],

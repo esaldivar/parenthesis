@@ -23,7 +23,6 @@ import { Api, EventPhoto, EventPhotos, PhotoBatch, PhotoExport } from '../../cor
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { Toasts } from '../../shared/toast/toasts';
-import { monthDay } from '../dashboard/week';
 import {
   ACCEPT,
   PHOTOS_NOW,
@@ -35,6 +34,7 @@ import {
   expiryChip,
   familyDate,
   fileProblem,
+  shortDate,
   sizeText,
   uploadMessage,
 } from './photo-text';
@@ -139,6 +139,7 @@ export class EventPhotosSection {
     }
     const zone = this.timeZone();
     const now = this.now();
+    const locale = this.copyLocale.locale();
     let first = 1;
     return view.batches
       .filter((b) => b.photos.length > 0)
@@ -146,9 +147,9 @@ export class EventPhotosSection {
         const soonest = batch.photos.reduce((a, b) => (a.expiresAt < b.expiresAt ? a : b));
         const shown = {
           batch,
-          date: monthDay(familyDate(batch.createdAt, this.timeZone())),
+          date: shortDate(familyDate(batch.createdAt, this.timeZone()), locale),
           first,
-          expiry: expiryChip(expiry(soonest.expiresAt, zone, now)),
+          expiry: expiryChip(expiry(soonest.expiresAt, zone, now, locale), locale),
         };
         first += batch.photos.length;
         return shown;
@@ -201,7 +202,7 @@ export class EventPhotosSection {
 
   protected readonly deletedOn = computed(() => {
     const on = this.view()?.photosDeletedOn;
-    return on && this.total() === 0 ? monthDay(familyDate(on, this.timeZone())) : null;
+    return on && this.total() === 0 ? shortDate(familyDate(on, this.timeZone()), this.copyLocale.locale()) : null;
   });
 
   /** Room for this upload: the event's spots left, at most 5 at a time. */
@@ -222,7 +223,7 @@ export class EventPhotosSection {
     }
     const u = view.uploads;
     if (u.blocked) {
-      return blockedText(u.blocked, this.caregiver());
+      return blockedText(u.blocked, this.caregiver(), this.copyLocale.locale());
     }
     if (!u.available) {
       return translate('memory.upload.unavailable', this.copyLocale.locale());
@@ -260,7 +261,7 @@ export class EventPhotosSection {
       : '';
   });
   protected readonly deletedOnIfAdded = computed(() =>
-    deletedOnIfAddedToday(this.timeZone(), this.now()),
+    deletedOnIfAddedToday(this.timeZone(), this.now(), this.copyLocale.locale()),
   );
   protected readonly added = computed(() => this.picks().filter((p) => p.state === 'added').length);
   protected readonly progress = computed(() => {
@@ -364,7 +365,7 @@ export class EventPhotosSection {
     const max = this.view()?.uploads.maxFileBytes;
     this.picks.set(
       files.map((file) => {
-        const message = fileProblem(file, max);
+        const message = fileProblem(file, max, this.copyLocale.locale());
         return {
           key: this.nextKey++,
           file,
@@ -441,7 +442,7 @@ export class EventPhotosSection {
       }
       this.update((p) =>
         p.key === key
-          ? { ...p, state: 'failed', message: uploadMessage(problem), retry: canRetry(problem) }
+          ? { ...p, state: 'failed', message: uploadMessage(problem, this.copyLocale.locale()), retry: canRetry(problem) }
           : p,
       );
     }
@@ -565,7 +566,8 @@ export class EventPhotosSection {
 
   protected openExpiry = computed(() => {
     const photo = this.openPhoto();
-    return photo ? expiryChip(expiry(photo.expiresAt, this.timeZone(), this.now())) : '';
+    const locale = this.copyLocale.locale();
+    return photo ? expiryChip(expiry(photo.expiresAt, this.timeZone(), this.now(), locale), locale) : '';
   });
 
   protected startDelete(): void {

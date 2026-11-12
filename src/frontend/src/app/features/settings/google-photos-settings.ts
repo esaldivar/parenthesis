@@ -17,7 +17,6 @@ import { Icon } from '../../shared/icon/icon';
 import { Toasts } from '../../shared/toast/toasts';
 import { OPEN_EXTERNAL } from './google-calendar-settings';
 
-const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
 
 /**
  * A parent's own Google Photos connection (#404), for exporting Family Memories photos one way into albums the app
@@ -62,7 +61,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
                 {{ 'feature.export.photos.from.any.family.memory' | tr }}
               }
               @if (status.waitingCount > 0) {
-                {{ photos(status.waitingCount) }} {{ 'feature.waiting.to.export' | tr }}
+                {{ waiting(status.waitingCount) }}
               }
             </p>
           }
@@ -81,7 +80,7 @@ const photos = (n: number) => (n === 1 ? '1 photo' : `${n} photos`);
             <p>
               {{ 'feature.albums.and.photos.already.in.your.google' | tr }}
               @if (status.waitingCount > 0) {
-                {{ photos(status.waitingCount) }} {{ 'feature.waiting.to.export.won.t.be.sent' | tr }}
+                {{ notSent(status.waitingCount) }}
               }
             </p>
             <p class="muted">
@@ -193,7 +192,19 @@ export class GooglePhotosSettings implements OnInit {
   protected readonly busy = signal(false);
   protected readonly confirming = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly photos = photos;
+  /** "1 photo" or "6 photos", in the parent's language. */
+  protected photos(n: number): string {
+    return translate(n === 1 ? 'memory.onePhoto' : 'memory.photoCount', this.copyLocale.locale(), { count: n });
+  }
+
+  /** "1 photo waiting to export." with Spanish agreement for one or many. */
+  protected waiting(n: number): string {
+    return translate(n === 1 ? 'google.photos.toExportOne' : 'google.photos.toExportCount', this.copyLocale.locale(), { count: n });
+  }
+
+  protected notSent(n: number): string {
+    return translate(n === 1 ? 'google.photos.notSentOne' : 'google.photos.notSentCount', this.copyLocale.locale(), { count: n });
+  }
 
   ngOnInit(): void {
     void this.initialize();
@@ -209,8 +220,14 @@ export class GooglePhotosSettings implements OnInit {
 
   /** "18 photos exported to 3 albums." */
   protected exported(status: GooglePhotosStatus): string {
-    const albums = status.albumCount === 1 ? '1 album' : `${status.albumCount} albums`;
-    return `${photos(status.exportedCount)} exported to ${albums}.`;
+    const locale = this.copyLocale.locale();
+    const albums = translate(status.albumCount === 1 ? 'google.photos.oneAlbum' : 'google.photos.albumCount', locale, {
+      count: status.albumCount,
+    });
+    return translate(status.exportedCount === 1 ? 'google.photos.exportedOne' : 'google.photos.exportedMany', locale, {
+      photos: this.photos(status.exportedCount),
+      albums,
+    });
   }
 
   /** Why, and what happens to photos that were waiting. */
