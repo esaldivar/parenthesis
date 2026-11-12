@@ -783,8 +783,11 @@ The November 12 test found English on Settings (profile photo hints, Google Phot
 (dates, "All day", "Declined") and Memories (dates, "You", deletion chips). `fix/534-remaining-spanish` translates those
 and the Memories photo helpers (deletion dates, upload refusals, file problems).
 - [ ] Retest #534 on Development in Spanish after this deploys, including the "Shared Caregivers" heading from #578.
-- [ ] Sweep the remaining hard-coded English built in code, for example `features/privacy/privacy-page.ts`,
-  `features/memories/google-photos-export.ts` and the Download all, final-week and export notes in
-  `features/memories/event-photos.ts`, `features/from-your-kids/from-your-kids-preview.ts`, and the calendar repeat
-  and date-rule text (`series.ts`, `plain-dates.ts`, `date-rules.ts`, the repeat preview in `add-event-page.ts`).
+- [x] Sweep the remaining hard-coded English built in code (`fix/534-english-sweep`): privacy notice storage list
+  and contents, Google Photos export lines and progress, Memories download/final-week/export notes, calendar Month bar
+  labels, date-rule and title validation, unavailable-time conflicts, proposed-change dates, approvals, Home
+  "unavailable" titles, kids gallery expiry, onboarding, delete-account, and the Add event repeat preview.
+- [ ] Still English by design or for later: child-account screens (`features/kid/*`, out of #534's scope), the
+  default "Time with {name}" parenting-time title (stored event data, seen by both parents), the development-only
+  sample dashboard data, and server messages missing from `core/api/problem.ts`'s Spanish map.
 - [ ] Check system emails in Spanish.

@@ -1,9 +1,10 @@
-import { LocaleService } from '../../../core/i18n/locale.service';
+import { AppLocale, LocaleService } from '../../../core/i18n/locale.service';
+import { translate } from '../../../core/i18n/translations';
 import { Injectable, inject } from '@angular/core';
 import { Api, CalendarCategory, CalendarEvent, Child, FamilyMember, Memory } from '../../../core/api/api';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { parentPalette } from '../../calendar/calendar-palette';
-import { associatedChildIds, FORMER_PARENT } from '../../calendar/calendar-items';
+import { associatedChildIds } from '../../calendar/calendar-items';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from '../../calendar/time';
 import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from '../model';
 import { addDays } from '../week';
@@ -41,6 +42,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
 
   override async load(familyId: string, weekStart: PlainDate): Promise<DashboardWeek> {
     const zone = this.auth.currentFamily()?.timeZone ?? 'UTC';
+    const locale = this.locale.locale();
     const weekEnd = addDays(weekStart, 7);
     const [from, to] = [fromFamilyLocal(`${weekStart}T00:00`, zone), fromFamilyLocal(`${weekEnd}T00:00`, zone)];
     const [family, children, listed, approvals, reminders, tasks, memories] = await Promise.all([
@@ -59,7 +61,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
     const parent = (membershipId: string | null): Caregiver => ({
       membershipId: membershipId ?? '',
       palette: parentPalette(membershipId, members),
-      displayName: members.find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT,
+      displayName: members.find((m) => m.membershipId === membershipId)?.displayName ?? translate('feedback.former.parent', locale),
     });
     const kids = (ids: readonly (string | null)[]): ChildRef[] =>
       ids
@@ -71,7 +73,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
       source: 'live',
       children: children.filter((c) => c.status === 'Active').map((c) => ({ id: c.id, name: c.firstName })),
       parentingTime: events.filter((e) => e.category === 'ParentingTime').flatMap((e) => parentingTime(e, zone, kids, parent)),
-      events: events.filter((e) => e.category !== 'ParentingTime').map((e) => familyEvent(e, zone, kids, members)),
+      events: events.filter((e) => e.category !== 'ParentingTime').map((e) => familyEvent(e, zone, kids, members, locale)),
       pendingReviews: approvals
         .filter((r) => r.canDecide && r.status === 'Pending')
         .map((r) => ({ id: r.id, summary: r.summary, proposedBy: parent(r.proposerMembershipId).displayName })),
@@ -79,7 +81,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
       recentMemories: memories.slice(0, 5).map((m) => ({
         id: m.eventId,
         title: m.title,
-        sharedBy: whoseText(m, members.find((x) => x.role === 'Parent' && !x.isYou)?.displayName ?? null, this.locale.locale()),
+        sharedBy: whoseText(m, members.find((x) => x.role === 'Parent' && !x.isYou)?.displayName ?? null, locale),
         date: familyDate(m.startsAt, zone),
         coverUrl: m.coverThumbnailUrl,
         link: ['/memories', m.eventId],
@@ -129,6 +131,7 @@ function familyEvent(
   zone: string,
   kids: (ids: readonly string[]) => ChildRef[],
   members: readonly FamilyMember[],
+  locale: AppLocale,
 ): FamilyEvent {
   const start = toFamilyLocal(e.startsAt, zone);
   const last = lastDate(start, toFamilyLocal(e.endsAt, zone));
@@ -137,7 +140,11 @@ function familyEvent(
   return {
     id: e.id,
     // Only "Unavailable" and whose it is: a private note never comes this way.
-    title: unavailable ? `${owner?.isYou ? 'You’re' : `${owner?.displayName ?? FORMER_PARENT} is`} unavailable` : e.title,
+    title: unavailable
+      ? owner?.isYou
+        ? translate('dash.unavailable.you', locale)
+        : translate('dash.unavailable.other', locale, { name: owner?.displayName ?? translate('feedback.former.parent', locale) })
+      : e.title,
     date: start.slice(0, 10),
     endDate: last > start.slice(0, 10) ? last : undefined,
     time: e.allDay ? undefined : start.slice(11),

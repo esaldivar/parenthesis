@@ -147,7 +147,7 @@ export class SwapRequestPage {
   protected readonly coParent = computed(
     () => this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null,
   );
-  protected readonly otherParent = computed(() => this.coParent() ?? 'your co-parent');
+  protected readonly otherParent = computed(() => this.coParent() ?? translate('common.coParentLower', this.copyLocale.locale()));
 
   /** Why this event can't be swapped, if it can't. */
   protected readonly blocked = computed(() => {
@@ -285,7 +285,7 @@ export class SwapRequestPage {
       const { warnings } = await this.api.eventConflicts(family.id, event.id, startsAt, endsAt);
       if (warnings.includes('CaregiverUnavailable')) {
         // The parent with the children can't be unavailable then (#210): no Send anyway, the dates must change.
-        this.datesError.set(caregiverUnavailableText(this.caregiver(), true));
+        this.datesError.set(caregiverUnavailableText(this.caregiver(), true, this.copyLocale.locale()));
         this.focus('#swap-start-date');
         return;
       }

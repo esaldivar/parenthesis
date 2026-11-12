@@ -1,5 +1,6 @@
-import { TranslatePipe } from '../../core/i18n/translations';
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { A11yModule } from '@angular/cdk/a11y';
 import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
@@ -202,6 +203,7 @@ export class KidsGallery {
   readonly comment = output<{ id: string; text: string }>();
   readonly exportRequested = output<string>();
   protected readonly activeId = signal<string | null>(null);
+  private readonly locale = inject(LocaleService);
   protected readonly ordered = computed(() => {
     const now = new Date();
     return [...this.items()]
@@ -223,11 +225,12 @@ export class KidsGallery {
   }
 
   private retentionLabel(item: KidsGalleryItem, now: Date): string {
-    if (item.bookmarked) return 'Saved';
+    const locale = this.locale.locale();
+    if (item.bookmarked) return translate('kids.gallery.saved', locale);
     const days = daysUntilExpiry(item.expiresAt, now);
-    if (days === null) return 'Unsaved';
-    if (days === 0) return 'Expired';
-    return days === 1 ? 'Expires in 1 day' : `Expires in ${days} days`;
+    if (days === null) return translate('kids.gallery.unsaved', locale);
+    if (days === 0) return translate('kids.gallery.expired', locale);
+    return translate(days === 1 ? 'kids.gallery.expiresOne' : 'kids.gallery.expiresMany', locale, { days });
   }
 
   protected close(): void { this.activeId.set(null); }

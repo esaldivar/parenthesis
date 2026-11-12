@@ -56,7 +56,7 @@ import { FORM_STYLES } from '../auth/form-styles';
             <input matInput type="password" formControlName="password" autocomplete="current-password" required />
             <mat-hint>{{ 'feature.to.confirm.it.s.you' | tr }}</mat-hint>
             @if (form.controls.password.invalid) {
-              <mat-error>{{ fieldError() ?? 'Enter your password.' }}</mat-error>
+              <mat-error>{{ fieldError() ?? ('settings.delete.enterPassword' | tr) }}</mat-error>
             }
           </mat-form-field>
           <div class="actions">

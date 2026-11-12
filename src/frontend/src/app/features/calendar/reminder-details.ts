@@ -9,7 +9,7 @@ import { Api, FamilyMember, Reminder } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { dateMedium, dayLong } from '../dashboard/week';
-import { CalendarItem, FORMER_PARENT } from './calendar-items';
+import { CalendarItem } from './calendar-items';
 import { whenText } from './item-text';
 
 /** "Every week, 3 times" or "Every day until Oct 22, 2026"; null for a one-off. */
@@ -68,7 +68,7 @@ export class ReminderDetails implements OnInit {
   protected readonly repeats = computed(() => repeatText(this.reminder(), this.locale.locale()));
   private readonly me = computed(() => this.members().find((m) => m.isYou)?.membershipId);
   private readonly name = (membershipId: string) =>
-    this.members().find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
+    this.members().find((m) => m.membershipId === membershipId)?.displayName ?? translate('feedback.former.parent', this.locale.locale());
   protected readonly editedBy = computed(() => {
     const editor = this.reminder().editedBy;
     return editor ? this.name(editor) : null;

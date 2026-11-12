@@ -17,7 +17,7 @@ import {
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { Api, SavedTranscript, TranscriptPreview, TranscriptRange } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
+import { generalMessage, toProblem, localizeMessage } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon } from '../../shared/icon/icon';
 import { Toasts } from '../../shared/toast/toasts';
@@ -428,7 +428,8 @@ export class ChatTranscripts implements OnInit {
     };
     const fromMessage = field('from');
     const toMessage = field('to');
-    if (problem.status === 400 && fromMessage === EMPTY_RANGE) {
+    // toProblem may already have put the server's sentence into Spanish (#534).
+    if (problem.status === 400 && fromMessage === localizeMessage(EMPTY_RANGE, problem.locale ?? 'en')) {
       this.step.set('choose');
       this.empty.set(true);
       return;

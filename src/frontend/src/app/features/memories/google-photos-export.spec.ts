@@ -422,4 +422,17 @@ describe('export status words (#404)', () => {
       ]),
     ).toBe('3 of 5 in your Google Photos · 1 exporting · 1 couldn’t export');
   });
+
+  it('speaks Spanish when the parent chose it (#534)', () => {
+    const line = (state: PhotoExport['state'], reason: PhotoExport['reason']) =>
+      exportLine(record('p', { state, reason }), 'Sam', '9 nov', 'es-419');
+    expect(exportLine(record('p', { state: 'Exported' }), 'Sam', null, 'es-419').text).toBe('En tu Google Fotos');
+    expect(line('Skipped', 'NotAllowed').text).toBe(
+      'No se exportó. Sam dejó de compartir esta foto o desactivó las descargas.',
+    );
+    expect(line('Queued', 'RateLimited').text).toContain('hasta que esta foto se elimine el 9 nov');
+    expect(
+      progressText([record('a', { state: 'Exported' }), record('b'), record('c', { state: 'Failed' })], 'es-419'),
+    ).toBe('1 de 3 en tu Google Fotos · 1 exportándose · 1 no se pudieron exportar');
+  });
 });

@@ -15,7 +15,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { Api, Child, SharedTask, TaskInput } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
+import { generalMessage, toProblem, localizeMessage } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
@@ -170,7 +170,8 @@ export class TaskForm implements OnInit {
   }
 
   protected fieldError(name: string): string | null {
-    return this.fieldErrors()[name] ?? null;
+    const message = this.fieldErrors()[name];
+    return message ? localizeMessage(message, this.copyLocale.locale()) : null;
   }
 
   /** After a conflict: replace the form with the other parent's latest version. */

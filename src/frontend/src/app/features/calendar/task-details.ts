@@ -25,7 +25,7 @@ import { Api, ChecklistItem, FamilyMember, SharedTask } from '../../core/api/api
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { dayLong, monthDay, timeLabel } from '../dashboard/week';
-import { CalendarItem, FORMER_PARENT } from './calendar-items';
+import { CalendarItem } from './calendar-items';
 import { toFamilyLocal } from './time';
 
 /** How long the confetti plays before only the calm "done" state is left. */
@@ -233,7 +233,7 @@ export class TaskDetails implements OnInit {
   }
 
   private name(membershipId: string): string {
-    return this.members().find((m) => m.membershipId === membershipId)?.displayName ?? FORMER_PARENT;
+    return this.members().find((m) => m.membershipId === membershipId)?.displayName ?? translate('feedback.former.parent', this.locale.locale());
   }
 
   private who(membershipId: string): string {
