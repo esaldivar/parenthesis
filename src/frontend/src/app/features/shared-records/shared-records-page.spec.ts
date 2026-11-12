@@ -130,6 +130,11 @@ describe('SharedRecordsPage', () => {
     form.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
     expect(page.querySelector('app-loading-indicator [role="status"]')?.textContent).toBe('Sending request…');
+    // The branded indicator sits right above the submit button, so it's in view while the button is (#496).
+    const indicator = form.querySelector('app-loading-indicator');
+    expect(indicator?.querySelector('svg')).not.toBeNull();
+    expect(indicator?.nextElementSibling?.matches('button[type="submit"]')).toBe(true);
+    expect(page.querySelectorAll('app-loading-indicator')).toHaveLength(1);
     expect(form.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
     form.dispatchEvent(new Event('submit'));
     expect(api.proposeSharedFund).toHaveBeenCalledTimes(1);
@@ -280,6 +285,9 @@ describe('SharedRecordsPage', () => {
     page.querySelector('app-report-form form')!.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
     expect(page.querySelector('app-loading-indicator [role="status"]')?.textContent).toBe('Reporting contribution…');
+    const reportIndicator = page.querySelector('app-report-form form app-loading-indicator');
+    expect(reportIndicator?.querySelector('svg')).not.toBeNull();
+    expect(reportIndicator?.nextElementSibling?.querySelector('button[type="submit"]')).not.toBeNull();
     fail(new Error('offline'));
     await vi.waitFor(() => {
       fixture.detectChanges();

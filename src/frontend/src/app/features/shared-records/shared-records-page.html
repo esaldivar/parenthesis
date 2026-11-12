@@ -137,7 +137,6 @@
             <app-icon name="chevron-left" />
           </button>
         </header>
-        <app-loading-indicator [active]="busy()" [label]="savingLabel()" />
         @if (reporting(); as target) {
           <div class="badges">
             <span class="badge" [class.support]="target.kind === 'support'">{{ target.kind === 'fund' ? ('feature.shared.fund' | tr) : ('feature.child.support' | tr) }}</span>
@@ -145,7 +144,9 @@
           <p class="muted">{{ target.title }}</p>
           <app-report-form [kind]="target.kind" [currency]="target.kind === 'fund' ? target.fund.currency : target.record.currency"
             [submitting]="busy()" [error]="reportError()" [attachmentsReady]="workspace()?.attachmentsReady ?? true"
-            (report)="submitReport(target, $event)" (cancelled)="close()" />
+            (report)="submitReport(target, $event)" (cancelled)="close()">
+            <app-loading-indicator [active]="busy()" [label]="savingLabel()" />
+          </app-report-form>
         } @else {
           <h3 id="request-type-label">{{ 'feature.choose.a.request.type' | tr }}</h3>
           <div class="request-types" role="radiogroup" aria-labelledby="request-type-label">
@@ -159,9 +160,13 @@
             </button>
           </div>
           @if (requestType() === 'fund') {
-            <app-shared-fund-proposal-form [children]="data.children" [submitting]="busy()" (proposal)="propose($event)" />
+            <app-shared-fund-proposal-form [children]="data.children" [submitting]="busy()" (proposal)="propose($event)">
+              <app-loading-indicator [active]="busy()" [label]="savingLabel()" />
+            </app-shared-fund-proposal-form>
           } @else {
-            <app-support-form [submitting]="busy()" (record)="createSupport($event)" />
+            <app-support-form [submitting]="busy()" (record)="createSupport($event)">
+              <app-loading-indicator [active]="busy()" [label]="savingLabel()" />
+            </app-support-form>
           }
         }
       </section>

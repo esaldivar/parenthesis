@@ -818,3 +818,7 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
   keyboard, screen reader and reduced motion. A kid tablet must never show medication.
 - [ ] A Playwright spec for the Medical screen's medication flow.
 - [ ] Lawyer review before production (see the Privacy audit item above).
+
+## Shared Records submit indicator (#496)
+
+- [ ] After deploy, retest on Development with writes delayed or blocked: Report contribution, Shared fund request and Child support record each show the branded indicator just above Submit, in view at 1280×800 and phone width, both themes, keyboard and reduced motion.
