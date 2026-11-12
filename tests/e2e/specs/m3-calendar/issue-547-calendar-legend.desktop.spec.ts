@@ -32,12 +32,15 @@ test('the desktop Calendar legend stays visible and clear of Messages while scro
         await page.goto(`/calendar?date=${date}&view=${view}`);
         await expect(legend).toBeInViewport({ ratio: 1 });
         await expect(legend.getByRole('listitem')).toHaveCount(8);
-        await expect(legend).toHaveCSS('font-size', '16px');
-        await expect(legend.locator('.swatch').first()).toHaveCSS('width', '24px');
+        // A narrow desktop calendar (under 760px) uses a tighter legend so it covers fewer rows (#547).
+        const narrow = (await page.locator('app-calendar-page').boundingBox())!.width < 760;
+        await expect(legend).toHaveCSS('font-size', narrow ? '14px' : '16px');
+        await expect(legend.locator('.swatch').first()).toHaveCSS('width', narrow ? '20px' : '24px');
         const body = (await page.locator('app-calendar-page .body').boundingBox())!;
         const key = (await legend.boundingBox())!;
         expect(key.x).toBe(body.x);
-        expect(key.width).toBeCloseTo(Math.min(0.6 * body.width, body.width - 400), 0);
+        // While Messages is minimized the legend only clears its 18rem bar (288px + 16px gap).
+        expect(key.width).toBeCloseTo(Math.min(0.6 * body.width, body.width - 304), 0);
         expect(key.x + key.width).toBeLessThan((await minimized.boundingBox())!.x);
 
         const last = view === 'month'
@@ -52,7 +55,10 @@ test('the desktop Calendar legend stays visible and clear of Messages while scro
         await minimized.getByRole('button', { name: /Open the compact chat/ }).click();
         await expect(open).toBeVisible();
         const dock = (await open.boundingBox())!;
-        expect((await legend.boundingBox())!.x + key.width + 15).toBeLessThanOrEqual(dock.x);
+        // With Messages open it narrows to clear the 24rem panel.
+        const openKey = (await legend.boundingBox())!;
+        expect(openKey.width).toBeCloseTo(Math.min(0.6 * body.width, body.width - 400), 0);
+        expect(openKey.x + openKey.width + 15).toBeLessThanOrEqual(dock.x);
         // Scroll the final control into the usable strip above Messages, even when it sits at the far right.
         await last.evaluate((el, dockTop) => {
           const target = el.getBoundingClientRect();

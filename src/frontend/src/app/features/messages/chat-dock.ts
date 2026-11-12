@@ -72,7 +72,7 @@ import { ChatConversation } from './chat-conversation';
     }
     /* A tab along the bottom edge, like a messaging tray. */
     .bar {
-      width: 18rem;
+      width: var(--chat-dock-bar-width);
       border: 1px solid var(--color-outline);
       border-bottom: 0;
       border-radius: var(--radius-card) var(--radius-card) 0 0;

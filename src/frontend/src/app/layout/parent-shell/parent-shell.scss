@@ -235,8 +235,14 @@ a.is-active {
     grid-template-rows: auto 1fr;
   }
 
+  // How much width at the bottom right the Messages dock takes: the bar while minimized, the panel while open (#547).
+  .shell {
+    --chat-dock-reserve: var(--chat-dock-bar-width);
+  }
+
   .shell--chat-open {
     --chat-dock-clearance: var(--chat-dock-open-height);
+    --chat-dock-reserve: var(--chat-dock-open-width);
   }
 
   .sidebar {

@@ -180,6 +180,8 @@
   --target-min: 44px;
   // The compact chat and desktop pages that need to clear it share these dimensions.
   --chat-dock-open-width: 24rem;
+  // The minimized bar at the bottom right (#547: the calendar legend only needs to clear this while it's collapsed).
+  --chat-dock-bar-width: 18rem;
   --chat-dock-open-height: min(36rem, calc(100dvh - 6rem));
   --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-size-body: 1rem;
