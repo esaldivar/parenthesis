@@ -451,6 +451,8 @@ that points back here.
 ## Calendar follow-ups
 
 - [ ] #547: verify the desktop Calendar legend in Week, Month and List on Development at 125% browser zoom with Messages minimized and expanded.
+  November 12, 2026: failed at 1024×768 (the legend reserved the open Messages width and grew to about 258px tall); it now
+  clears only the minimized bar and tightens below a 760px calendar (about 106px tall). Retest after it deploys.
 
 - [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted
   titles from explicitly empty/whitespace titles. Required titles are rejected without saving other fields;
@@ -469,6 +471,8 @@ that points back here.
     and screen reader on development, phone/desktop and both themes. Independent-parent checks remain open.
 
 - [ ] #553: verify desktop Calendar Week attendee photos, initials and overflow with synthetic profiles on Development in both themes.
+  The November 11 failure at 1024×768 (no avatars or overflow count) should be fixed by #582's narrow Week rules; retest
+  at 1024 after #582 deploys.
 
 - [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
   29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,

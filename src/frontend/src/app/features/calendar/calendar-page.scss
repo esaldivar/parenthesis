@@ -267,7 +267,8 @@
     inset-block-end: var(--space-4);
     // Over the calendar bars and slot highlights, below the chat dock and detail dialogs.
     z-index: 4;
-    inline-size: min(60%, calc(100% - var(--chat-dock-open-width) - var(--space-4)));
+    // Clear only what the Messages dock takes now: the minimized bar, or the open panel (#547).
+    inline-size: min(60%, calc(100% - var(--chat-dock-reserve, var(--chat-dock-open-width)) - var(--space-4)));
     padding: var(--space-2) var(--space-3);
     gap: var(--space-2) var(--space-4);
     background: var(--color-surface);
@@ -286,5 +287,24 @@
     flex: none;
     width: 1.5rem;
     height: 1.125rem;
+  }
+
+  // A narrow desktop calendar (about 1024px wide, or zoomed in): a tighter legend, so fewer rows cover the schedule
+  // while it scrolls (#547). Still larger than the phone key.
+  @container (max-width: 759px) {
+    .key {
+      padding: var(--space-1) var(--space-2);
+      gap: var(--space-1) var(--space-3);
+      font-size: 0.875rem;
+    }
+
+    .key li {
+      gap: var(--space-1);
+    }
+
+    .swatch {
+      width: 1.25rem;
+      height: 0.875rem;
+    }
   }
 }
