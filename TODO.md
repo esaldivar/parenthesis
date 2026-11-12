@@ -769,19 +769,22 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 ## UX test follow-ups (November 11, 2026)
 These issues stay in **Test** on Project #2. Everything checkable from one parent account in desktop Chrome passed
 (details in each issue's comment); these items remain before they can move to Awaiting Deployment.
-- [ ] #125 Parent messaging: send and read between two synthetic parents, live read receipts, reconnect without
-  duplicates.
+- [ ] #125 Parent messaging: live updates failed on November 11 (two replicas, no backplane); fixed by running one
+  replica (#583). Retest two-parent read receipts and reconnect without duplicates.
 - [ ] #128 Child Essentials update indicators: make a shared update from a second parent and check banners, row
   highlights and independent clearing.
 - [ ] #178 Notifications: from a second parent, check calendar triggers, dot clearing, seven-day ageing and safe
   navigation.
-- [ ] #534 Spanish: switch a synthetic parent to Español and walk the parent screens, persistence across sign-out and
-  reload, and system emails (after open PR #578 merges).
+- [ ] #534 Spanish (failed November 12, back in Ready For Development): translate the profile-photo hints, the
+  Google Photos export status, chat event card dates, "All day" and "Declined", and the Memories dates and owner
+  label; recheck "Shared Caregivers" after #578 deploys; check system emails in Spanish.
 - [ ] #513 Favicon: check the tab icon in Safari on the sign-in page and an authenticated route.
-- [ ] #552 Mobile Week grid: physical-device retest above, plus a week with overlapping timed events.
+- [ ] #552 Mobile Week grid: physical-device retest above (overlapping timed events passed in emulation on
+  November 12).
 - [ ] #523 Greeting icons and #517 proposal rows: see the Big projects items above.
-- [ ] #544 Dependabot tracking: confirm on the next Dependabot batch that each PR gets exactly one tracking issue and
-  a valid reference.
+- [ ] #544 Dependabot tracking: the `workflow_run` workflow only runs from `main`, so it can't work until v0.4.0
+  reaches `main`. Then confirm on the next Dependabot batch that each PR gets exactly one tracking issue and a valid
+  reference.
 - [ ] #497 Shared Records PDF: confirm the PDF's embedded image is header artwork, not a payment attachment; legal and
   privacy review of the export wording.
 - [ ] Owner design decisions: #548 chat transcript PDF layout, #566 Shared Records PDF layout, #477 shared funds design.
