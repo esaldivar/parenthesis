@@ -43,7 +43,7 @@ import { sizeText } from '../memories/photo-text';
           [attr.aria-valuenow]="s.storageUsedBytes"
           aria-valuemin="0"
           [attr.aria-valuemax]="s.storageLimitBytes"
-          [attr.aria-valuetext]="used() + ' of ' + limit() + ' used'"
+          [attr.aria-valuetext]="'memory.storage.used' | tr: { used: used(), limit: limit() }"
         >
           <span [style.width.%]="percent()"></span>
         </div>

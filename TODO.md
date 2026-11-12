@@ -451,6 +451,8 @@ that points back here.
 ## Calendar follow-ups
 
 - [ ] #547: verify the desktop Calendar legend in Week, Month and List on Development at 125% browser zoom with Messages minimized and expanded.
+  November 12, 2026: failed at 1024×768 (the legend reserved the open Messages width and grew to about 258px tall); it now
+  clears only the minimized bar and tightens below a 760px calendar (about 106px tall). Retest after it deploys.
 
 - [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted
   titles from explicitly empty/whitespace titles. Required titles are rejected without saving other fields;
@@ -469,6 +471,8 @@ that points back here.
     and screen reader on development, phone/desktop and both themes. Independent-parent checks remain open.
 
 - [ ] #553: verify desktop Calendar Week attendee photos, initials and overflow with synthetic profiles on Development in both themes.
+  The November 11 failure at 1024×768 (no avatars or overflow count) should be fixed by #582's narrow Week rules; retest
+  at 1024 after #582 deploys.
 
 - [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
   29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
@@ -780,6 +784,21 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 ## Safari favicon fallbacks (#579)
 
 - [ ] After deploying the favicon fallback assets, verify the tab icon in Safari 16.6 on macOS 13, an SVG-capable browser, and Apple bookmarks/touch icons. Check image responses before clearing a stale favicon cache. Local exports and automated asset checks do not certify Safari acceptance.
+
+## Remaining Spanish text (#534)
+
+The November 12 test found English on Settings (profile photo hints, Google Photos export status), chat event cards
+(dates, "All day", "Declined") and Memories (dates, "You", deletion chips). `fix/534-remaining-spanish` translates those
+and the Memories photo helpers (deletion dates, upload refusals, file problems).
+- [ ] Retest #534 on Development in Spanish after this deploys, including the "Shared Caregivers" heading from #578.
+- [x] Sweep the remaining hard-coded English built in code (`fix/534-english-sweep`): privacy notice storage list
+  and contents, Google Photos export lines and progress, Memories download/final-week/export notes, calendar Month bar
+  labels, date-rule and title validation, unavailable-time conflicts, proposed-change dates, approvals, Home
+  "unavailable" titles, kids gallery expiry, onboarding, delete-account, and the Add event repeat preview.
+- [ ] Still English by design or for later: child-account screens (`features/kid/*`, out of #534's scope), the
+  default "Time with {name}" parenting-time title (stored event data, seen by both parents), the development-only
+  sample dashboard data, and server messages missing from `core/api/problem.ts`'s Spanish map.
+- [ ] Check system emails in Spanish.
 
 ## Shared Records submit indicator (#496)
 

@@ -12,7 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarCategory, CalendarEvent, CalendarEventChange, EditScope, FamilyMember } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
+import { generalMessage, toProblem, localizeMessage } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FORM_STYLES } from '../auth/form-styles';
 import { addDays, dayLong, todayIn } from '../dashboard/week';
@@ -209,7 +209,8 @@ export class EventEditPage implements OnInit {
   }
 
   protected fieldError(name: string): string | null {
-    return this.fieldErrors()[name] ?? null;
+    const message = this.fieldErrors()[name];
+    return message ? localizeMessage(message, this.locale.locale()) : null;
   }
 
   /** Shows the first problem after a refused save (see revealFirstProblem). */

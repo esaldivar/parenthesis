@@ -1,4 +1,5 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -283,6 +284,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
 export class WelcomePage implements OnInit {
   protected readonly auth = inject(AuthStore);
   private readonly api = inject(Api);
+  private readonly locale = inject(LocaleService);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly fb = inject(NonNullableFormBuilder);
@@ -391,7 +393,7 @@ export class WelcomePage implements OnInit {
       const problem = toProblem(error);
       const done = this.added().length;
       this.error.set(
-        (done > 0 ? `${done === 1 ? '1 child was' : done + ' children were'} added. ` : '') +
+        (done > 0 ? translate(done === 1 ? 'welcome.childrenAddedOne' : 'welcome.childrenAddedMany', this.locale.locale(), { count: done }) + ' ' : '') +
           (problem.errors['firstName']?.join(' ') ?? generalMessage(problem)),
       );
     } finally {

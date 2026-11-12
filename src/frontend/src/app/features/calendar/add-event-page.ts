@@ -13,7 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarCategory, CalendarWarning, Child, FamilyMember, NewCalendarEvent, SeriesFrequency, Weekday } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
+import { generalMessage, toProblem, localizeMessage } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon, IconName } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
@@ -290,7 +290,8 @@ export class AddEventPage implements OnInit {
   /** "Wed, Oct 28 · Fri, Oct 30 · Wed, Nov 4" and "+3 more". */
   protected readonly preview = computed(() => {
     const dates = this.dates();
-    return { shown: dates.slice(0, 3).map((d) => `${weekdayShort(d)}, ${monthDay(d)}`), more: Math.max(0, dates.length - 3), total: dates.length };
+    const locale = this.copyLocale.locale() === 'en' ? 'en-US' : this.copyLocale.locale();
+    return { shown: dates.slice(0, 3).map((d) => `${weekdayShort(d, locale)}, ${monthDay(d, locale)}`), more: Math.max(0, dates.length - 3), total: dates.length };
   });
   protected readonly selectedChildren = computed(() => this.value().childIds ?? []);
   protected readonly allChildren = computed(
@@ -485,7 +486,8 @@ export class AddEventPage implements OnInit {
   }
 
   protected fieldError(name: string): string | null {
-    return this.fieldErrors()[name] ?? null;
+    const message = this.fieldErrors()[name];
+    return message ? localizeMessage(message, this.copyLocale.locale()) : null;
   }
 
   private validate(type: EventType): Record<string, string> {

@@ -1,12 +1,16 @@
-import { TranslatePipe } from '../../core/i18n/translations';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey } from '../../core/i18n/translations';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+
+type Bilingual = readonly [english: string, spanish: string];
 
 /** One cookie or browser storage item, as listed in docs/privacy/data-inventory.md. */
 interface StoredItem {
   readonly name: string;
   readonly kind: 'Cookie' | 'Browser storage' | 'Tab storage';
-  readonly purpose: string;
-  readonly lasts: string;
+  /** English, then Spanish (#534). */
+  readonly purpose: Bilingual;
+  readonly lasts: Bilingual;
 }
 
 /**
@@ -18,83 +22,80 @@ export const STORED_ITEMS: readonly StoredItem[] = [
   {
     name: '__Host-parenthesis',
     kind: 'Cookie',
-    purpose: 'Keeps you signed in.',
-    lasts: '14 days after your last visit, or until you sign out.',
+    purpose: ['Keeps you signed in.', 'Mantiene tu sesión iniciada.'],
+    lasts: ['14 days after your last visit, or until you sign out.', '14 días después de tu última visita, o hasta que cierres sesión.'],
   },
   {
     name: '__Host-parenthesis-af',
     kind: 'Cookie',
-    purpose: 'Protects your account from forged requests from other sites.',
-    lasts: 'Until you close the browser.',
+    purpose: ['Protects your account from forged requests from other sites.', 'Protege tu cuenta de solicitudes falsificadas desde otros sitios.'],
+    lasts: ['Until you close the browser.', 'Hasta que cierres el navegador.'],
   },
   {
     name: 'XSRF-TOKEN',
     kind: 'Cookie',
-    purpose: 'Works with the cookie above to protect your account from forged requests.',
-    lasts: 'Until you close the browser.',
+    purpose: ['Works with the cookie above to protect your account from forged requests.', 'Funciona con la cookie anterior para proteger tu cuenta de solicitudes falsificadas.'],
+    lasts: ['Until you close the browser.', 'Hasta que cierres el navegador.'],
   },
   {
     name: '__Host-parenthesis-device',
     kind: 'Cookie',
-    purpose: 'Recognizes a shared family device or a child’s tablet that a parent registered.',
-    lasts:
-      '30 days for a shared device, about 400 days for a child’s tablet, or until a parent removes it.',
+    purpose: ['Recognizes a shared family device or a child’s tablet that a parent registered.', 'Reconoce un dispositivo familiar compartido o la tableta de un niño que registró un padre o madre.'],
+    lasts: ['30 days for a shared device, about 400 days for a child’s tablet, or until a parent removes it.', '30 días para un dispositivo compartido, unos 400 días para la tableta de un niño, o hasta que un padre o madre lo quite.'],
   },
   {
     name: 'parenthesis.locale',
     kind: 'Browser storage',
-    purpose: 'Your language choice before signing in.',
-    lasts: 'Until you clear it.',
+    purpose: ['Your language choice before signing in.', 'Tu idioma elegido antes de iniciar sesión.'],
+    lasts: ['Until you clear it.', 'Hasta que lo borres.'],
   },
   {
     name: 'parenthesis.locale.account.…',
     kind: 'Browser storage',
-    purpose: 'Remembers each signed-in parent’s language choice on this device; the account also saves the preference.',
-    lasts: 'Until you clear it.',
+    purpose: ['Remembers each signed-in parent’s language choice on this device; the account also saves the preference.', 'Recuerda el idioma de cada padre o madre con sesión iniciada en este dispositivo; la cuenta también guarda la preferencia.'],
+    lasts: ['Until you clear it.', 'Hasta que lo borres.'],
   },
   {
     name: 'parenthesis.appearance.…',
     kind: 'Browser storage',
-    purpose: 'Your light, dark or system appearance choice.',
-    lasts: 'Until you clear it.',
+    purpose: ['Your light, dark or system appearance choice.', 'Tu apariencia elegida: clara, oscura o la del sistema.'],
+    lasts: ['Until you clear it.', 'Hasta que lo borres.'],
   },
   {
     name: 'parenthesis.event-themes.…',
     kind: 'Browser storage',
-    purpose: 'Whether you want themes on events.',
-    lasts: 'Until you clear it.',
+    purpose: ['Whether you want themes on events.', 'Si quieres temas en los eventos.'],
+    lasts: ['Until you clear it.', 'Hasta que lo borres.'],
   },
   {
     name: 'parenthesis.calendar-filters.…',
     kind: 'Browser storage',
-    purpose: 'The calendar filters you chose.',
-    lasts: 'Until you reset the filters or clear it.',
+    purpose: ['The calendar filters you chose.', 'Los filtros del calendario que elegiste.'],
+    lasts: ['Until you reset the filters or clear it.', 'Hasta que restablezcas los filtros o lo borres.'],
   },
   {
     name: 'parenthesis.sharedDevice.declined:…',
     kind: 'Browser storage',
-    purpose:
-      'Remembers that you said this isn’t a shared family device, so we don’t ask at every sign-in.',
-    lasts: 'Until you clear it or set the device up as shared.',
+    purpose: ['Remembers that you said this isn’t a shared family device, so we don’t ask at every sign-in.', 'Recuerda que indicaste que este no es un dispositivo familiar compartido, para no preguntarte cada vez que inicias sesión.'],
+    lasts: ['Until you clear it or set the device up as shared.', 'Hasta que lo borres o configures el dispositivo como compartido.'],
   },
   {
     name: 'parenthesis.pendingInvitation',
     kind: 'Browser storage',
-    purpose: 'Keeps a co-parent invitation while you create your account.',
-    lasts: 'Until it’s used, or 7 days at most.',
+    purpose: ['Keeps a co-parent invitation while you create your account.', 'Guarda la invitación del otro padre o madre mientras creas tu cuenta.'],
+    lasts: ['Until it’s used, or 7 days at most.', 'Hasta que se use, o 7 días como máximo.'],
   },
   {
     name: 'parenthesis.parentPinReset',
     kind: 'Tab storage',
-    purpose: 'Keeps a parent PIN reset link while you choose a new PIN.',
-    lasts: 'Until it’s used or you close the tab.',
+    purpose: ['Keeps a parent PIN reset link while you choose a new PIN.', 'Guarda el enlace para restablecer el PIN de padre o madre mientras eliges un PIN nuevo.'],
+    lasts: ['Until it’s used or you close the tab.', 'Hasta que se use o cierres la pestaña.'],
   },
   {
     name: 'parenthesis.pickerSetAside',
     kind: 'Tab storage',
-    purpose:
-      'After a parent signs out of another parent’s shared device, keeps this tab on sign-in instead of that device’s profiles.',
-    lasts: 'Until someone signs in again or you close the tab.',
+    purpose: ['After a parent signs out of another parent’s shared device, keeps this tab on sign-in instead of that device’s profiles.', 'Cuando un padre o madre cierra sesión en el dispositivo compartido del otro, mantiene esta pestaña en el inicio de sesión en lugar de mostrar los perfiles de ese dispositivo.'],
+    lasts: ['Until someone signs in again or you close the tab.', 'Hasta que alguien vuelva a iniciar sesión o cierres la pestaña.'],
   },
 ];
 
@@ -120,7 +121,7 @@ export const STORED_ITEMS: readonly StoredItem[] = [
         <ul class="contents">
           @for (section of sections; track section.id) {
             <li>
-              <a [href]="'/privacy#' + section.id">{{ section.title }}</a>
+              <a [href]="'/privacy#' + section.id">{{ section.title | tr }}</a>
             </li>
           }
         </ul>
@@ -259,9 +260,9 @@ export const STORED_ITEMS: readonly StoredItem[] = [
               <p class="item-name">
                 <code>{{ item.name }}</code>
               </p>
-              <p class="muted">{{ item.kind }}</p>
-              <p>{{ item.purpose }}</p>
-              <p class="muted">{{ 'feature.lasts' | tr }} {{ item.lasts }}</p>
+              <p class="muted">{{ kinds[item.kind] | tr }}</p>
+              <p>{{ item.purpose[language()] }}</p>
+              <p class="muted">{{ 'feature.lasts' | tr }} {{ item.lasts[language()] }}</p>
             </li>
           }
         </ul>
@@ -386,18 +387,26 @@ export const STORED_ITEMS: readonly StoredItem[] = [
   `,
 })
 export class PrivacyPage {
+  private readonly locale = inject(LocaleService);
+  /** 0 for English, 1 for Spanish: which half of each stored item's text to show. */
+  protected readonly language = computed(() => (this.locale.locale() === 'es-419' ? 1 : 0));
   protected readonly storedItems = STORED_ITEMS;
-  protected readonly sections = [
-    { id: 'who', title: 'Who we are' },
-    { id: 'collect', title: 'What we collect' },
-    { id: 'children', title: 'Children’s information' },
-    { id: 'use', title: 'How we use information' },
-    { id: 'share', title: 'Who we share it with' },
-    { id: 'storage', title: 'Cookies and browser storage' },
-    { id: 'keep', title: 'How long we keep it' },
-    { id: 'choices', title: 'Your choices and rights' },
-    { id: 'security', title: 'How we protect it' },
-    { id: 'changes', title: 'Changes to this notice' },
-    { id: 'contact', title: 'Contact' },
-  ] as const;
+  protected readonly kinds: Record<StoredItem['kind'], TranslationKey> = {
+    Cookie: 'privacy.kind.cookie',
+    'Browser storage': 'privacy.kind.browser',
+    'Tab storage': 'privacy.kind.tab',
+  };
+  protected readonly sections: readonly { id: string; title: TranslationKey }[] = [
+    { id: 'who', title: 'feature.who.we.are' },
+    { id: 'collect', title: 'feature.what.we.collect' },
+    { id: 'children', title: 'feature.children.s.information' },
+    { id: 'use', title: 'feature.how.we.use.information' },
+    { id: 'share', title: 'feature.who.we.share.it.with' },
+    { id: 'storage', title: 'feature.cookies.and.browser.storage' },
+    { id: 'keep', title: 'feature.how.long.we.keep.it' },
+    { id: 'choices', title: 'feature.your.choices.and.rights' },
+    { id: 'security', title: 'feature.how.we.protect.it' },
+    { id: 'changes', title: 'feature.changes.to.this.notice' },
+    { id: 'contact', title: 'feature.contact' },
+  ];
 }

@@ -5,6 +5,7 @@ import { Router, provideRouter, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
 import { GooglePhotosStatus } from '../../core/api/api';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { Toasts } from '../../shared/toast/toasts';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
@@ -131,6 +132,21 @@ describe('Google Photos settings (#404)', () => {
     expect(toasts).toEqual([
       'Google Photos is disconnected. What’s already there stays in your Google Photos.',
     ]);
+  });
+
+  it('says what was exported in Spanish when the parent chose it (#534)', async () => {
+    const fixture = await render(status({ state: 'Connected', exportedCount: 6, albumCount: 2, waitingCount: 1 }));
+    const locale = TestBed.inject(LocaleService);
+    try {
+      locale.setLocale('es-419');
+      await settle(fixture);
+      const element = fixture.nativeElement as HTMLElement;
+      expect(text(element)).toContain('6 fotos exportadas a 2 álbumes.');
+      expect(text(element)).toContain('1 foto pendiente de exportar.');
+      expect(text(element)).not.toContain('exported to');
+    } finally {
+      locale.setLocale('en');
+    }
   });
 
   it('cancelling the disconnect question keeps the connection', async () => {

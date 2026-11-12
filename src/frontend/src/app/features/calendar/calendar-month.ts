@@ -163,7 +163,7 @@ export class CalendarMonth {
           isToday: date === this.today(),
         };
       });
-      return { days, ...layOutWeek(dates, this.items()) };
+      return { days, ...layOutWeek(dates, this.items(), locale) };
     });
   });
 }

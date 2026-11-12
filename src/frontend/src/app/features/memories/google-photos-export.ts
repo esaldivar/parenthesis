@@ -1,6 +1,8 @@
 import { DestroyRef, Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 import { Api, EventExport, PhotoExport, PhotoExportReason } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
+import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
+import { translate } from '../../core/i18n/translations';
 import { OPEN_EXTERNAL } from '../settings/google-calendar-settings';
 
 /** How often a memory with photos still on their way asks the server how far they got. Tests shorten it. */
@@ -24,6 +26,7 @@ export class MemoryExport {
   private readonly api = inject(Api);
   private readonly openExternal = inject(OPEN_EXTERNAL);
   private readonly pollMs = inject(EXPORT_POLL_MS);
+  private readonly locale = inject(LocaleService);
 
   private familyId = '';
   private eventId = '';
@@ -82,7 +85,7 @@ export class MemoryExport {
         // Not connected, reconnect needed or switched off: the refreshed status shows which.
         await this.refresh();
       } else {
-        this.error.set(`Nothing was exported. ${generalMessage(problem)}`);
+        this.error.set(translate('memory.export.nothing', this.locale.locale(), { reason: generalMessage(problem) }));
       }
       return false;
     } finally {
@@ -141,24 +144,27 @@ export function reasonText(
   reason: PhotoExportReason,
   coParent: string | null,
   deletedOn: string | null,
+  locale: AppLocale = 'en',
 ): string {
   switch (reason) {
     case 'Reconnect':
-      return 'Google Photos needs you to reconnect.';
+      return translate('memory.export.reason.reconnect', locale);
     case 'RateLimited':
       return deletedOn
-        ? `Google is limiting exports right now. Parenthesis will keep trying until this photo is deleted on ${deletedOn}.`
-        : 'Google is limiting exports right now. Parenthesis will keep trying.';
+        ? translate('memory.export.reason.rateLimitedUntil', locale, { date: deletedOn })
+        : translate('memory.export.reason.rateLimited', locale);
     case 'StorageFull':
-      return 'Your Google storage is full. Free up space in your Google account, then try again.';
+      return translate('memory.export.reason.storageFull', locale);
     case 'NotAllowed':
-      return `${coParent ?? 'Your co-parent'} stopped sharing this photo or turned off downloads.`;
+      return translate('memory.export.reason.notAllowed', locale, {
+        name: coParent ?? translate('common.coParent', locale),
+      });
     case 'Deleted':
-      return 'This photo was deleted.';
+      return translate('memory.export.reason.deleted', locale);
     case 'Expired':
-      return 'This photo expired before it was exported.';
+      return translate('memory.export.reason.expired', locale);
     default:
-      return 'Google Photos had a problem. Try again.';
+      return translate('memory.export.reason.google', locale);
   }
 }
 
@@ -167,46 +173,48 @@ export function exportLine(
   photo: PhotoExport,
   coParent: string | null,
   deletedOn: string | null,
+  locale: AppLocale = 'en',
 ): ExportLine {
+  const reason = () => reasonText(photo.reason, coParent, deletedOn, locale);
   switch (photo.state) {
     case 'Exported':
-      return { kind: 'done', text: 'In your Google Photos', retry: false };
+      return { kind: 'done', text: translate('memory.export.line.done', locale), retry: false };
     case 'Checking':
-      return { kind: 'checking', text: 'Checking with Google…', retry: false };
+      return { kind: 'checking', text: translate('memory.export.line.checking', locale), retry: false };
     case 'Queued':
       return photo.reason === 'None'
-        ? { kind: 'waiting', text: 'Exporting…', retry: false }
+        ? { kind: 'waiting', text: translate('memory.export.line.exporting', locale), retry: false }
         : {
             kind: 'waiting',
-            text: `Waiting to export. ${reasonText(photo.reason, coParent, deletedOn)}`,
+            text: translate('memory.export.line.waiting', locale, { reason: reason() }),
             retry: false,
           };
     case 'Failed':
       return {
         kind: 'failed',
-        text: `Couldn’t export. ${reasonText(photo.reason, coParent, deletedOn)}`,
+        text: translate('memory.export.line.failed', locale, { reason: reason() }),
         retry: canRetry(photo.reason),
       };
     default:
       return {
         kind: 'skipped',
-        text: `Not exported. ${reasonText(photo.reason, coParent, deletedOn)}`,
+        text: translate('memory.export.line.skipped', locale, { reason: reason() }),
         retry: false,
       };
   }
 }
 
 /** "3 of 5 in your Google Photos · 1 exporting · 1 couldn't export", for the progress line and the live region. */
-export function progressText(photos: readonly PhotoExport[]): string {
+export function progressText(photos: readonly PhotoExport[], locale: AppLocale = 'en'): string {
   const done = photos.filter((p) => p.state === 'Exported').length;
   const waiting = photos.filter((p) => p.state === 'Queued' || p.state === 'Checking').length;
   const failed = photos.filter((p) => p.state === 'Failed' || p.state === 'Skipped').length;
-  const parts = [`${done} of ${photos.length} in your Google Photos`];
+  const parts = [translate('memory.export.progress.done', locale, { done, total: photos.length })];
   if (waiting) {
-    parts.push(`${waiting} exporting`);
+    parts.push(translate('memory.export.progress.waiting', locale, { count: waiting }));
   }
   if (failed) {
-    parts.push(`${failed} couldn’t export`);
+    parts.push(translate('memory.export.progress.failed', locale, { count: failed }));
   }
   return parts.join(' · ');
 }

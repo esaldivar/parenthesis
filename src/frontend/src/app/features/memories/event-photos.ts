@@ -23,7 +23,6 @@ import { Api, EventPhoto, EventPhotos, PhotoBatch, PhotoExport } from '../../cor
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { Toasts } from '../../shared/toast/toasts';
-import { monthDay } from '../dashboard/week';
 import {
   ACCEPT,
   PHOTOS_NOW,
@@ -35,6 +34,7 @@ import {
   expiryChip,
   familyDate,
   fileProblem,
+  shortDate,
   sizeText,
   uploadMessage,
 } from './photo-text';
@@ -139,6 +139,7 @@ export class EventPhotosSection {
     }
     const zone = this.timeZone();
     const now = this.now();
+    const locale = this.copyLocale.locale();
     let first = 1;
     return view.batches
       .filter((b) => b.photos.length > 0)
@@ -146,9 +147,9 @@ export class EventPhotosSection {
         const soonest = batch.photos.reduce((a, b) => (a.expiresAt < b.expiresAt ? a : b));
         const shown = {
           batch,
-          date: monthDay(familyDate(batch.createdAt, this.timeZone())),
+          date: shortDate(familyDate(batch.createdAt, this.timeZone()), locale),
           first,
-          expiry: expiryChip(expiry(soonest.expiresAt, zone, now)),
+          expiry: expiryChip(expiry(soonest.expiresAt, zone, now, locale), locale),
         };
         first += batch.photos.length;
         return shown;
@@ -165,16 +166,21 @@ export class EventPhotosSection {
     if (!all?.url || all.photoCount === 0) {
       return null;
     }
-    const photos = all.photoCount === 1 ? '1 photo' : `${all.photoCount} photos`;
-    const who = this.coParent() ?? 'Your co-parent';
+    const locale = this.copyLocale.locale();
+    const photos = translate(all.photoCount === 1 ? 'memory.onePhoto' : 'memory.photoCount', locale, { count: all.photoCount });
+    const who = this.coParent() ?? translate('common.coParent', locale);
     const omitted =
       all.omitted === 0
         ? ''
-        : ` ${all.omitted === 1 ? '1 photo' : `${all.omitted} photos`} from ${who} ${all.omitted === 1 ? 'isn’t' : 'aren’t'} included because ${who} hasn’t allowed downloads.`;
+        : ' ' +
+          translate(all.omitted === 1 ? 'memory.download.omittedOne' : 'memory.download.omittedMany', locale, {
+            count: all.omitted,
+            name: who,
+          });
     return {
       url: all.url,
-      label: `Download all (${photos}, about ${sizeText(all.bytes)})`,
-      note: `Saved as one ZIP file. Your browser shows its progress and can cancel it.${omitted}`,
+      label: translate('memory.download.all', locale, { photos, size: sizeText(all.bytes) }),
+      note: translate('memory.download.note', locale) + omitted,
     };
   });
 
@@ -185,23 +191,25 @@ export class EventPhotosSection {
       return null;
     }
     const soonest = photos.reduce((a, b) => (a.expiresAt < b.expiresAt ? a : b), photos[0]);
-    const e = expiry(soonest.expiresAt, this.timeZone(), this.now());
+    const locale = this.copyLocale.locale();
+    const e = expiry(soonest.expiresAt, this.timeZone(), this.now(), locale);
     if (!e.soon) {
       return null;
     }
+    const one = photos.length === 1;
     const when =
       e.days === 0
-        ? `today, ${e.on}`
+        ? translate(one ? 'memory.finalWeek.todayOne' : 'memory.finalWeek.todayMany', locale, { date: e.on })
         : e.days === 1
-          ? `tomorrow, ${e.on}`
-          : `in ${e.days} days, on ${e.on}`;
-    const keep = this.exportOffered() ? 'Download or export any you want to keep.' : 'Download any you want to keep.';
-    return `${photos.length === 1 ? 'This photo is' : 'These photos are'} deleted ${when}. ${keep}`;
+          ? translate(one ? 'memory.finalWeek.tomorrowOne' : 'memory.finalWeek.tomorrowMany', locale, { date: e.on })
+          : translate(one ? 'memory.finalWeek.inDaysOne' : 'memory.finalWeek.inDaysMany', locale, { days: e.days, date: e.on });
+    const keep = translate(this.exportOffered() ? 'memory.finalWeek.keepExport' : 'memory.finalWeek.keep', locale);
+    return `${when} ${keep}`;
   });
 
   protected readonly deletedOn = computed(() => {
     const on = this.view()?.photosDeletedOn;
-    return on && this.total() === 0 ? monthDay(familyDate(on, this.timeZone())) : null;
+    return on && this.total() === 0 ? shortDate(familyDate(on, this.timeZone()), this.copyLocale.locale()) : null;
   });
 
   /** Room for this upload: the event's spots left, at most 5 at a time. */
@@ -222,7 +230,7 @@ export class EventPhotosSection {
     }
     const u = view.uploads;
     if (u.blocked) {
-      return blockedText(u.blocked, this.caregiver());
+      return blockedText(u.blocked, this.caregiver(), this.copyLocale.locale());
     }
     if (!u.available) {
       return translate('memory.upload.unavailable', this.copyLocale.locale());
@@ -260,7 +268,7 @@ export class EventPhotosSection {
       : '';
   });
   protected readonly deletedOnIfAdded = computed(() =>
-    deletedOnIfAddedToday(this.timeZone(), this.now()),
+    deletedOnIfAddedToday(this.timeZone(), this.now(), this.copyLocale.locale()),
   );
   protected readonly added = computed(() => this.picks().filter((p) => p.state === 'added').length);
   protected readonly progress = computed(() => {
@@ -364,7 +372,7 @@ export class EventPhotosSection {
     const max = this.view()?.uploads.maxFileBytes;
     this.picks.set(
       files.map((file) => {
-        const message = fileProblem(file, max);
+        const message = fileProblem(file, max, this.copyLocale.locale());
         return {
           key: this.nextKey++,
           file,
@@ -441,7 +449,7 @@ export class EventPhotosSection {
       }
       this.update((p) =>
         p.key === key
-          ? { ...p, state: 'failed', message: uploadMessage(problem), retry: canRetry(problem) }
+          ? { ...p, state: 'failed', message: uploadMessage(problem, this.copyLocale.locale()), retry: canRetry(problem) }
           : p,
       );
     }
@@ -461,7 +469,7 @@ export class EventPhotosSection {
     this.picks.set([]);
     if (added > 0) {
       this.toasts.show(
-        `${added === 1 ? 'Photo' : `${added} photos`} added. Only you can see ${added === 1 ? 'it' : 'them'} until you share.`,
+        translate(added === 1 ? 'memory.added.one' : 'memory.added.many', this.copyLocale.locale(), { count: added }),
       );
     }
     this.focus('#photos-add');
@@ -560,12 +568,13 @@ export class EventPhotosSection {
         return this.photoLabel(photo, shown, index);
       }
     }
-    return 'Photo';
+    return translate('memory.photo', this.copyLocale.locale());
   });
 
   protected openExpiry = computed(() => {
     const photo = this.openPhoto();
-    return photo ? expiryChip(expiry(photo.expiresAt, this.timeZone(), this.now())) : '';
+    const locale = this.copyLocale.locale();
+    return photo ? expiryChip(expiry(photo.expiresAt, this.timeZone(), this.now(), locale), locale) : '';
   });
 
   protected startDelete(): void {
@@ -619,13 +628,15 @@ export class EventPhotosSection {
       return null;
     }
     const soonest = photos.reduce((a, b) => (a.expiresAt < b.expiresAt ? a : b), photos[0]);
-    return expiry(soonest.expiresAt, this.timeZone(), this.now()).on;
+    return expiry(soonest.expiresAt, this.timeZone(), this.now(), this.copyLocale.locale()).on;
   });
 
   /** "2 photos here are in your Google Photos." */
   protected readonly exportedText = computed(() => {
     const n = this.exports.view()?.exported ?? 0;
-    return n === 0 ? null : `${n === 1 ? '1 photo here is' : `${n} photos here are`} in your Google Photos.`;
+    return n === 0
+      ? null
+      : translate(n === 1 ? 'memory.export.hereOne' : 'memory.export.hereMany', this.copyLocale.locale(), { count: n });
   });
 
   /** The export records the open sheet is about. */
@@ -672,21 +683,21 @@ export class EventPhotosSection {
     if (!v || this.exportSheet()?.photoId) {
       return null;
     }
+    const locale = this.copyLocale.locale();
     const parts: string[] = [];
     if (v.exported > 0) {
-      parts.push(
-        v.exported === 1
-          ? '1 photo is already in your Google Photos and is skipped.'
-          : `${v.exported} photos are already in your Google Photos and are skipped.`,
-      );
+      parts.push(translate(v.exported === 1 ? 'memory.export.skippedOne' : 'memory.export.skippedMany', locale, { count: v.exported }));
     }
     if (v.waiting > 0) {
-      parts.push(`${v.waiting === 1 ? '1 photo is' : `${v.waiting} photos are`} already on the way.`);
+      parts.push(translate(v.waiting === 1 ? 'memory.export.onWayOne' : 'memory.export.onWayMany', locale, { count: v.waiting }));
     }
     if (v.omitted > 0) {
-      const who = this.coParent() ?? 'Your co-parent';
+      const who = this.coParent() ?? translate('common.coParent', locale);
       parts.push(
-        `${who} hasn’t allowed downloads of ${v.omitted === 1 ? '1 of their photos, so it' : `${v.omitted} of their photos, so they`} can’t be exported.`,
+        translate(v.omitted === 1 ? 'memory.export.notAllowedOne' : 'memory.export.notAllowedMany', locale, {
+          count: v.omitted,
+          name: who,
+        }),
       );
     }
     return parts.length ? parts.join(' ') : null;
@@ -696,18 +707,19 @@ export class EventPhotosSection {
   protected readonly exportNote = computed(() => {
     const one = this.exportCount() === 1;
     const on = this.firstDeletedOn();
-    return `Copies use your Google storage. ${one ? 'It stays' : 'They stay'} in your Google Photos after ${
-      one ? 'this photo is' : 'these photos are'
-    } deleted here${on ? ` on ${on}` : ''}; Parenthesis can’t recall ${one ? 'it' : 'them'}.`;
+    const key = one
+      ? on ? 'memory.export.noteOneOn' : 'memory.export.noteOne'
+      : on ? 'memory.export.noteManyOn' : 'memory.export.noteMany';
+    return translate(key, this.copyLocale.locale(), { date: on ?? '' });
   });
 
-  protected readonly exportProgress = computed(() => progressText(this.sheetPhotos()));
+  protected readonly exportProgress = computed(() => progressText(this.sheetPhotos(), this.copyLocale.locale()));
   protected readonly sheetRetryable = computed(() =>
     this.sheetPhotos().filter((p) => this.line(p).retry),
   );
 
   protected line(photo: PhotoExport): ExportLine {
-    return exportLine(photo, this.coParent(), this.firstDeletedOn());
+    return exportLine(photo, this.coParent(), this.firstDeletedOn(), this.copyLocale.locale());
   }
 
   /** A photo's mark on its tile and in the viewer, if it has an export record. */

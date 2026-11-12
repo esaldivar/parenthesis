@@ -280,7 +280,7 @@ export class ApprovalsPage implements OnInit {
 
   /** Members load with the requests, so someone missing has left: they deleted their account (A-12). */
   protected nameOf(membershipId: string): string {
-    return this.members().find((m) => m.membershipId === membershipId)?.displayName ?? 'Former parent';
+    return this.members().find((m) => m.membershipId === membershipId)?.displayName ?? translate('feedback.former.parent', this.copyLocale.locale());
   }
 
   protected explain(request: ChangeRequest): string {
@@ -299,7 +299,9 @@ export class ApprovalsPage implements OnInit {
     }
     const name = this.children().find((c) => c.id === request.targetId)?.firstName;
     if (request.type === 'ChildCreate') {
-      return `${name ?? 'This child'} can start using Parenthesis once you both approve.`;
+      return name
+        ? translate('approvals.child.help', this.copyLocale.locale(), { name })
+        : translate('approvals.child.helpUnnamed', this.copyLocale.locale());
     }
     return name
       ? translate('approvals.pin.childHelp', this.copyLocale.locale(), { name })
