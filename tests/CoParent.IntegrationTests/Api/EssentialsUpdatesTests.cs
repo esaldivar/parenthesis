@@ -221,7 +221,7 @@ public sealed class EssentialsUpdatesTests(ApiFactory api) : IAsyncLifetime
         Assert.Contains((await outsider.PostAsync(updates + "/opened")).StatusCode, new[] { HttpStatusCode.Forbidden, HttpStatusCode.NotFound });
 
         Assert.Equal(HttpStatusCode.BadRequest,
-            (await dad.PostAsync(updates + "/sections", new { childId = kaiId, section = "medication" })).StatusCode);
+            (await dad.PostAsync(updates + "/sections", new { childId = kaiId, section = "diary" })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest,
             (await dad.PostAsync(updates + "/rows", new { childId = kaiId, section = "clothing", fields = Array.Empty<string>() })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest,
