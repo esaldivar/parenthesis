@@ -799,3 +799,7 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
   default "Time with {name}" parenting-time title (stored event data, seen by both parents), the development-only
   sample dashboard data, and server messages missing from `core/api/problem.ts`'s Spanish map.
 - [ ] Check system emails in Spanish.
+
+## Shared Records submit indicator (#496)
+
+- [ ] After deploy, retest on Development with writes delayed or blocked: Report contribution, Shared fund request and Child support record each show the branded indicator just above Submit, in view at 1280×800 and phone width, both themes, keyboard and reduced motion.
