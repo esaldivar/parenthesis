@@ -3,7 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatRadioChange, MatRadioModule } from '@angular/material/radio';
 import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
-import { KidPresentation, KidPresentationService } from '../../layout/kid-shell/kid-presentation.service';
+import { KidPresentation, KidPresentationService } from '../../core/layout/kid-shell/kid-presentation.service';
 import { AppearancePicker } from '../../shared/appearance-picker/appearance-picker';
 import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
 
