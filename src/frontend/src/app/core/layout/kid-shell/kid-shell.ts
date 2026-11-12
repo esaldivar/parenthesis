@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } from '@angular/core';
-import { AuthStore } from '../../core/auth/auth.store';
+import { AuthStore } from '../../auth/auth.store';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { Icon } from '../../shared/icon/icon';
-import { BottomNav } from '../../shared/overlay/bottom-nav-clearance';
+import { Icon } from '../../../shared/icon/icon';
+import { BottomNav } from '../../../shared/overlay/bottom-nav-clearance';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { KID_NAV } from '../navigation';
 import { KidPresentationService } from './kid-presentation.service';

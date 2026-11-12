@@ -7,7 +7,7 @@
 
 The standalone Angular app is already organized by feature, but Dashboard mixes its routed page, leaf UI,
 data source, scheduling logic, and Sass in one directory. Core and shared code are organized mostly by
-responsibility, with shells in `app/layout`. Several features also import date types and helpers from Dashboard.
+responsibility, with shells in `app/layout` (moved to `app/core/layout` in the second slice). Several features also import date types and helpers from Dashboard.
 Moving files incrementally lets us confirm that source boundaries and naming work without changing behavior.
 
 ## Proposed structure
@@ -79,7 +79,7 @@ Paths in this table are relative to `src/frontend/src` unless stated otherwise.
 | `dashboard/dashboard-data.ts` and its spec | Move both into `dashboard/data/`. |
 | `dashboard/_proposed-fill.scss` | Move the shared fill mixin to `styles/abstracts/` and update its two Dashboard consumers and Calendar’s item styles. |
 | `dashboard/week.ts`, `dashboard/model.ts`, and Calendar imports | Calendar uses Dashboard date types and helpers. Messages and Memories also use the date helpers. Dashboard hosts Calendar components and uses a Memories text helper. Keep these dependencies stable in the pilot. Separate feature-neutral date and calendar contracts before migrating Calendar. |
-| `app/layout` and root composition | Move the shells and navigation in a separate slice. Preserve route guards, scope, and providers. The parent shell currently imports the Messages dock, and the storage inventory spec reads the Privacy inventory. Keep that test dependency out of runtime imports. |
+| `app/layout` and root composition | **Done (second slice):** shells, navigation, focus handling and sample counts are in `app/core/layout`, with the shell spec beside them. The parent route loads `app/parent-app.ts`, which renders the parent shell and passes the Messages dock as a component input; the shell renders it with `NgComponentOutlet` in the same place and only off Messages, so `core` imports no feature. Route guards, providers and lazy loading are unchanged. The storage inventory spec still reads the Privacy inventory as a test-only dependency. |
 | `styles.scss` and `styles/_tokens.scss` | Keep their current order in the pilot. Separate Sass abstracts, base and themes in a follow-up with a compiled CSS comparison. |
 | `public/brand` and `public/art` (workspace root) | Retain the CLI's `public` copy rule and verify the same output paths and file bytes. |
 | `src/testing` and `tests/e2e` (repository root) | Retain the test entry points, and update relative imports from relocated Dashboard specs. |

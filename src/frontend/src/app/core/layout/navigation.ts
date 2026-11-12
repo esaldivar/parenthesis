@@ -1,5 +1,5 @@
-import type { TranslationKey } from '../core/i18n/translations';
-import { IconName } from '../shared/icon/icon';
+import type { TranslationKey } from '../i18n/translations';
+import { IconName } from '../../shared/icon/icon';
 
 export interface NavItem {
   readonly label: string;

@@ -1,26 +1,26 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, isDevMode, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Type, computed, effect, inject, input, isDevMode, untracked, viewChild } from '@angular/core';
+import { NgComponentOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { IsActiveMatchOptions, NavigationEnd, PRIMARY_OUTLET, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
-import { TranslatePipe } from '../../core/i18n/translations';
-import { AuthStore } from '../../core/auth/auth.store';
-import { ChatStore } from '../../core/chat/chat.store';
-import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
-import { Avatar } from '../../shared/avatar/avatar';
-import { Logo } from '../../shared/brand/logo';
-import { Leaves } from '../../shared/decor/leaves';
-import { Icon } from '../../shared/icon/icon';
+import { TranslatePipe } from '../../i18n/translations';
+import { AuthStore } from '../../auth/auth.store';
+import { ChatStore } from '../../chat/chat.store';
+import { ProfilePhotos } from '../../profile-photos/profile-photos';
+import { Avatar } from '../../../shared/avatar/avatar';
+import { Logo } from '../../../shared/brand/logo';
+import { Leaves } from '../../../shared/decor/leaves';
+import { Icon } from '../../../shared/icon/icon';
 import { focusMainOnNavigation } from '../focus-main-on-navigation';
 import { PARENT_MOBILE_NAV, PARENT_MORE_NAV, PARENT_NAV } from '../navigation';
-import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
-import { NotificationsStore } from '../../core/notifications/notifications.store';
+import { EssentialsUpdatesStore } from '../../essentials/essentials-updates.store';
+import { NotificationsStore } from '../../notifications/notifications.store';
 import { SAMPLE_UNREAD } from '../sample-counts';
-import { ToastHost } from '../../shared/toast/toast-host';
-import { BottomNav } from '../../shared/overlay/bottom-nav-clearance';
-import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
-import { ChatDock } from '../../features/messages/chat-dock';
+import { ToastHost } from '../../../shared/toast/toast-host';
+import { BottomNav } from '../../../shared/overlay/bottom-nav-clearance';
+import { SharedRecordsAttentionStore } from '../../shared-records/shared-records-attention.store';
 
 const IGNORE_QUERY = { queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' } as const;
 const HOME_ACTIVE: IsActiveMatchOptions = { paths: 'exact', ...IGNORE_QUERY };
@@ -33,11 +33,13 @@ const SECTION_ACTIVE: IsActiveMatchOptions = { paths: 'subset', ...IGNORE_QUERY 
 @Component({
   selector: 'app-parent-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule, Icon, Logo, Leaves, Avatar, ToastHost, BottomNav, ChatDock, TranslatePipe],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule, Icon, Logo, Leaves, Avatar, ToastHost, BottomNav, NgComponentOutlet, TranslatePipe],
   templateUrl: './parent-shell.html',
   styleUrl: './parent-shell.scss',
 })
 export class ParentShell {
+  /** Feature UI docked bottom right (the Messages dock), supplied by the app's composition (ADR-0009). */
+  readonly dock = input<Type<unknown> | null>(null);
   protected readonly nav = PARENT_NAV;
   protected readonly mobileNav = PARENT_MOBILE_NAV;
   /** Home is active only on "/" itself, other items on their sections too; queries (`?week=`, `?sample=1`) never matter. */
