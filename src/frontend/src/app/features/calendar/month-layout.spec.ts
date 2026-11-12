@@ -118,4 +118,16 @@ describe('Month view bars (#250)', () => {
     const [declined] = layOutWeek(week, [item('d', '2026-10-20', '2026-10-20', { status: 'declined' })]).bars;
     expect(declined.status).toBe('Declined');
   });
+
+  it('labels bars in Spanish when the parent chose it (#534)', () => {
+    const [proposed] = layOutWeek(week, [item('p', '2026-10-20', '2026-10-20', { status: 'pending', title: 'Weekend with Sam' })], 'es-419').bars;
+    expect(proposed.status).toBe('Propuesto');
+    expect(proposed.label).toContain('Weekend with Sam');
+    expect(proposed.label).toContain('martes, 20 de octubre, 2026');
+    const crossing = item('trip', '2026-12-31', '2027-01-04');
+    const label = layOutWeek(weekOf('2026-12-27'), [crossing], 'es-419').bars[0].label;
+    expect(label).toContain(' al ');
+    expect(label).toContain('Continúa la próxima semana.');
+    expect(label).not.toMatch(/through|Continues/);
+  });
 });

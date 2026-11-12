@@ -780,3 +780,18 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 ## Safari favicon fallbacks (#579)
 
 - [ ] After deploying the favicon fallback assets, verify the tab icon in Safari 16.6 on macOS 13, an SVG-capable browser, and Apple bookmarks/touch icons. Check image responses before clearing a stale favicon cache. Local exports and automated asset checks do not certify Safari acceptance.
+
+## Remaining Spanish text (#534)
+
+The November 12 test found English on Settings (profile photo hints, Google Photos export status), chat event cards
+(dates, "All day", "Declined") and Memories (dates, "You", deletion chips). `fix/534-remaining-spanish` translates those
+and the Memories photo helpers (deletion dates, upload refusals, file problems).
+- [ ] Retest #534 on Development in Spanish after this deploys, including the "Shared Caregivers" heading from #578.
+- [x] Sweep the remaining hard-coded English built in code (`fix/534-english-sweep`): privacy notice storage list
+  and contents, Google Photos export lines and progress, Memories download/final-week/export notes, calendar Month bar
+  labels, date-rule and title validation, unavailable-time conflicts, proposed-change dates, approvals, Home
+  "unavailable" titles, kids gallery expiry, onboarding, delete-account, and the Add event repeat preview.
+- [ ] Still English by design or for later: child-account screens (`features/kid/*`, out of #534's scope), the
+  default "Time with {name}" parenting-time title (stored event data, seen by both parents), the development-only
+  sample dashboard data, and server messages missing from `core/api/problem.ts`'s Spanish map.
+- [ ] Check system emails in Spanish.

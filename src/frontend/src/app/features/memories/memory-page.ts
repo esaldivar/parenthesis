@@ -137,15 +137,16 @@ export class MemoryPage {
     if (!view) {
       return null;
     }
-    const co = this.coParent() ?? 'your co-parent';
+    const locale = this.copyLocale.locale();
+    const co = this.coParent() ?? translate('common.coParentLower', locale);
     const yours = view.batches.filter((b) => b.yours).reduce((n, b) => n + b.photos.length, 0);
     const shared = view.batches.filter((b) => !b.yours).reduce((n, b) => n + b.photos.length, 0);
-    const parts = [dayLong(familyDate(view.startsAt, this.timeZone()))];
+    const parts = [dayLong(familyDate(view.startsAt, this.timeZone()), locale === 'en' ? 'en-US' : locale)];
     if (yours) {
-      parts.push(`${yours === 1 ? '1 photo' : `${yours} photos`} from you`);
+      parts.push(translate(yours === 1 ? 'memory.summary.yoursOne' : 'memory.summary.yoursMany', locale, { count: yours }));
     }
     if (shared) {
-      parts.push(`${shared} shared by ${co}`);
+      parts.push(translate('memory.summary.shared', locale, { count: shared, name: co }));
     }
     if (view.cancelled) {
       parts.push(translate('memory.event.cancelled', this.copyLocale.locale()));

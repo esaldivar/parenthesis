@@ -22,7 +22,7 @@ import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
         [subject]="you"
         [name]="yourName()"
         label="{{ 'feature.your.photo' | tr }}"
-        hint="You and your co-parent see this photo."
+        [hint]="'settings.photo.hintShared' | tr"
       />
     } @else {
       <p class="muted">{{ 'feature.loading' | tr }}</p>
@@ -45,8 +45,8 @@ import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
                 [childId]="child.id"
                 [name]="child.firstName"
                 [label]="child.firstName"
-                hint="Only you see this photo."
-                [forWhom]="'for ' + child.firstName"
+                [hint]="'settings.photo.hintOnlyYou' | tr"
+                [forWhom]="'settings.photo.forChild' | tr: { name: child.firstName }"
               />
             </li>
           }

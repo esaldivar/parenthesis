@@ -16,13 +16,13 @@ import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Icon } from '../../shared/icon/icon';
-import { monthDay } from '../dashboard/week';
 import {
   PHOTOS_NOW,
   RETENTION_DAYS,
   expiry,
   expiryChip,
   familyDate,
+  shortDate,
   whoseText,
 } from './photo-text';
 
@@ -249,14 +249,15 @@ export class MemoriesPage {
     const now = this.now();
     const coParent =
       this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null;
+    const locale = this.copyLocale.locale();
     return this.memories().map((memory) => {
-      const e = expiry(memory.expiresAt, zone, now);
+      const e = expiry(memory.expiresAt, zone, now, locale);
       return {
         memory,
-        date: monthDay(familyDate(memory.startsAt, zone)),
-        count: translate(memory.photoCount === 1 ? 'memory.onePhoto' : 'memory.photoCount', this.copyLocale.locale(), { count: memory.photoCount }),
-        whose: whoseText(memory, coParent),
-        expiry: expiryChip(e),
+        date: shortDate(familyDate(memory.startsAt, zone), locale),
+        count: translate(memory.photoCount === 1 ? 'memory.onePhoto' : 'memory.photoCount', locale, { count: memory.photoCount }),
+        whose: whoseText(memory, coParent, locale),
+        expiry: expiryChip(e, locale),
         soon: e.soon,
       };
     });

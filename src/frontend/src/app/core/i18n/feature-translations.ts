@@ -969,8 +969,6 @@ export const featureTranslations = {
   "feature.waiting.for.your.approval.it.isn.t": ["Waiting for your approval. It isn’t on the schedule until you accept.", "Espera tu aprobación. No se agrega al calendario hasta que lo apruebes."],
   "feature.waiting.for.your.co.parent": ["Waiting for your co-parent", "Esperando la respuesta del otro padre o madre"],
   "feature.waiting.for.your.co.parent.to.agree": ["Waiting for your co-parent to agree.", "Esperando la aprobación del otro padre o madre."],
-  "feature.waiting.to.export": ["waiting to export.", "pendientes de exportar."],
-  "feature.waiting.to.export.won.t.be.sent": ["waiting to export won’t be sent.", "pendientes de exportar no se enviarán."],
   "feature.we.collect.children.s.information.from.their": ["We collect children’s information from their parents, or from the child using the profile their parents set up. We ask only for what each feature needs.", "Recopilamos información de los niños a través de sus padres o del niño que usa el perfil configurado por sus padres. Solo pedimos lo que necesita cada función."],
   "feature.we.couldn.t.load.notifications.please.try": ["We couldn’t load notifications. Please try again.", "No pudimos cargar las notificaciones. Inténtalo de nuevo."],
   "feature.we.couldn.t.load.this.week": ["We couldn’t load this week.", "No pudimos cargar esta semana."],

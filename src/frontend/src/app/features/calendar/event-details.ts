@@ -27,7 +27,7 @@ import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { EventPhotosSection } from '../memories/event-photos';
 import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
-import { CalendarItem, FORMER_PARENT } from './calendar-items';
+import { CalendarItem } from './calendar-items';
 import { canManageEvent } from './event-permissions';
 import { statusText, whenText } from './item-text';
 import { mapsDirectionsUrl } from './maps-link';
@@ -56,6 +56,8 @@ export const COMMENT_MAX = 500;
 })
 export class EventDetails {
   private readonly locale = inject(LocaleService);
+  /** The Intl locale for dates: en-US or es-419. */
+  private readonly intl = computed(() => (this.locale.locale() === 'en' ? 'en-US' : this.locale.locale()));
   private readonly api = inject(Api);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -169,8 +171,10 @@ export class EventDetails {
       if (this.item().id === eventId && answer) {
         const member = this.members().find((m) => m.membershipId === answer.deciderMembershipId);
         this.declineInfo.set({
-          by: member?.isYou ? 'You' : (member?.displayName ?? FORMER_PARENT),
-          on: dateTimeLabel(toFamilyLocal(answer.decidedAt, this.timeZone())),
+          by: member?.isYou
+            ? translate('memory.whose.you', this.locale.locale())
+            : (member?.displayName ?? translate('feedback.former.parent', this.locale.locale())),
+          on: dateTimeLabel(toFamilyLocal(answer.decidedAt, this.timeZone()), this.intl()),
           comment: answer.comment,
         });
       }
@@ -239,13 +243,15 @@ export class EventDetails {
     const end = toFamilyLocal(proposed.endsAt, zone);
     const first = start.slice(0, 10);
     const last = lastDate(start, end);
+    const intl = this.intl();
+    const allDay = translate('calendar.details.allDay', this.locale.locale());
     const when = proposed.allDay
       ? last > first
-        ? `${dayLong(first)} – ${dayLong(last)}, all day`
-        : `${dayLong(first)}, all day`
+        ? `${dayLong(first, intl)} – ${dayLong(last, intl)}, ${allDay}`
+        : `${dayLong(first, intl)}, ${allDay}`
       : last > first || end.slice(0, 10) !== first
-        ? `${dateTimeLabel(start)} – ${dateTimeLabel(end)}`
-        : `${dayLong(first)} · ${timeLabel(start.slice(11))} – ${timeLabel(end.slice(11))}`;
+        ? `${dateTimeLabel(start, intl)} – ${dateTimeLabel(end, intl)}`
+        : `${dayLong(first, intl)} · ${timeLabel(start.slice(11), intl)} – ${timeLabel(end.slice(11), intl)}`;
     return [proposed.title !== this.item().title ? proposed.title : null, when, proposed.location]
       .filter(Boolean)
       .join(' · ');

@@ -285,7 +285,7 @@ export class ChatConversation implements OnInit {
   protected readonly draft = this.chat.draft;
 
   protected readonly coParent = computed(() => this.members().find((m) => !m.isYou && m.role === 'Parent') ?? null);
-  protected readonly name = computed(() => this.coParent()?.displayName.split(/\s+/)[0] ?? 'your co-parent');
+  protected readonly name = computed(() => this.coParent()?.displayName.split(/\s+/)[0] ?? translate('common.coParentLower', this.locale.locale()));
   protected readonly canSend = computed(
     () => (this.draft().trim().length > 0 || this.draftEvent() !== null) && this.draft().length <= MESSAGE_MAX_LENGTH,
   );

@@ -1,3 +1,5 @@
+import { localizeMessage } from '../../core/api/problem';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, inject, input, viewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DOCUMENT } from '@angular/common';
@@ -38,7 +40,7 @@ import { CalendarHeader } from './calendar-header';
       />
       <app-icon matSuffix class="date-field__icon" name="calendar" [size]="20" aria-hidden="true" />
       @if (issue(); as reason) {
-        <mat-hint class="visually-hidden">{{ reason }}</mat-hint>
+        <mat-hint class="visually-hidden">{{ localized(reason) }}</mat-hint>
       }
       <mat-datepicker #picker [startAt]="startAt()" [calendarHeaderComponent]="calendarHeader" />
     </mat-form-field>
@@ -83,6 +85,10 @@ export class DateField {
   readonly startAt = input<string | null>(null);
   /** Why the date is invalid, for screen readers; null when it's fine. */
   readonly issue = input<string | null>(null);
+  private readonly locale = inject(LocaleService);
+  protected localized(reason: string): string {
+    return localizeMessage(reason, this.locale.locale());
+  }
 
   private readonly dateInput = viewChild.required<ElementRef<HTMLInputElement>>('dateInput');
 
