@@ -321,6 +321,10 @@ erDiagram
   their owner's membership id and the agreed revision). `child_emergency_contacts` and `child_shared_caregivers` hold
   each child's list as JSON with a version for concurrent edits. `essentials_updates` holds each parent's notices of
   the other parent's saves (#128): ids and field names only, never values.
+- **Medication** (`families` schema, #127): `child_medication_revisions` keeps each child's list as JSON per revision,
+  like `child_medical_provider_revisions`; a permanent delete rewrites every revision without that entry.
+  `medication_acknowledgements` records each parent's one-time confirmation (membership, time, notice version).
+  Decisions: [the medication preflight](../privacy/medication-preflight-127.md).
 - **Shared records** (`shared_records` schema, #477): `funds` (a proposed Shared Fund with each parent's share; it opens
   once both agree through the approval engine), `support_records` (one-time Child Support records: payer, recipient,
   optional reference amount) and `entries` (each reported contribution or payment: amount, payment date, who was paid,

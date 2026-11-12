@@ -1,6 +1,7 @@
 # Medication data preflight (#127)
 
-**Status: draft for owner decisions. Not approved. Don't build medication storage from this page yet.**
+**Status: owner decisions recorded November 12, 2026 (D1 to D11 below). A lawyer reviews this before medication
+reaches production (D2); until then medication runs on Development with synthetic data only.**
 
 November 12, 2026. A technical draft of the "Medication-data preflight" that
 [#127](https://github.com/esaldivar/parenthesis/issues/127) requires before implementation. It is not legal advice:
@@ -8,8 +9,8 @@ the law sections list questions, not conclusions. Parenthesis must not be descri
 HIPAA-compliant. Related: [data inventory](data-inventory.md), [compliance review](compliance-review-416.md),
 [Child Essentials handoff](../design/child-essentials-handoff.md).
 
-When the owner has recorded each decision in the [decision log](#decision-log), the approved flow moves into the data
-inventory and the Privacy Notice in the same PR, and only then does implementation start.
+The owner recorded each decision in the [decision log](#decision-log) on November 12, 2026. The approved flow is in
+the [data inventory](data-inventory.md) and the Privacy Notice, in the same PR as the implementation.
 
 ## What would be stored
 
@@ -73,22 +74,22 @@ question each one raises. An engineering reading, not a determination.
 
 ## Decision log
 
-Each row needs the owner's decision, date, and (where noted) a lawyer's review. Proposed answers follow the existing
-Child Essentials and account-deletion behavior.
+The owner's decisions, November 12, 2026. A lawyer reviews the whole page before medication reaches production
+(D2). Answers follow the existing Child Essentials and account-deletion behavior.
 
 | # | Decision | Proposed answer | Owner decision |
 |---|---|---|---|
-| D1 | Operating model | Individual operator, U.S. only, consumer app for parents. No provider, health plan or employer relationship. | _Pending_ |
-| D2 | Lawyer review timing | Before medication reaches production (the Washington private right of action raises the stakes). Development may use synthetic data before then. | _Pending_ |
-| D3 | Who can authorize collection | Any active parent of the family, without mutual approval (#127, equal authority). | _Pending_ |
-| D4 | Notice and consent | Add a health-data section to the Privacy Notice, and a separate consumer health data policy if Washington or Nevada applies. Before a family's first medication entry, the entering parent confirms once that it will be stored and visible to the co-parent; record the parent, time and notice version. | _Pending_ |
-| D5 | Co-parent access | Both active parents see all entries, history and PDFs. The entering parent is told this before saving. | _Pending_ |
-| D6 | Access revoked or family membership ends | A parent who leaves or deletes their account loses access at once (membership `Left`); their update notices are deleted. Entries they wrote stay with the family as "Former parent", like other Child Essentials. When the last parent leaves, the family and all medication data are deleted. | _Pending_ |
-| D7 | Discontinue vs. delete | **Discontinue** moves an entry to history; either parent can do it. **Delete permanently** removes the entry and all its revisions, as a separate action with its own explanation. Choose: (a) either parent alone, confirmed, audited without content, other parent notified "A medication entry was deleted"; or (b) both parents approve, like memories (ADR-0003). Restrict (ADR-0005) doesn't apply: children never see this data. | _Pending: a or b_ |
-| D8 | Retention | Current and discontinued entries and their history: until deleted (D7), the child's record is removed on request, or the family closes. Deleted data leaves database backups within 7 days (point-in-time retention); the notice says so. PDFs aren't stored. Container logs (30 days) hold no values. | _Pending_ |
-| D9 | Breach response | Add a breach runbook with the FTC rule's and state notice timelines before production, covering all Child Essentials health data. | _Pending_ |
-| D10 | Privacy requests | Access: the parent views history and downloads the PDF; copies by email within 30 days as today. Deletion: D7 and family closure. A Washington-style "list of third parties" names Azure only. | _Pending_ |
-| D11 | Existing health-adjacent data | Allergies and medical providers are already stored (v0.4.0) and aren't in the data inventory. Apply D4 to D10 to them too, and add them to the inventory and notice before v0.4.0 reaches production. | _Pending_ |
+| D1 | Operating model | Individual operator, U.S. only, consumer app for parents. No provider, health plan or employer relationship. | Approved as proposed. Owner, Nov 12, 2026 |
+| D2 | Lawyer review timing | Before medication reaches production (the Washington private right of action raises the stakes). Development may use synthetic data before then. | Approved as proposed. Owner, Nov 12, 2026 |
+| D3 | Who can authorize collection | Any active parent of the family, without mutual approval (#127, equal authority). | Approved as proposed. Owner, Nov 12, 2026 |
+| D4 | Notice and consent | Add a health-data section to the Privacy Notice, and a separate consumer health data policy if Washington or Nevada applies. Before a family's first medication entry, the entering parent confirms once that it will be stored and visible to the co-parent; record the parent, time and notice version. | Approved as proposed. Owner, Nov 12, 2026 |
+| D5 | Co-parent access | Both active parents see all entries, history and PDFs. The entering parent is told this before saving. | Approved as proposed. Owner, Nov 12, 2026 |
+| D6 | Access revoked or family membership ends | A parent who leaves or deletes their account loses access at once (membership `Left`); their update notices are deleted. Entries they wrote stay with the family as "Former parent", like other Child Essentials. When the last parent leaves, the family and all medication data are deleted. | Approved as proposed. Owner, Nov 12, 2026 |
+| D7 | Discontinue vs. delete | **Discontinue** moves an entry to history; either parent can do it. **Delete permanently** removes the entry and all its revisions, as a separate action with its own explanation. Choose: (a) either parent alone, confirmed, audited without content, other parent notified "A medication entry was deleted"; or (b) both parents approve, like memories (ADR-0003). Restrict (ADR-0005) doesn't apply: children never see this data. | Approved (a): either parent alone. Owner, Nov 12, 2026 |
+| D8 | Retention | Current and discontinued entries and their history: until deleted (D7), the child's record is removed on request, or the family closes. Deleted data leaves database backups within 7 days (point-in-time retention); the notice says so. PDFs aren't stored. Container logs (30 days) hold no values. | Approved as proposed. Owner, Nov 12, 2026 |
+| D9 | Breach response | Add a breach runbook with the FTC rule's and state notice timelines before production, covering all Child Essentials health data. See [breach-response.md](../runbooks/breach-response.md). | Approved as proposed. Owner, Nov 12, 2026 |
+| D10 | Privacy requests | Access: the parent views history and downloads the PDF; copies by email within 30 days as today. Deletion: D7 and family closure. A Washington-style "list of third parties" names Azure only. | Approved as proposed. Owner, Nov 12, 2026 |
+| D11 | Existing health-adjacent data | Allergies and medical providers are already stored (v0.4.0) and aren't in the data inventory. Apply D4 to D10 to them too, and add them to the inventory and notice before v0.4.0 reaches production. | Approved as proposed. Owner, Nov 12, 2026 |
 
 ## Verification before medication ships
 

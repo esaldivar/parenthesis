@@ -50,6 +50,11 @@ export const ESSENTIALS_SECTIONS: Record<
     name: 'essentials.section.medical',
     fields: {},
   },
+  // Entries are named by id, never by their details (#127), so the banner names the section.
+  medication: {
+    name: 'essentials.section.medication',
+    fields: {},
+  },
 };
 
 /** "Kai’s shoe size updated" for one field, otherwise "Kai’s Clothing & Shoes updated". Never a value. */

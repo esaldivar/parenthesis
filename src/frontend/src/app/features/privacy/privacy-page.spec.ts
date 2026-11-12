@@ -58,6 +58,7 @@ describe('Privacy notice (#416)', () => {
       'Who we are',
       'What we collect',
       'Children’s information',
+      'Health information',
       'How we use information',
       'Who we share it with',
       'Cookies and browser storage',
@@ -86,7 +87,7 @@ describe('Privacy notice (#416)', () => {
       (a) => a.getAttribute('href')!.split('#')[1],
     );
 
-    expect(targets.length).toBe(11);
+    expect(targets.length).toBe(12);
     for (const id of targets) {
       expect(body.querySelector(`h2#${id}`), id).not.toBeNull();
     }

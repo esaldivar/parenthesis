@@ -110,7 +110,7 @@ export const STORED_ITEMS: readonly StoredItem[] = [
   template: `
     <article class="notice">
       <h1>{{ 'feature.privacy.notice' | tr }}</h1>
-      <p class="muted">{{ 'feature.last.updated.november.4.2026' | tr }}</p>
+      <p class="muted">{{ 'privacy.lastUpdated' | tr }}</p>
 
       <p>
         {{ 'feature.parenthesis.helps.separated.parents.share.a.family' | tr }}
@@ -189,6 +189,19 @@ export const STORED_ITEMS: readonly StoredItem[] = [
           <li>
             {{ 'feature.a.parent.can.see.and.change.their' | tr }}
           </li>
+          <li>{{ 'privacy.children.essentials' | tr }}</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="health">
+        <h2 id="health">{{ 'privacy.health.title' | tr }}</h2>
+        <p>{{ 'privacy.health.what' | tr }}</p>
+        <ul>
+          <li>{{ 'privacy.health.who' | tr }}</li>
+          <li>{{ 'privacy.health.reference' | tr }}</li>
+          <li>{{ 'privacy.health.confirm' | tr }}</li>
+          <li>{{ 'privacy.health.pdf' | tr }}</li>
+          <li>{{ 'privacy.health.delete' | tr }}</li>
         </ul>
       </section>
 
@@ -275,6 +288,7 @@ export const STORED_ITEMS: readonly StoredItem[] = [
           <li>{{ 'feature.event.photos.deleted.28.days.after.upload' | tr }}</li>
           <li>{{ 'feature.co.parent.invitations.they.stop.working.after' | tr }}</li>
           <li>{{ 'feature.change.requests.they.expire.after.14.days' | tr }}</li>
+          <li>{{ 'privacy.keep.essentials' | tr }}</li>
           <li>{{ 'feature.technical.logs.about.30.days' | tr }}</li>
           <li>
             {{ 'feature.database.backups.7.days.deleted.information.leaves' | tr }}
@@ -400,6 +414,7 @@ export class PrivacyPage {
     { id: 'who', title: 'feature.who.we.are' },
     { id: 'collect', title: 'feature.what.we.collect' },
     { id: 'children', title: 'feature.children.s.information' },
+    { id: 'health', title: 'privacy.health.title' },
     { id: 'use', title: 'feature.how.we.use.information' },
     { id: 'share', title: 'feature.who.we.share.it.with' },
     { id: 'storage', title: 'feature.cookies.and.browser.storage' },

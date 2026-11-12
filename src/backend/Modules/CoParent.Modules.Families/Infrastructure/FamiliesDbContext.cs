@@ -43,6 +43,8 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
     public DbSet<SharedCaregivers> SharedCaregivers => Set<SharedCaregivers>();
     public DbSet<SchoolRevision> SchoolRevisions => Set<SchoolRevision>();
     public DbSet<MedicalProvidersRevision> MedicalProvidersRevisions => Set<MedicalProvidersRevision>();
+    public DbSet<MedicationRevision> MedicationRevisions => Set<MedicationRevision>();
+    public DbSet<MedicationAcknowledgement> MedicationAcknowledgements => Set<MedicationAcknowledgement>();
 
     /// <summary>Each parent's notices of the other parent's Child Essentials saves (#128).</summary>
     public DbSet<EssentialsUpdate> EssentialsUpdates => Set<EssentialsUpdate>();
@@ -161,6 +163,24 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
                 .HasConstraintName("fk_child_medical_provider_revisions_child");
             revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
             revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<MedicationRevision>(revision =>
+        {
+            revision.ToTable("child_medication_revisions");
+            revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId)
+                .HasConstraintName("fk_child_medication_revisions_child");
+            revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
+            revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
+        });
+
+        modelBuilder.Entity<MedicationAcknowledgement>(acknowledgement =>
+        {
+            acknowledgement.ToTable("medication_acknowledgements");
+            acknowledgement.Property(row => row.NoticeVersion).HasMaxLength(MedicationAcknowledgement.NoticeVersionMaxLength);
+            acknowledgement.HasOne<FamilyMembership>().WithMany().HasForeignKey(row => row.MembershipId);
+            acknowledgement.HasIndex(row => new { row.MembershipId, row.NoticeVersion }).IsUnique();
+            acknowledgement.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);
         });
 
         modelBuilder.Entity<SchoolRevision>(revision =>

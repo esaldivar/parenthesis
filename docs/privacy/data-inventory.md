@@ -59,6 +59,10 @@ No analytics, advertising, third-party scripts or third-party fonts are loaded i
 | Events, tasks, reminders, unavailable time, locations | Family | Until deleted or the family closes |
 | Change requests and decisions | Parents | Requests expire after 14 days undecided; decisions stay with the family |
 | Event photos (re-encoded, metadata dropped) | Family | 28 days after upload |
+| Child Essentials: school, allergies and food, routines, clothing, what helps, caregivers, emergency contacts, medical providers. Every save is kept as history | Child (entered by parents) | Until the family closes or a parent asks |
+| Medication reference (#127): name, prescribed dose, schedule, instructions, current or discontinued, who updated it and when, with history | Child (entered by parents) | Until a parent deletes the entry (it's removed from history too), the family closes or a parent asks |
+| Medication confirmation: the parent, time and notice version of their one-time confirmation | Parent | Until the parent leaves the family or it closes |
+| Child Essentials update notices: child, section, changed field or entry ids; never values | Parent | Until the parent leaves the family or it closes |
 | Devices (name, kind, token hash, expiry) | Family | Until removed or expired |
 | Google refresh token (encrypted with data protection) | Parent | Until disconnect or account deletion |
 | Google Photos refresh token (encrypted), albums made and export records (photo id, state, Google's item id) | Parent | Until disconnect, reconnect or account deletion; an export record also goes with its photo's row |
@@ -66,6 +70,11 @@ No analytics, advertising, third-party scripts or third-party fonts are loaded i
 | IP address | Rate limiting, in memory | Minutes; not stored |
 | Container logs (Log Analytics) | Operations | Workspace default, 30 days |
 | PostgreSQL point-in-time backups | Operations | 7 days |
+
+Allergies, medical providers and medication are health information (decisions in
+[medication-preflight-127.md](medication-preflight-127.md)). Only the family's active parents can read them, children
+never can, and they aren't sent by email or to any service but Azure. Allergy and medication PDFs are made on request
+and never stored on the server. A deleted medication entry leaves database backups within 7 days.
 
 Account deletion (A-12) removes the sign-in, name and email at once; with a co-parent, the family's shared history
 stays attributed to "Former parent".
