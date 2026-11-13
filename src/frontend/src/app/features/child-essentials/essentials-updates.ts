@@ -27,14 +27,15 @@ export const ESSENTIALS_SECTIONS: Record<
     name: 'essentials.section.whatHelps',
     fields: { comfortItems: 'essentials.field.comfortItems', calmingStrategies: 'essentials.field.calmingStrategies' },
   },
+  // Routines are named by id, never by their text (#498), so the banner names the section.
   routines: {
     name: 'essentials.section.routines',
-    fields: { bedtime: 'essentials.field.bedtime', naps: 'essentials.field.naps' },
+    fields: {},
   },
   // The co-parent's own routines at their home: their Routines tab.
   householdRoutines: {
     name: 'essentials.section.householdRoutines',
-    fields: { bedtime: 'essentials.field.homeBedtime', naps: 'essentials.field.homeNaps' },
+    fields: {},
   },
   // Entries are named by position or id, never by their details, so the banner names the section.
   emergencyContacts: {

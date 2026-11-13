@@ -921,9 +921,23 @@ export interface HouseholdRoutine {
   readonly canAccept: boolean;
 }
 
+/** One routine a parent added (#498), such as “Brushing teeth”. */
+export interface RoutineEntry {
+  readonly id: string;
+  readonly title: string;
+  readonly details: string | null;
+}
+
+/** A child’s routines: only the entries parents added. */
 export interface RoutinesValues {
-  readonly bedtime: string | null;
-  readonly naps: string | null;
+  readonly entries: readonly RoutineEntry[];
+}
+
+/** Adds one routine to each chosen child: to the Shared list, or to the signed-in parent’s own list. */
+export interface AddRoutineRequest {
+  readonly routine: { readonly title: string; readonly details: string | null };
+  readonly childIds: readonly string[];
+  readonly visibility: 'shared' | 'mine';
 }
 
 export interface RoutinesView {
@@ -1076,6 +1090,9 @@ export class Api {
       params: beforeRevision === null ? {} : { beforeRevision },
     }));
 
+  addRoutine = (familyId: string, body: AddRoutineRequest) =>
+    this.call(this.http.post<readonly { childId: string; routines: RoutinesView }[]>(
+      `/api/families/${familyId}/essentials/routines`, body));
   householdRoutines = (familyId: string, childId: string) =>
     this.call(this.http.get<readonly HouseholdRoutine[]>(this.routinesUrl(familyId, childId) + '/households'));
   updateHouseholdRoutine = (familyId: string, childId: string, ownerId: string,

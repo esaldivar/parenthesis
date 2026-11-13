@@ -315,7 +315,6 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     [Theory]
     [InlineData("clothing", "shoeSize")]
     [InlineData("what-helps", "calmingStrategies")]
-    [InlineData("routines", "bedtime")]
     public async Task Shared_essentials_edits_are_shared_versioned_and_record_before_and_after_values(string section, string field)
     {
         using var family = await FamilyWithKaiAsync();
@@ -357,7 +356,6 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     [Theory]
     [InlineData("clothing", "shoeSize")]
     [InlineData("what-helps", "calmingStrategies")]
-    [InlineData("routines", "bedtime")]
     public async Task Shared_essentials_current_values_writes_and_history_are_parent_and_family_scoped(string section, string field)
     {
         using var family = await FamilyWithKaiAsync();
@@ -384,6 +382,42 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Routines_reads_writes_history_and_adding_are_parent_and_family_scoped()
+    {
+        using var family = await FamilyWithKaiAsync();
+        using var outsider = await ApiSession.SignedInAsync(api);
+        var outsideFamilyId = await outsider.CreateFamilyAsync("Other family");
+        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/routines";
+        var guessedChild = $"/api/families/{outsideFamilyId}/children/{family.KaiId}/essentials/routines";
+        var body = new { revision = 0, values = new { entries = new[] { new { id = Guid.NewGuid(), title = "Synthetic routine" } } } };
+        var add = new { routine = new { title = "Synthetic routine" }, childIds = new[] { family.KaiId }, visibility = "shared" };
+        Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, path, body)).StatusCode);
+        foreach (var outsidePath in new[] { path, guessedChild })
+        {
+            Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync(outsidePath)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await outsider.SendAsync(HttpMethod.Put, outsidePath, body)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync(outsidePath + "/history")).StatusCode);
+        }
+
+        // Another family's parent can't add to Kai, in their own family or by guessing Kai's family.
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await outsider.PostAsync($"/api/families/{outsideFamilyId}/essentials/routines", add)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await outsider.PostAsync($"/api/families/{family.FamilyId}/essentials/routines", add)).StatusCode);
+
+        using var tablet = await PairedTabletAsync(family);
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await tablet.PostAsync("/api/device/child-session", new { childId = family.KaiId, pin = KaisPin })).StatusCode);
+        await tablet.RefreshAntiforgeryAsync();
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.SendAsync(HttpMethod.Put, path, body)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path + "/history")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path + "/households")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await tablet.PostAsync($"/api/families/{family.FamilyId}/essentials/routines", add)).StatusCode);
+    }
+
+    [Fact]
     public async Task Household_routine_keeps_the_agreed_revision_until_the_other_parent_accepts()
     {
         using var family = await FamilyWithKaiAsync();
@@ -392,6 +426,10 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         var ownerId = Assert.Single(households.EnumerateArray(), row => row.GetProperty("isMine").GetBoolean())
             .GetProperty("ownerId").GetGuid();
         var ownerPath = $"{path}/{ownerId}";
+        var routineId = Guid.NewGuid();
+        object Values(string details) => new { entries = new[] { new { id = routineId, title = "Lights out", details } } };
+        static string? Details(JsonElement view) =>
+            Assert.Single(view.GetProperty("values").GetProperty("entries").EnumerateArray()).GetProperty("details").GetString();
 
         async Task<JsonElement> MomsViewAsync()
         {
@@ -399,7 +437,12 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
             return Assert.Single(rows.EnumerateArray(), row => row.GetProperty("ownerId").GetGuid() == ownerId);
         }
 
-        var first = new { revision = 0, action = "save", values = new { bedtime = "Lights out at eight" } };
+        // Nothing to accept while Dad's list is empty.
+        Assert.False((await MomsViewAsync()).GetProperty("canAccept").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await family.Mom.SendAsync(HttpMethod.Put, ownerPath,
+            new { revision = 0, action = "accept" })).StatusCode);
+
+        var first = new { revision = 0, action = "save", values = Values("At eight") };
         Assert.Equal(HttpStatusCode.Forbidden, (await family.Mom.SendAsync(HttpMethod.Put, ownerPath, first)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, ownerPath, first)).StatusCode);
         Assert.True((await MomsViewAsync()).GetProperty("canAccept").GetBoolean());
@@ -407,22 +450,21 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
             new { revision = 1, action = "accept" })).StatusCode);
 
         Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, ownerPath,
-            new { revision = 2, action = "save", values = new { bedtime = "Lights out at nine" } })).StatusCode);
+            new { revision = 2, action = "save", values = Values("At nine") })).StatusCode);
         var pending = await MomsViewAsync();
-        Assert.Equal("Lights out at eight", pending.GetProperty("shared").GetProperty("values").GetProperty("bedtime").GetString());
-        Assert.Equal("Lights out at nine", pending.GetProperty("latest").GetProperty("values").GetProperty("bedtime").GetString());
+        Assert.Equal("At eight", Details(pending.GetProperty("shared")));
+        Assert.Equal("At nine", Details(pending.GetProperty("latest")));
         Assert.Equal(HttpStatusCode.Conflict, (await family.Mom.SendAsync(HttpMethod.Put, ownerPath,
             new { revision = 2, action = "accept" })).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await family.Mom.SendAsync(HttpMethod.Put, ownerPath,
             new { revision = 3, action = "accept" })).StatusCode);
-        Assert.Equal("Lights out at nine", (await MomsViewAsync()).GetProperty("shared")
-            .GetProperty("values").GetProperty("bedtime").GetString());
+        Assert.Equal("At nine", Details((await MomsViewAsync()).GetProperty("shared")));
 
         Assert.Equal(HttpStatusCode.OK, (await family.Dad.SendAsync(HttpMethod.Put, ownerPath,
             new { revision = 4, action = "stop" })).StatusCode);
         var stopped = await MomsViewAsync();
         Assert.Equal(JsonValueKind.Null, stopped.GetProperty("shared").ValueKind);
-        Assert.Equal("Lights out at nine", stopped.GetProperty("latest").GetProperty("values").GetProperty("bedtime").GetString());
+        Assert.Equal("At nine", Details(stopped.GetProperty("latest")));
     }
 
     [Fact]
