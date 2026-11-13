@@ -38,7 +38,9 @@ that points back here.
   - [x] Child Essentials and Privacy (`chore/567-child-essentials-privacy`, November 13, 2026).
   - [x] `shared/` into `components/` and `directives/`; no pipes live in `shared/` (`chore/567-shared-groups`,
     November 13, 2026).
-  - [ ] Then `core` services by responsibility, in its own PR.
+  - [x] `core` by responsibility: routing services in `core/routing/`, and the storage inventory spec moved to Privacy
+    (`chore/567-core-routing`, November 13, 2026).
+  - [ ] Release Playwright run on the final layout before closing #567.
   - [ ] Release Playwright run and a Development smoke test (sign-in, parent and kid shells, Home, Calendar,
     Settings, Messages dock) after each slice deploys.
 - [ ] **English and Spanish localization (#534).** Review remaining runtime copy, including API validation and
