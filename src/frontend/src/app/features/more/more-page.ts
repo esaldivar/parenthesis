@@ -4,7 +4,7 @@ import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates
 import { RouterLink } from '@angular/router';
 import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
 import { Icon } from '../../shared/icon/icon';
-import { PARENT_MORE_NAV } from '../../layout/navigation';
+import { PARENT_MORE_NAV } from '../../core/layout/navigation';
 
 /** On phones: the destinations that don't fit in the bottom navigation. */
 @Component({

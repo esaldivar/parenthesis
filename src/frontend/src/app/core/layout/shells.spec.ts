@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { routes } from '../app.routes';
-import { CHAT_CONNECTION, ChatStore } from '../core/chat/chat.store';
-import { LocaleService } from '../core/i18n/locale.service';
-import { SharedRecordsAttentionStore } from '../core/shared-records/shared-records-attention.store';
-import { EssentialsUpdatesStore } from '../core/essentials/essentials-updates.store';
-import { axeViolations } from '../../testing/axe';
-import { fakeAuth } from '../../testing/fake-auth';
+import { routes } from '../../app.routes';
+import { CHAT_CONNECTION, ChatStore } from '../chat/chat.store';
+import { LocaleService } from '../i18n/locale.service';
+import { SharedRecordsAttentionStore } from '../shared-records/shared-records-attention.store';
+import { EssentialsUpdatesStore } from '../essentials/essentials-updates.store';
+import { axeViolations } from '../../../testing/axe';
+import { fakeAuth } from '../../../testing/fake-auth';
 
 describe('application shells', () => {
   async function open(url: string) {
@@ -42,6 +42,14 @@ describe('application shells', () => {
         'Settings',
       ]);
       expect(linkTexts(body.querySelector('nav.bottomnav')!)).toEqual(['Home', 'Calendar', 'Messages', 'More']);
+    });
+
+    it('docks Messages from the app composition, and not on Messages itself (ADR-0009)', async () => {
+      const home = await open('/');
+      expect(home.querySelector('app-parent-shell app-chat-dock')).not.toBeNull();
+      TestBed.resetTestingModule();
+      const messages = await open('/messages');
+      expect(messages.querySelector('app-chat-dock')).toBeNull();
     });
 
     it('lists the remaining destinations under More on phones, in the same order', async () => {

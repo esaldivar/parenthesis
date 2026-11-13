@@ -132,8 +132,8 @@
 </div>
 
 <!-- The compact chat (#125): desktop only, docked bottom right, not modal. Not over Messages itself. -->
-@if (!onMessages()) {
-  <app-chat-dock />
+@if (!onMessages() && dock(); as dockComponent) {
+  <ng-container *ngComponentOutlet="dockComponent" />
 }
 
 <!-- Confirmations (#226): bottom right on desktop, above the bottom navigation on phones. -->

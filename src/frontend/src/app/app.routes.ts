@@ -63,13 +63,13 @@ export const routes: Routes = [
   {
     path: 'kid',
     canMatch: [kidSpace],
-    loadComponent: () => import('./layout/kid-shell/kid-shell').then((m) => m.KidShell),
+    loadComponent: () => import('./core/layout/kid-shell/kid-shell').then((m) => m.KidShell),
     loadChildren: () => import('./features/kid/kid.routes').then((m) => m.KID_ROUTES),
   },
   {
     path: '',
     canMatch: [signedIn, hasFamily],
-    loadComponent: () => import('./layout/parent-shell/parent-shell').then((m) => m.ParentShell),
+    loadComponent: () => import('./parent-app').then((m) => m.ParentApp),
     loadChildren: () => import('./features/parent.routes').then((m) => m.PARENT_ROUTES),
   },
   { path: '**', redirectTo: '' },

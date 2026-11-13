@@ -13,6 +13,15 @@ that points back here.
   Continue in feature slices, starting with the shared date and Calendar boundaries. Move app-wide layout, core
   and shared code, and separate the global Sass layers. Verify lazy routes, assets and release Playwright coverage
   before closing the migration.
+  - [x] Dashboard pilot (#569).
+  - [x] Shells and navigation moved to `app/core/layout`; the Messages dock is wired in by `app/parent-app.ts`, so
+    core imports no feature (`chore/567-core-layout`, November 12, 2026).
+  - [ ] Separate the global Sass into `styles/abstracts`, `base` and `themes`, with a compiled CSS comparison.
+  - [ ] Move the shared date types and helpers out of Dashboard (`dashboard/week.ts`, `model.ts`) before Calendar.
+  - [ ] Remaining feature slices, then `shared/` into `components`, `directives` and `pipes`, and `core` services
+    by responsibility. Each in its own PR.
+  - [ ] Release Playwright run and a Development smoke test (sign-in, parent and kid shells, Home, Calendar,
+    Settings, Messages dock) after each slice deploys.
 - [ ] **English and Spanish localization (#534).** Review remaining runtime copy, including API validation and
   stored approval summaries, Family Memories export and quota messages, Child Essentials update announcements,
   and the privacy notice storage table. Use structured codes or fields where an API response mixes app copy and
@@ -438,7 +447,7 @@ that points back here.
 - [x] Recent Messages: decided by removing the card from Home (owner decision, November 7, 2026). Family Memories
   takes its place beside From Your Kids; messages stay one tap away in the side menu, bottom bar and Quick Add.
   - [ ] Owner check of the new Home bottom row on the dev site after the next release/0.4.0 promotion.
-- [ ] Replace placeholder counts (`src/frontend/src/app/layout/sample-counts.ts`) with real unread and notification
+- [ ] Replace placeholder counts (`src/frontend/src/app/core/layout/sample-counts.ts`) with real unread and notification
   data.
 - [ ] Deferred (owner OK for now): photo avatars, kids' artwork and memory photos (initials and tiles are used).
 - [ ] Show/hide password toggle (eye icon) on every password field: sign-in, create account, reset password and
