@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, TranslationKey } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 type Bilingual = readonly [english: string, spanish: string];
