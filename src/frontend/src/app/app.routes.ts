@@ -56,7 +56,7 @@ export const routes: Routes = [
   ),
   // On a child's own tablet: redeem a parent's one-time code (A-11).
   authPage('pair', 'Set up a child’s tablet', () => import('./features/profiles/pair-device-page').then((m) => m.PairDevicePage), [signedOut]),
-  authPage('welcome', 'Set up your family', () => import('./features/onboarding/welcome-page').then((m) => m.WelcomePage), [
+  authPage('welcome', 'Set up your family', () => import('./features/onboarding/pages/welcome-page/welcome-page.component').then((m) => m.WelcomePage), [
     signedIn,
     needsFamily,
   ]),
