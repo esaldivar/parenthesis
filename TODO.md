@@ -883,10 +883,13 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
   Shared or the parent's own list; edit keeps history, conflicts, the household agreement rules and update notices
   (by routine id). Bedtime and Naps values stay in storage, out of the list (branch `feat/498-custom-routines`,
   November 12, 2026).
-- [ ] CI: first run of `RoutinesTests` and the updated routines tests in `ChildAccessTests` and
-  `EssentialsUpdatesTests`, including the `AddRoutineEntries` migration (Docker wasn't available locally).
-- [ ] After deploy, test on Development with synthetic data and two parents: a child with no routines and one with
-  earlier bedtime values (list empty, add form blank, no child selected), "Brushing teeth" for one child, a second
-  routine for both children in one save, edit, Shared versus My routines visibility, use in both homes, stop
-  sharing, update dots, in English and Spanish, phone and desktop, both themes, keyboard and screen reader.
+- [x] CI: `RoutinesTests`, the updated routines tests and the `AddRoutineEntries` migration passed (#606), and the
+  release deployed to Development (November 13, 2026).
+- [x] One-parent check on Development (November 13, 2026): earlier bedtime value hidden, blank add form with no child
+  selected, one routine for one child and one for both in one save, edit and history, My routines kept out of Shared,
+  phone width and both themes.
+- [x] Keyboard focus stays in place when the add and edit forms open and close (`fix/498-routine-focus`, November 13,
+  2026): the first field on open, the Add routine or Edit button on close.
+- [ ] With the second parent: their view of Shared and My routines, use in both homes, stop sharing and update dots;
+  the section in Spanish; a screen reader pass after the focus fix deploys.
 - [ ] Removing a routine isn't in #498; decide whether parents need it before the private beta.

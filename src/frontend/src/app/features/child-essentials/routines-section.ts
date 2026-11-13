@@ -3,7 +3,9 @@ import { AppDatePipe } from '../../core/i18n/locale-formatting';
 import { TranslatePipe } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, signal, untracked,
+} from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { Icon } from '../../shared/icon/icon';
@@ -80,7 +82,7 @@ class SharedEditForm {
               <fieldset [disabled]="householdSaving()">
                 <legend>{{ 'essentials.routines.edit' | tr }}</legend>
                 <label>{{ 'essentials.routines.name' | tr }}
-                  <input name="title" required [maxLength]="titleLimit" [value]="homeTitle()" (input)="homeTitle.set($any($event.target).value)" />
+                  <input name="title" data-routine-start required [maxLength]="titleLimit" [value]="homeTitle()" (input)="homeTitle.set($any($event.target).value)" />
                 </label>
                 <label>{{ 'essentials.routines.details' | tr }}
                   <textarea name="details" [maxLength]="detailsLimit" [value]="homeDetails()" (input)="homeDetails.set($any($event.target).value)"></textarea>
@@ -102,7 +104,7 @@ class SharedEditForm {
           } @else {
             <ng-container *ngTemplateOutlet="list; context: { $implicit: home.latest.values, editable: 'mine' }" />
             <p role="status">{{ notice() }}</p>
-            <button type="button" (click)="startAdd('mine')">{{ 'essentials.routines.add' | tr }}</button>
+            <button type="button" data-routine-add (click)="startAdd('mine')">{{ 'essentials.routines.add' | tr }}</button>
           }
         } @else {
           <ng-container *ngTemplateOutlet="list; context: { $implicit: home.latest.values, rowMarks: homeMarks }" />
@@ -137,7 +139,7 @@ class SharedEditForm {
             }
             <fieldset [disabled]="saving()">
               <legend>{{ 'essentials.routines.edit' | tr }}</legend>
-              <label>{{ 'essentials.routines.name' | tr }} <input formControlName="title" required [maxLength]="titleLimit" /></label>
+              <label>{{ 'essentials.routines.name' | tr }} <input formControlName="title" data-routine-start required [maxLength]="titleLimit" /></label>
               <label>{{ 'essentials.routines.details' | tr }} <textarea formControlName="details" [maxLength]="detailsLimit"></textarea></label>
               <div class="actions">
                 <button type="submit" [disabled]="entryForm.invalid">
@@ -156,7 +158,7 @@ class SharedEditForm {
               (click)="toggleHistory()"><app-icon name="history" [size]="18" />{{ 'feature.history' | tr }}</button>
           </div>
           <p role="status">{{ notice() }}</p>
-          <button type="button" (click)="startAdd('shared')">{{ 'essentials.routines.add' | tr }}</button>
+          <button type="button" data-routine-add (click)="startAdd('shared')">{{ 'essentials.routines.add' | tr }}</button>
         }
         <div id="routines-history" [hidden]="!historyOpen() || editing() || adding() !== null">
           <h4>{{ 'feature.routines.history' | tr }}</h4>
@@ -202,7 +204,7 @@ class SharedEditForm {
                 @if (entry.details) { <p>{{ entry.details }}</p> }
               </div>
               @if (editable) {
-                <button type="button" class="edit" (click)="startEdit(editable, entry)"><app-icon name="pencil" [size]="18" />{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ entry.title }}</span></button>
+                <button type="button" class="edit" [attr.data-routine-edit]="entry.id" (click)="startEdit(editable, entry)"><app-icon name="pencil" [size]="18" />{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ entry.title }}</span></button>
               }
             </li>
           }
@@ -216,7 +218,7 @@ class SharedEditForm {
         <fieldset [disabled]="addSaving()">
           <legend>{{ 'essentials.routines.add' | tr }}</legend>
           <p>{{ (adding() === 'mine' ? 'essentials.routines.addMine' : 'essentials.routines.addShared') | tr }}</p>
-          <label>{{ 'essentials.routines.name' | tr }} <input formControlName="title" required [maxLength]="titleLimit" /></label>
+          <label>{{ 'essentials.routines.name' | tr }} <input formControlName="title" data-routine-start required [maxLength]="titleLimit" /></label>
           <label>{{ 'essentials.routines.details' | tr }} <textarea formControlName="details" [maxLength]="detailsLimit"></textarea></label>
           <fieldset class="child-picker">
             <legend>{{ 'feature.add.to.children' | tr }}</legend>
@@ -314,6 +316,8 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
   protected readonly householdError = localizedMessage();
   protected readonly householdConflict = signal(false);
   private homeDraftRevision = 0;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   /** The family and child whose lists are on screen. */
   private shownFor = '';
 
@@ -355,18 +359,35 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
       this.homeDetails.set(entry.details ?? '');
       this.homeDraftRevision = mine?.latest.revision ?? 0;
       this.householdConflict.set(false);
+      this.focusAfterRender('[data-routine-start]');
       return;
     }
     this.editingId.set(entry.id);
     this.entryForm.reset({ title: entry.title, details: entry.details ?? '' });
     this.historyOpen.set(false);
     this.editing.set(true);
+    this.focusAfterRender('[data-routine-start]');
   }
 
   protected cancelHomeEdit(): void {
+    const id = this.homeEditingId();
     this.homeEditingId.set(null);
     this.householdConflict.set(false);
     this.householdError.set('');
+    this.focusEditButton(id);
+  }
+
+  /** Back to the list after a Shared edit: focus returns to that routine's Edit button. */
+  protected override async save(): Promise<void> {
+    const id = this.editingId();
+    await super.save();
+    if (!this.editing()) this.focusEditButton(id);
+  }
+
+  protected override cancel(): void {
+    const id = this.editingId();
+    super.cancel();
+    this.focusEditButton(id);
   }
 
   protected startAdd(list: RoutineList): void {
@@ -376,11 +397,13 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
     this.notice.set('');
     this.historyOpen.set(false);
     this.adding.set(list);
+    this.focusAfterRender('[data-routine-start]');
   }
 
   protected cancelAdd(): void {
     this.adding.set(null);
     this.addError.set('');
+    this.focusAfterRender('[data-routine-add]');
   }
 
   protected toggleAddTarget(id: string): void {
@@ -402,6 +425,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
       if (this.destroyRef.destroyed) return;
       this.adding.set(null);
       this.notice.set('essentials.routines.added');
+      this.focusAfterRender('[data-routine-add]');
       await (list === 'shared' ? this.load() : this.loadHouseholds());
     } catch {
       this.addError.set('essentials.routines.addError');
@@ -437,6 +461,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
       if (action === 'save') {
         this.homeEditingId.set(null);
         this.notice.set('essentials.routines.saved');
+        this.focusEditButton(id);
       }
       this.householdConflict.set(false);
       await this.loadHouseholds();
@@ -467,6 +492,18 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
     } catch {
       if (this.stillShowing(family, child)) this.error.set('feedback.routines.couldn.t.be.loaded');
     }
+  }
+
+  /**
+   * Keeps keyboard and screen reader users in place when a form opens or closes: the element that had focus is removed,
+   * so focus moves to the form's first field, or back to the button that opened it.
+   */
+  private focusAfterRender(selector: string): void {
+    afterNextRender({ read: () => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus() }, { injector: this.injector });
+  }
+
+  private focusEditButton(id: string | null): void {
+    this.focusAfterRender(id ? `[data-routine-edit="${id}"]` : '[data-routine-add]');
   }
 
   /** Whether a response is for the child still on screen; a slow one for the previous child is dropped. */
