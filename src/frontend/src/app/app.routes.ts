@@ -35,27 +35,27 @@ export const routes: Routes = [
   ),
   // After a password sign-in: "Is this a shared family device?" (#153). Nothing is registered without a "Yes".
   authPage('shared-device/setup', 'Is this a shared family device?', () =>
-    import('./features/profiles/shared-device-setup-page').then((m) => m.SharedDeviceSetupPage), [signedIn, hasFamily],
+    import('./features/profiles/pages/shared-device-setup-page/shared-device-setup-page.component').then((m) => m.SharedDeviceSetupPage), [signedIn, hasFamily],
   ),
   // "Who's using Parenthesis?" on a registered device (ADR-0006, ADR-0007).
-  authPage('profiles', 'Who’s using Parenthesis?', () => import('./features/profiles/profile-picker-page').then((m) => m.ProfilePickerPage), [
+  authPage('profiles', 'Who’s using Parenthesis?', () => import('./features/profiles/pages/profile-picker-page/profile-picker-page.component').then((m) => m.ProfilePickerPage), [
     pickerAvailable,
   ]),
   authPage('profiles/parent/:id', 'Enter your parent PIN', () =>
-    import('./features/profiles/parent-pin-page').then((m) => m.ParentPinPage), [pickerAvailable],
+    import('./features/profiles/pages/parent-pin-page/parent-pin-page.component').then((m) => m.ParentPinPage), [pickerAvailable],
   ),
   authPage('profiles/parent/:id/password', 'Enter your password', () =>
-    import('./features/profiles/parent-password-page').then((m) => m.ParentPasswordPage), [pickerAvailable],
+    import('./features/profiles/pages/parent-password-page/parent-password-page.component').then((m) => m.ParentPasswordPage), [pickerAvailable],
   ),
-  authPage('profiles/child/:id', 'Enter your PIN', () => import('./features/profiles/child-pin-page').then((m) => m.ChildPinPage), [
+  authPage('profiles/child/:id', 'Enter your PIN', () => import('./features/profiles/pages/child-pin-page/child-pin-page.component').then((m) => m.ChildPinPage), [
     pickerAvailable,
   ]),
   // From the parent PIN reset email (#153). Works signed in or out; the page asks the right parent to sign in.
   authPage('parent-pin/reset', 'Choose a new parent PIN', () =>
-    import('./features/profiles/parent-pin-reset-page').then((m) => m.ParentPinResetPage),
+    import('./features/profiles/pages/parent-pin-reset-page/parent-pin-reset-page.component').then((m) => m.ParentPinResetPage),
   ),
   // On a child's own tablet: redeem a parent's one-time code (A-11).
-  authPage('pair', 'Set up a child’s tablet', () => import('./features/profiles/pair-device-page').then((m) => m.PairDevicePage), [signedOut]),
+  authPage('pair', 'Set up a child’s tablet', () => import('./features/profiles/pages/pair-device-page/pair-device-page.component').then((m) => m.PairDevicePage), [signedOut]),
   authPage('welcome', 'Set up your family', () => import('./features/onboarding/pages/welcome-page/welcome-page.component').then((m) => m.WelcomePage), [
     signedIn,
     needsFamily,

@@ -6,7 +6,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
-import { RESET_TOKEN_KEY } from './parent-pin-reset-page';
+import { RESET_TOKEN_KEY } from './pages/parent-pin-reset-page/parent-pin-reset-page.component';
 
 /** The parent PIN reset link (#153). Synthetic data only. */
 describe('parent PIN reset link (#153)', () => {

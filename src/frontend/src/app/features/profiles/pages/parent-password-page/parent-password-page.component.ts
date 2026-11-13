@@ -1,14 +1,14 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { FORM_STYLES } from '../auth/form-styles';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { FORM_STYLES } from '../../../auth/form-styles';
 
 /**
  * Password sign-in from the picker: for a parent without a parent PIN yet, and for recovering a forgotten, paused or

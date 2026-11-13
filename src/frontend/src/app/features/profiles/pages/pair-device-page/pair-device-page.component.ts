@@ -1,14 +1,14 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { FORM_STYLES } from '../auth/form-styles';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { FORM_STYLES } from '../../../auth/form-styles';
 
 /** 8 letters and numbers, with or without the dash; case and spaces don't matter (the API normalizes them). */
 const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;

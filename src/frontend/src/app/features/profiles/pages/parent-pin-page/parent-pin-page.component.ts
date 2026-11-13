@@ -1,18 +1,18 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormGroupDirective, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
-import { Api } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { Avatar } from '../../shared/avatar/avatar';
-import { FORM_STYLES } from '../auth/form-styles';
-import { PARENT_PIN_PATTERN } from './pin-rules';
+import { Api } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { FORM_STYLES } from '../../../auth/form-styles';
+import { PARENT_PIN_PATTERN } from '../../pin-rules';
 
 /**
  * A parent enters their own profile on their shared family device with their six-digit PIN (#153; approved parent
