@@ -1,7 +1,8 @@
 using CoParent.Infrastructure.Pdf;
+using CoParent.Modules.Families.Endpoints;
 using SkiaSharp;
 
-namespace CoParent.Modules.Families.Endpoints;
+namespace CoParent.Modules.Families.Infrastructure.Pdf;
 
 /// <summary>One child's part of the PDF. <c>Discontinued</c> is null when the parent chose current medications only.</summary>
 internal sealed record MedicationPdfSection(

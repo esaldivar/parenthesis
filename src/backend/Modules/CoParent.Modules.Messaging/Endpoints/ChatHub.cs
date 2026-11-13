@@ -4,7 +4,7 @@ using CoParent.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace CoParent.Modules.Messaging.Realtime;
+namespace CoParent.Modules.Messaging.Endpoints;
 
 /// <summary>
 /// Live updates for the family conversation (#125): new messages, read positions and typing. Clients only listen and

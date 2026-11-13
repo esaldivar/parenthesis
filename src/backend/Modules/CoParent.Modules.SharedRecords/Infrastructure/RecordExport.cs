@@ -1,11 +1,13 @@
 using System.Data;
 using CoParent.Modules.Families.Contracts;
+using CoParent.Modules.SharedRecords.Domain;
+using CoParent.Modules.SharedRecords.Infrastructure.Persistence;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
 
-namespace CoParent.Modules.SharedRecords;
+namespace CoParent.Modules.SharedRecords.Infrastructure;
 
 internal sealed record RecordExportRow(
     RecordKind Kind, Guid RecordId, Guid? EntryId, string Title, string Currency, long? AmountMinor,

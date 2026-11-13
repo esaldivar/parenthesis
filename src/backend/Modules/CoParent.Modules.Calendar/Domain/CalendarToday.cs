@@ -1,6 +1,4 @@
-using CoParent.Modules.Calendar.Domain;
-
-namespace CoParent.Modules.Calendar;
+namespace CoParent.Modules.Calendar.Domain;
 
 /// <summary>
 /// "Today" for the rule that new calendar dates start from today (#232, owner decisions October 23, 2026), in the

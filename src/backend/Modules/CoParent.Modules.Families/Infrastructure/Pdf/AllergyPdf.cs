@@ -1,7 +1,7 @@
 using CoParent.Infrastructure.Pdf;
 using SkiaSharp;
 
-namespace CoParent.Modules.Families.Endpoints;
+namespace CoParent.Modules.Families.Infrastructure.Pdf;
 
 internal sealed record AllergyPdfSection(string ChildName, string AllergySummary);
 
