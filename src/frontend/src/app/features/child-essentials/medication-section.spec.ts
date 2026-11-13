@@ -108,7 +108,10 @@ describe('Medication reference (#127)', () => {
       saveMedication,
     });
     await render();
-    el.querySelector<HTMLButtonElement>('button[aria-label="Delete Sample tablet permanently"]')!.click();
+    // The accessible name starts with the visible words, so voice control users can say "Delete permanently" (WCAG 2.5.3).
+    const remove = el.querySelector<HTMLButtonElement>('button[aria-label="Delete permanently: Sample tablet"]')!;
+    expect(remove.getAttribute('aria-label')!.startsWith(remove.textContent!.trim())).toBe(true);
+    remove.click();
     await render();
     expect(el.textContent).toContain('can’t be undone');
     expect(el.textContent).toContain('discontinue it instead');

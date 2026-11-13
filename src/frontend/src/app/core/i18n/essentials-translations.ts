@@ -73,7 +73,7 @@ export const essentialsTranslations = {
   "medication.resume.for": ["Resume {name}", "Reanudar {name}"],
   "medication.resume.explain": ["{name} moves back to Current medications.", "{name} vuelve a Medicamentos actuales."],
   "medication.delete": ["Delete permanently", "Eliminar definitivamente"],
-  "medication.delete.for": ["Delete {name} permanently", "Eliminar {name} definitivamente"],
+  "medication.delete.for": ["Delete permanently: {name}", "Eliminar definitivamente: {name}"],
   "medication.delete.explain": ["Delete {name} permanently? It’s removed from this child’s medication and its history for both parents, and can’t be undone. Your co-parent is told a medication was deleted, without its details. To keep it in history, discontinue it instead.", "¿Eliminar {name} definitivamente? Se quita de los medicamentos de este niño o niña y de su historial para ambos padres, y no se puede deshacer. Se le avisa al otro padre o madre que se eliminó un medicamento, sin los detalles. Para conservarlo en el historial, suspéndelo."],
   "medication.delete.confirm": ["Delete permanently", "Eliminar definitivamente"],
   "medication.deleted": ["Medication deleted permanently.", "Medicamento eliminado definitivamente."],
