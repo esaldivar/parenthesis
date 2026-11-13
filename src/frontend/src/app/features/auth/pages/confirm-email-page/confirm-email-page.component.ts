@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { Api } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { TranslatePipe } from '../../core/i18n/translations';
-import { FORM_STYLES } from './form-styles';
+import { Api } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { TranslatePipe } from '../../../../core/i18n/translations';
+import { FORM_STYLES } from '../../form-styles';
 
 type State = 'working' | 'confirmed' | 'invalid' | 'error';
 

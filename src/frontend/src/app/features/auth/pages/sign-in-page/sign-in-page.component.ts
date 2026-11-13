@@ -4,13 +4,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { PendingInvitation } from '../../core/invitations/pending-invitation';
-import { safeReturnUrl } from '../profiles/safe-return-url';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
-import { FORM_STYLES } from './form-styles';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { PendingInvitation } from '../../../../core/invitations/pending-invitation';
+import { safeReturnUrl } from '../../../profiles/safe-return-url';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
+import { FORM_STYLES } from '../../form-styles';
 
 @Component({
   selector: 'app-sign-in-page',

@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
-import { Api } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { FORM_STYLES } from './form-styles';
+import { Api } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { FORM_STYLES } from '../../form-styles';
 
 @Component({
   selector: 'app-check-email-page',

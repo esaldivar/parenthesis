@@ -14,7 +14,7 @@ function authPage(
     path,
     canMatch,
     data,
-    loadComponent: () => import('./features/auth/auth-layout').then((m) => m.AuthLayout),
+    loadComponent: () => import('./features/auth/pages/auth-layout/auth-layout.component').then((m) => m.AuthLayout),
     children: [{ path: '', title, loadComponent: page }],
   };
 }
@@ -23,12 +23,12 @@ function authPage(
 export const routes: Routes = [
   // The Privacy Notice (#416): public, for anyone signed in or out, a child included.
   authPage('privacy', 'Privacy notice', () => import('./features/privacy/privacy-page').then((m) => m.PrivacyPage), [], { wide: true }),
-  authPage('sign-in', 'Sign in', () => import('./features/auth/sign-in-page').then((m) => m.SignInPage), [signedOut]),
-  authPage('register', 'Create your account', () => import('./features/auth/register-page').then((m) => m.RegisterPage), [registerPage]),
-  authPage('check-email', 'Check your email', () => import('./features/auth/check-email-page').then((m) => m.CheckEmailPage)),
-  authPage('confirm-email', 'Confirm your email', () => import('./features/auth/confirm-email-page').then((m) => m.ConfirmEmailPage)),
-  authPage('forgot-password', 'Reset your password', () => import('./features/auth/forgot-password-page').then((m) => m.ForgotPasswordPage)),
-  authPage('reset-password', 'Choose a new password', () => import('./features/auth/reset-password-page').then((m) => m.ResetPasswordPage)),
+  authPage('sign-in', 'Sign in', () => import('./features/auth/pages/sign-in-page/sign-in-page.component').then((m) => m.SignInPage), [signedOut]),
+  authPage('register', 'Create your account', () => import('./features/auth/pages/register-page/register-page.component').then((m) => m.RegisterPage), [registerPage]),
+  authPage('check-email', 'Check your email', () => import('./features/auth/pages/check-email-page/check-email-page.component').then((m) => m.CheckEmailPage)),
+  authPage('confirm-email', 'Confirm your email', () => import('./features/auth/pages/confirm-email-page/confirm-email-page.component').then((m) => m.ConfirmEmailPage)),
+  authPage('forgot-password', 'Reset your password', () => import('./features/auth/pages/forgot-password-page/forgot-password-page.component').then((m) => m.ForgotPasswordPage)),
+  authPage('reset-password', 'Choose a new password', () => import('./features/auth/pages/reset-password-page/reset-password-page.component').then((m) => m.ResetPasswordPage)),
   // Opened from the invitation email; works signed in or out (the page asks signed-out visitors to sign in).
   authPage('invitations/accept', 'Join your co-parent’s family', () =>
     import('./features/invitations/accept-invitation-page').then((m) => m.AcceptInvitationPage),
