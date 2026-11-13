@@ -49,10 +49,12 @@ that points back here.
   The owner approved the rendered artwork and photos preview on November 8, 2026. Connect parent-authorized
   content and actions once the M5 service is available.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
-- [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523).
-- [ ] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514).
-- [ ] Verify viewer-authorized Home Upcoming avatars and initials fallback on the development site at phone and desktop widths (#529).
-- [ ] Verify Home Upcoming row destinations and keyboard focus on the development site (#517).
+- [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523). Morning
+  sunrise verified November 11, 2026; afternoon sun and evening moon still need a live check.
+- [x] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514). Verified November 11, 2026.
+- [x] Verify viewer-authorized Home Upcoming avatars and initials fallback on the development site at phone and desktop widths (#529). Verified November 11, 2026.
+- [ ] Verify Home Upcoming row destinations and keyboard focus on the development site (#517). Event, parenting-time,
+  task and reminder rows verified November 11, 2026; a pending proposal row is still unchecked.
 - [ ] **Unified Notifications (#178, M4).** First slice: parent inbox, real unseen dot, seen-item expiry and notices
   for directly confirmed calendar event changes. Finish approval-gated and series changes, authorized Family Memories
   and Shared Records producers, live arrival updates, and responsive visual/accessibility acceptance.
@@ -242,6 +244,9 @@ that points back here.
 - [ ] **MailKit 5 (held from Dependabot PR #602, November 12, 2026).** MailKit stays at 4.18.x: 5.0.0 changes
   `SmtpClient.SendAsync`, so `CoParent.Infrastructure/Email/EmailSender.cs` must be updated in its own change, then
   confirmation and password-reset email checked against Mailpit.
+- [ ] **.NET 11 SDK image (Dependabot PR #599, closed November 12, 2026).** The owner deferred `dotnet/sdk` 11.0 for
+  the API image build stage to a later release. With it, the API image and Playwright checks failed; upgrade the
+  SDK (and `global.json`, if needed) in its own change and get those checks passing first.
 
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
@@ -807,6 +812,25 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 
 ### #552 — Seven-day mobile Calendar Week grid
 - [ ] Retest on Development with physical iPhone Safari and Android Chrome in both themes, including touch scrolling, dense overlap, event details and bottom navigation.
+
+## UX test follow-ups (November 11, 2026)
+Items left from the November 11 and 12 test passes on Project #2 (details in each issue's comment).
+- [x] #125 Parent messaging, #128 Child Essentials update indicators and #178 Notifications: two-parent checks passed
+  on November 12, 2026 (live updates fixed by running one replica, #583); moved to Awaiting Deployment.
+- [ ] #534 Spanish: see "Remaining Spanish text (#534)" below.
+- [ ] #513 Favicon: check the tab icon in Safari on the sign-in page and an authenticated route.
+- [ ] #552 Mobile Week grid: physical-device retest above (overlapping timed events passed in emulation on
+  November 12).
+- [ ] #523 Greeting icons and #517 proposal rows: see the Big projects items above.
+- [ ] #544 Dependabot tracking: the `workflow_run` workflow only runs from `main`, so it can't work until v0.4.0
+  reaches `main`. Then confirm on the next Dependabot batch that each PR gets exactly one tracking issue and a valid
+  reference.
+- [ ] #497 Shared Records PDF: confirm the PDF's embedded image is header artwork, not a payment attachment; legal and
+  privacy review of the export wording.
+- [x] Owner design decisions: #548 chat transcript PDF layout and #566 Shared Records PDF layout approved (November 12, 2026).
+- [ ] Owner design decision: #477 shared funds design.
+- [ ] Remove the synthetic "UX TEST 555/504/500/499" task, provider, caregiver and emergency contact from the
+  Development family when they're no longer useful.
 
 ## Child Essentials Spanish follow-up (#577)
 
