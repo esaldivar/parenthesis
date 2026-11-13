@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import type { Browser } from '@playwright/test';
 import { MacOSKeyCodes } from '@guidepup/guidepup';
 import { voiceOverTest } from '@guidepup/playwright';
 // Guidepup has no public API for this; the package has no exports map, so the module path is stable for 0.21.x.
@@ -58,26 +59,44 @@ export function keyScript(name: string): string {
   return modifiers.length ? `${command} using {${modifiers.join(', ')}}` : command;
 }
 
-async function systemEvents(applicationId: string, command: string) {
-  // Bring the browser to the front only when it isn't already, so VoiceOver doesn't re-announce the window.
+async function systemEvents(pid: number, command: string) {
+  // Bring the test's own browser process forward by process ID, not by app ID: the person's everyday Chrome has the
+  // same app ID, and activating by app ID can send the keys there. Only when it isn't already in front, so VoiceOver
+  // doesn't re-announce the window.
   const script = [
-    `tell application id ${quote(applicationId)} to if not frontmost then activate`,
-    `tell application "System Events" to ${command}`,
+    'tell application "System Events"',
+    `set target to first process whose unix id is ${pid}`,
+    'if not frontmost of target then set frontmost of target to true',
+    command,
+    'end tell',
   ];
   await execFileAsync('osascript', script.flatMap(line => ['-e', line]), { timeout: 15_000 });
 }
 
+/** The process ID of the Chromium Playwright launched for this test, from the browser itself (DevTools protocol). */
+export async function browserPid(browser: Browser): Promise<number> {
+  const session = await browser.newBrowserCDPSession();
+  try {
+    const { processInfo } = await session.send('SystemInfo.getProcessInfo') as { processInfo: { type: string; id: number }[] };
+    const pid = processInfo.find(info => info.type === 'browser')?.id;
+    if (!pid) throw new Error('VoiceOver keys need the launched browser process ID.');
+    return pid;
+  } finally {
+    await session.detach();
+  }
+}
+
 /**
- * Keys go to the front browser window as real macOS key events (System Events), the way a person's keyboard does,
+ * Keys go to the test's browser window as real macOS key events (System Events), the way a person's keyboard does,
  * so VoiceOver follows and announces the focus changes they cause. Keys Guidepup sends through the VoiceOver process
  * didn't reach the page on macOS 13, and Playwright's page keys (CDP) move focus without VoiceOver speaking it.
  */
-export function osKeys(applicationId: string): JourneyKeys {
+export function osKeys(pid: number): JourneyKeys {
   return {
-    press: async name => { await systemEvents(applicationId, keyScript(name)); },
+    press: async name => { await systemEvents(pid, keyScript(name)); },
     type: async text => {
       for (const line of text.split('\n')) {
-        if (line) await systemEvents(applicationId, `keystroke ${quote(line)}`);
+        if (line) await systemEvents(pid, `keystroke ${quote(line)}`);
       }
     },
   };
@@ -86,8 +105,8 @@ export function osKeys(applicationId: string): JourneyKeys {
 /** Full capture records everything VoiceOver says after each command; the journey also reads its last phrase. */
 export const test = voiceOverChannelTest.extend<{ family: Family; reader: ReaderJourney }>({
   family: async ({ context, baseURL }, use) => withLocalFamily(context, baseURL, use),
-  reader: async ({ voiceOver, browserName }, use, info) => {
-    const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, osKeys(browserApplicationId(browserName)));
+  reader: async ({ voiceOver, browser }, use, info) => {
+    const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, osKeys(await browserPid(browser)));
     try {
       await use(reader);
     } finally {

@@ -46,7 +46,8 @@ node scripts/verify-nvda-results.mjs guidepup-results/voiceover-results.json Voi
 scripts/macos-voiceover-candidate.sh stop
 ```
 
-Don't type, click or switch windows while it runs: VoiceOver speaks and the tests send real keystrokes. On macOS the
+Quit your everyday Chrome first, so VoiceOver's web-content step can't pick its window. Don't type, click or switch
+windows while it runs: VoiceOver speaks and the tests send real keystrokes. On macOS the
 config lists only the VoiceOver project, so the NVDA projects never start there; on Windows nothing changes.
 `scripts/macos-voiceover-candidate.sh status` shows what is still running; `stop` is safe to repeat.
 
@@ -81,7 +82,8 @@ Restore it and rerun to pass. Never commit the deliberate failure.
 
 ## Limits
 
-- Keys are real macOS key events sent with System Events to the front browser window, like a person's keyboard,
+- Keys are real macOS key events sent with System Events to the test's own browser process (found by process ID, so
+  an everyday Chrome that is also open doesn't take them), like a person's keyboard,
   so VoiceOver follows the focus they move. On macOS 13, keys Guidepup sends through the VoiceOver process didn't
   reach Chrome, and Playwright's page keys moved focus without VoiceOver speaking it.
 - Desktop VoiceOver with Chromium only (owner decision, November 13, 2026): Playwright's Chromium, or the installed
