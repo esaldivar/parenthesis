@@ -1,7 +1,7 @@
 import { CalendarEvent } from '../../core/api/api';
 import { CHILDREN, MEMBERS, event, reminder, task } from '../../../testing/calendar-fixtures';
 import { FORMER_PARENT, forChild, onDate, reminderItems, taskItems, toItems } from './calendar-items';
-import { itemSummary, statusText, whenText } from './item-text';
+import { itemSummary, statusText, whenText } from './components/item-text/item-text.component';
 
 const ZONE = 'America/Chicago';
 const items = (...events: CalendarEvent[]) => toItems(events, MEMBERS, CHILDREN, ZONE);

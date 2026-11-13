@@ -24,7 +24,7 @@ All first-party, `Secure`, `SameSite=Strict`, `Path=/`.
 | `parenthesis.locale.account.<userId>` | local | Device copy of each parent's language choice (server account preference is authoritative) | Until cleared | `locale.service.ts` |
 | `parenthesis.appearance.<userId>` | local | Light/dark/system choice | Until cleared | `appearance.service.ts` |
 | `parenthesis.event-themes.<account>` | local | Event themes on/off | Until cleared | `event-themes.service.ts` |
-| `parenthesis.calendar-filters.<userId>.<familyId>` | local | Calendar filters | Until reset/cleared | `calendar-filters.ts`, `calendar-page.ts` |
+| `parenthesis.calendar-filters.<userId>.<familyId>` | local | Calendar filters | Until reset/cleared | `calendar-filters.ts`, `calendar-page.component.ts` |
 | `parenthesis.sharedDevice.declined:<userId>` | local | "Not a shared device" answer | Until cleared or device set up | `auth.store.ts` |
 | `parenthesis.pendingInvitation` | local | Invitation token across sign-up | Cleared on use, 7 days max | `pending-invitation.ts` |
 | `parenthesis.parentPinReset` | session | PIN reset token during the flow | Cleared on use or tab close | `parent-pin-reset-page.ts` |
