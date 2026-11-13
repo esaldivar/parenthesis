@@ -4,8 +4,8 @@ import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, HostListener, computed, effect, input, output, untracked } from '@angular/core';
 import { AddAt, SlotPick, clearsPick, pickLabel } from './slot';
-import { PlainDate } from '../dashboard/model';
-import { addDays, dayLong, dayOfMonth, startOfWeek, weekdayShort } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays, dayLong, dayOfMonth, startOfWeek, weekdayShort } from '../../core/dates/dates';
 import { CalendarItem, onDate } from './calendar-items';
 import { layOutWeek } from './month-layout';
 

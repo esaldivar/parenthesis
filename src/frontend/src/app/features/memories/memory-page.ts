@@ -16,7 +16,7 @@ import { Api, EventPhotos, FamilyMember } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon } from '../../shared/icon/icon';
-import { dayLong } from '../dashboard/week';
+import { dayLong } from '../../core/dates/dates';
 import { EventPhotosSection } from './event-photos';
 import { familyDate } from './photo-text';
 

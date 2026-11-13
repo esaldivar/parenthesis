@@ -17,7 +17,7 @@ import {
 import { Api, ChatEventCard, FamilyMember } from '../../core/api/api';
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { toSearch } from '../calendar/search-query';
-import { todayIn } from '../dashboard/week';
+import { todayIn } from '../../core/dates/dates';
 import { Icon } from '../../shared/icon/icon';
 import { ChatEventCardView, toCard } from './event-card';
 

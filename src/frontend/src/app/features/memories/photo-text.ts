@@ -3,7 +3,7 @@ import { AppLocale } from '../../core/i18n/locale.service';
 import { translate } from '../../core/i18n/translations';
 import { Memory, PhotoUploadBlock } from '../../core/api/api';
 import { Problem, generalMessage } from '../../core/api/problem';
-import { addDays, daysBetween, monthDay, todayIn } from '../dashboard/week';
+import { addDays, daysBetween, monthDay, todayIn } from '../../core/dates/dates';
 import { toFamilyLocal } from '../calendar/time';
 
 /** The current time, for expiry warnings. Tests replace it. */

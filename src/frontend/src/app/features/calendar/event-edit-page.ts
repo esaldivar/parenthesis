@@ -15,7 +15,7 @@ import { Api, CalendarCategory, CalendarEvent, CalendarEventChange, EditScope, F
 import { generalMessage, toProblem, localizeMessage } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FORM_STYLES } from '../auth/form-styles';
-import { addDays, dayLong, todayIn } from '../dashboard/week';
+import { addDays, dayLong, todayIn } from '../../core/dates/dates';
 import { warningText } from './add-event-page';
 import { repeatText } from './series';
 import { withOwnOverlap } from './own-overlap';

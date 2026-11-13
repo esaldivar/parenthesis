@@ -18,7 +18,8 @@ that points back here.
     core imports no feature (`chore/567-core-layout`, November 12, 2026).
   - [x] Separate the global Sass into `styles/abstracts`, `base` and `themes`; compiled CSS byte-identical in
     production and development builds (`chore/567-sass-layers`, November 12, 2026).
-  - [ ] Move the shared date types and helpers out of Dashboard (`dashboard/week.ts`, `model.ts`) before Calendar.
+  - [x] Shared date types and helpers moved out of Dashboard to `app/core/dates` (`chore/567-shared-dates`,
+    November 12, 2026).
   - [ ] Remaining feature slices, then `shared/` into `components`, `directives` and `pipes`, and `core` services
     by responsibility. Each in its own PR.
   - [ ] Release Playwright run and a Development smoke test (sign-in, parent and kid shells, Home, Calendar,

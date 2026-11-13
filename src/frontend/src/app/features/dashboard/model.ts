@@ -1,12 +1,8 @@
+import { LocalDateTime, PlainDate } from '../../core/dates/plain-date';
+
 // Shapes the dashboard needs. The live source fills them from the calendar, approvals, reminders and tasks APIs
 // (#196); messages, memories and children's shares stay empty until those features exist. The development-only sample
 // data fills everything.
-
-/** A calendar date in the family's time zone, "YYYY-MM-DD". */
-export type PlainDate = string;
-
-/** A wall-clock time in the family's time zone, "YYYY-MM-DDTHH:mm". */
-export type LocalDateTime = string;
 
 export interface ChildRef {
   readonly id: string;

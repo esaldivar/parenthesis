@@ -1,7 +1,7 @@
 import { AppLocale } from '../../core/i18n/locale.service';
 import { translate } from '../../core/i18n/translations';
-import { PlainDate } from '../dashboard/model';
-import { addDays, dayLong } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays, dayLong } from '../../core/dates/dates';
 import { CalendarItem, byStart } from './calendar-items';
 import { itemSummary, statusText } from './item-text';
 

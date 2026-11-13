@@ -4,8 +4,8 @@ import { DateAdapter, MAT_DATE_FORMATS, MatDateFormats } from '@angular/material
 import { MatDatepickerIntl } from '@angular/material/datepicker';
 import { LocaleService } from '../../core/i18n/locale.service';
 import { AuthStore } from '../../core/auth/auth.store';
-import { PlainDate } from '../dashboard/model';
-import { addDays, todayIn } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays, todayIn } from '../../core/dates/dates';
 
 /** Something that isn't a date, for a typed value that can't be read. */
 const INVALID = 'invalid-date';

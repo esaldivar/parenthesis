@@ -1,7 +1,7 @@
 import { CalendarCategory, CalendarSearch, FamilyMember } from '../../core/api/api';
 import { AppLocale } from '../../core/i18n/locale.service';
 import { translate } from '../../core/i18n/translations';
-import { PlainDate } from '../dashboard/model';
+import { PlainDate } from '../../core/dates/plain-date';
 import { CATEGORY_LABELS } from './calendar-items';
 
 /** The shortest text worth searching for. A date can be shorter ("5/3"). */
