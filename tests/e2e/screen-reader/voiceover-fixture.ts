@@ -1,4 +1,6 @@
-import type { Page } from '@playwright/test';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { MacOSKeyCodes } from '@guidepup/guidepup';
 import { voiceOverTest } from '@guidepup/playwright';
 // Guidepup has no public API for this; the package has no exports map, so the module path is stable for 0.21.x.
 import { applicationIdMap } from '@guidepup/playwright/lib/applicationIdMap.js';
@@ -15,10 +17,8 @@ import { ReaderJourney, type JourneyKeys } from './reader-journey';
 export const voiceOverChannelTest = voiceOverTest.extend({
   voiceOverStartOptions: { capture: true },
   voiceOver: async ({ voiceOver, page }, use) => {
-    const channel = process.env['E2E_BROWSER_CHANNEL'];
-    if (channel) {
-      const applicationId = (applicationIdMap as Record<string, string | undefined>)[channel];
-      if (!applicationId) throw new Error(`VoiceOver can't activate browser channel ${channel}.`);
+    if (process.env['E2E_BROWSER_CHANNEL']) {
+      const applicationId = browserApplicationId('');
       voiceOver.navigateToWebContent = ({ capture } = {}) =>
         navigateVoiceOverToWebContent({ voiceOver, page, applicationId, capture });
     }
@@ -26,24 +26,68 @@ export const voiceOverChannelTest = voiceOverTest.extend({
   },
 });
 
+const execFileAsync = promisify(execFile);
+
+/** The browser app VoiceOver and the keys target: the channel's app (installed Chrome) or Chrome for Testing. */
+export function browserApplicationId(browserName: string): string {
+  const name = process.env['E2E_BROWSER_CHANNEL'] || browserName;
+  const applicationId = (applicationIdMap as Record<string, string | undefined>)[name];
+  if (!applicationId) throw new Error(`VoiceOver can't activate browser ${name}.`);
+  return applicationId;
+}
+
+const modifierNames: Record<string, string> = {
+  Shift: 'shift down', Command: 'command down', Meta: 'command down', Control: 'control down',
+  Option: 'option down', Alt: 'option down',
+};
+
+const quote = (text: string) => `"${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+
+/** One System Events command for a Playwright-style key ("Shift+Tab", "Command+a", "Enter", "ArrowDown"). */
+export function keyScript(name: string): string {
+  const parts = name.split('+');
+  const key = parts.pop() ?? '';
+  const modifiers = parts.map(part => {
+    const modifier = modifierNames[part];
+    if (!modifier) throw new Error(`Unknown modifier ${part} in ${name}.`);
+    return modifier;
+  });
+  const code = (MacOSKeyCodes as unknown as Record<string, number | undefined>)[key];
+  const command = key.length === 1 ? `keystroke ${quote(key)}` : code === undefined ? undefined : `key code ${code}`;
+  if (!command) throw new Error(`Unknown key ${key}.`);
+  return modifiers.length ? `${command} using {${modifiers.join(', ')}}` : command;
+}
+
+async function systemEvents(applicationId: string, command: string) {
+  // Bring the browser to the front only when it isn't already, so VoiceOver doesn't re-announce the window.
+  const script = [
+    `tell application id ${quote(applicationId)} to if not frontmost then activate`,
+    `tell application "System Events" to ${command}`,
+  ];
+  await execFileAsync('osascript', script.flatMap(line => ['-e', line]), { timeout: 15_000 });
+}
+
 /**
- * On macOS 13, keys Guidepup sends through VoiceOver (System Events to the VoiceOver process) don't reach the page,
- * so keys go to the browser page instead. VoiceOver still announces the resulting focus and live-region changes
- * itself; only the keystroke's route differs. VoiceOver's own commands (headings, cursor, web content) stay real.
+ * Keys go to the front browser window as real macOS key events (System Events), the way a person's keyboard does,
+ * so VoiceOver follows and announces the focus changes they cause. Keys Guidepup sends through the VoiceOver process
+ * didn't reach the page on macOS 13, and Playwright's page keys (CDP) move focus without VoiceOver speaking it.
  */
-export function pageKeys(page: Page): JourneyKeys {
-  const key = (name: string) => name === 'Space' ? ' ' : name.replace('Command+', 'Meta+');
+export function osKeys(applicationId: string): JourneyKeys {
   return {
-    press: async name => { await page.keyboard.press(key(name)); },
-    type: async text => { await page.keyboard.type(text, { delay: 30 }); },
+    press: async name => { await systemEvents(applicationId, keyScript(name)); },
+    type: async text => {
+      for (const line of text.split('\n')) {
+        if (line) await systemEvents(applicationId, `keystroke ${quote(line)}`);
+      }
+    },
   };
 }
 
 /** Full capture records everything VoiceOver says after each command; the journey also reads its last phrase. */
 export const test = voiceOverChannelTest.extend<{ family: Family; reader: ReaderJourney }>({
   family: async ({ context, baseURL }, use) => withLocalFamily(context, baseURL, use),
-  reader: async ({ voiceOver, page }, use, info) => {
-    const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, pageKeys(page));
+  reader: async ({ voiceOver, browserName }, use, info) => {
+    const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, osKeys(browserApplicationId(browserName)));
     try {
       await use(reader);
     } finally {

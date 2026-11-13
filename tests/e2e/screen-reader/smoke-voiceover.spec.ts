@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test';
-import { pageKeys, voiceOverChannelTest as test } from './voiceover-fixture';
+import { browserApplicationId, osKeys, voiceOverChannelTest as test } from './voiceover-fixture';
 import { ReaderJourney } from './reader-journey';
 
 // Real VoiceOver speech without an app server (#443): the macOS host control. Keep the title distinct from the
 // heading so the window title can't satisfy the assertion.
 
-test('VoiceOver announces a named heading and button', async ({ page, voiceOver }, testInfo) => {
+test('VoiceOver announces a named heading and button', async ({ page, voiceOver, browserName }, testInfo) => {
   const fixtureUrl = 'http://parenthesis.test/screen-reader-smoke';
   await page.route(fixtureUrl, route => route.fulfill({
     contentType: 'text/html',
@@ -16,7 +16,7 @@ test('VoiceOver announces a named heading and button', async ({ page, voiceOver 
   await page.goto(fixtureUrl, { waitUntil: 'load' });
   await expect(page.getByRole('heading', { name: 'Screen reader control' })).toBeVisible();
   await page.bringToFront();
-  const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, pageKeys(page));
+  const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, osKeys(browserApplicationId(browserName)));
   try {
     await voiceOver.navigateToWebContent();
     await reader.checkpoint('Next heading');

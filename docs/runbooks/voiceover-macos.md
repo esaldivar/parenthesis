@@ -81,9 +81,9 @@ Restore it and rerun to pass. Never commit the deliberate failure.
 
 ## Limits
 
-- Keys go to the browser page through Playwright, not through VoiceOver: on macOS 13 keys Guidepup sends via
-  VoiceOver didn't reach Chrome. VoiceOver's own navigation (web content, headings, cursor) and all speech are real;
-  only the keystroke's route differs from a person's keyboard.
+- Keys are real macOS key events sent with System Events to the front browser window, like a person's keyboard,
+  so VoiceOver follows the focus they move. On macOS 13, keys Guidepup sends through the VoiceOver process didn't
+  reach Chrome, and Playwright's page keys moved focus without VoiceOver speaking it.
 - Desktop VoiceOver with Chromium only (owner decision, November 13, 2026): Playwright's Chromium, or the installed
   Google Chrome where Playwright's build isn't available. Safari/WebKit VoiceOver and iPhone
   VoiceOver (#112) remain manual checks.
