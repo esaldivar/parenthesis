@@ -4,7 +4,7 @@ using CoParent.Modules.Calendar.Domain;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParent.Modules.Calendar.Infrastructure;
+namespace CoParent.Modules.Calendar.Infrastructure.Persistence;
 
 /// <summary>Calendar events, reminders and tasks in the <c>calendar</c> schema, filtered to the request's tenant.</summary>
 internal sealed class CalendarDbContext(DbContextOptions<CalendarDbContext> options, ITenantContext tenant)

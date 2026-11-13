@@ -1,6 +1,6 @@
 using System.Net.Mime;
 using CoParent.Modules.Messaging.Domain;
-using CoParent.Modules.Messaging.Infrastructure;
+using CoParent.Modules.Messaging.Infrastructure.Persistence;
 using CoParent.Modules.Messaging.Transcripts;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Builder;

@@ -1,4 +1,5 @@
 using CoParent.Modules.Calendar.Domain;
+using CoParent.Modules.Calendar.Infrastructure.Persistence;
 using CoParent.SharedKernel.Accounts;
 using Microsoft.EntityFrameworkCore;
 
