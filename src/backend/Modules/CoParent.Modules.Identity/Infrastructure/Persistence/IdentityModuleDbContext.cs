@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParent.Modules.Identity.Infrastructure;
+namespace CoParent.Modules.Identity.Infrastructure.Persistence;
 
 /// <summary>ASP.NET Core Identity's user store, in the <c>identity</c> schema. No roles: authority comes from family membership.</summary>
 internal sealed class IdentityModuleDbContext(DbContextOptions<IdentityModuleDbContext> options)
