@@ -100,6 +100,9 @@ export const translations = {
   'dash.morning': ["Good morning","Buenos días"],
   'dash.afternoon': ["Good afternoon","Buenas tardes"],
   'dash.evening': ["Good evening","Buenas noches"],
+  // Spanish exclamations open with ¡ (#534).
+  'dash.greetingNamed': ['{greeting}, {name}!', '¡{greeting}, {name}!'],
+  'dash.greetingPlain': ['{greeting}!', '¡{greeting}!'],
   'dash.lead': ["Here’s what’s happening with your family.","Esto es lo que sucede en tu familia."],
   'dash.upcoming': ["Upcoming","Próximos eventos"],
   'dash.seeAll': ["See all","Ver todo"],
