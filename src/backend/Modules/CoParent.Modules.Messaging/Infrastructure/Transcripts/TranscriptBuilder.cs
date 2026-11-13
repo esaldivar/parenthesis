@@ -4,7 +4,7 @@ using CoParent.Modules.Messaging.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
 
-namespace CoParent.Modules.Messaging.Transcripts;
+namespace CoParent.Modules.Messaging.Infrastructure.Transcripts;
 
 /// <summary>One message in a transcript: its family-local time, who sent it, and what it said.</summary>
 internal sealed record TranscriptMessage(string Time, string Sender, string Text, string? Event);

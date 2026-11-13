@@ -18,7 +18,8 @@ that points back here.
     (`chore/570-identity-persistence`, November 12, 2026).
   - [x] Shared Records into `Domain/`, `Endpoints/` and `Infrastructure/`; no model changes
     (`chore/570-shared-records`, November 12, 2026). Its migrations stay in `Migrations/` until the migrations step.
-  - [ ] Messaging `Realtime/` and `Transcripts/`; Families PDF renderers; Calendar's `CalendarToday`.
+  - [x] Messaging `Realtime/` and `Transcripts/`; Families PDF renderers; Calendar's `CalendarToday`
+    (`chore/570-module-folders`, November 12, 2026).
   - [ ] Migrations into `Infrastructure/Persistence/` only after an existing-database upgrade check on
     disposable PostgreSQL; full integration suite and Compose start after each slice (CI).
 - [ ] **Angular source layout (#567).** Review the Dashboard pilot and [source move map](docs/adr/0009-frontend-source-layout.md).
