@@ -1,6 +1,7 @@
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Calendar.Domain;
 using CoParent.Modules.Calendar.Endpoints;
+using CoParent.Modules.Calendar.Infrastructure.Persistence;
 using CoParent.Modules.Families.Contracts;
 using Microsoft.EntityFrameworkCore;
 

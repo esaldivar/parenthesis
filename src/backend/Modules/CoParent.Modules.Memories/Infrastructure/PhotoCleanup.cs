@@ -3,6 +3,7 @@ using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Memories.Contracts;
 using CoParent.Modules.Memories.Domain;
 using CoParent.Modules.Memories.Endpoints;
+using CoParent.Modules.Memories.Infrastructure.Persistence;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,5 +1,6 @@
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Families.Domain;
+using CoParent.Modules.Families.Infrastructure.Persistence;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
