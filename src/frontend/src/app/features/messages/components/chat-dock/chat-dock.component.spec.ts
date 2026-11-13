@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { Api, ChatMessage, FamilyMember } from '../../core/api/api';
-import { CHAT_CONNECTION, ChatConnection, ChatStore } from '../../core/chat/chat.store';
-import { axeViolations } from '../../../testing/axe';
-import { fakeAuth } from '../../../testing/fake-auth';
-import { ChatDock } from './chat-dock';
-import { MessagesPage } from './messages-page';
+import { Api, ChatMessage, FamilyMember } from '../../../../core/api/api';
+import { CHAT_CONNECTION, ChatConnection, ChatStore } from '../../../../core/chat/chat.store';
+import { axeViolations } from '../../../../../testing/axe';
+import { fakeAuth } from '../../../../../testing/fake-auth';
+import { ChatDock } from './chat-dock.component';
+import { MessagesPage } from '../../pages/messages-page/messages-page.component';
 
 // Slice 2 of docs/design/m4-chat.md: the compact desktop chat. Synthetic family only: Alex (this parent) and Jamie.
 const ALEX: FamilyMember = { membershipId: 'm-alex', displayName: 'Alex Rivera', role: 'Parent', joinedAt: '', isYou: true };

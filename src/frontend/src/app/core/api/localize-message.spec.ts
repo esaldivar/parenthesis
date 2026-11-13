@@ -1,6 +1,6 @@
 import { localizeMessage } from './problem';
 import { END_BEFORE_START, PAST_DATE, TOO_LONG, UNREADABLE_DATE } from '../../features/calendar/date-rules';
-import { EMPTY_RANGE } from '../../features/messages/chat-transcripts';
+import { EMPTY_RANGE } from '../../features/messages/components/chat-transcripts/chat-transcripts.component';
 
 describe('localizeMessage (#534)', () => {
   it('puts client-side calendar validation into Spanish', () => {

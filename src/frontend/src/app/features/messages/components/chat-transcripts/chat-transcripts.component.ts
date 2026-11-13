@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { translate, TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { translate, TranslatePipe } from '../../../../core/i18n/translations';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
@@ -16,13 +16,13 @@ import {
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { Api, SavedTranscript, TranscriptPreview, TranscriptRange } from '../../core/api/api';
-import { generalMessage, toProblem, localizeMessage } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { Icon } from '../../shared/icon/icon';
-import { Toasts } from '../../shared/toast/toasts';
-import { DateField } from '../calendar/components/date-field/date-field.component';
-import { providePlainDates } from '../calendar/plain-dates';
+import { Api, SavedTranscript, TranscriptPreview, TranscriptRange } from '../../../../core/api/api';
+import { generalMessage, toProblem, localizeMessage } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { Icon } from '../../../../shared/icon/icon';
+import { Toasts } from '../../../../shared/toast/toasts';
+import { DateField } from '../../../calendar/components/date-field/date-field.component';
+import { providePlainDates } from '../../../calendar/plain-dates';
 
 /** Field messages, matching the server's (TranscriptRange.Validate). */
 export const HALF_RANGE = 'Choose a start and an end date, or All messages.';
@@ -256,7 +256,7 @@ type Step = 'choose' | 'preview';
       </div>
     }
   `,
-  styleUrl: './chat-transcripts.scss',
+  styleUrl: './chat-transcripts.component.scss',
 })
 export class ChatTranscripts implements OnInit {
   private static next = 0;

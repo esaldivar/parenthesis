@@ -1,4 +1,4 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,9 +8,9 @@ import {
   inject,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChatStore } from '../../core/chat/chat.store';
-import { Icon } from '../../shared/icon/icon';
-import { ChatConversation } from './chat-conversation';
+import { ChatStore } from '../../../../core/chat/chat.store';
+import { Icon } from '../../../../shared/icon/icon';
+import { ChatConversation } from '../chat-conversation/chat-conversation.component';
 
 /**
  * The compact desktop chat (slice 2 of docs/design/m4-chat.md): the same conversation, draft and chosen event as the

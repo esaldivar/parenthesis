@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Api, ChatConversation, ChatMessage, FamilyMember } from '../../core/api/api';
-import { CHAT_CONNECTION, ChatConnection } from '../../core/chat/chat.store';
-import { axeViolations } from '../../../testing/axe';
-import { fakeAuth } from '../../../testing/fake-auth';
-import { MessagesPage } from './messages-page';
+import { Api, ChatConversation, ChatMessage, FamilyMember } from '../../../../core/api/api';
+import { CHAT_CONNECTION, ChatConnection } from '../../../../core/chat/chat.store';
+import { axeViolations } from '../../../../../testing/axe';
+import { fakeAuth } from '../../../../../testing/fake-auth';
+import { MessagesPage } from './messages-page.component';
 
 // Synthetic family only: Alex (this parent) and Jamie. The API and the hub are faked; the page's behaviour is under test.
 const ALEX: FamilyMember = { membershipId: 'm-alex', displayName: 'Alex Rivera', role: 'Parent', joinedAt: '', isYou: true };
