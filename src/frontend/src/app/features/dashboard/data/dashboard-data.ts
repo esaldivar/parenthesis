@@ -77,7 +77,7 @@ export class LiveDashboardDataSource extends DashboardDataSource {
       events: events.filter((e) => e.category !== 'ParentingTime').map((e) => familyEvent(e, zone, kids, members, locale)),
       pendingReviews: approvals
         .filter((r) => r.canDecide && r.status === 'Pending')
-        .map((r) => ({ id: r.id, summary: r.summary, proposedBy: parent(r.proposerMembershipId).displayName })),
+        .map((r) => ({ id: r.id, type: r.type, targetType: r.targetType, summary: r.summary, proposedBy: parent(r.proposerMembershipId).displayName })),
       kidShares: [],
       recentMemories: memories.slice(0, 5).map((m) => ({
         id: m.eventId,
@@ -204,7 +204,7 @@ export class SampleDashboardDataSource extends DashboardDataSource {
         { id: 'e-unavailable', title: 'Dad unavailable', date: date(3), time: '09:00', durationMinutes: 180, category: 'unavailable', children: [], status: 'confirmed' },
         { id: 'e-art', title: 'Art Class', date: date(5), time: '16:00', category: 'art', children: [aurora], status: 'confirmed' },
       ],
-      pendingReviews: [{ id: 'r1', summary: 'Time with Mom for Kai, Saturday 10:00 AM – 6:00 PM', proposedBy: 'Dad' }],
+      pendingReviews: [{ id: 'r1', type: 'CalendarCreate', targetType: 'calendar_event', summary: 'Time with Mom for Kai, Saturday 10:00 AM – 6:00 PM', proposedBy: 'Dad' }],
       kidShares: [
         { id: 'k1', child: aurora, kind: 'drawing', sharedAt: '2 hours ago' },
         { id: 'k2', child: kai, kind: 'photo', sharedAt: '5 hours ago' },

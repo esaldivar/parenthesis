@@ -1,6 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { LocaleService } from '../../../../core/i18n/locale.service';
+import { localizeSummary } from '../../../../core/i18n/change-request-summary';
 import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { CalendarPalette, CalendarPaletteKey } from '../../../calendar/calendar-palette';
@@ -78,7 +79,7 @@ interface UpcomingItem {
   styleUrl: './dashboard-page.component.scss',
 })
 export class DashboardPage {
-  private readonly locale = inject(LocaleService);
+  protected readonly locale = inject(LocaleService);
   protected readonly t = (key: TranslationKey) => translate(key, this.locale.locale());
   protected quickLabel(kind: 'event' | 'task' | 'reminder'): string {
     return this.t(({ event: 'dash.event', task: 'dash.task', reminder: 'dash.reminder' } as const)[kind]);
@@ -168,7 +169,7 @@ export class DashboardPage {
       key: `review-${r.id}`,
       icon: 'approvals',
       category: 'review',
-      title: r.summary,
+      title: localizeSummary(r, locale),
       when: translate('dash.proposedReview', this.locale.locale(), { name: r.proposedBy }),
       people: [],
       status: 'proposed',
