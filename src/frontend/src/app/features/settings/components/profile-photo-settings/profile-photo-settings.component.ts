@@ -1,10 +1,10 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
-import { Api, Child } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
-import { PhotoEditor } from '../../shared/photo-editor/photo-editor';
+import { Api, Child } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { ProfilePhotos } from '../../../../core/profile-photos/profile-photos';
+import { PhotoEditor } from '../../../../shared/photo-editor/photo-editor';
 
 /**
  * A parent's profile photos (#388), edited only here in Settings: their own photo, which their co-parent sees too,

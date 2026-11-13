@@ -83,18 +83,18 @@ export const PARENT_ROUTES: Routes = [
     title: 'Shared records',
     loadComponent: () => import('./shared-records/shared-records-page').then((m) => m.SharedRecordsPage),
   },
-  { path: 'settings', title: 'Settings', loadComponent: () => import('./settings/settings-page').then((m) => m.SettingsPage) },
+  { path: 'settings', title: 'Settings', loadComponent: () => import('./settings/pages/settings-page/settings-page.component').then((m) => m.SettingsPage) },
   // Google sends parents back here after connecting Google Calendar (#386); the server registers this exact address.
   {
     path: 'settings/google-calendar',
     title: 'Google Calendar',
-    loadComponent: () => import('./settings/google-calendar-callback').then((m) => m.GoogleCalendarCallback),
+    loadComponent: () => import('./settings/pages/google-calendar-callback/google-calendar-callback.component').then((m) => m.GoogleCalendarCallback),
   },
   // Google sends parents back here after connecting Google Photos (#404); the server registers this exact address.
   {
     path: 'settings/google-photos',
     title: 'Google Photos',
-    loadComponent: () => import('./settings/google-photos-callback').then((m) => m.GooglePhotosCallback),
+    loadComponent: () => import('./settings/pages/google-photos-callback/google-photos-callback.component').then((m) => m.GooglePhotosCallback),
   },
   { path: 'more', title: 'More', loadComponent: () => import('./more/pages/more-page/more-page.component').then((m) => m.MorePage) },
 ];

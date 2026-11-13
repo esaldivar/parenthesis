@@ -5,12 +5,12 @@ import { By } from '@angular/platform-browser';
 import { MatSelect } from '@angular/material/select';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { routes } from '../../app.routes';
-import { GoogleCalendarStatus } from '../../core/api/api';
-import { Toasts } from '../../shared/toast/toasts';
-import { axeViolations } from '../../../testing/axe';
-import { fakeAuth } from '../../../testing/fake-auth';
-import { GoogleCalendarSettings, OPEN_EXTERNAL } from './google-calendar-settings';
+import { routes } from '../../../../app.routes';
+import { GoogleCalendarStatus } from '../../../../core/api/api';
+import { Toasts } from '../../../../shared/toast/toasts';
+import { axeViolations } from '../../../../../testing/axe';
+import { fakeAuth } from '../../../../../testing/fake-auth';
+import { GoogleCalendarSettings, OPEN_EXTERNAL } from './google-calendar-settings.component';
 
 // Synthetic family only.
 const PATH = '/api/families/family-1/google-calendar';
