@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { LocaleService, AppLocale } from '../../core/i18n/locale.service';
-import { TranslatePipe } from '../../core/i18n/translations';
-import { Logo } from '../../shared/brand/logo';
+import { LocaleService, AppLocale } from '../../../../core/i18n/locale.service';
+import { TranslatePipe } from '../../../../core/i18n/translations';
+import { Logo } from '../../../../shared/brand/logo';
 
 /**
  * A calm, single-column frame for signing in, registering and setting up a family. Provisional layout from the

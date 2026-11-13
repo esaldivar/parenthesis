@@ -4,10 +4,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
-import { Api } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { TranslatePipe } from '../../core/i18n/translations';
-import { FORM_STYLES } from './form-styles';
+import { Api } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { TranslatePipe } from '../../../../core/i18n/translations';
+import { FORM_STYLES } from '../../form-styles';
 
 @Component({
   selector: 'app-forgot-password-page',
