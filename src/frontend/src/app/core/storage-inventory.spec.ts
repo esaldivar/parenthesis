@@ -13,7 +13,7 @@ const REVIEWED = new Set([
   'app/core/invitations/pending-invitation.ts',
   'app/core/theme/appearance.service.ts',
   'app/core/theme/event-themes.service.ts',
-  'app/features/calendar/calendar-page.ts',
+  'app/features/calendar/pages/calendar-page/calendar-page.component.ts',
   'app/features/profiles/parent-pin-reset-page.ts',
 ]);
 

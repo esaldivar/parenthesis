@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { CalendarItem } from '../../../calendar/calendar-items';
-import { CalendarMonth } from '../../../calendar/calendar-month';
+import { CalendarMonth } from '../../../calendar/components/calendar-month/calendar-month.component';
 import { CalendarPalette } from '../../../calendar/calendar-palette';
 import {
   ChangeDetectionStrategy,

@@ -1,0 +1,101 @@
+import { TranslatePipe, TranslationKey } from '../../../../core/i18n/translations';
+import { CalendarPalette, CalendarPaletteKey } from '../../calendar-palette';
+import { A11yModule } from '@angular/cdk/a11y';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { Icon } from '../../../../shared/icon/icon';
+import { CalendarFilters, DIMENSIONS, Dimension } from '../../calendar-filters';
+
+const TYPE_PALETTES: Readonly<Record<string, CalendarPaletteKey | undefined>> = {
+  parenting: 'parenting', activity: 'activity', family: 'family', unavailable: 'unavailable', task: 'task', reminder: 'reminder',
+};
+
+/**
+ * The Filters panel (#190): a popover on wide screens and a bottom sheet on phones, with the same choices. Changes
+ * apply at once; Done closes it and returns focus to the Filters button (the page does that). Only this parent's view
+ * changes. The child filter stays on the page itself.
+ */
+@Component({
+  selector: 'app-calendar-filter-panel',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslatePipe, CalendarPalette, A11yModule, MatButtonModule, Icon],
+  host: { '(keydown.escape)': 'closed.emit()' },
+  template: `
+    <div class="backdrop" (click)="closed.emit()" aria-hidden="true"></div>
+    <section
+      class="sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="filters-title"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+    >
+      <header class="sheet__head">
+        <h2 id="filters-title" tabindex="-1" cdkFocusInitial>{{ 'feature.filters' | tr }}</h2>
+        <button mat-icon-button type="button" (click)="closed.emit()" aria-label="{{ 'feature.close.filters' | tr }}">
+          <app-icon name="close" />
+        </button>
+      </header>
+      <p class="sheet__note">{{ 'feature.only.your.view.changes.your.co.parent' | tr }}</p>
+      @for (dimension of dimensions; track dimension.id) {
+        <fieldset>
+          <legend>{{ filterLabel(dimension.id) | tr }}</legend>
+          @if (dimension.id === 'approval') {
+            <p class="hint">{{ 'feature.tasks.and.reminders.have.no.approval.so' | tr }}</p>
+          }
+          @for (option of dimension.options; track option.id) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="isChecked(dimension.id, option.id)"
+                (change)="toggle(dimension.id, option.id, $any($event.target).checked)"
+              />
+              @if (dimension.id === 'types') {
+                @if (option.id === 'parenting') {
+                  <span appCalendarPalette="parent-a" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+                  <span appCalendarPalette="parent-b" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+                } @else {
+                  <span [appCalendarPalette]="typePalette(option.id)" aria-hidden="true" style="display:inline-block;width:16px;height:16px;border-radius:4px"></span>
+                }
+              }
+              {{ filterLabel(option.id) | tr }}
+            </label>
+          }
+        </fieldset>
+      }
+      <div class="sheet__actions">
+        <button mat-flat-button type="button" (click)="closed.emit()">{{ 'feature.done' | tr }}</button>
+        <button mat-stroked-button type="button" (click)="resetAll.emit()">{{ 'feature.reset.filters' | tr }}</button>
+      </div>
+    </section>
+  `,
+  styleUrl: './calendar-filter-panel.component.scss',
+})
+export class CalendarFilterPanel {
+  protected readonly typePalette = (id: string): CalendarPaletteKey | undefined =>
+    TYPE_PALETTES[id];
+
+  readonly filters = input.required<CalendarFilters>();
+  readonly changed = output<CalendarFilters>();
+  readonly resetAll = output();
+  readonly closed = output();
+
+  protected readonly dimensions = DIMENSIONS;
+
+  protected filterLabel(id: string): TranslationKey {
+    // IDs come from DIMENSIONS, whose labels are defined in the calendar filter catalog.
+    return `calendar.filter.${id}` as TranslationKey;
+  }
+
+  protected isChecked(dimension: Dimension, option: string): boolean {
+    return (this.filters()[dimension] as readonly string[]).includes(option);
+  }
+
+  protected toggle(dimension: Dimension, option: string, checked: boolean): void {
+    const all = DIMENSIONS.find((d) => d.id === dimension)!.options.map((o) => o.id);
+    const current = this.filters()[dimension] as readonly string[];
+    // Keep the options in their listed order, whatever order they were ticked in.
+    const next = all.filter((id) => (id === option ? checked : current.includes(id)));
+    this.changed.emit({ ...this.filters(), [dimension]: next });
+  }
+}
