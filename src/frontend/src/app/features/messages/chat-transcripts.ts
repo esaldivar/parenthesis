@@ -21,7 +21,7 @@ import { generalMessage, toProblem, localizeMessage } from '../../core/api/probl
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon } from '../../shared/icon/icon';
 import { Toasts } from '../../shared/toast/toasts';
-import { DateField } from '../calendar/date-field';
+import { DateField } from '../calendar/components/date-field/date-field.component';
 import { providePlainDates } from '../calendar/plain-dates';
 
 /** Field messages, matching the server's (TranscriptRange.Validate). */

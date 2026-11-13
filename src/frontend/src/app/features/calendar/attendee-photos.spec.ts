@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
 import { CalendarItem } from './calendar-items';
-import { CalendarList } from './calendar-list';
-import { CalendarWeek } from './calendar-week';
+import { CalendarList } from './components/calendar-list/calendar-list.component';
+import { CalendarWeek } from './components/calendar-week/calendar-week.component';
 
 const item: CalendarItem = {
   id: 'event', title: 'Family outing', kind: 'family', category: 'Joint', categoryLabel: 'Family event', icon: 'calendar',

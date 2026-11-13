@@ -3,7 +3,7 @@ import { translate } from '../../core/i18n/translations';
 import { PlainDate } from '../../core/dates/plain-date';
 import { addDays, dayLong } from '../../core/dates/dates';
 import { CalendarItem, byStart } from './calendar-items';
-import { itemSummary, statusText } from './item-text';
+import { itemSummary, statusText } from './components/item-text/item-text.component';
 
 /** Lanes of bars a week row shows; anything more is behind that day's "+N more" (#250). */
 export const MONTH_LANES = 3;
