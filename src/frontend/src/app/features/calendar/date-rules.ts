@@ -1,5 +1,5 @@
-import { PlainDate } from '../dashboard/model';
-import { addDays } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays } from '../../core/dates/dates';
 import { isPlainDate } from './plain-dates';
 import { fromFamilyLocal } from './time';
 

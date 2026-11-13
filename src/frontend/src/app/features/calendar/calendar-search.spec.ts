@@ -8,7 +8,7 @@ import { CalendarEvent } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { CHILDREN, MEMBERS, event } from '../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../testing/fake-auth';
-import { dayOfMonth, todayIn } from '../dashboard/week';
+import { dayOfMonth, todayIn } from '../../core/dates/dates';
 import { resultType, resultWhen } from './calendar-search';
 import { toItems } from './calendar-items';
 

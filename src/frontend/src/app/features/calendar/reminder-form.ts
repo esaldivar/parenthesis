@@ -15,8 +15,8 @@ import { Api, Child, Reminder, ReminderInput, RepeatFrequency } from '../../core
 import { generalMessage, toProblem, localizeMessage } from '../../core/api/problem';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FORM_STYLES } from '../auth/form-styles';
-import { PlainDate } from '../dashboard/model';
-import { todayIn } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { todayIn } from '../../core/dates/dates';
 import { revealFirstProblem } from './reveal-problem';
 import { PAST_DATE, UNREADABLE_DATE, choosable } from './date-rules';
 import { isPlainDate, providePlainDates, typedValues } from './plain-dates';

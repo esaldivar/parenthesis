@@ -16,7 +16,7 @@ import {
 import { Api, CalendarEvent, CalendarSearch as SearchCriteria, Child, FamilyMember } from '../../core/api/api';
 import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
 import { Icon } from '../../shared/icon/icon';
-import { dateMedium, dayOfMonth, dayLong, timeLabel, todayIn } from '../dashboard/week';
+import { dateMedium, dayOfMonth, dayLong, timeLabel, todayIn } from '../../core/dates/dates';
 import { CalendarItem, toItems } from './calendar-items';
 import { statusText } from './item-text';
 import { toSearch } from './search-query';

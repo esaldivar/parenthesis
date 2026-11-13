@@ -3,7 +3,7 @@ import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
-import { monthDay, timeLabel } from '../dashboard/week';
+import { monthDay, timeLabel } from '../../core/dates/dates';
 import { CalendarItem } from './calendar-items';
 
 /** "All day", "8:00 AM – 3:00 PM", or "Oct 20 – Oct 22" for an item over several dates. */

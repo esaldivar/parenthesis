@@ -27,8 +27,8 @@ import { CachedPeriod, CalendarCache } from '../../core/cache/calendar-cache';
 import { LoadingIndicator } from '../../shared/brand/loading-indicator';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Icon } from '../../shared/icon/icon';
-import { PlainDate } from '../dashboard/model';
-import { addDays, startOfWeek, todayIn, weekLabelLong } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays, startOfWeek, todayIn, weekLabelLong } from '../../core/dates/dates';
 import { CalendarFilterPanel } from './calendar-filter-panel';
 import {
   ALL_FILTERS,
