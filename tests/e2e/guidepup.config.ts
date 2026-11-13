@@ -32,7 +32,8 @@ export default withGuidepup({
     name: 'screen-reader-app-voiceover',
     testMatch: '**/*-voiceover.spec.ts',
     timeout: 300_000,
-    use: { ...devices['Desktop Chrome'], headless: false },
+    // Playwright doesn't install its Chromium on macOS 13; E2E_BROWSER_CHANNEL=chrome uses the installed Chrome.
+    use: { ...devices['Desktop Chrome'], headless: false, channel: process.env['E2E_BROWSER_CHANNEL'] || undefined },
   }] : [{
     name: 'screen-reader-desktop',
     testMatch: '**/real-reader-smoke.spec.ts',

@@ -1,9 +1,8 @@
 import { expect } from '@playwright/test';
-import { voiceOverTest as test } from '@guidepup/playwright';
+import { voiceOverChannelTest as test } from './voiceover-fixture';
 
 // Real VoiceOver speech without an app server (#443): the macOS host control. Keep the title distinct from the
 // heading so the window title can't satisfy the assertion.
-test.use({ voiceOverStartOptions: { capture: true } });
 
 test('VoiceOver announces a named heading and button', async ({ page, voiceOver }, testInfo) => {
   const fixtureUrl = 'http://parenthesis.test/screen-reader-smoke';

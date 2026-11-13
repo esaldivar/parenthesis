@@ -19,7 +19,9 @@ never change system settings.
 
 1. Install the tools: Xcode command line tools, the .NET SDK in `global.json`, Node from `src/frontend/.nvmrc`,
    and `brew install postgresql@17 mailpit`.
-2. From `tests/e2e`: `npm ci`, then `npx playwright install chromium`.
+2. From `tests/e2e`: `npm ci`, then `npx playwright install chromium`. On macOS 13 Playwright refuses to install its
+   Chromium; use the installed Google Chrome instead with `export E2E_BROWSER_CHANNEL=chrome` (VoiceOver then
+   activates Google Chrome rather than Chrome for Testing).
 3. Run `npx @guidepup/setup@0.29.3` once. It enables "Allow VoiceOver to be controlled with AppleScript" and the
    VoiceOver defaults Guidepup needs. On recent macOS it may ask you to confirm in VoiceOver Utility or System
    Settings.
@@ -76,7 +78,8 @@ Restore it and rerun to pass. Never commit the deliberate failure.
 
 ## Limits
 
-- Desktop VoiceOver with Chromium only (owner decision, November 13, 2026). Safari/WebKit VoiceOver and iPhone
+- Desktop VoiceOver with Chromium only (owner decision, November 13, 2026): Playwright's Chromium, or the installed
+  Google Chrome where Playwright's build isn't available. Safari/WebKit VoiceOver and iPhone
   VoiceOver (#112) remain manual checks.
 - Owner-machine evidence, not a CI gate. Promoting it to a required check needs a supported macOS runner and the
   owner's approval.
