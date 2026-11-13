@@ -2,12 +2,12 @@ import { HttpEventType, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { EventPhoto, EventPhotos, PhotoBatch } from '../../core/api/api';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { Toasts } from '../../shared/toast/toasts';
-import { axeViolations } from '../../../testing/axe';
-import { EventPhotosSection } from './event-photos';
-import { PHOTOS_NOW } from './photo-text';
+import { EventPhoto, EventPhotos, PhotoBatch } from '../../../../core/api/api';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { Toasts } from '../../../../shared/toast/toasts';
+import { axeViolations } from '../../../../../testing/axe';
+import { EventPhotosSection } from './event-photos.component';
+import { PHOTOS_NOW } from '../../photo-text';
 
 // Synthetic family only: you are Alex, Sam is the co-parent.
 const F = '/api/families/family-1';

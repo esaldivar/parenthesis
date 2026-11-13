@@ -2,13 +2,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { EventPhotos, Memory } from '../../core/api/api';
-import { axeViolations } from '../../../testing/axe';
-import { MEMBERS } from '../../../testing/calendar-fixtures';
-import { fakeAuth } from '../../../testing/fake-auth';
-import { MemoriesPage } from './memories-page';
-import { MemoryPage } from './memory-page';
-import { PHOTOS_NOW } from './photo-text';
+import { EventPhotos, Memory } from '../../../../core/api/api';
+import { axeViolations } from '../../../../../testing/axe';
+import { MEMBERS } from '../../../../../testing/calendar-fixtures';
+import { fakeAuth } from '../../../../../testing/fake-auth';
+import { MemoriesPage } from './memories-page.component';
+import { MemoryPage } from '../memory-page/memory-page.component';
+import { PHOTOS_NOW } from '../../photo-text';
 
 // Synthetic family only: you are Alex, Sam is the co-parent.
 const F = '/api/families/family-1';

@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { EventExport, EventPhoto, EventPhotos, PhotoBatch, PhotoExport } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { OPEN_EXTERNAL } from '../settings/google-calendar-settings';
-import { EventPhotosSection } from './event-photos';
+import { EventPhotosSection } from './components/event-photos/event-photos.component';
 import { EXPORT_POLL_MS, exportLine, progressText } from './google-photos-export';
 import { PHOTOS_NOW } from './photo-text';
 

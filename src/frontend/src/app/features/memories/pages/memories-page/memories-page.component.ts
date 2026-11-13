@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,11 +11,11 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
-import { Api, FamilyMember, Memory } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { EmptyState } from '../../shared/empty-state/empty-state';
-import { Icon } from '../../shared/icon/icon';
+import { Api, FamilyMember, Memory } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { EmptyState } from '../../../../shared/empty-state/empty-state';
+import { Icon } from '../../../../shared/icon/icon';
 import {
   PHOTOS_NOW,
   RETENTION_DAYS,
@@ -24,7 +24,7 @@ import {
   familyDate,
   shortDate,
   whoseText,
-} from './photo-text';
+} from '../../photo-text';
 
 /**
  * Family Memories (#403): one memory per event with photos the viewer may see, newest event first. It replaces the
