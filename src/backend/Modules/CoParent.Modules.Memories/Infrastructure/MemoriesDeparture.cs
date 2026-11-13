@@ -1,4 +1,5 @@
 using CoParent.Modules.Memories.Domain;
+using CoParent.Modules.Memories.Infrastructure.Persistence;
 using CoParent.SharedKernel.Accounts;
 using Microsoft.EntityFrameworkCore;
 
