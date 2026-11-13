@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { KidsDiary } from './kids-diary';
-import { KidsDiaryEntry } from './from-your-kids-contract';
+import { KidsDiary } from './kids-diary.component';
+import { KidsDiaryEntry } from '../../from-your-kids-contract';
 
 describe('KidsDiary (#531)', () => {
   const entry = (id: string, createdAt: string): KidsDiaryEntry => ({

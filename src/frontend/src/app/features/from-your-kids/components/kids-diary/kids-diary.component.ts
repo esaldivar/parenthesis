@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal, viewChild } from '@angular/core';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
-import { KidsDiaryEntry, KidsMood } from './from-your-kids-contract';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../../../core/i18n/translations';
+import { KidsDiaryEntry, KidsMood } from '../../from-your-kids-contract';
 
 const MOOD_CHARACTER: Record<Exclude<KidsMood, 'Happy'>, string> = {
   Excited: '🤩',

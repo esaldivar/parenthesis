@@ -1,7 +1,7 @@
 import { InteractivityChecker } from '@angular/cdk/a11y';
 import { TestBed } from '@angular/core/testing';
-import { KidsGalleryItem } from './from-your-kids-contract';
-import { KidsGallery } from './kids-gallery';
+import { KidsGalleryItem } from '../../from-your-kids-contract';
+import { KidsGallery } from './kids-gallery.component';
 
 describe('KidsGallery (#531)', () => {
   function render(includeSecondPage = false) {

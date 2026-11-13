@@ -53,7 +53,7 @@ export const PARENT_ROUTES: Routes = [
   {
     path: 'from-your-kids',
     title: 'From Your Kids',
-    loadComponent: () => import('./from-your-kids/from-your-kids-page').then((m) => m.FromYourKidsPage),
+    loadComponent: () => import('./from-your-kids/pages/from-your-kids-page/from-your-kids-page.component').then((m) => m.FromYourKidsPage),
   },
   // Event photos (#403): temporary, private by default, parents only.
   {
