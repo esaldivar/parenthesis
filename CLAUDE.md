@@ -146,8 +146,8 @@ authoritative reference; follow it. In short:
   December 23 replace the holiday Fridays). Windows are opportunities, not deadlines: never skip testing or approval
   to meet one.
 - Milestones: v0.1.0 Foundation, v0.2.0 Accounts and profiles, v0.3.0 Calendar and approvals, v0.4.0 Communication,
-  v0.5.0 Design Refresh & UX Overhaul, v0.6.0 Google Integrations & Native Mobile, v0.7.0 Beta Readiness & Quality,
-  v0.8.0 Child Experience, v1.0.0 Private beta (owner roadmap, November 13, 2026: [roadmap](docs/planning/roadmap.md);
-  backlog mapping in [the backlog](docs/planning/mvp-backlog.md)).
+  v0.5.0 Design Refresh & UX Overhaul, v0.6.0 Google Integrations & Native Mobile, v0.7.0 Beta Readiness & Quality
+  (the parent private beta), v0.8.0 Child Experience, v1.0.0 to be decided (owner roadmap, November 13, 2026:
+  [roadmap](docs/planning/roadmap.md); backlog mapping in [the backlog](docs/planning/mvp-backlog.md)).
 - Deployments go to Azure (setup in [the Azure runbook](docs/runbooks/azure-environments.md)). The development site
   holds synthetic data only.

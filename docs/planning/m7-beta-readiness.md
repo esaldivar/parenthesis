@@ -1,6 +1,7 @@
 # M7 — Beta Readiness & Quality
 
-Gates for inviting external parent beta testers. This is the **parent** product only; the child experience (M8) has
+Gates for inviting external parent beta testers. **The parent beta is release v0.7.0** (owner decision, November 13,
+2026; it was v1.0.0 before). This is the **parent** product only; the child experience (M8) has
 its own launch gates. Nothing here is declared complete without evidence (a CI run, a report, a recorded device test).
 
 ## Where quality stands (November 13, 2026)

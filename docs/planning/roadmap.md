@@ -8,9 +8,9 @@ M5, and Performance, Accessibility & Final Polish as M6. Milestones M1–M4 and 
 | M4 — Messaging | v0.4.0 | Active now (`release/0.4.0`): messaging, Child Essentials, Shared Records, From Your Kids (parent view), Spanish, folder reorganization | [Development workflow](../development-workflow.md) |
 | **M5 — Design Refresh & UX Overhaul** | v0.5.0 | Polish the parent app: layout system, content widths, forms, cards, states, light/dark, motion | [M5 design refresh](../design/m5-design-refresh.md) |
 | **M6 — Google Integrations & Native Mobile** | v0.6.0 | Epic A: Google Calendar, Maps, Photos, Sign in with Google, OAuth verification. Epic B: iOS and Android apps | [M6 plan](m6-google-and-native-mobile.md) |
-| **M7 — Beta Readiness & Quality** | v0.7.0 | Quality gates for external parent beta testers: tests, accessibility, performance, security, monitoring, recovery | [M7 beta gates](m7-beta-readiness.md) |
+| **M7 — Beta Readiness & Quality** | v0.7.0 | **The external parent beta.** Quality gates for beta testers: tests, accessibility, performance, security, monitoring, recovery | [M7 beta gates](m7-beta-readiness.md) |
 | **M8 — Child Experience** | v0.8.0 | Child home, calendar, memories, artwork, diary, consent, companions (Gwenny), behind design, privacy and legal gates | [M8 plan](m8-child-experience.md) |
-| v1.0 — Private Beta | v1.0.0 | Kept as is until the owner decides how it relates to M7 (see "Open decisions") | |
+| v1.0 (milestone #5) | v1.0.0 | After M8. The parent beta moved to v0.7.0 (owner decision, November 13, 2026); v1.0.0's scope and name are still to be decided | |
 
 Release numbers follow the existing rule: a milestone titled `M<n> — …` belongs to `release/0.<n>.0` (see
 `.github/scripts/pr-milestones.mjs` and `dependabot-release-target.mjs`). Only the active release branch exists; no
@@ -62,8 +62,9 @@ M8 child experience (implementation only after its design, privacy and legal gat
 
 These were not applied because they are ambiguous or change an earlier owner decision:
 
-1. **v1.0 — Private Beta versus M7.** The workflow docs say v1.0.0 is the private beta. Is the external parent beta
-   v0.7.0 (M7), with v1.0.0 after M8, or should M7's work be released as v1.0.0? Empty milestone #5 was left alone.
+1. **v1.0.0's scope and name.** Decided November 13, 2026: the external parent beta is **v0.7.0 (M7)**, and v1.0.0
+   comes after M8. Still open: what v1.0.0 contains and what the empty milestone #5 (still titled "v1.0 — Private
+   Beta") should be called.
 2. **Closing M2 and M3.** Both milestones are open with no open issues. Closing them is safe for release routing, but
    was not done without approval.
 3. **Child-experience rule conflicts** (diary sharing audience, parent comments, child-content deletion and expiry):

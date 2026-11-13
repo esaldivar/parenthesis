@@ -314,7 +314,7 @@ that points back here.
   - [ ] Mobile WebKit Playwright profiles in CI, physical iPhone (HEIC photo conversion by Safari) and Android
     photo pickers, real screen reader pass of the editor.
   - [ ] Owner test on the dev site after the release reaches `develop`; #388 stays open until then.
-  - [ ] Move profile photos from PostgreSQL to private Azure Blob storage before the private beta (v1.0.0): change
+  - [ ] Move profile photos from PostgreSQL to private Azure Blob storage before the parent beta (v0.7.0, moved from v1.0.0 on November 13, 2026): change
     the photo endpoints' storage and copy existing photos once. Owner decision October 30, 2026: Postgres for now.
 - [ ] **Open an event's location in Google Maps (#113, owner-approved stretch, October 29, 2026).**
   - [x] Event details show **Open in Google Maps** under Where: a Google Maps directions link
@@ -503,8 +503,8 @@ that points back here.
 ## Roadmap M5–M8 (owner direction, November 13, 2026)
 See [the roadmap](docs/planning/roadmap.md). Milestones renamed and created, issues moved, epics #641 (M5), #643 and
 #644 (M6), #645 (M7), #648 (M8) created (`docs/roadmap-m5-m8`, November 13, 2026).
-- [ ] Owner: decide how **v1.0 — Private Beta** relates to **M7 — Beta Readiness & Quality** (is the parent beta
-  v0.7.0, or v1.0.0?). Milestone #5 was left unchanged.
+- [x] Owner: the external parent beta is **v0.7.0 (M7)**, not v1.0.0 (November 13, 2026).
+- [ ] Owner: decide v1.0.0's scope and the name of milestone #5 (still titled "v1.0 — Private Beta").
 - [ ] Owner: close the finished milestones **M2 — Onboarding** and **M3 — Calendar** (no open issues), if wanted.
 - [ ] Owner: resolve the child-experience rule conflicts in #647 before M8 design approval.
 - [ ] Owner: add Gwenny's approved reference photo, with provenance, under `docs/design/companions/` before concept

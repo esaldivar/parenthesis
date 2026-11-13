@@ -108,9 +108,9 @@ Each milestone is one release. The backlog's items are mapped to them in [the ba
 | v0.4.0 | 4. Communication | Parent messaging, family communication, notifications, shared family information |
 | v0.5.0 | 5. Design Refresh & UX Overhaul | Layout system, content widths, forms, cards, states, light/dark polish of the parent app |
 | v0.6.0 | 6. Google Integrations & Native Mobile | Google Calendar, Maps, Photos, Sign in with Google and OAuth verification; iOS and Android apps |
-| v0.7.0 | 7. Beta Readiness & Quality | Quality gates for external parent beta testers |
+| v0.7.0 | 7. Beta Readiness & Quality | The external parent beta (invitation-only): quality gates, security validation, end-to-end tests, production readiness |
 | v0.8.0 | 8. Child Experience | Child home, calendar, memories, artwork, diary, consent and companions, behind design, privacy and legal gates |
-| v1.0.0 | Private beta | All milestones integrated, security validation, end-to-end tests, production readiness, invitation-only (relation to M7 is an open owner decision) |
+| v1.0.0 | To be decided | After M8; scope and name to be decided (the private beta moved to v0.7.0, owner decision November 13, 2026) |
 
 The M5–M8 order is the owner's November 13, 2026 roadmap; see [the roadmap](planning/roadmap.md).
 

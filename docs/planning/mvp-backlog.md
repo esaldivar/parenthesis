@@ -17,9 +17,9 @@ rows follow the owner's November 13, 2026 [roadmap](roadmap.md).
 | **v0.4.0** | 4. Communication | Messaging (post-MVP epic, brought forward); N-01, N-02, N-03; shared family information (to be specified) |
 | **v0.5.0** | 5. Design Refresh & UX Overhaul | Parent-app polish ([M5 plan](../design/m5-design-refresh.md)); no backlog items move |
 | **v0.6.0** | 6. Google Integrations & Native Mobile | Google integrations and verification, native apps; reminder notifications (C-04) and the .ics feed (C-07), #198 ([M6 plan](m6-google-and-native-mobile.md)) |
-| **v0.7.0** | 7. Beta Readiness & Quality | Lighthouse and WCAG 2.2 AA work (#109, #112) and the beta gates ([M7 plan](m7-beta-readiness.md)) |
+| **v0.7.0** | 7. Beta Readiness & Quality (parent beta) | E7 (S-01 to S-08); end-to-end tests; invitation-only access; Lighthouse and WCAG 2.2 AA work (#109, #112) and the beta gates ([M7 plan](m7-beta-readiness.md)) |
 | **v0.8.0** | 8. Child Experience | Remaining E5 items (child uploads, kid dashboard M-07, diary M-08, child-content deletion and Restrict for child content) ([M8 plan](m8-child-experience.md)) |
-| **v1.0.0** | Private beta | E7 (S-01 to S-08); D-01 parent dashboard with live data; end-to-end tests; invitation-only access |
+| **v1.0.0** | To be decided | After M8; scope to be decided. (The private beta and E7 moved to v0.7.0, owner decision November 13, 2026; D-01 live dashboard data shipped earlier.) |
 | after 1.0 | | Billing (one-way Google Calendar export already shipped, #386) |
 
 Notes:
@@ -132,7 +132,7 @@ Notes:
 | N-03 | Email notifications with per-user preferences (no surveillance-style nudges) | P1 | M |
 | D-01 | Parent dashboard: upcoming events, pending approvals, recent memories, medical, activity | P0 | M |
 
-## E7 — Security, quality, deployment (v1.0.0; environment setup first)
+## E7 — Security, quality, deployment (v0.7.0; environment setup first)
 | ID | Item | P | Size |
 |---|---|---|---|
 | S-01 | Security headers / CSP, HSTS, data-protection key ring in Blob + Key Vault | P0 | S |
