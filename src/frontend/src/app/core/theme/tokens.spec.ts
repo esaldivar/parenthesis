@@ -1,5 +1,5 @@
 // WCAG 2.2 contrast checks for the design tokens, in both themes. The tokens file is the single source of truth.
-import tokensScss from '../../../styles/_tokens.scss' with { loader: 'text' };
+import tokensScss from '../../../styles/abstracts/_tokens.scss' with { loader: 'text' };
 
 function themeTokens(mixin: 'light' | 'dark'): Record<string, string> {
   const block = new RegExp(`@mixin ${mixin} \\{([\\s\\S]*?)\\n\\}`).exec(tokensScss)?.[1] ?? '';

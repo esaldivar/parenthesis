@@ -1,0 +1,23 @@
+// App-wide layout and overlay rules: bottom navigation clearance, Material button icons, CDK popups.
+
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-block-end: calc(57px + env(safe-area-inset-bottom));
+  }
+}
+
+// Material buttons with one of our icons (#372): the icon and label share one centred row. Left inline, the icon
+// sat on the text baseline and rode above the label ("+ Add" looked misaligned next to "Approvals").
+.mdc-button__label:has(> .app-icon) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+// Nonmodal popups (date pickers, selects, menus, suggestions) stop at the bottom navigation (#327): their invisible
+// backdrop leaves it uncovered, so one tap on the navigation closes the popup and navigates. Modal dialogs use a dark
+// backdrop and still cover everything. The clearance comes from the BottomNav directive; 0 without a bottom navigation.
+.cdk-overlay-container .cdk-overlay-transparent-backdrop,
+.cdk-overlay-container .mat-overlay-transparent-backdrop {
+  bottom: var(--bottom-nav-clearance, 0px);
+}
