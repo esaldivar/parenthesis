@@ -35,7 +35,7 @@ that points back here.
     November 12, 2026).
   - [x] Calendar: pages and components moved (`chore/567-calendar`, November 12, 2026).
   - [x] Fourteen more features moved, one commit each (`chore/567-features`, November 12, 2026).
-  - [ ] Child Essentials and Privacy, after #587 merges.
+  - [x] Child Essentials and Privacy (`chore/567-child-essentials-privacy`, November 13, 2026).
   - [ ] Then `shared/` into `components`, `directives` and `pipes`, and `core` services
     by responsibility. Each in its own PR.
   - [ ] Release Playwright run and a Development smoke test (sign-in, parent and kid shells, Home, Calendar,
