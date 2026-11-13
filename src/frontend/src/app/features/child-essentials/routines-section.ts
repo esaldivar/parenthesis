@@ -3,7 +3,7 @@ import { AppDatePipe } from '../../core/i18n/locale-formatting';
 import { TranslatePipe } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
 import { Icon } from '../../shared/icon/icon';
@@ -314,10 +314,26 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
   protected readonly householdError = localizedMessage();
   protected readonly householdConflict = signal(false);
   private homeDraftRevision = 0;
+  /** The family and child whose lists are on screen. */
+  private shownFor = '';
 
   constructor() {
     super();
-    effect(() => { void this.load(); void this.loadHouseholds(); });
+    effect(() => {
+      const family = this.familyId();
+      const child = this.childId();
+      untracked(() => {
+        // Another child: drop the last one's lists so nothing of theirs shows or saves while this one loads.
+        if (`${family}/${child}` !== this.shownFor) {
+          this.shownFor = `${family}/${child}`;
+          this.current.set(null);
+          this.conflict.set(null);
+          this.households.set([]);
+        }
+        void this.load();
+        void this.loadHouseholds();
+      });
+    });
   }
 
   protected openHousehold(home: HouseholdRoutine | null): void {
@@ -395,11 +411,15 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
   }
 
   protected async loadHouseholds(): Promise<void> {
+    const family = this.familyId();
+    const child = this.childId();
     try {
-      this.households.set(await this.api.householdRoutines(this.familyId(), this.childId()));
+      const households = await this.api.householdRoutines(family, child);
+      if (!this.stillShowing(family, child)) return;
+      this.households.set(households);
       this.householdError.set('');
     } catch {
-      this.householdError.set('essentials.routines.loadError');
+      if (this.stillShowing(family, child)) this.householdError.set('essentials.routines.loadError');
     }
   }
 
@@ -438,12 +458,20 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
   }
 
   protected async load(): Promise<void> {
+    const family = this.familyId();
+    const child = this.childId();
     this.error.set('');
     try {
-      this.current.set(await this.api.routines(this.familyId(), this.childId()));
+      const saved = await this.api.routines(family, child);
+      if (this.stillShowing(family, child)) this.current.set(saved);
     } catch {
-      this.error.set('feedback.routines.couldn.t.be.loaded');
+      if (this.stillShowing(family, child)) this.error.set('feedback.routines.couldn.t.be.loaded');
     }
+  }
+
+  /** Whether a response is for the child still on screen; a slow one for the previous child is dropped. */
+  private stillShowing(family: string, child: string): boolean {
+    return !this.destroyRef.destroyed && family === this.familyId() && child === this.childId();
   }
 
   /** The Shared list to save: the latest one the parent reviewed, with their edited routine in it. */

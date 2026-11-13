@@ -83,6 +83,27 @@ describe('Routines', () => {
     http.verify();
   });
 
+  it('ignores a late answer for the previously selected child', async () => {
+    const { fixture, http, host, settle } = setup();
+    const otherUrl = '/api/families/family-1/children/child-2/essentials/routines';
+    const first = http.expectOne({ method: 'GET', url });
+    const firstHomes = http.expectOne({ method: 'GET', url: url + '/households' });
+    fixture.componentRef.setInput('childId', 'child-2');
+    fixture.detectChanges();
+    http.expectOne({ method: 'GET', url: otherUrl }).flush({ revision: 2, values: { entries: [teeth] } });
+    http.expectOne({ method: 'GET', url: otherUrl + '/households' }).flush([]);
+    await settle();
+
+    first.flush({ revision: 5, values: { entries: [school] } });
+    firstHomes.error(new ProgressEvent('offline'));
+    await settle();
+    const routines = host.querySelector('.routines')?.textContent ?? '';
+    expect(routines).toContain('Brushing teeth');
+    expect(routines).not.toContain('Getting ready for school');
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+    http.verify();
+  });
+
   it('edits a shared routine, keeps the draft after a conflict and shows history', async () => {
     const { http, host, click, type, settle, next } = setup();
     (await next({ method: 'GET', url })).flush({ revision: 1, values: { entries: [teeth] } });
