@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { Api, ChangeRequest } from '../../core/api/api';
-import { fakeAuth } from '../../../testing/fake-auth';
-import { ApprovalsPage } from './approvals-page';
+import { Api, ChangeRequest } from '../../../../core/api/api';
+import { fakeAuth } from '../../../../../testing/fake-auth';
+import { ApprovalsPage } from './approvals-page.component';
 
 // Synthetic family only. The API is faked: the page's own focus handling is what's under test.
 const request = (overrides: Partial<ChangeRequest> = {}): ChangeRequest => ({
