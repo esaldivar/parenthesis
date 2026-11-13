@@ -109,5 +109,10 @@ Use the [frontend source layout](docs/adr/0009-frontend-source-layout.md) to cho
 Keep feature components and their companion templates, styles, and specs together. Preserve lazy route imports,
 public asset URLs, and global style order during file moves.
 
+## Backend module layout
+
+Use the [backend module layout](docs/adr/0010-backend-module-layout.md) to choose a home for module code. Moves are
+namespace-only: keep routes, schemas and migration IDs, and check `dotnet ef migrations has-pending-model-changes`.
+
 ## Code style
 `.editorconfig` and the .NET analyzers are enforced at build time. Run `dotnet format` before pushing.

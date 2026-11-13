@@ -9,6 +9,16 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Backend module layout (#570).** Move map and conventions in
+  [ADR-0010](docs/adr/0010-backend-module-layout.md).
+  - [x] Approvals DbContext pilot (#572).
+  - [x] Calendar, Families, Memories and Messaging DbContexts in `Infrastructure/Persistence/`; no model changes
+    (`chore/570-persistence`, November 12, 2026).
+  - [ ] Identity DbContext, in its own PR (auth code).
+  - [ ] Shared Records into `Domain/`, `Endpoints/` and `Infrastructure/`.
+  - [ ] Messaging `Realtime/` and `Transcripts/`; Families PDF renderers; Calendar's `CalendarToday`.
+  - [ ] Migrations into `Infrastructure/Persistence/` only after an existing-database upgrade check on
+    disposable PostgreSQL; full integration suite and Compose start after each slice (CI).
 - [ ] **Angular source layout (#567).** Review the Dashboard pilot and [source move map](docs/adr/0009-frontend-source-layout.md).
   Continue in feature slices, starting with the shared date and Calendar boundaries. Move app-wide layout, core
   and shared code, and separate the global Sass layers. Verify lazy routes, assets and release Playwright coverage

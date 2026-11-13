@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Families.Domain;
 using CoParent.Modules.Families.Infrastructure;
+using CoParent.Modules.Families.Infrastructure.Persistence;
 using CoParent.SharedKernel.Auditing;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Security;

@@ -4,7 +4,7 @@ using CoParent.Modules.Families.Domain;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParent.Modules.Families.Infrastructure;
+namespace CoParent.Modules.Families.Infrastructure.Persistence;
 
 /// <summary>
 /// Families and memberships in the <c>families</c> schema. Both are filtered to the request's tenant; the few

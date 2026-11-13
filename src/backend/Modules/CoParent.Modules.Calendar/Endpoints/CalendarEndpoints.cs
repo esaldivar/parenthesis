@@ -1,7 +1,7 @@
 using System.Globalization;
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Calendar.Domain;
-using CoParent.Modules.Calendar.Infrastructure;
+using CoParent.Modules.Calendar.Infrastructure.Persistence;
 using CoParent.Modules.Families.Contracts;
 using CoParent.SharedKernel.Auditing;
 using CoParent.SharedKernel.Persistence;
