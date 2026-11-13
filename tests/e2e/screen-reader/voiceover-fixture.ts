@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { Browser } from '@playwright/test';
-import { MacOSKeyCodes } from '@guidepup/guidepup';
+import { MacOSKeyCodes, type VoiceOver } from '@guidepup/guidepup';
 import { voiceOverTest } from '@guidepup/playwright';
 // Guidepup has no public API for this; the package has no exports map, so the module path is stable for 0.21.x.
 import { applicationIdMap } from '@guidepup/playwright/lib/applicationIdMap.js';
@@ -108,13 +108,14 @@ export function osKeys(pid: number): JourneyKeys {
  * VoiceOver as a journey reader whose last phrase is what VoiceOver itself last said. Guidepup's log only holds
  * speech after its own commands, so speech caused by a real key (focus moves, live regions) is read from VoiceOver.
  */
-export function liveVoiceOver(voiceOver: JourneyReader): JourneyReader {
+export function liveVoiceOver(voiceOver: VoiceOver): JourneyReader {
   return {
     press: key => voiceOver.press(key),
     type: text => voiceOver.type(text),
     spokenPhraseLog: () => voiceOver.spokenPhraseLog(),
     clearSpokenPhraseLog: () => voiceOver.clearSpokenPhraseLog(),
     lastSpokenPhrase: () => voiceOverLastPhrase(),
+    describeFocus: () => voiceOver.perform(voiceOver.keyboardCommands.describeItemWithKeyboardFocus),
   };
 }
 

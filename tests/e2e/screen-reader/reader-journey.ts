@@ -7,6 +7,8 @@ export interface JourneyReader {
   spokenPhraseLog(): Promise<string[]>;
   clearSpokenPhraseLog(): Promise<void>;
   lastSpokenPhrase(): Promise<string>;
+  /** Live readers only: ask the reader to say the item that has keyboard focus (VoiceOver's own command). */
+  describeFocus?(): Promise<void>;
 }
 
 /** Sends keys some other way than the reader (VoiceOver: straight to the browser page). */
@@ -32,6 +34,7 @@ export class ReaderJourney {
     const phrases = [...await this.reader.spokenPhraseLog()];
     if (this.live) {
       const last = await this.reader.lastSpokenPhrase();
+      if (process.env['VOICEOVER_DEBUG']) console.log(`[${this.name}] ${this.stage}: last phrase ${JSON.stringify(last)}`);
       if (last && last !== this.lastSeen) {
         this.lastSeen = last;
         if (phrases.at(-1) !== last) this.heardLive.push(last);
@@ -59,8 +62,17 @@ export class ReaderJourney {
   }
 
   async heard(pattern: RegExp) {
-    await expect.poll(async () => (await this.speech()).join(' '),
-      { message: `${this.name} speech at ${this.stage}` }).toMatch(pattern);
+    const joined = async () => (await this.speech()).join(' ');
+    const message = `${this.name} speech at ${this.stage}`;
+    if (this.live && this.reader.describeFocus) {
+      // VoiceOver may not repeat what a key changed while its cursor is already inside the page. If its own
+      // speech doesn't match soon, ask it once to describe the keyboard focus; that answer is real speech too.
+      const spoken = await expect.poll(joined, { message, timeout: 4_000 }).toMatch(pattern).then(() => true, () => false);
+      if (spoken) return;
+      this.heardLive.push('[asked VoiceOver to describe the keyboard focus]');
+      await this.reader.describeFocus();
+    }
+    await expect.poll(joined, { message }).toMatch(pattern);
   }
 
   async tabTo(target: Locator, name: RegExp, role: RegExp, key: 'Tab' | 'Shift+Tab' = 'Tab') {
