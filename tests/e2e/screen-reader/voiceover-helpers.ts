@@ -15,13 +15,20 @@ export const typedDate = (date: Date) => date.toLocaleDateString('en-US', {
   month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC',
 });
 
-/** VoiceOver's own heading navigation (VO-Command-H), bounded, until it says this heading. */
+/**
+ * VoiceOver's own heading navigation (VO-Command-H), bounded, until it says this heading. VoiceOver's cursor may start
+ * below the heading and doesn't wrap ("Last heading"), so the search turns back at either end.
+ */
 export async function findHeading(voiceOver: VoiceOverPlaywright, reader: ReaderJourney, name: RegExp) {
   await reader.checkpoint(`Heading ${name}`);
-  for (let count = 0; count < 16; count++) {
-    await voiceOver.nextHeading();
+  let forward = true;
+  for (let count = 0; count < 32; count++) {
+    if (forward) await voiceOver.nextHeading();
+    else await voiceOver.perform(voiceOver.keyboardCommands.findPreviousHeading);
     const spoken = (await voiceOver.spokenPhraseLog()).join(' ');
     if (/\bheading\b/i.test(spoken) && name.test(spoken)) return;
+    if (forward && /\blast heading\b/i.test(spoken)) forward = false;
+    else if (!forward && /\bfirst heading\b/i.test(spoken)) forward = true;
     await reader.checkpoint(`Heading ${name}, step ${count + 2}`);
   }
   throw new Error(`VoiceOver did not announce the heading ${name}`);

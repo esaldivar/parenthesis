@@ -30,15 +30,43 @@ export class ReaderJourney {
   constructor(readonly reader: JourneyReader, readonly name: string, private readonly live = false,
     private readonly keys: JourneyKeys = reader) {}
 
+  private sampling = false;
+  private sampler: Promise<void> = Promise.resolve();
+
+  /** Keeps VoiceOver's newest phrase, if it changed. */
+  private async sampleLive(logged?: string) {
+    const last = await this.reader.lastSpokenPhrase();
+    if (process.env['VOICEOVER_DEBUG']) console.log(`[${this.name}] ${this.stage}: last phrase ${JSON.stringify(last)}`);
+    if (last && last !== this.lastSeen) {
+      this.lastSeen = last;
+      if (logged !== last) this.heardLive.push(last);
+    }
+  }
+
+  /**
+   * After a key, keep sampling VoiceOver's last phrase until the next checkpoint, so a short announcement (a polite
+   * toast) is kept even while the test waits on the page, before the next phrase replaces it.
+   */
+  private startSampling() {
+    if (!this.live || this.sampling) return;
+    this.sampling = true;
+    this.sampler = (async () => {
+      while (this.sampling) {
+        await this.sampleLive().catch(() => undefined);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    })();
+  }
+
+  private async stopSampling() {
+    this.sampling = false;
+    await this.sampler;
+  }
+
   private async speech() {
     const phrases = [...await this.reader.spokenPhraseLog()];
     if (this.live) {
-      const last = await this.reader.lastSpokenPhrase();
-      if (process.env['VOICEOVER_DEBUG']) console.log(`[${this.name}] ${this.stage}: last phrase ${JSON.stringify(last)}`);
-      if (last && last !== this.lastSeen) {
-        this.lastSeen = last;
-        if (phrases.at(-1) !== last) this.heardLive.push(last);
-      }
+      await this.sampleLive(phrases.at(-1));
       phrases.push(...this.heardLive);
     }
     return phrases;
@@ -46,13 +74,16 @@ export class ReaderJourney {
 
   async press(key: string) {
     await this.keys.press(key);
+    this.startSampling();
   }
 
   async type(text: string) {
     await this.keys.type(text);
+    this.startSampling();
   }
 
   async checkpoint(stage: string) {
+    await this.stopSampling();
     this.transcript.push({ stage: this.stage, phrases: await this.speech() });
     await this.reader.clearSpokenPhraseLog();
     this.heardLive = [];
@@ -64,15 +95,18 @@ export class ReaderJourney {
   async heard(pattern: RegExp) {
     const joined = async () => (await this.speech()).join(' ');
     const message = `${this.name} speech at ${this.stage}`;
+    // Live reads see only VoiceOver's latest phrase, so poll often enough to catch a short announcement (a polite
+    // toast) before the next phrase replaces it.
+    const intervals = this.live ? [100] : undefined;
     if (this.live && this.reader.describeFocus) {
       // VoiceOver may not repeat what a key changed while its cursor is already inside the page. If its own
       // speech doesn't match soon, ask it once to describe the keyboard focus; that answer is real speech too.
-      const spoken = await expect.poll(joined, { message, timeout: 4_000 }).toMatch(pattern).then(() => true, () => false);
+      const spoken = await expect.poll(joined, { message, timeout: 4_000, intervals }).toMatch(pattern).then(() => true, () => false);
       if (spoken) return;
       this.heardLive.push('[asked VoiceOver to describe the keyboard focus]');
       await this.reader.describeFocus();
     }
-    await expect.poll(joined, { message }).toMatch(pattern);
+    await expect.poll(joined, { message, intervals }).toMatch(pattern);
   }
 
   async tabTo(target: Locator, name: RegExp, role: RegExp, key: 'Tab' | 'Shift+Tab' = 'Tab') {
@@ -91,6 +125,7 @@ export class ReaderJourney {
   }
 
   async attach() {
+    await this.stopSampling();
     this.transcript.push({ stage: this.stage, phrases: await this.speech() });
     return JSON.stringify(this.transcript, null, 2);
   }

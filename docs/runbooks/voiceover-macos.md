@@ -86,6 +86,11 @@ Restore it and rerun to pass. Never commit the deliberate failure.
   an everyday Chrome that is also open doesn't take them), like a person's keyboard,
   so VoiceOver follows the focus they move. On macOS 13, keys Guidepup sends through the VoiceOver process didn't
   reach Chrome, and Playwright's page keys moved focus without VoiceOver speaking it.
+- When VoiceOver's cursor is already inside the page, it may not repeat what a key changed (on macOS 13 a Tab to a
+  button produced no new phrase). If the expected speech doesn't arrive within 4 seconds, the journey asks VoiceOver
+  once to describe the item with keyboard focus and checks that answer. The transcript marks each such step with
+  "[asked VoiceOver to describe the keyboard focus]". Speech that only arrives this way is VoiceOver's description of
+  the focused element, not proof that VoiceOver announces it unprompted. `VOICEOVER_DEBUG=1` prints each live phrase.
 - Desktop VoiceOver with Chromium only (owner decision, November 13, 2026): Playwright's Chromium, or the installed
   Google Chrome where Playwright's build isn't available. Safari/WebKit VoiceOver and iPhone
   VoiceOver (#112) remain manual checks.

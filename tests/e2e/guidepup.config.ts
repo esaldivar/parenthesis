@@ -31,7 +31,8 @@ export default withGuidepup({
   projects: process.platform === 'darwin' ? [{
     name: 'screen-reader-app-voiceover',
     testMatch: '**/*-voiceover.spec.ts',
-    timeout: 300_000,
+    // VoiceOver waits for each phrase to settle; reading a dialog item by item on an Intel Mac takes minutes.
+    timeout: 600_000,
     // Playwright doesn't install its Chromium on macOS 13; E2E_BROWSER_CHANNEL=chrome uses the installed Chrome.
     use: { ...devices['Desktop Chrome'], headless: false, channel: process.env['E2E_BROWSER_CHANNEL'] || undefined },
   }] : [{
