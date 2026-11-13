@@ -1,6 +1,12 @@
-# Real screen-reader tests (issues #281 and #279)
+# Real screen-reader tests (issues #281, #279 and #443)
 
 These tests are **opt-in** and run serially in a headed browser. The required release configuration and workflows are unchanged. Application tests use actual Parenthesis pages and API-created synthetic families, not intercepted application responses. The smoke fixture alone uses synthetic HTML.
+
+## macOS VoiceOver
+
+The `*-voiceover.spec.ts` journeys run real VoiceOver on a Mac. Setup, the run commands, coverage and the
+controlled negative are in the [VoiceOver runbook](../../../docs/runbooks/voiceover-macos.md). On macOS the config lists
+only the VoiceOver project; on other hosts it lists only the NVDA projects below.
 
 ## Windows verification
 
@@ -46,6 +52,6 @@ The owner reported the earlier Windows smoke test passed (1 test, 14.5 seconds).
 
 Prove a controlled negative locally: temporarily change an expected speech label (for example `notifications` in `navigation-nvda`) to a unique absent phrase, rerun that spec and verify it fails at the speech assertion. Restore the assertion and rerun. Do not commit the deliberate failure or treat type checking/list discovery as NVDA evidence.
 
-Windows app execution, controlled-negative evidence, repeated stability runs, macOS VoiceOver, real mobile readers and wider Calendar/approval scenarios remain open in TODO.md. Keep this PR draft and the pilot separate from the release gate until supported-host evidence and owner approval justify promotion.
+Windows app execution, controlled-negative evidence, repeated stability runs, real mobile readers and wider Calendar/approval scenarios remain open in TODO.md. Keep this PR draft and the pilot separate from the release gate until supported-host evidence and owner approval justify promotion.
 
 API references: [Guidepup Playwright](https://github.com/guidepup/guidepup-playwright), [NVDA](https://www.guidepup.dev/docs/api/class-nvda).

@@ -702,6 +702,15 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   above. macOS/VoiceOver remains unavailable; evidence archival and repeated stability runs remain open.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
 
+### #443 — Desktop macOS VoiceOver with Guidepup
+- [x] VoiceOver project, nine journeys (smoke, navigation, forms, calendar save, event dialog, two date journeys,
+  reminder details, task progress), macOS candidate script and [runbook](docs/runbooks/voiceover-macos.md).
+- [ ] Owner-Mac run on the PR's exact commit: record macOS, Chromium, VoiceOver and Guidepup versions, pass count
+  and `voiceover-app-speech` transcripts on #443.
+- [ ] Controlled negative (one speech assertion fails with the actual speech, then passes restored) on #443.
+- [ ] A second full passing run on the same commit, for repeatability.
+- [ ] Optional later: a manual-only hosted macOS job, only with the owner's approval of its Actions-minute cost.
+
 ### #278/#279 — Coverage follow-up (October 26, 2026)
 - Verified historical release PR #315 browser run 40316038202: 179 passing executions on merge candidate `92be9b9e962751f6e6fa3c273d6cb62836eae46e`; original no-run blocker notes above are historical.
 - Added touch Edit/Swap invalid/corrected/cancel checks, Home/Calendar slot moving/clearing, Chicago spring/fall persisted edit boundaries and controlled overflow detection/restoration. Removed the remaining #259 viewport override.
