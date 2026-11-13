@@ -14,7 +14,8 @@ that points back here.
   - [x] Approvals DbContext pilot (#572).
   - [x] Calendar, Families, Memories and Messaging DbContexts in `Infrastructure/Persistence/`; no model changes
     (`chore/570-persistence`, November 12, 2026).
-  - [ ] Identity DbContext, in its own PR (auth code).
+  - [x] Identity DbContext in `Infrastructure/Persistence/`, in its own PR (auth code); no model changes
+    (`chore/570-identity-persistence`, November 12, 2026).
   - [ ] Shared Records into `Domain/`, `Endpoints/` and `Infrastructure/`.
   - [ ] Messaging `Realtime/` and `Transcripts/`; Families PDF renderers; Calendar's `CalendarToday`.
   - [ ] Migrations into `Infrastructure/Persistence/` only after an existing-database upgrade check on
