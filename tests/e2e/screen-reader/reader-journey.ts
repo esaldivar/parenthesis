@@ -92,13 +92,18 @@ export class ReaderJourney {
     this.stage = stage;
   }
 
-  async heard(pattern: RegExp) {
+  /** Adds a marker to this stage's transcript, e.g. when a fallback reads what the reader didn't announce. */
+  note(text: string) {
+    this.heardLive.push(text);
+  }
+
+  async heard(pattern: RegExp, { describe = true }: { describe?: boolean } = {}) {
     const joined = async () => (await this.speech()).join(' ');
     const message = `${this.name} speech at ${this.stage}`;
     // Live reads see only VoiceOver's latest phrase, so poll often enough to catch a short announcement (a polite
     // toast) before the next phrase replaces it.
     const intervals = this.live ? [100] : undefined;
-    if (this.live && this.reader.describeFocus) {
+    if (describe && this.live && this.reader.describeFocus) {
       // VoiceOver may not repeat what a key changed while its cursor is already inside the page. If its own
       // speech doesn't match soon, ask it once to describe the keyboard focus; that answer is real speech too.
       const spoken = await expect.poll(joined, { message, timeout: 4_000, intervals }).toMatch(pattern).then(() => true, () => false);

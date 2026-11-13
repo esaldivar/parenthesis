@@ -91,6 +91,11 @@ Restore it and rerun to pass. Never commit the deliberate failure.
   once to describe the item with keyboard focus and checks that answer. The transcript marks each such step with
   "[asked VoiceOver to describe the keyboard focus]". Speech that only arrives this way is VoiceOver's description of
   the focused element, not proof that VoiceOver announces it unprompted. `VOICEOVER_DEBUG=1` prints each live phrase.
+- The polite success toast should be announced on its own. On macOS 13, after an activity save (which moves focus
+  and changes the week heading at the same moment) VoiceOver didn't say it, while the reminder save's toast was
+  spoken. If it isn't heard, the journey holds the toast with the pointer and reads it with the VoiceOver cursor,
+  and the transcript says "[VoiceOver did not announce the notification; reading it with the VoiceOver cursor]".
+  That proves the message is readable, not that it was announced.
 - Desktop VoiceOver with Chromium only (owner decision, November 13, 2026): Playwright's Chromium, or the installed
   Google Chrome where Playwright's build isn't available. Safari/WebKit VoiceOver and iPhone
   VoiceOver (#112) remain manual checks.

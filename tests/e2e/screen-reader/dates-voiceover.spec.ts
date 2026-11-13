@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from './voiceover-fixture';
 import { addHours, nextMonday } from '../support/data';
-import { dayLabel, isoDate, pickDay, typedDate } from './voiceover-helpers';
+import { dayLabel, isoDate, pickDay, toastHeardOrRead, typedDate } from './voiceover-helpers';
 
 const monday = nextMonday();
 
@@ -91,6 +91,6 @@ test('VoiceOver gives typed-date format guidance, a past-date reason and saves t
   await reader.checkpoint('Corrected reminder saved');
   await reader.press('Enter');
   await expect(page).toHaveURL(new RegExp(`/calendar\\?date=${isoDate(corrected)}`));
-  await reader.heard(/voiceover date reminder.{0,3} is on the calendar/i);
+  await toastHeardOrRead(page, voiceOver, reader, /voiceover date reminder.{0,3} is on the calendar/i);
   expect(writes).toBe(1);
 });

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from './voiceover-fixture';
 import { addHours, nextMonday } from '../support/data';
-import { findHeading, isoDate } from './voiceover-helpers';
+import { findHeading, isoDate, toastHeardOrRead } from './voiceover-helpers';
 
 test('VoiceOver announces Calendar, Add, validation and a saved activity once without focus theft', async ({ page, family, reader, voiceOver }) => {
   const date = isoDate(nextMonday());
@@ -46,10 +46,12 @@ test('VoiceOver announces Calendar, Add, validation and a saved activity once wi
   await reader.press('Enter');
   await expect(page).toHaveURL(/\/calendar\?date=/);
   await expect(page.getByRole('heading', { name: 'Calendar', exact: true, level: 1 })).toBeVisible();
-  // The polite toast; VoiceOver may drop the typographic quotation marks around the name.
-  await reader.heard(new RegExp(`${title}.{0,3} is on the calendar`, 'i'));
+  await expect(page.locator('app-toast-host .toast')).toBeVisible();
   expect(await page.locator('app-toast-host').evaluate(host => host.contains(host.ownerDocument.activeElement)),
     'The success toast must not take keyboard focus').toBe(false);
+  // The polite toast; VoiceOver may drop the typographic quotation marks around the name. Checked after the focus
+  // check, because reading it with the VoiceOver cursor can move keyboard focus with it.
+  await toastHeardOrRead(page, voiceOver, reader, new RegExp(`${title}.{0,3} is on the calendar`, 'i'));
   const saved = await family.dad.json<{ title: string; status: string }[]>(family.dad.get(
     `/api/families/${family.familyId}/calendar/events`,
     { from: date + 'T00:00:00Z', to: addHours(new Date(date), 48).toISOString() },

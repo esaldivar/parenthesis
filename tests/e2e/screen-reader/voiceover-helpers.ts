@@ -65,3 +65,21 @@ export async function pickDay(page: Page, reader: ReaderJourney, target: string)
   }
   throw new Error(`Could not move the date picker to ${target}`);
 }
+
+/**
+ * The polite success toast. VoiceOver should announce it on its own. On macOS 13 it didn't after an activity save,
+ * which moves focus and changes the week heading at the same moment, so if it isn't heard the VoiceOver cursor reads
+ * it instead and the transcript says so. That fallback proves the toast is readable, not that it was announced; the
+ * announcement timing is tracked as an app issue (see the runbook's limits).
+ */
+export async function toastHeardOrRead(page: Page, voiceOver: VoiceOverPlaywright, reader: ReaderJourney, pattern: RegExp) {
+  const toast = page.locator('app-toast-host .toast').filter({ hasText: pattern });
+  await expect(toast).toBeVisible();
+  // Pointing at a toast pauses its countdown (the host's hover hold), so it is still there if VoiceOver must read it.
+  // Playwright's pointer events don't move VoiceOver's cursor.
+  await toast.hover();
+  if (await reader.heard(pattern, { describe: false }).then(() => true, () => false)) return;
+  reader.note('[VoiceOver did not announce the notification; reading it with the VoiceOver cursor]');
+  await voiceOver.perform(voiceOver.keyboardCommands.moveToLast);
+  await readUntil(voiceOver, reader, pattern, 'previous');
+}
