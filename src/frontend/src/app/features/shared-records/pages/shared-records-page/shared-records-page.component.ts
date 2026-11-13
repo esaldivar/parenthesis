@@ -1,7 +1,7 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AppCurrencyPipe } from '../../../../core/i18n/locale-formatting';
 import { DOCUMENT } from '@angular/common';
-import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
+import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender,
   computed, effect, inject, input, signal, viewChild,
@@ -9,16 +9,16 @@ import {
 import { RouterLink } from '@angular/router';
 import {
   Api, RecordEntry, ReportDraft, SharedFund, SharedFundDraft, SupportDraft, SupportRecord,
-} from '../../core/api/api';
-import { generalMessage, Problem, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { SharedRecordsAttentionStore } from '../../core/shared-records/shared-records-attention.store';
-import { LoadingIndicator } from '../../shared/brand/loading-indicator';
-import { Icon } from '../../shared/icon/icon';
-import { EntryResponse, RecordHistory, RecordProgress } from './record-history';
-import { ReportForm } from './report-form';
-import { SharedFundProposalForm } from './shared-fund-proposal-form';
-import { SupportForm } from './support-form';
+} from '../../../../core/api/api';
+import { generalMessage, Problem, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { SharedRecordsAttentionStore } from '../../../../core/shared-records/shared-records-attention.store';
+import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
+import { Icon } from '../../../../shared/icon/icon';
+import { EntryResponse, RecordHistory, RecordProgress } from '../../components/record-history/record-history.component';
+import { ReportForm } from '../../components/report-form/report-form.component';
+import { SharedFundProposalForm } from '../../components/shared-fund-proposal-form/shared-fund-proposal-form.component';
+import { SupportForm } from '../../components/support-form/support-form.component';
 
 interface Workspace {
   readonly membershipId: string;
@@ -45,8 +45,8 @@ type Composer = { readonly mode: 'new' } | { readonly mode: 'report'; readonly k
   selector: 'app-shared-records-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, AppCurrencyPipe, Icon, LoadingIndicator, RouterLink, RecordHistory, RecordProgress, ReportForm, SharedFundProposalForm, SupportForm],
-  templateUrl: './shared-records-page.html',
-  styleUrl: './shared-records-page.scss',
+  templateUrl: './shared-records-page.component.html',
+  styleUrl: './shared-records-page.component.scss',
 })
 export class SharedRecordsPage {
   private readonly copyLocale = inject(LocaleService);

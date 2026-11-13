@@ -81,7 +81,7 @@ export const PARENT_ROUTES: Routes = [
   {
     path: 'shared-records',
     title: 'Shared records',
-    loadComponent: () => import('./shared-records/shared-records-page').then((m) => m.SharedRecordsPage),
+    loadComponent: () => import('./shared-records/pages/shared-records-page/shared-records-page.component').then((m) => m.SharedRecordsPage),
   },
   { path: 'settings', title: 'Settings', loadComponent: () => import('./settings/pages/settings-page/settings-page.component').then((m) => m.SettingsPage) },
   // Google sends parents back here after connecting Google Calendar (#386); the server registers this exact address.

@@ -2,10 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Api, FamilySummary, Me, RecordEntry, SharedFund, SupportRecord } from '../../core/api/api';
-import { AuthStore } from '../../core/auth/auth.store';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { SharedRecordsPage } from './shared-records-page';
+import { Api, FamilySummary, Me, RecordEntry, SharedFund, SupportRecord } from '../../../../core/api/api';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { SharedRecordsPage } from './shared-records-page.component';
 
 describe('SharedRecordsPage', () => {
   const fund: SharedFund = {
