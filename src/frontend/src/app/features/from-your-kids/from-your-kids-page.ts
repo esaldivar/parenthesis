@@ -1,5 +1,5 @@
 import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, isDevMode, signal, untracked } from '@angular/core';
 import { Api, Child } from '../../core/api/api';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -29,15 +29,15 @@ export class FromYourKidsPage {
   protected readonly previewAt = signal<number | null>(null);
   protected readonly diaryEntries = computed(() => {
     const now = this.previewAt();
-    return now === null ? [] : previewDiary(now);
+    return now === null ? [] : previewDiary(now, this.locale.locale());
   });
   protected readonly artwork = computed(() => {
     const now = this.previewAt();
-    return now === null ? [] : previewGallery('Artwork', now);
+    return now === null ? [] : previewGallery('Artwork', now, this.locale.locale());
   });
   protected readonly photos = computed(() => {
     const now = this.previewAt();
-    return now === null ? [] : previewGallery('Photo', now);
+    return now === null ? [] : previewGallery('Photo', now, this.locale.locale());
   });
   protected readonly sections = [
     { id: 'diary', title: 'feature.diary', description: 'feature.thoughts.stories.and.daily.adventures' },
@@ -48,7 +48,7 @@ export class FromYourKidsPage {
   protected readonly children = signal<readonly Child[]>([]);
   protected readonly selectedChildId = signal<string | null>(null);
   protected readonly selectedChild = computed(() => this.children().find(child => child.id === this.selectedChildId()) ?? null);
-  protected readonly contentName = computed(() => this.previewAt() === null ? this.selectedChild()?.firstName : 'Sample child');
+  protected readonly contentName = computed(() => this.previewAt() === null ? this.selectedChild()?.firstName : translate('kids.preview.sampleChild', this.locale.locale()));
   protected readonly loading = signal(true);
   protected readonly failed = signal(false);
 

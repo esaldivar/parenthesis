@@ -8,6 +8,7 @@ import {
   expiry,
   expiryChip,
   fileProblem,
+  shortDate,
   sizeText,
   uploadMessage,
   whoseText,
@@ -91,5 +92,30 @@ describe('event photo wording (#403)', () => {
     expect(whoseText(memory(4, 0), 'Sam')).toBe('You');
     expect(whoseText(memory(0, 3), 'Sam')).toBe('Sam');
     expect(whoseText(memory(0, 3), null)).toBe('Your co-parent');
+  });
+
+  it('speaks Spanish when the parent chose it (#534)', () => {
+    const now = new Date('2026-11-06T18:00:00Z');
+    const zone = 'America/Chicago';
+    const memory = (yours: number, shared: number) => ({ yourPhotoCount: yours, sharedWithYouCount: shared }) as Memory;
+
+    expect(expiryChip(expiry('2026-11-30T16:00:00Z', zone, now, 'es-419'), 'es-419')).toBe('Se elimina el 30 nov');
+    expect(expiryChip(expiry('2026-11-09T16:00:00Z', zone, now, 'es-419'), 'es-419')).toBe('Se elimina en 3 días');
+    expect(expiryChip(expiry('2026-11-07T16:00:00Z', zone, now, 'es-419'), 'es-419')).toBe('Se elimina mañana');
+    expect(deletedOnIfAddedToday(zone, now, 'es-419')).toBe('4 dic');
+    expect(shortDate('2026-11-03', 'es-419')).toBe('3 nov');
+    expect(shortDate('2026-11-03')).toBe('Nov 3');
+    expect(blockedText('not-caregiver', 'Sam', 'es-419')).toBe(
+      'Sam tiene a los niños durante este tiempo con los hijos, así que solo Sam puede agregar fotos.',
+    );
+    expect(blockedText('window-closed', null, 'es-419')).toContain('más de 28 días');
+    expect(whoseText(memory(4, 3), 'Sam', 'es-419')).toBe('Tú y Sam');
+    expect(whoseText(memory(4, 3), null, 'es-419')).toBe('Tú y el otro padre o madre');
+    expect(whoseText(memory(4, 0), 'Sam', 'es-419')).toBe('Tú');
+    expect(whoseText(memory(0, 3), null, 'es-419')).toBe('El otro padre o madre');
+    expect(fileProblem(file('a.heic', 'image/heic'), undefined, 'es-419')).toContain('Todavía no se admiten fotos HEIC');
+    expect(fileProblem(file('a.jpg', 'image/jpeg', 30_000_000), 20_000_000, 'es-419')).toBe(
+      'Esta foto pesa más de 20 MB. Elige una más pequeña.',
+    );
   });
 });

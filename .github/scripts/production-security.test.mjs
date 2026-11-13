@@ -142,4 +142,6 @@ test('production guard precedes Azure and preserves environment approval, failur
   assert.match(deploy, /if: failure\(\) && steps\.before\.outputs\.previous != ''/);
   assert.match(deploy, /job update[^\n]+--image "\$TARGET"/);
   assert.match(deploy, /containerapp update[^\n]+--image "\$TARGET"/);
+  // The chat hub has no backplane, so the app must stay on one replica (#125).
+  assert.match(deploy, /containerapp update[^\n]+--image "\$TARGET"[^\n]+--max-replicas 1\b/);
 });

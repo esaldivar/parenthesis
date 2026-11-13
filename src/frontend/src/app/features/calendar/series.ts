@@ -1,7 +1,7 @@
 import { AppLocale } from '../../core/i18n/locale.service';
 import { EventRepeat, SeriesFrequency, Weekday } from '../../core/api/api';
-import { PlainDate } from '../dashboard/model';
-import { addDays, dateMedium, monthDay } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays, dateMedium, monthDay } from '../../core/dates/dates';
 
 export const WEEKDAYS: readonly { id: Weekday; short: string }[] = [
   { id: 'Sunday', short: 'Sun' },

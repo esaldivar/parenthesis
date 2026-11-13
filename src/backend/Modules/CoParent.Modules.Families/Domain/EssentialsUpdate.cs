@@ -57,8 +57,12 @@ internal static class EssentialsSections
     /// <summary>Medical providers (#509); rows are provider ids, and "removed" when one was taken off.</summary>
     public const string Medical = "medical";
 
+    /// <summary>Medication (#127); rows are entry ids, and "deleted" when one was permanently deleted.</summary>
+    public const string Medication = "medication";
+
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
         School, AllergiesFood, Clothing, WhatHelps, Routines, HouseholdRoutines, EmergencyContacts, Caregivers, Medical,
+        Medication,
     };
 }

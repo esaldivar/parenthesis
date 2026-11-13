@@ -9,10 +9,35 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Backend module layout (#570).** Move map and conventions in
+  [ADR-0010](docs/adr/0010-backend-module-layout.md).
+  - [x] Approvals DbContext pilot (#572).
+  - [x] Calendar, Families, Memories and Messaging DbContexts in `Infrastructure/Persistence/`; no model changes
+    (`chore/570-persistence`, November 12, 2026).
+  - [x] Identity DbContext in `Infrastructure/Persistence/`, in its own PR (auth code); no model changes
+    (`chore/570-identity-persistence`, November 12, 2026).
+  - [x] Shared Records into `Domain/`, `Endpoints/` and `Infrastructure/`; no model changes
+    (`chore/570-shared-records`, November 12, 2026). Its migrations stay in `Migrations/` until the migrations step.
+  - [x] Messaging `Realtime/` and `Transcripts/`; Families PDF renderers; Calendar's `CalendarToday`
+    (`chore/570-module-folders`, November 12, 2026).
+  - [ ] Migrations into `Infrastructure/Persistence/` only after an existing-database upgrade check on
+    disposable PostgreSQL; full integration suite and Compose start after each slice (CI).
 - [ ] **Angular source layout (#567).** Review the Dashboard pilot and [source move map](docs/adr/0009-frontend-source-layout.md).
   Continue in feature slices, starting with the shared date and Calendar boundaries. Move app-wide layout, core
   and shared code, and separate the global Sass layers. Verify lazy routes, assets and release Playwright coverage
   before closing the migration.
+  - [x] Dashboard pilot (#569).
+  - [x] Shells and navigation moved to `app/core/layout`; the Messages dock is wired in by `app/parent-app.ts`, so
+    core imports no feature (`chore/567-core-layout`, November 12, 2026).
+  - [x] Separate the global Sass into `styles/abstracts`, `base` and `themes`; compiled CSS byte-identical in
+    production and development builds (`chore/567-sass-layers`, November 12, 2026).
+  - [x] Shared date types and helpers moved out of Dashboard to `app/core/dates` (`chore/567-shared-dates`,
+    November 12, 2026).
+  - [x] Calendar: pages and components moved (`chore/567-calendar`, November 12, 2026).
+  - [ ] Remaining feature slices, then `shared/` into `components`, `directives` and `pipes`, and `core` services
+    by responsibility. Each in its own PR.
+  - [ ] Release Playwright run and a Development smoke test (sign-in, parent and kid shells, Home, Calendar,
+    Settings, Messages dock) after each slice deploys.
 - [ ] **English and Spanish localization (#534).** Review remaining runtime copy, including API validation and
   stored approval summaries, Family Memories export and quota messages, Child Essentials update announcements,
   and the privacy notice storage table. Use structured codes or fields where an API response mixes app copy and
@@ -95,6 +120,12 @@ that points back here.
   - [ ] Before families outside the US: GDPR/UK GDPR wording, lawful bases and regulator contact.
   - [ ] Later, if wanted: self-service data export (today a copy is sent on request within 30 days).
   - [ ] Before public launch: a lawyer's review of the notice.
+  - [x] **Owner:** decided D1 to D11 in `docs/privacy/medication-preflight-127.md` (November 12, 2026); the approved
+    flow is in the data inventory and the notice's new Health information section.
+  - [x] Allergies, medical providers and Child Essentials are in the data inventory and notice (preflight D11).
+  - [ ] **Before medication reaches production (#127, D2):** a lawyer reviews the preflight, the Health information
+    section and the breach runbook (`docs/runbooks/breach-response.md`), including whether Washington's or
+    Nevada's consumer health data laws require a separate consumer health data policy.
 - [ ] **Switch Profiles showed the other parent after account switching (#405, M3, November 5, 2026).** Cause:
   the phone was still Parent A's shared device, and Parent B's sign-out went to that device's picker. Owner decision:
   B goes to sign-in and the device stays A's; the tab keeps showing sign-in until someone signs in again. Server
@@ -208,6 +239,12 @@ that points back here.
   `githubactions:S7631` on the tracking checkout and `jssecurity:S5145` on routing error output after promotion.
 - [ ] **Dependabot tracking issues (#544).** After normal promotion to `main`, verify a real Dependabot PR gets
   one issue and passes the required tracking check. Rerun the writer to verify that it reuses the issue and link.
+- [ ] **MailKit 5 (held from Dependabot PR #602, November 12, 2026).** MailKit stays at 4.18.x: 5.0.0 changes
+  `SmtpClient.SendAsync`, so `CoParent.Infrastructure/Email/EmailSender.cs` must be updated in its own change, then
+  confirmation and password-reset email checked against Mailpit.
+- [ ] **.NET 11 SDK image (Dependabot PR #599, closed November 12, 2026).** The owner deferred `dotnet/sdk` 11.0 for
+  the API image build stage to a later release. With it, the API image and Playwright checks failed; upgrade the
+  SDK (and `global.json`, if needed) in its own change and get those checks passing first.
 
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
@@ -434,7 +471,7 @@ that points back here.
 - [x] Recent Messages: decided by removing the card from Home (owner decision, November 7, 2026). Family Memories
   takes its place beside From Your Kids; messages stay one tap away in the side menu, bottom bar and Quick Add.
   - [ ] Owner check of the new Home bottom row on the dev site after the next release/0.4.0 promotion.
-- [ ] Replace placeholder counts (`src/frontend/src/app/layout/sample-counts.ts`) with real unread and notification
+- [ ] Replace placeholder counts (`src/frontend/src/app/core/layout/sample-counts.ts`) with real unread and notification
   data.
 - [ ] Deferred (owner OK for now): photo avatars, kids' artwork and memory photos (initials and tiles are used).
 - [ ] Show/hide password toggle (eye icon) on every password field: sign-in, create account, reset password and
@@ -453,6 +490,8 @@ that points back here.
 ## Calendar follow-ups
 
 - [ ] #547: verify the desktop Calendar legend in Week, Month and List on Development at 125% browser zoom with Messages minimized and expanded.
+  November 12, 2026: failed at 1024×768 (the legend reserved the open Messages width and grew to about 258px tall); it now
+  clears only the minimized bar and tightens below a 760px calendar (about 106px tall). Retest after it deploys.
 
 - [x] **Reject explicitly blank event edit titles (#273; #98).** Single and recurring edits distinguish omitted
   titles from explicitly empty/whitespace titles. Required titles are rejected without saving other fields;
@@ -471,6 +510,8 @@ that points back here.
     and screen reader on development, phone/desktop and both themes. Independent-parent checks remain open.
 
 - [ ] #553: verify desktop Calendar Week attendee photos, initials and overflow with synthetic profiles on Development in both themes.
+  The November 11 failure at 1024×768 (no avatars or overflow count) should be fixed by #582's narrow Week rules; retest
+  at 1024 after #582 deploys.
 
 - [x] **Monthly reminder boundary coverage (#171).** Expand the January 31 integration scenario to January
   29/30/31 in both non-leap and leap years, verifying February clamping, recovery of the original monthly day,
@@ -750,6 +791,10 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   - [ ] #125/#548: Verify exact text extraction for multi-codepoint emoji. Noto Emoji renders these sequences in
     the PDF, but some extract as a base or private-use glyph. Extend font coverage for additional writing systems.
   - [ ] Verify on develop: the live connection works through Azure's ingress (WebSockets, same-site check).
+    November 11, 2026: it failed because the app ran two replicas with no backplane (negotiate on one, connect on the
+    other: `404 No Connection with that ID`). The deploy workflow now sets `--max-replicas 1`; after the next deploy,
+    retest two-parent send/read, live read receipts and reconnect.
+  - [ ] Add a SignalR backplane (for example Azure SignalR) before the app ever needs more than one replica.
 
 ## Earlier Playwright feedback (#341)
 - [ ] Move the Playwright release gate to Ubuntu 26.04. `ubuntu-latest` switched on 2026-11-06, and there WebKit saved
@@ -790,3 +835,62 @@ These issues stay in **Test** on Project #2. Everything checkable from one paren
 - [ ] Owner design decisions: #548 chat transcript PDF layout, #566 Shared Records PDF layout, #477 shared funds design.
 - [ ] Remove the synthetic "UX TEST 555/504/500/499" task, provider, caregiver and emergency contact from the
   Development family when they're no longer useful.
+
+## Child Essentials Spanish follow-up (#577)
+
+- [ ] Complete CI build/full frontend and backend validation, including the new allergy PDF localization/tenant tests.
+- [ ] Verify Spanish section layouts on phone/desktop in light/dark, keyboard/screen-reader labels, Development language persistence/reload, and rendered allergy PDFs. See `docs/testing/child-essentials-spanish-577.md` for the audited inventory and local evidence.
+
+## Mobile calendar attendee photos (#581)
+
+- [ ] Verify authorized parent/child photos in Home Week/List and Calendar Week/List on Development, both themes and phone widths, including missing/failed images and narrow-slot overflow. Automated regression coverage is included; physical-device verification is not yet executed.
+
+## Safari favicon fallbacks (#579)
+
+- [ ] After deploying the favicon fallback assets, verify the tab icon in Safari 16.6 on macOS 13, an SVG-capable browser, and Apple bookmarks/touch icons. Check image responses before clearing a stale favicon cache. Local exports and automated asset checks do not certify Safari acceptance.
+
+## Remaining Spanish text (#534)
+
+The November 12 test found English on Settings (profile photo hints, Google Photos export status), chat event cards
+(dates, "All day", "Declined") and Memories (dates, "You", deletion chips). `fix/534-remaining-spanish` translates those
+and the Memories photo helpers (deletion dates, upload refusals, file problems).
+- [ ] Retest #534 on Development in Spanish after this deploys, including the "Shared Caregivers" heading from #578.
+- [x] Sweep the remaining hard-coded English built in code (`fix/534-english-sweep`): privacy notice storage list
+  and contents, Google Photos export lines and progress, Memories download/final-week/export notes, calendar Month bar
+  labels, date-rule and title validation, unavailable-time conflicts, proposed-change dates, approvals, Home
+  "unavailable" titles, kids gallery expiry, onboarding, delete-account, and the Add event repeat preview.
+- [ ] Still English by design or for later: child-account screens (`features/kid/*`, out of #534's scope), the
+  default "Time with {name}" parenting-time title (stored event data, seen by both parents), the development-only
+  sample dashboard data, and server messages missing from `core/api/problem.ts`'s Spanish map.
+- [ ] Check system emails in Spanish.
+
+## Medication reference (#127)
+
+- [x] Backend (revisions, one-time confirmation, permanent delete, PDF), Medical screen section, Privacy Notice and
+  inventory, breach runbook (branch `feat/127-medication-reference`, November 12, 2026).
+- [ ] CI: first run of `MedicationTests` and the child-session check in `ChildAccessTests` (Docker wasn't available
+  locally, so these integration tests haven't run yet).
+- [ ] After deploy, test on Development with synthetic data and two parents: first-save confirmation, add, edit,
+  discontinue, resume, delete permanently (history and the other parent's banner show no details), concurrent edits,
+  PDF for one child, all children and current only, in English and Spanish, phone and desktop, both themes,
+  keyboard, screen reader and reduced motion. A kid tablet must never show medication.
+- [ ] A Playwright spec for the Medical screen's medication flow.
+- [ ] Lawyer review before production (see the Privacy audit item above).
+
+## Shared Records submit indicator (#496)
+
+- [ ] After deploy, retest on Development with writes delayed or blocked: Report contribution, Shared fund request and Child support record each show the branded indicator just above Submit, in view at 1280×800 and phone width, both themes, keyboard and reduced motion.
+
+## Custom routines (#498)
+
+- [x] Routines list only what parents add; Add routine saves one routine to one or more children in one save, to
+  Shared or the parent's own list; edit keeps history, conflicts, the household agreement rules and update notices
+  (by routine id). Bedtime and Naps values stay in storage, out of the list (branch `feat/498-custom-routines`,
+  November 12, 2026).
+- [ ] CI: first run of `RoutinesTests` and the updated routines tests in `ChildAccessTests` and
+  `EssentialsUpdatesTests`, including the `AddRoutineEntries` migration (Docker wasn't available locally).
+- [ ] After deploy, test on Development with synthetic data and two parents: a child with no routines and one with
+  earlier bedtime values (list empty, add form blank, no child selected), "Brushing teeth" for one child, a second
+  routine for both children in one save, edit, Shared versus My routines visibility, use in both homes, stop
+  sharing, update dots, in English and Spanish, phone and desktop, both themes, keyboard and screen reader.
+- [ ] Removing a routine isn't in #498; decide whether parents need it before the private beta.

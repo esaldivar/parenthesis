@@ -1,7 +1,8 @@
 import { AppLocale } from '../../core/i18n/locale.service';
 import { translate } from '../../core/i18n/translations';
-import { Caregiver, ChildRef, LocalDateTime, ParentingTime, PlainDate, ScheduleStatus } from './model';
-import { addDays, dateTimeLabel, datePart, daysBetween } from './week';
+import { Caregiver, ChildRef, ParentingTime, ScheduleStatus } from './model';
+import { LocalDateTime, PlainDate } from '../../core/dates/plain-date';
+import { addDays, dateTimeLabel, datePart, daysBetween } from '../../core/dates/dates';
 
 /**
  * Parenting time as displayed: children who share a caregiver, start, end, status and title appear in one block

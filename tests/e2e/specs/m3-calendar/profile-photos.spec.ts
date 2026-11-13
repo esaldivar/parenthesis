@@ -55,7 +55,7 @@ const week = monday.toISOString().slice(0, 10);
 
 test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
   for (const theme of ['light', 'dark'] as const) {
-    test(`each parent sets their own photo and their own photo of a child; desktop calendar circles show them, phones keep initials, ${theme} (#388)`, async ({ page, family }, info) => {
+    test(`each parent sets their own photo and their own photo of a child; calendar circles show them on every screen size, ${theme} (#388)`, async ({ page, family }, info) => {
       await page.emulateMedia({ colorScheme: theme });
       const phone = (page.viewportSize()?.width ?? 1280) < 1024;
       const members = await family.dad.json<{ members: { membershipId: string; displayName: string }[] }>(family.dad.get(`/api/families/${family.familyId}`));
@@ -101,33 +101,32 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
         await page.keyboard.press('Escape');
       });
 
-      await test.step('calendar circles: Dad’s own photo choices on desktop, first-letter initials on phones', async () => {
+      await test.step('calendar circles: Dad’s own photo choices on phones and desktop', async () => {
         await page.goto(`/?week=${week}`);
         const block = page.locator(phone ? '.agenda .pt' : '.grid .pt', { hasText: 'Dad time' }).first();
         await expect(block).toBeVisible();
         const parent = block.locator('app-avatar[data-kind="parent"]');
         const child = block.locator('app-avatar:not([data-kind="parent"])');
-        if (phone) {
-          // The photos are on the page but hidden below 1024px.
-          await expect(child.locator('img')).toHaveCount(1);
-          expect(await shownPhoto(parent)).toBeNull();
-          expect(await shownPhoto(child)).toBeNull();
-          await expect(parent).toHaveText('D');
-          await expect(child).toHaveText('K');
-        } else {
-          await expect(child.locator('img')).toBeVisible();
-          expect(await shownPhoto(parent)).toMatch(/\/photos\//);
-          expect(await shownPhoto(child)).toBe(dadsKai);
-        }
+        await expect(parent.locator('img')).toBeVisible();
+        await expect(child.locator('img')).toBeVisible();
+        expect(await shownPhoto(parent)).toContain('/photos/');
+        expect(await shownPhoto(child)).toBe(dadsKai);
+        await page.getByRole('button', { name: 'List', exact: true }).click();
+        await expect(page.locator('.agenda .pt', { hasText: 'Dad time' }).first().locator('app-avatar[title="Kai"] img')).toBeVisible();
         await evidence(page, info, `${theme}-profile-photos-calendar`);
 
+        await page.goto(`/calendar?date=${week}`);
+        const slot = page.locator('app-calendar-week .grid').getByRole('button', { name: /^Dad time/ });
+        const attendee = slot.locator('.week-people app-avatar[title="Kai"]');
+        await expect(slot.locator('.week-people app-avatar[data-kind="parent"] img')).toBeVisible();
         if (!phone) {
-          await page.goto(`/calendar?date=${week}`);
-          const slot = page.locator('app-calendar-week .grid').getByRole('button', { name: /^Dad time/ });
-          const attendee = slot.locator('.week-people app-avatar[title="Kai"]');
           await expect(attendee.locator('img')).toBeVisible();
           expect(await shownPhoto(attendee)).toBe(dadsKai);
         }
+        await page.getByRole('button', { name: 'List', exact: true }).click();
+        const listed = page.locator('app-calendar-list').getByRole('button', { name: /^Dad time/ });
+        await expect(listed.locator('app-avatar[title="Kai"] img')).toBeVisible();
+        expect(await shownPhoto(listed.locator('app-avatar[title="Kai"]'))).toBe(dadsKai);
       });
 
       await test.step('Mom still sees only her own photo of Kai, and Dad can’t read hers', async () => {

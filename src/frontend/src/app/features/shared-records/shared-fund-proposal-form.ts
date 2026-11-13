@@ -68,6 +68,8 @@ const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
       @if (showError()) {
         <p class="error" role="alert">{{ 'feature.enter.a.title.and.both.shares.using' | tr }}</p>
       }
+      <!-- The page passes its loading indicator here, beside the submit action, so it stays in view (#496). -->
+      <ng-content select="app-loading-indicator" />
       <button type="submit" [disabled]="submitting()">{{ 'feature.send.for.agreement' | tr }}</button>
       <p class="privacy"><app-icon name="lock" /> {{ 'feature.visible.to.authorized.parents.only' | tr }}</p>
     </form>

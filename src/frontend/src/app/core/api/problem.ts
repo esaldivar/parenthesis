@@ -111,7 +111,23 @@ const spanishErrors = new Map([
   ["The attachment couldn't be saved. Try again.", "No se pudo guardar el archivo adjunto. Inténtalo de nuevo."],
   ["Only the other parent can respond to this report.", "Solo el otro padre o madre puede responder a este registro."],
   ["This report has already been answered.", "Ya se respondió a este registro."],
+  // Client-side calendar validation (#534); the same sentences the server sends where they overlap.
+  ["Enter a title.", "Ingresa un título."],
+  ["Choose a start date.", "Elige una fecha de inicio."],
+  ["Choose an end date.", "Elige una fecha de finalización."],
+  ["Choose a start date from today on.", "Elige una fecha de inicio a partir de hoy."],
+  ["Choose an end date from today on.", "Elige una fecha de finalización a partir de hoy."],
+  ["Choose a date from today on.", "Elige una fecha a partir de hoy."],
+  ["Enter a date like 10/27/2026.", "Ingresa una fecha como 10/27/2026 (mes/día/año)."],
+  ["Choose an end within 31 days of the start.", "Elige una finalización dentro de los 31 días posteriores al inicio."],
 ]);
+
+/** A message in the parent's language when the catalog has it, otherwise as it is (#534). */
+export function localizeMessage(message: string, locale: AppLocale): string {
+  return locale === 'es-419'
+    ? (spanishErrors.get(message) ?? spanishErrors.get(message.replaceAll('’', "'")) ?? message)
+    : message;
+}
 
 /** An RFC 9457 problem response from the API, reduced to what the UI needs. */
 export interface Problem {

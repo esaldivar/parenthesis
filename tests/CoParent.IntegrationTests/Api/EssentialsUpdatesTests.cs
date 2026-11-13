@@ -135,20 +135,26 @@ public sealed class EssentialsUpdatesTests(ApiFactory api) : IAsyncLifetime
         using var _ = dad;
         using var __ = mom;
         var routines = $"/api/families/{familyId}/children/{kaiId}/essentials/routines";
-        await mom.SendAsync(HttpMethod.Put, routines, new { revision = 0, values = new { bedtime = "8:00 PM" } });
+        var shared = new { id = Guid.NewGuid(), title = "Brushing teeth", details = "After breakfast" };
+        Assert.Equal(HttpStatusCode.OK, (await mom.SendAsync(HttpMethod.Put, routines,
+            new { revision = 0, values = new { entries = new[] { shared } } })).StatusCode);
 
         var homes = await JsonAsync(await mom.GetAsync(routines + "/households"));
         var momsId = homes.EnumerateArray().Single(h => h.GetProperty("isMine").GetBoolean()).GetProperty("ownerId").GetGuid();
+        var lightsOut = new { id = Guid.NewGuid(), title = "Lights out", details = "8:30 PM" };
+        var nap = new { id = Guid.NewGuid(), title = "Nap", details = (string?)null };
         Assert.Equal(HttpStatusCode.OK, (await mom.SendAsync(HttpMethod.Put, $"{routines}/households/{momsId}",
-            new { revision = 0, action = "save", values = new { bedtime = "8:30 PM", naps = "1 PM" } })).StatusCode);
+            new { revision = 0, action = "save", values = new { entries = new object[] { lightsOut, nap } } })).StatusCode);
         // Dad accepting Mom's routine into Shared changes no text, so Mom gets no notice for it.
         Assert.Equal(HttpStatusCode.OK, (await dad.SendAsync(HttpMethod.Put, $"{routines}/households/{momsId}",
             new { revision = 1, action = "accept" })).StatusCode);
 
+        // Notices name changed routines by id only, never by their text.
         var banners = await JsonAsync(await dad.PostAsync($"/api/families/{familyId}/essentials/updates/opened"));
         Assert.Equal(["routines", "householdRoutines"], banners.EnumerateArray().Select(b => b.GetProperty("section").GetString()!).ToList());
-        Assert.Equal(["bedtime"], Strings(banners[0].GetProperty("fields")));
-        Assert.Equal(["bedtime", "naps"], Strings(banners[1].GetProperty("fields")));
+        Assert.Equal([shared.id.ToString()], Strings(banners[0].GetProperty("fields")));
+        Assert.Equal([lightsOut.id.ToString(), nap.id.ToString()], Strings(banners[1].GetProperty("fields")));
+        Assert.DoesNotContain("Lights out", banners.GetRawText(), StringComparison.Ordinal);
         Assert.Empty((await UpdatesAsync(mom, familyId)).GetProperty("sections").EnumerateArray());
     }
 
@@ -221,7 +227,7 @@ public sealed class EssentialsUpdatesTests(ApiFactory api) : IAsyncLifetime
         Assert.Contains((await outsider.PostAsync(updates + "/opened")).StatusCode, new[] { HttpStatusCode.Forbidden, HttpStatusCode.NotFound });
 
         Assert.Equal(HttpStatusCode.BadRequest,
-            (await dad.PostAsync(updates + "/sections", new { childId = kaiId, section = "medication" })).StatusCode);
+            (await dad.PostAsync(updates + "/sections", new { childId = kaiId, section = "diary" })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest,
             (await dad.PostAsync(updates + "/rows", new { childId = kaiId, section = "clothing", fields = Array.Empty<string>() })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest,

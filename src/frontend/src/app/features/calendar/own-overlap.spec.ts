@@ -24,4 +24,11 @@ describe('own overlaps (#210, #259)', () => {
       'Sam is unavailable then. Choose different dates.',
     );
   });
+
+  it('speaks Spanish when the parent chose it (#534)', () => {
+    expect(caregiverUnavailableText(MEMBERS[1], true, 'es-419')).toBe('Sam no está disponible en ese horario. Elige otras fechas.');
+    expect(caregiverUnavailableText(undefined, false, 'es-419')).toBe(
+      'El padre o la madre que tiene a los niños no está disponible en ese horario. Elige otro horario u otro padre o madre.',
+    );
+  });
 });

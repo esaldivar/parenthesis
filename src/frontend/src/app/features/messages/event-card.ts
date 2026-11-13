@@ -1,9 +1,10 @@
-import { TranslatePipe } from '../../core/i18n/translations';
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CalendarEvent, ChatEventCard } from '../../core/api/api';
 import { toFamilyLocal } from '../calendar/time';
-import { dateTimeLabel, datePart } from '../dashboard/week';
+import { dateTimeLabel, datePart } from '../../core/dates/dates';
 import { Icon } from '../../shared/icon/icon';
 
 /** A calendar event as a chat card, from a calendar search result. */
@@ -20,25 +21,25 @@ export function toCard(event: CalendarEvent): ChatEventCard {
   };
 }
 
-/** "Sat, Nov 7, 10:30 AM", or "Sat, Nov 7 · All day", in the family's time zone. */
-export function cardWhen(card: ChatEventCard, timeZone: string): string {
+/** "Sat, Nov 7, 10:30 AM", or "Sat, Nov 7 · All day", in the family's time zone and the parent's language. */
+export function cardWhen(card: ChatEventCard, timeZone: string, locale: AppLocale = 'en'): string {
   if (!card.startsAt) {
     return '';
   }
   const local = toFamilyLocal(card.startsAt, timeZone);
-  const label = dateTimeLabel(local);
-  return card.allDay ? `${label.slice(0, label.lastIndexOf(','))} · All day` : label;
+  const label = dateTimeLabel(local, locale === 'en' ? 'en-US' : locale);
+  return card.allDay ? translate('chat.card.allDay', locale, { date: label.slice(0, label.lastIndexOf(',')) }) : label;
 }
 
 /** A proposal or a declined request never reads as confirmed (CLAUDE.md product guardrails). */
-export function cardStatus(card: ChatEventCard): string | null {
+export function cardStatus(card: ChatEventCard, locale: AppLocale = 'en'): string | null {
   switch (card.status) {
     case 'Proposed':
-      return 'Pending approval';
+      return translate('feature.pending.approval', locale);
     case 'Declined':
-      return 'Declined';
+      return translate('feature.declined', locale);
     default:
-      return card.changePending ? 'Change pending' : null;
+      return card.changePending ? translate('calendar.filter.change-pending', locale) : null;
   }
 }
 
@@ -151,8 +152,9 @@ export class ChatEventCardView {
   /** In a message, the card opens the event on the Calendar. */
   readonly link = input(true);
 
-  protected readonly when = computed(() => cardWhen(this.card(), this.timeZone()));
-  protected readonly status = computed(() => cardStatus(this.card()));
+  private readonly locale = inject(LocaleService);
+  protected readonly when = computed(() => cardWhen(this.card(), this.timeZone(), this.locale.locale()));
+  protected readonly status = computed(() => cardStatus(this.card(), this.locale.locale()));
   protected readonly query = computed(() => {
     const start = this.card().startsAt;
     return { date: start ? datePart(toFamilyLocal(start, this.timeZone())) : null, event: this.card().id };

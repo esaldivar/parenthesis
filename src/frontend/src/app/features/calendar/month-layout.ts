@@ -1,7 +1,9 @@
-import { PlainDate } from '../dashboard/model';
-import { addDays, dayLong } from '../dashboard/week';
+import { AppLocale } from '../../core/i18n/locale.service';
+import { translate } from '../../core/i18n/translations';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays, dayLong } from '../../core/dates/dates';
 import { CalendarItem, byStart } from './calendar-items';
-import { itemSummary, statusText } from './item-text';
+import { itemSummary, statusText } from './components/item-text/item-text.component';
 
 /** Lanes of bars a week row shows; anything more is behind that day's "+N more" (#250). */
 export const MONTH_LANES = 3;
@@ -34,17 +36,17 @@ export interface MonthMore {
 }
 
 /** Short status words for a bar, where space is tight. */
-function barStatus(item: CalendarItem): string | null {
+function barStatus(item: CalendarItem, locale: AppLocale): string | null {
   if (item.kind === 'task') {
     return null;
   }
   switch (item.status) {
     case 'pending':
-      return 'Proposed';
+      return translate('calendar.month.proposed', locale);
     case 'declined':
-      return 'Declined';
+      return translate('feature.declined', locale);
     case 'change-pending':
-      return statusText(item);
+      return statusText(item, locale);
     default:
       return null;
   }
@@ -59,7 +61,9 @@ function barStatus(item: CalendarItem): string | null {
 export function layOutWeek(
   days: readonly PlainDate[],
   items: readonly CalendarItem[],
+  locale: AppLocale = 'en',
 ): { bars: MonthBar[]; more: MonthMore[] } {
+  const intl = locale === 'en' ? 'en-US' : locale;
   const [first, last] = [days[0], days[days.length - 1]];
   const from = (i: CalendarItem) => (i.firstDate < first ? first : i.firstDate);
   const to = (i: CalendarItem) => (i.lastDate > last ? last : i.lastDate);
@@ -96,11 +100,20 @@ export function layOutWeek(
     }
     const continuesBefore = item.firstDate < first;
     const continuesAfter = item.lastDate > last;
-    const part = continuesBefore && continuesAfter ? ' Continues from last week and into next week.' : continuesBefore ? ' Continues from last week.' : continuesAfter ? ' Continues into next week.' : '';
+    const part = continuesBefore && continuesAfter
+      ? ' ' + translate('calendar.month.continuesBoth', locale)
+      : continuesBefore
+        ? ' ' + translate('calendar.month.continuesFrom', locale)
+        : continuesAfter
+          ? ' ' + translate('calendar.month.continuesInto', locale)
+          : '';
     // Month bars sit in week rows, without a labelled day ancestor. Every occurrence needs its own full date (#250).
-    const firstDate = `${dayLong(item.firstDate)}, ${item.firstDate.slice(0, 4)}`;
-    const lastDate = `${dayLong(item.lastDate)}, ${item.lastDate.slice(0, 4)}`;
-    const dates = item.firstDate === item.lastDate ? firstDate : `${firstDate} through ${lastDate}`;
+    const firstDate = `${dayLong(item.firstDate, intl)}, ${item.firstDate.slice(0, 4)}`;
+    const lastDate = `${dayLong(item.lastDate, intl)}, ${item.lastDate.slice(0, 4)}`;
+    const dates = item.firstDate === item.lastDate
+      ? firstDate
+      : translate('calendar.month.through', locale, { from: firstDate, to: lastDate });
+    const status = barStatus(item, locale);
     bars.push({
       key: `${item.id}:${first}`,
       item,
@@ -109,8 +122,8 @@ export function layOutWeek(
       lane,
       continuesBefore,
       continuesAfter,
-      label: `${barStatus(item) ? `${barStatus(item)}: ` : ''}${itemSummary(item)}, ${dates}${part}`,
-      status: barStatus(item),
+      label: `${status ? `${status}: ` : ''}${itemSummary(item, locale)}, ${dates}${part}`,
+      status,
     });
   }
 
@@ -119,7 +132,11 @@ export function layOutWeek(
     column: days.indexOf(date) + 1,
     count,
     pending,
-    label: `${count} more on ${dayLong(date)}${pending ? `, ${pending} pending approval` : ''}. Open this week.`,
+    label: translate(pending ? 'calendar.month.morePending' : 'calendar.month.more', locale, {
+      count,
+      date: dayLong(date, intl),
+      pending,
+    }),
   }));
   return { bars, more };
 }

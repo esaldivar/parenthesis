@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Families.Domain;
 using CoParent.Modules.Families.Infrastructure;
+using CoParent.Modules.Families.Infrastructure.Persistence;
 using CoParent.Modules.Identity.Contracts;
 using CoParent.SharedKernel.Accounts;
 using CoParent.SharedKernel.Auditing;
@@ -160,6 +161,10 @@ internal static class AccountDeletionEndpoints
             db.EssentialsUpdates.RemoveRange(await db.EssentialsUpdates
                 .Where(u => u.RecipientMembershipId == membershipId).ToListAsync(ct));
 
+            // Their medication confirmation (#127, preflight D6) is about them; the entries stay with the family.
+            db.MedicationAcknowledgements.RemoveRange(await db.MedicationAcknowledgements
+                .Where(a => a.MembershipId == membershipId).ToListAsync(ct));
+
             await db.SaveChangesAsync(ct);
             foreach (var handler in handlers)
             {
@@ -176,6 +181,7 @@ internal static class AccountDeletionEndpoints
     private static async Task DeleteFamilyAsync(FamiliesDbContext db, CancellationToken cancellationToken)
     {
         db.EssentialsUpdates.RemoveRange(await db.EssentialsUpdates.ToListAsync(cancellationToken));
+        db.MedicationAcknowledgements.RemoveRange(await db.MedicationAcknowledgements.ToListAsync(cancellationToken));
         db.ProfilePhotos.RemoveRange(await db.ProfilePhotos.ToListAsync(cancellationToken));
         db.PairingCodes.RemoveRange(await db.PairingCodes.ToListAsync(cancellationToken));
         db.ChildCredentials.RemoveRange(await db.ChildCredentials.ToListAsync(cancellationToken));

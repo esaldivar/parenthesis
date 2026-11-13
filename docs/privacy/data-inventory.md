@@ -24,7 +24,7 @@ All first-party, `Secure`, `SameSite=Strict`, `Path=/`.
 | `parenthesis.locale.account.<userId>` | local | Device copy of each parent's language choice (server account preference is authoritative) | Until cleared | `locale.service.ts` |
 | `parenthesis.appearance.<userId>` | local | Light/dark/system choice | Until cleared | `appearance.service.ts` |
 | `parenthesis.event-themes.<account>` | local | Event themes on/off | Until cleared | `event-themes.service.ts` |
-| `parenthesis.calendar-filters.<userId>.<familyId>` | local | Calendar filters | Until reset/cleared | `calendar-filters.ts`, `calendar-page.ts` |
+| `parenthesis.calendar-filters.<userId>.<familyId>` | local | Calendar filters | Until reset/cleared | `calendar-filters.ts`, `calendar-page.component.ts` |
 | `parenthesis.sharedDevice.declined:<userId>` | local | "Not a shared device" answer | Until cleared or device set up | `auth.store.ts` |
 | `parenthesis.pendingInvitation` | local | Invitation token across sign-up | Cleared on use, 7 days max | `pending-invitation.ts` |
 | `parenthesis.parentPinReset` | session | PIN reset token during the flow | Cleared on use or tab close | `parent-pin-reset-page.ts` |
@@ -59,6 +59,10 @@ No analytics, advertising, third-party scripts or third-party fonts are loaded i
 | Events, tasks, reminders, unavailable time, locations | Family | Until deleted or the family closes |
 | Change requests and decisions | Parents | Requests expire after 14 days undecided; decisions stay with the family |
 | Event photos (re-encoded, metadata dropped) | Family | 28 days after upload |
+| Child Essentials: school, allergies and food, routines, clothing, what helps, caregivers, emergency contacts, medical providers. Every save is kept as history | Child (entered by parents) | Until the family closes or a parent asks |
+| Medication reference (#127): name, prescribed dose, schedule, instructions, current or discontinued, who updated it and when, with history | Child (entered by parents) | Until a parent deletes the entry (it's removed from history too), the family closes or a parent asks |
+| Medication confirmation: the parent, time and notice version of their one-time confirmation | Parent | Until the parent leaves the family or it closes |
+| Child Essentials update notices: child, section, changed field or entry ids; never values | Parent | Until the parent leaves the family or it closes |
 | Devices (name, kind, token hash, expiry) | Family | Until removed or expired |
 | Google refresh token (encrypted with data protection) | Parent | Until disconnect or account deletion |
 | Google Photos refresh token (encrypted), albums made and export records (photo id, state, Google's item id) | Parent | Until disconnect, reconnect or account deletion; an export record also goes with its photo's row |
@@ -66,6 +70,11 @@ No analytics, advertising, third-party scripts or third-party fonts are loaded i
 | IP address | Rate limiting, in memory | Minutes; not stored |
 | Container logs (Log Analytics) | Operations | Workspace default, 30 days |
 | PostgreSQL point-in-time backups | Operations | 7 days |
+
+Allergies, medical providers and medication are health information (decisions in
+[medication-preflight-127.md](medication-preflight-127.md)). Only the family's active parents can read them, children
+never can, and they aren't sent by email or to any service but Azure. Allergy and medication PDFs are made on request
+and never stored on the server. A deleted medication entry leaves database backups within 7 days.
 
 Account deletion (A-12) removes the sign-in, name and email at once; with a co-parent, the family's shared history
 stays attributed to "Former parent".
