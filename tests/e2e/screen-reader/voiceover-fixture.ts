@@ -1,7 +1,7 @@
 import { voiceOverTest } from '@guidepup/playwright';
 // Guidepup has no public API for this; the package has no exports map, so the module path is stable for 0.21.x.
-import { applicationIdMap } from '@guidepup/playwright/lib/applicationIdMap';
-import { navigateVoiceOverToWebContent } from '@guidepup/playwright/lib/navigateVoiceOverToWebContent';
+import { applicationIdMap } from '@guidepup/playwright/lib/applicationIdMap.js';
+import { navigateVoiceOverToWebContent } from '@guidepup/playwright/lib/navigateVoiceOverToWebContent.js';
 import type { Family } from '../support/family';
 import { withLocalFamily } from './local-family';
 import { ReaderJourney } from './reader-journey';

@@ -50,18 +50,22 @@ port_free() {
 head_sha() { git -C "$repo" rev-parse HEAD; }
 head_tree() { git -C "$repo" rev-parse 'HEAD^{tree}'; }
 
+# A process's start time, trimmed: macOS pads `ps -o lstart=` with a trailing space that `read` would drop.
+started_at() { ps -o lstart= -p "$1" 2>/dev/null | tr -s ' ' | sed 's/^ //; s/ $//'; }
+
 # Records a background process with its start time, so stop never kills a reused process ID.
 record() {
-  printf '%s %s\n' "$2" "$(ps -o lstart= -p "$2" | tr -s ' ')" > "$state/$1.pid"
+  printf '%s %s\n' "$2" "$(started_at "$2")" > "$state/$1.pid"
 }
 
 stop_recorded() {
   local file="$state/$1.pid" pid started now
   [[ -f "$file" ]] || return 0
   read -r pid started < "$file"
-  now="$(ps -o lstart= -p "$pid" 2>/dev/null | tr -s ' ' || true)"
+  now="$(started_at "$pid" || true)"
   if [[ -n "$now" ]]; then
-    [[ "$now" == "$started" ]] || fail "Refusing to stop reused process ID $pid ($1)."
+    # Report and carry on, so stop still shuts down the other processes and the database.
+    if [[ "$now" != "$started" ]]; then echo "Refusing to stop reused process ID $pid ($1)." >&2; return 1; fi
     kill "$pid"
     for _ in $(seq 1 50); do kill -0 "$pid" 2>/dev/null || break; sleep 0.2; done
   fi
@@ -80,8 +84,14 @@ wait_url() { # url expected-status pid
   fail "Candidate readiness failed: $url (expected $expected)."
 }
 
+# Sass's native compiler needs macOS 14+; on older macOS it fails and the Angular build hangs. Use the JS compiler.
+sass_fallback() {
+  if [[ "$(uname)" == Darwin && "$(sw_vers -productVersion | cut -d. -f1)" -lt 14 ]]; then export NG_BUILD_SASS_EMBEDDED=0; fi
+}
+
 build() {
   own_state
+  sass_fallback
   rm -rf "$app"
   echo 'Publishing the API'
   dotnet publish "$repo/src/backend/CoParent.Api/CoParent.Api.csproj" -c Release --self-contained false \
