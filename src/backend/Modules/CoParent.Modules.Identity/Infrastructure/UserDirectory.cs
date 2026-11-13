@@ -1,5 +1,6 @@
 using CoParent.Modules.Identity.Contracts;
 using CoParent.Modules.Identity.Endpoints;
+using CoParent.Modules.Identity.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 

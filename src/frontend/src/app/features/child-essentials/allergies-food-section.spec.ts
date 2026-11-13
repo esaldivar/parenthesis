@@ -1,12 +1,38 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AllergiesFoodValues, attachmentName } from '../../core/api/api';
 import { AllergiesFoodSection } from './allergies-food-section';
 
 describe('Allergies & Food', () => {
   const url = '/api/families/family-1/children/child-1/essentials/allergies-food';
   const empty: AllergiesFoodValues = { allergies: null, noKnownAllergies: false, foodPreferences: null };
+
+  it('requests Spanish labels for the allergy PDF without changing the selected child', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.inject(LocaleService).setLocale('es-419');
+    const fixture = TestBed.createComponent(AllergiesFoodSection);
+    fixture.componentRef.setInput('familyId', 'family-1');
+    fixture.componentRef.setInput('childId', 'child-1');
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne({ method: 'GET', url }).flush({ revision: 0, values: empty });
+    await fixture.whenStable(); fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    host.querySelector<HTMLButtonElement>('[aria-controls="allergy-pdf-options"]')!.click();
+    fixture.detectChanges();
+    host.querySelector<HTMLButtonElement>('#allergy-pdf-options button')!.click();
+    const request = http.expectOne(r => r.url.endsWith('/allergies/pdf'));
+    expect(request.request.params.get('language')).toBe('es-419');
+    expect(request.request.params.get('childId')).toBe('child-1');
+    request.flush(new Blob(), { status: 403, statusText: 'Forbidden' });
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(host.querySelector('#allergy-pdf-options')?.textContent).not.toContain('couldn');
+    TestBed.inject(LocaleService).setLocale('en');
+    localStorage.clear();
+    http.verify();
+  });
 
   it('requests an export for all children and reports download failure', async () => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
@@ -26,7 +52,7 @@ describe('Allergies & Food', () => {
     expect(picker.value).toBe('child-1');
     picker.value = '';
     [...host.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Download PDF')!.click();
-    const request = http.expectOne('/api/families/family-1/child-essentials/allergies/pdf');
+    const request = http.expectOne('/api/families/family-1/child-essentials/allergies/pdf?language=en');
     expect(request.request.responseType).toBe('blob');
     request.flush(new Blob(), { status: 403, statusText: 'Forbidden' });
     await fixture.whenStable();

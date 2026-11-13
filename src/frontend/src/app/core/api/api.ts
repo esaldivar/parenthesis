@@ -196,6 +196,36 @@ export interface MedicalProvidersHistoryEntry {
   readonly current: readonly MedicalProvider[];
 }
 
+/** One medication as a parent enters it (#127): reference only, no doses calculated or tracked. */
+export interface MedicationValues {
+  readonly id: string;
+  readonly name: string;
+  readonly dose: string | null;
+  readonly schedule: string | null;
+  readonly instructions: string | null;
+  readonly discontinued: boolean;
+}
+
+export interface MedicationItem extends MedicationValues {
+  readonly updatedBy: string;
+  readonly updatedAt: string;
+}
+
+/** A child's medication. `acknowledged`: this parent has confirmed the medication notice (preflight D4). */
+export interface MedicationView {
+  readonly revision: number;
+  readonly acknowledged: boolean;
+  readonly entries: readonly MedicationItem[];
+}
+
+export interface MedicationHistoryEntry {
+  readonly revision: number;
+  readonly editedBy: string;
+  readonly editedAt: string;
+  readonly previous: readonly MedicationValues[];
+  readonly current: readonly MedicationValues[];
+}
+
 export interface EmergencyContactsView {
   readonly version: number;
   readonly contacts: readonly EmergencyContact[];
@@ -809,7 +839,8 @@ export type EssentialsSectionId =
   | 'householdRoutines'
   | 'emergencyContacts'
   | 'caregivers'
-  | 'medical';
+  | 'medical'
+  | 'medication';
 
 /** A child's section with an update this parent hasn't looked at: its dot, and the changed rows not yet seen. */
 export interface EssentialsSectionUpdates {
@@ -890,9 +921,23 @@ export interface HouseholdRoutine {
   readonly canAccept: boolean;
 }
 
+/** One routine a parent added (#498), such as “Brushing teeth”. */
+export interface RoutineEntry {
+  readonly id: string;
+  readonly title: string;
+  readonly details: string | null;
+}
+
+/** A child’s routines: only the entries parents added. */
 export interface RoutinesValues {
-  readonly bedtime: string | null;
-  readonly naps: string | null;
+  readonly entries: readonly RoutineEntry[];
+}
+
+/** Adds one routine to each chosen child: to the Shared list, or to the signed-in parent’s own list. */
+export interface AddRoutineRequest {
+  readonly routine: { readonly title: string; readonly details: string | null };
+  readonly childIds: readonly string[];
+  readonly visibility: 'shared' | 'mine';
 }
 
 export interface RoutinesView {
@@ -1045,6 +1090,9 @@ export class Api {
       params: beforeRevision === null ? {} : { beforeRevision },
     }));
 
+  addRoutine = (familyId: string, body: AddRoutineRequest) =>
+    this.call(this.http.post<readonly { childId: string; routines: RoutinesView }[]>(
+      `/api/families/${familyId}/essentials/routines`, body));
   householdRoutines = (familyId: string, childId: string) =>
     this.call(this.http.get<readonly HouseholdRoutine[]>(this.routinesUrl(familyId, childId) + '/households'));
   updateHouseholdRoutine = (familyId: string, childId: string, ownerId: string,
@@ -1089,6 +1137,36 @@ export class Api {
     return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/medical`;
   }
 
+  medication = (familyId: string, childId: string) =>
+    this.call(this.http.get<MedicationView>(this.medicationUrl(familyId, childId)));
+  /** Saves the whole list. `acknowledge` confirms the medication notice on this parent's first save. */
+  saveMedication = (familyId: string, childId: string, revision: number, entries: readonly MedicationValues[], acknowledge = false) =>
+    this.call(this.http.put<MedicationView>(this.medicationUrl(familyId, childId), { revision, entries, acknowledge }));
+  /** Deletes one entry permanently, from its history too. */
+  deleteMedication = (familyId: string, childId: string, entryId: string) =>
+    this.call(this.http.delete<MedicationView>(`${this.medicationUrl(familyId, childId)}/${encodeURIComponent(entryId)}`));
+  medicationHistory = (familyId: string, childId: string, beforeRevision: number | null) =>
+    this.call(this.http.get<{ entries: readonly MedicationHistoryEntry[]; beforeRevision: number | null }>(
+      this.medicationUrl(familyId, childId) + '/history',
+      { params: beforeRevision === null ? {} : { beforeRevision } },
+    ));
+
+  /** The medication PDF and its dated file name ("medications-2026-11-12.pdf"). */
+  downloadMedicationPdf = async (familyId: string, childId: string | null, currentOnly: boolean) => {
+    const response = await this.call(
+      this.http.get(`/api/families/${encodeURIComponent(familyId)}/child-essentials/medication/pdf`, {
+        responseType: 'blob',
+        observe: 'response',
+        params: { ...(childId ? { childId } : {}), ...(currentOnly ? { currentOnly: true } : {}), language: this.locale.locale() },
+      }),
+    );
+    return { pdf: response.body ?? new Blob(), fileName: attachmentName(response.headers.get('Content-Disposition')) ?? 'medications.pdf' };
+  };
+
+  private medicationUrl(familyId: string, childId: string): string {
+    return `/api/families/${encodeURIComponent(familyId)}/children/${encodeURIComponent(childId)}/essentials/medication`;
+  }
+
   emergencyContacts = (familyId: string, childId: string) =>
     this.call(this.http.get<EmergencyContactsView>(this.emergencyContactsUrl(familyId, childId)));
   saveEmergencyContacts = (familyId: string, childId: string, body: EmergencyContactsView) =>
@@ -1104,7 +1182,7 @@ export class Api {
       this.http.get(`/api/families/${encodeURIComponent(familyId)}/child-essentials/allergies/pdf`, {
         responseType: 'blob',
         observe: 'response',
-        params: childId ? { childId } : {},
+        params: { ...(childId ? { childId } : {}), language: this.locale.locale() },
       }),
     );
     return { pdf: response.body ?? new Blob(), fileName: attachmentName(response.headers.get('Content-Disposition')) ?? 'allergies.pdf' };

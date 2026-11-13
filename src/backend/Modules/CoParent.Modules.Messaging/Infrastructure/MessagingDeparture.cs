@@ -1,3 +1,4 @@
+using CoParent.Modules.Messaging.Infrastructure.Persistence;
 using CoParent.SharedKernel.Accounts;
 using Microsoft.EntityFrameworkCore;
 

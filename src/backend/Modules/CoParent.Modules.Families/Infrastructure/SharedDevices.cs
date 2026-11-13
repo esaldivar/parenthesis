@@ -1,5 +1,6 @@
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Families.Domain;
+using CoParent.Modules.Families.Infrastructure.Persistence;
 using CoParent.Modules.Identity.Contracts;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Http;

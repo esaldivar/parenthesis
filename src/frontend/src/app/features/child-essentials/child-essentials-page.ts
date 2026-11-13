@@ -1,3 +1,4 @@
+import { LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe } from '../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal,
@@ -26,6 +27,7 @@ import { CaregiversSection } from './caregivers-section';
 import { ClothingSection } from './clothing-section';
 import { EmergencyContactsSection } from './emergency-contacts-section';
 import { MedicalProvidersSection } from './medical-providers-section';
+import { MedicationSection } from './medication-section';
 import { RoutinesSection } from './routines-section';
 import { SchoolSection } from './school-section';
 import { WhatHelpsSection } from './what-helps-section';
@@ -39,7 +41,7 @@ const MEDICAL_TINT = {
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, MedicalProvidersSection, RoutinesSection, SchoolSection, WhatHelpsSection],
+  imports: [TranslatePipe, Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, MedicalProvidersSection, MedicationSection, RoutinesSection, SchoolSection, WhatHelpsSection],
   template: `
     <h1 tabindex="-1" #heading>{{ 'feature.child.essentials' | tr }}</h1>
     <!-- The other parent's saves since the last visit (#128): shown once, then gone after about ten seconds or on X. -->
@@ -67,6 +69,7 @@ const MEDICAL_TINT = {
           @for (profile of [child]; track profile.id) {
             <app-medical-providers-section [familyId]="family" [childId]="profile.id" [children]="children()"
               (childSelected)="selectChild($event)" (back)="closeMedical()" />
+            <app-medication-section [familyId]="family" [childId]="profile.id" [children]="children()" />
           }
         }
       } @else {
@@ -87,11 +90,11 @@ const MEDICAL_TINT = {
           }
         </div>
         <section aria-labelledby="essentials-heading">
-          <h2 id="essentials-heading">{{ child.firstName }}{{ 'feature.s.essentials' | tr }}</h2>
+          <h2 id="essentials-heading">{{ 'essentials.copy.childHeading' | tr: { name: child.firstName } }}</h2>
           @if (openSection() !== null) {
             <button type="button" class="back" (click)="closeSection()">
               <app-icon name="chevron-left" [size]="20" />
-              {{ 'feature.all.of' | tr }} {{ child.firstName }}{{ 'feature.s.essentials' | tr }}
+              {{ 'essentials.copy.allEssentials' | tr: { name: child.firstName } }}
             </button>
           }
           @if (familyId(); as family) {
@@ -104,7 +107,7 @@ const MEDICAL_TINT = {
                     <summary>
                       <img class="tile-art" [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
                       <span class="tile-text">
-                        <span class="tile-name">{{ tile.name }}</span><span class="visually-hidden">, </span>
+                        <span class="tile-name">{{ tile.name | tr }}</span><span class="visually-hidden">, </span>
                         <span class="tile-about">{{ tile.aboutKey | tr }}</span>
                       </span>
                       @if (!disclosure.open && tileHasUpdate(child.id, tile.section)) {
@@ -116,14 +119,14 @@ const MEDICAL_TINT = {
                     <div class="tile-content">
                       @if (openSection() === tile.section) {
                         <header class="section-hero">
-                          <h2 id="section-heading" tabindex="-1">{{ tile.name }}</h2>
+                          <h2 id="section-heading" tabindex="-1">{{ tile.name | tr }}</h2>
                           <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
                         </header>
                       }
                       @switch (tile.section) {
                         @case ('school') { <app-school-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('allergiesFood') { <app-allergies-food-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
-                        @case ('routines') { <app-routines-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('routines') { <app-routines-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
                         @case ('clothing') { <app-clothing-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('whatHelps') { <app-what-helps-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('caregivers') { <app-caregivers-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
@@ -136,7 +139,7 @@ const MEDICAL_TINT = {
                   <span class="tile-text"><span class="tile-name">{{ 'feature.medical' | tr }}</span>
                     <span class="tile-about">{{ 'feature.doctors.dentists.and.other.providers' | tr }}</span>
                   </span>
-                  @if (tileHasUpdate(child.id, 'medical')) {
+                  @if (tileHasUpdate(child.id, 'medical') || tileHasUpdate(child.id, 'medication')) {
                     <span class="child-dot" aria-hidden="true"></span>
                     <span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span>
                   }
@@ -322,6 +325,7 @@ const MEDICAL_TINT = {
   `,
 })
 export class ChildEssentialsPage {
+  private readonly locale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   protected readonly updates = inject(EssentialsUpdatesStore);
@@ -347,7 +351,7 @@ export class ChildEssentialsPage {
       .filter((banner) => names.has(banner.childId) && ESSENTIALS_SECTIONS[banner.section])
       .map((banner) => ({
         key: `${banner.childId}:${banner.section}`,
-        text: bannerText(names.get(banner.childId)!, banner),
+        text: bannerText(names.get(banner.childId)!, banner, this.locale.locale()),
         ...this.bannerTint(banner.section),
       }))
       .filter((banner) => !this.dismissed().has(banner.key));
@@ -393,6 +397,7 @@ export class ChildEssentialsPage {
   protected openMedical(childId: string): void {
     this.medicalOpen.set(true);
     this.updates.sectionOpened(childId, 'medical');
+    this.updates.sectionOpened(childId, 'medication');
   }
 
   protected tileHasUpdate(childId: string, section: EssentialsSectionId): boolean {
@@ -430,6 +435,11 @@ export class ChildEssentialsPage {
   protected selectChild(id: string): void {
     this.openSection.set(null);
     this.selectedId.set(id);
+    // On the Medical screen, choosing a child opens their providers and medication.
+    if (this.medicalOpen()) {
+      this.updates.sectionOpened(id, 'medical');
+      this.updates.sectionOpened(id, 'medication');
+    }
   }
 
   protected retryLoad(): void {

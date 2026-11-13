@@ -6,6 +6,7 @@ using CoParent.Modules.Calendar.Contracts;
 using CoParent.Modules.Families.Contracts;
 using CoParent.Modules.Memories.Domain;
 using CoParent.Modules.Memories.Infrastructure;
+using CoParent.Modules.Memories.Infrastructure.Persistence;
 using CoParent.SharedKernel.Auditing;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Security;

@@ -4,8 +4,8 @@ import { Api, CalendarEvent, ChatConversation, ChatMessage, FamilyMember } from 
 import { CHAT_CONNECTION, ChatConnection } from '../../core/chat/chat.store';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
-import { MessagesPage } from './messages-page';
-import { PICKER_DEBOUNCE_MS } from './event-picker';
+import { MessagesPage } from './pages/messages-page/messages-page.component';
+import { PICKER_DEBOUNCE_MS } from './components/event-picker/event-picker.component';
 
 // Slice 2 of docs/design/m4-chat.md: calendar event cards. Synthetic family only: Alex (this parent) and Jamie.
 const ALEX: FamilyMember = { membershipId: 'm-alex', displayName: 'Alex Rivera', role: 'Parent', joinedAt: '', isYou: true };

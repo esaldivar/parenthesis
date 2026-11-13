@@ -83,9 +83,12 @@ az storage account create -g $RG -n stparenthesis$ENV$SUFFIX -l $LOC --sku Stand
 The first deployment uses a placeholder image; the workflow replaces it.
 
 ```bash
-az containerapp create -g $RG -n ca-parenthesis-$ENV --environment cae-parenthesis-$ENV --image mcr.microsoft.com/k8se/quickstart:latest --target-port 8080 --ingress external --min-replicas 0 --max-replicas 2 --system-assigned
+az containerapp create -g $RG -n ca-parenthesis-$ENV --environment cae-parenthesis-$ENV --image mcr.microsoft.com/k8se/quickstart:latest --target-port 8080 --ingress external --min-replicas 0 --max-replicas 1 --system-assigned
 az containerapp job create -g $RG -n job-parenthesis-migrate-$ENV --environment cae-parenthesis-$ENV --image mcr.microsoft.com/k8se/quickstart:latest --trigger-type Manual --replica-timeout 600 --replica-retry-limit 0 --args migrate --system-assigned
 ```
+
+Keep the app at one replica (`--max-replicas 1`; the deploy workflow enforces it). The live chat hub has no backplane
+yet, so a second replica breaks live messages and read receipts (ADR-0008, #125).
 
 The migration job runs the API image with the `migrate` argument (`dotnet CoParent.Api.dll migrate`), which applies
 every module's migrations and exits.

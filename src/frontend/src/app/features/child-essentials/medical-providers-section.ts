@@ -1,6 +1,7 @@
 import { LocaleService } from '../../core/i18n/locale.service';
+import { essentialsOption } from './essentials-options';
 import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -57,7 +58,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
           @for (provider of saved.providers; track provider.id) {
             <article class="entry provider">
               <div>
-                <span class="tag">{{ provider.specialty || provider.type }}</span>
+                <span class="tag">{{ provider.specialty || optionLabel(provider.type, locale.locale()) }}</span>
                 <h3>{{ provider.name }}</h3>
                 @if (provider.practice) { <p>{{ provider.practice }}</p> }
                 @if (provider.phone) { <p>{{ provider.phone }}</p> }
@@ -93,7 +94,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
               <fieldset [disabled]="saving()">
                 <label>{{ 'feature.provider.type' | tr }}
                   <select formControlName="type">
-                    @for (type of types; track type) { <option [value]="type">{{ type }}</option> }
+                    @for (type of types; track type) { <option [value]="type">{{ optionLabel(type, locale.locale()) }}</option> }
                   </select>
                 </label>
                 @if (form.controls.type.value === 'Other') {
@@ -178,7 +179,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
       @if (providers.length) {
         <ul>
           @for (provider of providers; track provider.id) {
-            <li>{{ provider.name }} · {{ provider.specialty || provider.type }}
+            <li>{{ provider.name }} · {{ provider.specialty || optionLabel(provider.type, locale.locale()) }}
               @if (provider.practice) { · {{ provider.practice }} }
               @if (provider.phone) { · {{ provider.phone }} }
               @if (provider.address) { · {{ provider.address }} }
@@ -190,7 +191,8 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
   `,
 })
 export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersView, ProviderFields, MedicalProvidersHistoryEntry> {
-  private readonly locale = inject(LocaleService);
+  protected readonly locale = inject(LocaleService);
+  protected readonly optionLabel = essentialsOption;
   readonly children = input.required<readonly Child[]>();
   readonly childSelected = output<string>();
   readonly back = output<void>();
@@ -201,9 +203,7 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
   protected readonly targetIds = signal<readonly string[]>([]);
   protected readonly directionsUrl = mapsDirectionsUrl;
   protected readonly addressLimit = LOCATION_MAX_LENGTH;
-  protected get savedNotice(): string {
-    return translate('essentials.medical.saved', this.locale.locale());
-  }
+  protected readonly savedNoticeKey = 'essentials.medical.saved';
   protected readonly types = MEDICAL_PROVIDER_TYPES;
   protected readonly existing = signal<MedicalProvider | null>(null);
   protected readonly removing = signal<MedicalProvider | null>(null);
@@ -271,7 +271,7 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
       const saved = await this.api.medicalProviders(this.familyId(), childId);
       if (!this.destroyRef.destroyed && childId === this.childId()) this.current.set(saved);
     } catch {
-      if (childId === this.childId()) this.error.set(translate('feedback.medical.providers.couldn.t.be.loaded', this.locale.locale()));
+      if (childId === this.childId()) this.error.set('feedback.medical.providers.couldn.t.be.loaded');
     }
   }
 

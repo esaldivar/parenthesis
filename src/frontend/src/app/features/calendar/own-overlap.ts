@@ -1,4 +1,6 @@
 import { FamilyMember } from '../../core/api/api';
+import { AppLocale } from '../../core/i18n/locale.service';
+import { translate } from '../../core/i18n/translations';
 
 /**
  * A parent can't have the children and be unavailable at the same time (owner decisions, October 22, 2026; #210).
@@ -11,16 +13,13 @@ export const OVERLAPS_YOUR_PARENTING_TIME = 'overlapsYourParentingTime';
 export function caregiverUnavailableText(
   caregiver: FamilyMember | undefined,
   sameParent = false,
+  locale: AppLocale = 'en',
 ): string {
   if (caregiver?.isYou) {
-    return sameParent
-      ? 'You marked yourself unavailable then. Choose different dates, or change your unavailable time first.'
-      : 'You marked yourself unavailable then. Choose another time, or change your unavailable time first.';
+    return translate(sameParent ? 'calendar.unavailable.youDates' : 'calendar.unavailable.youTime', locale);
   }
-  const name = caregiver?.displayName ?? 'The parent with the children';
-  return sameParent
-    ? `${name} is unavailable then. Choose different dates.`
-    : `${name} is unavailable then. Choose another time, or another parent.`;
+  const name = caregiver?.displayName ?? translate('calendar.unavailable.caregiver', locale);
+  return translate(sameParent ? 'calendar.unavailable.otherDates' : 'calendar.unavailable.otherTime', locale, { name });
 }
 
 /**

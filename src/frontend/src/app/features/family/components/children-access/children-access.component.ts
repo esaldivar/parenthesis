@@ -1,0 +1,379 @@
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
+import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { RouterLink } from '@angular/router';
+import { Api, Child } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { PIN_PATTERN } from '../../../profiles/pages/child-pin-page/child-pin-page.component';
+import { Toasts } from '../../../../shared/toast/toasts';
+
+/** Mirrors the API's rule (ChildCredential.IsAcceptable): not all the same digit, and not a straight run like 1234. */
+export function isGuessablePin(pin: string): boolean {
+  const steps = new Set([...pin].slice(1).map((digit, i) => Number(digit) - Number(pin[i])));
+  return steps.size === 1 && [0, 1, -1].includes([...steps][0]);
+}
+
+function pinRules(control: AbstractControl): ValidationErrors | null {
+  const value = String(control.value ?? '');
+  return PIN_PATTERN.test(value) && isGuessablePin(value) ? { guessable: true } : null;
+}
+
+interface Panel {
+  readonly childId: string;
+  readonly kind: 'pin' | 'disable' | 'pair';
+}
+
+/**
+ * Children's sign-in, for parents (ADR-0006, #153): set a first PIN, reset it (at once, by either parent, which also
+ * clears a pause or lock; the other parent is emailed without the PIN), turn sign-in off, and pair a child's own
+ * tablet. A locked PIN can only be cleared by choosing a new one.
+ */
+@Component({
+  selector: 'app-children-access',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslatePipe, ReactiveFormsModule, RouterLink, MatButtonModule, MatFormFieldModule, MatInputModule, Avatar],
+  template: `
+    @if (error(); as error) {
+      <p class="alert" role="alert">{{ error }}</p>
+    }
+
+    @if (children(); as children) {
+      @if (children.length === 0) {
+        <p class="muted">{{ 'feature.no.children.yet' | tr }}</p>
+      } @else {
+        <ul class="children">
+          @for (child of children; track child.id) {
+            <li class="child">
+              <div class="child__head">
+                <app-avatar [name]="child.firstName" [size]="40" [personId]="child.id" />
+                <div>
+                  <p class="child__name">{{ child.firstName }}</p>
+                  <p class="child__state">{{ state(child) }}</p>
+                </div>
+              </div>
+
+              @if (child.status === 'Active') {
+                <div class="child__actions">
+                  <button mat-stroked-button type="button" (click)="open(child, 'pin')">
+                    {{ child.signIn.enabled ? ('feature.reset.pin' | tr) : ('feature.set.a.pin' | tr) }}
+                  </button>
+                  @if (child.signIn.enabled) {
+                    <button mat-stroked-button type="button" (click)="open(child, 'pair')">{{ 'feature.pair.a.tablet' | tr }}</button>
+                    <button mat-button type="button" (click)="open(child, 'disable')">{{ 'feature.turn.off.sign.in' | tr }}</button>
+                  }
+                </div>
+
+                @if (isOpen(child, 'pin')) {
+                  <form class="panel" [formGroup]="pinForm" (ngSubmit)="savePin(child)" novalidate>
+                    <p class="muted">
+                      @if (child.signIn.enabled) {
+                        {{ 'feature.the.new.pin.works.straight.away.and' | tr }}
+                      } @else {
+                        {{ child.firstName }} {{ 'feature.uses.this.pin.on.your.family.s' | tr }}
+                      }
+                    </p>
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>{{ 'feature.new.pin.for' | tr }} {{ child.firstName }}</mat-label>
+                      <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="pin" required />
+                      <mat-hint>{{ 'feature.4.to.6.numbers' | tr }}</mat-hint>
+                      @if (pinForm.controls.pin.hasError('required')) {
+                        <mat-error>{{ 'feature.enter.a.pin' | tr }}</mat-error>
+                      } @else if (pinForm.controls.pin.hasError('pattern')) {
+                        <mat-error>{{ 'feature.use.4.to.6.numbers' | tr }}</mat-error>
+                      } @else if (pinForm.controls.pin.hasError('guessable')) {
+                        <mat-error>{{ 'feature.choose.numbers.that.aren.t.all.the' | tr }}</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>{{ 'feature.type.it.again' | tr }}</mat-label>
+                      <input matInput type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" formControlName="confirm" required />
+                      @if (pinForm.controls.confirm.hasError('required')) {
+                        <mat-error>{{ 'feature.type.the.pin.again' | tr }}</mat-error>
+                      } @else if (pinForm.controls.confirm.hasError('mismatch')) {
+                        <mat-error>{{ 'feature.the.two.pins.don.t.match' | tr }}</mat-error>
+                      }
+                    </mat-form-field>
+                    <div class="panel__actions">
+                      <button mat-flat-button type="submit" [disabled]="busy()">
+                        {{ child.signIn.enabled ? ('feature.reset.pin.now' | tr) : ('feature.save.pin' | tr) }}
+                      </button>
+                      <button mat-button type="button" (click)="close()">{{ 'feature.cancel' | tr }}</button>
+                    </div>
+                  </form>
+                }
+
+                @if (isOpen(child, 'disable')) {
+                  <div class="panel">
+                    <p>
+                      {{ child.firstName }} {{ 'feature.won.t.be.able.to.sign.in' | tr }}
+                      {{ child.firstName }} {{ 'feature.is.signed.out.now.this.doesn.t' | tr }}
+                    </p>
+                    <div class="panel__actions">
+                      <button mat-flat-button type="button" [disabled]="busy()" (click)="disable(child)">{{ 'feature.turn.off.sign.in' | tr }}</button>
+                      <button mat-button type="button" (click)="close()">{{ 'feature.cancel' | tr }}</button>
+                    </div>
+                  </div>
+                }
+
+                @if (isOpen(child, 'pair')) {
+                  <div class="panel">
+                    @if (pairing(); as pairing) {
+                      @if (minutesLeft() > 0) {
+                        <p>{{ 'feature.on.130011' | tr }} {{ child.firstName }}{{ 'feature.s.tablet.go.to' | tr }} <strong>{{ pairUrl }}</strong> {{ 'feature.and.enter.this.code' | tr }}</p>
+                        <p class="code" [attr.aria-label]="spelled(pairing.code)">{{ pairing.code }}</p>
+                        <p class="muted" aria-live="polite">
+                          {{ 'feature.works.once.for' | tr }} {{ minutesLeft() === 1 ? ('feature.about.1.more.minute' | tr) : ('feature.about.eae942' | tr) + minutesLeft() + ('feature.more.minutes' | tr) }}.
+                        </p>
+                      } @else {
+                        <p role="status">{{ 'feature.this.code.has.expired.get.a.new' | tr }}</p>
+                      }
+                    } @else {
+                      <p class="muted">{{ 'feature.you.ll.get.a.code.that.works' | tr }} {{ child.firstName }} {{ 'feature.can.use.the.tablet.you.pair' | tr }}</p>
+                    }
+                    <div class="panel__actions">
+                      <button mat-flat-button type="button" [disabled]="busy()" (click)="pair(child)">
+                        {{ pairing() ? ('feature.get.a.new.code' | tr) : ('feature.get.a.code' | tr) }}
+                      </button>
+                      <button mat-button type="button" (click)="close()">{{ 'feature.done' | tr }}</button>
+                    </div>
+                  </div>
+                }
+              }
+            </li>
+          }
+        </ul>
+        @if (hasActive()) {
+          <p class="preview"><a routerLink="/kid">{{ 'feature.preview.the.children.s.space' | tr }}</a></p>
+        }
+      }
+    } @else if (!error()) {
+      <p class="muted">{{ 'feature.loading' | tr }}</p>
+    }
+  `,
+  styles: `
+    .children {
+      display: grid;
+      gap: var(--space-4);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .child {
+      display: grid;
+      gap: var(--space-3);
+    }
+    .child + .child {
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--color-divider);
+    }
+    .child__head {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .child__name {
+      margin: 0;
+      font-weight: 600;
+    }
+    .child__state {
+      margin: 0;
+      color: var(--color-text-secondary);
+    }
+    .child__actions,
+    .panel__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+    button {
+      min-height: var(--target-min);
+    }
+    .panel {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+    }
+    .panel p {
+      margin: 0;
+    }
+    mat-form-field {
+      width: 100%;
+    }
+    .code {
+      font-size: var(--font-size-h2);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      font-variant-numeric: tabular-nums;
+    }
+    .muted {
+      color: var(--color-text-secondary);
+    }
+    .alert {
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--color-danger);
+      border-radius: var(--radius-control);
+      background: var(--color-status-rejected-bg);
+    }
+    .preview a {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--target-min);
+    }
+  `,
+})
+export class ChildrenAccess implements OnInit {
+  private readonly copyLocale = inject(LocaleService);
+  private readonly api = inject(Api);
+  private readonly auth = inject(AuthStore);
+  private readonly fb = inject(NonNullableFormBuilder);
+
+  readonly familyId = input.required<string>();
+
+  protected readonly pairUrl = `${location.host}/pair`;
+  protected readonly children = signal<readonly Child[] | null>(null);
+  protected readonly panel = signal<Panel | null>(null);
+  protected readonly pairing = signal<{ code: string; expiresAt: string } | null>(null);
+  protected readonly busy = signal(false);
+  protected readonly error = signal<string | null>(null);
+  private readonly toasts = inject(Toasts);
+  protected readonly hasActive = computed(() => (this.children() ?? []).some((c) => c.status === 'Active'));
+
+  private readonly now = signal(Date.now());
+  protected readonly minutesLeft = computed(() => {
+    const pairing = this.pairing();
+    return pairing ? Math.max(0, Math.ceil((Date.parse(pairing.expiresAt) - this.now()) / 60_000)) : 0;
+  });
+
+  protected readonly pinForm = this.fb.group(
+    {
+      pin: ['', [Validators.required, Validators.pattern(PIN_PATTERN), pinRules]],
+      confirm: ['', Validators.required],
+    },
+    {
+      validators: (group: AbstractControl) => {
+        const confirm = group.get('confirm');
+        const mismatch = !!confirm?.value && confirm.value !== group.get('pin')?.value;
+        // Keep the error on the second field, so it shows there.
+        confirm?.setErrors(mismatch ? { ...confirm.errors, mismatch: true } : confirm.errors && omit(confirm.errors, 'mismatch'));
+        return null;
+      },
+    },
+  );
+
+  constructor() {
+    // The pairing countdown moves once every 15 seconds; minutes are all it shows.
+    const timer = setInterval(() => this.now.set(Date.now()), 15_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
+
+  ngOnInit(): void {
+    void this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
+    await this.reload();
+  }
+
+  protected state(child: Child): string {
+    if (child.status === 'PendingApproval') {
+      return translate('family.childAccess.pending', this.copyLocale.locale());
+    }
+    if (child.signIn.locked) {
+      return translate('family.childAccess.locked', this.copyLocale.locale());
+    }
+    if (child.signIn.pausedUntil && new Date(child.signIn.pausedUntil).getTime() > this.now()) {
+      return translate('family.childAccess.paused', this.copyLocale.locale());
+    }
+    return child.signIn.enabled ? translate('family.childAccess.enabled', this.copyLocale.locale()) : translate('family.childAccess.disabled', this.copyLocale.locale());
+  }
+
+  protected isOpen(child: Child, kind: Panel['kind']): boolean {
+    const panel = this.panel();
+    return panel?.childId === child.id && panel.kind === kind;
+  }
+
+  protected open(child: Child, kind: Panel['kind']): void {
+    this.pinForm.reset();
+    this.pairing.set(null);
+    this.error.set(null);
+    this.panel.set({ childId: child.id, kind });
+  }
+
+  protected close(): void {
+    this.panel.set(null);
+    this.pairing.set(null);
+  }
+
+  protected async savePin(child: Child): Promise<void> {
+    if (this.pinForm.invalid) {
+      this.pinForm.markAllAsTouched();
+      return;
+    }
+    await this.run(async () => {
+      await this.api.setChildPin(this.familyId(), child.id, this.pinForm.getRawValue().pin);
+      this.close();
+      this.toasts.show(
+        child.signIn.enabled ? translate('family.childAccess.newPin', this.copyLocale.locale(), { name: child.firstName }) : translate('family.childAccess.signInEnabled', this.copyLocale.locale(), { name: child.firstName }),
+      );
+    });
+  }
+
+  protected async disable(child: Child): Promise<void> {
+    await this.run(async () => {
+      await this.api.disableChildSignIn(this.familyId(), child.id);
+      this.close();
+      this.toasts.show(translate('family.childAccess.signInDisabled', this.copyLocale.locale(), { name: child.firstName }));
+    });
+  }
+
+  protected async pair(child: Child): Promise<void> {
+    await this.run(async () => {
+      this.pairing.set(await this.api.pairingCode(this.familyId(), child.id));
+      this.now.set(Date.now());
+    }, false);
+  }
+
+  /** Reads the code out character by character ("A B C D, 2 3 4 5"). */
+  protected spelled(code: string): string {
+    return code.split('-').map((part) => part.split('').join(' ')).join(', ');
+  }
+
+  private async run(action: () => Promise<void>, reload = true): Promise<void> {
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await action();
+      if (reload) {
+        await this.reload();
+        // The picker on this device shows locks and PINs too.
+        await this.auth.loadDevice().catch(() => undefined);
+      }
+    } catch (error) {
+      const problem = toProblem(error);
+      this.error.set(problem.errors['pin']?.join(' ') ?? generalMessage(problem));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private async reload(): Promise<void> {
+    try {
+      this.children.set(await this.api.children(this.familyId()));
+    } catch (error) {
+      this.error.set(generalMessage(toProblem(error)));
+    }
+  }
+}
+
+function omit(errors: ValidationErrors, key: string): ValidationErrors | null {
+  const rest = Object.fromEntries(Object.entries(errors).filter(([name]) => name !== key));
+  return Object.keys(rest).length ? rest : null;
+}

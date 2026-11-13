@@ -1,7 +1,9 @@
 import { InjectionToken } from '@angular/core';
+import { AppLocale } from '../../core/i18n/locale.service';
+import { translate } from '../../core/i18n/translations';
 import { Memory, PhotoUploadBlock } from '../../core/api/api';
 import { Problem, generalMessage } from '../../core/api/problem';
-import { addDays, daysBetween, monthDay, todayIn } from '../dashboard/week';
+import { addDays, daysBetween, monthDay, todayIn } from '../../core/dates/dates';
 import { toFamilyLocal } from '../calendar/time';
 
 /** The current time, for expiry warnings. Tests replace it. */
@@ -23,36 +25,36 @@ export const RETENTION_DAYS = 28;
 export const FINAL_WARNING_DAYS = 7;
 
 /** Why a chosen file won't be added, before uploading, or null when it can go. */
-export function fileProblem(file: File, maxBytes = MAX_SOURCE_BYTES): string | null {
+export function fileProblem(file: File, maxBytes = MAX_SOURCE_BYTES, locale: AppLocale = 'en'): string | null {
   const name = file.name.toLowerCase();
   if (/\.(dng|nef|cr2|cr3|arw|raf|orf|rw2|tif|tiff)$/.test(name)) {
-    return 'RAW photos (DNG) aren’t supported. Export it as a JPEG and add that instead.';
+    return translate('memory.file.raw', locale);
   }
   if (/\.(heic|heif|avif)$/.test(name) || /image\/(heic|heif|avif)/.test(file.type)) {
-    return 'HEIC photos aren’t supported yet. Choose it from your photo library so it’s added as a JPEG, or export it as a JPEG.';
+    return translate('memory.file.heic', locale);
   }
   if (file.type && !(PHOTO_TYPES as readonly string[]).includes(file.type)) {
-    return 'Choose a JPEG, PNG or WebP photo.';
+    return translate('memory.file.type', locale);
   }
   if (file.size === 0) {
-    return 'This file is empty. Choose a photo to add.';
+    return translate('memory.file.empty', locale);
   }
   if (file.size > maxBytes) {
-    return `This photo is over ${Math.round(maxBytes / 1_000_000)} MB. Choose a smaller one.`;
+    return translate('memory.file.tooLarge', locale, { size: Math.round(maxBytes / 1_000_000) });
   }
   return null;
 }
 
 /** Why an upload failed, in words, for one file. The server's refusals already read well; network ones get a hint. */
-export function uploadMessage(problem: Problem): string {
+export function uploadMessage(problem: Problem, locale: AppLocale = 'en'): string {
   if (problem.status === 0) {
-    return 'Couldn’t upload. Check your connection and try again.';
+    return translate('memory.upload.offline', locale);
   }
   if (problem.reason === 'storage-failed') {
-    return 'The photo couldn’t be saved. Try again.';
+    return translate('memory.upload.storageFailed', locale);
   }
   if (problem.reason === 'storage-full') {
-    return 'You don’t have enough photo storage left. Delete photos you no longer need, or wait for older ones to be deleted.';
+    return translate('memory.upload.storageFull', locale);
   }
   if (problem.reason && problem.title) {
     return problem.title;
@@ -99,51 +101,60 @@ export interface Expiry {
   readonly soon: boolean;
 }
 
-export function expiry(expiresAt: string, zone: string, now: Date): Expiry {
+export function expiry(expiresAt: string, zone: string, now: Date, locale: AppLocale = 'en'): Expiry {
   const date = familyDate(expiresAt, zone);
   const days = Math.max(0, daysBetween(todayIn(zone, now), date));
-  return { on: monthDay(date), days, soon: days <= FINAL_WARNING_DAYS };
+  return { on: monthDay(date, intlLocale(locale)), days, soon: days <= FINAL_WARNING_DAYS };
 }
 
 /** "Deleted Nov 9", or in the final week "Deleted in 3 days", "Deleted tomorrow", "Deleted today". */
-export function expiryChip(e: Expiry): string {
+export function expiryChip(e: Expiry, locale: AppLocale = 'en'): string {
   if (!e.soon) {
-    return `Deleted ${e.on}`;
+    return translate('memory.expiry.on', locale, { date: e.on });
   }
   return e.days === 0
-    ? 'Deleted today'
+    ? translate('memory.expiry.today', locale)
     : e.days === 1
-      ? 'Deleted tomorrow'
-      : `Deleted in ${e.days} days`;
+      ? translate('memory.expiry.tomorrow', locale)
+      : translate('memory.expiry.inDays', locale, { days: e.days });
 }
 
 /** The date photos added today will be deleted, for the note before uploading. */
-export function deletedOnIfAddedToday(zone: string, now: Date): string {
-  return monthDay(addDays(todayIn(zone, now), RETENTION_DAYS));
+export function deletedOnIfAddedToday(zone: string, now: Date, locale: AppLocale = 'en'): string {
+  return monthDay(addDays(todayIn(zone, now), RETENTION_DAYS), intlLocale(locale));
 }
 
+/** A family-local date (YYYY-MM-DD) as "Nov 9" or "9 nov", in the parent's language. */
+export function shortDate(date: string, locale: AppLocale = 'en'): string {
+  return monthDay(date, intlLocale(locale));
+}
+
+const intlLocale = (locale: AppLocale) => (locale === 'en' ? 'en-US' : locale);
+
 /** Why this event can't take the viewer's photos, in words. */
-export function blockedText(block: PhotoUploadBlock, caregiver: string | null): string {
+export function blockedText(block: PhotoUploadBlock, caregiver: string | null, locale: AppLocale = 'en'): string {
   switch (block) {
     case 'not-confirmed':
-      return 'Photos can be added once this event is confirmed.';
+      return translate('memory.blocked.notConfirmed', locale);
     case 'unavailable-time':
-      return 'Unavailable time doesn’t take photos.';
+      return translate('memory.blocked.unavailable', locale);
     case 'not-caregiver':
       return caregiver
-        ? `${caregiver} has the kids during this parenting time, so only ${caregiver} can add photos.`
-        : 'Only the parent who has the kids during this parenting time can add photos.';
+        ? translate('memory.blocked.caregiver', locale, { name: caregiver })
+        : translate('memory.blocked.caregiverUnknown', locale);
     case 'not-started':
-      return 'Photos can be added once this event starts.';
+      return translate('memory.blocked.notStarted', locale);
     case 'window-closed':
-      return `It’s been more than ${RETENTION_DAYS} days since this event, so photos can’t be added any more.`;
+      return translate('memory.blocked.windowClosed', locale, { days: RETENTION_DAYS });
   }
 }
 
 /** "You and Mom", "You" or "Mom": whose photos a memory holds, from what the viewer may see. */
-export function whoseText(memory: Memory, coParent: string | null): string {
+export function whoseText(memory: Memory, coParent: string | null, locale: AppLocale = 'en'): string {
   if (memory.yourPhotoCount > 0 && memory.sharedWithYouCount > 0) {
-    return `You and ${coParent ?? 'your co-parent'}`;
+    return coParent
+      ? translate('memory.whose.youAnd', locale, { name: coParent })
+      : translate('memory.whose.youAndCoParent', locale);
   }
-  return memory.yourPhotoCount > 0 ? 'You' : (coParent ?? 'Your co-parent');
+  return memory.yourPhotoCount > 0 ? translate('memory.whose.you', locale) : (coParent ?? translate('common.coParent', locale));
 }

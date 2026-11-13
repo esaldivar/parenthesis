@@ -3,6 +3,7 @@ using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Memories.Contracts;
 using CoParent.Modules.Memories.Endpoints;
 using CoParent.Modules.Memories.Infrastructure;
+using CoParent.Modules.Memories.Infrastructure.Persistence;
 using CoParent.SharedKernel.Accounts;
 using CoParent.SharedKernel.Security;
 using Microsoft.AspNetCore.RateLimiting;

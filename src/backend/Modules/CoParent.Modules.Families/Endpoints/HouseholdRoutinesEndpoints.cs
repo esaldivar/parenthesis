@@ -1,5 +1,5 @@
 using CoParent.Modules.Families.Domain;
-using CoParent.Modules.Families.Infrastructure;
+using CoParent.Modules.Families.Infrastructure.Persistence;
 using CoParent.Modules.Identity.Contracts;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Security;
@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CoParent.Modules.Families.Endpoints;
 
 internal sealed record HouseholdRoutine(Guid OwnerId, string OwnerName, bool IsMine, RoutinesView Latest, RoutinesView? Shared, bool CanAccept);
-internal sealed record HouseholdRoutineRequest(int Revision, string Action, RoutinesValues? Values);
+internal sealed record HouseholdRoutineRequest(int Revision, string Action, RoutinesInput? Values);
 
 internal static class HouseholdRoutinesEndpoints
 {
@@ -51,7 +51,7 @@ internal static class HouseholdRoutinesEndpoints
             var shared = agreed is null ? null : RoutinesView.From(agreed);
             var isMine = parent.Id == tenant.MembershipId;
             result.Add(new(parent.Id, names.GetValueOrDefault(parent.UserId, "Co-parent"), isMine, latest, shared,
-                !isMine && latest.Values != new RoutinesValues(null, null) && latest.Values != shared?.Values));
+                !isMine && latest.Values.Entries.Count > 0 && latest.Values != shared?.Values));
         }
 
         return TypedResults.Ok(result);
@@ -79,15 +79,12 @@ internal static class HouseholdRoutinesEndpoints
         }
 
         var errors = new Dictionary<string, string[]>();
-        var input = request.Values;
-        if (request.Action == "save" && input is null)
+        var edited = request.Action == "save" ? RoutinesEndpoints.Normalize(request.Values, errors) : null;
+        if (request.Action == "save" && edited is null)
         {
             return TypedResults.BadRequest();
         }
 
-        var edited = new RoutinesValues(
-            ChildEssentialsAccess.Normalize(input?.Bedtime, "bedtime", RoutinesRevision.TextLimit, errors),
-            ChildEssentialsAccess.Normalize(input?.Naps, "naps", RoutinesRevision.TextLimit, errors));
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -110,7 +107,7 @@ internal static class HouseholdRoutinesEndpoints
                 return TypedResults.Conflict(view);
             }
 
-            var values = request.Action == "save" ? edited : view.Values;
+            var values = edited ?? view.Values;
             var sharedRevision = current?.SharedRevision;
             switch (request.Action)
             {
@@ -120,35 +117,23 @@ internal static class HouseholdRoutinesEndpoints
                 case "stop":
                     sharedRevision = null;
                     break;
-                case "accept" when values == new RoutinesValues(null, null):
+                case "accept" when values.Entries.Count == 0:
                     return TypedResults.BadRequest();
                 case "accept":
                     sharedRevision = view.Revision;
                     break;
             }
 
-            var row = new RoutinesRevision
-            {
-                FamilyId = tenant.FamilyId,
-                ChildProfileId = childId,
-                OwnerMembershipId = ownerId,
-                Revision = view.Revision + 1,
-                SharedRevision = sharedRevision,
-                Bedtime = values.Bedtime,
-                Naps = values.Naps,
-                EditedByUserId = userId,
-                EditedAt = clock.GetUtcNow(),
-            };
+            var row = RoutinesEndpoints.NextRevision(tenant, childId, ownerId, current, sharedRevision, values, userId,
+                clock.GetUtcNow());
             db.RoutinesRevisions.Add(row);
             if (request.Action == "save")
             {
                 // The owner revised their own routine: the co-parent's tab for it gets a dot (#128). Accepting it into
                 // Shared or stopping sharing changes no routine text, so it makes no notice.
+                var (fields, rows) = view.Values.ChangesTo(values);
                 await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.HouseholdRoutines, row.Revision,
-                    EssentialsUpdateEndpoints.Changed(
-                    ("bedtime", view.Values.Bedtime, values.Bedtime),
-                    ("naps", view.Values.Naps, values.Naps)),
-                    row.EditedAt, ct);
+                    fields, row.EditedAt, ct, rows);
             }
 
             await db.SaveChangesAsync(ct);

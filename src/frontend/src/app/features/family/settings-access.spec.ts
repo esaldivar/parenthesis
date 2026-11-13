@@ -8,7 +8,7 @@ import { ChangeRequest, Child, Device, DeviceProfiles } from '../../core/api/api
 import { AuthStore } from '../../core/auth/auth.store';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
-import { isGuessablePin } from './children-access';
+import { isGuessablePin } from './components/children-access/children-access.component';
 import { toastText } from '../../../testing/toasts';
 
 // Synthetic family only.

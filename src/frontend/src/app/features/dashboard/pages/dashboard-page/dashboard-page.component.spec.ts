@@ -89,7 +89,7 @@ describe('DashboardPage (approved design)', () => {
   const link = (el: HTMLElement, label: string) => [...el.querySelectorAll('a')].find((a) => text(a).startsWith(label))!;
 
   describe('calendar photos (#388)', () => {
-    it('gives every calendar circle the viewer’s photo for that person, shown on desktop only', async () => {
+    it('gives every calendar circle the viewer’s photo for that person, shown at every screen size', async () => {
       const asked: string[] = [];
       const photos = {
         url: (kind: 'parent' | 'child', id: string | null | undefined) => (asked.push(`${kind}:${id}`), `/photos/${kind}-${id}`),
@@ -100,10 +100,10 @@ describe('DashboardPage (approved design)', () => {
       const circles = [...el.querySelectorAll<HTMLElement>('.cal app-avatar')];
       expect(circles.length).toBeGreaterThan(0);
       for (const circle of circles) {
-        expect(circle.getAttribute('data-photo')).toBe('desktop');
+        expect(circle.getAttribute('data-photo')).toBe('any');
         const kind = circle.getAttribute('data-kind');
         expect(circle.querySelector('img')!.getAttribute('src')).toMatch(new RegExp(`^/photos/${kind}-`));
-        // The initial stays underneath: phones and tablets show it (the photo is hidden below 1024px).
+        // The initial remains available as a fallback when an image is missing or fails.
         expect(circle.textContent!.trim()).toMatch(/^[A-Z]$/);
       }
       // Parents are looked up by membership and children by child id, never across kinds.

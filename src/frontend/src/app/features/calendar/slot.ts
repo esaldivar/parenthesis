@@ -1,8 +1,8 @@
 import { signal } from '@angular/core';
 import { AppLocale } from '../../core/i18n/locale.service';
 import { translate } from '../../core/i18n/translations';
-import { PlainDate } from '../dashboard/model';
-import { dayLong, timeLabel } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { dayLong, timeLabel } from '../../core/dates/dates';
 
 /**
  * Adding from a tap on a calendar (#212). A timed day column gives the date and the half-hour under the pointer; the

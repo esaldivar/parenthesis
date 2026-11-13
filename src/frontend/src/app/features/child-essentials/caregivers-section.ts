@@ -1,3 +1,4 @@
+import { localizedMessage } from './localized-message';
 import { LocaleService } from '../../core/i18n/locale.service';
 import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
 import { TranslatePipe, translate } from '../../core/i18n/translations';
@@ -52,7 +53,7 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../co
             <h4>
               <span class="caregiver-name">{{ caregiver.details.name }}</span>
               <span class="stars" role="img"
-                    [attr.aria-label]="caregiver.averageRating === null ? ('feature.unrated' | tr) : caregiver.averageRating + ('feature.out.of.3.stars' | tr)">
+                    [attr.aria-label]="caregiver.averageRating === null ? ('feature.unrated' | tr) : ratingLabel(caregiver.averageRating)">
                 @for (star of [0, 1, 2]; track star) {
                   <span class="star" aria-hidden="true">☆<span class="filled" [style.width.%]="fill(caregiver.averageRating, star)">★</span></span>
                 }
@@ -134,8 +135,8 @@ export class CaregiversSection {
   protected readonly marks = sectionUpdates('caregivers', this.childId);
   private readonly api = inject(Api);
   protected readonly list = signal<CaregiverList | null>(null);
-  protected readonly error = signal('');
-  protected readonly notice = signal('');
+  protected readonly error = localizedMessage();
+  protected readonly notice = localizedMessage();
   protected readonly busy = signal(false);
   protected readonly editing = signal(false);
   protected readonly editId = signal<string | null>(null);
@@ -161,7 +162,7 @@ export class CaregiversSection {
       this.list.set(await this.api.caregivers(this.familyId(), this.childId()));
       this.error.set('');
     } catch {
-      this.error.set(translate('feedback.shared.caregivers.couldn.t.be.loaded', this.locale.locale()));
+      this.error.set('feedback.shared.caregivers.couldn.t.be.loaded');
     }
   }
 
@@ -193,7 +194,7 @@ export class CaregiversSection {
     const familyId = this.familyId();
     const currentId = this.childId();
     const targets = [
-      this.children().find(child => child.id === currentId) ?? { id: currentId, firstName: 'this child' },
+      this.children().find(child => child.id === currentId) ?? { id: currentId, firstName: translate('essentials.copy.thisChild', this.locale.locale()) },
       ...this.otherChildren(),
     ];
     const name = details.name.trim().toLowerCase();
@@ -222,10 +223,10 @@ export class CaregiversSection {
             break;
           }
         }
-        this.error.set(`Couldn’t save for ${failed.map(child => child.firstName).join(', ')}. Retry to add the missing caregiver.`);
+        this.error.set('essentials.copy.caregiverPartial', { names: failed.map(child => child.firstName).join(', ') });
         return;
       }
-      this.notice.set(translate('essentials.caregiver.savedAll', this.locale.locale()));
+      this.notice.set('essentials.caregiver.savedAll');
       this.editing.set(false);
     } finally {
       this.busy.set(false);
@@ -249,7 +250,7 @@ export class CaregiversSection {
     this.notice.set('');
     try {
       await update();
-      this.notice.set(translate('essentials.caregiver.updated', this.locale.locale()));
+      this.notice.set('essentials.caregiver.updated');
       await this.load();
       return true;
     } catch (error) {
@@ -260,17 +261,21 @@ export class CaregiversSection {
           await this.load();
           this.editing.set(false);
           this.removing.set(null);
-          this.error.set(translate('essentials.caregiver.conflict', this.locale.locale()));
+          this.error.set('essentials.caregiver.conflict');
         }
       } else {
         const errors = error instanceof HttpErrorResponse && error.status === 400
           ? error.error?.errors as Record<string, string[]> | undefined : undefined;
-        this.error.set(errors ? Object.values(errors).flat().join(' ') : translate('essentials.caregiver.error', this.locale.locale()));
+        this.error.set(errors ? 'essentials.copy.validation' : 'essentials.caregiver.error');
       }
       return false;
     } finally {
       this.busy.set(false);
     }
+  }
+
+  protected ratingLabel(rating: number): string {
+    return translate('essentials.copy.rating', this.locale.locale(), { rating: new Intl.NumberFormat(this.locale.locale()).format(rating) });
   }
 
   protected fill(average: number | null, star: number): number {
