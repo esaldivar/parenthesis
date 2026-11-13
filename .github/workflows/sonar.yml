@@ -117,6 +117,9 @@ jobs:
 
       # The .NET scanner analyses C# through the build and, with scanAll, the rest of the repository too (TypeScript,
       # HTML, CSS, Docker, YAML).
+      # EF Core migrations are generated code (.editorconfig treats them so) and repeat the same blocks by design, so
+      # they're left out of duplication detection only (sonar.cpd.exclusions); every other rule still analyses them.
+      # Owner decision, November 13, 2026 (release PR #629): see docs/runbooks/sonar-release-gate.md.
       - name: Begin analysis
         if: steps.mode.outputs.mode != 'bound'
         run: >
@@ -132,6 +135,7 @@ jobs:
           /d:sonar.javascript.lcov.reportPaths="src/frontend/coverage/parenthesis/lcov.info"
           /d:sonar.python.coverage.reportPaths="coverage-python.xml"
           /d:sonar.coverage.exclusions="**/*.spec.ts,src/frontend/src/main.ts,src/frontend/src/**/*.config.ts,src/frontend/src/testing/**,tests/e2e/**,docker/**,.github/**"
+          /d:sonar.cpd.exclusions="**/Migrations/**"
 
       - name: Build
         if: steps.mode.outputs.mode != 'bound'
