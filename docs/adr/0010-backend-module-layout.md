@@ -24,17 +24,19 @@ Application/<UseCase>/         Handlers, only where one can be extracted without
 Endpoints/                     Minimal API bindings, HTTP validation and responses
 Infrastructure/                Adapters: email, Google clients, storage, departure handlers, cross-module bridges
 Infrastructure/Persistence/    The module's DbContext (namespace ...Infrastructure.Persistence)
-Infrastructure/Migrations/     Existing migrations, IDs and snapshot, in place for now
+Infrastructure/Persistence/Migrations/  Migrations and snapshot (namespace ...Infrastructure.Persistence.Migrations)
 ```
 
 - **Namespaces follow folders.** A moved file takes the namespace of its new folder, and its users add the `using`.
 - **Dependency direction:** Endpoints and Infrastructure may use Domain and Persistence; Domain uses neither.
   Modules talk only through another module's `Contracts/`. Host-wide middleware stays in `CoParent.Api`.
 - **Persistence:** one DbContext per module, same schema, same registration and lifetime.
-- **Migrations stay in `Infrastructure/Migrations/`** with their namespaces. EF Core finds them by their
-  `[DbContext]` and `[Migration]` attributes, not their folder, so moving the DbContext leaves migration IDs, the
-  snapshot and `__EFMigrationsHistory` unchanged. Moving the migrations themselves waits until an upgrade of an
-  existing database can be shown on disposable PostgreSQL (not available on every workstation).
+- **Migrations live in `Infrastructure/Persistence/Migrations/`**, beside the DbContext, with that folder's
+  namespace. EF Core finds them by their `[DbContext]` and `[Migration]` attributes, not their folder or namespace, so
+  migration IDs, the snapshot and `__EFMigrationsHistory` are unchanged by a move. The migrations slice proved this on
+  disposable PostgreSQL 17.11: a database migrated by the old layout reported 0 pending migrations in all nine schemas
+  under the new one, with identical migration history and schema, and a fresh database got the same schema.
+  `dotnet ef migrations add` places new migrations next to the existing snapshot, so no `--output-dir` is needed.
 - **Application layer:** endpoints keep their logic until a use case can move out with no behavior change; then it
   goes to `Application/<UseCase>/`. Folder moves come first.
 - **Tests:** `tests/CoParent.IntegrationTests` already has `Api/`, `Infrastructure/` and `Persistence/`; test files
@@ -51,7 +53,7 @@ Infrastructure/Migrations/     Existing migrations, IDs and snapshot, in place f
 | Identity | `Infrastructure/IdentityModuleDbContext.cs` | **Identity slice**, in its own PR (auth code): DbContext → `Infrastructure/Persistence/`. `UserDirectory` and the other adapters stay in `Infrastructure/`. |
 | Memories | `Infrastructure/MemoriesDbContext.cs` | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. |
 | Messaging | `Infrastructure/MessagingDbContext.cs`; `Realtime/` and `Transcripts/` at the root | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. **Folders slice:** `ChatHub` (the SignalR boundary) → `Endpoints/`, the notifier and origin check → `Infrastructure/Realtime/`, transcript building and PDF → `Infrastructure/Transcripts/`. |
-| Shared Records | Every file at the root, migrations in `Migrations/` | **Shared Records slice:** entities (split out of the DbContext file) → `Domain/`, `RecordEndpoints` → `Endpoints/`, DbContext → `Infrastructure/Persistence/`, export, PDF, attachments, the fund approval handler, cleanup and departure → `Infrastructure/`. The model snapshot carries the entities' new type names. Later: migrations → `Infrastructure/Migrations/` only with the upgrade check above. |
+| Shared Records | Every file at the root, migrations in `Migrations/` | **Shared Records slice:** entities (split out of the DbContext file) → `Domain/`, `RecordEndpoints` → `Endpoints/`, DbContext → `Infrastructure/Persistence/`, export, PDF, attachments, the fund approval handler, cleanup and departure → `Infrastructure/`. The model snapshot carries the entities' new type names. **Migrations slice:** migrations → `Infrastructure/Persistence/Migrations/`. |
 
 Each slice is move-only: no route, request, response, validation, DI lifetime, tenant filter, auth policy,
 antiforgery or transaction change, and `dotnet ef migrations has-pending-model-changes` reports no changes for every
