@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -17,14 +17,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
-import { Api, Child, FamilySummary } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { PendingInvitation } from '../../core/invitations/pending-invitation';
-import { Avatar } from '../../shared/avatar/avatar';
-import { Icon } from '../../shared/icon/icon';
-import { FORM_STYLES } from '../auth/form-styles';
-import { InviteCoParent } from '../family/components/invite-co-parent/invite-co-parent.component';
+import { Api, Child, FamilySummary } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { PendingInvitation } from '../../../../core/invitations/pending-invitation';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { Icon } from '../../../../shared/icon/icon';
+import { FORM_STYLES } from '../../../auth/form-styles';
+import { InviteCoParent } from '../../../family/components/invite-co-parent/invite-co-parent.component';
 
 function deviceTimeZone(): string {
   try {
