@@ -455,6 +455,24 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Child_sessions_cannot_read_or_change_medication()
+    {
+        // #127: medication is for parents only; children never see it (docs/privacy/medication-preflight-127.md).
+        using var family = await FamilyWithKaiAsync();
+        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/medication";
+        using var tablet = await PairedTabletAsync(family);
+        Assert.Equal(HttpStatusCode.NoContent, (await tablet.PostAsync("/api/device/child-session",
+            new { childId = family.KaiId, pin = KaisPin })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path + "/history")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.SendAsync(HttpMethod.Put, path,
+            new { revision = 0, entries = Array.Empty<object>(), acknowledge = true })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.SendAsync(HttpMethod.Delete, $"{path}/{Guid.NewGuid()}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(
+            $"/api/families/{family.FamilyId}/child-essentials/medication/pdf")).StatusCode);
+    }
+
+    [Fact]
     public async Task Allergy_pdf_keeps_exactly_fitting_child_sections_together()
     {
         using var family = await FamilyWithKaiAsync();

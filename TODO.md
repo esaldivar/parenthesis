@@ -93,6 +93,12 @@ that points back here.
   - [ ] Before families outside the US: GDPR/UK GDPR wording, lawful bases and regulator contact.
   - [ ] Later, if wanted: self-service data export (today a copy is sent on request within 30 days).
   - [ ] Before public launch: a lawyer's review of the notice.
+  - [x] **Owner:** decided D1 to D11 in `docs/privacy/medication-preflight-127.md` (November 12, 2026); the approved
+    flow is in the data inventory and the notice's new Health information section.
+  - [x] Allergies, medical providers and Child Essentials are in the data inventory and notice (preflight D11).
+  - [ ] **Before medication reaches production (#127, D2):** a lawyer reviews the preflight, the Health information
+    section and the breach runbook (`docs/runbooks/breach-response.md`), including whether Washington's or
+    Nevada's consumer health data laws require a separate consumer health data policy.
 - [ ] **Switch Profiles showed the other parent after account switching (#405, M3, November 5, 2026).** Cause:
   the phone was still Parent A's shared device, and Parent B's sign-out went to that device's picker. Owner decision:
   B goes to sign-in and the device stays A's; the tab keeps showing sign-in until someone signs in again. Server
@@ -799,6 +805,19 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
   default "Time with {name}" parenting-time title (stored event data, seen by both parents), the development-only
   sample dashboard data, and server messages missing from `core/api/problem.ts`'s Spanish map.
 - [ ] Check system emails in Spanish.
+
+## Medication reference (#127)
+
+- [x] Backend (revisions, one-time confirmation, permanent delete, PDF), Medical screen section, Privacy Notice and
+  inventory, breach runbook (branch `feat/127-medication-reference`, November 12, 2026).
+- [ ] CI: first run of `MedicationTests` and the child-session check in `ChildAccessTests` (Docker wasn't available
+  locally, so these integration tests haven't run yet).
+- [ ] After deploy, test on Development with synthetic data and two parents: first-save confirmation, add, edit,
+  discontinue, resume, delete permanently (history and the other parent's banner show no details), concurrent edits,
+  PDF for one child, all children and current only, in English and Spanish, phone and desktop, both themes,
+  keyboard, screen reader and reduced motion. A kid tablet must never show medication.
+- [ ] A Playwright spec for the Medical screen's medication flow.
+- [ ] Lawyer review before production (see the Privacy audit item above).
 
 ## Shared Records submit indicator (#496)
 

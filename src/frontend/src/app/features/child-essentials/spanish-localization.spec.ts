@@ -60,7 +60,7 @@ describe('Child Essentials Spanish (#577)', () => {
     const { host, locale, settle } = await render(ChildEssentialsPage, service);
     expect(host.textContent).toContain('Información esencial de Sam');
     for (const [section, copy] of Object.entries(ESSENTIALS_SECTIONS)) {
-      if (section !== 'householdRoutines' && section !== 'medical') {
+      if (section !== 'householdRoutines' && section !== 'medical' && section !== 'medication') {
         expect(host.querySelector(`[data-section="${section}"] summary`)?.textContent).toContain(translations[copy.name][1]);
       }
     }

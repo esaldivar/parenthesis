@@ -36,3 +36,6 @@ October 31, 2026. A technical review of the app against common privacy requireme
 - No mechanism yet to tell parents about significant notice changes (the notice promises to); an email or in-app
   notice is needed before such a change.
 - A lawyer's review before public launch.
+- Health data (allergies, medical providers, medication): owner decisions of November 12, 2026 are in
+  [medication-preflight-127.md](medication-preflight-127.md). A lawyer reviews them before medication reaches
+  production.

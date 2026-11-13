@@ -27,6 +27,7 @@ import { CaregiversSection } from './caregivers-section';
 import { ClothingSection } from './clothing-section';
 import { EmergencyContactsSection } from './emergency-contacts-section';
 import { MedicalProvidersSection } from './medical-providers-section';
+import { MedicationSection } from './medication-section';
 import { RoutinesSection } from './routines-section';
 import { SchoolSection } from './school-section';
 import { WhatHelpsSection } from './what-helps-section';
@@ -40,7 +41,7 @@ const MEDICAL_TINT = {
 @Component({
   selector: 'app-child-essentials-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, MedicalProvidersSection, RoutinesSection, SchoolSection, WhatHelpsSection],
+  imports: [TranslatePipe, Avatar, Icon, AllergiesFoodSection, CaregiversSection, ClothingSection, EmergencyContactsSection, MedicalProvidersSection, MedicationSection, RoutinesSection, SchoolSection, WhatHelpsSection],
   template: `
     <h1 tabindex="-1" #heading>{{ 'feature.child.essentials' | tr }}</h1>
     <!-- The other parent's saves since the last visit (#128): shown once, then gone after about ten seconds or on X. -->
@@ -68,6 +69,7 @@ const MEDICAL_TINT = {
           @for (profile of [child]; track profile.id) {
             <app-medical-providers-section [familyId]="family" [childId]="profile.id" [children]="children()"
               (childSelected)="selectChild($event)" (back)="closeMedical()" />
+            <app-medication-section [familyId]="family" [childId]="profile.id" [children]="children()" />
           }
         }
       } @else {
@@ -137,7 +139,7 @@ const MEDICAL_TINT = {
                   <span class="tile-text"><span class="tile-name">{{ 'feature.medical' | tr }}</span>
                     <span class="tile-about">{{ 'feature.doctors.dentists.and.other.providers' | tr }}</span>
                   </span>
-                  @if (tileHasUpdate(child.id, 'medical')) {
+                  @if (tileHasUpdate(child.id, 'medical') || tileHasUpdate(child.id, 'medication')) {
                     <span class="child-dot" aria-hidden="true"></span>
                     <span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span>
                   }
@@ -395,6 +397,7 @@ export class ChildEssentialsPage {
   protected openMedical(childId: string): void {
     this.medicalOpen.set(true);
     this.updates.sectionOpened(childId, 'medical');
+    this.updates.sectionOpened(childId, 'medication');
   }
 
   protected tileHasUpdate(childId: string, section: EssentialsSectionId): boolean {
@@ -432,6 +435,11 @@ export class ChildEssentialsPage {
   protected selectChild(id: string): void {
     this.openSection.set(null);
     this.selectedId.set(id);
+    // On the Medical screen, choosing a child opens their providers and medication.
+    if (this.medicalOpen()) {
+      this.updates.sectionOpened(id, 'medical');
+      this.updates.sectionOpened(id, 'medication');
+    }
   }
 
   protected retryLoad(): void {
