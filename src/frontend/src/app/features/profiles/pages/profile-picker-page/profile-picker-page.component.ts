@@ -1,13 +1,13 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
-import { ProfileTile } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { Avatar } from '../../shared/avatar/avatar';
-import { FORM_STYLES } from '../auth/form-styles';
+import { ProfileTile } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { FORM_STYLES } from '../../../auth/form-styles';
 
 /**
  * "Who's using Parenthesis?" on a registered device (ADR-0006, #153). Names, and each person's own photo or initial

@@ -10,7 +10,7 @@ import { Api, Child } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { Avatar } from '../../../../shared/avatar/avatar';
-import { PIN_PATTERN } from '../../../profiles/child-pin-page';
+import { PIN_PATTERN } from '../../../profiles/pages/child-pin-page/child-pin-page.component';
 import { Toasts } from '../../../../shared/toast/toasts';
 
 /** Mirrors the API's rule (ChildCredential.IsAcceptable): not all the same digit, and not a straight run like 1234. */
