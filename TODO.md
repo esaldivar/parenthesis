@@ -20,8 +20,13 @@ that points back here.
     (`chore/570-shared-records`, November 12, 2026). Its migrations stay in `Migrations/` until the migrations step.
   - [x] Messaging `Realtime/` and `Transcripts/`; Families PDF renderers; Calendar's `CalendarToday`
     (`chore/570-module-folders`, November 12, 2026).
-  - [ ] Migrations into `Infrastructure/Persistence/` only after an existing-database upgrade check on
-    disposable PostgreSQL; full integration suite and Compose start after each slice (CI).
+  - [x] Migrations into `Infrastructure/Persistence/Migrations/` for all seven modules, after an existing-database
+    upgrade check on disposable PostgreSQL 17.11: 0 pending migrations in all nine schemas, identical history and
+    schema, and a fresh database with the same schema (`chore/570-migrations`, November 13, 2026).
+  - [ ] Close #570 after the migrations slice merges and the release Compose start and integration suite pass in CI.
+  - [ ] Test portability: `SharedRecordReportTests.Transaction_export_requires_a_valid_range_and_an_authorized_parent`
+    fails on Windows (`TimeZoneNotFoundException` for `America/Chicago`); it passes on Linux CI. Use the app's own
+    time-zone lookup in the test (found running the suite locally on November 13, 2026).
 - [ ] **Angular source layout (#567).** Review the Dashboard pilot and [source move map](docs/adr/0009-frontend-source-layout.md).
   Continue in feature slices, starting with the shared date and Calendar boundaries. Move app-wide layout, core
   and shared code, and separate the global Sass layers. Verify lazy routes, assets and release Playwright coverage
