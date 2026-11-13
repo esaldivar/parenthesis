@@ -1,6 +1,6 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -19,15 +19,15 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
-import { Api, ChatEventCard, ChatMessage } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { ChatStore } from '../../core/chat/chat.store';
-import { Avatar } from '../../shared/avatar/avatar';
-import { EmptyState } from '../../shared/empty-state/empty-state';
-import { Icon } from '../../shared/icon/icon';
-import { ChatEventCardView } from './event-card';
-import { ChatEventPicker } from './event-picker';
+import { Api, ChatEventCard, ChatMessage } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { ChatStore } from '../../../../core/chat/chat.store';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { EmptyState } from '../../../../shared/empty-state/empty-state';
+import { Icon } from '../../../../shared/icon/icon';
+import { ChatEventCardView } from '../event-card/event-card.component';
+import { ChatEventPicker } from '../event-picker/event-picker.component';
 
 /** The server's limit (ADR-0008). */
 export const MESSAGE_MAX_LENGTH = 2000;
@@ -240,7 +240,7 @@ const BOTTOM_SLACK_PX = 48;
       }
     }
   `,
-  styleUrl: './chat-conversation.scss',
+  styleUrl: './chat-conversation.component.scss',
 })
 export class ChatConversation implements OnInit {
   private readonly locale = inject(LocaleService);

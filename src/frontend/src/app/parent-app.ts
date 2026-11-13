@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ParentShell } from './core/layout/parent-shell/parent-shell';
-import { ChatDock } from './features/messages/chat-dock';
+import { ChatDock } from './features/messages/components/chat-dock/chat-dock.component';
 
 /**
  * The signed-in parent's app: the parent shell with feature UI wired in here, at the composition boundary, so the

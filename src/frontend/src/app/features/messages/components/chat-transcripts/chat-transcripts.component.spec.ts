@@ -2,11 +2,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { FormControl } from '@angular/forms';
 import { provideRouter } from '@angular/router';
-import { Api, SavedTranscript, TranscriptPreview, TranscriptRange } from '../../core/api/api';
-import { Toasts } from '../../shared/toast/toasts';
-import { axeViolations } from '../../../testing/axe';
-import { fakeAuth } from '../../../testing/fake-auth';
-import { ChatTranscripts, EMPTY_RANGE, HALF_RANGE, REVERSED_RANGE } from './chat-transcripts';
+import { Api, SavedTranscript, TranscriptPreview, TranscriptRange } from '../../../../core/api/api';
+import { Toasts } from '../../../../shared/toast/toasts';
+import { axeViolations } from '../../../../../testing/axe';
+import { fakeAuth } from '../../../../../testing/fake-auth';
+import { ChatTranscripts, EMPTY_RANGE, HALF_RANGE, REVERSED_RANGE } from './chat-transcripts.component';
 
 // Synthetic family only: Alex (this parent) and Jamie. The API is faked; the component's behaviour is under test.
 const OCTOBER: SavedTranscript = {

@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
@@ -14,12 +14,12 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Api, ChatEventCard, FamilyMember } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { toSearch } from '../calendar/search-query';
-import { todayIn } from '../../core/dates/dates';
-import { Icon } from '../../shared/icon/icon';
-import { ChatEventCardView, toCard } from './event-card';
+import { Api, ChatEventCard, FamilyMember } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { toSearch } from '../../../calendar/search-query';
+import { todayIn } from '../../../../core/dates/dates';
+import { Icon } from '../../../../shared/icon/icon';
+import { ChatEventCardView, toCard } from '../event-card/event-card.component';
 
 /** Results in each group. */
 export const PICKER_RESULTS = 10;

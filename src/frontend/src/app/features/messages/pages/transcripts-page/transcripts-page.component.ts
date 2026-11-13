@@ -1,8 +1,8 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Icon } from '../../shared/icon/icon';
-import { ChatTranscripts } from './chat-transcripts';
+import { Icon } from '../../../../shared/icon/icon';
+import { ChatTranscripts } from '../../components/chat-transcripts/chat-transcripts.component';
 
 /**
  * The phone's Transcripts screen (#125, slice 3): the document icon in the conversation's header opens it, with the

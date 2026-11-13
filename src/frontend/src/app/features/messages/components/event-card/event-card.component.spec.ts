@@ -1,5 +1,5 @@
-import { ChatEventCard } from '../../core/api/api';
-import { cardStatus, cardWhen } from './event-card';
+import { ChatEventCard } from '../../../../core/api/api';
+import { cardStatus, cardWhen } from './event-card.component';
 
 // Synthetic event only.
 const card = (overrides: Partial<ChatEventCard> = {}): ChatEventCard => ({

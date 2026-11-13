@@ -1,13 +1,13 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { ChatStore } from '../../core/chat/chat.store';
-import { Icon } from '../../shared/icon/icon';
-import { ChatConversation } from './chat-conversation';
-import { ChatTranscripts } from './chat-transcripts';
+import { ChatStore } from '../../../../core/chat/chat.store';
+import { Icon } from '../../../../shared/icon/icon';
+import { ChatConversation } from '../../components/chat-conversation/chat-conversation.component';
+import { ChatTranscripts } from '../../components/chat-transcripts/chat-transcripts.component';
 
 /** The server's limit (ADR-0008). */
-export { MESSAGE_MAX_LENGTH } from './chat-conversation';
+export { MESSAGE_MAX_LENGTH } from '../../components/chat-conversation/chat-conversation.component';
 
 /**
  * Messages (#125, docs/design/m4-chat.md): the parents' conversation as a full page. On phones it fills the screen, as in
