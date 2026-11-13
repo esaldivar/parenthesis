@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { Api } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 /**
  * Where Google sends a parent back after its consent page (#404). Finishes connecting with the one-time code, then

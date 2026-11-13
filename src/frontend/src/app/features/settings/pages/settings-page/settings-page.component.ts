@@ -7,7 +7,7 @@ import { RouterLink } from '@angular/router';
 import { Api, FamilyDetails, InvitationSummary } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { AppearancePicker } from '../../../../shared/appearance-picker/appearance-picker';
+import { AppearancePicker } from '../../../../shared/components/appearance-picker/appearance-picker';
 import { ChildrenAccess } from '../../../family/components/children-access/children-access.component';
 import { DeviceList } from '../../../family/components/device-list/device-list.component';
 import { ParentPinSettings } from '../../../family/components/parent-pin-settings/parent-pin-settings.component';

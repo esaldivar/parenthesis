@@ -81,7 +81,7 @@ charts, and empty states in both themes.
   navigation's z-index to hide content behind it. Modal dialogs are different: they
   keep a full-screen backdrop and block the page on purpose. A new shell with its
   own bottom navigation marks it with `appBottomNav`
-  (`src/frontend/src/app/shared/overlay/bottom-nav-clearance.ts`).
+  (`src/frontend/src/app/shared/directives/overlay/bottom-nav-clearance.ts`).
 
 ## Accessible appearance preferences
 

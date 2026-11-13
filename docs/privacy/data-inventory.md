@@ -31,7 +31,7 @@ All first-party, `Secure`, `SameSite=Strict`, `Path=/`.
 | `parenthesis.pickerSetAside` | session | Keeps the tab on sign-in after another parent signs out of someone's shared device (#405) | Cleared at the next sign-in or tab close | `auth.store.ts` |
 
 Every item is strictly necessary or stores a choice the person made, so no consent banner is used.
-`src/frontend/src/app/core/storage-inventory.spec.ts` fails when a new file or key touches browser storage or
+`src/frontend/src/app/features/privacy/storage-inventory.spec.ts` fails when a new file or key touches browser storage or
 cookies; review it for consent and add it here and to the notice before it ships.
 
 ## Third parties

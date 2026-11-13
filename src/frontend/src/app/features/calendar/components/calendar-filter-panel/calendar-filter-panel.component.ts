@@ -3,7 +3,7 @@ import { CalendarPalette, CalendarPaletteKey } from '../../calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { CalendarFilters, DIMENSIONS, Dimension } from '../../calendar-filters';
 
 const TYPE_PALETTES: Readonly<Record<string, CalendarPaletteKey | undefined>> = {

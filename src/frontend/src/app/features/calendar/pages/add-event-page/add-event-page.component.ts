@@ -1,6 +1,6 @@
 import { AppLocale, LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
-import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
+import { LoadingIndicator } from '../../../../shared/components/brand/loading-indicator';
 import { CalendarPalette } from '../../calendar-palette';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -15,7 +15,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarCategory, CalendarWarning, Child, FamilyMember, NewCalendarEvent, SeriesFrequency, Weekday } from '../../../../core/api/api';
 import { generalMessage, toProblem, localizeMessage } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Icon, IconName } from '../../../../shared/icon/icon';
+import { Icon, IconName } from '../../../../shared/components/icon/icon';
 import { FORM_STYLES } from '../../../auth/form-styles';
 import { PlainDate } from '../../../../core/dates/plain-date';
 import { addDays, monthDay, todayIn, weekdayShort } from '../../../../core/dates/dates';

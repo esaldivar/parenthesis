@@ -1,8 +1,8 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
-import { LocaleService } from './i18n/locale.service';
-import { TranslationKey, translate } from './i18n/translations';
+import { LocaleService } from '../i18n/locale.service';
+import { TranslationKey, translate } from '../i18n/translations';
 
 const parentRouteTitles = new Map<string, TranslationKey>([
   ['Home', 'nav.home'],

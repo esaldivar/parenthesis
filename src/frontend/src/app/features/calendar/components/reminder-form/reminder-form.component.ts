@@ -1,6 +1,6 @@
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
-import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
+import { LoadingIndicator } from '../../../../shared/components/brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal, ElementRef, Injector, afterNextRender } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';

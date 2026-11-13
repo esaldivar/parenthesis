@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { EssentialsUpdatesStore } from '../../../../core/essentials/essentials-updates.store';
 import { RouterLink } from '@angular/router';
 import { SharedRecordsAttentionStore } from '../../../../core/shared-records/shared-records-attention.store';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { PARENT_MORE_NAV } from '../../../../core/layout/navigation';
 
 /** On phones: the destinations that don't fit in the bottom navigation. */

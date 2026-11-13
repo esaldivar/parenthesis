@@ -7,8 +7,8 @@ import {
 import { Api, Child, EssentialsBanner, EssentialsSectionId } from '../../../../core/api/api';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { EssentialsUpdatesStore } from '../../../../core/essentials/essentials-updates.store';
-import { Avatar } from '../../../../shared/avatar/avatar';
-import { Icon } from '../../../../shared/icon/icon';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { ESSENTIALS_SECTIONS, bannerText } from '../../essentials-updates';
 
 /** How long a banner shows, unless the parent is pointing at or focused on the banners (#128: about ten seconds). */

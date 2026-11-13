@@ -23,7 +23,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
 import { Api, ChecklistItem, FamilyMember, SharedTask } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { dayLong, monthDay, timeLabel } from '../../../../core/dates/dates';
 import { CalendarItem } from '../../calendar-items';
 import { toFamilyLocal } from '../../time';

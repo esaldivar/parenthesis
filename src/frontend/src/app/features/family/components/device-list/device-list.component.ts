@@ -7,7 +7,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api, Child, Device } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 /**
  * The family's devices (ADR-0006, #153): shared family devices that show the profile picker for a fixed 30 days, and

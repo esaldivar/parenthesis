@@ -1,4 +1,4 @@
-import { TranslatePipe } from './i18n/translations';
+import { TranslatePipe } from '../i18n/translations';
 import { Dialog, DialogRef } from '@angular/cdk/dialog';
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Injectable, inject } from '@angular/core';

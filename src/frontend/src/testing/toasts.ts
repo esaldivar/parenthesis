@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Toasts } from '../app/shared/toast/toasts';
+import { Toasts } from '../app/shared/components/toast/toasts';
 
 /** The messages showing as toasts (#226), oldest first. */
 export const toastMessages = (): string[] =>

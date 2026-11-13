@@ -21,8 +21,8 @@ import { Api, Child, FamilySummary } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { PendingInvitation } from '../../../../core/invitations/pending-invitation';
-import { Avatar } from '../../../../shared/avatar/avatar';
-import { Icon } from '../../../../shared/icon/icon';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { FORM_STYLES } from '../../../auth/form-styles';
 import { InviteCoParent } from '../../../family/components/invite-co-parent/invite-co-parent.component';
 

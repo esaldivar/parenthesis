@@ -20,8 +20,8 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
-import { Avatar } from '../../../../shared/avatar/avatar';
-import { Icon } from '../../../../shared/icon/icon';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRows, pickText } from '../../../calendar/slot';
 import { CalendarKey } from '../calendar-key/calendar-key.component';
 import { DashboardChildFilter } from '../dashboard-child-filter/dashboard-child-filter.component';

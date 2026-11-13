@@ -15,7 +15,7 @@ import { RouterLink } from '@angular/router';
 import { Api, EventPhotos, FamilyMember } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { dayLong } from '../../../../core/dates/dates';
 import { EventPhotosSection } from '../../components/event-photos/event-photos.component';
 import { familyDate } from '../../photo-text';

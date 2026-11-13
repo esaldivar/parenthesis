@@ -9,7 +9,7 @@ import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validatio
 import {
   Child, MEDICAL_PROVIDER_TYPES, MedicalProvider, MedicalProvidersHistoryEntry, MedicalProvidersView,
 } from '../../../../core/api/api';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { LOCATION_MAX_LENGTH, mapsDirectionsUrl } from '../../../calendar/maps-link';
 import { RevisionedSection } from '../../revisioned-section';
 

@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 import { axeViolations } from '../../../../../testing/axe';
 import { MemorySettingsSection } from './memory-settings.component';
 

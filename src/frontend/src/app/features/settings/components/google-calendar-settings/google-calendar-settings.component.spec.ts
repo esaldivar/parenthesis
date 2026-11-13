@@ -7,7 +7,7 @@ import { Router, provideRouter, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../../../app.routes';
 import { GoogleCalendarStatus } from '../../../../core/api/api';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 import { axeViolations } from '../../../../../testing/axe';
 import { fakeAuth } from '../../../../../testing/fake-auth';
 import { GoogleCalendarSettings, OPEN_EXTERNAL } from './google-calendar-settings.component';

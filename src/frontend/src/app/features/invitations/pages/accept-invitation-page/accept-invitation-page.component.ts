@@ -6,7 +6,7 @@ import { Api } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { PendingInvitation } from '../../../../core/invitations/pending-invitation';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { FORM_STYLES } from '../../../auth/form-styles';
 
 type State = 'working' | 'signed-out' | 'joined' | 'invalid' | 'wrong-email' | 'existing-family' | 'error';

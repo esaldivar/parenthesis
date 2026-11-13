@@ -24,9 +24,9 @@ import { Api, CalendarEvent, Child, FamilyMember, Reminder, SharedTask } from '.
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { CachedPeriod, CalendarCache } from '../../../../core/cache/calendar-cache';
-import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
-import { EmptyState } from '../../../../shared/empty-state/empty-state';
-import { Icon } from '../../../../shared/icon/icon';
+import { LoadingIndicator } from '../../../../shared/components/brand/loading-indicator';
+import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { PlainDate } from '../../../../core/dates/plain-date';
 import { addDays, startOfWeek, todayIn, weekLabelLong } from '../../../../core/dates/dates';
 import { CalendarFilterPanel } from '../../components/calendar-filter-panel/calendar-filter-panel.component';
@@ -53,7 +53,7 @@ import { AddAt, addQuery } from '../../slot';
 import { ReminderDetails } from '../../components/reminder-details/reminder-details.component';
 import { TaskDetails } from '../../components/task-details/task-details.component';
 import { fromFamilyLocal } from '../../time';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 export type CalendarView = 'week' | 'month' | 'list';
 type LoadState = 'loading' | 'error' | 'ready';

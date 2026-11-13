@@ -1,10 +1,10 @@
-import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { AppLocale, LocaleService } from '../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../core/i18n/translations';
 import { LoadingIndicator } from '../brand/loading-indicator';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { toProblem } from '../../core/api/problem';
-import { PhotoSubject, ProfilePhotos } from '../../core/profile-photos/profile-photos';
+import { toProblem } from '../../../core/api/problem';
+import { PhotoSubject, ProfilePhotos } from '../../../core/profile-photos/profile-photos';
 import { Avatar } from '../avatar/avatar';
 
 /** What the server accepts (#388). The server checks the file's own bytes again; these just give a quick answer. */

@@ -6,7 +6,7 @@ import { DOCUMENT } from '@angular/common';
 import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { CalendarHeader } from '../calendar-header/calendar-header.component';
 
 /**

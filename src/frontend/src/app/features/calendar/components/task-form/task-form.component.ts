@@ -1,7 +1,7 @@
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
-import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
+import { LoadingIndicator } from '../../../../shared/components/brand/loading-indicator';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { FormArray, FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -17,7 +17,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api, Child, SharedTask, TaskInput } from '../../../../core/api/api';
 import { generalMessage, toProblem, localizeMessage } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { FORM_STYLES } from '../../../auth/form-styles';
 import { PlainDate } from '../../../../core/dates/plain-date';
 import { todayIn } from '../../../../core/dates/dates';

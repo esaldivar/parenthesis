@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { ComingSoonPage } from '../../shared/coming-soon/coming-soon-page';
+import { ComingSoonPage } from '../../shared/components/coming-soon/coming-soon-page';
 import { KidHomePage } from './pages/kid-home-page/kid-home-page.component';
 
 const comingSoon = (title: string, data: Record<string, string>) => ({

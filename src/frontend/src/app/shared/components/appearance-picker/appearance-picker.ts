@@ -1,7 +1,7 @@
-import { TranslatePipe, TranslationKey } from '../../core/i18n/translations';
+import { TranslatePipe, TranslationKey } from '../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatRadioChange, MatRadioModule } from '@angular/material/radio';
-import { AppearancePreference, AppearanceService } from '../../core/theme/appearance.service';
+import { AppearancePreference, AppearanceService } from '../../../core/theme/appearance.service';
 
 interface AppearanceOption {
   readonly value: AppearancePreference;

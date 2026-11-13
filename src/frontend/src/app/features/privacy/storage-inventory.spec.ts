@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { STORED_ITEMS } from '../features/privacy/pages/privacy-page/privacy-page.component';
+import { STORED_ITEMS } from './pages/privacy-page/privacy-page.component';
 
 /**
  * Guards the Privacy Notice (#416): every file that touches browser storage or cookies must be one we've reviewed and

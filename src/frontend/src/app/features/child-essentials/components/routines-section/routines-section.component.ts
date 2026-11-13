@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { EssentialsUpdatesStore } from '../../../../core/essentials/essentials-updates.store';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { OnScreen, sectionUpdates } from '../../essentials-updates';
 import { RevisionedSection } from '../../revisioned-section';
 import { Child, HouseholdRoutine, RoutineEntry, RoutinesHistoryPage, RoutinesValues, RoutinesView } from '../../../../core/api/api';

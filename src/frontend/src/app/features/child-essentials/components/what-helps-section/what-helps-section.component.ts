@@ -3,7 +3,7 @@ import { TranslatePipe } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { OnScreen, sectionUpdates } from '../../essentials-updates';
 import { RevisionedSection } from '../../revisioned-section';
 import { WhatHelpsHistoryPage, WhatHelpsView } from '../../../../core/api/api';

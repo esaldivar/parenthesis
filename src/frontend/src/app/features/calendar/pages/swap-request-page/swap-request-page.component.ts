@@ -26,7 +26,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api, CalendarEvent, CalendarWarning, Child, FamilyMember } from '../../../../core/api/api';
 import { Problem, generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { FORM_STYLES } from '../../../auth/form-styles';
 import { LocalDateTime } from '../../../../core/dates/plain-date';
 import { addDays, dayLong, todayIn } from '../../../../core/dates/dates';

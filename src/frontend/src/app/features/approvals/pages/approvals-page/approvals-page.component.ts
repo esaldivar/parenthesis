@@ -23,7 +23,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Api, ChangeRequest, ChangeRequestType, Child, FamilyMember } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 /** The request types the inbox shows: children, PINs and the calendar (the handoff keeps approvals in this inbox). */
 const SHOWN: readonly string[] = [

@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { ChatStore } from '../../../../core/chat/chat.store';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { ChatConversation } from '../chat-conversation/chat-conversation.component';
 
 /**

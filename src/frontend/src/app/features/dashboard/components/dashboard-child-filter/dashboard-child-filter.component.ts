@@ -1,6 +1,6 @@
 import { TranslatePipe } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { ChildRef } from '../../model';
 
 /** A view-only, single-choice child selector for Home. Child names come from the authorized family list. */

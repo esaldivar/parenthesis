@@ -5,7 +5,7 @@ import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { inject, ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { FundCurrency, RecordEntry, RecordTotals } from '../../../../core/api/api';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 
 export type EntryResponse = 'acknowledge' | 'dispute';
 

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppearanceService } from '../../core/theme/appearance.service';
+import { LocaleService } from '../../../core/i18n/locale.service';
+import { AppearanceService } from '../../../core/theme/appearance.service';
 import { AppearancePicker } from './appearance-picker';
 
 describe('AppearancePicker', () => {

@@ -7,7 +7,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { ComingSoonPage } from '../../../../shared/coming-soon/coming-soon-page';
+import { ComingSoonPage } from '../../../../shared/components/coming-soon/coming-soon-page';
 import { CHILDREN, MEMBERS, event } from '../../../../../testing/calendar-fixtures';
 import { axeViolations } from '../../../../../testing/axe';
 import { AuthStore } from '../../../../core/auth/auth.store';

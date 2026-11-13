@@ -13,8 +13,8 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { Api, GooglePhotosStatus } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
-import { Icon } from '../../../../shared/icon/icon';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Icon } from '../../../../shared/components/icon/icon';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 import { OPEN_EXTERNAL } from '../google-calendar-settings/google-calendar-settings.component';
 
 
