@@ -500,6 +500,20 @@ that points back here.
     complaint in mind. If light mode still feels too bright, the deferred option is dimming the ivory canvas and
     adding card hairlines (owner chose not to include it on October 30, 2026).
 
+## Roadmap M5–M8 (owner direction, November 13, 2026)
+See [the roadmap](docs/planning/roadmap.md). Milestones renamed and created, issues moved, epics #641 (M5), #643 and
+#644 (M6), #645 (M7), #648 (M8) created (`docs/roadmap-m5-m8`, November 13, 2026).
+- [ ] Owner: decide how **v1.0 — Private Beta** relates to **M7 — Beta Readiness & Quality** (is the parent beta
+  v0.7.0, or v1.0.0?). Milestone #5 was left unchanged.
+- [ ] Owner: close the finished milestones **M2 — Onboarding** and **M3 — Calendar** (no open issues), if wanted.
+- [ ] Owner: resolve the child-experience rule conflicts in #647 before M8 design approval.
+- [ ] Owner: add Gwenny's approved reference photo, with provenance, under `docs/design/companions/` before concept
+  art starts (#646).
+- [ ] Owner: decide whether Child Essentials needs an **insurance information** section (named in the M5 brief; it
+  doesn't exist today, so it would be a new feature with its own issue).
+- [ ] Fix the Google Calendar runbook's scope tier: it says the Calendar scope is sensitive, but the console reading in
+  the Photos tracker says non-sensitive; re-check in the console first (#643).
+
 ## Calendar follow-ups
 
 - [ ] #547: verify the desktop Calendar legend in Week, Month and List on Development at 125% browser zoom with Messages minimized and expanded.
