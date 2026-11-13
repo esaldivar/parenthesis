@@ -76,7 +76,7 @@ export const PARENT_ROUTES: Routes = [
   {
     path: 'approvals',
     title: 'Approvals',
-    loadComponent: () => import('./approvals/approvals-page').then((m) => m.ApprovalsPage),
+    loadComponent: () => import('./approvals/pages/approvals-page/approvals-page.component').then((m) => m.ApprovalsPage),
   },
   {
     path: 'shared-records',

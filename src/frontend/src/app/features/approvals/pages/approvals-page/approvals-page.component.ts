@@ -1,6 +1,6 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -19,10 +19,10 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Api, ChangeRequest, ChangeRequestType, Child, FamilyMember } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { Toasts } from '../../shared/toast/toasts';
+import { Api, ChangeRequest, ChangeRequestType, Child, FamilyMember } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { Toasts } from '../../../../shared/toast/toasts';
 
 /** The request types the inbox shows: children, PINs and the calendar (the handoff keeps approvals in this inbox). */
 const SHOWN: readonly string[] = [
