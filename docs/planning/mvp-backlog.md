@@ -6,18 +6,21 @@ Size: S ≤ 1 day, M ≈ 2–3 days, L ≈ 1 week. Each item should fit in one r
 ## Release map (owner decision, October 18, 2026)
 
 Each milestone is one release (see [the development workflow](../development-workflow.md#milestones)). This replaces
-the earlier milestone map below as the release structure; no item was dropped or changed, only grouped.
+the earlier milestone map below as the release structure; no item was dropped or changed, only grouped. The M5–M8
+rows follow the owner's November 13, 2026 [roadmap](roadmap.md).
 
 | Release | Milestone | Backlog items |
 |---|---|---|
 | **v0.1.0** | 1. Foundation | E0 (F-01 to F-10) |
 | **v0.2.0** | 2. Accounts and profiles | E1 (A-01 to A-11); E2 (FM-01 to FM-09) |
 | **v0.3.0** | 3. Calendar and approvals | A-12 account deletion (first); E3 (C-01 to C-06; C-04's notifications and C-07 moved to M6, #198); E4 (AP-01 to AP-07); calendar notifications (N-03 for calendar events) |
-| **v0.4.0** | 4. Communication (proposed) | Messaging (post-MVP epic, brought forward); N-01, N-02, N-03; shared family information (to be specified) |
-| **v0.5.0** | 5. Child experience (proposed) | E5 (M-01 to M-10), including the kid dashboard (M-07), diary (M-08) and Restrict/deletion (M-04 to M-06) |
-| **v1.0.0** | Private beta | E7 (S-01 to S-08); D-01 parent dashboard with live data; end-to-end tests; invitation-only access |
-| M6 (stretch) | Performance, Accessibility & Final Polish | Lighthouse and WCAG 2.2 AA work (#109, #112); reminder notifications (C-04) and the .ics feed (C-07), #198 (owner decision, October 22, 2026) |
-| after 1.0 | | Google Calendar sync; billing |
+| **v0.4.0** | 4. Communication | Messaging (post-MVP epic, brought forward); N-01, N-02, N-03; shared family information (to be specified) |
+| **v0.5.0** | 5. Design Refresh & UX Overhaul | Parent-app polish ([M5 plan](../design/m5-design-refresh.md)); no backlog items move |
+| **v0.6.0** | 6. Google Integrations & Native Mobile | Google integrations and verification, native apps; reminder notifications (C-04) and the .ics feed (C-07), #198 ([M6 plan](m6-google-and-native-mobile.md)) |
+| **v0.7.0** | 7. Beta Readiness & Quality (parent beta) | E7 (S-01 to S-08); end-to-end tests; invitation-only access; Lighthouse and WCAG 2.2 AA work (#109, #112) and the beta gates ([M7 plan](m7-beta-readiness.md)) |
+| **v0.8.0** | 8. Child Experience | Remaining E5 items (child uploads, kid dashboard M-07, diary M-08, child-content deletion and Restrict for child content) ([M8 plan](m8-child-experience.md)) |
+| **v1.0.0** | To be decided | After M8; scope to be decided. (The private beta and E7 moved to v0.7.0, owner decision November 13, 2026; D-01 live dashboard data shipped earlier.) |
+| after 1.0 | | Billing (one-way Google Calendar export already shipped, #386) |
 
 Notes:
 - **Moved earlier than before:** authentication and tenancy (A-01 to A-04, FM-01, FM-02) were in M1 and are now
@@ -129,7 +132,7 @@ Notes:
 | N-03 | Email notifications with per-user preferences (no surveillance-style nudges) | P1 | M |
 | D-01 | Parent dashboard: upcoming events, pending approvals, recent memories, medical, activity | P0 | M |
 
-## E7 — Security, quality, deployment (v1.0.0; environment setup first)
+## E7 — Security, quality, deployment (v0.7.0; environment setup first)
 | ID | Item | P | Size |
 |---|---|---|---|
 | S-01 | Security headers / CSP, HSTS, data-protection key ring in Blob + Key Vault | P0 | S |
