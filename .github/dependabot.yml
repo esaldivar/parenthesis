@@ -8,6 +8,19 @@ updates:
     groups:
       dotnet:
         patterns: ["*"]
+    ignore:
+      # Held at 4.x: MailKit 5 changes SmtpClient.SendAsync (owner decision, TODO.md).
+      - dependency-name: MailKit
+        update-types: ["version-update:semver-major"]
+      # .NET 11 packages wait for the deferred .NET 11 upgrade (owner decision, TODO.md).
+      - dependency-name: "Microsoft.AspNetCore.*"
+        versions: [">= 11.0.0"]
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        versions: [">= 11.0.0"]
+      - dependency-name: "Microsoft.Extensions.*"
+        versions: [">= 11.0.0"]
+      - dependency-name: "System.*"
+        versions: [">= 11.0.0"]
 
   - package-ecosystem: github-actions
     directory: "/"

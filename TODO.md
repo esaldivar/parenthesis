@@ -250,10 +250,14 @@ that points back here.
   one issue and passes the required tracking check. Rerun the writer to verify that it reuses the issue and link.
 - [ ] **MailKit 5 (held from Dependabot PR #602, November 12, 2026).** MailKit stays at 4.18.x: 5.0.0 changes
   `SmtpClient.SendAsync`, so `CoParent.Infrastructure/Email/EmailSender.cs` must be updated in its own change, then
-  confirmation and password-reset email checked against Mailpit.
+  confirmation and password-reset email checked against Mailpit. Dependabot ignores MailKit major updates until then
+  (`.github/dependabot.yml`; Dependabot reads it from `main`). Remove that rule with the upgrade.
 - [ ] **.NET 11 SDK image (Dependabot PR #599, closed November 12, 2026).** The owner deferred `dotnet/sdk` 11.0 for
   the API image build stage to a later release. With it, the API image and Playwright checks failed; upgrade the
-  SDK (and `global.json`, if needed) in its own change and get those checks passing first.
+  SDK (and `global.json`, if needed) in its own change and get those checks passing first. Until then Dependabot
+  ignores 11.x `Microsoft.AspNetCore.*`, `Microsoft.EntityFrameworkCore*`, `Microsoft.Extensions.*` and `System.*`
+  packages (`.github/dependabot.yml`); remove those rules with the upgrade. Dependabot PR #623 proposed
+  SignalR.Client 11.0.0 and was kept on 10.0.15.
 
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
