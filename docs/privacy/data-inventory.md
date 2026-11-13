@@ -27,7 +27,7 @@ All first-party, `Secure`, `SameSite=Strict`, `Path=/`.
 | `parenthesis.calendar-filters.<userId>.<familyId>` | local | Calendar filters | Until reset/cleared | `calendar-filters.ts`, `calendar-page.component.ts` |
 | `parenthesis.sharedDevice.declined:<userId>` | local | "Not a shared device" answer | Until cleared or device set up | `auth.store.ts` |
 | `parenthesis.pendingInvitation` | local | Invitation token across sign-up | Cleared on use, 7 days max | `pending-invitation.ts` |
-| `parenthesis.parentPinReset` | session | PIN reset token during the flow | Cleared on use or tab close | `parent-pin-reset-page.ts` |
+| `parenthesis.parentPinReset` | session | PIN reset token during the flow | Cleared on use or tab close | `parent-pin-reset-page.component.ts` |
 | `parenthesis.pickerSetAside` | session | Keeps the tab on sign-in after another parent signs out of someone's shared device (#405) | Cleared at the next sign-in or tab close | `auth.store.ts` |
 
 Every item is strictly necessary or stores a choice the person made, so no consent banner is used.
