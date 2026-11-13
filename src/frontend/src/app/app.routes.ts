@@ -31,7 +31,7 @@ export const routes: Routes = [
   authPage('reset-password', 'Choose a new password', () => import('./features/auth/pages/reset-password-page/reset-password-page.component').then((m) => m.ResetPasswordPage)),
   // Opened from the invitation email; works signed in or out (the page asks signed-out visitors to sign in).
   authPage('invitations/accept', 'Join your co-parent’s family', () =>
-    import('./features/invitations/accept-invitation-page').then((m) => m.AcceptInvitationPage),
+    import('./features/invitations/pages/accept-invitation-page/accept-invitation-page.component').then((m) => m.AcceptInvitationPage),
   ),
   // After a password sign-in: "Is this a shared family device?" (#153). Nothing is registered without a "Yes".
   authPage('shared-device/setup', 'Is this a shared family device?', () =>
