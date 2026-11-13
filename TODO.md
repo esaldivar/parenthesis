@@ -21,7 +21,9 @@ that points back here.
   - [x] Shared date types and helpers moved out of Dashboard to `app/core/dates` (`chore/567-shared-dates`,
     November 12, 2026).
   - [x] Calendar: pages and components moved (`chore/567-calendar`, November 12, 2026).
-  - [ ] Remaining feature slices, then `shared/` into `components`, `directives` and `pipes`, and `core` services
+  - [x] Fourteen more features moved, one commit each (`chore/567-features`, November 12, 2026).
+  - [ ] Child Essentials and Privacy, after #587 merges.
+  - [ ] Then `shared/` into `components`, `directives` and `pipes`, and `core` services
     by responsibility. Each in its own PR.
   - [ ] Release Playwright run and a Development smoke test (sign-in, parent and kid shells, Home, Calendar,
     Settings, Messages dock) after each slice deploys.
