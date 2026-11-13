@@ -231,6 +231,9 @@ that points back here.
   `githubactions:S7631` on the tracking checkout and `jssecurity:S5145` on routing error output after promotion.
 - [ ] **Dependabot tracking issues (#544).** After normal promotion to `main`, verify a real Dependabot PR gets
   one issue and passes the required tracking check. Rerun the writer to verify that it reuses the issue and link.
+- [ ] **MailKit 5 (held from Dependabot PR #602, November 12, 2026).** MailKit stays at 4.18.x: 5.0.0 changes
+  `SmtpClient.SendAsync`, so `CoParent.Infrastructure/Email/EmailSender.cs` must be updated in its own change, then
+  confirmation and password-reset email checked against Mailpit.
 
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
