@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Encodings.Web;
 using CoParent.Infrastructure.Email;
 using CoParent.Modules.Identity.Domain;
 using Microsoft.AspNetCore.Identity;
@@ -24,12 +23,15 @@ internal sealed partial class AccountEmails(
             ["token"] = token,
         });
 
+        var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
-            "Confirm your email for Parenthesis",
-            "Confirm your email address to finish setting up your Parenthesis account.",
-            ("Confirm email", link),
-            "If you didn't create an account, you can ignore this email."), cancellationToken);
+            spanish,
+            spanish ? "Confirma tu correo electrónico de Parenthesis" : "Confirm your email for Parenthesis",
+            spanish ? "Solo falta un paso: confirma tu correo electrónico" : "One step left: confirm your email",
+            [spanish ? "Confirma tu correo electrónico para terminar de configurar tu cuenta. El enlace solo se puede usar una vez." : "Confirm your email address to finish setting up your Parenthesis account. The link works once."],
+            new EmailAction(spanish ? "Confirmar correo electrónico" : "Confirm email", link),
+            spanish ? "Si no creaste una cuenta, puedes ignorar este mensaje." : "If you didn't create an account, you can ignore this email and nothing will happen."), cancellationToken);
     }
 
     /// <summary>Sent when someone registers with an email that already has an account. Only the inbox owner learns that.</summary>
@@ -37,12 +39,18 @@ internal sealed partial class AccountEmails(
     {
         var link = urls.Build("/forgot-password", new Dictionary<string, string?>());
 
+        var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
-            "You already have a Parenthesis account",
-            "Someone tried to create a Parenthesis account with this email address, which already has one. If it was you, sign in, or reset your password if you've forgotten it.",
-            ("Reset password", link),
-            "If it wasn't you, no action is needed. Your account hasn't changed."), cancellationToken);
+            spanish,
+            spanish ? "Ya tienes una cuenta de Parenthesis" : "You already have a Parenthesis account",
+            spanish ? "Inicia sesión con este correo electrónico" : "Sign in with this email address",
+            [
+                spanish ? "Alguien intentó crear una cuenta con este correo, pero ya existe una." : "Someone tried to create a Parenthesis account with this email address, which already has one.",
+                spanish ? "Si fuiste tú, inicia sesión con este correo. Si olvidaste tu contraseña, puedes restablecerla." : "If it was you, sign in with this email address. If you've forgotten your password, you can reset it.",
+            ],
+            new EmailAction(spanish ? "Restablecer contraseña" : "Reset password", link),
+            spanish ? "Si no fuiste tú, no necesitas hacer nada. Tu cuenta no cambió." : "If it wasn't you, no action is needed. Your account hasn't changed."), cancellationToken);
     }
 
     public async Task SendPasswordResetAsync(AppUser user, CancellationToken cancellationToken)
@@ -54,13 +62,19 @@ internal sealed partial class AccountEmails(
             ["token"] = token,
         });
 
+        var spanish = await IsSpanishAsync(user);
         await TrySendAsync(Compose(
             user,
-            "Reset your Parenthesis password",
-            "We received a request to reset your password. The link works once.",
-            ("Choose a new password", link),
-            "If you didn't ask for this, you can ignore this email. Your password won't change."), cancellationToken);
+            spanish,
+            spanish ? "Restablece tu contraseña de Parenthesis" : "Reset your Parenthesis password",
+            spanish ? "Elige una nueva contraseña" : "Choose a new password",
+            [spanish ? "Recibimos una solicitud para restablecer tu contraseña. El enlace solo se puede usar una vez." : "We received a request to reset your Parenthesis password. The link works once."],
+            new EmailAction(spanish ? "Elegir una nueva contraseña" : "Choose a new password", link),
+            spanish ? "Si no solicitaste esto, puedes ignorar el mensaje. Tu contraseña no cambiará." : "If you didn't ask for this, you can ignore this email. Your password won't change."), cancellationToken);
     }
+
+    private async Task<bool> IsSpanishAsync(AppUser user) =>
+        await UserLanguage.GetAsync(users, user) == UserLanguage.Spanish;
 
     /// <summary>Identity tokens contain characters that aren't URL-safe, so links carry them base64url-encoded.</summary>
     public static string Encode(string token) => WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
@@ -82,26 +96,9 @@ internal sealed partial class AccountEmails(
         }
     }
 
-    private static EmailMessage Compose(AppUser user, string subject, string intro, (string Label, Uri Url) action, string footer)
-    {
-        var html = HtmlEncoder.Default;
-        var text = $"""
-            Hi {user.DisplayName},
-
-            {intro}
-
-            {action.Label}: {action.Url}
-
-            {footer}
-            """;
-        var body = $"""
-            <p>Hi {html.Encode(user.DisplayName)},</p>
-            <p>{html.Encode(intro)}</p>
-            <p><a href="{html.Encode(action.Url.AbsoluteUri)}">{html.Encode(action.Label)}</a></p>
-            <p>{html.Encode(footer)}</p>
-            """;
-        return new EmailMessage(user.Email!, subject, text, body);
-    }
+    private static EmailMessage Compose(
+        AppUser user, bool spanish, string subject, string preview, IReadOnlyList<string> paragraphs, EmailAction action, string footer) =>
+        EmailTemplate.Render(user.Email!, new EmailContent(subject, preview, user.DisplayName, paragraphs, action, footer, spanish));
 
     private async Task TrySendAsync(EmailMessage message, CancellationToken cancellationToken)
     {

@@ -1,0 +1,38 @@
+name: Copilot review usage
+
+# Counts Copilot reviews when one is requested: at most 2 per PR and 6 a week (Monday 12:00 AM Central), per
+# docs/development-workflow.md. GitHub can't cancel a review request, so this warns on the PR and on Discord, and
+# fails, when a request goes over a limit without the owner's "owner-approved-review" label.
+#
+# Runs from the base branch and never checks out or executes the PR's code.
+on:
+  pull_request_target:
+    types: [review_requested]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+
+concurrency:
+  group: copilot-review-usage-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  copilot-usage:
+    name: Copilot review usage
+    if: contains(github.event.requested_reviewer.login, 'opilot')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Count Copilot reviews
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          OWNER_LOGIN: ${{ github.repository_owner }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: node .github/scripts/dev-workflow.mjs copilot-usage

@@ -1,0 +1,293 @@
+<div class="backdrop" (click)="closed.emit()" aria-hidden="true"></div>
+<section
+  class="panel"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="event-details-title"
+  cdkTrapFocus
+  [cdkTrapFocusAutoCapture]="true"
+  [attr.data-kind]="item().kind"
+  [appPanelTint]="item().palette ?? item().kind"
+>
+  <app-event-decoration [title]="item().title" [palette]="item().palette ?? item().kind" [allowed]="item().kind !== 'unavailable' || item().isMine" />
+  <div class="panel__head">
+    <span class="panel__icon" [appCalendarPalette]="item().palette ?? item().kind"><app-icon [name]="item().icon" [size]="24" /></span>
+    <div class="panel__titles">
+      @let unavailable = item().kind === 'unavailable';
+      @let genericUnavailable = unavailable && (item().title === ('feature.unavailable' | tr) || item().title.trim().toLowerCase() === 'unavailable');
+      <h2 id="event-details-title" tabindex="-1" cdkFocusInitial>
+        {{ genericUnavailable ? ('feature.unavailable' | tr) : item().title }}
+      </h2>
+      @if (!genericUnavailable) {
+        <p class="panel__type" [appCalendarPalette]="item().palette ?? item().kind">
+          {{ unavailable ? ('feature.unavailable' | tr) : item().categoryLabel }}
+        </p>
+      }
+    </div>
+    <button mat-icon-button type="button" (click)="closed.emit()" aria-label="{{ 'feature.close.details' | tr }}">
+      <app-icon name="close" />
+    </button>
+  </div>
+
+  <p class="status" [attr.data-status]="item().status">{{ status() }}</p>
+
+  @switch (item().status) {
+    @case ('pending') {
+      <p class="explain">
+        @if (item().isMine) {
+          {{ 'feature.waiting.for' | tr }} {{ coParent() ?? 'your co-parent' }}{{ 'feature.s.approval.it.isn.t.on.the' | tr }}
+        } @else {
+          {{ 'feature.waiting.for.your.approval.it.isn.t' | tr }}
+        }
+      </p>
+    }
+    @case ('declined') {
+      <p class="explain">
+        @if (declineInfo(); as decline) {
+          {{ decline.by }} {{ 'feature.declined.this.request.on' | tr }} {{ decline.on }}.
+        } @else {
+          {{ 'feature.this.request.was.declined' | tr }}
+        }
+        {{ 'feature.it.isn.t.on.the.schedule' | tr }}
+      </p>
+      @if (declineInfo()?.comment; as comment) {
+        <dl class="change">
+          <dt>{{ 'feature.comment' | tr }}</dt>
+          <dd>{{ comment }}</dd>
+        </dl>
+      }
+    }
+    @case ('change-pending') {
+      <p class="explain">
+        @if (item().pendingChange === 'Cancel') {
+          {{ 'feature.a.cancellation.is.waiting.for.approval.the' | tr }}
+        } @else {
+          {{ 'feature.a.change.is.waiting.for.approval.the' | tr }}
+        }
+      </p>
+    }
+  }
+
+  @if (proposed() || request()?.reason) {
+    <dl class="change">
+      @if (proposed(); as change) {
+        <dt>{{ 'feature.original' | tr }}</dt>
+        <dd>{{ item().lastDate > item().firstDate ? when() : date() + ' · ' + when() }}</dd>
+        <dt>{{ 'feature.proposed' | tr }}</dt>
+        <dd>{{ change }}</dd>
+      }
+      @if (request()?.reason; as reason) {
+        <dt>{{ 'feature.reason' | tr }}</dt>
+        <dd>{{ reason }}</dd>
+      }
+    </dl>
+  }
+
+  @if (item().status === 'pending' || item().status === 'change-pending') {
+    @if (request(); as request) {
+      <section class="timeline" aria-labelledby="timeline-heading">
+        <h3 id="timeline-heading">{{ 'feature.status' | tr }}</h3>
+        <ol>
+          <li data-done="true">
+            <app-icon name="check" [size]="16" />
+            <span>{{ 'feature.request.sent' | tr }} <span class="hint">{{ sentAt() }}</span></span>
+          </li>
+          <li>
+            <span class="dot" aria-hidden="true"></span>
+            <span>{{ answerLabel() }} <span class="hint">{{ 'feature.waiting' | tr }}</span></span>
+          </li>
+          <li>
+            <span class="dot" aria-hidden="true"></span>
+            <span>
+              {{ item().status === 'pending' ? ('feature.on.the.calendar' | tr) : ('feature.calendar.updated' | tr) }}
+              <span class="hint">{{ 'feature.happens.automatically.once.approved' | tr }}</span>
+            </span>
+          </li>
+        </ol>
+      </section>
+    }
+    @if (requestState() === 'gone') {
+      <div class="actions">
+        @if (error(); as error) {
+          <p class="error" role="alert">{{ error }}</p>
+        }
+        <p class="explain">{{ 'feature.this.request.isn.t.waiting.any.more' | tr }}</p>
+        <button mat-stroked-button type="button" (click)="refresh()">{{ 'feature.refresh.the.calendar' | tr }}</button>
+      </div>
+    } @else if (request()?.proposedByYou) {
+      <div class="actions">
+        @if (!withdrawing()) {
+          <button mat-stroked-button type="button" class="danger-outline" id="event-withdraw" (click)="startWithdraw()">{{ 'feature.withdraw.request' | tr }}</button>
+        } @else {
+          <p class="explain" id="event-withdraw-explanation">{{ 'feature.this.takes.your.request.back' | tr }} {{ coParent() ?? 'Your co-parent' }} {{ 'feature.won.t.be.asked.to.decide.it' | tr }}</p>
+          @if (error(); as error) {
+            <p class="error" role="alert">{{ error }}</p>
+          }
+          <div class="actions__row">
+            <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="withdraw()">
+              {{ busy() ? ('feature.withdrawing' | tr) : ('feature.yes.withdraw' | tr) }}
+            </button>
+            <button mat-button type="button" id="event-keep-request" aria-describedby="event-withdraw-explanation" [disabled]="busy()" (click)="keepRequest()">{{ 'feature.keep.it' | tr }}</button>
+          </div>
+        }
+      </div>
+    } @else if (request()?.canDecide) {
+      <div class="actions" role="group" aria-label="{{ 'feature.your.answer' | tr }}">
+        @if (error(); as error) {
+          <p class="error" role="alert">{{ error }}</p>
+        }
+        @if (!declining()) {
+          <div class="actions__row">
+            <button mat-flat-button type="button" [disabled]="busy()" (click)="approve()">
+              {{ busy() ? ('feature.approving' | tr) : ('feature.approve' | tr) }}
+            </button>
+            <button mat-stroked-button type="button" id="event-decline" [disabled]="busy()" (click)="startDecline()">{{ 'feature.decline' | tr }}</button>
+          </div>
+        } @else {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ 'feature.tell' | tr }} {{ coParent() ?? 'your co-parent' }} {{ 'feature.why.optional' | tr }}</mat-label>
+            <textarea matInput id="event-decline-comment" [formControl]="comment" rows="3" [maxlength]="commentMax"></textarea>
+            <mat-hint align="end">{{ comment.value.length }} / {{ commentMax }}</mat-hint>
+          </mat-form-field>
+          <div class="actions__row">
+            <button mat-flat-button type="button" [disabled]="busy()" (click)="decline()">
+              {{ busy() ? ('feature.declining' | tr) : ('feature.decline.a2d285' | tr) }}
+            </button>
+            <button mat-button type="button" [disabled]="busy()" (click)="keepWaiting()">{{ 'feature.not.now' | tr }}</button>
+          </div>
+        }
+        <a mat-button routerLink="/approvals">{{ 'feature.see.it.in.approvals' | tr }}</a>
+      </div>
+    } @else {
+      <a mat-stroked-button routerLink="/approvals">{{ item().isMine ? ('feature.see.it.in.approvals' | tr) : ('feature.review.in.approvals' | tr) }}</a>
+    }
+  }
+
+  @if (item().beforeCoParentJoined) {
+    <p class="explain">{{ 'feature.confirmed.before.your.co.parent.joined.they' | tr }}</p>
+  }
+
+  <dl class="facts">
+    <dt>{{ 'feature.when' | tr }}</dt>
+    <dd>{{ date() }} · {{ when() }}</dd>
+    @if (repeats(); as repeats) {
+      <dt>{{ 'feature.repeats' | tr }}</dt>
+      <dd>{{ repeats }}</dd>
+      @if (seriesDates(); as dates) {
+        <dt>{{ 'feature.dates' | tr }}</dt>
+        <dd>{{ dates }}</dd>
+      }
+    }
+    @if (people()) {
+      <dt>{{ 'feature.who' | tr }}</dt>
+      <dd>{{ people() }}</dd>
+    }
+    @if (item().location; as location) {
+      <dt>{{ 'feature.where' | tr }}</dt>
+      <dd>
+        {{ location }}
+        @if (mapsUrl(); as url) {
+          <!-- Leaves Parenthesis: no map is shown here, and no referrer is sent with the address (#113). -->
+          <a class="maps" [href]="url" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">
+            <app-icon name="external" [size]="18" />
+            <span>{{ 'feature.open.in.google.maps' | tr }}</span><span class="visually-hidden"> {{ 'feature.opens.in.a.new.tab' | tr }}</span>
+          </a>
+        }
+      </dd>
+    }
+    @if (item().kind === 'unavailable') {
+      @if (item().isMine) {
+        @if (item().notes; as notes) {
+          <dt>{{ 'feature.private.note' | tr }}</dt>
+          <dd>{{ notes }} <span class="hint">{{ 'feature.only.you.can.see.this' | tr }}</span></dd>
+        }
+      } @else {
+        <dt>{{ 'feature.details' | tr }}</dt>
+        <dd>{{ 'feature.private.details.aren.t.shared' | tr }}</dd>
+      }
+    } @else if (item().notes; as notes) {
+      <dt>{{ 'feature.notes' | tr }}</dt>
+      <dd>{{ notes }}</dd>
+    }
+    <dt>{{ 'feature.added.by' | tr }}</dt>
+    <dd>{{ item().isMine ? ('feature.you.08b041' | tr) : item().ownerName }}</dd>
+  </dl>
+
+  @if (item().kind !== 'unavailable') {
+    <app-event-photos
+      [familyId]="familyId()"
+      [eventId]="item().id"
+      [timeZone]="timeZone()"
+      [coParent]="coParent()"
+      [caregiver]="item().kind === 'parenting' ? (item().parents[0]?.name ?? null) : null"
+      [eventStatus]="item().status"
+    />
+  }
+
+  @if (item().kind === 'unavailable' && swapTarget() && coParent()) {
+    <div class="actions">
+      <p class="explain">
+        {{ swapTarget()!.parents[0]?.name }} {{ 'feature.has.parenting.time.then' | tr }}{{ swapTargetWhen() }}{{ 'feature.you.can.ask.to.swap.it.nothing' | tr }}
+      </p>
+      <a mat-stroked-button [routerLink]="['/calendar', swapTarget()!.id, 'swap']">
+        <app-icon name="swap" [size]="18" /> {{ 'feature.request.parenting.time.swap' | tr }}
+      </a>
+    </div>
+  }
+
+  @if (item().status === 'declined') {
+    <div class="actions">
+      <p class="explain">{{ 'feature.removing.it.changes.only.your.calendar.the' | tr }}</p>
+      @if (error(); as error) {
+        <p class="error" role="alert">{{ error }}</p>
+      }
+      <div class="actions__row">
+        <button mat-stroked-button type="button" [disabled]="busy()" (click)="dismiss()">
+          {{ busy() ? ('feature.removing' | tr) : ('feature.remove.from.my.calendar' | tr) }}
+        </button>
+        <a mat-button routerLink="/approvals">{{ 'feature.see.it.in.approvals' | tr }}</a>
+      </div>
+    </div>
+  }
+
+  @if (canCancel() || canSwap()) {
+    <div class="actions">
+      @if (canCancel() && !confirming()) {
+        <a mat-stroked-button [routerLink]="['/calendar', item().id, 'edit']">{{ 'feature.edit.event' | tr }}</a>
+      }
+      @if (canSwap() && !confirming()) {
+        <a mat-flat-button [routerLink]="['/calendar', item().id, 'swap']">
+          <app-icon name="swap" [size]="18" /> {{ 'feature.request.swap' | tr }}
+        </a>
+      }
+      @if (canCancel() && !confirming()) {
+        <button mat-stroked-button type="button" id="event-cancel" (click)="startCancel()">{{ 'feature.cancel.event' | tr }}</button>
+      } @else if (canCancel()) {
+        @if (error(); as error) {
+          <p class="error" role="alert">{{ error }}</p>
+        }
+        @if (cancelsTogether()) {
+          <p class="explain" id="event-cancel-explanation">{{ 'feature.this.repeats.which.dates.do.you.want' | tr }}</p>
+          <div class="actions__row">
+            <button mat-stroked-button type="button" class="danger-outline" [disabled]="busy()" (click)="cancel('this')">
+              {{ 'feature.this.event' | tr }}
+            </button>
+            <button mat-stroked-button type="button" class="danger-outline" [disabled]="busy()" (click)="cancel('following')">
+              {{ 'feature.this.and.following' | tr }}
+            </button>
+            <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel('all')">{{ 'feature.all.events' | tr }}</button>
+            <button mat-button type="button" id="event-keep-series" aria-describedby="event-cancel-explanation" [disabled]="busy()" (click)="keepEvent()">{{ 'feature.keep.them' | tr }}</button>
+          </div>
+        } @else {
+          <p class="explain" id="event-cancel-explanation">{{ cancelExplanation() }}</p>
+          <div class="actions__row">
+            <button mat-flat-button type="button" class="danger" [disabled]="busy()" (click)="cancel()">
+              {{ busy() ? ('feature.cancelling' | tr) : ('feature.yes.cancel.event' | tr) }}
+            </button>
+            <button mat-button type="button" id="event-keep" aria-describedby="event-cancel-explanation" [disabled]="busy()" (click)="keepEvent()">{{ 'feature.keep.it' | tr }}</button>
+          </div>
+        }
+      }
+    </div>
+  }
+</section>

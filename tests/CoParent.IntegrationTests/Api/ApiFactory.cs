@@ -1,7 +1,10 @@
 using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
 using CoParent.IntegrationTests.Infrastructure;
+using CoParent.Modules.Calendar;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -14,7 +17,7 @@ namespace CoParent.IntegrationTests.Api;
 /// The real API host on its own test database: migrations applied once, data reset between tests with Respawn.
 /// Runs in the "Testing" environment, so error handling behaves as in production (no developer exception page).
 /// </summary>
-public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory<Program>, IAsyncLifetime
+public sealed class ApiFactory(PostgresFixture postgres, AzuriteFixture azurite) : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string TestingEnvironment = "Testing";
     public const string PublicBaseUrl = "https://app.parenthesis.test";
@@ -42,10 +45,14 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
             _respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
             {
                 DbAdapter = DbAdapter.Postgres,
-                TablesToIgnore = [MigrationsHistoryTable],
+                // The data-protection key ring isn't test data: keys issued earlier in the run must stay valid.
+                TablesToIgnore = [MigrationsHistoryTable, new Respawn.Graph.Table("data_protection", "keys")],
             });
         }
     }
+
+    /// <summary>The API's test database, for building a second host that shares it.</summary>
+    public string ConnectionString => _connectionString;
 
     /// <summary>Runs a scalar query against the API's database, for asserting on data no endpoint exposes (e.g. the audit log).</summary>
     public async Task<T?> QueryScalarAsync<T>(string sql, params (string Name, object Value)[] parameters)
@@ -64,6 +71,7 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
     /// <summary>Deletes all application data, keeping schema and migration history.</summary>
     public async Task ResetDatabaseAsync()
     {
+        Clock.Reset();
         if (_respawner is null)
         {
             return;
@@ -105,15 +113,66 @@ public sealed class ApiFactory(PostgresFixture postgres) : WebApplicationFactory
         builder.UseWebRoot(_webRoot);
         builder.UseSetting("ConnectionStrings:Postgres", _connectionString);
 
-        // Every test client shares one "IP"; rate limiting has its own test with a low limit.
+        // Each session has its own client address (TestClientAddress), but a test may sign in many times; login rate
+        // limiting has its own test with a low limit.
         builder.UseSetting("Identity:AuthRateLimit:PermitLimit", "10000");
         builder.UseSetting("App:PublicBaseUrl", PublicBaseUrl);
+
+        // Event photos (#403) in Azurite. The cleanup runs only when a test asks for it.
+        builder.UseSetting("EventPhotos:ConnectionString", azurite.ConnectionString);
+        // Shared records payment attachments (#477), in their own Azurite container.
+        builder.UseSetting("SharedRecords:ConnectionString", azurite.ConnectionString);
+        builder.UseSetting("SharedRecords:CleanupInterval", "1.00:00:00");
+        builder.UseSetting("EventPhotos:UploadsEnabled", "true");
+        builder.UseSetting("EventPhotos:CleanupInterval", "1.00:00:00");
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<FakeEmailSender>();
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+            services.AddSingleton<IStartupFilter, TestClientAddress>();
+
+            // The real clock, which a test can move forward (PIN pauses, shared-device expiry). Reset between tests.
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(Clock);
+            // Keep cookie issuance and security-stamp validation on the browser's clock. Business time jumps
+            // otherwise expire new cookies or trigger a renewal that replaces the endpoint's cache headers.
+            services.PostConfigure<CookieAuthenticationOptions>(
+                IdentityConstants.ApplicationScheme,
+                options => options.TimeProvider = TimeProvider.System);
+            services.PostConfigure<SecurityStampValidatorOptions>(options => options.TimeProvider = TimeProvider.System);
+
+            // The tests' calendar dates are in October 2026 and later: they're checked against a fixed "today" of
+            // October 1, 2026 (#232), so they never become "the past". The rest of the app keeps the real clock.
+            services.RemoveAllKeyed<TimeProvider>(CalendarModule.TodayClock);
+            services.AddKeyedSingleton<TimeProvider>(CalendarModule.TodayClock, new FixedClock(FixedToday));
         });
+    }
+
+    /// <summary>The app's clock: real time plus whatever a test has moved it forward by.</summary>
+    public ShiftableClock Clock { get; } = new();
+
+    /// <summary>The day the calendar's "from today on" rule checks against in tests (noon UTC, October 1, 2026).</summary>
+    public static readonly DateTimeOffset FixedToday = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
+
+    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
+
+    /// <summary>System time plus an offset a test can advance. Tests in the API collection run one at a time.</summary>
+    public sealed class ShiftableClock : TimeProvider
+    {
+        private long _offsetTicks;
+
+        public override DateTimeOffset GetUtcNow() => System.GetUtcNow() + TimeSpan.FromTicks(Interlocked.Read(ref _offsetTicks));
+
+        public void Advance(TimeSpan by) => Interlocked.Add(ref _offsetTicks, by.Ticks);
+
+        public void Reset() => Interlocked.Exchange(ref _offsetTicks, 0);
+
+        /// <summary>Makes "now" this moment (it keeps ticking from there), for tests written against fixed dates.</summary>
+        public void SetUtcNow(DateTimeOffset now) => Interlocked.Exchange(ref _offsetTicks, (now - System.GetUtcNow()).Ticks);
     }
 
     public override async ValueTask DisposeAsync()

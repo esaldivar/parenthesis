@@ -1,0 +1,225 @@
+<div class="dashboard">
+  <header class="welcome">
+    <svg class="welcome__artwork" viewBox="0 0 64 40" aria-hidden="true" focusable="false">
+      @switch (greetingText()) {
+        @case ('Good afternoon') {
+          <circle class="full-sun sun-body" cx="32" cy="20" r="11" />
+          <path class="sun-rays" d="M32 2v3 M32 35v3 M14 20h3 M47 20h3 M19 7l3 3 M42 30l3 3 M45 7l-3 3 M22 30l-3 3" />
+        }
+        @case ('Good evening') {
+          <path class="moon" d="M33 3a17 17 0 1 0 17 24A16 16 0 0 1 33 3Z" />
+        }
+        @default {
+          <path class="sunrise sun-body" d="M14 34a18 18 0 0 1 36 0z" />
+          <path class="sun-rays" d="M32 2v8 M10 10l5 5 M54 10l-5 5 M2 26h7 M55 26h7" />
+          <path class="sun-ground" d="M6 37h52" />
+        }
+      }
+    </svg>
+    <div>
+      <h1>{{ greeting() }}</h1>
+      <p class="welcome__sub">{{ 'dash.lead' | tr }}</p>
+      @if (showingSample()) {
+        <p class="sample-banner" role="note">
+          <strong>{{ 'dash.sample' | tr }}</strong> · {{ 'dash.sampleHelp' | tr }}
+        </p>
+      }
+    </div>
+    <app-leaves class="welcome__leaves" variant="header" />
+  </header>
+
+  <app-week-calendar
+    class="card area-calendar"
+    [weekStart]="shownWeek()"
+    [today]="today()"
+    [isCurrentWeek]="isCurrentWeek()"
+    [state]="state()"
+    [week]="calendarWeek()"
+    [selectedChild]="selectedChild()"
+    [view]="inlineView()"
+    [desktopMonth]="desktopMonth()"
+    [monthDate]="monthDate()"
+    [monthState]="monthState()"
+    [monthItems]="filteredMonthItems()"
+    (previousWeek)="stepCalendar(-1)"
+    (nextWeek)="stepCalendar(1)"
+    (goToToday)="goToToday()"
+    (viewChange)="selectView($event)"
+    (openMonthDay)="openMonthDay($event)"
+    (childChange)="selectedChild.set($event)"
+    (retry)="reload()"
+    (openEvent)="openEvent($event)"
+    (add)="addAt($event)"
+  />
+
+  <section class="card area-upcoming" aria-labelledby="upcoming-heading" [attr.aria-busy]="state() === 'loading'">
+    <header class="card__header">
+      <h2 id="upcoming-heading">{{ 'dash.upcoming' | tr }}</h2>
+      <a class="see-all" routerLink="/calendar" [queryParams]="{ view: 'list', week: shownWeek() }">
+        {{ 'dash.seeAll' | tr }}<span class="visually-hidden"> {{ 'dash.upcomingEvents' | tr }}</span>
+      </a>
+    </header>
+    @if (state() === 'loading') {
+      <p role="status">{{ 'dash.loading' | tr }}</p>
+    } @else if (state() === 'error') {
+      <div role="alert">
+        <p>{{ 'dash.loadError' | tr }}</p>
+        <button mat-button type="button" (click)="reload()">{{ 'dash.retry' | tr }}</button>
+      </div>
+    } @else if (state() === 'ready' && upcoming().length > 0) {
+      <ul class="upcoming">
+        @for (item of upcoming(); track item.key) {
+          <li class="upcoming__item" [attr.data-category]="item.category" [attr.data-status]="item.status">
+            @if (item.eventId; as eventId) {
+              <button #trigger class="upcoming__action" type="button" (click)="openEvent(eventId, trigger)">
+                <ng-container [ngTemplateOutlet]="row" />
+              </button>
+            } @else {
+              <a class="upcoming__action" [routerLink]="item.link" [queryParams]="item.params">
+                <ng-container [ngTemplateOutlet]="row" />
+              </a>
+            }
+            <ng-template #row>
+              <span [appCalendarPalette]="item.palette" class="upcoming__icon" aria-hidden="true"><app-icon [name]="item.icon" [size]="24" /></span>
+              <span class="upcoming__text">
+                <span class="upcoming__title">{{ item.title }}</span>
+                <span class="upcoming__when">{{ item.when }}</span>
+                @if (item.people.length > 0) {
+                  <span class="visually-hidden">{{ 'feature.with.5dc768' | tr }} {{ childNames(item.people) }}</span>
+                }
+                @if (item.status !== 'confirmed' || item.note) {
+                  <span class="upcoming__status">
+                    @if (item.status !== 'confirmed') {
+                      <app-status-label [status]="item.status" />
+                    }
+                    @if (item.note) {
+                      <app-status-label status="change-pending" />
+                    }
+                  </span>
+                }
+              </span>
+              <span class="upcoming__people" aria-hidden="true">
+                @for (person of item.people; track person.kind + ':' + person.id) {
+                  <app-avatar [name]="person.name" [kind]="person.kind" [personId]="person.id" [size]="32" />
+                }
+              </span>
+            </ng-template>
+          </li>
+        }
+      </ul>
+    } @else if (state() === 'ready') {
+      <app-empty-state icon="calendar" [title]="'dash.emptyWeek' | tr" [body]="'dash.emptyWeekBody' | tr" />
+    } @else {
+      <app-empty-state
+        icon="calendar"
+        [title]="'dash.empty' | tr"
+        [body]="'dash.emptyBody' | tr"
+      />
+    }
+  </section>
+
+  <section class="card area-quick" aria-labelledby="quick-heading">
+    <h2 id="quick-heading">{{ 'dash.quick' | tr }}</h2>
+    <div class="quick">
+      @for (action of quickCalendarActions; track action.kind) {
+        <a class="quick__btn" routerLink="/calendar/new"
+          [queryParams]="{ date: isCurrentWeek() ? today() : shownWeek(), kind: action.kind === 'event' ? null : action.kind }">
+          <app-icon [name]="action.icon" [size]="26" />
+          <span>{{ quickLabel(action.kind) }}</span>
+        </a>
+      }
+      <a class="quick__btn" routerLink="/shared-records" [queryParams]="{ add: '1' }">
+        <app-icon name="receipt" [size]="26" />
+        <span>{{ 'dash.record' | tr }}</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="card area-kids" aria-labelledby="kids-heading">
+    <header class="card__header">
+      <h2 id="kids-heading"><app-icon name="children" [size]="26" /> {{ 'nav.fromKids' | tr }}</h2>
+      <a class="see-all" routerLink="/from-your-kids">{{ 'dash.seeAll' | tr }}<span class="visually-hidden"> {{ 'dash.kids' | tr }}</span></a>
+    </header>
+    @if (state() === 'ready' && data()!.kidShares.length > 0) {
+      <ul class="kids">
+        @for (share of data()!.kidShares; track share.id) {
+          <li>
+            <span class="kids__tile" [attr.data-kind]="share.kind" aria-hidden="true">
+              <app-icon [name]="share.kind === 'drawing' ? 'palette' : 'image'" [size]="40" />
+            </span>
+            <span class="kids__caption">
+              <app-avatar [name]="share.child.name" [size]="32" />
+              <span>
+                <span class="kids__what">{{ share.child.name }} {{ 'feature.shared.a' | tr }} {{ share.kind }} {{ 'feature.with.you' | tr }}</span>
+                <span class="muted">{{ share.sharedAt }}</span>
+              </span>
+            </span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <app-empty-state
+        icon="pencil"
+        [title]="'dash.kidsEmpty' | tr"
+        [body]="'dash.kidsEmptyBody' | tr"
+      />
+    }
+  </section>
+
+  <section class="card area-memories" aria-labelledby="memories-heading">
+    <header class="card__header">
+      <h2 id="memories-heading"><app-icon name="album" [size]="26" /> {{ 'nav.memories' | tr }}</h2>
+      <a class="see-all" routerLink="/memories">{{ 'dash.seeAll' | tr }}<span class="visually-hidden"> {{ 'dash.memories' | tr }}</span></a>
+    </header>
+    @if (state() === 'ready' && currentMemory(); as memory) {
+      <div class="memory">
+        <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(-1)" [attr.aria-label]="'dash.previous' | tr">
+          <app-icon name="chevron-left" />
+        </button>
+        <figure class="memory__figure" aria-live="polite">
+          @if (memory.coverUrl; as cover) {
+            <img class="memory__tile memory__tile--photo" [src]="cover" alt="" />
+          } @else {
+            <span class="memory__tile" aria-hidden="true"><app-icon name="album" [size]="44" /></span>
+          }
+          <span class="dots" aria-hidden="true">
+            @for (m of memories(); track m.id; let i = $index) {
+              <span [class.is-current]="i === memoryIndex()"></span>
+            }
+          </span>
+          <figcaption>
+            @if (memory.link; as link) {
+              <a class="memory__title" [routerLink]="link">{{ memory.title }}</a>
+            } @else {
+              <span class="memory__title">{{ memory.title }}</span>
+            }
+            <span class="muted">{{ dateMedium(memory.date) }}</span>
+            <span class="visually-hidden">{{ 'feature.memory' | tr }} {{ memoryIndex() + 1 }} {{ 'feature.of' | tr }} {{ memories().length }}</span>
+          </figcaption>
+        </figure>
+        <button mat-icon-button type="button" class="memory__nav" (click)="showMemory(1)" [attr.aria-label]="'dash.next' | tr">
+          <app-icon name="chevron-right" />
+        </button>
+      </div>
+    } @else {
+      <app-empty-state
+        icon="album"
+        [title]="'dash.memoriesEmpty' | tr"
+        [body]="'dash.memoriesEmptyBody' | tr"
+      />
+    }
+  </section>
+</div>
+
+@if (details(); as d) {
+  <app-event-details
+    [item]="d.item"
+    [event]="d.event"
+    [members]="d.members"
+    [familyId]="d.familyId"
+    [timeZone]="familyTimeZone()"
+    [swapTarget]="d.swapTarget"
+    (closed)="closeDetails()"
+    (changed)="detailsChanged($event)"
+  />
+}

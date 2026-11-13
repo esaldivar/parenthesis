@@ -1,0 +1,79 @@
+<section class="kids" aria-labelledby="kids-title">
+  <header class="intro">
+    <h1 id="kids-title" class="title-ribbon">
+      @if (locale.locale() === 'en') {
+        <img src="/art/from-your-kids/hand-lettered-title.webp" alt="" width="279" height="52" />
+      }
+      <span [class.visually-hidden]="locale.locale() === 'en'">{{ 'feature.from.your.kids' | tr }}</span>
+    </h1>
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'feature.loading.children' | tr }}</p>
+  } @else if (failed()) {
+    <p role="alert">{{ 'feature.we.couldn.t.load.your.children.s' | tr }}</p>
+    <button type="button" class="retry" (click)="retry()">{{ 'feature.try.again' | tr }}</button>
+  } @else if (children().length === 0) {
+    <p>{{ 'feature.no.active.child.profiles.yet' | tr }}</p>
+  } @else {
+    <nav class="child-tabs" aria-label="{{ 'feature.choose.a.child' | tr }}">
+      @for (child of children(); track child.id) {
+        <button type="button" [attr.aria-pressed]="selectedChildId() === child.id"
+          (click)="selectChild(child.id)">
+          <app-avatar [name]="child.firstName" [personId]="child.id" [size]="28" />
+          <span class="child-name">{{ child.firstName }}</span>
+        </button>
+      }
+    </nav>
+
+    <nav class="sections" aria-label="{{ 'feature.from.your.kids.sections' | tr }}">
+      @for (item of sections; track item.id) {
+        <button type="button" [attr.aria-current]="section() === item.id ? 'page' : null"
+          (click)="section.set(item.id)">
+          <img [src]="'/art/from-your-kids/' + item.id + '-icon.webp'" alt="" />
+          <span class="section-copy"><strong>{{ item.title | tr }}</strong><small>{{ item.description | tr }}</small></span>
+        </button>
+      }
+    </nav>
+
+    @if (developmentBuild) {
+      <div class="preview-controls">
+        <label class="preview-toggle">
+          <input type="checkbox" [checked]="previewAt() !== null" (change)="setPreview($event)" />
+          {{ 'feature.development.preview.with.sample.content' | tr }}
+        </label>
+        @if (previewAt() !== null) {
+          <p class="sharing-note" role="status">{{ 'feature.showing.synthetic.examples.for.ui.testing' | tr }}</p>
+        }
+      </div>
+    }
+
+    @switch (section()) {
+      @case ('diary') {
+        <h2 class="section-heading">{{ 'feature.child.diary.heading' | tr: { name: contentName() ?? '' } }} <span aria-hidden="true">♡</span></h2>
+        <app-kids-diary [entries]="diaryEntries()" />
+      }
+      @case ('artwork') {
+        <section class="gallery" aria-labelledby="artwork-title">
+          <h2 id="artwork-title" class="section-heading">{{ 'feature.child.artwork.heading' | tr: { name: contentName() ?? '' } }}</h2>
+          <app-kids-gallery kind="Artwork" [items]="artwork()" />
+          @if (!artwork().length) { <p class="empty">{{ 'feature.no.artwork.shared.with.you.yet' | tr }}</p> }
+        </section>
+      }
+      @case ('photos') {
+        <section class="corkboard" aria-labelledby="photos-title">
+          @if (previewAt() !== null) {
+            <img class="corkboard-sticker rainbow" src="/art/from-your-kids/sample-rainbow.webp" alt="" />
+            <img class="corkboard-sticker star" src="/art/from-your-kids/sample-star.webp" alt="" />
+          }
+          <h2 id="photos-title">{{ 'feature.child.photos.heading' | tr: { name: contentName() ?? '' } }} <span aria-hidden="true">♡</span></h2>
+          <app-kids-gallery kind="Photo" [items]="photos()" />
+          @if (!photos().length) { <p class="empty">{{ 'feature.no.photos.shared.with.you.yet' | tr }}</p> }
+        </section>
+      }
+    }
+    @if (previewAt() === null) {
+      <p class="sharing-note">{{ 'feature.child.sharing.note' | tr: { name: contentName() ?? '' } }}</p>
+    }
+  }
+</section>

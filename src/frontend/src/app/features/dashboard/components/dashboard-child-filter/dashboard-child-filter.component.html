@@ -1,0 +1,20 @@
+<div class="child-filter" role="group" aria-label="{{ 'feature.filter.home.calendar.by.child' | tr }}">
+  <button type="button" [attr.aria-pressed]="selectedChild() === null" (click)="changed.emit(null)">
+    @if (selectedChild() === null) {
+      <app-icon name="check" [size]="18" />
+    }
+    <span>{{ 'feature.show.all.kids' | tr }}</span>
+  </button>
+  @for (child of children(); track child.id) {
+    <button
+      type="button"
+      [attr.aria-pressed]="selectedChild() === child.id"
+      (click)="changed.emit(child.id)"
+    >
+      @if (selectedChild() === child.id) {
+        <app-icon name="check" [size]="18" />
+      }
+      <span>{{ child.name }}</span>
+    </button>
+  }
+</div>

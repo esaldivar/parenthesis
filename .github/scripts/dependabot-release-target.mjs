@@ -1,0 +1,81 @@
+import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+
+const versionPattern = '(0|[1-9][0-9]*)';
+const releasePattern = new RegExp(`^release/${versionPattern}\\.${versionPattern}\\.${versionPattern}$`);
+
+export function matchesReleaseMilestone(branch, { state, title }) {
+  if (state !== 'open' || !releasePattern.test(branch)) return false;
+  const version = branch.slice(8);
+  return new RegExp(`^v${version.replaceAll('.', '\\.')}($|[^0-9.])`).test(title) ||
+    (version.endsWith('.0') && new RegExp(`^v${version.slice(0, -2).replaceAll('.', '\\.')}($|[^0-9.])`).test(title)) ||
+    (version.startsWith('0.') && version.endsWith('.0') &&
+      new RegExp(`^M${Number(version.split('.')[1])}($|[^0-9])`).test(title));
+}
+
+export function isDependabotUpdate(pr, repository) {
+  return pr.state === 'open' && pr.user?.login === 'dependabot[bot]' && pr.user?.type === 'Bot' &&
+    pr.head?.repo?.full_name === repository && pr.head?.ref?.startsWith('dependabot/');
+}
+
+export function selectRelease(branches, milestones) {
+  const candidates = branches.filter(({ name }) => milestones.some(milestone => matchesReleaseMilestone(name, milestone)));
+  candidates.sort((a, b) => {
+    const av = a.name.slice(8).split('.').map(Number);
+    const bv = b.name.slice(8).split('.').map(Number);
+    return bv[0] - av[0] || bv[1] - av[1] || bv[2] - av[2];
+  });
+  if (!candidates.length) throw new Error('No release branch matches an open milestone; refusing a main/develop fallback.');
+  return candidates[0].name;
+}
+
+export async function routeUpdates(api, repository, event = {}) {
+  const target = selectRelease(await api('branches?per_page=100'), await api('milestones?state=open&per_page=100'));
+  const prs = event.pull_request ? [event.pull_request] : await api('pulls?state=open&per_page=100');
+  for (const pr of prs) {
+    if (!isDependabotUpdate(pr, repository) || pr.base.ref === target) continue;
+    await api(`pulls/${pr.number}`, { method: 'PATCH', body: { base: target } });
+  }
+  return target;
+}
+
+export function githubApi(repository, token, fetchImpl = fetch) {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repository ?? '') || !token) {
+    throw new Error('Missing or invalid GitHub workflow context.');
+  }
+  const root = `https://api.github.com/repos/${repository}/`;
+  return async (path, options = {}) => {
+    let url = root + path;
+    const result = [];
+    do {
+      const response = await fetchImpl(url, {
+        method: options.method || 'GET',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: options.body ? JSON.stringify(options.body) : undefined,
+        redirect: 'error', signal: AbortSignal.timeout(30_000),
+      });
+      if (!response.ok) throw new Error(`GitHub ${options.method || 'GET'} ${path}: HTTP ${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data)) return data;
+      result.push(...data);
+      url = response.headers.get('link')?.match(/<([^>]+)>; rel="next"/)?.[1];
+      if (url && !url.startsWith(root)) throw new Error('Unexpected pagination origin.');
+    } while (url);
+    return result;
+  };
+}
+
+async function main() {
+  const repository = process.env.GITHUB_REPOSITORY;
+  const api = githubApi(repository, process.env.GH_TOKEN);
+  const event = process.env.GITHUB_EVENT_PATH ? JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')) : {};
+  await routeUpdates(api, repository, event);
+  console.log('Dependabot release routing completed.');
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch(() => {
+    console.error('Dependabot release routing failed. Check the GitHub API permissions and active release milestone.');
+    process.exitCode = 1;
+  });
+}

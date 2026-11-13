@@ -6,9 +6,15 @@
     <ProjectReference Include="..\CoParent.Infrastructure\CoParent.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\CoParent.Modules.Identity\CoParent.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\CoParent.Modules.Families\CoParent.Modules.Families.csproj" />
+    <ProjectReference Include="..\Modules\CoParent.Modules.Approvals\CoParent.Modules.Approvals.csproj" />
+    <ProjectReference Include="..\Modules\CoParent.Modules.Calendar\CoParent.Modules.Calendar.csproj" />
+    <ProjectReference Include="..\Modules\CoParent.Modules.Memories\CoParent.Modules.Memories.csproj" />
+    <ProjectReference Include="..\Modules\CoParent.Modules.Messaging\CoParent.Modules.Messaging.csproj" />
+    <ProjectReference Include="..\Modules\CoParent.Modules.SharedRecords\CoParent.Modules.SharedRecords.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
   </ItemGroup>

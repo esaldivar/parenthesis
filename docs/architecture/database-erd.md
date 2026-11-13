@@ -61,8 +61,17 @@ erDiagram
     text display_name
     smallint birth_year "optional"
     smallint birth_month "optional"
-    text avatar_blob_key
+    text avatar_blob_key "superseded by PROFILE_PHOTO (#388)"
     uuid created_by_membership_id FK
+  }
+  PROFILE_PHOTO {
+    uuid id PK
+    uuid family_id FK
+    text chooser_kind "Parent | Child"
+    uuid chooser_id "membership or child"
+    uuid subject_id "membership or child"
+    bytea content "WebP, at most 512px and 200 KB"
+    timestamptz created_at
   }
   PARENT_CHILD_RELATIONSHIP {
     uuid family_id FK
@@ -174,33 +183,34 @@ erDiagram
     timestamptz lifted_at
   }
 
-  %% ---------- messaging (post-MVP) ----------
-  CONVERSATION {
-    uuid id PK
-    uuid family_id FK
-    timestamptz created_at
-  }
-  CONVERSATION_PARTICIPANT {
-    uuid family_id FK
-    uuid conversation_id PK, FK
-    uuid membership_id PK, FK
-    uuid last_read_message_id
-  }
+  %% ---------- messaging (M4, ADR-0008) ----------
   MESSAGE {
     uuid id PK
     uuid family_id FK
-    uuid conversation_id FK
+    bigint sequence "conversation order"
     uuid sender_membership_id FK
-    text body
+    uuid client_message_id "idempotent sends"
+    text text
+    uuid event_id "optional shared calendar event"
     timestamptz sent_at
   }
-  MESSAGE_ATTACHMENT {
+  READ_POSITION {
+    uuid membership_id PK, FK
+    uuid family_id FK
+    uuid message_id
+    bigint message_sequence "only moves forward"
+    timestamptz updated_at
+  }
+  TRANSCRIPT {
     uuid id PK
     uuid family_id FK
-    uuid message_id FK
-    text blob_key
-    text content_type
-    bigint size_bytes
+    uuid owner_membership_id FK
+    text file_name
+    date range_from
+    date range_to
+    int message_count
+    bytea pdf
+    timestamptz created_at
   }
 
   %% ---------- notifications / audit / integrations ----------
@@ -258,6 +268,7 @@ erDiagram
   FAMILY ||--o{ FAMILY_MEMBERSHIP : "has"
   FAMILY ||--o{ INVITATION : "issues"
   FAMILY ||--o{ CHILD_PROFILE : "has"
+  FAMILY ||--o{ PROFILE_PHOTO : "has"
   CHILD_PROFILE ||--o| FAMILY_MEMBERSHIP : "login (optional)"
   FAMILY_MEMBERSHIP ||--o{ PARENT_CHILD_RELATIONSHIP : "parent of"
   CHILD_PROFILE ||--o{ PARENT_CHILD_RELATIONSHIP : "child of"
@@ -278,10 +289,9 @@ erDiagram
   MEMORY ||--o{ MEMORY_ATTACHMENT : "has"
   MEMORY ||--o{ MEMORY_RESTRICTION : "restricted by"
 
-  FAMILY ||--o{ CONVERSATION : "has"
-  CONVERSATION ||--o{ CONVERSATION_PARTICIPANT : "includes"
-  CONVERSATION ||--o{ MESSAGE : "contains"
-  MESSAGE ||--o{ MESSAGE_ATTACHMENT : "has"
+  FAMILY ||--o{ MESSAGE : "one conversation"
+  FAMILY_MEMBERSHIP ||--o| READ_POSITION : "reads to"
+  FAMILY_MEMBERSHIP ||--o{ TRANSCRIPT : "saves"
 
   USER ||--o{ NOTIFICATION : "receives"
   USER ||--o{ EXTERNAL_CALENDAR_CONNECTION : "authorizes"
@@ -299,9 +309,54 @@ erDiagram
 | CalendarProposal / DeletionRequest | `approvals.change_request` (`type` tells them apart) |
 | CalendarApproval / DeletionApproval | `approvals.approval_decision` |
 | Memory, MemoryAttachment | Same names in `memories` (+ `memory_restriction` for protective actions) |
-| Conversation, Message, MessageAttachment | Same names in `messaging` (+ `conversation_participant`) |
+| Conversation, Message, MessageAttachment | `messaging.messages` (one conversation per family, text only, no attachments), `read_positions` and `transcripts` ([ADR-0008](../adr/0008-parent-messaging.md)) |
 | Notification, AuditLog, ExternalCalendarConnection | Same names (+ `external_event_link` for de-duplication) |
 | *(new)* Invitation, CategoryApprovalPolicy, OutboxMessage | Needed for invitations, configurable approvals and reliable side effects |
+
+## M4 additions (v0.4.0)
+- **Messaging** (`messaging` schema, ADR-0008): `messages`, `read_positions` and `transcripts`, as in the diagram.
+- **Child Essentials** (`families` schema, #126): each shared section keeps every save as a revision row, the newest
+  being current, so history needs no separate table: `child_school_revisions`, `child_allergies_food_revisions`,
+  `child_clothing_revisions`, `child_what_helps_revisions` and `child_routines_revisions` (household routines carry
+  their owner's membership id and the agreed revision). `child_emergency_contacts` and `child_shared_caregivers` hold
+  each child's list as JSON with a version for concurrent edits. `essentials_updates` holds each parent's notices of
+  the other parent's saves (#128): ids and field names only, never values.
+- **Medication** (`families` schema, #127): `child_medication_revisions` keeps each child's list as JSON per revision,
+  like `child_medical_provider_revisions`; a permanent delete rewrites every revision without that entry.
+  `medication_acknowledgements` records each parent's one-time confirmation (membership, time, notice version).
+  Decisions: [the medication preflight](../privacy/medication-preflight-127.md).
+- **Shared records** (`shared_records` schema, #477): `funds` (a proposed Shared Fund with each parent's share; it opens
+  once both agree through the approval engine), `support_records` (one-time Child Support records: payer, recipient,
+  optional reference amount) and `entries` (each reported contribution or payment: amount, payment date, who was paid,
+  status and response time, and its attachment's blob path, type and size; never the file name). `entries` is unique
+  on (record, reporter, client request id), so a retried report is recorded once. Attachments live in the private
+  `shared-records` blob container. Everything goes when the family closes: closing sets `entries.removed_at`, and an
+  hourly cleanup deletes each file after the closure commits, then the row.
+
+## M2 additions (ADR-0006, accepted 2026-10-17)
+The new tables for profile picker sign-in, child PINs, paired child devices, and children that need both parents'
+approval:
+- **`device`:** a household device or a child's paired tablet.
+- **`device_pairing_code`:** single-use, valid for 10 minutes, stored hashed.
+- **`child_credential`:** the PIN hash, a failed-attempt counter, and the lock state.
+
+#153 ([ADR-0007](../adr/0007-shared-devices-and-parent-pins.md)) adds `devices.expires_at` (shared
+devices: 30 days from setup), pause and concurrency columns on `child_credentials`, and a `parent_credentials` table
+(one six-digit parent PIN per family membership, hashed, with the same pause-then-lock counters).
+- **`child_profile.status`:** `PendingApproval | Active | Archived`.
+- **`change_request.type`:** gains `ChildCreate`.
+
+## M3 addition: profile photos (#388, October 30, 2026)
+`families.profile_photos` replaces the single planned `child_profile.avatar_blob_key`: each photo belongs to whoever
+chose it, so one row per **chooser and pictured person** (unique `(family_id, chooser_kind, chooser_id, subject_id)`).
+A parent's own photo (chooser = subject = their membership), a parent's private photo of a child, and a child's own
+photo are separate rows and never overwrite each other. Small processed WebP bytes live in the row (at most 38 per
+family); replacing deletes the old row in the same transaction. Details:
+[profile photos handoff](../design/handoffs/PROFILE_PHOTOS_388.md).
+
+Full columns: [ADR-0006](../adr/0006-profiles-pins-and-child-devices.md#data-model-additions-identity-and-families-schemas).
+Child sign-in no longer uses an Identity user with `user_type = Child`. That column stays for compatibility until the
+migration removes it.
 
 ## Key constraints and indexes
 

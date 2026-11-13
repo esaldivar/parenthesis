@@ -1,0 +1,506 @@
+// The approved dashboard layout. Wide: calendar centrepiece (two columns) with Upcoming and Quick Add beside it,
+// then From Your Kids and Family Memories (Recent Messages removed, owner decision, November 7, 2026).
+// Medium: two columns. Phones: one column, with Upcoming straight after the calendar so the next handoff and pending
+// reviews are easy to find.
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.4rem);
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 1.375rem;
+
+  app-icon {
+    color: var(--color-action);
+  }
+}
+
+p {
+  margin: 0;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+// Small label under the greeting; still dashed and explicit so sample data can't be mistaken for a real schedule.
+.sample-banner {
+  display: inline-block;
+  margin-top: var(--space-2);
+  padding: 2px var(--space-3);
+  font-size: 0.8125rem;
+  border: 1px dashed var(--color-outline);
+  border-radius: var(--radius-control);
+  background: var(--color-status-pending-bg);
+  color: var(--color-text);
+}
+
+.dashboard {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-areas:
+    'welcome'
+    'calendar'
+    'upcoming'
+    'quick'
+    'kids'
+    'memories';
+}
+
+// --- Welcome ---------------------------------------------------------------------------------------------------------
+.welcome {
+  grid-area: welcome;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 5rem;
+  padding-block: var(--space-2);
+}
+
+.welcome__artwork {
+  flex: none;
+  width: 3.5rem;
+  height: 2.25rem;
+
+  .sun-body,
+  .moon {
+    fill: var(--brand-gold);
+  }
+  .sun-rays,
+  .sun-ground {
+    fill: none;
+    stroke: var(--brand-coral);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+}
+
+.welcome__sub {
+  color: var(--color-text-secondary);
+  font-size: 1.125rem;
+}
+
+.welcome__leaves {
+  display: none;
+}
+
+// --- Cards -----------------------------------------------------------------------------------------------------------
+.card {
+  display: block;
+  min-width: 0;
+  padding: var(--space-4) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.see-all {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  font-size: 0.9375rem;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.area-calendar {
+  grid-area: calendar;
+}
+.area-upcoming {
+  grid-area: upcoming;
+}
+.area-quick {
+  grid-area: quick;
+}
+.area-kids {
+  grid-area: kids;
+}
+.area-memories {
+  grid-area: memories;
+}
+
+// Upcoming
+.upcoming {
+  display: grid;
+}
+
+.upcoming__item {
+  border-bottom: 1px solid var(--color-divider);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.upcoming__action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-1);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover .upcoming__title {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+  }
+}
+
+.upcoming__icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--color-cat-other-bg);
+  color: var(--color-cat-other-icon);
+}
+
+@each $category in school, medical, music, sport, art, family, unavailable {
+  .upcoming__item[data-category='#{$category}'] .upcoming__icon {
+    background: var(--color-cat-#{$category}-bg);
+    color: var(--color-cat-#{$category}-icon);
+  }
+}
+
+// Reminders: a gold accent, as on the calendar. Tasks keep the calm default with their note icon.
+.upcoming__item[data-category='reminder'] .upcoming__icon {
+  background: var(--color-surface);
+  outline: 2px solid var(--color-leaf-gold);
+}
+
+.upcoming__item[data-status='proposed'] .upcoming__icon {
+  background: var(--color-status-pending-bg);
+  color: var(--color-text);
+  outline: 2px dashed var(--color-outline);
+}
+
+.upcoming__text {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.upcoming__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.upcoming__when {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.upcoming__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.upcoming__people {
+  display: inline-flex;
+  flex: none;
+
+  app-avatar + app-avatar {
+    margin-inline-start: -8px;
+  }
+}
+
+// Quick Add
+.quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-block: var(--space-3) var(--space-2);
+}
+
+.quick__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3.25rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+  cursor: not-allowed;
+  text-decoration: none;
+
+  app-icon {
+    color: var(--color-action);
+  }
+}
+// Event and Note work (#196); the rest stay marked unavailable.
+a.quick__btn {
+  cursor: pointer;
+  &:hover {
+    border-color: var(--color-action);
+  }
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+// From Your Kids
+.kids {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  li {
+    display: grid;
+    gap: var(--space-2);
+  }
+}
+
+.kids__tile {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-control);
+  background: var(--color-cat-art-bg);
+  color: var(--color-cat-art-icon);
+
+  &[data-kind='photo'] {
+    background: var(--color-cat-music-bg);
+    color: var(--color-cat-music-icon);
+  }
+}
+
+.kids__caption {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+
+  > span {
+    display: grid;
+  }
+}
+
+.kids__what {
+  font-size: 0.9375rem;
+}
+
+// Family Memories
+.memory {
+  display: flex;
+  align-items: center;
+  // Keeps the arrows beside the photo now that the card is wider (it took Recent Messages' space).
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.memory__nav {
+  flex: none;
+  width: var(--target-min);
+  height: var(--target-min);
+  border: 1px solid var(--color-divider);
+  color: var(--color-text);
+}
+
+.memory__figure {
+  flex: 0 1 26rem;
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+  text-align: center;
+
+  figcaption {
+    display: grid;
+  }
+}
+
+.memory__tile {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-control);
+  background: linear-gradient(180deg, var(--color-cat-medical-bg), var(--color-parenting-bg));
+  color: var(--color-text);
+}
+
+.memory__tile--photo {
+  width: 100%;
+  object-fit: cover;
+}
+
+.memory__title {
+  font-weight: 700;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+
+  span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-surface-soft);
+    box-shadow: inset 0 0 0 1px var(--color-outline);
+  }
+
+  .is-current {
+    background: var(--color-action);
+    box-shadow: none;
+  }
+}
+
+// --- Layouts ---------------------------------------------------------------------------------------------------------
+@container (min-width: 760px) {
+  .dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'welcome welcome'
+      'calendar calendar'
+      'upcoming quick'
+      'kids memories';
+  }
+
+  .welcome__leaves {
+    display: block;
+    position: absolute;
+    inset-inline-end: 0;
+    top: -2.5rem;
+    width: 14rem;
+    height: 10rem;
+    transform: scaleX(-1) rotate(-20deg);
+    opacity: 0.85;
+  }
+}
+
+@container (min-width: 1120px) {
+  .dashboard {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(19rem, 0.85fr);
+    // Upcoming and Quick Add stack at the top of the right column; the calendar spans their height and more.
+    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-areas:
+      'welcome welcome welcome'
+      'calendar calendar upcoming'
+      'calendar calendar quick'
+      'calendar calendar .'
+      // Family Memories keeps the middle column, under the calendar (owner decision, November 7, 2026).
+      'kids memories .';
+    align-items: start;
+  }
+
+  .area-calendar {
+    align-self: stretch;
+  }
+
+  // Desktop windows tall enough: the whole dashboard fits the window with no page scroll (user decision, October 17,
+  // 2026). The calendar takes the height that's left and its hours scroll inside it; the cards below stay compact.
+  @media (min-height: 760px) {
+    .dashboard {
+      height: calc(100dvh - 5.75rem); // Window minus the top bar and the page's bottom padding.
+      // Reserve the full greeting before distributing the remaining height to the calendar.
+      grid-template-rows: max-content auto auto minmax(0, 1fr) auto;
+    }
+
+    .area-calendar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      --cal-body-max: none;
+    }
+
+    .area-kids,
+    .area-memories {
+      align-self: stretch;
+      padding-block: var(--space-3);
+    }
+
+    .card__header {
+      margin-bottom: var(--space-2);
+    }
+
+    .welcome {
+      min-height: 0;
+      padding-block: 0;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    .welcome__sub {
+      font-size: 1rem;
+    }
+
+    .sample-banner {
+      margin-top: var(--space-1);
+    }
+
+    .upcoming__item {
+      padding-block: var(--space-2);
+    }
+
+    .quick {
+      margin-block: var(--space-2) var(--space-1);
+    }
+
+    .quick__btn {
+      min-height: var(--target-min);
+    }
+
+    .kids__tile {
+      aspect-ratio: auto;
+      height: 5rem;
+    }
+
+    .memory__tile {
+      aspect-ratio: auto;
+      height: 5rem;
+    }
+  }
+}

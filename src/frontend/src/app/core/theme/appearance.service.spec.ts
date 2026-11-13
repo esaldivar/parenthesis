@@ -11,7 +11,7 @@ function fakeSystemTheme(prefersDark: boolean) {
     addEventListener: (_: string, listener: Listener) => listeners.push(listener),
     removeEventListener: () => undefined,
   };
-  window.matchMedia = (() => media) as unknown as typeof window.matchMedia;
+  vi.stubGlobal('matchMedia', () => media);
   return {
     change(dark: boolean) {
       media.matches = dark;
@@ -21,6 +21,7 @@ function fakeSystemTheme(prefersDark: boolean) {
 }
 
 describe('AppearanceService', () => {
+  afterEach(() => vi.unstubAllGlobals());
   const theme = () => document.documentElement.getAttribute('data-theme');
 
   function create(prefersDark = false) {

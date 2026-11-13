@@ -11,6 +11,10 @@ const issue = (number, state = 'open') => ({ id: number + 1000, number, state, h
 test('explicit local references, duplicates and case-insensitive full URLs', () => {
   assert.deepEqual(references(body('- Refs #132\nRefs #132\nhttps://github.com/ESALDIVAR/Parenthesis/issues/65'), repository), [132, 65]);
 });
+test('references after a code example still count, and an unclosed fence is not removed', () => {
+  assert.deepEqual(references(body('```text\nRefs #1\n```\nRefs #132'), repository), [132]);
+  assert.throws(() => references(body('Refs #132\n```text\nRefs #1'), repository));
+});
 test('release rollups and hotfix syncs can reuse closed tracking issues without closing them', async () => {
   assert.deepEqual(await validate({ body: body('Refs #65\nRefs #132'), repository, getIssue: async n => issue(n, 'closed') }), [65, 132]);
 });
@@ -23,6 +27,8 @@ for (const [name, text] of [
   ['PR URL', body('https://github.com/esaldivar/parenthesis/pull/132')],
   ['comment example', body('<!-- Refs #132 -->')],
   ['code example', body('```text\nRefs #132\n```')],
+  ['tilde code example', body('~~~\nRefs #132\n~~~')],
+  ['longer closing fence', body('```\nRefs #132\n````')],
   ['inline code example', body('`Refs #132`')],
   ['duplicate section', body('Refs #132') + '\n## Tracking issues\nRefs #65'],
   ['reference in other section', body('') + '\nRefs #132'],
@@ -46,14 +52,14 @@ test('mismatched repository and malformed API responses fail closed', async () =
   }
 });
 
-async function workflow(t, { current, second = current, status = 200, eventHead = 'head' } = {}) {
+async function workflow(t, { current, second = current, status = 200, eventHead = 'head', eventBase = 'release/0.3.0', wait } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'issue-links-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const file = path.join(dir, 'event.json');
-  fs.writeFileSync(file, JSON.stringify({ pull_request: { number: 133, head: { sha: eventHead }, base: { ref: 'release/0.3.0' } } }));
+  fs.writeFileSync(file, JSON.stringify({ pull_request: { number: 133, head: { sha: eventHead }, base: { ref: eventBase } } }));
   let reads = 0;
   const calls = [];
-  const result = run({ env: { GITHUB_EVENT_PATH: file, GITHUB_REPOSITORY: repository, GITHUB_TOKEN: 'synthetic-test-token' }, fetchImpl: async (url, options) => {
+  const result = run({ wait, env: { GITHUB_EVENT_PATH: file, GITHUB_REPOSITORY: repository, GITHUB_TOKEN: 'synthetic-test-token' }, fetchImpl: async (url, options) => {
     calls.push({ url, options });
     const data = url.endsWith('/pulls/133') ? (++reads === 1 ? current : second) : issue(132);
     return { ok: status === 200, status, json: async () => data };
@@ -78,4 +84,29 @@ test('workflow fails if PR body changes while verifying', async t => {
 test('workflow fails closed on inaccessible GitHub API', async t => {
   const { result } = await workflow(t, { current, status: 403 });
   await assert.rejects(result, /HTTP 403/);
+});
+
+
+const bot = { ...current, user: { login: 'dependabot[bot]', type: 'Bot' },
+  head: { sha: 'head', ref: 'dependabot/npm/example', repo: { full_name: repository } } };
+
+test('waits for the trusted writer, then validates the same Dependabot head after routing', async t => {
+  let waits = 0;
+  const { result, calls } = await workflow(t, {
+    current: { ...bot, base: { ref: 'main' }, body: 'Dependabot release notes' },
+    second: bot, eventBase: 'main', wait: async () => { waits++; },
+  });
+  assert.deepEqual(await result, [132]);
+  assert.equal(waits, 1);
+  assert.equal(calls.length, 4);
+});
+
+test('fails closed when Dependabot tracking never arrives or the head changes while waiting', async t => {
+  const unlinked = { ...bot, body: 'Dependabot release notes' };
+  const missing = await workflow(t, { current: unlinked, wait: async () => {} });
+  await assert.rejects(missing.result, /not ready/);
+  const stale = await workflow(t, {
+    current: unlinked, second: { ...bot, head: { ...bot.head, sha: 'new' } }, wait: async () => {},
+  });
+  await assert.rejects(stale.result, /changed/);
 });

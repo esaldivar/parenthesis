@@ -1,0 +1,77 @@
+{
+  "_note": "Shaped like api/qualitygates/project_status?analysisId=...",
+  "ok": {
+    "projectStatus": {
+      "status": "OK",
+      "conditions": [
+        {
+          "status": "OK",
+          "metricKey": "new_coverage",
+          "comparator": "LT",
+          "errorThreshold": "80",
+          "actualValue": "98.6"
+        },
+        {
+          "status": "OK",
+          "metricKey": "new_security_rating",
+          "comparator": "GT",
+          "errorThreshold": "1",
+          "actualValue": "1"
+        },
+        {
+          "status": "OK",
+          "metricKey": "new_security_hotspots_reviewed",
+          "comparator": "LT",
+          "errorThreshold": "100",
+          "actualValue": "100.0"
+        },
+        {
+          "status": "OK",
+          "metricKey": "new_duplicated_lines_density",
+          "comparator": "GT",
+          "errorThreshold": "3",
+          "actualValue": "0.0"
+        }
+      ],
+      "ignoredConditions": false,
+      "caycStatus": "compliant"
+    }
+  },
+  "error": {
+    "projectStatus": {
+      "status": "ERROR",
+      "conditions": [
+        {
+          "status": "ERROR",
+          "metricKey": "new_coverage",
+          "comparator": "LT",
+          "errorThreshold": "80",
+          "actualValue": "41.2"
+        },
+        {
+          "status": "OK",
+          "metricKey": "new_security_rating",
+          "comparator": "GT",
+          "errorThreshold": "1",
+          "actualValue": "1"
+        },
+        {
+          "status": "OK",
+          "metricKey": "new_security_hotspots_reviewed",
+          "comparator": "LT",
+          "errorThreshold": "100",
+          "actualValue": "100.0"
+        },
+        {
+          "status": "OK",
+          "metricKey": "new_duplicated_lines_density",
+          "comparator": "GT",
+          "errorThreshold": "3",
+          "actualValue": "0.0"
+        }
+      ],
+      "ignoredConditions": false,
+      "caycStatus": "compliant"
+    }
+  }
+}
