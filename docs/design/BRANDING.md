@@ -8,7 +8,7 @@ approved October 20 (see `assets/APPROVED_ASSET_MANIFEST.md`). Use them unchange
 References below to pending exports apply to the remaining wordmark/lockups, not
 to that approved icon. Verified exact light/dark wordmark exports and outlined
 typeface remain pending; the existing horizontal SVGs are recorded defective in
-the app's `shared/brand/logo.ts`. Prefer an explicit wordmark-pending state.
+the app's `shared/components/brand/logo.ts`. Prefer an explicit wordmark-pending state.
 
 ## Immutable reference rules
 - **Do not regenerate, redraw, restyle, recolor, substitute, or approximate the approved icon in any mockup or application screen.** Do not use AI-generated dashboard logos as source material.

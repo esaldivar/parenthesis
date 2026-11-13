@@ -75,6 +75,9 @@ export interface FamilyEvent {
 
 export interface PendingReview {
   readonly id: string;
+  /** Read with the request's type to show its summary in the viewer's language (#534). */
+  readonly type: string;
+  readonly targetType: string;
   readonly summary: string;
   readonly proposedBy: string;
 }

@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { EventPhoto, EventPhotos, PhotoBatch } from '../../../../core/api/api';
 import { LocaleService } from '../../../../core/i18n/locale.service';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 import { axeViolations } from '../../../../../testing/axe';
 import { EventPhotosSection } from './event-photos.component';
 import { PHOTOS_NOW } from '../../photo-text';

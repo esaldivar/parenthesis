@@ -22,7 +22,7 @@ function authPage(
 // Guards decide what to show; the API independently enforces authentication, membership and tenancy.
 export const routes: Routes = [
   // The Privacy Notice (#416): public, for anyone signed in or out, a child included.
-  authPage('privacy', 'Privacy notice', () => import('./features/privacy/privacy-page').then((m) => m.PrivacyPage), [], { wide: true }),
+  authPage('privacy', 'Privacy notice', () => import('./features/privacy/pages/privacy-page/privacy-page.component').then((m) => m.PrivacyPage), [], { wide: true }),
   authPage('sign-in', 'Sign in', () => import('./features/auth/pages/sign-in-page/sign-in-page.component').then((m) => m.SignInPage), [signedOut]),
   authPage('register', 'Create your account', () => import('./features/auth/pages/register-page/register-page.component').then((m) => m.RegisterPage), [registerPage]),
   authPage('check-email', 'Check your email', () => import('./features/auth/pages/check-email-page/check-email-page.component').then((m) => m.CheckEmailPage)),

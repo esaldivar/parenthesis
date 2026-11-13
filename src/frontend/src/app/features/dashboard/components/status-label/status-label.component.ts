@@ -1,11 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslationKey, translate } from '../../../../core/i18n/translations';
 import { ScheduleStatus } from '../../model';
 
-const LABELS: Record<ScheduleStatus | 'change-pending', string> = {
-  confirmed: 'Confirmed',
-  proposed: 'Proposed',
-  rejected: 'Rejected',
-  'change-pending': 'Change pending',
+const LABELS: Record<ScheduleStatus | 'change-pending', TranslationKey> = {
+  confirmed: 'dash.status.confirmed',
+  proposed: 'dash.status.proposed',
+  rejected: 'dash.status.rejected',
+  'change-pending': 'dash.status.change-pending',
 };
 
 /** A text status chip. The word carries the meaning; colour and border style only support it. */
@@ -42,5 +44,7 @@ const LABELS: Record<ScheduleStatus | 'change-pending', string> = {
 })
 export class StatusLabel {
   readonly status = input.required<ScheduleStatus | 'change-pending'>();
-  protected readonly label = computed(() => LABELS[this.status()]);
+  private readonly locale = inject(LocaleService);
+  /** In the viewer's language (#534). */
+  protected readonly label = computed(() => translate(LABELS[this.status()], this.locale.locale()));
 }

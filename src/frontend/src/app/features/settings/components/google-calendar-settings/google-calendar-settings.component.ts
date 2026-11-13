@@ -19,7 +19,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { Api, GoogleCalendarStatus, GoogleCopyType } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 /** Leaves the app for Google's consent page. Tests replace it. */
 export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXTERNAL', {

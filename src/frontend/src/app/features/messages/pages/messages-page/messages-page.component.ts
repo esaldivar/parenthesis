@@ -2,7 +2,7 @@ import { TranslatePipe } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ChatStore } from '../../../../core/chat/chat.store';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { ChatConversation } from '../../components/chat-conversation/chat-conversation.component';
 import { ChatTranscripts } from '../../components/chat-transcripts/chat-transcripts.component';
 

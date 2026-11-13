@@ -9,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Api, ParentPinStatus } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 import { PARENT_PIN_PATTERN, isTrivialPin } from '../../../profiles/pin-rules';
 
 function notTrivial(control: AbstractControl<string>): ValidationErrors | null {

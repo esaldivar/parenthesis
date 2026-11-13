@@ -4,8 +4,8 @@ import { MatRadioChange, MatRadioModule } from '@angular/material/radio';
 import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { KidPresentation, KidPresentationService } from '../../../../core/layout/kid-shell/kid-presentation.service';
-import { AppearancePicker } from '../../../../shared/appearance-picker/appearance-picker';
-import { PhotoEditor } from '../../../../shared/photo-editor/photo-editor';
+import { AppearancePicker } from '../../../../shared/components/appearance-picker/appearance-picker';
+import { PhotoEditor } from '../../../../shared/components/photo-editor/photo-editor';
 
 @Component({
   selector: 'app-kid-settings-page',

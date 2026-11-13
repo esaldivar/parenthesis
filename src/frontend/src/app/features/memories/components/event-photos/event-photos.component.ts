@@ -1,6 +1,6 @@
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
-import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
+import { LoadingIndicator } from '../../../../shared/components/brand/loading-indicator';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,8 +21,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { RouterLink } from '@angular/router';
 import { Api, EventPhoto, EventPhotos, PhotoBatch, PhotoExport } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
-import { Icon } from '../../../../shared/icon/icon';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Icon } from '../../../../shared/components/icon/icon';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 import {
   ACCEPT,
   PHOTOS_NOW,

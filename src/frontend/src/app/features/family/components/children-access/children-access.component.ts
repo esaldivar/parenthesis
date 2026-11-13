@@ -9,9 +9,9 @@ import { RouterLink } from '@angular/router';
 import { Api, Child } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Avatar } from '../../../../shared/avatar/avatar';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { PIN_PATTERN } from '../../../profiles/pages/child-pin-page/child-pin-page.component';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 /** Mirrors the API's rule (ChildCredential.IsAcceptable): not all the same digit, and not a straight run like 1234. */
 export function isGuessablePin(pin: string): boolean {

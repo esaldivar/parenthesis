@@ -6,7 +6,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ProfileTile } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Avatar } from '../../../../shared/avatar/avatar';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { FORM_STYLES } from '../../../auth/form-styles';
 
 /**

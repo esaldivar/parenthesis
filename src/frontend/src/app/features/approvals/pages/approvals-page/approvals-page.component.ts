@@ -1,6 +1,7 @@
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
+import { localizeSummary } from '../../../../core/i18n/change-request-summary';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -22,7 +23,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Api, ChangeRequest, ChangeRequestType, Child, FamilyMember } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 /** The request types the inbox shows: children, PINs and the calendar (the handoff keeps approvals in this inbox). */
 const SHOWN: readonly string[] = [
@@ -64,7 +65,7 @@ const COMMENT_MAX = 500;
             @for (request of pending; track request.id) {
               <li #requestRow class="request" tabindex="-1" [attr.data-request]="request.id">
                 <div class="request__head">
-                  <p class="request__summary">{{ request.summary }}</p>
+                  <p class="request__summary">{{ summaryOf(request) }}</p>
                   <span class="chip chip--pending">{{ request.canDecide ? ('feature.waiting.for.you' | tr) : ('feature.waiting.for.your.co.parent' | tr) }}</span>
                 </div>
                 <p class="muted">
@@ -127,7 +128,7 @@ const COMMENT_MAX = 500;
             @for (request of history; track request.id) {
               <li #requestRow class="request" tabindex="-1" [attr.data-request]="request.id">
                 <div class="request__head">
-                  <p class="request__summary">{{ request.summary }}</p>
+                  <p class="request__summary">{{ summaryOf(request) }}</p>
                   <span class="chip" [attr.data-status]="request.status">{{ outcome(request) }}</span>
                 </div>
                 <p class="muted">
@@ -275,7 +276,14 @@ export class ApprovalsPage implements OnInit {
   }
 
   protected proposer(request: ChangeRequest): string {
-    return request.proposedByYou ? 'you' : this.nameOf(request.proposerMembershipId);
+    return request.proposedByYou
+      ? translate('approvals.proposer.you', this.copyLocale.locale())
+      : this.nameOf(request.proposerMembershipId);
+  }
+
+  /** The request's summary in the viewer's language; the family's own titles and names stay as entered. */
+  protected summaryOf(request: ChangeRequest): string {
+    return localizeSummary(request, this.copyLocale.locale());
   }
 
   /** Members load with the requests, so someone missing has left: they deleted their account (A-12). */
@@ -311,13 +319,13 @@ export class ApprovalsPage implements OnInit {
   protected outcome(request: ChangeRequest): string {
     switch (request.status) {
       case 'Approved':
-        return 'Approved';
+        return translate('approvals.status.approved', this.copyLocale.locale());
       case 'Rejected':
-        return 'Declined';
+        return translate('approvals.status.declined', this.copyLocale.locale());
       case 'Withdrawn':
-        return 'Withdrawn';
+        return translate('approvals.status.withdrawn', this.copyLocale.locale());
       default:
-        return 'Waiting';
+        return translate('approvals.status.waiting', this.copyLocale.locale());
     }
   }
 
@@ -333,20 +341,20 @@ export class ApprovalsPage implements OnInit {
   }
 
   protected approve(request: ChangeRequest): Promise<void> {
-    return this.run((familyId) => this.api.approve(familyId, request.id), translate('approvals.approved', this.copyLocale.locale(), { summary: request.summary }), `[data-approve="${request.id}"]`);
+    return this.run((familyId) => this.api.approve(familyId, request.id), translate('approvals.approved', this.copyLocale.locale(), { summary: this.summaryOf(request) }), `[data-approve="${request.id}"]`);
   }
 
   protected decline(request: ChangeRequest): Promise<void> {
     const comment = this.comment.value.trim() || undefined;
     return this.run(
       (familyId) => this.api.reject(familyId, request.id, comment),
-      translate('approvals.declined', this.copyLocale.locale(), { summary: request.summary }),
+      translate('approvals.declined', this.copyLocale.locale(), { summary: this.summaryOf(request) }),
       `[data-decline-submit="${request.id}"]`,
     );
   }
 
   protected withdraw(request: ChangeRequest): Promise<void> {
-    return this.run((familyId) => this.api.withdraw(familyId, request.id), translate('approvals.withdrawn', this.copyLocale.locale(), { summary: request.summary }), `[data-withdraw="${request.id}"]`);
+    return this.run((familyId) => this.api.withdraw(familyId, request.id), translate('approvals.withdrawn', this.copyLocale.locale(), { summary: this.summaryOf(request) }), `[data-withdraw="${request.id}"]`);
   }
 
   /** `retry` is the button that started the action: after a failure, focus returns there so the person can try again. */

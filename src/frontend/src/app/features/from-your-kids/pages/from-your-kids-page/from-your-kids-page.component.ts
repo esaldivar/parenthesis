@@ -5,7 +5,7 @@ import { Api, Child } from '../../../../core/api/api';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { KidsGallery } from '../../components/kids-gallery/kids-gallery.component';
 import { KidsDiary } from '../../components/kids-diary/kids-diary.component';
-import { Avatar } from '../../../../shared/avatar/avatar';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { previewDiary, previewGallery } from '../../from-your-kids-preview';
 
 /**

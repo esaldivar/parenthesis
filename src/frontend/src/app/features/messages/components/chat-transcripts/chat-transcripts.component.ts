@@ -19,8 +19,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { Api, SavedTranscript, TranscriptPreview, TranscriptRange } from '../../../../core/api/api';
 import { generalMessage, toProblem, localizeMessage } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Icon } from '../../../../shared/icon/icon';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Icon } from '../../../../shared/components/icon/icon';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 import { DateField } from '../../../calendar/components/date-field/date-field.component';
 import { providePlainDates } from '../../../calendar/plain-dates';
 

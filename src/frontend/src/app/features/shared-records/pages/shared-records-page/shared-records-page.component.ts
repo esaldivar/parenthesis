@@ -13,8 +13,8 @@ import {
 import { generalMessage, Problem, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SharedRecordsAttentionStore } from '../../../../core/shared-records/shared-records-attention.store';
-import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
-import { Icon } from '../../../../shared/icon/icon';
+import { LoadingIndicator } from '../../../../shared/components/brand/loading-indicator';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { EntryResponse, RecordHistory, RecordProgress } from '../../components/record-history/record-history.component';
 import { ReportForm } from '../../components/report-form/report-form.component';
 import { SharedFundProposalForm } from '../../components/shared-fund-proposal-form/shared-fund-proposal-form.component';

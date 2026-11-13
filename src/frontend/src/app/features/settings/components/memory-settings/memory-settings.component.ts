@@ -13,7 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Api, MemorySettings } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 import { sizeText } from '../../../memories/photo-text';
 
 /**

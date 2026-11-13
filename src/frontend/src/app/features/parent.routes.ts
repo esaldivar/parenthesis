@@ -69,7 +69,7 @@ export const PARENT_ROUTES: Routes = [
   {
     path: 'child-essentials',
     title: 'Child Essentials',
-    loadComponent: () => import('./child-essentials/child-essentials-page').then((m) => m.ChildEssentialsPage),
+    loadComponent: () => import('./child-essentials/pages/child-essentials-page/child-essentials-page.component').then((m) => m.ChildEssentialsPage),
   },
   // Older links to /children land on its replacement.
   { path: 'children', redirectTo: 'child-essentials' },

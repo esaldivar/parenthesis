@@ -142,8 +142,10 @@ test.describe('Event photos and Family Memories', { tag: ['@m3', '@mobile'] }, (
         const zipLink = page.getByRole('link', { name: /^Download all \(2 photos, about .+\)$/ });
         await expect(zipLink).toBeVisible();
         const [zip] = await Promise.all([page.waitForEvent('download'), activate(zipLink, info)]);
-        // The name uses the event's UTC date, like single downloads.
-        expect(zip.suggestedFilename()).toBe(`${start.toISOString().slice(0, 10)} Soccer final photos.zip`);
+        // The name uses the event's UTC date, like single downloads. WebKit (Playwright 1.65+) reports spaces in a
+        // download's suggested name as underscores, so either spelling of the server's name passes.
+        const zipName = `${start.toISOString().slice(0, 10)} Soccer final photos.zip`;
+        expect([zipName, zipName.replaceAll(' ', '_')]).toContain(zip.suggestedFilename());
         // Mom may not download Dad's photos, so she has no ZIP to fetch.
         expect((await family.mom.get(`/api/families/${family.familyId}/memories/events/${event.id}/download`)).status()).toBe(404);
         await fitsPage(page);

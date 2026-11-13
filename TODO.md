@@ -20,8 +20,13 @@ that points back here.
     (`chore/570-shared-records`, November 12, 2026). Its migrations stay in `Migrations/` until the migrations step.
   - [x] Messaging `Realtime/` and `Transcripts/`; Families PDF renderers; Calendar's `CalendarToday`
     (`chore/570-module-folders`, November 12, 2026).
-  - [ ] Migrations into `Infrastructure/Persistence/` only after an existing-database upgrade check on
-    disposable PostgreSQL; full integration suite and Compose start after each slice (CI).
+  - [x] Migrations into `Infrastructure/Persistence/Migrations/` for all seven modules, after an existing-database
+    upgrade check on disposable PostgreSQL 17.11: 0 pending migrations in all nine schemas, identical history and
+    schema, and a fresh database with the same schema (`chore/570-migrations`, November 13, 2026).
+  - [ ] Close #570 after the migrations slice merges and the release Compose start and integration suite pass in CI.
+  - [ ] Test portability: `SharedRecordReportTests.Transaction_export_requires_a_valid_range_and_an_authorized_parent`
+    fails on Windows (`TimeZoneNotFoundException` for `America/Chicago`); it passes on Linux CI. Use the app's own
+    time-zone lookup in the test (found running the suite locally on November 13, 2026).
 - [ ] **Angular source layout (#567).** Review the Dashboard pilot and [source move map](docs/adr/0009-frontend-source-layout.md).
   Continue in feature slices, starting with the shared date and Calendar boundaries. Move app-wide layout, core
   and shared code, and separate the global Sass layers. Verify lazy routes, assets and release Playwright coverage
@@ -35,9 +40,11 @@ that points back here.
     November 12, 2026).
   - [x] Calendar: pages and components moved (`chore/567-calendar`, November 12, 2026).
   - [x] Fourteen more features moved, one commit each (`chore/567-features`, November 12, 2026).
-  - [ ] Child Essentials and Privacy, after #587 merges.
-  - [ ] Then `shared/` into `components`, `directives` and `pipes`, and `core` services
-    by responsibility. Each in its own PR.
+  - [x] Child Essentials and Privacy (`chore/567-child-essentials-privacy`, November 13, 2026).
+  - [x] `shared/` into `components/` and `directives/`; no pipes live in `shared/` (`chore/567-shared-groups`,
+    November 13, 2026).
+  - [x] `core` by responsibility: routing services in `core/routing/`, and the storage inventory spec moved to Privacy
+    (`chore/567-core-routing`, November 13, 2026).
   - [ ] Release Playwright run and a Development smoke test (sign-in, parent and kid shells, Home, Calendar,
     Settings, Messages dock) after each slice deploys.
 - [ ] **English and Spanish localization (#534).** Review remaining runtime copy, including API validation and
@@ -243,10 +250,14 @@ that points back here.
   one issue and passes the required tracking check. Rerun the writer to verify that it reuses the issue and link.
 - [ ] **MailKit 5 (held from Dependabot PR #602, November 12, 2026).** MailKit stays at 4.18.x: 5.0.0 changes
   `SmtpClient.SendAsync`, so `CoParent.Infrastructure/Email/EmailSender.cs` must be updated in its own change, then
-  confirmation and password-reset email checked against Mailpit.
+  confirmation and password-reset email checked against Mailpit. Dependabot ignores MailKit major updates until then
+  (`.github/dependabot.yml`; Dependabot reads it from `main`). Remove that rule with the upgrade.
 - [ ] **.NET 11 SDK image (Dependabot PR #599, closed November 12, 2026).** The owner deferred `dotnet/sdk` 11.0 for
   the API image build stage to a later release. With it, the API image and Playwright checks failed; upgrade the
-  SDK (and `global.json`, if needed) in its own change and get those checks passing first.
+  SDK (and `global.json`, if needed) in its own change and get those checks passing first. Until then Dependabot
+  ignores 11.x `Microsoft.AspNetCore.*`, `Microsoft.EntityFrameworkCore*`, `Microsoft.Extensions.*` and `System.*`
+  packages (`.github/dependabot.yml`); remove those rules with the upgrade. Dependabot PR #623 proposed
+  SignalR.Client 11.0.0 and was kept on 10.0.15.
 
 - [ ] **Daily Discord health summary (#114, October 28, 2026).** Workflow and regression tests prepared for monitor
   `804458679`, daily at 8 AM America/Chicago with automatic DST handling; existing outage alerts unchanged.
@@ -284,7 +295,7 @@ that points back here.
     mobile-dark/desktop-light reuse, parent lock, initial parent PIN form, notification-failure variants. The
     implemented screens follow the existing design system and are not claimed to match unapproved supplements.
   - [ ] Exact wordmark/lockup exports still unavailable: headers keep the approved icon plus the text wordmark
-    (`shared/brand/logo.ts`, `TODO(brand)`); emails keep the CID icon plus text wordmark.
+    (`shared/components/brand/logo.ts`, `TODO(brand)`); emails keep the CID icon plus text wordmark.
   - [ ] Email client testing (Gmail web/mobile, Outlook Windows/web, Apple Mail/iOS, both themes, images blocked) with
     real test sends; retry/outbox delivery (F-09) instead of log-and-continue.
   - [ ] Real screen reader, physical phones, 200% text/400% zoom, forced colors and reduced motion on the release
@@ -466,7 +477,7 @@ that points back here.
     screen reader. Reproduce the owner's original missing-events report and record deployed commit, week,
     time zone, household setup and owner retest before acceptance; this fixes only the confirmed load-state gap.
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
-  are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
+  are in `src/frontend/src/app/shared/components/brand/logo.ts` (`TODO(brand)`).
 - [ ] Commit the exact approved dashboard image as `docs/design/assets/approved-dashboard-2026-10-16.png`, or confirm
   that `3116E10A-….png` is it.
 - [ ] Choose the rounded brand typeface (open in `docs/design/BRANDING.md`).
@@ -825,10 +836,13 @@ Items left from the November 11 and 12 test passes on Project #2 (details in eac
 - [ ] #544 Dependabot tracking: the `workflow_run` workflow only runs from `main`, so it can't work until v0.4.0
   reaches `main`. Then confirm on the next Dependabot batch that each PR gets exactly one tracking issue and a valid
   reference.
-- [ ] #497 Shared Records PDF: confirm the PDF's embedded image is header artwork, not a payment attachment; legal and
-  privacy review of the export wording.
+- [x] #497 Shared Records PDF: the only embedded image is the approved Parenthesis icon in the header; attachments are
+  never read (code check, November 13, 2026). The owner accepted #497 on November 13, 2026.
+- [ ] #497 Shared Records PDF: legal and privacy review of the export wording and provenance before the private beta
+  (deferred by the owner, November 13, 2026). Until then the PDF claims nothing beyond "a Parenthesis export of
+  parent-reported records".
 - [x] Owner design decisions: #548 chat transcript PDF layout and #566 Shared Records PDF layout approved (November 12, 2026).
-- [ ] Owner design decision: #477 shared funds design.
+- [x] Owner design decision: #477 shared funds design accepted (November 13, 2026).
 - [ ] Remove the synthetic "UX TEST 555/504/500/499" task, provider, caregiver and emergency contact from the
   Development family when they're no longer useful.
 
@@ -850,7 +864,17 @@ Items left from the November 11 and 12 test passes on Project #2 (details in eac
 The November 12 test found English on Settings (profile photo hints, Google Photos export status), chat event cards
 (dates, "All day", "Declined") and Memories (dates, "You", deletion chips). `fix/534-remaining-spanish` translates those
 and the Memories photo helpers (deletion dates, upload refusals, file problems).
-- [ ] Retest #534 on Development in Spanish after this deploys, including the "Shared Caregivers" heading from #578.
+- [x] Retested on Development in Spanish (November 13, 2026): Settings, Calendar, Child Essentials, Shared records labels
+  and Memories passed; Approvals, Home's memory date and month-first dates failed.
+- [x] Approvals statuses and "Propuesto por ti", request summaries rebuilt in Spanish around the family's titles (Approvals
+  and Home), Home's memory date, and day-first dates for Spanish (`fix/534-approvals-dates`, November 13, 2026).
+- [x] Home's status chips ("Proposed", "Confirmed", "Rejected", "Change pending") follow the language; found while
+  testing #517 on November 13, 2026 (`fix/534-status-chip`).
+- [ ] Retest Approvals (pending and history, including a repeating request), Home's pending reviews, status chips and
+  memory date, chat message times and Shared records dates in Spanish after `fix/534-approvals-dates` and
+  `fix/534-status-chip` deploy.
+- [ ] Request summaries are still stored in English: summaries cut short at 200 characters, and approval emails, stay
+  English. Storing structured request details would remove the English-only server text.
 - [x] Sweep the remaining hard-coded English built in code (`fix/534-english-sweep`): privacy notice storage list
   and contents, Google Photos export lines and progress, Memories download/final-week/export notes, calendar Month bar
   labels, date-rule and title validation, unavailable-time conflicts, proposed-change dates, approvals, Home
@@ -883,10 +907,19 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
   Shared or the parent's own list; edit keeps history, conflicts, the household agreement rules and update notices
   (by routine id). Bedtime and Naps values stay in storage, out of the list (branch `feat/498-custom-routines`,
   November 12, 2026).
-- [ ] CI: first run of `RoutinesTests` and the updated routines tests in `ChildAccessTests` and
-  `EssentialsUpdatesTests`, including the `AddRoutineEntries` migration (Docker wasn't available locally).
-- [ ] After deploy, test on Development with synthetic data and two parents: a child with no routines and one with
-  earlier bedtime values (list empty, add form blank, no child selected), "Brushing teeth" for one child, a second
-  routine for both children in one save, edit, Shared versus My routines visibility, use in both homes, stop
-  sharing, update dots, in English and Spanish, phone and desktop, both themes, keyboard and screen reader.
+- [x] CI: `RoutinesTests`, the updated routines tests and the `AddRoutineEntries` migration passed (#606), and the
+  release deployed to Development (November 13, 2026).
+- [x] One-parent check on Development (November 13, 2026): earlier bedtime value hidden, blank add form with no child
+  selected, one routine for one child and one for both in one save, edit and history, My routines kept out of Shared,
+  phone width and both themes.
+- [x] Keyboard focus stays in place when the add and edit forms open and close (`fix/498-routine-focus`, November 13,
+  2026): the first field on open, the Add routine or Edit button on close.
+- [x] Second-parent check on Development, in Spanish (November 13, 2026): update notices and dots, editing Shared
+  with history, the other parent's routines read-only, use in both homes and stop sharing. It found focus falling to
+  the page after those two buttons, which also didn't say whose routines they act on.
+- [x] Use in both homes and stop sharing keep focus (on the button that replaces them, or the selected tab), announce
+  the change, and name whose routines they act on (`fix/498-household-focus`, November 13, 2026).
+- [ ] After both focus fixes deploy: retest focus on Development and do a screen reader pass.
+- [ ] An older history entry from before custom routines (a Bedtime/Naps edit) reads "No routines yet" both before
+  and after; decide whether history should skip entries with no visible change.
 - [ ] Removing a routine isn't in #498; decide whether parents need it before the private beta.

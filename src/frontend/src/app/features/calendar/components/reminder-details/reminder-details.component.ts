@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Api, FamilyMember, Reminder } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { dateMedium, dayLong } from '../../../../core/dates/dates';
 import { CalendarItem } from '../../calendar-items';
 import { whenText } from '../item-text/item-text.component';

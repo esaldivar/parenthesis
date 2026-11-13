@@ -1,7 +1,7 @@
 import { TranslatePipe } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { ChatTranscripts } from '../../components/chat-transcripts/chat-transcripts.component';
 
 /**

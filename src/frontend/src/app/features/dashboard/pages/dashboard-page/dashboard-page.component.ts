@@ -1,6 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { LocaleService } from '../../../../core/i18n/locale.service';
+import { localizeSummary } from '../../../../core/i18n/change-request-summary';
 import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { CalendarPalette, CalendarPaletteKey } from '../../../calendar/calendar-palette';
@@ -28,10 +29,10 @@ import { monthGrid, startOfMonth } from '../../../calendar/components/calendar-m
 import { fromFamilyLocal } from '../../../calendar/time';
 import { EventDetails } from '../../../calendar/components/event-details/event-details.component';
 import { AddAt, addQuery } from '../../../calendar/slot';
-import { Avatar } from '../../../../shared/avatar/avatar';
-import { Leaves } from '../../../../shared/decor/leaves';
-import { EmptyState } from '../../../../shared/empty-state/empty-state';
-import { Icon, IconName } from '../../../../shared/icon/icon';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
+import { Leaves } from '../../../../shared/components/decor/leaves';
+import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Icon, IconName } from '../../../../shared/components/icon/icon';
 import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from '../../data/dashboard-data';
 import { blockRange, childNames, groupParentingTime } from '../../grouping';
 import { DashboardWeek, ScheduleStatus, eventPalette } from '../../model';
@@ -41,7 +42,7 @@ import { CATEGORY_ICONS } from '../../timeline';
 import { InlineView, WeekCalendar, WeekState } from '../../components/week-calendar/week-calendar.component';
 import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from '../../../../core/dates/dates';
 import { greetingFor } from '../../greeting';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 /** The current time; replaced in tests. */
 export const NOW = new InjectionToken<() => Date>('NOW', { factory: () => () => new Date() });
@@ -78,7 +79,7 @@ interface UpcomingItem {
   styleUrl: './dashboard-page.component.scss',
 })
 export class DashboardPage {
-  private readonly locale = inject(LocaleService);
+  protected readonly locale = inject(LocaleService);
   protected readonly t = (key: TranslationKey) => translate(key, this.locale.locale());
   protected quickLabel(kind: 'event' | 'task' | 'reminder'): string {
     return this.t(({ event: 'dash.event', task: 'dash.task', reminder: 'dash.reminder' } as const)[kind]);
@@ -168,7 +169,7 @@ export class DashboardPage {
       key: `review-${r.id}`,
       icon: 'approvals',
       category: 'review',
-      title: r.summary,
+      title: localizeSummary(r, locale),
       when: translate('dash.proposedReview', this.locale.locale(), { name: r.proposedBy }),
       people: [],
       status: 'proposed',
