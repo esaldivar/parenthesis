@@ -1,11 +1,11 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AppCurrencyPipe } from '../../../../core/i18n/locale-formatting';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { inject, ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { FundCurrency, RecordEntry, RecordTotals } from '../../core/api/api';
-import { Icon } from '../../shared/icon/icon';
+import { FundCurrency, RecordEntry, RecordTotals } from '../../../../core/api/api';
+import { Icon } from '../../../../shared/icon/icon';
 
 export type EntryResponse = 'acknowledge' | 'dispute';
 

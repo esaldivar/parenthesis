@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { SharedFundDraft } from '../../core/api/api';
-import { SharedFundProposalForm } from './shared-fund-proposal-form';
+import { SharedFundDraft } from '../../../../core/api/api';
+import { SharedFundProposalForm } from './shared-fund-proposal-form.component';
 
 describe('SharedFundProposalForm', () => {
   async function render() {

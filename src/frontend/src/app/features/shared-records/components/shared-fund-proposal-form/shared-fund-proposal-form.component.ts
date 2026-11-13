@@ -1,11 +1,11 @@
-import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { AppCurrencyPipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { FundCurrency, SharedFundDraft } from '../../core/api/api';
-import { Icon } from '../../shared/icon/icon';
-import { parseMinor as parseShare } from './money';
+import { FundCurrency, SharedFundDraft } from '../../../../core/api/api';
+import { Icon } from '../../../../shared/icon/icon';
+import { parseMinor as parseShare } from '../../money';
 
 const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];
 

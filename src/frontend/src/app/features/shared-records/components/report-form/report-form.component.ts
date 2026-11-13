@@ -1,11 +1,11 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { inject, ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { FundCurrency, PaidTo, ReportDraft } from '../../core/api/api';
-import { Icon } from '../../shared/icon/icon';
-import { localToday, parseMinor } from './money';
+import { FundCurrency, PaidTo, ReportDraft } from '../../../../core/api/api';
+import { Icon } from '../../../../shared/icon/icon';
+import { localToday, parseMinor } from '../../money';
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
