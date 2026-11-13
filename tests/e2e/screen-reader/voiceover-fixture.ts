@@ -61,12 +61,12 @@ export function keyScript(name: string): string {
 
 async function systemEvents(pid: number, command: string) {
   // Bring the test's own browser process forward by process ID, not by app ID: the person's everyday Chrome has the
-  // same app ID, and activating by app ID can send the keys there. Only when it isn't already in front, so VoiceOver
-  // doesn't re-announce the window.
+  // same app ID. Always, because after Guidepup activates VoiceOver, System Events still reports the browser as
+  // frontmost while keys don't reach it; the short delay lets the switch settle before the key.
   const script = [
     'tell application "System Events"',
-    `set target to first process whose unix id is ${pid}`,
-    'if not frontmost of target then set frontmost of target to true',
+    `set frontmost of (first process whose unix id is ${pid}) to true`,
+    'delay 0.5',
     command,
     'end tell',
   ];
