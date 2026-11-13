@@ -96,5 +96,5 @@ export const PARENT_ROUTES: Routes = [
     title: 'Google Photos',
     loadComponent: () => import('./settings/google-photos-callback').then((m) => m.GooglePhotosCallback),
   },
-  { path: 'more', title: 'More', loadComponent: () => import('./more/more-page').then((m) => m.MorePage) },
+  { path: 'more', title: 'More', loadComponent: () => import('./more/pages/more-page/more-page.component').then((m) => m.MorePage) },
 ];
