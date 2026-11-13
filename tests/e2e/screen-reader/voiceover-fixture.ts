@@ -6,9 +6,11 @@ import { voiceOverTest } from '@guidepup/playwright';
 // Guidepup has no public API for this; the package has no exports map, so the module path is stable for 0.21.x.
 import { applicationIdMap } from '@guidepup/playwright/lib/applicationIdMap.js';
 import { navigateVoiceOverToWebContent } from '@guidepup/playwright/lib/navigateVoiceOverToWebContent.js';
+// The client's lastSpokenPhrase() only repeats its own log; this one asks VoiceOver ("content of last phrase").
+import { lastSpokenPhrase as voiceOverLastPhrase } from '@guidepup/guidepup/lib/macOS/VoiceOver/lastSpokenPhrase.js';
 import type { Family } from '../support/family';
 import { withLocalFamily } from './local-family';
-import { ReaderJourney, type JourneyKeys } from './reader-journey';
+import { ReaderJourney, type JourneyKeys, type JourneyReader } from './reader-journey';
 
 /**
  * Real macOS VoiceOver (#443), in Playwright's Chromium or, where Playwright can't install it (macOS 13), the
@@ -102,11 +104,25 @@ export function osKeys(pid: number): JourneyKeys {
   };
 }
 
+/**
+ * VoiceOver as a journey reader whose last phrase is what VoiceOver itself last said. Guidepup's log only holds
+ * speech after its own commands, so speech caused by a real key (focus moves, live regions) is read from VoiceOver.
+ */
+export function liveVoiceOver(voiceOver: JourneyReader): JourneyReader {
+  return {
+    press: key => voiceOver.press(key),
+    type: text => voiceOver.type(text),
+    spokenPhraseLog: () => voiceOver.spokenPhraseLog(),
+    clearSpokenPhraseLog: () => voiceOver.clearSpokenPhraseLog(),
+    lastSpokenPhrase: () => voiceOverLastPhrase(),
+  };
+}
+
 /** Full capture records everything VoiceOver says after each command; the journey also reads its last phrase. */
 export const test = voiceOverChannelTest.extend<{ family: Family; reader: ReaderJourney }>({
   family: async ({ context, baseURL }, use) => withLocalFamily(context, baseURL, use),
   reader: async ({ voiceOver, browser }, use, info) => {
-    const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, osKeys(await browserPid(browser)));
+    const reader = new ReaderJourney(liveVoiceOver(voiceOver), 'VoiceOver', true, osKeys(await browserPid(browser)));
     try {
       await use(reader);
     } finally {
