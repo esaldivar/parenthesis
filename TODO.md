@@ -854,8 +854,11 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
   and Memories passed; Approvals, Home's memory date and month-first dates failed.
 - [x] Approvals statuses and "Propuesto por ti", request summaries rebuilt in Spanish around the family's titles (Approvals
   and Home), Home's memory date, and day-first dates for Spanish (`fix/534-approvals-dates`, November 13, 2026).
-- [ ] Retest Approvals (pending and history, including a repeating request), Home's pending reviews and memory date,
-  chat message times and Shared records dates in Spanish after `fix/534-approvals-dates` deploys.
+- [x] Home's status chips ("Proposed", "Confirmed", "Rejected", "Change pending") follow the language; found while
+  testing #517 on November 13, 2026 (`fix/534-status-chip`).
+- [ ] Retest Approvals (pending and history, including a repeating request), Home's pending reviews, status chips and
+  memory date, chat message times and Shared records dates in Spanish after `fix/534-approvals-dates` and
+  `fix/534-status-chip` deploy.
 - [ ] Request summaries are still stored in English: summaries cut short at 200 characters, and approval emails, stay
   English. Storing structured request details would remove the English-only server text.
 - [x] Sweep the remaining hard-coded English built in code (`fix/534-english-sweep`): privacy notice storage list
