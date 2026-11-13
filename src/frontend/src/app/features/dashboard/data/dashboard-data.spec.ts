@@ -43,8 +43,8 @@ describe('the live dashboard source (#196)', () => {
       event({ id: 'no-play', title: 'Declined play', category: 'Joint', status: 'Rejected' }),
     ]);
     http.expectOne(`${F}/approvals`).flush([
-      { id: 'r1', summary: 'Add: Time with Alex, Oct 20', status: 'Pending', canDecide: false, proposerMembershipId: 'm-alex' },
-      { id: 'r2', summary: 'Change Soccer practice', status: 'Pending', canDecide: true, proposerMembershipId: 'm-sam' },
+      { id: 'r1', type: 'CalendarCreate', targetType: 'calendar_event', summary: 'Add: Time with Alex, Oct 20', status: 'Pending', canDecide: false, proposerMembershipId: 'm-alex' },
+      { id: 'r2', type: 'CalendarModify', targetType: 'calendar_event', summary: 'Change Soccer practice', status: 'Pending', canDecide: true, proposerMembershipId: 'm-sam' },
     ]);
     http.expectOne((r) => r.url === `${F}/calendar/reminders`).flush([reminder()]);
     tasks.flush([task(), task({ id: 't2', title: 'Already done', completedAt: '2026-10-19T12:00:00Z', completedBy: 'm-sam' })]);
@@ -87,7 +87,10 @@ describe('the live dashboard source (#196)', () => {
     expect(week.events[0].parents?.map((p) => p.displayName)).toEqual(['Alex', 'Sam']);
     expect(JSON.stringify(week)).not.toContain('Private reason');
     // Only what waits on this parent.
-    expect(week.pendingReviews).toEqual([{ id: 'r2', summary: 'Change Soccer practice', proposedBy: 'Sam' }]);
+    // The request type is kept so Home can show the summary in the viewer's language (#534).
+    expect(week.pendingReviews).toEqual([
+      { id: 'r2', type: 'CalendarModify', targetType: 'calendar_event', summary: 'Change Soccer practice', proposedBy: 'Sam' },
+    ]);
     // Reminders and tasks for Upcoming; done tasks left out.
     expect(week.notes?.map((n) => [n.kind, n.title, n.date, n.time, n.children.map((c) => c.name)])).toEqual([
       ['reminder', 'Spirit Day', '2026-10-20', '08:00', ['Kai']],

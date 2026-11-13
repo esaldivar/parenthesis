@@ -166,7 +166,7 @@ hashed device secrets, and current family authorization on every protected opera
 
 `BRANDING.md`'s broad “production exports pending” statement is qualified by the
 October 20 approved export in `assets/APPROVED_ASSET_MANIFEST.md`, the email Brand
-README and `shared/brand/logo.ts`: exact icon SVG and approved transparent PNG exist.
+README and `shared/components/brand/logo.ts`: exact icon SVG and approved transparent PNG exist.
 Their copies in frontend public assets/email resources are authoritative unchanged
 exports. The original board exists at its actual F617… JPEG path, despite the older
 manifest's “not uploaded” paragraph and expected alias. Do not crop that board.
