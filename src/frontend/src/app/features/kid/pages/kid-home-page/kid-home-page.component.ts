@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { KID_NAV } from '../../core/layout/navigation';
-import { Icon } from '../../shared/icon/icon';
+import { KID_NAV } from '../../../../core/layout/navigation';
+import { Icon } from '../../../../shared/icon/icon';
 
 @Component({
   selector: 'app-kid-home-page',
