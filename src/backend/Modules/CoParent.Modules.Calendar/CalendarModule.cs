@@ -4,6 +4,7 @@ using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Calendar.Contracts;
 using CoParent.Modules.Calendar.Endpoints;
 using CoParent.Modules.Calendar.Infrastructure;
+using CoParent.Modules.Calendar.Infrastructure.Persistence;
 using CoParent.SharedKernel.Accounts;
 using CoParent.SharedKernel.Security;
 using Microsoft.AspNetCore.RateLimiting;

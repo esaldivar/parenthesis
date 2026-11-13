@@ -4,7 +4,7 @@ using CoParent.Modules.Memories.Domain;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParent.Modules.Memories.Infrastructure;
+namespace CoParent.Modules.Memories.Infrastructure.Persistence;
 
 /// <summary>Event photos and Family Memories (#403) in the <c>memories</c> schema, filtered to the request's family.</summary>
 internal sealed class MemoriesDbContext(DbContextOptions<MemoriesDbContext> options, ITenantContext tenant)

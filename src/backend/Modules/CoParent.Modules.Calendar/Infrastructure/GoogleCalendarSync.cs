@@ -5,6 +5,7 @@ using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Calendar.Contracts;
 using CoParent.Modules.Calendar.Domain;
+using CoParent.Modules.Calendar.Infrastructure.Persistence;
 using CoParent.Modules.Families.Contracts;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Tenancy;

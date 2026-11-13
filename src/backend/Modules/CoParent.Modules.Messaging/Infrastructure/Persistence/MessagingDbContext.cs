@@ -4,7 +4,7 @@ using CoParent.Modules.Messaging.Domain;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParent.Modules.Messaging.Infrastructure;
+namespace CoParent.Modules.Messaging.Infrastructure.Persistence;
 
 /// <summary>Parent-to-parent messages (#125) in the <c>messaging</c> schema, filtered to the request's family.</summary>
 internal sealed class MessagingDbContext(DbContextOptions<MessagingDbContext> options, ITenantContext tenant)

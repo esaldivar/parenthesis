@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.Families.Contracts;
 using CoParent.Modules.Families.Domain;
+using CoParent.Modules.Families.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Families.Infrastructure;

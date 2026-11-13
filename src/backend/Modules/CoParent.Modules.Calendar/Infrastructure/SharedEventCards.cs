@@ -1,6 +1,7 @@
 using CoParent.Modules.Calendar.Contracts;
 using CoParent.Modules.Calendar.Domain;
 using CoParent.Modules.Calendar.Endpoints;
+using CoParent.Modules.Calendar.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Calendar.Infrastructure;
