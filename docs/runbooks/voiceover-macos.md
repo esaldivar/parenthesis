@@ -18,11 +18,14 @@ Use an unlocked Mac session with nothing else running a screen reader or GUI tes
 never change system settings.
 
 1. Install the tools: Xcode command line tools, the .NET SDK in `global.json`, Node from `src/frontend/.nvmrc`,
-   and `brew install postgresql@17 mailpit`.
+   and `brew install postgresql@17 mailpit`. On macOS 13 Homebrew builds from source; use the prebuilt Node and
+   Mailpit downloads and the EDB PostgreSQL 17 binaries instead, and pass `PG_BIN` to the candidate script.
 2. From `tests/e2e`: `npm ci`, then `npx playwright install chromium`. On macOS 13 Playwright refuses to install its
    Chromium; use the installed Google Chrome instead with `export E2E_BROWSER_CHANNEL=chrome` (VoiceOver then
    activates Google Chrome rather than Chrome for Testing).
-3. Run `npx @guidepup/setup@0.29.3` once. It enables "Allow VoiceOver to be controlled with AppleScript" and the
+3. From `tests/e2e`, run `npx @guidepup/setup@0.29.3 setup` and then `npx @guidepup/setup@0.29.3 install` once. `install`
+   downloads the VoiceOver preferences image Guidepup mounts; without it VoiceOver fails to start with "Failed to mount
+   Guidepup preferences". `setup` enables "Allow VoiceOver to be controlled with AppleScript" and the
    VoiceOver defaults Guidepup needs. On recent macOS it may ask you to confirm in VoiceOver Utility or System
    Settings.
 4. In **System Settings → Privacy & Security**, allow **Accessibility** and **Automation** (System Events, VoiceOver)
