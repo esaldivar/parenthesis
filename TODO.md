@@ -825,10 +825,13 @@ Items left from the November 11 and 12 test passes on Project #2 (details in eac
 - [ ] #544 Dependabot tracking: the `workflow_run` workflow only runs from `main`, so it can't work until v0.4.0
   reaches `main`. Then confirm on the next Dependabot batch that each PR gets exactly one tracking issue and a valid
   reference.
-- [ ] #497 Shared Records PDF: confirm the PDF's embedded image is header artwork, not a payment attachment; legal and
-  privacy review of the export wording.
+- [x] #497 Shared Records PDF: the only embedded image is the approved Parenthesis icon in the header; attachments are
+  never read (code check, November 13, 2026). The owner accepted #497 on November 13, 2026.
+- [ ] #497 Shared Records PDF: legal and privacy review of the export wording and provenance before the private beta
+  (deferred by the owner, November 13, 2026). Until then the PDF claims nothing beyond "a Parenthesis export of
+  parent-reported records".
 - [x] Owner design decisions: #548 chat transcript PDF layout and #566 Shared Records PDF layout approved (November 12, 2026).
-- [ ] Owner design decision: #477 shared funds design.
+- [x] Owner design decision: #477 shared funds design accepted (November 13, 2026).
 - [ ] Remove the synthetic "UX TEST 555/504/500/499" task, provider, caregiver and emergency contact from the
   Development family when they're no longer useful.
 
