@@ -5,6 +5,7 @@ using CoParent.Modules.Identity.Contracts;
 using CoParent.Modules.Identity.Domain;
 using CoParent.Modules.Identity.Endpoints;
 using CoParent.Modules.Identity.Infrastructure;
+using CoParent.Modules.Identity.Infrastructure.Persistence;
 using CoParent.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
