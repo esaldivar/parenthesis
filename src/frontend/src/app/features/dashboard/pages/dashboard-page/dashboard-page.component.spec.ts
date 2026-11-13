@@ -11,6 +11,7 @@ import { ComingSoonPage } from '../../../../shared/components/coming-soon/coming
 import { CHILDREN, MEMBERS, event } from '../../../../../testing/calendar-fixtures';
 import { axeViolations } from '../../../../../testing/axe';
 import { AuthStore } from '../../../../core/auth/auth.store';
+import { LocaleService } from '../../../../core/i18n/locale.service';
 import { ProfilePhotos } from '../../../../core/profile-photos/profile-photos';
 import { fakeAuth } from '../../../../../testing/fake-auth';
 import { LiveDashboardDataSource } from '../../data/dashboard-data';
@@ -162,6 +163,19 @@ describe('DashboardPage (approved design)', () => {
 
       expect(text(el.querySelector('h1'))).toBe('Good morning, Alex!');
       expect(text(el.querySelector('.welcome__sub'))).toBe('Here’s what’s happening with your family.');
+    });
+
+    it('opens the Spanish greeting with ¡ (#534)', async () => {
+      const { fixture, el } = await render({ now: new Date('2026-10-14T17:00:00Z') });
+      const locale = TestBed.inject(LocaleService);
+      try {
+        locale.setLocale('es-419');
+        fixture.detectChanges();
+
+        expect(text(el.querySelector('h1'))).toBe('¡Buenas tardes, Alex!');
+      } finally {
+        locale.setLocale('en');
+      }
     });
 
     it.each([
