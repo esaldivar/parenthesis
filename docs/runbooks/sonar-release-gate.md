@@ -35,6 +35,17 @@ left, for example a finding the release was expected to fix.
 | Accepted findings | A security issue marked **Accepted** or **False positive**, or a hotspot reviewed as **Safe** or **Acknowledged**, with no comment explaining why. |
 | Failing safely | Missing `SONAR_TOKEN` or `SONAR_PROJECT_KEY`, a skipped or failed analysis, an analysis for a different PR, a SonarQube Cloud error (after 2 retries for server errors), a timeout, or an answer the gate doesn't understand. |
 
+### Duplication and EF Core migrations
+EF Core migrations (`**/Migrations/**`) are excluded from duplication detection only, through
+`sonar.cpd.exclusions` in `.github/workflows/sonar.yml`. They're generated code that repeats the same table and index
+blocks by design, and `.editorconfig` already treats them as generated. Security, reliability and maintainability
+rules, hotspots and the gate's other checks still analyse them.
+
+Why: moving files makes SonarQube count them as new code. When #628 moved every module's migrations into
+`Infrastructure/Persistence/Migrations/`, release PR #629's new-code duplication rose to 7.7% (limit 3%), almost all
+of it from migrations; without them it was about 2.5%. The owner chose this exclusion as its own reviewed policy change
+(November 13, 2026) rather than reverting the move. Hand-written code keeps the 3% new-code limit.
+
 Not blocking, but listed as warnings: security issues of **Medium**, **Low** or **Info** severity that aren't
 vulnerabilities, and **Medium** or **Low** priority hotspots already on `main`. Sonar Sunday reviews those weekly.
 
