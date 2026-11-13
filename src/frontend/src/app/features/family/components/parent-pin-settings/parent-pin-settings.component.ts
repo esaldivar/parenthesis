@@ -1,16 +1,16 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Api, ParentPinStatus } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { Toasts } from '../../shared/toast/toasts';
-import { PARENT_PIN_PATTERN, isTrivialPin } from '../profiles/pin-rules';
+import { Api, ParentPinStatus } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { Toasts } from '../../../../shared/toast/toasts';
+import { PARENT_PIN_PATTERN, isTrivialPin } from '../../../profiles/pin-rules';
 
 function notTrivial(control: AbstractControl<string>): ValidationErrors | null {
   return control.value && isTrivialPin(control.value) ? { trivial: true } : null;

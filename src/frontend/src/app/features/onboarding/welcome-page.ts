@@ -24,7 +24,7 @@ import { PendingInvitation } from '../../core/invitations/pending-invitation';
 import { Avatar } from '../../shared/avatar/avatar';
 import { Icon } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
-import { InviteCoParent } from '../family/invite-co-parent';
+import { InviteCoParent } from '../family/components/invite-co-parent/invite-co-parent.component';
 
 function deviceTimeZone(): string {
   try {

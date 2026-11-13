@@ -1,17 +1,17 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
-import { Api, Child } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { Avatar } from '../../shared/avatar/avatar';
-import { PIN_PATTERN } from '../profiles/child-pin-page';
-import { Toasts } from '../../shared/toast/toasts';
+import { Api, Child } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { PIN_PATTERN } from '../../../profiles/child-pin-page';
+import { Toasts } from '../../../../shared/toast/toasts';
 
 /** Mirrors the API's rule (ChildCredential.IsAcceptable): not all the same digit, and not a straight run like 1234. */
 export function isGuessablePin(pin: string): boolean {
