@@ -4,7 +4,7 @@ import { Api, Child } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { ProfilePhotos } from '../../../../core/profile-photos/profile-photos';
-import { PhotoEditor } from '../../../../shared/photo-editor/photo-editor';
+import { PhotoEditor } from '../../../../shared/components/photo-editor/photo-editor';
 
 /**
  * A parent's profile photos (#388), edited only here in Settings: their own photo, which their co-parent sees too,

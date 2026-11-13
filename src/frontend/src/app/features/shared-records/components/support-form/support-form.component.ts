@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input, output, signal } from '@angu
 import { FormsModule } from '@angular/forms';
 
 import { FundCurrency, SupportDraft } from '../../../../core/api/api';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { parseMinor } from '../../money';
 
 const currencies: readonly FundCurrency[] = ['USD', 'CAD', 'MXN'];

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { ProfilePhotos } from '../../core/profile-photos/profile-photos';
+import { ProfilePhotos } from '../../../core/profile-photos/profile-photos';
 
 /**
  * A person's avatar: their profile photo when the viewer has one for them (#388), otherwise an initial on a neutral

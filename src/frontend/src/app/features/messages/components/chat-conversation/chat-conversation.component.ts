@@ -23,9 +23,9 @@ import { Api, ChatEventCard, ChatMessage } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { ChatStore } from '../../../../core/chat/chat.store';
-import { Avatar } from '../../../../shared/avatar/avatar';
-import { EmptyState } from '../../../../shared/empty-state/empty-state';
-import { Icon } from '../../../../shared/icon/icon';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
+import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { ChatEventCardView } from '../event-card/event-card.component';
 import { ChatEventPicker } from '../event-picker/event-picker.component';
 

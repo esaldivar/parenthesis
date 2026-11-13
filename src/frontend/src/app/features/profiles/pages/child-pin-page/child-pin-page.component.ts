@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Avatar } from '../../../../shared/avatar/avatar';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { FORM_STYLES } from '../../../auth/form-styles';
 
 /** A PIN is 4 to 6 digits; the parent chose its length when setting it (owner decision, October 18, 2026). */

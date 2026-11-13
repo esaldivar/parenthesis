@@ -2,7 +2,7 @@ import { AppLocale } from '../../core/i18n/locale.service';
 import { TranslationKey, translate } from '../../core/i18n/translations';
 import { CalendarCategory, CalendarEvent, CalendarWarning, Child, FamilyMember, Reminder, SharedTask } from '../../core/api/api';
 import { CalendarPaletteKey, parentPalette } from './calendar-palette';
-import { IconName } from '../../shared/icon/icon';
+import { IconName } from '../../shared/components/icon/icon';
 import { LocalDateTime, PlainDate } from '../../core/dates/plain-date';
 import { addDays, daysBetween } from '../../core/dates/dates';
 import { lastDate, toFamilyLocal } from './time';

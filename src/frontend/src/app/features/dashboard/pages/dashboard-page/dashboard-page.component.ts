@@ -29,10 +29,10 @@ import { monthGrid, startOfMonth } from '../../../calendar/components/calendar-m
 import { fromFamilyLocal } from '../../../calendar/time';
 import { EventDetails } from '../../../calendar/components/event-details/event-details.component';
 import { AddAt, addQuery } from '../../../calendar/slot';
-import { Avatar } from '../../../../shared/avatar/avatar';
-import { Leaves } from '../../../../shared/decor/leaves';
-import { EmptyState } from '../../../../shared/empty-state/empty-state';
-import { Icon, IconName } from '../../../../shared/icon/icon';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
+import { Leaves } from '../../../../shared/components/decor/leaves';
+import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Icon, IconName } from '../../../../shared/components/icon/icon';
 import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from '../../data/dashboard-data';
 import { blockRange, childNames, groupParentingTime } from '../../grouping';
 import { DashboardWeek, ScheduleStatus, eventPalette } from '../../model';
@@ -42,7 +42,7 @@ import { CATEGORY_ICONS } from '../../timeline';
 import { InlineView, WeekCalendar, WeekState } from '../../components/week-calendar/week-calendar.component';
 import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from '../../../../core/dates/dates';
 import { greetingFor } from '../../greeting';
-import { Toasts } from '../../../../shared/toast/toasts';
+import { Toasts } from '../../../../shared/components/toast/toasts';
 
 /** The current time; replaced in tests. */
 export const NOW = new InjectionToken<() => Date>('NOW', { factory: () => () => new Date() });

@@ -6,7 +6,7 @@ import { AuthStore } from './core/auth/auth.store';
 import { clearCalendarCacheOnWrite } from './core/cache/calendar-cache';
 import { PageTitleStrategy } from './core/page-title.strategy';
 import { NavigationRecovery } from './core/navigation-recovery';
-import { installBottomNavClearance } from './shared/overlay/bottom-nav-clearance';
+import { installBottomNavClearance } from './shared/directives/overlay/bottom-nav-clearance';
 
 export const appConfig: ApplicationConfig = {
   providers: [

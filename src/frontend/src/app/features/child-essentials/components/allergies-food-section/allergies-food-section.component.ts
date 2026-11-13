@@ -4,7 +4,7 @@ import { TranslatePipe } from '../../../../core/i18n/translations';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { OnScreen, sectionUpdates } from '../../essentials-updates';
 import { RevisionedSection } from '../../revisioned-section';
 import { AllergiesFoodHistoryPage, AllergiesFoodView, Child } from '../../../../core/api/api';

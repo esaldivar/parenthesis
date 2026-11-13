@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Api, NearbyPosition } from '../../../../core/api/api';
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 
 /** Wait this long after the last keystroke before asking, so a parent typing quickly makes one request, not ten. */
 export const SUGGESTION_DELAY_MS = 300;

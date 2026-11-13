@@ -2,9 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { PhotoSet } from '../../core/api/api';
-import { PhotoSubject, ProfilePhotos } from '../../core/profile-photos/profile-photos';
-import { axeViolations } from '../../../testing/axe';
+import { PhotoSet } from '../../../core/api/api';
+import { PhotoSubject, ProfilePhotos } from '../../../core/profile-photos/profile-photos';
+import { axeViolations } from '../../../../testing/axe';
 import { Avatar } from '../avatar/avatar';
 import { PhotoEditor } from './photo-editor';
 

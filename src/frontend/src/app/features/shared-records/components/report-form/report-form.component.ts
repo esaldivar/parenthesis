@@ -4,7 +4,7 @@ import { inject, ChangeDetectionStrategy, Component, input, output, signal } fro
 import { FormsModule } from '@angular/forms';
 
 import { FundCurrency, PaidTo, ReportDraft } from '../../../../core/api/api';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { localToday, parseMinor } from '../../money';
 
 const MAX_BYTES = 10 * 1024 * 1024;

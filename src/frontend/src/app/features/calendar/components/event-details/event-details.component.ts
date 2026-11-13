@@ -24,7 +24,7 @@ import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { Api, CalendarEvent, ChangeRequest, EditScope, FamilyMember } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { EventPhotosSection } from '../../../memories/components/event-photos/event-photos.component';
 import { dateTimeLabel, dayLong, timeLabel } from '../../../../core/dates/dates';
 import { CalendarItem } from '../../calendar-items';

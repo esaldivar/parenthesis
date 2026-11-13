@@ -9,7 +9,7 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Api, Child, MedicationHistoryEntry, MedicationItem, MedicationValues, MedicationView } from '../../../../core/api/api';
 import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
 import { TranslatePipe } from '../../../../core/i18n/translations';
-import { Icon } from '../../../../shared/icon/icon';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { localizedMessage } from '../../localized-message';
 
 export const MEDICATION_LIMITS = { name: 100, dose: 100, schedule: 200, instructions: 1000 } as const;

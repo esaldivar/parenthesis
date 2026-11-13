@@ -1,4 +1,4 @@
-import { TranslatePipe } from '../../core/i18n/translations';
+import { TranslatePipe } from '../../../core/i18n/translations';
 import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,

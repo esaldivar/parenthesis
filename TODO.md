@@ -36,8 +36,9 @@ that points back here.
   - [x] Calendar: pages and components moved (`chore/567-calendar`, November 12, 2026).
   - [x] Fourteen more features moved, one commit each (`chore/567-features`, November 12, 2026).
   - [x] Child Essentials and Privacy (`chore/567-child-essentials-privacy`, November 13, 2026).
-  - [ ] Then `shared/` into `components`, `directives` and `pipes`, and `core` services
-    by responsibility. Each in its own PR.
+  - [x] `shared/` into `components/` and `directives/`; no pipes live in `shared/` (`chore/567-shared-groups`,
+    November 13, 2026).
+  - [ ] Then `core` services by responsibility, in its own PR.
   - [ ] Release Playwright run and a Development smoke test (sign-in, parent and kid shells, Home, Calendar,
     Settings, Messages dock) after each slice deploys.
 - [ ] **English and Spanish localization (#534).** Review remaining runtime copy, including API validation and
@@ -284,7 +285,7 @@ that points back here.
     mobile-dark/desktop-light reuse, parent lock, initial parent PIN form, notification-failure variants. The
     implemented screens follow the existing design system and are not claimed to match unapproved supplements.
   - [ ] Exact wordmark/lockup exports still unavailable: headers keep the approved icon plus the text wordmark
-    (`shared/brand/logo.ts`, `TODO(brand)`); emails keep the CID icon plus text wordmark.
+    (`shared/components/brand/logo.ts`, `TODO(brand)`); emails keep the CID icon plus text wordmark.
   - [ ] Email client testing (Gmail web/mobile, Outlook Windows/web, Apple Mail/iOS, both themes, images blocked) with
     real test sends; retry/outbox delivery (F-09) instead of log-and-continue.
   - [ ] Real screen reader, physical phones, 200% text/400% zoom, forced colors and reduced motion on the release
@@ -466,7 +467,7 @@ that points back here.
     screen reader. Reproduce the owner's original missing-events report and record deployed commit, week,
     time zone, household setup and owner retest before acceptance; this fixes only the confirmed load-state gap.
 - [ ] Corrected horizontal logo SVGs from ChatGPT (`parenthesis-logo-horizontal.svg`, `-dark.svg`). The requirements
-  are in `src/frontend/src/app/shared/brand/logo.ts` (`TODO(brand)`).
+  are in `src/frontend/src/app/shared/components/brand/logo.ts` (`TODO(brand)`).
 - [ ] Commit the exact approved dashboard image as `docs/design/assets/approved-dashboard-2026-10-16.png`, or confirm
   that `3116E10A-….png` is it.
 - [ ] Choose the rounded brand typeface (open in `docs/design/BRANDING.md`).

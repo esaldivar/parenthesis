@@ -1,8 +1,8 @@
 import { AppLocale, LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, inject, input, signal, viewChild } from '@angular/core';
-import { Avatar } from '../../../../shared/avatar/avatar';
-import { Icon } from '../../../../shared/icon/icon';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { monthDay, timeLabel } from '../../../../core/dates/dates';
 import { CalendarItem } from '../../calendar-items';
 

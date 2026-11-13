@@ -1,5 +1,5 @@
 import { EventCategory, FamilyEvent } from './model';
-import { IconName } from '../../shared/icon/icon';
+import { IconName } from '../../shared/components/icon/icon';
 
 // Placement of timed activities in the week grid ("below the all-day parenting-time span" in the approved design).
 // Pure functions: they read events and never change them, and activities never affect parenting time.
