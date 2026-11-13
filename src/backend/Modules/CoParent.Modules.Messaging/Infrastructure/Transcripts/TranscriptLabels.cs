@@ -2,7 +2,7 @@ using System.Globalization;
 using NodaTime;
 using NodaTime.Text;
 
-namespace CoParent.Modules.Messaging.Transcripts;
+namespace CoParent.Modules.Messaging.Infrastructure.Transcripts;
 
 /// <summary>Export copy and date formatting for the API's invariant globalization environment.</summary>
 internal sealed record TranscriptLabels(

@@ -1,7 +1,7 @@
 using CoParent.Modules.Messaging.Endpoints;
 using Microsoft.AspNetCore.SignalR;
 
-namespace CoParent.Modules.Messaging.Realtime;
+namespace CoParent.Modules.Messaging.Infrastructure.Realtime;
 
 /// <summary>Pushes the family's chat events to the parents watching it. Delivery is best effort: the REST endpoints
 /// are the source of truth, and clients reload from them when they reconnect.</summary>

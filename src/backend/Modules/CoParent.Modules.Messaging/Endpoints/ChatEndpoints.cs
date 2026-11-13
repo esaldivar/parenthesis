@@ -1,7 +1,7 @@
 using CoParent.Modules.Calendar.Contracts;
 using CoParent.Modules.Messaging.Domain;
 using CoParent.Modules.Messaging.Infrastructure.Persistence;
-using CoParent.Modules.Messaging.Realtime;
+using CoParent.Modules.Messaging.Infrastructure.Realtime;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Builder;

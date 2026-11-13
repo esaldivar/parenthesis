@@ -1,6 +1,7 @@
+using CoParent.Modules.Messaging.Endpoints;
 using Microsoft.AspNetCore.Http;
 
-namespace CoParent.Modules.Messaging.Realtime;
+namespace CoParent.Modules.Messaging.Infrastructure.Realtime;
 
 /// <summary>
 /// The chat hub authenticates with the same cookie as the API (ADR-0004), and a browser sends that cookie on a

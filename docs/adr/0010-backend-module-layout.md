@@ -46,13 +46,18 @@ Infrastructure/Migrations/     Existing migrations, IDs and snapshot, in place f
 | Module | Today | Move |
 | --- | --- | --- |
 | Approvals | DbContext in `Infrastructure/Persistence/` (#572) | Done. `ChangeRequests`, `RequestExpiry` and `ApprovalsDeparture` are adapters and stay in `Infrastructure/`. |
-| Calendar | `Infrastructure/CalendarDbContext.cs`; `CalendarToday.cs` at the root | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. Later: `CalendarToday` to `Domain/` or `Infrastructure/` by what it depends on. |
-| Families | `Infrastructure/FamiliesDbContext.cs`; PDF renderers (`AllergyPdf`, `MedicationPdf`) in `Endpoints/` | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. Later: PDF renderers to `Infrastructure/Pdf/`. |
+| Calendar | `Infrastructure/CalendarDbContext.cs`; `CalendarToday.cs` at the root | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. **Folders slice:** `CalendarToday` → `Domain/` (it uses only `TimeProvider` and `EventSchedule`). |
+| Families | `Infrastructure/FamiliesDbContext.cs`; PDF renderers (`AllergyPdf`, `MedicationPdf`) in `Endpoints/` | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. **Folders slice:** PDF renderers → `Infrastructure/Pdf/`. |
 | Identity | `Infrastructure/IdentityModuleDbContext.cs` | **Identity slice**, in its own PR (auth code): DbContext → `Infrastructure/Persistence/`. `UserDirectory` and the other adapters stay in `Infrastructure/`. |
 | Memories | `Infrastructure/MemoriesDbContext.cs` | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. |
-| Messaging | `Infrastructure/MessagingDbContext.cs`; `Realtime/` and `Transcripts/` at the root | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. Later: `ChatHub` (the SignalR boundary) → `Endpoints/`, the notifier and origin check → `Infrastructure/Realtime/`, transcript building and PDF → `Infrastructure/Transcripts/`. |
+| Messaging | `Infrastructure/MessagingDbContext.cs`; `Realtime/` and `Transcripts/` at the root | **Persistence slice:** DbContext → `Infrastructure/Persistence/`. **Folders slice:** `ChatHub` (the SignalR boundary) → `Endpoints/`, the notifier and origin check → `Infrastructure/Realtime/`, transcript building and PDF → `Infrastructure/Transcripts/`. |
 | Shared Records | Every file at the root, migrations in `Migrations/` | **Shared Records slice:** entities (split out of the DbContext file) → `Domain/`, `RecordEndpoints` → `Endpoints/`, DbContext → `Infrastructure/Persistence/`, export, PDF, attachments, the fund approval handler, cleanup and departure → `Infrastructure/`. The model snapshot carries the entities' new type names. Later: migrations → `Infrastructure/Migrations/` only with the upgrade check above. |
 
 Each slice is move-only: no route, request, response, validation, DI lifetime, tenant filter, auth policy,
 antiforgery or transaction change, and `dotnet ef migrations has-pending-model-changes` reports no changes for every
 moved DbContext. Progress is tracked in [TODO.md](../../TODO.md).
+
+Known exceptions to the dependency direction, left as they were because removing them changes more than folders:
+`MedicationPdf` renders the `MedicationEntry` API record from `Endpoints/`, and Messaging's `ChatNotifier` and
+`HubOriginCheck` use the hub and message views in `Endpoints/`. A later change can move those shared records into
+`Contracts/` or `Domain/` if a module needs the boundary enforced.
