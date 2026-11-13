@@ -847,3 +847,17 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
 ## Shared Records submit indicator (#496)
 
 - [ ] After deploy, retest on Development with writes delayed or blocked: Report contribution, Shared fund request and Child support record each show the branded indicator just above Submit, in view at 1280×800 and phone width, both themes, keyboard and reduced motion.
+
+## Custom routines (#498)
+
+- [x] Routines list only what parents add; Add routine saves one routine to one or more children in one save, to
+  Shared or the parent's own list; edit keeps history, conflicts, the household agreement rules and update notices
+  (by routine id). Bedtime and Naps values stay in storage, out of the list (branch `feat/498-custom-routines`,
+  November 12, 2026).
+- [ ] CI: first run of `RoutinesTests` and the updated routines tests in `ChildAccessTests` and
+  `EssentialsUpdatesTests`, including the `AddRoutineEntries` migration (Docker wasn't available locally).
+- [ ] After deploy, test on Development with synthetic data and two parents: a child with no routines and one with
+  earlier bedtime values (list empty, add form blank, no child selected), "Brushing teeth" for one child, a second
+  routine for both children in one save, edit, Shared versus My routines visibility, use in both homes, stop
+  sharing, update dots, in English and Spanish, phone and desktop, both themes, keyboard and screen reader.
+- [ ] Removing a routine isn't in #498; decide whether parents need it before the private beta.

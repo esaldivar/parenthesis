@@ -24,7 +24,7 @@ const api = () => ({
   clothing: vi.fn(async () => ({ revision: 0, values: { topSize: null, bottomSize: null, shoeSize: null, fitNotes: null } })),
   allergiesFood: vi.fn(async () => ({ revision: 0, values: { allergies: null, foodPreferences: null, noKnownAllergies: true } })),
   whatHelps: vi.fn(async () => ({ revision: 0, values: { comfortItems: null, calmingStrategies: null } })),
-  routines: vi.fn(async () => ({ revision: 0, values: { bedtime: null, naps: null } })),
+  routines: vi.fn(async () => ({ revision: 0, values: { entries: [] } })),
   householdRoutines: vi.fn(async () => []),
   emergencyContacts: vi.fn(async () => ({ version: 0, contacts: [] })),
   caregivers: vi.fn(async () => ({ version: 0, caregivers: [] })),
@@ -72,7 +72,7 @@ describe('Child Essentials Spanish (#577)', () => {
 
   for (const [component, expected] of [
     [ClothingSection, 'Sin especificar'], [WhatHelpsSection, 'Sin especificar'],
-    [RoutinesSection, 'Sin especificar'], [AllergiesFoodSection, 'Sin alergias conocidas'],
+    [RoutinesSection, 'Aún no hay rutinas'], [AllergiesFoodSection, 'Sin alergias conocidas'],
     [CaregiversSection, 'Aún no hay cuidadores compartidos'], [EmergencyContactsSection, 'Aún no hay contactos de emergencia'],
     [MedicalProvidersSection, 'Aún no se han agregado profesionales de salud'],
   ] as const) {
@@ -127,7 +127,7 @@ describe('Child Essentials Spanish (#577)', () => {
 
   it('has both languages for every new key and keeps private banner values out', () => {
     for (const pair of Object.values(essentialsTranslations)) { expect(pair[0]).toBeTruthy(); expect(pair[1]).toBeTruthy(); }
-    expect(bannerText('Sam', { childId: child.id, section: 'householdRoutines', fields: ['bedtime'] }, 'es-419'))
-      .toBe('Se actualizó horario para dormir en el hogar del otro padre o madre de Sam');
+    expect(bannerText('Sam', { childId: child.id, section: 'householdRoutines', fields: ['r-lights'] }, 'es-419'))
+      .toBe('Se actualizó rutinas en el hogar del otro padre o madre de Sam');
   });
 });

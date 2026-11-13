@@ -90,12 +90,14 @@ test('the co-parent’s Routines tab shows a dot until opened, and a changed car
   const child = `/api/families/${familyId}/children/${kaiId}/essentials`;
   const homes = await mom.json<{ ownerId: string; isMine: boolean }[]>(mom.get(`${child}/routines/households`));
   const momsId = homes.find((home) => home.isMine)!.ownerId;
-  await mom.json(mom.put(`${child}/routines/households/${momsId}`, { revision: 0, action: 'save', values: { bedtime: '8:30 PM' } }));
+  await mom.json(mom.post(`/api/families/${familyId}/essentials/routines`, {
+    routine: { title: 'Lights out', details: '8:30 PM' }, childIds: [kaiId], visibility: 'mine',
+  }));
   expect((await mom.post(`${child}/caregivers`, { version: 0, details: { name: 'Ava Park', phone: '555-010-4000', schoolPickup: true } })).status()).toBe(204);
 
   await signIn(page, dad.email);
   await page.goto('/child-essentials');
-  await expect(page.locator('.banner')).toHaveText(['Kai’s bedtime at your co-parent’s home updated', 'Kai’s Shared Caregivers updated']);
+  await expect(page.locator('.banner')).toHaveText(['Kai’s routines at your co-parent’s home updated', 'Kai’s Shared Caregivers updated']);
 
   const routines = page.locator('app-routines-section');
   const routinesTile = page.locator('[data-section=routines] > summary');
@@ -105,7 +107,7 @@ test('the co-parent’s Routines tab shows a dot until opened, and a changed car
   await expect(momsTab).toBeVisible();
   await activate(momsTab, info);
   await expect(routines.getByRole('button', { name: 'Mom’s routines', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(routines.locator('.row').filter({ hasText: 'Bedtime' })).toHaveClass(/row--updated/);
+  await expect(routines.locator('.row').filter({ hasText: 'Lights out' })).toHaveClass(/row--updated/);
 
   if (page.viewportSize()!.width >= 1024) {
     await expect(page.locator('.layout')).toHaveClass(/focused/);
