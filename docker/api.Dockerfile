@@ -10,7 +10,7 @@ COPY src/frontend/ ./
 RUN npx ng build
 
 # 2. API
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 
 # Restore first so the layer is cached until a project or package version changes.
