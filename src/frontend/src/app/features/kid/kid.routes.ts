@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { ComingSoonPage } from '../../shared/coming-soon/coming-soon-page';
-import { KidHomePage } from './kid-home-page';
+import { KidHomePage } from './pages/kid-home-page/kid-home-page.component';
 
 const comingSoon = (title: string, data: Record<string, string>) => ({
   title,
@@ -43,5 +43,5 @@ export const KID_ROUTES: Routes = [
       emptyBody: 'Memories aren’t ready yet.',
     }),
   },
-  { path: 'settings', title: 'Settings', loadComponent: () => import('./kid-settings-page').then((m) => m.KidSettingsPage) },
+  { path: 'settings', title: 'Settings', loadComponent: () => import('./pages/kid-settings-page/kid-settings-page.component').then((m) => m.KidSettingsPage) },
 ];

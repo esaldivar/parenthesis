@@ -14,7 +14,7 @@ const REVIEWED = new Set([
   'app/core/theme/appearance.service.ts',
   'app/core/theme/event-themes.service.ts',
   'app/features/calendar/pages/calendar-page/calendar-page.component.ts',
-  'app/features/profiles/parent-pin-reset-page.ts',
+  'app/features/profiles/pages/parent-pin-reset-page/parent-pin-reset-page.component.ts',
 ]);
 
 const KEY_PREFIXES = [
