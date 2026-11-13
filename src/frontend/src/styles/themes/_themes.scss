@@ -1,0 +1,47 @@
+// Light and dark themes from the token mixins, and Angular Material pointed at the same semantic tokens.
+@use '@angular/material' as mat;
+@use '../abstracts/tokens';
+
+// Theme selection: html[data-theme] holds an explicit choice; without it ("System") the OS preference decides.
+:root {
+  @include tokens.scale;
+  @include tokens.brand;
+  @include tokens.light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    @include tokens.dark;
+  }
+}
+
+:root[data-theme='light'] {
+  @include tokens.light;
+}
+
+:root[data-theme='dark'] {
+  @include tokens.dark;
+}
+
+// Angular Material reads --mat-sys-* variables; point them at our semantic tokens so Material and our
+// components share one palette in both themes.
+html {
+  @include mat.theme((
+    typography: (plain-family: var(--font-family), brand-family: var(--font-family)),
+    density: 0,
+  ));
+
+  --mat-sys-background: var(--color-canvas);
+  --mat-sys-surface: var(--color-surface);
+  --mat-sys-surface-container: var(--color-surface);
+  --mat-sys-surface-container-low: var(--color-surface);
+  --mat-sys-surface-container-high: var(--color-surface-soft);
+  --mat-sys-on-surface: var(--color-text);
+  --mat-sys-on-surface-variant: var(--color-text-secondary);
+  --mat-sys-primary: var(--color-action);
+  --mat-sys-on-primary: var(--color-on-action);
+  --mat-sys-secondary-container: var(--color-surface-soft);
+  --mat-sys-on-secondary-container: var(--color-text);
+  --mat-sys-outline: var(--color-outline);
+  --mat-sys-error: var(--color-danger);
+}
