@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { WhatHelpsValues } from '../../core/api/api';
-import { WhatHelpsSection } from './what-helps-section';
+import { WhatHelpsValues } from '../../../../core/api/api';
+import { WhatHelpsSection } from './what-helps-section.component';
 
 describe('What Helps', () => {
   const url = '/api/families/family-1/children/child-1/essentials/what-helps';

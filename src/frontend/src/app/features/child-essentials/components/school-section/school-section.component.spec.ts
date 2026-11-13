@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { SchoolValues } from '../../core/api/api';
-import { SchoolSection } from './school-section';
+import { SchoolValues } from '../../../../core/api/api';
+import { SchoolSection } from './school-section.component';
 
 describe('School', () => {
   const url = '/api/families/family-1/children/child-1/essentials/school';

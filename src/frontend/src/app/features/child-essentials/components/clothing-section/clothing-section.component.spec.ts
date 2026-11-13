@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { ClothingValues } from '../../core/api/api';
-import { ClothingSection } from './clothing-section';
+import { ClothingValues } from '../../../../core/api/api';
+import { ClothingSection } from './clothing-section.component';
 
 describe('Clothing & Shoes', () => {
   const url = '/api/families/family-1/children/child-1/essentials/clothing';

@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { EmergencyContactsSection } from './emergency-contacts-section';
+import { EmergencyContactsSection } from './emergency-contacts-section.component';
 
 describe('Emergency Contacts', () => {
   const url = '/api/families/family-1/children/child-1/essentials/emergency-contacts';

@@ -1,15 +1,15 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal,
   untracked, viewChild, viewChildren,
 } from '@angular/core';
-import { Api, Child, EssentialsBanner, EssentialsSectionId } from '../../core/api/api';
-import { AuthStore } from '../../core/auth/auth.store';
-import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
-import { Avatar } from '../../shared/avatar/avatar';
-import { Icon } from '../../shared/icon/icon';
-import { ESSENTIALS_SECTIONS, bannerText } from './essentials-updates';
+import { Api, Child, EssentialsBanner, EssentialsSectionId } from '../../../../core/api/api';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { EssentialsUpdatesStore } from '../../../../core/essentials/essentials-updates.store';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { Icon } from '../../../../shared/icon/icon';
+import { ESSENTIALS_SECTIONS, bannerText } from '../../essentials-updates';
 
 /** How long a banner shows, unless the parent is pointing at or focused on the banners (#128: about ten seconds). */
 export const BANNER_MS = 10_000;
@@ -22,15 +22,15 @@ interface ShownBanner {
   readonly art: string;
 }
 
-import { AllergiesFoodSection } from './allergies-food-section';
-import { CaregiversSection } from './caregivers-section';
-import { ClothingSection } from './clothing-section';
-import { EmergencyContactsSection } from './emergency-contacts-section';
-import { MedicalProvidersSection } from './medical-providers-section';
-import { MedicationSection } from './medication-section';
-import { RoutinesSection } from './routines-section';
-import { SchoolSection } from './school-section';
-import { WhatHelpsSection } from './what-helps-section';
+import { AllergiesFoodSection } from '../../components/allergies-food-section/allergies-food-section.component';
+import { CaregiversSection } from '../../components/caregivers-section/caregivers-section.component';
+import { ClothingSection } from '../../components/clothing-section/clothing-section.component';
+import { EmergencyContactsSection } from '../../components/emergency-contacts-section/emergency-contacts-section.component';
+import { MedicalProvidersSection } from '../../components/medical-providers-section/medical-providers-section.component';
+import { MedicationSection } from '../../components/medication-section/medication-section.component';
+import { RoutinesSection } from '../../components/routines-section/routines-section.component';
+import { SchoolSection } from '../../components/school-section/school-section.component';
+import { WhatHelpsSection } from '../../components/what-helps-section/what-helps-section.component';
 
 /** Medical's banner colours and icon (dusty coral, docs/design/child-essentials-handoff.md); it has its own screen. */
 const MEDICAL_TINT = {

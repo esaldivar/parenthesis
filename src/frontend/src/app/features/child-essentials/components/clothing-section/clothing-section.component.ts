@@ -1,12 +1,12 @@
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Icon } from '../../shared/icon/icon';
-import { OnScreen, sectionUpdates } from './essentials-updates';
-import { RevisionedSection } from './revisioned-section';
-import { ClothingHistoryPage, ClothingView } from '../../core/api/api';
+import { Icon } from '../../../../shared/icon/icon';
+import { OnScreen, sectionUpdates } from '../../essentials-updates';
+import { RevisionedSection } from '../../revisioned-section';
+import { ClothingHistoryPage, ClothingView } from '../../../../core/api/api';
 
 @Component({
   selector: 'app-clothing-section',
@@ -102,7 +102,7 @@ import { ClothingHistoryPage, ClothingView } from '../../core/api/api';
       </dl>
     </ng-template>
   `,
-  styleUrl: './essentials-section.css',
+  styleUrl: '../../essentials-section.css',
   styles: `
     :host {
       display: block;

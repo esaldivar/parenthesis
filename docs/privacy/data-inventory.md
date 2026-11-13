@@ -1,7 +1,7 @@
 # Data inventory
 
 The source of truth for what Parenthesis stores and shares (#416). The public
-[Privacy Notice](../../src/frontend/src/app/features/privacy/privacy-page.ts) (`/privacy`) is written from this
+[Privacy Notice](../../src/frontend/src/app/features/privacy/pages/privacy-page/privacy-page.component.ts) (`/privacy`) is written from this
 page; change both together. Audited against `release/0.3.0` on October 31, 2026. Findings and open gaps:
 [compliance-review-416.md](compliance-review-416.md).
 

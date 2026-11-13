@@ -1,17 +1,17 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { essentialsOption } from './essentials-options';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { essentialsOption } from '../../essentials-options';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import {
   Child, MEDICAL_PROVIDER_TYPES, MedicalProvider, MedicalProvidersHistoryEntry, MedicalProvidersView,
-} from '../../core/api/api';
-import { Icon } from '../../shared/icon/icon';
-import { LOCATION_MAX_LENGTH, mapsDirectionsUrl } from '../calendar/maps-link';
-import { RevisionedSection } from './revisioned-section';
+} from '../../../../core/api/api';
+import { Icon } from '../../../../shared/icon/icon';
+import { LOCATION_MAX_LENGTH, mapsDirectionsUrl } from '../../../calendar/maps-link';
+import { RevisionedSection } from '../../revisioned-section';
 
 type ProviderFields = Omit<MedicalProvider, 'id'>;
 
@@ -25,7 +25,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
   selector: 'app-medical-providers-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, AppDatePipe, Icon, NgTemplateOutlet, ReactiveFormsModule],
-  styleUrls: ['./essentials-section.css', './medical-providers-section.css'],
+  styleUrls: ['../../essentials-section.css', './medical-providers-section.component.css'],
   template: `
     <section aria-labelledby="medical-heading">
       <button type="button" class="back" #backButton (click)="editing() ? cancel() : back.emit()" [disabled]="saving()">

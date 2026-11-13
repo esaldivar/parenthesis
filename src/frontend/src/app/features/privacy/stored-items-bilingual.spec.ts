@@ -1,4 +1,4 @@
-import { STORED_ITEMS } from './privacy-page';
+import { STORED_ITEMS } from './pages/privacy-page/privacy-page.component';
 
 describe('privacy notice storage list in both languages (#534)', () => {
   it('has English and Spanish text for every item', () => {

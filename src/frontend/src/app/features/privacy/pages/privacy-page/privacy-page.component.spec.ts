@@ -3,9 +3,9 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { routes } from '../../app.routes';
-import { axeViolations } from '../../../testing/axe';
-import { fakeAuth } from '../../../testing/fake-auth';
+import { routes } from '../../../../app.routes';
+import { axeViolations } from '../../../../../testing/axe';
+import { fakeAuth } from '../../../../../testing/fake-auth';
 
 // Synthetic people only.
 const KAI = { childId: 'kai', firstName: 'Kai', familyId: 'family-1' };
