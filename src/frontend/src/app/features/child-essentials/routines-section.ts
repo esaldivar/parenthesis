@@ -62,14 +62,15 @@ class SharedEditForm {
       <h3 id="routines-heading">{{ 'feature.routines' | tr }}
       </h3>
       <div class="actions" role="group" aria-label="{{ 'feature.routine.views' | tr }}">
-        <button type="button" [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">{{ 'feature.shared' | tr }}</button>
+        <button type="button" data-routine-view [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">{{ 'feature.shared' | tr }}</button>
         @for (home of households(); track home.ownerId) {
-          <button type="button" [attr.aria-pressed]="selectedOwner() === home.ownerId"
+          <button type="button" data-routine-view [attr.aria-pressed]="selectedOwner() === home.ownerId"
             (click)="openHousehold(home)">{{ home.isMine ? ('feature.my.routines' | tr) : ('essentials.copy.ownerRoutines' | tr: { name: home.ownerName }) }}@if (
               !home.isMine && updates.unopened(childId(), 'householdRoutines')
             ) {<span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span><span class="updated-dot tab-dot" aria-hidden="true"></span>}</button>
         }
       </div>
+      <p role="status">{{ householdNotice() }}</p>
       @if (householdError()) {
         <p role="alert">{{ householdError() }}</p>
         <button type="button" (click)="loadHouseholds()">{{ 'feature.refresh.household.routines' | tr }}</button>
@@ -109,18 +110,18 @@ class SharedEditForm {
         } @else {
           <ng-container *ngTemplateOutlet="list; context: { $implicit: home.latest.values, rowMarks: homeMarks }" />
           @if (home.canAccept) {
-            <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'accept')">{{ 'feature.use.in.both.homes' | tr }}</button>
+            <button type="button" data-routine-share [disabled]="householdSaving()" (click)="updateHousehold(home, 'accept')">{{ 'feature.use.in.both.homes' | tr }}<span class="visually-hidden">{{ home.isMine ? ('essentials.routines.ofMine' | tr) : ('essentials.routines.ofOwner' | tr: { name: home.ownerName }) }}</span></button>
           }
         }
         @if (home.shared) {
-          <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}</button>
+          <button type="button" data-routine-share [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}<span class="visually-hidden">{{ home.isMine ? ('essentials.routines.ofMine' | tr) : ('essentials.routines.ofOwner' | tr: { name: home.ownerName }) }}</span></button>
         }
       } @else {
         @for (home of households(); track home.ownerId) {
           @if (home.shared; as agreed) {
             <h4>{{ home.isMine ? ('feature.my.shared.routine' | tr) : ('essentials.copy.ownerSharedRoutine' | tr: { name: home.ownerName }) }}</h4>
             <ng-container *ngTemplateOutlet="list; context: { $implicit: agreed.values }" />
-            <button type="button" [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}</button>
+            <button type="button" data-routine-share [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}<span class="visually-hidden">{{ home.isMine ? ('essentials.routines.ofMine' | tr) : ('essentials.routines.ofOwner' | tr: { name: home.ownerName }) }}</span></button>
           }
         }
       <p>{{ 'feature.shared.routines.for.both.homes' | tr }}</p>
@@ -315,6 +316,8 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
   protected readonly householdSaving = signal(false);
   protected readonly householdError = localizedMessage();
   protected readonly householdConflict = signal(false);
+  /** Announces "use in both homes" and "stop sharing", whose buttons are replaced when they're used. */
+  protected readonly householdNotice = localizedMessage();
   private homeDraftRevision = 0;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -345,6 +348,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
     this.selectedOwner.set(home?.ownerId ?? null);
     this.adding.set(null);
     this.notice.set('');
+    this.householdNotice.set('');
     // Opening the co-parent's tab clears its dot; its changed rows stay highlighted until on screen (#128).
     if (home && !home.isMine) this.updates.sectionOpened(this.childId(), 'householdRoutines');
   }
@@ -453,6 +457,7 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
     if (action === 'save' && (!id || !this.homeTitle().trim())) return;
     this.householdSaving.set(true);
     this.householdError.set('');
+    this.householdNotice.set('');
     try {
       await this.api.updateHouseholdRoutine(this.familyId(), this.childId(), home.ownerId, {
         revision: action === 'save' ? this.homeDraftRevision : home.latest.revision, action,
@@ -465,6 +470,10 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
       }
       this.householdConflict.set(false);
       await this.loadHouseholds();
+      if (action !== 'save') {
+        this.householdNotice.set(action === 'accept' ? 'essentials.routines.sharedNotice' : 'essentials.routines.stoppedNotice');
+        this.focusShareButton();
+      }
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 409) {
         await this.loadHouseholds();
@@ -500,6 +509,21 @@ export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesVal
    */
   private focusAfterRender(selector: string): void {
     afterNextRender({ read: () => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus() }, { injector: this.injector });
+  }
+
+  /**
+   * After "use in both homes" or "stop sharing" the button is replaced: focus moves to the one that replaced it on a
+   * parent's tab, or back to the selected tab when nothing replaced it (the Shared tab, or my routines no longer shared).
+   */
+  private focusShareButton(): void {
+    const tab = '[data-routine-view][aria-pressed="true"]';
+    afterNextRender({
+      read: () => {
+        const host = this.host.nativeElement;
+        const share = this.selectedOwner() === null ? null : host.querySelector<HTMLElement>('[data-routine-share]');
+        (share ?? host.querySelector<HTMLElement>(tab))?.focus();
+      },
+    }, { injector: this.injector });
   }
 
   private focusEditButton(id: string | null): void {
