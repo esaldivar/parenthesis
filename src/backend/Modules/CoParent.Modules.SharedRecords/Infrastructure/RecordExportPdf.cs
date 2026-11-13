@@ -1,10 +1,11 @@
 using System.Globalization;
 using CoParent.Infrastructure.Pdf;
+using CoParent.Modules.SharedRecords.Domain;
 using NodaTime;
 using NodaTime.Text;
 using SkiaSharp;
 
-namespace CoParent.Modules.SharedRecords;
+namespace CoParent.Modules.SharedRecords.Infrastructure;
 
 /// <summary>Selectable, printable US Letter transaction report (#497, approved design #566).</summary>
 internal sealed class RecordExportPdf(bool spanish, DateTimeZone zone)

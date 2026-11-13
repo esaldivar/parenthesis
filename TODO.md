@@ -16,7 +16,8 @@ that points back here.
     (`chore/570-persistence`, November 12, 2026).
   - [x] Identity DbContext in `Infrastructure/Persistence/`, in its own PR (auth code); no model changes
     (`chore/570-identity-persistence`, November 12, 2026).
-  - [ ] Shared Records into `Domain/`, `Endpoints/` and `Infrastructure/`.
+  - [x] Shared Records into `Domain/`, `Endpoints/` and `Infrastructure/`; no model changes
+    (`chore/570-shared-records`, November 12, 2026). Its migrations stay in `Migrations/` until the migrations step.
   - [ ] Messaging `Realtime/` and `Transcripts/`; Families PDF renderers; Calendar's `CalendarToday`.
   - [ ] Migrations into `Infrastructure/Persistence/` only after an existing-database upgrade check on
     disposable PostgreSQL; full integration suite and Compose start after each slice (CI).

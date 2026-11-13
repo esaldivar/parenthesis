@@ -1,6 +1,7 @@
 using CoParent.Infrastructure.Hosting;
 using CoParent.Infrastructure.Tenancy;
 using CoParent.Modules.SharedRecords.Contracts;
+using CoParent.Modules.SharedRecords.Infrastructure.Persistence;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace CoParent.Modules.SharedRecords;
+namespace CoParent.Modules.SharedRecords.Infrastructure;
 
 /// <summary>
 /// Closing a family only marks its reports removed, inside the closing transaction, so a rolled-back closure loses no
