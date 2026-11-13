@@ -204,4 +204,48 @@ describe('Routines', () => {
     expect(host.textContent).toContain('Routine added.');
     http.verify();
   });
+
+  it('moves focus into a form when it opens and back to its button when it closes', async () => {
+    const { http, host, button, click, type, settle, next } = setup([{ id: 'child-1', firstName: 'Sam' }]);
+    (await next({ method: 'GET', url })).flush({ revision: 1, values: { entries: [teeth] } });
+    (await next({ method: 'GET', url: url + '/households' })).flush([]);
+    await settle();
+    const focused = () => document.activeElement;
+
+    click('Add routine');
+    await settle();
+    expect(focused()).toBe(host.querySelector('input[formcontrolname="title"]'));
+    click('Cancel');
+    await settle();
+    expect(focused()).toBe(button('Add routine'));
+
+    click('Edit Brushing teeth');
+    await settle();
+    expect(focused()).toBe(host.querySelector('input[formcontrolname="title"]'));
+    click('Cancel');
+    await settle();
+    expect(focused()).toBe(button('Edit Brushing teeth'));
+
+    click('Edit Brushing teeth');
+    type('textarea[formcontrolname="details"]', 'Two minutes');
+    click('Save routine');
+    (await next({ method: 'PUT', url })).flush({ revision: 2, values: { entries: [{ ...teeth, details: 'Two minutes' }] } });
+    await vi.waitFor(async () => {
+      await settle();
+      expect(focused()).toBe(button('Edit Brushing teeth'));
+    });
+
+    click('Add routine');
+    type('input[formcontrolname="title"]', 'Reading');
+    host.querySelector<HTMLInputElement>('.child-picker input[type="checkbox"]')!.click();
+    await settle();
+    click('Save routine');
+    (await next({ method: 'POST', url: addUrl })).flush([]);
+    (await next({ method: 'GET', url })).flush({ revision: 3, values: { entries: [{ ...teeth, details: 'Two minutes' }] } });
+    await vi.waitFor(async () => {
+      await settle();
+      expect(focused()).toBe(button('Add routine'));
+    });
+    http.verify();
+  });
 });
