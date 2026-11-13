@@ -35,11 +35,17 @@ export async function findHeading(voiceOver: VoiceOverPlaywright, reader: Reader
 }
 
 /** VoiceOver's cursor, bounded, until it reads text matching `name` (for content Tab doesn't reach). */
-export async function readUntil(voiceOver: VoiceOverPlaywright, reader: ReaderJourney, name: RegExp, direction: 'next' | 'previous' = 'next') {
+export async function readUntil(voiceOver: VoiceOverPlaywright, reader: ReaderJourney, name: RegExp,
+  direction: 'next' | 'previous' = 'next', steps = 24) {
   await reader.checkpoint(`Read ${direction} to ${name}`);
-  for (let count = 0; count < 24; count++) {
+  for (let count = 0; count < steps; count++) {
     await voiceOver[direction]();
-    if (name.test((await voiceOver.spokenPhraseLog()).join(' '))) return;
+    const spoken = (await voiceOver.spokenPhraseLog()).join(' ');
+    if (name.test(spoken)) return;
+    // Fail fast if VoiceOver's cursor has left the page for the browser's own toolbar.
+    if (/\b(new tab button|tab search|leaving web content)\b/i.test(spoken)) {
+      throw new Error(`VoiceOver left the web page before reading ${name}`);
+    }
   }
   throw new Error(`VoiceOver did not read ${name}`);
 }
@@ -80,6 +86,10 @@ export async function toastHeardOrRead(page: Page, voiceOver: VoiceOverPlaywrigh
   await toast.hover();
   if (await reader.heard(pattern, { describe: false }).then(() => true, () => false)) return;
   reader.note('[VoiceOver did not announce the notification; reading it with the VoiceOver cursor]');
-  await voiceOver.perform(voiceOver.keyboardCommands.moveToLast);
-  await readUntil(voiceOver, reader, pattern, 'previous');
+  // Start VoiceOver's cursor at the toast itself: put keyboard focus on its Close button (the focus check is already
+  // done), bring VoiceOver's cursor to it, then step back to the message. "Last item" from the page would leave the
+  // web area for Chrome's toolbar.
+  await toast.getByRole('button').focus();
+  await voiceOver.perform(voiceOver.keyboardCommands.moveCursorToKeyboardFocus);
+  await readUntil(voiceOver, reader, pattern, 'previous', 6);
 }
