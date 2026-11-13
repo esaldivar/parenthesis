@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,13 +12,13 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
-import { Api, EventPhotos, FamilyMember } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { Icon } from '../../shared/icon/icon';
-import { dayLong } from '../../core/dates/dates';
-import { EventPhotosSection } from './event-photos';
-import { familyDate } from './photo-text';
+import { Api, EventPhotos, FamilyMember } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { Icon } from '../../../../shared/icon/icon';
+import { dayLong } from '../../../../core/dates/dates';
+import { EventPhotosSection } from '../../components/event-photos/event-photos.component';
+import { familyDate } from '../../photo-text';
 
 /**
  * One Family Memory (#403): an event's photos the viewer may see, with the same sharing, viewing, downloading and

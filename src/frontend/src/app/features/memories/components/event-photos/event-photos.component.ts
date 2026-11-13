@@ -1,6 +1,6 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
-import { LoadingIndicator } from '../../shared/brand/loading-indicator';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
+import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -19,10 +19,10 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { RouterLink } from '@angular/router';
-import { Api, EventPhoto, EventPhotos, PhotoBatch, PhotoExport } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { Icon } from '../../shared/icon/icon';
-import { Toasts } from '../../shared/toast/toasts';
+import { Api, EventPhoto, EventPhotos, PhotoBatch, PhotoExport } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { Icon } from '../../../../shared/icon/icon';
+import { Toasts } from '../../../../shared/toast/toasts';
 import {
   ACCEPT,
   PHOTOS_NOW,
@@ -37,8 +37,8 @@ import {
   shortDate,
   sizeText,
   uploadMessage,
-} from './photo-text';
-import { ExportLine, MemoryExport, exportLine, progressText } from './google-photos-export';
+} from '../../photo-text';
+import { ExportLine, MemoryExport, exportLine, progressText } from '../../google-photos-export';
 
 /** One chosen file, from checking it to its upload's result. */
 interface Pick {
@@ -72,8 +72,8 @@ interface ShownBatch {
   providers: [MemoryExport],
   // Escape closes an open photo first, before the event details around it.
   host: { '(keydown.escape)': 'escape($event)' },
-  templateUrl: './event-photos.html',
-  styleUrl: './event-photos.scss',
+  templateUrl: './event-photos.component.html',
+  styleUrl: './event-photos.component.scss',
 })
 export class EventPhotosSection {
   private readonly copyLocale = inject(LocaleService);

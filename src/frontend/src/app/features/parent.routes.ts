@@ -59,12 +59,12 @@ export const PARENT_ROUTES: Routes = [
   {
     path: 'memories',
     title: 'Family Memories',
-    loadComponent: () => import('./memories/memories-page').then((m) => m.MemoriesPage),
+    loadComponent: () => import('./memories/pages/memories-page/memories-page.component').then((m) => m.MemoriesPage),
   },
   {
     path: 'memories/:eventId',
     title: 'Family Memory',
-    loadComponent: () => import('./memories/memory-page').then((m) => m.MemoryPage),
+    loadComponent: () => import('./memories/pages/memory-page/memory-page.component').then((m) => m.MemoryPage),
   },
   {
     path: 'child-essentials',
