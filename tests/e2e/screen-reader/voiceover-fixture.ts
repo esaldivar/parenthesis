@@ -1,10 +1,11 @@
+import type { Page } from '@playwright/test';
 import { voiceOverTest } from '@guidepup/playwright';
 // Guidepup has no public API for this; the package has no exports map, so the module path is stable for 0.21.x.
 import { applicationIdMap } from '@guidepup/playwright/lib/applicationIdMap.js';
 import { navigateVoiceOverToWebContent } from '@guidepup/playwright/lib/navigateVoiceOverToWebContent.js';
 import type { Family } from '../support/family';
 import { withLocalFamily } from './local-family';
-import { ReaderJourney } from './reader-journey';
+import { ReaderJourney, type JourneyKeys } from './reader-journey';
 
 /**
  * Real macOS VoiceOver (#443), in Playwright's Chromium or, where Playwright can't install it (macOS 13), the
@@ -25,11 +26,24 @@ export const voiceOverChannelTest = voiceOverTest.extend({
   },
 });
 
+/**
+ * On macOS 13, keys Guidepup sends through VoiceOver (System Events to the VoiceOver process) don't reach the page,
+ * so keys go to the browser page instead. VoiceOver still announces the resulting focus and live-region changes
+ * itself; only the keystroke's route differs. VoiceOver's own commands (headings, cursor, web content) stay real.
+ */
+export function pageKeys(page: Page): JourneyKeys {
+  const key = (name: string) => name === 'Space' ? ' ' : name.replace('Command+', 'Meta+');
+  return {
+    press: async name => { await page.keyboard.press(key(name)); },
+    type: async text => { await page.keyboard.type(text, { delay: 30 }); },
+  };
+}
+
 /** Full capture records everything VoiceOver says after each command; the journey also reads its last phrase. */
 export const test = voiceOverChannelTest.extend<{ family: Family; reader: ReaderJourney }>({
   family: async ({ context, baseURL }, use) => withLocalFamily(context, baseURL, use),
-  reader: async ({ voiceOver }, use, info) => {
-    const reader = new ReaderJourney(voiceOver, 'VoiceOver', true);
+  reader: async ({ voiceOver, page }, use, info) => {
+    const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, pageKeys(page));
     try {
       await use(reader);
     } finally {

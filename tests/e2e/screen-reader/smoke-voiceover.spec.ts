@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
-import { voiceOverChannelTest as test } from './voiceover-fixture';
+import { pageKeys, voiceOverChannelTest as test } from './voiceover-fixture';
+import { ReaderJourney } from './reader-journey';
 
 // Real VoiceOver speech without an app server (#443): the macOS host control. Keep the title distinct from the
 // heading so the window title can't satisfy the assertion.
@@ -15,20 +16,17 @@ test('VoiceOver announces a named heading and button', async ({ page, voiceOver 
   await page.goto(fixtureUrl, { waitUntil: 'load' });
   await expect(page.getByRole('heading', { name: 'Screen reader control' })).toBeVisible();
   await page.bringToFront();
+  const reader = new ReaderJourney(voiceOver, 'VoiceOver', true, pageKeys(page));
   try {
     await voiceOver.navigateToWebContent();
-    await voiceOver.clearSpokenPhraseLog();
+    await reader.checkpoint('Next heading');
     await voiceOver.nextHeading();
-    await expect.poll(async () => (await voiceOver.spokenPhraseLog()).join(' '),
-      { message: 'VoiceOver must announce the control heading' }).toMatch(/screen reader control.*heading|heading.*screen reader control/i);
-    await voiceOver.press('Tab');
+    await reader.heard(/screen reader control.*heading|heading.*screen reader control/i);
+    await reader.checkpoint('Tab to the button');
+    await reader.press('Tab');
     await expect(page.getByRole('button', { name: 'Add event' })).toBeFocused();
-    await expect.poll(async () => (await voiceOver.spokenPhraseLog()).join(' '),
-      { message: 'VoiceOver must announce the named button' }).toMatch(/add event.*button/i);
+    await reader.heard(/add event.*button|button.*add event/i);
   } finally {
-    await testInfo.attach('screen-reader-speech', {
-      body: JSON.stringify(await voiceOver.spokenPhraseLog(), null, 2),
-      contentType: 'application/json',
-    });
+    await testInfo.attach('screen-reader-speech', { body: await reader.attach(), contentType: 'application/json' });
   }
 });

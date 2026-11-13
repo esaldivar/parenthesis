@@ -19,7 +19,7 @@ test('VoiceOver reads parent navigation names and follows Calendar and Settings'
     await reader.tabTo(link, new RegExp(name, 'i'), /\blink\b/i);
   }
   await reader.checkpoint('Settings activation');
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole('heading', { name: 'Settings', level: 1, exact: true })).toBeVisible();
   await expect(page.locator('#main-content')).toBeFocused();
@@ -32,7 +32,7 @@ test('VoiceOver reads parent navigation names and follows Calendar and Settings'
   await reader.heard(/current page/i);
   await reader.tabTo(nav.getByRole('link', { name: 'Calendar', exact: true }), /calendar/i, /link/i, 'Shift+Tab');
   await reader.checkpoint('Calendar activation');
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   await expect(page).toHaveURL(/\/calendar$/);
   await expect(page.locator('#main-content')).toBeFocused();
   await expect(nav.getByRole('link', { name: 'Calendar', exact: true })).toHaveAttribute('aria-current', 'page');

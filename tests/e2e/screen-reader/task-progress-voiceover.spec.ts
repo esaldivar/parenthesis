@@ -21,7 +21,7 @@ test('VoiceOver reads task state, checklist progress and completion without focu
   await voiceOver.navigateToWebContent();
   await reader.tabTo(opener, /voiceover packing list/i, /button/i);
   await reader.checkpoint('Task details open');
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   const dialog = page.getByRole('dialog', { name: title, exact: true });
   await expect(dialog.getByRole('heading', { name: title, exact: true })).toBeFocused();
   await reader.heard(/voiceover packing list/i);
@@ -35,7 +35,7 @@ test('VoiceOver reads task state, checklist progress and completion without focu
   await reader.tabTo(first, /pack the jersey/i, /check ?box/i);
   await reader.heard(/unchecked|not checked/i);
   await reader.checkpoint('Tick the first item');
-  await voiceOver.press('Space');
+  await reader.press('Space');
   await expect(first).toBeChecked();
   await expect(first).toBeFocused();
   await reader.heard(/\bchecked\b/i);
@@ -45,7 +45,7 @@ test('VoiceOver reads task state, checklist progress and completion without focu
 
   await reader.tabTo(second, /pack the water bottle/i, /check ?box/i);
   await reader.checkpoint('Tick the last item');
-  await voiceOver.press('Space');
+  await reader.press('Space');
   await expect(second).toBeChecked();
   await expect(second).toBeFocused();
   // The polite completion message, said once without moving focus.

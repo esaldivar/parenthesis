@@ -48,12 +48,12 @@ export async function pickDay(page: Page, reader: ReaderJourney, target: string)
     const current = await active.getAttribute('aria-label');
     if (current === target) {
       await reader.heard(new RegExp(target.split(',')[1]!.trim(), 'i'));
-      await reader.reader.press('Enter');
+      await reader.press('Enter');
       await expect(page.locator('mat-calendar')).toHaveCount(0);
       return;
     }
     await reader.checkpoint(`Picker toward ${target}`);
-    await reader.reader.press(Date.parse(current!) < Date.parse(target) ? 'ArrowRight' : 'ArrowLeft');
+    await reader.press(Date.parse(current!) < Date.parse(target) ? 'ArrowRight' : 'ArrowLeft');
     await expect(active).not.toHaveAttribute('aria-label', current!);
   }
   throw new Error(`Could not move the date picker to ${target}`);

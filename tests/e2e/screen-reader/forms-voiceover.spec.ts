@@ -13,7 +13,7 @@ test('VoiceOver announces activity input labels, required state and title valida
   await page.bringToFront();
   await voiceOver.navigateToWebContent();
   await reader.tabTo(page.getByRole('button', { name: /^Activity\b/ }), /activity/i, /button/i);
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   const title = page.getByRole('textbox', { name: 'Title', exact: true });
   await reader.tabTo(title, /title/i, editText);
   await expect(title).toHaveAttribute('required', '');
@@ -31,7 +31,7 @@ test('VoiceOver announces activity input labels, required state and title valida
     if (request.method() === 'POST' && /\/calendar\/events$/.test(new URL(request.url()).pathname)) writes++;
   });
   await reader.checkpoint('Blank title validation');
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   await expect(title).toBeFocused();
   await expect.poll(() => title.evaluate((input: HTMLInputElement) => input.validity.valueMissing)).toBe(true);
   await expect(title).toHaveAccessibleDescription('Enter a title.');
@@ -39,12 +39,12 @@ test('VoiceOver announces activity input labels, required state and title valida
   await reader.heard(/enter a title/i);
   expect(writes, 'Invalid form must not submit an event').toBe(0);
   await reader.checkpoint('Correct title');
-  await voiceOver.type('VoiceOver form correction');
+  await reader.type('VoiceOver form correction');
   await expect(title).toHaveValue('VoiceOver form correction');
-  await voiceOver.press('Tab');
+  await reader.press('Tab');
   await expect.poll(() => title.evaluate((input: HTMLInputElement) => input.validity.valueMissing)).toBe(false);
   await reader.tabTo(page.getByRole('link', { name: 'Cancel', exact: true }), /cancel/i, /link/i);
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   await expect(page).toHaveURL(/\/calendar\?date=/);
   expect(writes).toBe(0);
 });

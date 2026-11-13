@@ -16,7 +16,7 @@ test('VoiceOver reads reminder details, confirmation choices and restores focus 
   await voiceOver.navigateToWebContent();
   await reader.tabTo(opener, /voiceover spirit day/i, /button/i);
   await reader.checkpoint('Reminder details open');
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   const dialog = page.getByRole('dialog', { name: title, exact: true });
   await expect(dialog.getByRole('heading', { name: title, exact: true })).toBeFocused();
   await reader.heard(/voiceover spirit day/i);
@@ -33,7 +33,7 @@ test('VoiceOver reads reminder details, confirmation choices and restores focus 
   await reader.tabTo(edit, /edit reminder/i, /link/i);
   await reader.tabTo(remove, /delete reminder/i, /button/i);
   await reader.checkpoint('Delete confirmation');
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   const keep = dialog.getByRole('button', { name: 'Keep it', exact: true });
   await expect(keep).toBeFocused();
   await reader.heard(/keep it/i);
@@ -42,11 +42,11 @@ test('VoiceOver reads reminder details, confirmation choices and restores focus 
   await reader.heard(/deletes the reminder/i);
   await reader.tabTo(keep, /keep it/i, /button/i);
   await reader.checkpoint('Keep it');
-  await voiceOver.press('Enter');
+  await reader.press('Enter');
   await expect(remove).toBeFocused();
   await reader.heard(/delete reminder/i);
   await reader.checkpoint('Escape closes details');
-  await voiceOver.press('Escape');
+  await reader.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(opener).toBeFocused();
   await reader.heard(/voiceover spirit day/i);
