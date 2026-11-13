@@ -1,10 +1,10 @@
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Api, NotificationItem } from '../../core/api/api';
-import { AuthStore } from '../../core/auth/auth.store';
-import { NotificationsStore } from '../../core/notifications/notifications.store';
+import { Api, NotificationItem } from '../../../../core/api/api';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { NotificationsStore } from '../../../../core/notifications/notifications.store';
 
 @Component({
   selector: 'app-notifications-page',

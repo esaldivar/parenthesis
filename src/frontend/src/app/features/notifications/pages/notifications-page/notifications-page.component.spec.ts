@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Api, NotificationItem } from '../../core/api/api';
-import { NotificationsStore } from '../../core/notifications/notifications.store';
-import { fakeAuth } from '../../../testing/fake-auth';
-import { NotificationsPage } from './notifications-page';
+import { Api, NotificationItem } from '../../../../core/api/api';
+import { NotificationsStore } from '../../../../core/notifications/notifications.store';
+import { fakeAuth } from '../../../../../testing/fake-auth';
+import { NotificationsPage } from './notifications-page.component';
 
 // Synthetic family only; the server is faked.
 const item = (id: string, overrides: Partial<NotificationItem> = {}): NotificationItem => ({
