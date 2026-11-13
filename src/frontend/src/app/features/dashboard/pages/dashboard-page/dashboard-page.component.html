@@ -193,7 +193,7 @@
             } @else {
               <span class="memory__title">{{ memory.title }}</span>
             }
-            <span class="muted">{{ dateMedium(memory.date) }}</span>
+            <span class="muted">{{ dateMedium(memory.date, locale.locale()) }}</span>
             <span class="visually-hidden">{{ 'feature.memory' | tr }} {{ memoryIndex() + 1 }} {{ 'feature.of' | tr }} {{ memories().length }}</span>
           </figcaption>
         </figure>

@@ -5,13 +5,22 @@ import { LocaleService } from './locale.service';
 
 registerLocaleData(latinAmericanSpanish);
 
+/**
+ * A fixed month-first pattern ("MMM d", "MMM d, h:mm a") written day-first for Spanish ("7 nov", "7 nov, 2:08 p.m."),
+ * as Spanish dates read elsewhere in the app (#534). Named formats such as 'mediumDate' already follow the locale.
+ */
+export function localDateFormat(format: string | undefined, locale: string): string | undefined {
+  return format && locale !== 'en' ? format.replace(/^MMM d(?!d)/, 'd MMM') : format;
+}
+
 @Pipe({ name: 'appDate', pure: false })
 export class AppDatePipe implements PipeTransform {
   private readonly locale = inject(LocaleService);
   private readonly date = new DatePipe('en-US');
 
   transform(value: string | number | Date | null | undefined, format?: string, timezone?: string): string | null {
-    return value == null ? null : this.date.transform(value, format, timezone, this.locale.locale());
+    const locale = this.locale.locale();
+    return value == null ? null : this.date.transform(value, localDateFormat(format, locale), timezone, locale);
   }
 }
 

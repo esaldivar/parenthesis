@@ -850,7 +850,14 @@ Items left from the November 11 and 12 test passes on Project #2 (details in eac
 The November 12 test found English on Settings (profile photo hints, Google Photos export status), chat event cards
 (dates, "All day", "Declined") and Memories (dates, "You", deletion chips). `fix/534-remaining-spanish` translates those
 and the Memories photo helpers (deletion dates, upload refusals, file problems).
-- [ ] Retest #534 on Development in Spanish after this deploys, including the "Shared Caregivers" heading from #578.
+- [x] Retested on Development in Spanish (November 13, 2026): Settings, Calendar, Child Essentials, Shared records labels
+  and Memories passed; Approvals, Home's memory date and month-first dates failed.
+- [x] Approvals statuses and "Propuesto por ti", request summaries rebuilt in Spanish around the family's titles (Approvals
+  and Home), Home's memory date, and day-first dates for Spanish (`fix/534-approvals-dates`, November 13, 2026).
+- [ ] Retest Approvals (pending and history, including a repeating request), Home's pending reviews and memory date,
+  chat message times and Shared records dates in Spanish after `fix/534-approvals-dates` deploys.
+- [ ] Request summaries are still stored in English: summaries cut short at 200 characters, and approval emails, stay
+  English. Storing structured request details would remove the English-only server text.
 - [x] Sweep the remaining hard-coded English built in code (`fix/534-english-sweep`): privacy notice storage list
   and contents, Google Photos export lines and progress, Memories download/final-week/export notes, calendar Month bar
   labels, date-rule and title validation, unavailable-time conflicts, proposed-change dates, approvals, Home

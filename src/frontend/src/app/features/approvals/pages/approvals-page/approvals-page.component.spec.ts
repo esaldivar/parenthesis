@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Api, ChangeRequest } from '../../../../core/api/api';
 import { fakeAuth } from '../../../../../testing/fake-auth';
 import { ApprovalsPage } from './approvals-page.component';
+import { LocaleService } from '../../../../core/i18n/locale.service';
 
 // Synthetic family only. The API is faked: the page's own focus handling is what's under test.
 const request = (overrides: Partial<ChangeRequest> = {}): ChangeRequest => ({
@@ -162,5 +163,34 @@ describe('approvals focus after Cancel and decisions (#279)', () => {
     await settle(fixture);
 
     await focused(fixture, page);
+  });
+});
+
+describe('approvals in Spanish (#534)', () => {
+  it('shows statuses, the proposer and request summaries in Spanish, keeping the family’s titles', async () => {
+    const resolved = request({
+      id: 'request-2', status: 'Approved', proposedByYou: true, canDecide: false, resolvedAt: '2026-11-07T12:00:00Z',
+      summary: 'Change Dinner with Sam', type: 'CalendarModify',
+    });
+    const waiting = request({ summary: 'Family event: Dinner, Dec 4', type: 'JointEventCreate' });
+    const api = {
+      approvals: vi.fn(async (_family: string, which?: string) => (which === 'history' ? [resolved] : [waiting])),
+      family: vi.fn(async () => ({ id: 'family-1', name: 'Rivera Family', timeZone: 'America/Chicago', createdAt: '', members: [] })),
+      children: vi.fn(async () => []),
+    };
+    TestBed.configureTestingModule({ providers: [fakeAuth(), { provide: Api, useValue: api }] });
+    TestBed.inject(LocaleService).setLocale('es-419');
+    const fixture = TestBed.createComponent(ApprovalsPage);
+    for (let i = 0; i < 4; i++) {
+      fixture.detectChanges();
+      await fixture.whenStable();
+    }
+    const text = (fixture.nativeElement as HTMLElement).textContent!.replace(/\s+/g, ' ');
+    expect(text).toMatch(/Evento familiar: Dinner, 4 dic/);
+    expect(text).toContain('Cambiar Dinner with Sam');
+    expect(text).toContain('Propuesto por ti');
+    expect(text).toContain('Aprobada');
+    expect(text).not.toMatch(/\b(Approved|Declined|Withdrawn|Family event|Change Dinner)\b|por you/);
+    TestBed.inject(LocaleService).setLocale('en');
   });
 });

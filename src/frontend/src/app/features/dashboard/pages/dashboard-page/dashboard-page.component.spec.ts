@@ -226,7 +226,7 @@ describe('DashboardPage (approved design)', () => {
       const { el } = await render({
         live: {
           ...EMPTY_WEEK,
-          pendingReviews: [{ id: 'r1', summary: 'Change Time with Sam', proposedBy: 'Sam' }],
+          pendingReviews: [{ id: 'r1', type: 'CalendarModify', targetType: 'calendar_event', summary: 'Change Time with Sam', proposedBy: 'Sam' }],
           events: [{ id: 'e1', title: 'Soccer practice', date: '2026-10-15', time: '17:00', category: 'sport', children: [kai], status: 'confirmed' }],
           notes: [
             { id: 'n1', kind: 'reminder', title: 'Spirit Day', date: '2026-10-14', time: '08:00', children: [kai] },
