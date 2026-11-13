@@ -710,11 +710,14 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   run cleared the results folder); keep them from the second run.
 - [x] Controlled negative: navigation expecting "zebra quokka" failed at the speech assertion with VoiceOver's actual
   speech ("Settings … current page link …"); restored.
-- [ ] A second full passing run on the same commit, for repeatability, with its `voiceover-app-speech` transcripts on
-  #443 (an interrupted second run passed its first 5 tests).
+- [x] Second full run at 7f13a43: 8 of 9 passed. Smoke failed once because Guidepup's log kept only VoiceOver's hint
+  after `nextHeading`; fixed in c499266 with the bounded heading search. Results kept on the owner's Mac
+  (`~/voiceover-evidence/run2-7f13a43`).
+- [ ] One more full 9 of 9 run on the final PR commit, if the owner wants a clean repeat (about 40 minutes).
 - [ ] App: VoiceOver on macOS 13 sometimes doesn't announce the "… is on the calendar" toast after an activity save
   (focus moves to main and the week heading changes at the same moment). The VoiceOver test reads it with the cursor
-  when that happens, marked in its transcript. Owner to choose the follow-up; then track it in its own issue.
+  when that happens, marked in its transcript. Announced directly in 2 of 3 Calendar runs; the reminder save's toast
+  needed the cursor read in run 2. Owner to choose the follow-up; then track it in its own issue.
 - [ ] Optional later: a manual-only hosted macOS job, only with the owner's approval of its Actions-minute cost.
 
 ### #278/#279 — Coverage follow-up (October 26, 2026)
