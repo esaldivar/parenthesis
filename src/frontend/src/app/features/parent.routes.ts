@@ -36,7 +36,7 @@ export const PARENT_ROUTES: Routes = [
   {
     path: 'notifications',
     title: 'Notifications',
-    loadComponent: () => import('./notifications/notifications-page').then((m) => m.NotificationsPage),
+    loadComponent: () => import('./notifications/pages/notifications-page/notifications-page.component').then((m) => m.NotificationsPage),
   },
   // The parents' conversation (#125, ADR-0008). Children never reach it.
   {
