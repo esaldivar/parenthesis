@@ -7,7 +7,9 @@ Use plain text Refs #123 or a full https://github.com/esaldivar/parenthesis/issu
 List every relevant issue; PR references do not count. Release rollups and hotfix syncs reuse the
 underlying tracking issues (closed issues are allowed). Use Refs for intermediate branches;
 only use Closes on the final promotion when the issue's full acceptance criteria are met.
-Do not invent unrelated links merely to pass. See docs/runbooks/pr-issue-links.md. -->
+Do not invent unrelated links merely to pass. See docs/runbooks/pr-issue-links.md.
+Milestone (#140): the PR's milestone comes from these issues. The "PR milestone" report says which one; if they
+disagree or have none, set the PR's milestone yourself (none is fine for repository-wide maintenance). -->
 Refs #ISSUE
 
 ## Summary of changes
@@ -41,4 +43,5 @@ Refs #ISSUE
 - [ ] Accessibility: keyboard, labels, contrast (UI changes)
 - [ ] Only synthetic data in code, tests and screenshots
 - [ ] `TODO.md` updated for anything left unfinished or deferred
+- [ ] Architecture diagrams and docs updated in this PR (architecture changes; see `docs/architecture.md`)
 - [ ] Screenshots attached (UI changes)

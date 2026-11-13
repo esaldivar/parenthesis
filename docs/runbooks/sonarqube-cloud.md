@@ -1,8 +1,10 @@
 # SonarQube Cloud setup (Free plan)
 
 SonarQube Cloud checks code quality, security issues and vulnerabilities in C# and TypeScript. The repository is
-public, so the **Free plan** costs nothing and has no line limit. On that plan Sonar analyses the **main** branch:
-PRs into `main` (releases from `develop`, and hotfixes), plus `main` itself after each merge. The workflow
+public, so the **Free plan** costs nothing and has no line limit. On that plan Sonar analyses only the project's main
+branch. Since #373 that is **`develop`** (renamed in SonarQube Cloud): pushes to `develop` and PRs into it are scanned,
+and releases into GitHub's `main` reuse `develop`'s analysis of identical code
+([details](sonar-release-gate.md#develop-is-the-analysed-branch-373)). The workflow
 (`.github/workflows/sonar.yml`) is already in place. It stays skipped until the steps below are done.
 
 Only the repository owner can do steps 1–4, because they involve signing in and creating an access token. Never paste
@@ -19,7 +21,8 @@ the token into chat, an issue or a file.
 ## 2. Use GitHub Actions, not Automatic Analysis
 C# can only be analysed from a build, so the analysis runs in our pipeline.
 - In the project, go to **Administration → Analysis Method** and **turn off Automatic Analysis**.
-- Under **Administration → Branches**, check that the main branch is `main`.
+- Under **Administration → Branches and Pull Requests**, rename the main branch to `develop` (#373). Renaming keeps
+  its history and comments; don't delete it and start a new branch.
 
 ## 3. Create the token
 - Go to **My Account → Security → Generate token**. Name it `parenthesis-github-actions` and copy it.
@@ -34,6 +37,8 @@ On GitHub, open `esaldivar/parenthesis` and go to **Settings → Secrets and var
 - Open or re-run a PR into `main`. The **SonarQube Cloud** check runs and the quality gate result appears on the PR.
 - Once it passes, add **SonarQube Cloud** to `main`'s required status checks, so a failing quality gate blocks
   releases.
+- Also add **Release security gate**, which blocks releases with unresolved security findings. See
+  [sonar-release-gate.md](sonar-release-gate.md).
 - Use the default **Sonar way** quality gate to start with.
 - Add the Sonar quality-gate badge to the README.
 

@@ -45,6 +45,28 @@ html {
   --mat-sys-error: var(--color-danger);
 }
 
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-block-end: calc(57px + env(safe-area-inset-bottom));
+  }
+}
+
+// Material buttons with one of our icons (#372): the icon and label share one centred row. Left inline, the icon
+// sat on the text baseline and rode above the label ("+ Add" looked misaligned next to "Approvals").
+.mdc-button__label:has(> .app-icon) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+// Nonmodal popups (date pickers, selects, menus, suggestions) stop at the bottom navigation (#327): their invisible
+// backdrop leaves it uncovered, so one tap on the navigation closes the popup and navigates. Modal dialogs use a dark
+// backdrop and still cover everything. The clearance comes from the BottomNav directive; 0 without a bottom navigation.
+.cdk-overlay-container .cdk-overlay-transparent-backdrop,
+.cdk-overlay-container .mat-overlay-transparent-backdrop {
+  bottom: var(--bottom-nav-clearance, 0px);
+}
+
 *,
 *::before,
 *::after {
@@ -140,5 +162,61 @@ a {
 @media (forced-colors: active) {
   :focus-visible {
     outline-color: Highlight;
+  }
+}
+
+// The tapped time or day on a calendar (#237): a highlighted box that adds there when tapped again.
+.slot-pick__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  min-height: var(--target-min);
+  padding: 2px var(--space-1);
+  border: 2px solid var(--color-action);
+  border-radius: var(--radius-control);
+  background: var(--color-selected);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+
+  &::before {
+    content: '+';
+    font-weight: 700;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+// In a time grid the time sits at the top of the hour, as on the grid's labels.
+.daycol .slot-pick__button {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+// An invalid date or time in an event form (#248): only its text turns red, with no message on screen. The reason
+// is in the field's accessible name, and the form can't be sent until it's corrected.
+// Doubled class: Material's own input colour uses a doubled class too.
+input.date-invalid,
+.mat-mdc-form-field input.date-invalid.date-invalid {
+  color: var(--color-danger);
+  -webkit-text-fill-color: var(--color-danger);
+}
+
+// A Start or End date field (#249): a little less padding, so the whole date fits beside its icon on a 320px phone.
+app-date-field .mat-mdc-text-field-wrapper {
+  padding-inline-start: 12px;
+}
+@media (max-width: 359px) {
+  app-date-field .mat-mdc-text-field-wrapper {
+    padding-inline-start: 10px;
   }
 }

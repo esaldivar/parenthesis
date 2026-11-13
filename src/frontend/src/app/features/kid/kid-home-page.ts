@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { KID_NAV } from '../../layout/navigation';
+import { KID_NAV } from '../../core/layout/navigation';
 import { Icon } from '../../shared/icon/icon';
 
 @Component({
@@ -43,7 +43,7 @@ import { Icon } from '../../shared/icon/icon';
       min-height: 8.5rem;
       padding: var(--space-4);
       background: var(--color-surface);
-      border: 1px solid var(--color-surface-soft);
+      border: 1px solid var(--color-divider);
       border-radius: var(--radius-card);
       color: var(--color-text);
       font-weight: 600;

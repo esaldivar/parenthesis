@@ -39,6 +39,32 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_fixed_business_date_does_not_expire_a_fresh_sign_in_cookie()
+    {
+        // A date beyond the cookie lifetime would make the browser discard a cookie issued on the business clock.
+        api.Clock.SetUtcNow(DateTimeOffset.UtcNow.AddDays(-30));
+        var email = ApiSession.NewEmail();
+        await _session.RegisterConfirmedAsync(email);
+        Assert.Equal(HttpStatusCode.NoContent, (await _session.LoginAsync(email)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await _session.GetAsync("/api/me")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Advancing_business_time_does_not_renew_a_fresh_sign_in_cookie()
+    {
+        var email = ApiSession.NewEmail();
+        await _session.RegisterConfirmedAsync(email);
+        Assert.Equal(HttpStatusCode.NoContent, (await _session.LoginAsync(email)).StatusCode);
+
+        api.Clock.Advance(TimeSpan.FromDays(2));
+        using var me = await _session.GetAsync("/api/me");
+
+        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+        Assert.Null(ApiSession.FindSetCookie(me, "__Host-parenthesis"));
+    }
+
+    [Fact]
     public async Task Session_cookie_is_host_prefixed_secure_httponly_and_samesite_strict()
     {
         var email = ApiSession.NewEmail();
@@ -154,6 +180,28 @@ public sealed class AuthTests(ApiFactory api) : IAsyncLifetime
         }
 
         Assert.Equal([HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized, HttpStatusCode.TooManyRequests], statuses);
+    }
+
+    [Fact]
+    public async Task An_invite_only_site_lets_only_listed_emails_sign_up()
+    {
+        var tester = ApiSession.NewEmail();
+        var stranger = ApiSession.NewEmail();
+        await using var inviteOnly = api.WithWebHostBuilder(b => b
+            .UseSetting("Identity:SignUp:InviteOnly", "true")
+            .UseSetting("Identity:SignUp:AllowedEmails", $"someone@example.test; {tester.ToUpperInvariant()}"));
+        using var session = await ApiSession.StartAsync(inviteOnly);
+
+        var listed = await session.PostAsync(
+            "/api/auth/register", new { email = tester, password = ApiSession.Password, displayName = "Alex" });
+        var unlisted = await session.PostAsync(
+            "/api/auth/register", new { email = stranger, password = ApiSession.Password, displayName = "Sam" });
+
+        Assert.Equal(HttpStatusCode.Accepted, listed.StatusCode);
+        Assert.Single(session.Emails.SentTo(tester));
+        Assert.Equal(HttpStatusCode.Forbidden, unlisted.StatusCode);
+        Assert.Equal("Sign-up here is by invitation only.", await TitleAsync(unlisted));
+        Assert.Empty(session.Emails.SentTo(stranger));
     }
 
     private static async Task<string?> TitleAsync(HttpResponseMessage response) =>

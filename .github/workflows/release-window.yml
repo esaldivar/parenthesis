@@ -1,0 +1,171 @@
+name: Release window
+
+# Biweekly production release windows (owner decision, October 18, 2026), replacing Release Tuesday. The calendar is
+# in .github/release-windows.json (every other Friday, America/Chicago, from October 30, 2026, with holiday moves).
+# This workflow never merges or deploys anything. On each phase of a window it opens or updates a checklist issue and
+# tells Discord:
+#   - Monday of release week: open the release/x.y.z -> develop PR and test on the development site.
+#   - The day before: readiness review; the release candidate needs owner approval.
+#   - The window: promote develop -> main if approved (production deploys only after approval in Actions).
+# Windows are opportunities, not deadlines: if the milestone isn't ready, skip it. See docs/development-workflow.md.
+on:
+  schedule:
+    - cron: "0 14 * * *" # Daily at 14:00 UTC (9 AM Central, 8 AM in winter); most days it does nothing.
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Pretend today is this date (YYYY-MM-DD), to test or catch up on a phase"
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: release-window
+  cancel-in-progress: false
+
+jobs:
+  window:
+    name: Release window
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Where are we in the cycle?
+        id: cycle
+        env:
+          DATE: ${{ inputs.date }}
+        run: |
+          if [[ -n "$DATE" && ! "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then echo "::error::date must be YYYY-MM-DD"; exit 1; fi
+          bash .github/scripts/release-window.sh .github/release-windows.json ${DATE:+"$DATE"} | tee -a "$GITHUB_OUTPUT"
+
+      - name: Gather release state
+        id: state
+        if: steps.cycle.outputs.phase != 'none'
+        run: |
+          # The active release is the lowest release/x.y.z branch that develop doesn't contain yet.
+          release=""
+          for b in $(gh api "repos/$REPO/branches?per_page=100" --paginate --jq '.[].name | select(test("^release/[0-9]+\\.[0-9]+\\.[0-9]+$"))' | sort -t/ -k2 -V); do
+            if [[ "$(gh api "repos/$REPO/compare/develop...$b" --jq '.ahead_by')" != "0" ]]; then release="$b"; break; fi
+          done
+          ahead_main="$(gh api "repos/$REPO/compare/main...develop" --jq '.ahead_by')"
+          owner="${REPO%%/*}"
+          dev_pr=""
+          if [[ -n "$release" ]]; then
+            dev_pr="$(gh api "repos/$REPO/pulls?state=open&base=develop&head=$owner:$release" --jq '.[0].html_url // ""')"
+          fi
+          main_pr="$(gh api "repos/$REPO/pulls?state=open&base=main&head=$owner:develop" --jq '.[0].html_url // ""')"
+          {
+            echo "release=$release"
+            echo "ahead_main=$ahead_main"
+            echo "dev_pr=$dev_pr"
+            echo "main_pr=$main_pr"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      - name: Update the checklist issue and write the Discord message
+        id: issue
+        if: steps.cycle.outputs.phase != 'none'
+        env:
+          PHASE: ${{ steps.cycle.outputs.phase }}
+          WINDOW: ${{ steps.cycle.outputs.window }}
+          HOLIDAY: ${{ steps.cycle.outputs.holiday }}
+          RELEASE: ${{ steps.state.outputs.release }}
+          AHEAD_MAIN: ${{ steps.state.outputs.ahead_main }}
+          DEV_PR: ${{ steps.state.outputs.dev_pr }}
+          MAIN_PR: ${{ steps.state.outputs.main_pr }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Release window: $WINDOW"
+          when="$(date -u -d "$WINDOW" '+%A, %B %-d, %Y') (America/Chicago)"
+          if [[ -z "$RELEASE" && "$AHEAD_MAIN" == "0" ]]; then
+            echo "Nothing to release: no open release branch, and main already has everything in develop."
+            echo "send=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          holiday_note=""
+          [[ "$HOLIDAY" == "true" ]] && holiday_note="⚠️ This window is on a holiday listed in .github/release-windows.json. Owner: confirm, move or skip it."
+
+          number="$(gh api "repos/$REPO/issues?state=all&labels=release-window&per_page=50" \
+            | jq -r --arg t "$title" '.[] | select(.title == $t and (has("pull_request") | not)) | .number' | head -1)"
+          if [[ -z "$number" ]]; then
+            {
+              echo "Production release window: **$when**. A window is an opportunity, not a deadline: if the milestone isn't ready or stable, skip it and close this issue as *not planned*."
+              echo
+              [[ -n "$holiday_note" ]] && { echo "$holiday_note"; echo; }
+              echo "Active release branch: ${RELEASE:-none}. \`develop\` is $AHEAD_MAIN commit(s) ahead of \`main\`."
+              echo
+              echo "**Monday: into development**"
+              echo "- [ ] Release notes drafted."
+              echo "- [ ] PR \`${RELEASE:-release/x.y.z}\` → \`develop\` opened, checks green, no open blocking defects. ${DEV_PR}"
+              echo "- [ ] Owner approved and merged it. The development deployment and its smoke tests passed; tested commit recorded here."
+              echo
+              echo "**Tuesday–Wednesday: test on the development site**"
+              echo "- [ ] Authentication and authorization (parents, kids' PINs, cross-family isolation)."
+              echo "- [ ] Family workflows (invitations, children, calendar, approvals)."
+              echo "- [ ] Database changes and migrations."
+              echo "- [ ] Critical defects fixed on the release branch, then retested."
+              echo
+              echo "**Day before: readiness review**"
+              echo "- [ ] Acceptance criteria met."
+              echo "- [ ] Production deployment plan checked; rollback ready (previous version tag noted)."
+              echo "- [ ] Owner approves the release candidate."
+              echo
+              echo "**Window: production**"
+              echo "- [ ] PR \`develop\` → \`main\` (merge commit) contains only this tested release. ${MAIN_PR}"
+              echo "- [ ] **Release security gate** green on that PR: no unresolved release-blocking SonarQube findings (docs/runbooks/sonar-release-gate.md)."
+              echo "- [ ] Owner approves the **production** deployment in Actions."
+              echo "- [ ] Production smoke tests and health checks green; version tag and release notes published."
+              echo "- [ ] Back-merge \`main\` into \`develop\` (\`chore/sync-main\`), then into any open release branch."
+            } > body.md
+            gh label create release-window --repo "$REPO" --color 2DA44E --description "Biweekly production release window" --force
+            url="$(gh issue create --repo "$REPO" --title "$title" --label release-window --body-file body.md)"
+            number="${url##*/}"
+          fi
+          issue_url="${{ github.server_url }}/$REPO/issues/$number"
+
+          case "$PHASE" in
+            release-pr)
+              headline="RELEASE WEEK"
+              ask="Open the ${RELEASE:-release} → develop PR, merge it once approved, and test on the development site."
+              ;;
+            readiness)
+              headline="RELEASE CANDIDATE NEEDS OWNER APPROVAL"
+              ask="Readiness review today. Approve or skip the release in the issue."
+              gh issue comment "$number" --repo "$REPO" --body "Readiness review for $when. Owner: approve the release candidate here, or skip this window."
+              ;;
+            release)
+              headline="RELEASE WINDOW TODAY"
+              ask="If approved: open develop → main, merge it, then approve the production deployment in Actions. Nothing deploys without approval."
+              gh issue comment "$number" --repo "$REPO" --body "Release window is today ($when). Nothing deploys without the owner's approval."
+              ;;
+          esac
+          {
+            echo "PARENTHESIS — $headline"
+            echo
+            echo "Window: $when"
+            [[ -n "$holiday_note" ]] && echo "$holiday_note"
+            echo "Release branch: ${RELEASE:-none}"
+            echo "develop ahead of main: $AHEAD_MAIN commit(s)"
+            [[ -n "$DEV_PR" ]] && echo "Release PR (→ develop): $DEV_PR"
+            [[ -n "$MAIN_PR" ]] && echo "Production PR (→ main): $MAIN_PR"
+            echo
+            echo "Next: $ask"
+            echo "Checklist: $issue_url"
+          } > message.md
+          echo "send=true" >> "$GITHUB_OUTPUT"
+
+      # Same sender as the PR notices (mentions disabled; a failed delivery turns the run red).
+      - name: Tell Discord
+        if: steps.issue.outputs.send == 'true'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: node .github/scripts/dev-workflow.mjs send message.md

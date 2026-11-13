@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { AppearanceService } from '../../core/theme/appearance.service';
 import { AppearancePicker } from './appearance-picker';
 
@@ -36,5 +37,17 @@ describe('AppearancePicker', () => {
     expect(appearance.preference()).toBe('dark');
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(localStorage.getItem('parenthesis.appearance.parent-a')).toBe('dark');
+  });
+
+  it('translates the radio labels and keeps the selected preference in Spanish', () => {
+    const locale = TestBed.inject(LocaleService);
+    locale.setLocale('es-419');
+    try {
+      const radios = [...render().querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+      expect(radios.map((radio) => radio.labels![0].textContent!.trim())).toEqual(['Claro', 'Oscuro', 'Sistema']);
+      expect(radios.find((radio) => radio.checked)?.value).toBe('system');
+    } finally {
+      locale.setLocale('en');
+    }
   });
 });

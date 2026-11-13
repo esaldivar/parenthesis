@@ -1,0 +1,354 @@
+{
+  "_note": "Synthetic answer shaped like api/issues/search. Keys, messages, files, lines and legacy severities come from the real Sonar Sunday issue #56 (vulnerabilities tracked in #65); rule keys, impacts and issueStatus are illustrative.",
+  "answer": {
+    "total": 9,
+    "p": 1,
+    "ps": 500,
+    "paging": {
+      "pageIndex": 1,
+      "pageSize": 500,
+      "total": 9
+    },
+    "effortTotal": 45,
+    "debtTotal": 45,
+    "issues": [
+      {
+        "key": "AaFJgkAVnwwNvcZN96mT",
+        "rule": "docker:S6505",
+        "severity": "MAJOR",
+        "component": "esaldivar_parenthesis:docker/api.Dockerfile",
+        "project": "esaldivar_parenthesis",
+        "line": 8,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 8,
+          "endLine": 8,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "Omitting \"--ignore-scripts\" allows lifecycle scripts to run during package installation.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "MEDIUM"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      },
+      {
+        "key": "AaFJgkAVnwwNvcZN96mU",
+        "rule": "docker:S8431",
+        "severity": "MAJOR",
+        "component": "esaldivar_parenthesis:docker/api.Dockerfile",
+        "project": "esaldivar_parenthesis",
+        "line": 10,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 10,
+          "endLine": 10,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "Define exact package version to avoid installing unverified releases.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "MEDIUM"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      },
+      {
+        "key": "AaFJgkAVnwwNvcZN96mV",
+        "rule": "docker:S8432",
+        "severity": "MAJOR",
+        "component": "esaldivar_parenthesis:docker/api.Dockerfile",
+        "project": "esaldivar_parenthesis",
+        "line": 10,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 10,
+          "endLine": 10,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "\"npx\" can install packages on-demand and run their lifecycle scripts.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "MEDIUM"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      },
+      {
+        "key": "AaFJgj-qnwwNvcZN96mQ",
+        "rule": "githubactions:S6505",
+        "severity": "MAJOR",
+        "component": "esaldivar_parenthesis:.github/workflows/ci.yml",
+        "project": "esaldivar_parenthesis",
+        "line": 88,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 88,
+          "endLine": 88,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "Omitting \"--ignore-scripts\" allows lifecycle scripts to run during package installation.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "MEDIUM"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      },
+      {
+        "key": "AaFJgj-qnwwNvcZN96mR",
+        "rule": "githubactions:S8432",
+        "severity": "MAJOR",
+        "component": "esaldivar_parenthesis:.github/workflows/ci.yml",
+        "project": "esaldivar_parenthesis",
+        "line": 97,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 97,
+          "endLine": 97,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "\"npx\" can install packages on-demand and run their lifecycle scripts.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "MEDIUM"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      },
+      {
+        "key": "AaFJgj-qnwwNvcZN96mS",
+        "rule": "githubactions:S8431",
+        "severity": "MAJOR",
+        "component": "esaldivar_parenthesis:.github/workflows/ci.yml",
+        "project": "esaldivar_parenthesis",
+        "line": 97,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 97,
+          "endLine": 97,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "Define exact package version to avoid installing unverified releases.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "MEDIUM"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      },
+      {
+        "key": "AaFJqlaJCiUwZk3h2z-2",
+        "rule": "csharpsquid:S3330",
+        "severity": "MINOR",
+        "component": "esaldivar_parenthesis:src/backend/CoParent.Api/Hosting/AntiforgeryExtensions.cs",
+        "project": "esaldivar_parenthesis",
+        "line": 34,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 34,
+          "endLine": 34,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "Set the 'HttpOnly' flag on this cookie.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [
+          "cwe",
+          "privacy"
+        ],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "VULNERABILITY",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "TRUSTWORTHY",
+        "cleanCodeAttributeCategory": "RESPONSIBLE",
+        "impacts": [
+          {
+            "softwareQuality": "SECURITY",
+            "severity": "LOW"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      },
+      {
+        "key": "AaFJqlcRCiUwZk3h2z-3",
+        "rule": "typescript:S6544",
+        "severity": "MAJOR",
+        "component": "esaldivar_parenthesis:src/frontend/src/app/features/auth/confirm-email-page.ts",
+        "project": "esaldivar_parenthesis",
+        "line": 48,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 48,
+          "endLine": 48,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "Promise-returning method provided where a void return was expected by extended/implemented type 'OnInit'.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "BUG",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "CONVENTIONAL",
+        "cleanCodeAttributeCategory": "CONSISTENT",
+        "impacts": [
+          {
+            "softwareQuality": "RELIABILITY",
+            "severity": "MEDIUM"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      },
+      {
+        "key": "AaFJqlc5CiUwZk3h2z-4",
+        "rule": "Web:S6845",
+        "severity": "MAJOR",
+        "component": "esaldivar_parenthesis:src/frontend/src/app/features/dashboard/week-calendar.html",
+        "project": "esaldivar_parenthesis",
+        "line": 111,
+        "hash": "0123456789abcdef0123456789abcdef",
+        "textRange": {
+          "startLine": 111,
+          "endLine": 111,
+          "startOffset": 0,
+          "endOffset": 40
+        },
+        "flows": [],
+        "status": "OPEN",
+        "message": "\"tabindex\" should only be declared on interactive elements.",
+        "effort": "5min",
+        "debt": "5min",
+        "author": "",
+        "tags": [],
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "type": "CODE_SMELL",
+        "organization": "esaldivar",
+        "cleanCodeAttribute": "CONVENTIONAL",
+        "cleanCodeAttributeCategory": "CONSISTENT",
+        "impacts": [
+          {
+            "softwareQuality": "MAINTAINABILITY",
+            "severity": "MEDIUM"
+          }
+        ],
+        "issueStatus": "OPEN",
+        "comments": []
+      }
+    ],
+    "components": [
+      {
+        "key": "esaldivar_parenthesis",
+        "enabled": true,
+        "qualifier": "TRK",
+        "name": "parenthesis",
+        "longName": "parenthesis"
+      }
+    ],
+    "facets": []
+  }
+}

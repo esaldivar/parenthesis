@@ -1,0 +1,402 @@
+import { LocaleService } from '../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { EventDecoration } from './event-decoration';
+import { CalendarPalette, PanelTint } from './calendar-palette';
+import { A11yModule } from '@angular/cdk/a11y';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { RouterLink } from '@angular/router';
+import { Api, CalendarEvent, ChangeRequest, EditScope, FamilyMember } from '../../core/api/api';
+import { generalMessage, toProblem } from '../../core/api/problem';
+import { Icon } from '../../shared/icon/icon';
+import { EventPhotosSection } from '../memories/event-photos';
+import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
+import { CalendarItem } from './calendar-items';
+import { canManageEvent } from './event-permissions';
+import { statusText, whenText } from './item-text';
+import { mapsDirectionsUrl } from './maps-link';
+import { datesText, repeatText } from './series';
+import { lastDate, toFamilyLocal } from './time';
+
+/**
+ * One event's details, over the calendar (a dialog with its focus kept inside; Escape or Close returns focus to the
+ * item). It says plainly what's confirmed and what's waiting, and offers what the rules allow: editing (#188) and
+ * cancelling, which
+ * asks the co-parent first for parenting time and family events; requesting a swap of parenting time; and, while a
+ * request waits, its details (original → proposed, the reason, where it stands) with Withdraw for the parent who
+ * sent it, and Approve or Decline (with an optional comment) for the parent who can decide (#218). Those use the same
+ * approvals API and rules as the inbox. Confirmed events also show their photos (#403).
+ */
+/** As in the approvals inbox. */
+export const COMMENT_MAX = 500;
+
+@Component({
+  selector: 'app-event-details',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslatePipe, EventDecoration, CalendarPalette, PanelTint, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
+  host: { '(keydown.escape)': 'closed.emit()' },
+  templateUrl: './event-details.html',
+  styleUrl: './event-details.scss',
+})
+export class EventDetails {
+  private readonly locale = inject(LocaleService);
+  /** The Intl locale for dates: en-US or es-419. */
+  private readonly intl = computed(() => (this.locale.locale() === 'en' ? 'en-US' : this.locale.locale()));
+  private readonly api = inject(Api);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+
+  readonly item = input.required<CalendarItem>();
+  readonly event = input<CalendarEvent | null>(null);
+  readonly members = input.required<readonly FamilyMember[]>();
+  readonly familyId = input.required<string>();
+  readonly timeZone = input.required<string>();
+  /**
+   * For unavailable time: the confirmed parenting time of the same parent that it overlaps, if any (#190). Only then
+   * is a swap offered, and opening the details never starts one.
+   */
+  readonly swapTarget = input<CalendarItem | null>(null);
+  readonly closed = output();
+  /** Something changed; the message says what. */
+  readonly changed = output<string>();
+
+  protected readonly confirming = signal(false);
+  /** The parent's decision on a declined request (#199), from the approvals history. */
+  protected readonly declineInfo = signal<{ by: string; on: string; comment: string | null } | null>(null);
+  protected readonly withdrawing = signal(false);
+  /** The waiting request about this event, if any (from the approvals inbox). */
+  protected readonly request = signal<ChangeRequest | null>(null);
+  /**
+   * Whether the waiting request was found: `gone` when the item still shows as waiting but nothing waits any more
+   * (answered on another device, withdrawn or expired), so no stale buttons are offered.
+   */
+  protected readonly requestState = signal<'loading' | 'found' | 'gone' | 'unknown'>('loading');
+  protected readonly declining = signal(false);
+  protected readonly commentMax = COMMENT_MAX;
+  protected readonly comment = new FormControl('', { nonNullable: true, validators: Validators.maxLength(COMMENT_MAX) });
+  protected readonly busy = signal(false);
+  protected readonly error = signal<string | null>(null);
+
+  protected readonly status = computed(() => statusText(this.item(), this.locale.locale()) ?? translate('calendar.filter.confirmed', this.locale.locale()));
+  protected readonly date = computed(() => dayLong(this.item().firstDate, this.locale.locale()));
+  protected readonly when = computed(() => whenText(this.item(), this.locale.locale()));
+  protected readonly coParent = computed(
+    () => this.members().find((m) => m.role === 'Parent' && !m.isYou)?.displayName ?? null,
+  );
+  /** "Open in Google Maps" for the location the viewer is allowed to see (#113); the API already hides the rest. */
+  protected readonly mapsUrl = computed(() => mapsDirectionsUrl(this.item().location));
+
+  protected readonly people = computed(() =>
+    [...this.item().parents.map((p) => p.name), ...this.item().children.map((c) => c.name)].join(', '),
+  );
+  /** Parenting time, holidays and family events change only with both parents' agreement. */
+  private readonly needsBoth = computed(() => this.item().kind === 'parenting' || this.item().kind === 'family');
+
+  protected readonly swapTargetWhen = computed(() => {
+    const target = this.swapTarget();
+    return target ? `${dayLong(target.firstDate, this.locale.locale())} · ${whenText(target, this.locale.locale())}` : null;
+  });
+
+  /** A swap changes confirmed parenting time's dates, with the co-parent's approval. */
+  protected readonly canSwap = computed(
+    () => this.item().category === 'ParentingTime' && this.item().status === 'confirmed' && !!this.coParent(),
+  );
+  protected readonly sentAt = computed(() => {
+    const request = this.request();
+    return request ? dateTimeLabel(toFamilyLocal(request.createdAt, this.timeZone()), this.locale.locale()) : null;
+  });
+  protected readonly answerLabel = computed(() =>
+    this.request()?.canDecide ? translate('calendar.event.yourAnswer', this.locale.locale()) : translate('calendar.event.parentAnswer', this.locale.locale(), { name: this.coParent() ?? translate('common.coParent', this.locale.locale()) }),
+  );
+
+  constructor() {
+    effect(() => {
+      const item = this.item();
+      const familyId = this.familyId();
+      untracked(() => {
+        this.request.set(null);
+        this.requestState.set('loading');
+        this.declineInfo.set(null);
+        this.withdrawing.set(false);
+        this.declining.set(false);
+        this.comment.reset();
+        if (item.status === 'declined') {
+          void this.loadDecline(familyId, item.id);
+        } else if (item.status !== 'confirmed') {
+          void this.loadRequest(familyId, item.id);
+        }
+      });
+    });
+  }
+
+  private async loadRequest(familyId: string, eventId: string): Promise<void> {
+    try {
+      const requests = await this.api.approvals(familyId);
+      if (this.item().id === eventId) {
+        // A repeating parenting-time request is about the whole series (#239).
+        const seriesId = this.event()?.seriesId;
+        const request = requests.find((r) => r.targetId === eventId || (!!seriesId && r.targetId === seriesId)) ?? null;
+        this.request.set(request);
+        this.requestState.set(request ? 'found' : 'gone');
+      }
+    } catch {
+      // The details still show the status in words; the approvals inbox has the rest.
+      this.requestState.set('unknown');
+    }
+  }
+
+  /** Who declined it, when, and their comment, from the decided requests. */
+  private async loadDecline(familyId: string, eventId: string): Promise<void> {
+    try {
+      const decided = await this.api.approvals(familyId, 'history');
+      const seriesId = this.event()?.seriesId;
+      const request = decided.find((r) => (r.targetId === eventId || (!!seriesId && r.targetId === seriesId)) && r.status === 'Rejected');
+      const answer = request?.decisions.find((d) => d.decision === 'Reject');
+      if (this.item().id === eventId && answer) {
+        const member = this.members().find((m) => m.membershipId === answer.deciderMembershipId);
+        this.declineInfo.set({
+          by: member?.isYou
+            ? translate('memory.whose.you', this.locale.locale())
+            : (member?.displayName ?? translate('feedback.former.parent', this.locale.locale())),
+          on: dateTimeLabel(toFamilyLocal(answer.decidedAt, this.timeZone()), this.intl()),
+          comment: answer.comment,
+        });
+      }
+    } catch {
+      // The details still say it was declined; the approvals history has the rest.
+    }
+  }
+
+  /** Removes a declined request from this parent's calendar only (#199). */
+  protected async dismiss(): Promise<void> {
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.api.dismissEvent(this.familyId(), this.item().id);
+      this.changed.emit(
+        translate('calendar.event.removed', this.locale.locale(), { title: this.item().title }),
+      );
+    } catch (error) {
+      this.error.set(generalMessage(toProblem(error)));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /**
+   * Whether several dates can be cancelled together. Not for repeating parenting time yet (#239): each date's
+   * cancellation goes to the co-parent on its own.
+   */
+  protected readonly cancelsTogether = computed(() => !!this.repeats() && this.item().category !== 'ParentingTime');
+
+  /** "Every Wed and Fri until Nov 13, 2026" for a repeating event (#193). */
+  protected readonly repeats = computed(() => {
+    const event = this.event();
+    // Keep weekday ordering anchored to the series, even when a later occurrence is opened.
+    // Older responses may omit the first dates; fall back to the opened occurrence.
+    return event?.repeat
+      ? repeatText(event.repeat, toFamilyLocal(event.repeat.firstStarts?.[0] ?? event.startsAt, this.timeZone()).slice(0, 10), this.locale.locale())
+      : null;
+  });
+
+  /** "12 dates: Oct 28, Nov 4, Nov 11 and 9 more" for a repeating event (#239). */
+  protected readonly seriesDates = computed(() => {
+    const repeat = this.event()?.repeat;
+    const zone = this.timeZone();
+    return repeat ? datesText(repeat.dateCount, (repeat.firstStarts ?? []).map((s) => toFamilyLocal(s, zone).slice(0, 10)), this.locale.locale()) : null;
+  });
+
+  /** Editing/cancelling another parent's parenting time is never offered (#260). */
+  protected readonly canCancel = computed(
+    () => this.item().status === 'confirmed' && canManageEvent(this.event(), this.members()),
+  );
+  protected readonly cancelExplanation = computed(() =>
+    this.needsBoth() && this.coParent()
+      ? translate('calendar.event.requestCancel', this.locale.locale(), { name: this.coParent() ?? translate('common.coParent', this.locale.locale()) })
+      : translate('calendar.event.cancelBoth', this.locale.locale()),
+  );
+
+  /** The proposed change in words (before → after), when a change is waiting for approval. */
+  protected readonly proposed = computed(() => {
+    const proposed = this.event()?.proposed;
+    if (!proposed || this.item().pendingChange !== 'Modify') {
+      return null;
+    }
+    const zone = this.timeZone();
+    const start = toFamilyLocal(proposed.startsAt, zone);
+    const end = toFamilyLocal(proposed.endsAt, zone);
+    const first = start.slice(0, 10);
+    const last = lastDate(start, end);
+    const intl = this.intl();
+    const allDay = translate('calendar.details.allDay', this.locale.locale());
+    const when = proposed.allDay
+      ? last > first
+        ? `${dayLong(first, intl)} – ${dayLong(last, intl)}, ${allDay}`
+        : `${dayLong(first, intl)}, ${allDay}`
+      : last > first || end.slice(0, 10) !== first
+        ? `${dateTimeLabel(start, intl)} – ${dateTimeLabel(end, intl)}`
+        : `${dayLong(first, intl)} · ${timeLabel(start.slice(11), intl)} – ${timeLabel(end.slice(11), intl)}`;
+    return [proposed.title !== this.item().title ? proposed.title : null, when, proposed.location]
+      .filter(Boolean)
+      .join(' · ');
+  });
+
+  protected async withdraw(): Promise<void> {
+    const request = this.request();
+    if (!request) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.api.withdraw(this.familyId(), request.id);
+      this.changed.emit(
+        this.item().status === 'pending'
+          ? translate('calendar.event.withdrawn', this.locale.locale(), { title: this.item().title })
+          : translate('calendar.event.withdrawnChange', this.locale.locale(), { title: this.item().title }),
+      );
+    } catch (error) {
+      this.error.set(generalMessage(toProblem(error)));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected startCancel(): void {
+    this.confirming.set(true);
+    this.focus(this.cancelsTogether() ? '#event-keep-series' : '#event-keep');
+  }
+
+  protected keepEvent(): void {
+    this.confirming.set(false);
+    this.focus('#event-cancel');
+  }
+
+  protected startWithdraw(): void {
+    this.withdrawing.set(true);
+    this.focus('#event-keep-request');
+  }
+
+  protected keepRequest(): void {
+    this.withdrawing.set(false);
+    this.focus('#event-withdraw');
+  }
+
+  protected startDecline(): void {
+    this.comment.reset();
+    this.error.set(null);
+    this.declining.set(true);
+    this.focus('#event-decline-comment');
+  }
+
+  protected keepWaiting(): void {
+    this.declining.set(false);
+    this.focus('#event-decline');
+  }
+
+  private focus(selector: string): void {
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), { injector: this.injector });
+  }
+
+  /** Approves the waiting request, as in the inbox; the calendar then refreshes and says what happened. */
+  protected approve(): Promise<void> {
+    const title = this.item().title;
+    const change = this.item().pendingChange;
+    return this.decide(
+      (familyId, id) => this.api.approve(familyId, id),
+      (result) =>
+        result.status !== 'Approved'
+          ? translate('calendar.event.approvedPending', this.locale.locale(), { title })
+          : change === 'Cancel'
+            ? translate('calendar.event.approvedCancellation', this.locale.locale(), { title })
+            : change === 'Modify'
+              ? translate('calendar.event.approvedChange', this.locale.locale(), { title })
+              : translate('calendar.event.approved', this.locale.locale(), { title }),
+    );
+  }
+
+  /** Declines it with the optional comment, as in the inbox. */
+  protected decline(): Promise<void> {
+    if (this.comment.invalid) {
+      return Promise.resolve();
+    }
+    const title = this.item().title;
+    const change = this.item().pendingChange;
+    const comment = this.comment.value.trim() || undefined;
+    return this.decide(
+      (familyId, id) => this.api.reject(familyId, id, comment),
+      () =>
+        change === 'Cancel'
+          ? translate('calendar.event.declinedCancellation', this.locale.locale(), { title })
+          : change === 'Modify'
+            ? translate('calendar.event.declinedChange', this.locale.locale(), { title })
+            : translate('calendar.event.declined', this.locale.locale(), { title }),
+    );
+  }
+
+  private async decide(
+    action: (familyId: string, requestId: string) => Promise<ChangeRequest>,
+    done: (result: ChangeRequest) => string,
+  ): Promise<void> {
+    const request = this.request();
+    if (!request || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      const result = await action(this.familyId(), request.id);
+      this.changed.emit(done(result));
+    } catch (error) {
+      // Answered elsewhere meanwhile, for example: say so, and check where it stands now.
+      this.error.set(generalMessage(toProblem(error)));
+      this.declining.set(false);
+      await this.loadRequest(this.familyId(), this.item().id);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Reloads the calendar when the request was answered elsewhere. */
+  protected refresh(): void {
+    this.changed.emit(translate('calendar.event.current', this.locale.locale()));
+  }
+
+  protected async cancel(scope: EditScope = 'this'): Promise<void> {
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      const result = await this.api.cancelEvent(this.familyId(), this.item().id, scope);
+      const title = this.item().title;
+      this.changed.emit(
+        result && result.pendingChange === 'Cancel'
+          ? translate('calendar.event.cancelSent', this.locale.locale(), { name: this.coParent() ?? translate('common.coParentLower', this.locale.locale()), title })
+          : scope === 'all'
+            ? translate('calendar.event.cancelledAll', this.locale.locale(), { title })
+            : scope === 'following'
+              ? translate('calendar.event.cancelledFollowing', this.locale.locale(), { title, date: this.date() })
+              : translate('calendar.event.cancelled', this.locale.locale(), { title }),
+      );
+    } catch (error) {
+      this.error.set(generalMessage(toProblem(error)));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}

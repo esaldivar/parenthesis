@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Issue 403 · event photos design review</title>
+<!--
+  Static design boards for #403 (event photos and Family Memories). Not production code and not a prototype of
+  working uploads: nothing here uploads, shares or downloads. Synthetic family only (Rivera Family: Dad, Mom, Kai).
+  Photo tiles are drawn shapes, not photos. Open with ?theme=dark for the dark theme.
+  Tokens are copied from src/frontend/src/styles/_tokens.scss (October 31, 2026).
+-->
+<style>
+:root{color-scheme:light;
+  --canvas:#f7f5ed;--surface:#fff;--soft:#e4ebdd;--text:#203a31;--muted:#4d6258;--action:#176b67;--on:#fff;
+  --outline:#718478;--divider:#cfd7c9;--danger:#a13333;--selected:#d6e4d0;
+  --pending:#fbeee0;--confirmed:#dcefe9;--rejected:#f8e1df;--accent:#de8f7e;
+  --tile-a:#c9dcc4;--tile-b:#efd28f;--tile-c:#dfebf7;--tile-d:#f9e1ea}
+body.dark{color-scheme:dark;
+  --canvas:#10251e;--surface:#19372d;--soft:#24483a;--text:#f7f5ed;--muted:#c0d0c5;--action:#91d2c5;--on:#10251e;
+  --outline:#8aa99a;--divider:#24483a;--danger:#ffb4ab;--selected:#24483a;
+  --pending:#4a3a22;--confirmed:#1f4a3f;--rejected:#4d2724;--accent:#edaa98;
+  --tile-a:#2f5a48;--tile-b:#5a4a26;--tile-c:#24425e;--tile-d:#4f2c3c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px}
+header.board{max-width:1240px;margin:0 auto 20px}
+header.board p{margin:0;color:var(--muted)}
+header.board h1{font-size:28px;line-height:1.2;margin:6px 0 8px}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:24px;max-width:1240px;margin:0 auto;align-items:start}
+.frame{display:flex;flex-direction:column;gap:8px}
+.frame>.label{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--action);font-weight:600}
+.frame>.why{font-size:14px;color:var(--muted);margin:0}
+.wide{grid-column:1/-1}
+.panel{background:var(--surface);border:1px solid var(--divider);border-radius:20px;padding:16px;display:grid;gap:12px;align-content:start}
+h2{font-size:20px;line-height:1.3;margin:0}
+h3{font-size:16px;margin:0}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.head{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start}
+.ico{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--soft)}
+.ico svg,.btn svg,.chip svg,.note svg{width:20px;height:20px;flex:none}
+.x{width:44px;height:44px;border:0;background:none;color:var(--text);border-radius:50%;font-size:22px}
+.pill{justify-self:start;padding:0 10px;border-radius:999px;border:1px solid var(--outline);font-weight:600;font-size:14px}
+.pill.ok{background:var(--confirmed)}.pill.pend{background:var(--pending)}
+section.photos{border-top:1px solid var(--divider);padding-top:12px;display:grid;gap:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 16px;border-radius:12px;font:600 15px/1.3 inherit;border:1px solid var(--action);background:var(--action);color:var(--on)}
+.btn.out{background:transparent;color:var(--action)}
+.btn.text{border-color:transparent;background:transparent;color:var(--action);padding:8px}
+.btn.danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+.btn[aria-disabled=true]{opacity:.55}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;border:1px solid var(--outline);font-size:13px;font-weight:600}
+.chip.warn{background:var(--pending)}
+.chip.private{background:var(--soft)}
+.chip.shared{background:var(--confirmed)}
+.batch{border:1px solid var(--divider);border-radius:16px;padding:12px;display:grid;gap:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px}
+.tile{aspect-ratio:1;border-radius:10px;position:relative;overflow:hidden;background:var(--tile-a)}
+.tile:nth-child(4n+2){background:var(--tile-b)}.tile:nth-child(4n+3){background:var(--tile-c)}.tile:nth-child(4n){background:var(--tile-d)}
+.tile::before{content:"";position:absolute;left:18%;bottom:-20%;width:90%;height:70%;border-radius:50% 50% 0 0;background:rgb(255 255 255 / 22%)}
+.tile::after{content:"";position:absolute;right:18%;top:18%;width:22%;height:22%;border-radius:50%;background:rgb(255 255 255 / 35%)}
+.tile.big{aspect-ratio:4/3;border-radius:14px}
+.tile .fail{position:absolute;inset:0;display:grid;place-items:center;background:rgb(0 0 0 / 45%);color:#fff;font-size:12px;font-weight:600;text-align:center;padding:4px;z-index:1}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.track{width:52px;height:32px;border-radius:16px;border:2px solid var(--outline);background:var(--soft);position:relative;flex:none}
+.track::after{content:"";position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--outline)}
+.track.on{background:var(--action);border-color:var(--action)}
+.track.on::after{left:24px;width:20px;background:var(--on)}
+.meter{height:8px;border-radius:4px;background:var(--soft);border:1px solid var(--outline);overflow:hidden}
+.meter span{display:block;height:100%;background:var(--action)}
+.note{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--outline);background:var(--soft);font-size:14px}
+.note.warn{background:var(--pending)}
+.note.err{background:var(--rejected);border-color:var(--danger)}
+.files{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.files li{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center}
+.files .tile{width:56px}
+.err{color:var(--danger)}
+.ok-t{color:var(--action)}
+.sheet{background:var(--surface);border:1px solid var(--divider);border-radius:20px 20px 0 0;padding:16px;display:grid;gap:12px}
+.mem{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;border:1px solid var(--divider);border-radius:16px;padding:10px;background:var(--surface)}
+.mem .tile{width:96px}
+.empty{display:grid;justify-items:center;text-align:center;gap:8px;padding:24px 12px}
+.empty .ico{width:64px;height:64px}
+.focus{outline:3px solid var(--action);outline-offset:3px}
+.page{display:grid;gap:12px}
+@media (min-width:1000px){.memlist{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}}
+@media (max-width:700px){body{padding:16px}main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="photo" viewBox="0 0 24 24"><path fill="currentColor" d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v9.6l3.3-3.3a1 1 0 0 1 1.4 0l3.3 3.3 2.3-2.3a1 1 0 0 1 1.4 0L19 15.6V6H5Zm10 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3Z"/></symbol>
+  <symbol id="people" viewBox="0 0 24 24"><path fill="currentColor" d="M9 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm8 0a3 3 0 1 1 0-6 3 3 0 0 1 0 6ZM2 20c0-3.3 3.1-6 7-6s7 2.7 7 6H2Zm15.5 0c0-2.1-.8-3.9-2.2-5.3 3.4-.5 6.7 1.6 6.7 5.3h-4.5Z"/></symbol>
+  <symbol id="download" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3h2v9.6l3.3-3.3 1.4 1.4L12 16.4l-5.7-5.7 1.4-1.4 3.3 3.3V3ZM5 19h14v2H5z"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm1 3v5.4l3.6 2.1-1 1.7L11 13.6V7h2Z"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-1 8v7h2v-7h-2Zm0-3v2h2V7h-2Z"/></symbol>
+  <symbol id="star" viewBox="0 0 24 24"><path fill="currentColor" d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></symbol>
+  <symbol id="album" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v12h12V6H4Zm16 1h2v11a4 4 0 0 1-4 4H6v-2h12a2 2 0 0 0 2-2V7Z"/></symbol>
+</svg>
+
+<header class="board">
+  <p>Parenthesis / issue #403 / event photos and Family Memories / proposed design for owner review</p>
+  <h1>Event photos and Family Memories</h1>
+  <p>Static boards, not working features. Synthetic Rivera Family (you are Dad; Mom is the co-parent; child Kai). Photo tiles are drawn shapes.</p>
+</header>
+
+<main>
+
+<!-- E1 -->
+<div class="frame">
+  <span class="label">E1 · Event details · Photos (shared event)</span>
+  <p class="why">Your batch is private by default. Mom's shared batch shows; her private batches never show, not even as a count.</p>
+  <div class="panel">
+    <div class="head">
+      <span class="ico"><svg><use href="#star"/></svg></span>
+      <div><h2>Soccer final</h2><p class="muted">Activity</p></div>
+      <button class="x" aria-label="Close details">×</button>
+    </div>
+    <span class="pill ok">Confirmed</span>
+    <p class="muted small">Sat, Oct 12 · 10:00 AM – 12:00 PM · Kai</p>
+    <section class="photos" aria-labelledby="ph1">
+      <div class="row between"><h3 id="ph1">Photos</h3><button class="btn out"><svg><use href="#photo"/></svg>Add photos</button></div>
+      <p class="small muted">You can add 6 more (4 of your 10 used). Photos are deleted 28 days after upload.</p>
+      <div class="batch">
+        <div class="row between"><strong class="small">Your photos · Oct 12</strong><span class="chip private"><svg><use href="#lock"/></svg>Only you</span></div>
+        <div class="grid"><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+        <div class="switch"><label for="v1" class="small">Visible to Co-Parent</label><span class="track" role="switch" id="v1" aria-checked="false" aria-label="Visible to Co-Parent, your Oct 12 photos"></span></div>
+        <p class="small muted"><svg width="14" height="14" style="vertical-align:-2px"><use href="#clock"/></svg> Deleted Nov 9</p>
+      </div>
+      <div class="batch">
+        <div class="row between"><strong class="small">Mom's photos · Oct 12</strong><span class="chip shared"><svg><use href="#people"/></svg>Shared with you</span></div>
+        <div class="grid"><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+        <p class="small muted"><svg width="14" height="14" style="vertical-align:-2px"><use href="#clock"/></svg> Deleted Nov 9 · Mom hasn't allowed downloads</p>
+      </div>
+      <button class="btn text">Open in Family Memories</button>
+    </section>
+  </div>
+</div>
+
+<!-- E2 -->
+<div class="frame">
+  <span class="label">E2 · Empty, not eligible, full</span>
+  <p class="why">Each reason is stated plainly. Pending events never offer photos, so a proposal can't look confirmed.</p>
+  <div class="panel">
+    <section class="photos" aria-labelledby="ph2a" style="border-top:0;padding-top:0">
+      <div class="row between"><h3 id="ph2a">Photos</h3><button class="btn out"><svg><use href="#photo"/></svg>Add photos</button></div>
+      <p class="small muted">No photos yet. Add up to 10 of your own, 5 at a time. Only you see them unless you share them.</p>
+    </section>
+  </div>
+  <div class="panel">
+    <span class="pill pend">Pending approval</span>
+    <section class="photos" aria-labelledby="ph2b" style="border-top:0;padding-top:0">
+      <h3 id="ph2b">Photos</h3>
+      <p class="small muted">Photos can be added once this event is confirmed.</p>
+    </section>
+  </div>
+  <div class="panel">
+    <section class="photos" aria-labelledby="ph2c" style="border-top:0;padding-top:0">
+      <h3 id="ph2c">Photos</h3>
+      <p class="small muted">Mom has the kids during this parenting time, so only Mom can add photos.</p>
+    </section>
+  </div>
+  <div class="panel">
+    <section class="photos" aria-labelledby="ph2d" style="border-top:0;padding-top:0">
+      <div class="row between"><h3 id="ph2d">Photos</h3><button class="btn out" aria-disabled="true"><svg><use href="#photo"/></svg>Add photos</button></div>
+      <p class="small muted">You've added all 10 of your photos for this event. Delete one to add another.</p>
+    </section>
+  </div>
+</div>
+
+<!-- U1 -->
+<div class="frame">
+  <span class="label">U1 · Add photos · before upload</span>
+  <p class="why">Retention and privacy are stated before anything uploads. HEIC on iPhone arrives as JPEG; DNG is refused with a way forward.</p>
+  <div class="sheet" role="dialog" aria-labelledby="u1">
+    <div class="row between"><h2 id="u1">Add photos to Soccer final</h2><button class="x" aria-label="Close">×</button></div>
+    <ul class="files">
+      <li><div class="tile"></div><div><strong class="small">IMG_2041.jpg</strong><p class="small muted">3.1 MB</p></div></li>
+      <li><div class="tile"></div><div><strong class="small">IMG_2042.jpg</strong><p class="small muted">2.8 MB</p></div></li>
+      <li><div class="tile"><span class="fail">Not added</span></div><div><strong class="small">IMG_2043.dng</strong><p class="small err">RAW photos (DNG) aren't supported. Export it as a JPEG and add that instead.</p></div></li>
+      <li><div class="tile"><span class="fail">Not added</span></div><div><strong class="small">pano.jpg</strong><p class="small err">This photo is over 20 MB. Choose a smaller one.</p></div></li>
+    </ul>
+    <div class="note"><svg><use href="#info"/></svg><span>2 photos will be added. <strong>Only you</strong> will see them until you turn on Visible to Co-Parent. They're deleted on <strong>Nov 30</strong>, 28 days after upload.</span></div>
+    <p class="small muted">Up to 5 at a time · You can add 6 more to this event · 212 MB of your 250 MB left</p>
+    <div class="row"><button class="btn">Add 2 photos</button><button class="btn out">Cancel</button></div>
+  </div>
+</div>
+
+<!-- U2 -->
+<div class="frame">
+  <span class="label">U2 · Uploading, partial failure, limits</span>
+  <p class="why">Each file reports its own result; a failure is never shown as added. Status is announced politely.</p>
+  <div class="sheet">
+    <h2>Adding photos…</h2>
+    <ul class="files" aria-live="polite">
+      <li><div class="tile"></div><div><strong class="small">IMG_2041.jpg</strong><p class="small ok-t">Added</p></div></li>
+      <li><div class="tile"><span class="fail">Not added</span></div><div><strong class="small">IMG_2042.jpg</strong><p class="small err">Couldn't upload. Check your connection and try again.</p></div></li>
+    </ul>
+    <div class="row"><button class="btn">Try again</button><button class="btn out">Done</button></div>
+  </div>
+  <div class="note err"><svg><use href="#info"/></svg><span>You don't have enough storage for these photos (12 MB left of 250 MB). Delete photos you no longer need, or wait for older ones to expire.</span></div>
+  <div class="note err"><svg><use href="#info"/></svg><span>This event has room for 1 more of your photos. Choose 1 photo.</span></div>
+  <div class="note err"><svg><use href="#info"/></svg><span>You're offline. Nothing was uploaded.</span></div>
+</div>
+
+<!-- S1 -->
+<div class="frame">
+  <span class="label">S1 · Turning sharing off</span>
+  <p class="why">Only the uploader sees this switch. Turning it off explains what can't be undone.</p>
+  <div class="panel">
+    <div class="batch">
+      <div class="row between"><strong class="small">Your photos · Oct 12</strong><span class="chip shared"><svg><use href="#people"/></svg>Shared with Mom</span></div>
+      <div class="switch"><label class="small">Visible to Co-Parent</label><span class="track on focus" role="switch" aria-checked="true"></span></div>
+    </div>
+    <div class="note" role="dialog" aria-labelledby="s1"><span><strong id="s1">Stop sharing these 4 photos?</strong><br>Mom won't see them in Parenthesis any more. Copies she already downloaded can't be recalled.</span></div>
+    <div class="row"><button class="btn">Stop sharing</button><button class="btn out">Keep sharing</button></div>
+  </div>
+  <div class="panel">
+    <span class="label" style="font-size:13px;color:var(--action);font-weight:600">Delete one of your photos</span>
+    <div class="tile big"></div>
+    <div class="row"><button class="btn out"><svg><use href="#download"/></svg>Download</button><button class="btn danger">Delete photo…</button></div>
+    <p class="small muted">Deleting removes it for both of you now and frees its spot and storage.</p>
+  </div>
+</div>
+
+<!-- X1 -->
+<div class="frame">
+  <span class="label">X1 · Final week and expired</span>
+  <p class="why">From day 21 the warning is stronger and sits beside Download. The event itself stays after photos go.</p>
+  <div class="panel">
+    <div class="note warn" role="status"><svg><use href="#clock"/></svg><span><strong>These photos are deleted in 3 days, on Nov 9.</strong> Download any you want to keep.</span></div>
+    <div class="grid"><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+    <button class="btn"><svg><use href="#download"/></svg>Download photos (4)</button>
+  </div>
+  <div class="panel">
+    <h3>Photos</h3>
+    <p class="small muted">The photos from this event were deleted on Nov 9, 28 days after they were added.</p>
+  </div>
+</div>
+
+<!-- G1 -->
+<div class="frame wide">
+  <span class="label">G1 · Family Memories page</span>
+  <p class="why">One memory per event, newest first, showing only photos you may see. Replaces today's "coming soon" page.</p>
+  <div class="panel page">
+    <div class="row between"><h2>Family Memories</h2></div>
+    <p class="small muted">Photos from your events. Each photo is deleted 28 days after it's added, so download the ones you want to keep.</p>
+    <div class="memlist">
+      <div class="mem"><div class="tile"></div><div><strong>Soccer final</strong><p class="small muted">Oct 12 · 7 photos · You and Mom</p><span class="chip warn"><svg><use href="#clock"/></svg>Deleted in 3 days</span></div></div>
+      <div class="mem"><div class="tile"></div><div><strong>Kai's birthday</strong><p class="small muted">Oct 20 · 12 photos · You</p><span class="chip"><svg><use href="#clock"/></svg>Deleted Nov 17</span></div></div>
+      <div class="mem"><div class="tile"></div><div><strong>Weekend with Dad</strong><p class="small muted">Oct 26 · 3 photos · You</p><span class="chip"><svg><use href="#clock"/></svg>Deleted Nov 23</span></div></div>
+      <div class="mem"><div class="tile"></div><div><strong>Science fair</strong><p class="small muted">Oct 28 · 5 photos · Mom</p><span class="chip"><svg><use href="#clock"/></svg>Deleted Nov 25</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- G2 -->
+<div class="frame">
+  <span class="label">G2 · Memories: empty, loading, error</span>
+  <p class="why">Honest states; no sample photos on a real account.</p>
+  <div class="panel"><div class="empty"><span class="ico"><svg><use href="#album"/></svg></span><h3>No memories yet</h3><p class="small muted">Add photos to a confirmed event on the calendar and they'll show here.</p><button class="btn out">Open calendar</button></div></div>
+  <div class="panel"><p class="small muted" role="status">Loading memories…</p></div>
+  <div class="panel"><p class="small err" role="alert">Memories couldn't load. Check your connection.</p><button class="btn out">Try again</button></div>
+</div>
+
+<!-- G3 -->
+<div class="frame">
+  <span class="label">G3 · One memory · Download photos (ZIP)</span>
+  <p class="why">Shows what the ZIP will hold before it starts. Omitted photos are explained without revealing private ones.</p>
+  <div class="panel">
+    <div class="row between"><h2>Soccer final</h2><span class="chip warn"><svg><use href="#clock"/></svg>Deleted in 3 days</span></div>
+    <p class="small muted">Sat, Oct 12 · 4 photos from you · 3 shared by Mom</p>
+    <div class="grid"><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+    <div class="note"><svg><use href="#info"/></svg><span><strong>4 of 7 photos can be downloaded</strong> (about 9 MB). Mom hasn't allowed downloads of her photos, so you can view them here but not download them.</span></div>
+    <button class="btn"><svg><use href="#download"/></svg>Download 4 photos</button>
+    <p class="small muted">Your browser shows the download's progress. Downloaded copies are yours to keep; Parenthesis can't recall them.</p>
+  </div>
+  <div class="panel">
+    <div class="note"><svg><use href="#info"/></svg><span><strong>No photos here can be downloaded.</strong> Mom hasn't allowed downloads of her photos.</span></div>
+    <button class="btn" aria-disabled="true"><svg><use href="#download"/></svg>Download photos</button>
+  </div>
+  <div class="panel">
+    <p class="small err" role="alert">The download stopped before it finished. Nothing was lost; try again to download a fresh copy.</p>
+    <button class="btn out">Try again</button>
+  </div>
+</div>
+
+<!-- P1 -->
+<div class="frame">
+  <span class="label">P1 · Settings · Memories</span>
+  <p class="why">Personal settings. Each parent controls only their own photos; OFF by default.</p>
+  <div class="panel">
+    <h2>Memories</h2>
+    <div><div class="row between"><strong class="small">Your photo storage</strong><span class="small muted">38 MB of 250 MB used</span></div>
+      <div class="meter" role="meter" aria-label="Photo storage" aria-valuenow="38" aria-valuemin="0" aria-valuemax="250"><span style="width:15%"></span></div>
+      <p class="small muted">Includes thumbnails. Space comes back when photos are deleted or expire.</p></div>
+    <div class="switch"><label class="small"><strong>Allow co-parent to download my shared memories</strong></label><span class="track" role="switch" aria-checked="false"></span></div>
+    <p class="small muted">When this is on, Mom can download and export the photos you've shared with her. When it's off, she can still view them. This controls Parenthesis's download features only: copies already saved can't be recalled, and screenshots can't be prevented.</p>
+  </div>
+</div>
+
+<!-- D1 -->
+<div class="frame">
+  <span class="label">D1 · Home · Family Memories card</span>
+  <p class="why">The dashboard card shows real memories once this ships, and an honest empty state until then.</p>
+  <div class="panel">
+    <div class="row between"><h3>Family Memories</h3><button class="btn text">See all</button></div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr)"><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+    <p class="small muted">Soccer final · Kai's birthday · Weekend with Dad</p>
+  </div>
+</div>
+
+</main>
+<script>
+  const params = new URLSearchParams(location.search);
+  if (params.get('theme') === 'dark') document.body.classList.add('dark');
+</script>
+</body>
+</html>
