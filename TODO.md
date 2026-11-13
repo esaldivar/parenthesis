@@ -705,10 +705,16 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 ### #443 — Desktop macOS VoiceOver with Guidepup
 - [x] VoiceOver project, nine journeys (smoke, navigation, forms, calendar save, event dialog, two date journeys,
   reminder details, task progress), macOS candidate script and [runbook](docs/runbooks/voiceover-macos.md).
-- [ ] Owner-Mac run on the PR's exact commit: record macOS, Chromium, VoiceOver and Guidepup versions, pass count
-  and `voiceover-app-speech` transcripts on #443.
-- [ ] Controlled negative (one speech assertion fails with the actual speech, then passes restored) on #443.
-- [ ] A second full passing run on the same commit, for repeatability.
+- [x] Owner-Mac run at 523a9ab (macOS 13.7.8, Chrome 157, Guidepup 0.38.0 / Playwright 0.21.0): 9 of 9 passed,
+  verified by `verify-nvda-results.mjs … VoiceOver`. Per-test speech transcripts weren't kept for that run (the next
+  run cleared the results folder); keep them from the second run.
+- [x] Controlled negative: navigation expecting "zebra quokka" failed at the speech assertion with VoiceOver's actual
+  speech ("Settings … current page link …"); restored.
+- [ ] A second full passing run on the same commit, for repeatability, with its `voiceover-app-speech` transcripts on
+  #443 (an interrupted second run passed its first 5 tests).
+- [ ] App: VoiceOver on macOS 13 sometimes doesn't announce the "… is on the calendar" toast after an activity save
+  (focus moves to main and the week heading changes at the same moment). The VoiceOver test reads it with the cursor
+  when that happens, marked in its transcript. Owner to choose the follow-up; then track it in its own issue.
 - [ ] Optional later: a manual-only hosted macOS job, only with the owner's approval of its Actions-minute cost.
 
 ### #278/#279 — Coverage follow-up (October 26, 2026)
