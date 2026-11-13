@@ -1,6 +1,6 @@
 using System.Globalization;
 using CoParent.Modules.Families.Contracts;
-using CoParent.Modules.Messaging.Infrastructure;
+using CoParent.Modules.Messaging.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
 

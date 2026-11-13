@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using CoParent.Infrastructure.Persistence;
 using CoParent.Modules.Messaging.Endpoints;
 using CoParent.Modules.Messaging.Infrastructure;
+using CoParent.Modules.Messaging.Infrastructure.Persistence;
 using CoParent.Modules.Messaging.Realtime;
 using CoParent.Modules.Messaging.Transcripts;
 using CoParent.SharedKernel.Accounts;

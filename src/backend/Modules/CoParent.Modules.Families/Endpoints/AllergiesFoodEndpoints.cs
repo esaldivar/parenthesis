@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Net.Mime;
 using CoParent.Modules.Families.Domain;
-using CoParent.Modules.Families.Infrastructure;
+using CoParent.Modules.Families.Infrastructure.Persistence;
 using CoParent.Modules.Identity.Contracts;
 using CoParent.SharedKernel.Persistence;
 using CoParent.SharedKernel.Security;
