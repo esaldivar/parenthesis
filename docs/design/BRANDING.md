@@ -2,6 +2,14 @@
 
 Status: **BRAND DESIGN LOCKED — October 16, 2026.** The user supplied the original branding board and explicitly chose **Variation 1 (Default) + Option B wordmark**. This is a strict reference, not permission to reinterpret the mark. The exact original branding board is committed at [`assets/F61791C0-BC62-4584-9C48-B5E8CA9A7BFE.jpeg`](assets/F61791C0-BC62-4584-9C48-B5E8CA9A7BFE.jpeg). This is the immutable visual reference; production-ready logo exports remain pending.
 
+**Export status correction — October 28, 2026 (#153):** the exact approved icon
+`assets/parenthesis-icon.svg` and transparent email PNG are available; the PNG was
+approved October 20 (see `assets/APPROVED_ASSET_MANIFEST.md`). Use them unchanged.
+References below to pending exports apply to the remaining wordmark/lockups, not
+to that approved icon. Verified exact light/dark wordmark exports and outlined
+typeface remain pending; the existing horizontal SVGs are recorded defective in
+the app's `shared/brand/logo.ts`. Prefer an explicit wordmark-pending state.
+
 ## Immutable reference rules
 - **Do not regenerate, redraw, restyle, recolor, substitute, or approximate the approved icon in any mockup or application screen.** Do not use AI-generated dashboard logos as source material.
 - The original user-supplied branding board is the authoritative visual source: **Variation 1 (Default)** icon in the lower-left row and **Option B** wordmark in the upper middle. Any discrepancy between this text and the original artwork must be resolved in favor of the original artwork.

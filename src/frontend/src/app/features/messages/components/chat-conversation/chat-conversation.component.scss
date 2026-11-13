@@ -1,0 +1,334 @@
+// Fills whatever holds it: the Messages page or the compact desktop chat set its size.
+:host {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-canvas);
+  overflow: hidden;
+}
+
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-surface);
+
+  h1,
+  h2 {
+    margin: 0;
+    min-width: 0;
+    font-size: 1.375rem;
+    overflow-wrap: anywhere;
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--target-min);
+  height: var(--target-min);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-soft);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+.draft-event {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  app-chat-event-card {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.note {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  justify-items: start;
+  padding: var(--space-4);
+}
+
+.alert {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-control);
+  background: var(--color-status-rejected-bg);
+}
+
+.log {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+  }
+}
+
+.older {
+  align-self: center;
+  min-height: var(--target-min);
+}
+
+.start {
+  margin-block: auto;
+  text-align: center;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.message {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+  max-width: min(28rem, 80%);
+}
+
+.message--yours {
+  align-self: flex-end;
+  justify-items: end;
+}
+
+.sender {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.bubble {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 1.125rem;
+  background: var(--color-surface-soft);
+  font-size: 1.0625rem;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.bubble .text {
+  white-space: pre-wrap;
+}
+
+.message--yours .bubble {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+// A failed message keeps its text but looks unsent: outlined, not filled.
+.message--failed .bubble {
+  background: transparent;
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 2px var(--color-action);
+}
+
+.status {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.status--failed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+
+  button {
+    min-height: var(--target-min);
+  }
+}
+
+.not-sent {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block: var(--space-2);
+  font-weight: 700;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--color-outline);
+  }
+}
+
+.jump {
+  justify-self: center;
+  margin-block: var(--space-1);
+  min-height: var(--target-min);
+}
+
+.typing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 1.75rem;
+  padding: 0 var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.dots {
+  display: inline-flex;
+  gap: 3px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-soft);
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: typing 1.2s infinite ease-in-out;
+  }
+
+  span:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  span:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+}
+
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dots span {
+    animation: none;
+  }
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-surface);
+
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--target-min);
+    max-height: 9.5rem;
+    field-sizing: content;
+    padding: 0.625rem var(--space-4);
+    border: 1px solid var(--color-outline);
+    border-radius: 1.375rem;
+    background: var(--color-canvas);
+    color: var(--color-text);
+    font: inherit;
+    line-height: 1.4;
+    resize: none;
+
+    &::placeholder {
+      color: var(--color-text-secondary);
+      opacity: 1;
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--color-focus);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.send {
+  display: inline-grid;
+  place-items: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-action);
+  color: var(--color-on-action);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--color-action-hover);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    background: var(--color-surface-soft);
+    color: var(--color-disabled-text);
+    cursor: default;
+  }
+}
+
+.count {
+  grid-column: 1 / -1;
+  font-size: 0.875rem;
+}

@@ -41,6 +41,7 @@ public sealed class FamiliesTests(ApiFactory api) : IAsyncLifetime
         var member = Assert.Single(family.GetProperty("members").EnumerateArray());
         Assert.Equal("Jordan Lee", member.GetProperty("displayName").GetString());
         Assert.Equal("Parent", member.GetProperty("role").GetString());
+        Assert.True(member.GetProperty("isYou").GetBoolean());
     }
 
     [Fact]

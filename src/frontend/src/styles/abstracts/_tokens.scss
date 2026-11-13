@@ -1,0 +1,193 @@
+// Parenthesis semantic design tokens (docs/design-system.md).
+// Proposed defaults for visual review. Components use these tokens, never raw hex values.
+// Contrast for the text/background pairs is checked by src/app/core/theme/tokens.spec.ts.
+
+@mixin light {
+  // Owner-approved Calendar palette (#255); independent of brand/decorative category tokens.
+  --color-calendar-parent-a-bg: #d5f2f7;
+  --color-calendar-parent-a-fg: #205363;
+  --color-calendar-parent-b-bg: #f7dff0;
+  --color-calendar-parent-b-fg: #71335e;
+  --color-calendar-parenting-bg: #f1e9df;
+  --color-calendar-parenting-fg: #5c4934;
+  --color-calendar-activity-bg: #deebfc;
+  --color-calendar-activity-fg: #264d79;
+  --color-calendar-family-bg: #fbe5de;
+  --color-calendar-family-fg: #743c30;
+  --color-calendar-task-bg: #eee8f7;
+  --color-calendar-task-fg: #49345f;
+  --color-calendar-reminder-bg: #fff1cc;
+  --color-calendar-reminder-fg: #604515;
+  --color-calendar-unavailable-bg: #eceef0;
+  --color-calendar-unavailable-fg: #4b5158;
+  color-scheme: light;
+  --color-canvas: #f7f5ed;
+  --color-surface: #ffffff;
+  --color-surface-soft: #e4ebdd;
+  --color-text: #203a31;
+  --color-text-secondary: #4d6258;
+  --color-action: #176b67;
+  --color-action-hover: #125955;
+  --color-action-pressed: #0e4744;
+  --color-on-action: #ffffff;
+  --color-accent: #de8f7e;
+  --color-on-accent: #203a31;
+  --color-outline: #718478;
+  --color-danger: #a13333;
+  // New-notification dot (owner request, November 7, 2026): at least 3:1 on the canvas in each theme.
+  --color-notify: #1e8e3e;
+  --color-focus: #176b67;
+  --color-selected: #d6e4d0;
+  // Hairlines between grid cells, rows and cards (#209). Calm, but visible on white and ivory.
+  --color-divider: #cfd7c9;
+  // How much of an item's category text colour tints its edge (#209), as in the approved calendar boards.
+  --calendar-item-edge-mix: 60%;
+  --color-disabled-text: #5f6f66;
+  --color-status-pending-bg: #fbeee0;
+  --color-status-confirmed-bg: #dcefe9;
+  --color-status-rejected-bg: #f8e1df;
+  // Wordmark (docs/design/BRANDING.md): sage "Parent", charcoal "hesis".
+  --brand-wordmark-parent: #5e8f7e;
+  --brand-wordmark-hesis: #20303f;
+  // Decoration and activity categories (approved dashboard). Category fills take primary text; icons meet 3:1.
+  --color-leaf: #c9dcc4;
+  --color-leaf-strong: #8fb29a;
+  --color-leaf-gold: #efd28f;
+  --color-avatar-parent: #dce7f2;
+  --color-cat-school-bg: #fbe3e0;
+  --color-cat-school-icon: #b23a32;
+  --color-cat-medical-bg: #fdecd6;
+  --color-cat-medical-icon: #a5560a;
+  --color-cat-music-bg: #dfebf7;
+  --color-cat-music-icon: #2b63a0;
+  --color-cat-sport-bg: #dff0e3;
+  --color-cat-sport-icon: #2a7247;
+  --color-cat-art-bg: #f9e1ea;
+  --color-cat-art-icon: #a3345f;
+  // Child Support label (#477): plum, set apart from Shared Fund's green. 7:1 contrast.
+  --color-support-bg: #ece4f7;
+  --color-support-fg: #4f2f7d;
+  --color-cat-other-bg: #e4ebdd;
+  --color-cat-other-icon: #176b67;
+  --color-cat-family-bg: #ece6f7;
+  --color-cat-family-icon: #6a4fa3;
+  --color-cat-unavailable-bg: #e7e5df;
+  --color-cat-unavailable-icon: #55605a;
+  --color-parenting-bg: #dfe9d8;
+  // Minimal elevation for cards, as in the approved dashboard.
+  --shadow-card: 0 1px 2px rgb(32 58 49 / 4%), 0 4px 16px rgb(32 58 49 / 6%);
+  // Event artwork on a details panel in its category colour (#431): faint enough that secondary text and links over
+  // its strokes keep 4.5:1 on every category fill (worst case 4.6:1).
+  --event-art-tinted-opacity: 0.06;
+}
+
+// Dark mode is a full forest-green surface system, not an inversion. Elevation comes from surface steps and borders.
+@mixin dark {
+  // See the light value; dark fills keep 4.5:1 up to 12% (worst case 5.2:1 at 10%).
+  --event-art-tinted-opacity: 0.1;
+  // Owner-approved Calendar palette (#255); independent of brand/decorative category tokens.
+  --color-calendar-parent-a-bg: #193d4a;
+  --color-calendar-parent-a-fg: #c6eef7;
+  --color-calendar-parent-b-bg: #452b40;
+  --color-calendar-parent-b-fg: #f3cde7;
+  --color-calendar-parenting-bg: #3d342d;
+  --color-calendar-parenting-fg: #f1dfc9;
+  --color-calendar-activity-bg: #26354b;
+  --color-calendar-activity-fg: #d3e5ff;
+  --color-calendar-family-bg: #4a2e28;
+  --color-calendar-family-fg: #ffdcd1;
+  --color-calendar-task-bg: #352a42;
+  --color-calendar-task-fg: #e9ddf5;
+  --color-calendar-reminder-bg: #44351f;
+  --color-calendar-reminder-fg: #ffe8b0;
+  --color-calendar-unavailable-bg: #30353b;
+  --color-calendar-unavailable-fg: #d7dbe0;
+  color-scheme: dark;
+  --color-canvas: #10251e;
+  --color-surface: #19372d;
+  --color-surface-soft: #24483a;
+  --color-text: #f7f5ed;
+  --color-text-secondary: #c0d0c5;
+  --color-action: #91d2c5;
+  --color-action-hover: #a8ddd2;
+  --color-action-pressed: #bfe7de;
+  --color-on-action: #10251e;
+  --color-accent: #edaa98;
+  --color-on-accent: #10251e; // Ivory text fails on light coral (1.8:1), so accent fills always take dark text.
+  --color-outline: #8aa99a;
+  --color-danger: #ffb4ab;
+  --color-notify: #3ddc84;
+  --color-focus: #91d2c5;
+  --color-selected: #24483a;
+  --color-divider: #24483a;
+  --calendar-item-edge-mix: 45%;
+  --color-disabled-text: #9db2a6;
+  --color-status-pending-bg: #4a3a22;
+  --color-status-confirmed-bg: #1f4a3f;
+  --color-status-rejected-bg: #4d2724;
+  // Charcoal "hesis" is invisible on forest green (1.2:1), so dark mode uses ivory. Sage "Parent" is unchanged.
+  --brand-wordmark-parent: #5e8f7e;
+  --brand-wordmark-hesis: #f7f5ed;
+  --color-leaf: #2c5141;
+  --color-leaf-strong: #4d7a63;
+  --color-leaf-gold: #6b5a2e;
+  --color-avatar-parent: #2b4a63;
+  --color-cat-school-bg: #4a2b2a;
+  --color-cat-school-icon: #ffa59c;
+  --color-cat-medical-bg: #4a3a22;
+  --color-cat-medical-icon: #f6bd77;
+  --color-cat-music-bg: #22394b;
+  --color-cat-music-icon: #9cc6ee;
+  --color-cat-sport-bg: #1f4a35;
+  --color-cat-sport-icon: #8fd8aa;
+  --color-cat-art-bg: #4a2638;
+  --color-cat-art-icon: #f4a6c6;
+  --color-support-bg: #3a2a52;
+  --color-support-fg: #dccbf5;
+  --color-cat-other-bg: #24483a;
+  --color-cat-other-icon: #91d2c5;
+  --color-cat-family-bg: #352c4a;
+  --color-cat-family-icon: #c9b8f0;
+  --color-cat-unavailable-bg: #2d3633;
+  --color-cat-unavailable-icon: #bcc6c0;
+  --color-parenting-bg: #24483a;
+  --shadow-card: none;
+}
+
+// Brand colours (docs/design/BRANDING.md) for the logo and small decorative touches only. They are not
+// semantic UI tokens: the two caregiver colours must never encode a parent, role or custody in the product.
+@mixin brand {
+  --brand-blue: #4e79a7;
+  --brand-sage: #5e8f7e;
+  --brand-coral: #f08a6b;
+  --brand-gold: #f4c15d;
+  --brand-charcoal: #20303f;
+  --brand-on-coral: #ffffff;
+}
+
+@mixin scale {
+  // 4px grid.
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-card: 18px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --content-max-width: 72rem;
+  --target-min: 44px;
+  // The compact chat and desktop pages that need to clear it share these dimensions.
+  --chat-dock-open-width: 24rem;
+  // The minimized bar at the bottom right (#547: the calendar legend only needs to clear this while it's collapsed).
+  --chat-dock-bar-width: 18rem;
+  --chat-dock-open-height: min(36rem, calc(100dvh - 6rem));
+  --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-body: 1rem;
+  --line-height-body: 1.5;
+  --font-size-h3: 1.25rem;
+  --font-size-h2: 1.5rem;
+  --font-size-h1: 2rem;
+  --motion-fast: 120ms;
+}

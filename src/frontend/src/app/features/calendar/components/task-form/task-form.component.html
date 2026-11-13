@@ -1,0 +1,114 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate aria-labelledby="task-heading">
+  <h2 id="task-heading" class="step">{{ editing() ? ('feature.task' | tr) : ('feature.task.details' | tr) }}</h2>
+  <p class="note">
+    {{ 'feature.a.shared.to.do.for.both.of' | tr }} {{ editing() ? ('feature.is.updated' | tr) : ('feature.goes.on.the.calendar' | tr) }} {{ 'feature.at.once.with.no.approval' | tr }}
+  </p>
+  @if (conflict()) {
+    <div class="alert" role="alert">
+      <p>{{ 'feature.the.other.parent.changed.this.task.while' | tr }}</p>
+      <button mat-stroked-button type="button" (click)="loadLatest()">{{ 'feature.load.their.latest.version' | tr }}</button>
+    </div>
+  }
+  @if (error(); as message) {
+    <div class="alert" role="alert">{{ message }}</div>
+  }
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>{{ 'feature.title' | tr }}</mat-label>
+    <input matInput formControlName="title" [maxlength]="titleMax" required />
+    @if (fieldError('title'); as e) {
+      <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+    } @else {
+      <mat-hint>{{ 'feature.short.enough.for.the.calendar.e.g.a84718' | tr }}</mat-hint>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>{{ 'feature.due.date' | tr }}</mat-label>
+    <input matInput [matDatepicker]="duePicker" [matDatepickerFilter]="dayFilter()" formControlName="dueDate" required />
+    <mat-datepicker-toggle matIconSuffix [for]="duePicker" aria-label="{{ 'feature.choose.the.due.date' | tr }}" />
+    <mat-datepicker #duePicker [calendarHeaderComponent]="calendarHeader" />
+    @if (fieldError('dueDate'); as e) {
+      <mat-hint class="field-error" role="alert">{{ e }}</mat-hint>
+    } @else {
+      <mat-hint class="visually-hidden">{{ 'feature.date.format.mm.dd.yyyy.or.yyyy' | tr }}</mat-hint>
+    }
+  </mat-form-field>
+
+  @if (activeChildren().length > 0 || selectedChildIds().length > 0) {
+    <app-calendar-note-children
+      [children]="activeChildren()"
+      [selected]="selectedChildIds()"
+      [error]="fieldError('childIds') ?? fieldError('childId')"
+      (changed)="form.controls.childIds.setValue($event)"
+    />
+  }
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>{{ 'feature.details.optional' | tr }}</mat-label>
+    <textarea matInput formControlName="details" rows="3" [maxlength]="detailsMax"></textarea>
+  </mat-form-field>
+
+  <fieldset class="checklist" formArrayName="items">
+    <legend>{{ 'feature.checklist.optional' | tr }}</legend>
+    <p class="legend-hint">
+      {{ 'feature.the.task.is.done.when.its.required' | tr }}
+    </p>
+    @if (items.length > 0) {
+      <ol>
+        @for (row of items.controls; track row; let i = $index; let first = $first; let last = $last) {
+          <li class="item" [formGroupName]="i">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item__text">
+              <mat-label>{{ 'feature.item' | tr }} {{ i + 1 }}</mat-label>
+              <input matInput type="text" formControlName="text" [maxlength]="itemMax" required />
+            </mat-form-field>
+            <mat-checkbox formControlName="required" class="item__required">{{ 'feature.required' | tr }}</mat-checkbox>
+            <span class="item__buttons">
+              <button
+                mat-icon-button
+                type="button"
+                class="move-up"
+                [disabled]="first"
+                [attr.aria-label]="('feature.move' | tr) + itemLabel(i) + ('feature.up' | tr)"
+                (click)="moveItem(i, -1)"
+              >
+                <app-icon name="chevron-up" />
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                class="move-down"
+                [disabled]="last"
+                [attr.aria-label]="('feature.move' | tr) + itemLabel(i) + ('feature.down' | tr)"
+                (click)="moveItem(i, 1)"
+              >
+                <app-icon name="chevron-down" />
+              </button>
+              <button mat-icon-button type="button" [attr.aria-label]="('feature.remove.594895' | tr) + itemLabel(i)" (click)="removeItem(i)">
+                <app-icon name="close" />
+              </button>
+            </span>
+          </li>
+        }
+      </ol>
+    }
+    @if (fieldError('items'); as e) {
+      <p class="field-error" role="alert">{{ e }}</p>
+    }
+    @if (items.length < itemsMax) {
+      <button mat-stroked-button type="button" class="add-item" (click)="addItem()">
+        <app-icon name="plus" [size]="20" /> {{ 'feature.add.item' | tr }}
+      </button>
+    } @else {
+      <p class="legend-hint">{{ 'feature.a.checklist.can.have.up.to' | tr }} {{ itemsMax }} {{ 'feature.items' | tr }}</p>
+    }
+  </fieldset>
+
+  <app-loading-indicator [active]="busy()" label="{{ 'feature.saving' | tr }}" />
+  <div class="actions">
+    <button mat-flat-button type="submit" [disabled]="busy()">
+      {{ busy() ? ('feature.saving' | tr) : editing() ? ('feature.save.changes' | tr) : ('feature.add.to.calendar' | tr) }}
+    </button>
+    <a mat-button routerLink="/calendar" [queryParams]="{ date: back() }">{{ 'feature.cancel' | tr }}</a>
+  </div>
+</form>

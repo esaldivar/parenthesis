@@ -1,9 +1,15 @@
 using System.Text.Json.Serialization;
 using CoParent.Api.Hosting;
+using CoParent.Infrastructure.DataProtection;
 using CoParent.Infrastructure.Email;
 using CoParent.Infrastructure.Persistence;
+using CoParent.Modules.Approvals;
+using CoParent.Modules.Calendar;
 using CoParent.Modules.Families;
 using CoParent.Modules.Identity;
+using CoParent.Modules.Memories;
+using CoParent.Modules.Messaging;
+using CoParent.Modules.SharedRecords;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,18 +18,26 @@ var postgresConnectionString = builder.Configuration.GetConnectionString("Postgr
         "Connection string 'Postgres' is not configured. For local development, set it with dotnet user-secrets (see README).");
 
 builder.AddPlatformLogging();
+builder.AddPlatformTelemetry();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services
     .AddPersistence(postgresConnectionString)
+    .AddPlatformDataProtection()
     .AddEmail()
     .AddPlatformProblemDetails()
     .AddPlatformOpenApi()
     .AddPlatformHealthChecks()
-    .AddPlatformAntiforgery();
+    .AddPlatformAntiforgery()
+    .AddPlatformPerformance();
 
 builder.Services
     .AddIdentityModule()
-    .AddFamiliesModule();
+    .AddApprovalsModule()
+    .AddFamiliesModule()
+    .AddCalendarModule()
+    .AddMemoriesModule()
+    .AddMessagingModule()
+    .AddSharedRecordsModule();
 
 var app = builder.Build();
 
@@ -37,8 +51,11 @@ if (args is ["migrate"])
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseTraceIdHeader();
+app.UseServerTiming();
 app.UseHttpLogging();
+app.UseResponseCompression();
 app.UseSpaStaticFiles();
+app.UseMessagingHubOriginCheck();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseTenantGate();
@@ -61,6 +78,14 @@ var family = api.MapFamilyScopedGroup();
 
 api.MapIdentityEndpoints();
 api.MapFamiliesEndpoints(family);
+family.MapApprovalsEndpoints();
+family.MapCalendarEndpoints();
+family.MapMemoriesEndpoints();
+family.MapMessagingEndpoints();
+family.MapSharedRecordsEndpoints();
+
+// Live chat updates (#125). Signed-in parents only; the hub checks family membership itself.
+app.MapMessagingHub();
 
 // Everything else that looks like a client-side route gets the Angular app.
 app.MapSpaFallback();

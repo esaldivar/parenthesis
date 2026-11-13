@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Issue 404 · Google Photos export design review</title>
+<!--
+  Static design boards for #404 (Google Photos export). Not production code and not a prototype: nothing here
+  connects to Google or exports. Synthetic family only (Rivera Family: Dad, Mom, Kai). Photo tiles are drawn shapes.
+  Open with ?theme=dark for the dark theme. Styles and tokens are copied from the approved #403 boards
+  (docs/design/reviews/issue-403/boards.html), which copy src/frontend/src/styles/abstracts/_tokens.scss.
+-->
+<style>
+:root{color-scheme:light;
+  --canvas:#f7f5ed;--surface:#fff;--soft:#e4ebdd;--text:#203a31;--muted:#4d6258;--action:#176b67;--on:#fff;
+  --outline:#718478;--divider:#cfd7c9;--danger:#a13333;--selected:#d6e4d0;
+  --pending:#fbeee0;--confirmed:#dcefe9;--rejected:#f8e1df;--accent:#de8f7e;
+  --tile-a:#c9dcc4;--tile-b:#efd28f;--tile-c:#dfebf7;--tile-d:#f9e1ea}
+body.dark{color-scheme:dark;
+  --canvas:#10251e;--surface:#19372d;--soft:#24483a;--text:#f7f5ed;--muted:#c0d0c5;--action:#91d2c5;--on:#10251e;
+  --outline:#8aa99a;--divider:#24483a;--danger:#ffb4ab;--selected:#24483a;
+  --pending:#4a3a22;--confirmed:#1f4a3f;--rejected:#4d2724;--accent:#edaa98;
+  --tile-a:#2f5a48;--tile-b:#5a4a26;--tile-c:#24425e;--tile-d:#4f2c3c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px}
+header.board{max-width:1240px;margin:0 auto 20px}
+header.board p{margin:0;color:var(--muted)}
+header.board h1{font-size:28px;line-height:1.2;margin:6px 0 8px}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:24px;max-width:1240px;margin:0 auto;align-items:start}
+.frame{display:flex;flex-direction:column;gap:8px}
+.frame>.label{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--action);font-weight:600}
+.frame>.why{font-size:14px;color:var(--muted);margin:0}
+.wide{grid-column:1/-1}
+.panel{background:var(--surface);border:1px solid var(--divider);border-radius:20px;padding:16px;display:grid;gap:12px;align-content:start}
+h2{font-size:20px;line-height:1.3;margin:0}
+h3{font-size:16px;margin:0}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.head{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start}
+.ico{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--soft)}
+.ico svg,.btn svg,.chip svg,.note svg{width:20px;height:20px;flex:none}
+.x{width:44px;height:44px;border:0;background:none;color:var(--text);border-radius:50%;font-size:22px}
+.pill{justify-self:start;padding:0 10px;border-radius:999px;border:1px solid var(--outline);font-weight:600;font-size:14px}
+.pill.ok{background:var(--confirmed)}.pill.pend{background:var(--pending)}
+section.photos{border-top:1px solid var(--divider);padding-top:12px;display:grid;gap:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 16px;border-radius:12px;font:600 15px/1.3 inherit;border:1px solid var(--action);background:var(--action);color:var(--on)}
+.btn.out{background:transparent;color:var(--action)}
+.btn.text{border-color:transparent;background:transparent;color:var(--action);padding:8px}
+.btn.danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+.btn[aria-disabled=true]{opacity:.55}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;border:1px solid var(--outline);font-size:13px;font-weight:600}
+.chip.warn{background:var(--pending)}
+.chip.private{background:var(--soft)}
+.chip.shared{background:var(--confirmed)}
+.batch{border:1px solid var(--divider);border-radius:16px;padding:12px;display:grid;gap:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px}
+.tile{aspect-ratio:1;border-radius:10px;position:relative;overflow:hidden;background:var(--tile-a)}
+.tile:nth-child(4n+2){background:var(--tile-b)}.tile:nth-child(4n+3){background:var(--tile-c)}.tile:nth-child(4n){background:var(--tile-d)}
+.tile::before{content:"";position:absolute;left:18%;bottom:-20%;width:90%;height:70%;border-radius:50% 50% 0 0;background:rgb(255 255 255 / 22%)}
+.tile::after{content:"";position:absolute;right:18%;top:18%;width:22%;height:22%;border-radius:50%;background:rgb(255 255 255 / 35%)}
+.tile.big{aspect-ratio:4/3;border-radius:14px}
+.tile .fail{position:absolute;inset:0;display:grid;place-items:center;background:rgb(0 0 0 / 45%);color:#fff;font-size:12px;font-weight:600;text-align:center;padding:4px;z-index:1}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.track{width:52px;height:32px;border-radius:16px;border:2px solid var(--outline);background:var(--soft);position:relative;flex:none}
+.track::after{content:"";position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--outline)}
+.track.on{background:var(--action);border-color:var(--action)}
+.track.on::after{left:24px;width:20px;background:var(--on)}
+.meter{height:8px;border-radius:4px;background:var(--soft);border:1px solid var(--outline);overflow:hidden}
+.meter span{display:block;height:100%;background:var(--action)}
+.note{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--outline);background:var(--soft);font-size:14px}
+.note.warn{background:var(--pending)}
+.note.err{background:var(--rejected);border-color:var(--danger)}
+.files{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.files li{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center}
+.files .tile{width:56px}
+.err{color:var(--danger)}
+.ok-t{color:var(--action)}
+.sheet{background:var(--surface);border:1px solid var(--divider);border-radius:20px 20px 0 0;padding:16px;display:grid;gap:12px}
+.mem{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;border:1px solid var(--divider);border-radius:16px;padding:10px;background:var(--surface)}
+.mem .tile{width:96px}
+.empty{display:grid;justify-items:center;text-align:center;gap:8px;padding:24px 12px}
+.empty .ico{width:64px;height:64px}
+.focus{outline:3px solid var(--action);outline-offset:3px}
+.page{display:grid;gap:12px}
+@media (min-width:1000px){.memlist{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}}
+@media (max-width:700px){body{padding:16px}main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="photo" viewBox="0 0 24 24"><path fill="currentColor" d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v9.6l3.3-3.3a1 1 0 0 1 1.4 0l3.3 3.3 2.3-2.3a1 1 0 0 1 1.4 0L19 15.6V6H5Zm10 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3Z"/></symbol>
+  <symbol id="people" viewBox="0 0 24 24"><path fill="currentColor" d="M9 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm8 0a3 3 0 1 1 0-6 3 3 0 0 1 0 6ZM2 20c0-3.3 3.1-6 7-6s7 2.7 7 6H2Zm15.5 0c0-2.1-.8-3.9-2.2-5.3 3.4-.5 6.7 1.6 6.7 5.3h-4.5Z"/></symbol>
+  <symbol id="download" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3h2v9.6l3.3-3.3 1.4 1.4L12 16.4l-5.7-5.7 1.4-1.4 3.3 3.3V3ZM5 19h14v2H5z"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm1 3v5.4l3.6 2.1-1 1.7L11 13.6V7h2Z"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-1 8v7h2v-7h-2Zm0-3v2h2V7h-2Z"/></symbol>
+  <symbol id="star" viewBox="0 0 24 24"><path fill="currentColor" d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></symbol>
+  <symbol id="album" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v12h12V6H4Zm16 1h2v11a4 4 0 0 1-4 4H6v-2h12a2 2 0 0 0 2-2V7Z"/></symbol>
+  <symbol id="cloud" viewBox="0 0 24 24"><path fill="currentColor" d="M6.5 19a5.5 5.5 0 0 1-.9-10.9A7 7 0 0 1 19 9.5a4.8 4.8 0 0 1-.5 9.5h-12Zm5.5-11-4 4h3v4h2v-4h3l-4-4Z"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/></symbol>
+</svg>
+
+<header class="board">
+  <p>Parenthesis / issue #404 / Google Photos export / proposed design for owner review</p>
+  <h1>Export to Google Photos</h1>
+  <p>Static boards, not working features: nothing here connects to Google or exports. Synthetic Rivera Family (you are Dad; Mom is the co-parent; child Kai). Photo tiles are drawn shapes. Extends the approved #403 boards.</p>
+</header>
+
+<main>
+
+<!-- C1 -->
+<div class="frame">
+  <span class="label">C1 · Settings · Google Photos</span>
+  <p class="why">Each parent connects their own account. What's sent is said before Google's consent screen.</p>
+  <div class="panel">
+    <h2>Google Photos</h2>
+    <p class="small muted">Exporting to Google Photos isn't available yet.</p>
+  </div>
+  <div class="panel">
+    <h2>Google Photos</h2>
+    <p class="small">Save copies of Family Memories photos to your own Google Photos, one album per event.</p>
+    <ul class="small muted" style="margin:0;padding-left:20px">
+      <li>Only photos you choose are sent, as the version stored in Parenthesis.</li>
+      <li>Parenthesis can add photos and make albums. It can't see anything else in your Google Photos.</li>
+      <li>Copies use your Google storage and stay yours: Parenthesis can't recall or delete them.</li>
+      <li>Connecting changes nothing for Mom.</li>
+    </ul>
+    <div class="row"><button class="btn"><svg><use href="#cloud"/></svg>Connect Google Photos</button></div>
+  </div>
+  <div class="panel">
+    <h2>Google Photos</h2>
+    <p class="small" role="status"><strong>Connected.</strong> 18 photos exported to 3 albums.</p>
+    <div class="row"><button class="btn out">Disconnect…</button></div>
+  </div>
+  <div class="panel">
+    <h2>Google Photos</h2>
+    <div class="note err" role="alert"><svg><use href="#info"/></svg><span><strong>Google Photos needs you to reconnect.</strong> Access was removed in your Google account, so 2 photos are waiting. They'll wait until they expire.</span></div>
+    <div class="row"><button class="btn">Reconnect Google Photos</button><button class="btn out">Disconnect…</button></div>
+  </div>
+</div>
+
+<!-- C2 -->
+<div class="frame">
+  <span class="label">C2 · Disconnect</span>
+  <p class="why">Says what stays in Google and what Parenthesis forgets.</p>
+  <div class="panel" role="group" aria-labelledby="c2">
+    <h3 id="c2">Disconnect Google Photos?</h3>
+    <p class="small">Albums and photos already in your Google Photos stay there. 1 photo waiting to export won't be sent.</p>
+    <p class="small muted">Parenthesis can't see your Google Photos, so after you reconnect, photos show as not exported and new exports make new albums.</p>
+    <div class="row"><button class="btn">Disconnect</button><button class="btn text">Cancel</button></div>
+  </div>
+</div>
+
+<!-- M1 -->
+<div class="frame">
+  <span class="label">M1 · One memory · Export beside Download</span>
+  <p class="why">Export follows the download rule: Mom's photos aren't offered because she hasn't allowed downloads.</p>
+  <div class="panel">
+    <div class="row between"><h2>Soccer final</h2><span class="chip"><svg><use href="#clock"/></svg>Deleted Nov 9</span></div>
+    <p class="small muted">Sat, Oct 12 · 4 photos from you · 3 shared by Mom</p>
+    <div class="grid">
+      <div class="tile"><span class="chip shared" style="position:absolute;left:4px;bottom:4px;z-index:1;padding:0 6px" aria-label="In your Google Photos"><svg width="14" height="14"><use href="#check"/></svg></span></div>
+      <div class="tile"><span class="chip shared" style="position:absolute;left:4px;bottom:4px;z-index:1;padding:0 6px" aria-label="In your Google Photos"><svg width="14" height="14"><use href="#check"/></svg></span></div>
+      <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+    </div>
+    <p class="small muted"><svg width="14" height="14" style="vertical-align:-2px"><use href="#check"/></svg> 2 of your photos are in your Google Photos.</p>
+    <div class="row"><button class="btn"><svg><use href="#download"/></svg>Download 4 photos</button><button class="btn out"><svg><use href="#cloud"/></svg>Export to Google Photos</button></div>
+  </div>
+</div>
+
+<!-- M2 -->
+<div class="frame">
+  <span class="label">M2 · Export sheet · before starting</span>
+  <p class="why">Count, album, omitted photos and what can't be undone, before anything is sent.</p>
+  <div class="sheet" role="dialog" aria-labelledby="m2">
+    <div class="row between"><h2 id="m2">Export to Google Photos</h2><button class="x" aria-label="Close">×</button></div>
+    <p class="small"><strong>2 photos</strong> will go to the album <strong>"Soccer final · Oct 12, 2026"</strong> in your Google Photos.</p>
+    <div class="note"><svg><use href="#info"/></svg><span>2 photos are already in your Google Photos and are skipped. Mom hasn't allowed downloads of her 3 photos, so they can't be exported.</span></div>
+    <p class="small muted">Copies use your Google storage. They stay in your Google Photos after these photos are deleted here on Nov 9; Parenthesis can't recall them.</p>
+    <div class="row"><button class="btn">Export 2 photos</button><button class="btn out">Cancel</button></div>
+  </div>
+</div>
+
+<!-- M3 -->
+<div class="frame">
+  <span class="label">M3 · Export sheet · not connected</span>
+  <p class="why">Connect first, then come back to this memory. Download stays available without Google.</p>
+  <div class="sheet" role="dialog" aria-labelledby="m3">
+    <div class="row between"><h2 id="m3">Export to Google Photos</h2><button class="x" aria-label="Close">×</button></div>
+    <p class="small">Connect your Google Photos first. You'll come back here to export.</p>
+    <p class="small muted">Parenthesis can add photos and make albums, and can't see anything else in your Google Photos. Copies use your Google storage.</p>
+    <div class="row"><button class="btn"><svg><use href="#cloud"/></svg>Connect Google Photos</button><button class="btn out">Cancel</button></div>
+    <p class="small muted">Or use Download photos to save them to this device.</p>
+  </div>
+</div>
+
+<!-- P1 -->
+<div class="frame">
+  <span class="label">P1 · Photo viewer · one photo</span>
+  <p class="why">Single-photo export, then a lasting mark once Google confirms it.</p>
+  <div class="panel">
+    <div class="tile big"></div>
+    <p class="small muted">Photo 3 of 7 · yours · Deleted Nov 9</p>
+    <div class="row"><button class="btn out"><svg><use href="#download"/></svg>Download</button><button class="btn out"><svg><use href="#cloud"/></svg>Export to Google Photos</button><button class="btn danger">Delete photo…</button></div>
+  </div>
+  <div class="panel">
+    <div class="tile big"></div>
+    <p class="small ok-t" role="status"><svg width="14" height="14" style="vertical-align:-2px"><use href="#check"/></svg> In your Google Photos, album "Soccer final · Oct 12, 2026"</p>
+    <div class="row"><button class="btn out"><svg><use href="#download"/></svg>Download</button><button class="btn danger">Delete photo…</button></div>
+  </div>
+</div>
+
+<!-- S1 -->
+<div class="frame">
+  <span class="label">S1 · Progress and per-photo results</span>
+  <p class="why">Only Google's confirmation shows "In your Google Photos". A failure is never shown as exported.</p>
+  <div class="sheet">
+    <h2>Exporting to Google Photos</h2>
+    <p class="small" role="status" aria-live="polite">3 of 5 in your Google Photos · 1 exporting · 1 couldn't export</p>
+    <ul class="files">
+      <li><div class="tile"></div><div><strong class="small">Photo 1</strong><p class="small ok-t">In your Google Photos</p></div></li>
+      <li><div class="tile"></div><div><strong class="small">Photo 2</strong><p class="small muted">Exporting…</p></div></li>
+      <li><div class="tile"></div><div><strong class="small">Photo 3</strong><p class="small muted">Checking with Google…</p></div></li>
+      <li><div class="tile"><span class="fail">Not exported</span></div><div><strong class="small">Photo 4</strong><p class="small err">Google Photos had a problem. Try again.</p></div></li>
+      <li><div class="tile"><span class="fail">Not exported</span></div><div><strong class="small">Photo 5 (Mom's)</strong><p class="small err">Mom turned off downloads of her photos.</p></div></li>
+    </ul>
+    <div class="row"><button class="btn">Try again (1)</button><button class="btn out">Close</button></div>
+    <p class="small muted">You can close this. Exporting continues, and the memory shows each photo's result.</p>
+  </div>
+</div>
+
+<!-- S2 -->
+<div class="frame">
+  <span class="label">S2 · Problems that stop exports</span>
+  <p class="why">Each says who must act: you, Google, or nobody (Parenthesis retries).</p>
+  <div class="note err" role="alert"><svg><use href="#info"/></svg><span><strong>Google Photos needs you to reconnect.</strong> 2 photos are waiting. <a href="#" style="color:inherit">Reconnect in Settings</a></span></div>
+  <div class="note err" role="alert"><svg><use href="#info"/></svg><span><strong>Your Google storage is full.</strong> Free up space in your Google account, then try again. Download still works.</span></div>
+  <div class="note warn" role="status"><svg><use href="#clock"/></svg><span><strong>Google is limiting exports right now.</strong> Parenthesis will keep trying until these photos are deleted on Nov 9. Download any you need now.</span></div>
+  <div class="panel">
+    <div class="note"><svg><use href="#info"/></svg><span><strong>No photos here can be exported.</strong> Your 4 photos are already in your Google Photos, and Mom hasn't allowed downloads of hers.</span></div>
+    <button class="btn" aria-disabled="true"><svg><use href="#cloud"/></svg>Export to Google Photos</button>
+  </div>
+</div>
+
+<!-- X1 -->
+<div class="frame">
+  <span class="label">X1 · Final week and expiry</span>
+  <p class="why">Export never extends the 28 days and is never called a backup until Google confirms it.</p>
+  <div class="panel">
+    <div class="note warn" role="status"><svg><use href="#clock"/></svg><span><strong>These photos are deleted in 3 days, on Nov 9.</strong> Download or export any you want to keep.</span></div>
+    <div class="grid"><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+    <div class="row"><button class="btn"><svg><use href="#download"/></svg>Download photos (4)</button><button class="btn out"><svg><use href="#cloud"/></svg>Export to Google Photos</button></div>
+  </div>
+  <div class="panel">
+    <ul class="files">
+      <li><div class="tile"><span class="fail">Not exported</span></div><div><strong class="small">Photo 2</strong><p class="small err">This photo expired before it was exported.</p></div></li>
+    </ul>
+  </div>
+</div>
+
+</main>
+<script>
+  const params = new URLSearchParams(location.search);
+  if (params.get('theme') === 'dark') document.body.classList.add('dark');
+</script>
+</body>
+</html>

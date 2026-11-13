@@ -1,0 +1,570 @@
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
+import { CalendarPalette } from '../../calendar-palette';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { MatButtonModule } from '@angular/material/button';
+import { Router, RouterLink } from '@angular/router';
+import { Api, CalendarEvent, Child, FamilyMember, Reminder, SharedTask } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { CachedPeriod, CalendarCache } from '../../../../core/cache/calendar-cache';
+import { LoadingIndicator } from '../../../../shared/brand/loading-indicator';
+import { EmptyState } from '../../../../shared/empty-state/empty-state';
+import { Icon } from '../../../../shared/icon/icon';
+import { PlainDate } from '../../../../core/dates/plain-date';
+import { addDays, startOfWeek, todayIn, weekLabelLong } from '../../../../core/dates/dates';
+import { CalendarFilterPanel } from '../../components/calendar-filter-panel/calendar-filter-panel.component';
+import {
+  ALL_FILTERS,
+  CalendarFilters,
+  DIMENSIONS,
+  Dimension,
+  activeDimensions,
+  applyFilters,
+  concealedUnavailable,
+  filtersKey,
+  filtersToSave,
+  parseFilters,
+  selectionText,
+} from '../../calendar-filters';
+import { CalendarItem, forChild, reminderItems, swapTargetFor, taskItems, toItems } from '../../calendar-items';
+import { CalendarList } from '../../components/calendar-list/calendar-list.component';
+import { CalendarSearch } from '../../components/calendar-search/calendar-search.component';
+import { CalendarMonth, monthGrid, startOfMonth } from '../../components/calendar-month/calendar-month.component';
+import { CalendarWeek } from '../../components/calendar-week/calendar-week.component';
+import { EventDetails } from '../../components/event-details/event-details.component';
+import { AddAt, addQuery } from '../../slot';
+import { ReminderDetails } from '../../components/reminder-details/reminder-details.component';
+import { TaskDetails } from '../../components/task-details/task-details.component';
+import { fromFamilyLocal } from '../../time';
+import { Toasts } from '../../../../shared/toast/toasts';
+
+export type CalendarView = 'week' | 'month' | 'list';
+type LoadState = 'loading' | 'error' | 'ready';
+
+/** After this long, the loading state explains that the app may be starting up after a quiet spell (#415). */
+export const SLOW_LOAD_MS = 4000;
+/** How long to wait before the one automatic retry of a load that failed while the app was starting. */
+export const COLD_START_RETRY_MS = 1500;
+/** Statuses a starting replica or its ingress can return for a moment: worth one quiet retry, never more. */
+const TRANSIENT_STATUSES = new Set([0, 502, 503, 504]);
+const isTransient = (error: unknown) => error instanceof HttpErrorResponse && TRANSIENT_STATUSES.has(error.status);
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const VIEWS: readonly { id: CalendarView; label: TranslationKey }[] = [
+  { id: 'week', label: 'feature.week' },
+  { id: 'month', label: 'feature.month' },
+  { id: 'list', label: 'feature.list' },
+];
+
+const isDate = (value: string | undefined): value is PlainDate => !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+/** "October 2026" */
+function monthLabel(date: PlainDate, locale: string): string {
+  const [y, m] = date.split('-').map(Number);
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, 1)));
+}
+
+/** The first day of the next month. */
+const nextMonth = (date: PlainDate): PlainDate => {
+  const [y, m] = date.split('-').map(Number);
+  return m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
+};
+const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(startOfMonth(date), -1));
+
+/**
+ * The shared calendar (M3; docs/design/handoffs/2026-10-20-calendar.md). Week is the default, with Month and List;
+ * a child filter; and calm loading, error and empty states. The view, date and child live in the address, so the
+ * dashboard can open it on the week it was showing. Pending items are labelled and patterned, never shown as
+ * confirmed; selecting any item opens its details.
+ */
+@Component({
+  selector: 'app-calendar-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslatePipe, CalendarPalette,
+    MatButtonModule,
+    RouterLink,
+    EmptyState,
+    Icon,
+    CalendarWeek,
+    CalendarMonth,
+    CalendarList,
+    EventDetails,
+    ReminderDetails,
+    TaskDetails,
+    CalendarFilterPanel,
+    CalendarSearch,
+    LoadingIndicator,
+  ],
+  templateUrl: './calendar-page.component.html',
+  styleUrl: './calendar-page.component.scss',
+})
+export class CalendarPage {
+  private readonly locale = inject(LocaleService);
+  private readonly api = inject(Api);
+  private readonly auth = inject(AuthStore);
+  private readonly router = inject(Router);
+  private readonly toasts = inject(Toasts);
+  private readonly injector = inject(Injector);
+  private readonly cache = inject(CalendarCache);
+  private readonly calendarHeading = viewChild.required<ElementRef<HTMLHeadingElement>>('calendarHeading');
+
+  /** `?view=week|month|list` */
+  readonly view = input<string>();
+  /** `?date=YYYY-MM-DD`, any day in the period. */
+  readonly date = input<string>();
+  /** `?week=YYYY-MM-DD`, from the dashboard; same as `date`. */
+  readonly week = input<string>();
+  /** `?child=<id>` */
+  readonly child = input<string>();
+  /** `?event=<id>`: open that event's details once it's loaded (e.g. "View request details" after a swap). */
+  readonly event = input<string>();
+
+  protected readonly views = VIEWS;
+  protected readonly family = this.auth.currentFamily;
+  private readonly timeZone = computed(() => this.family()?.timeZone ?? 'UTC');
+  protected readonly today = computed(() => todayIn(this.timeZone(), new Date()));
+
+  protected readonly current = computed<CalendarView>(() =>
+    (['week', 'month', 'list'] as const).find((v) => v === this.view()) ?? 'week',
+  );
+  protected readonly anchor = computed<PlainDate>(() => {
+    const date = this.date();
+    const week = this.week();
+    return isDate(date) ? date : isDate(week) ? week : this.today();
+  });
+
+  /** [from, to) for the current view. Month fetches its whole six-week grid. */
+  protected readonly range = computed(() => {
+    const anchor = this.anchor();
+    switch (this.current()) {
+      case 'week': {
+        const from = startOfWeek(anchor);
+        return { from, to: addDays(from, 7) };
+      }
+      case 'month': {
+        const grid = monthGrid(anchor);
+        return { from: grid[0], to: addDays(grid[41], 1) };
+      }
+      default:
+        return { from: startOfMonth(anchor), to: nextMonth(anchor) };
+    }
+  });
+
+  protected periodLabel(direction: 'previous' | 'next'): TranslationKey {
+    const labels = {
+      previous: { week: 'calendar.previous.week', month: 'calendar.previous.month', list: 'calendar.previous.list' },
+      next: { week: 'calendar.next.week', month: 'calendar.next.month', list: 'calendar.next.list' },
+    } as const;
+    return labels[direction][this.current()];
+  }
+
+  protected readonly heading = computed(() =>
+    this.current() === 'week' ? weekLabelLong(startOfWeek(this.anchor()), this.locale.locale()) : monthLabel(this.anchor(), this.locale.locale()),
+  );
+  protected readonly isCurrentPeriod = computed(() => {
+    const { from, to } = this.range();
+    const today = this.today();
+    return this.current() === 'month' ? today.slice(0, 7) === this.anchor().slice(0, 7) : today >= from && today < to;
+  });
+
+  protected readonly state = signal<LoadState>('loading');
+  protected readonly loadError = signal<string | null>(null);
+  /** A period seen earlier in this tab is on screen while the server's current answer is fetched. */
+  protected readonly refreshing = signal(false);
+  /** Loading has taken longer than {@link SLOW_LOAD_MS}. */
+  protected readonly slow = signal(false);
+  private readonly events = signal<readonly CalendarEvent[]>([]);
+  private readonly reminders = signal<readonly Reminder[]>([]);
+  private readonly tasks = signal<readonly SharedTask[]>([]);
+  protected readonly members = signal<readonly FamilyMember[]>([]);
+  protected readonly children = signal<readonly Child[]>([]);
+  private readonly reloads = signal(0);
+  /** A message after adding or cancelling, read out politely. */
+
+  protected readonly items = computed(() => [
+    ...toItems(this.events(), this.members(), this.children(), this.timeZone(), this.locale.locale()),
+    ...reminderItems(this.reminders(), this.members(), this.children(), this.timeZone(), this.locale.locale()),
+    ...taskItems(this.tasks(), this.members(), this.children(), this.locale.locale()),
+  ]);
+  protected readonly childFilter = computed(() => {
+    const child = this.child();
+    return this.children().some((c) => c.id === child) ? child! : null;
+  });
+  /** This parent's own filters (#190): remembered in this browser per parent and family, never shared. */
+  protected readonly filters = signal<CalendarFilters>(ALL_FILTERS);
+  protected readonly filtersOpen = signal(false);
+  protected readonly activeFilters = computed(() =>
+    activeDimensions(this.filters()).map((id) => ({
+      id,
+      label: DIMENSIONS.find((d) => d.id === id)!.label,
+      text: selectionText(this.filters(), id),
+    })),
+  );
+  private readonly me = computed(() => this.members().find((m) => m.isYou)?.membershipId);
+  protected readonly childShown = computed(() => forChild(this.items(), this.childFilter()));
+  /** Items shown in full (not counting hidden-unavailable markers). */
+  protected readonly visibleCount = computed(() => this.shown().filter((i) => !i.concealed).length);
+  protected readonly shown = computed(() => [
+    ...applyFilters(this.childShown(), this.filters(), this.me()),
+    ...concealedUnavailable(this.childShown(), this.filters(), this.me()),
+  ]);
+  protected readonly activeChildren = computed(() => this.children().filter((c) => c.status === 'Active'));
+
+  protected readonly selected = signal<CalendarItem | null>(null);
+  protected readonly selectedEvent = computed(() => this.events().find((e) => e.id === this.selected()?.id) ?? null);
+  protected readonly selectedReminder = computed(() => {
+    const item = this.selected();
+    return item?.reminderId ? (this.reminders().find((r) => `reminder:${r.id}:${r.startsAt}` === item.id) ?? null) : null;
+  });
+  protected readonly selectedTask = computed(() => {
+    const id = this.selected()?.taskId;
+    return id ? (this.tasks().find((t) => t.id === id) ?? null) : null;
+  });
+  /**
+   * For unavailable time: the same parent's confirmed parenting time it overlaps, so the details can offer a swap only
+   * when one applies (#190). Uses every loaded item, whatever the filters hide.
+   */
+  protected readonly swapTarget = computed(() => swapTargetFor(this.selected(), this.items()));
+  private opener: HTMLElement | null = null;
+  private readonly storage = inject(DOCUMENT).defaultView;
+  private readonly user = this.auth.user;
+  /** Where this parent's filters are kept for this family, once both are known. */
+  private readonly storageKey = computed(() => {
+    const user = this.user();
+    const family = this.family();
+    return user && family ? filtersKey(user.id, family.id) : null;
+  });
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.slowTimer));
+    // A message handed over by the Add, Edit, Swap, Reminder and Task pages: shown as a toast (#226).
+    const handed = this.router.currentNavigation()?.extras.state?.['calendarNotice'];
+    if (typeof handed === 'string') {
+      this.toasts.show(handed);
+    }
+
+    effect(() => {
+      const family = this.family();
+      const { from, to } = this.range();
+      this.reloads();
+      if (!family) {
+        return;
+      }
+      untracked(() => void this.load(family.id, from, to));
+    });
+
+    // Restore this parent's filters for this family. Storage can be missing or blocked; then everything shows.
+    effect(() => {
+      const key = this.storageKey();
+      untracked(() => this.filters.set(key ? parseFilters(this.read(key)) : ALL_FILTERS));
+    });
+
+    effect(() => {
+      const id = this.event();
+      const item = this.state() === 'ready' ? this.items().find((i) => i.id === id) : undefined;
+      if (item && id !== this.linked) {
+        this.linked = id;
+        untracked(() => void this.open(item));
+      }
+    });
+  }
+
+  /** The `?event=` already opened, so closing it doesn't reopen it. */
+  private linked: string | undefined;
+
+  private loadToken = 0;
+  private slowTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * Shows a period at once when it was seen earlier in this tab (memory only, #415), and always fetches the server's
+   * current answer, which replaces it. Without a cached copy the loading state shows, and after a few seconds it
+   * explains a likely cold start. A load that fails the way a starting app does is retried once, quietly.
+   */
+  private async load(familyId: string, from: PlainDate, to: PlainDate): Promise<void> {
+    const token = ++this.loadToken;
+    const stamp = this.cache.stamp();
+    const cached = this.cache.get(familyId, from, to);
+    this.markStart(token);
+    this.slow.set(false);
+    clearTimeout(this.slowTimer);
+    if (cached) {
+      this.show(cached);
+      this.state.set('ready');
+      this.refreshing.set(true);
+    } else {
+      this.state.set('loading');
+      this.refreshing.set(false);
+      this.slowTimer = setTimeout(() => this.slow.set(token === this.loadToken && this.state() === 'loading'), SLOW_LOAD_MS);
+    }
+    try {
+      const zone = this.timeZone();
+      const needsFamily = this.members().length === 0;
+      const [fromInstant, toInstant] = [fromFamilyLocal(`${from}T00:00`, zone), fromFamilyLocal(`${to}T00:00`, zone)];
+      const fetchAll = () =>
+        Promise.all([
+          this.api.calendarEvents(familyId, fromInstant, toInstant),
+          this.api.reminders(familyId, fromInstant, toInstant),
+          this.api.tasks(familyId, from, to),
+          needsFamily ? this.api.family(familyId) : Promise.resolve(null),
+          needsFamily ? this.api.children(familyId) : Promise.resolve(null),
+        ]);
+      const [events, reminders, tasks, details, children] = await fetchAll().catch(async (error: unknown) => {
+        if (!isTransient(error) || token !== this.loadToken) {
+          throw error;
+        }
+        await delay(COLD_START_RETRY_MS);
+        return fetchAll();
+      });
+      if (token !== this.loadToken) {
+        return;
+      }
+      if (details) {
+        this.members.set(details.members);
+      }
+      if (children) {
+        this.children.set(children);
+      }
+      this.markData(token);
+      const period = { events, reminders, tasks };
+      this.cache.set(familyId, from, to, period, stamp);
+      this.show(period);
+      this.finish(token, 'ready');
+      const open = this.selected();
+      if (open && !this.items().some((i) => i.id === open.id)) {
+        this.selected.set(null);
+      }
+    } catch (error) {
+      if (token === this.loadToken) {
+        this.loadError.set(generalMessage(toProblem(error)));
+        this.finish(token, 'error');
+      }
+    }
+  }
+
+  private show(period: CachedPeriod): void {
+    this.events.set(period.events);
+    this.reminders.set(period.reminders);
+    this.tasks.set(period.tasks);
+  }
+
+  private finish(token: number, state: LoadState): void {
+    clearTimeout(this.slowTimer);
+    this.slow.set(false);
+    this.refreshing.set(false);
+    this.state.set(state);
+    if (state === 'ready') {
+      afterNextRender(() => this.markRendered(token), { injector: this.injector });
+    }
+  }
+
+  // Timings for #415, visible in the browser's Performance panel and readable with
+  // performance.getEntriesByName('parenthesis:calendar-data' | 'parenthesis:calendar-render'). Durations only.
+  private markStart(token: number): void {
+    globalThis.performance?.mark?.(`parenthesis:calendar-start:${token}`);
+  }
+
+  private markData(token: number): void {
+    this.measure('parenthesis:calendar-data', token);
+  }
+
+  private markRendered(token: number): void {
+    if (token === this.loadToken) {
+      this.measure('parenthesis:calendar-render', token);
+    }
+    globalThis.performance?.clearMarks?.(`parenthesis:calendar-start:${token}`);
+  }
+
+  private measure(name: string, token: number): void {
+    const timing = globalThis.performance;
+    try {
+      timing?.clearMeasures?.(name);
+      timing?.measure?.(name, `parenthesis:calendar-start:${token}`);
+    } catch {
+      // The start mark was cleared or never made (an older browser): nothing to report.
+    }
+  }
+
+  protected retry(): void {
+    this.reloads.update((n) => n + 1);
+  }
+
+  protected setView(view: CalendarView): void {
+    this.navigate({ view });
+  }
+
+  protected step(direction: -1 | 1): void {
+    const anchor = this.anchor();
+    const date =
+      this.current() === 'week'
+        ? addDays(anchor, direction * 7)
+        : direction === 1
+          ? nextMonth(anchor)
+          : previousMonth(anchor);
+    this.navigate({ date });
+  }
+
+  protected goToToday(): void {
+    this.navigate({ date: this.today() });
+  }
+
+  /**
+   * A search result (#253): show its first date and open its existing details there, even when it was opened before.
+   * Its details are reloaded from the server, so nothing stale or unauthorized is shown.
+   */
+  protected openFound(item: CalendarItem): void {
+    this.linked = undefined;
+    this.navigate({ date: item.firstDate, event: item.id });
+  }
+
+  protected setChild(childId: string | null): void {
+    this.navigate({ child: childId });
+  }
+
+  /** From Month: open the week of that day. */
+  protected openWeekOf(date: PlainDate): void {
+    this.navigate({ view: 'week', date });
+  }
+
+  /** A tap on empty calendar space (#212): the Add page, starting on that date (and half-hour). Nothing is saved yet. */
+  protected addAt(at: AddAt): void {
+    void this.router.navigate(['/calendar/new'], { queryParams: addQuery(at) });
+  }
+
+  /** A cached block may have changed in another tab. Never show live actions until its current details are loaded. */
+  private opening = 0;
+
+  protected async open(item: CalendarItem): Promise<void> {
+    const attempt = ++this.opening;
+    const loaded = this.loadToken;
+    this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.selected.set(null);
+    if (item.reminderId || item.taskId) {
+      this.selected.set(item);
+      return;
+    }
+    const familyId = this.family()?.id;
+    if (!familyId) return;
+    try {
+      const event = await this.api.calendarEvent(familyId, item.id);
+      if (attempt !== this.opening || loaded !== this.loadToken || familyId !== this.family()?.id) return;
+      const fresh = toItems([event], this.members(), this.children(), this.timeZone(), this.locale.locale()).find((i) => i.id === item.id);
+      if (!fresh || event.status === 'Cancelled') {
+        this.unavailable(item.id);
+        return;
+      }
+      this.events.update((events) => events.map((e) => e.id === event.id ? event : e));
+      this.selected.set(fresh);
+    } catch (error) {
+      if (attempt !== this.opening || loaded !== this.loadToken || familyId !== this.family()?.id) return;
+      if ([403, 404].includes(toProblem(error).status ?? 0)) {
+        this.unavailable(item.id);
+      } else {
+        this.toasts.show(translate('feedback.we.couldn.t.open.that.event.try.again', this.locale.locale()));
+      }
+    }
+  }
+
+  private unavailable(eventId: string): void {
+    this.events.update((events) => events.filter((e) => e.id !== eventId));
+    this.toasts.show(translate('feedback.that.event.isn.t.available.on.the.calendar.any.more.the.calendar.has.been.refreshed', this.locale.locale()));
+    this.retry();
+  }
+
+  protected close(): void {
+    this.opening++;
+    this.selected.set(null);
+    const opener = this.opener;
+    afterNextRender(() => (opener?.isConnected ? opener : this.calendarHeading().nativeElement).focus(), { injector: this.injector });
+  }
+
+  /** A task changed in its details (a tick, Mark done): show the new state and keep the details open. */
+  protected taskUpdated(task: SharedTask): void {
+    this.tasks.update((tasks) => tasks.map((t) => (t.id === task.id ? task : t)));
+  }
+
+  protected setFilters(filters: CalendarFilters): void {
+    this.filters.set(filters);
+    const key = this.storageKey();
+    if (key) {
+      try {
+        this.storage?.localStorage.setItem(key, filtersToSave(filters));
+      } catch {
+        // Not remembered this time; the filters still apply now.
+      }
+    }
+  }
+
+  /** Reset filters: everything shows again, Unavailable included, and the saved choice is cleared. */
+  protected resetFilters(): void {
+    this.filters.set(ALL_FILTERS);
+    const key = this.storageKey();
+    if (key) {
+      try {
+        this.storage?.localStorage.removeItem(key);
+      } catch {
+        // Nothing saved to clear.
+      }
+    }
+  }
+
+  /** Remove one dimension's filter (a chip's ×). */
+  protected clearFilter(dimension: Dimension): void {
+    this.setFilters({ ...this.filters(), [dimension]: ALL_FILTERS[dimension] });
+  }
+
+  protected openFilters(): void {
+    this.filtersOpen.set(true);
+  }
+
+  protected closeFilters(): void {
+    this.filtersOpen.set(false);
+    afterNextRender(() => document.querySelector<HTMLElement>('.filters-button')?.focus(), { injector: this.injector });
+  }
+
+  private read(key: string): string | null {
+    try {
+      return this.storage?.localStorage.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** After a cancellation (or a cancellation request) from the details panel. */
+  protected changed(message: string): void {
+    this.toasts.show(message);
+    this.selected.set(null);
+    this.retry();
+    // The deleted trigger and the loading grid disappear. This heading survives both renders (#172).
+    afterNextRender(() => this.calendarHeading().nativeElement.focus(), { injector: this.injector });
+  }
+
+  private navigate(params: { view?: CalendarView; date?: PlainDate; child?: string | null; event?: string }): void {
+    void this.router.navigate([], {
+      queryParams: {
+        view: params.view ?? (this.current() === 'week' ? null : this.current()),
+        date: params.date ?? this.date() ?? this.week() ?? null,
+        week: null,
+        child: params.child === undefined ? (this.childFilter() ?? null) : params.child,
+        event: params.event ?? null,
+      },
+      replaceUrl: true,
+    });
+  }
+}

@@ -1,0 +1,134 @@
+<div class="backdrop" (click)="closed.emit()" aria-hidden="true"></div>
+<section
+  class="panel"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="task-details-title"
+  cdkTrapFocus
+  [cdkTrapFocusAutoCapture]="true"
+  data-kind="task"
+  [appPanelTint]="'task'"
+>
+  @if (confetti()) {
+    <div class="confetti" aria-hidden="true">
+      @for (piece of pieces; track piece) {
+        <span [style.--i]="piece"></span>
+      }
+    </div>
+  }
+
+  <div class="panel__head">
+    <span class="panel__icon" [appCalendarPalette]="'task'"><app-icon name="note" [size]="24" /></span>
+    <div class="panel__titles">
+      <h2 id="task-details-title" tabindex="-1" cdkFocusInitial>{{ current().title }}</h2>
+      <p class="panel__type" [appCalendarPalette]="'task'">{{ 'feature.task' | tr }}</p>
+    </div>
+    <button mat-icon-button type="button" (click)="closed.emit()" aria-label="{{ 'feature.close.details' | tr }}">
+      <app-icon name="close" />
+    </button>
+  </div>
+
+  <p class="status" [attr.data-done]="done() ? 'true' : null">{{ done() ? ('feature.done' | tr) : ('feature.to.do' | tr) }}</p>
+
+  <p class="notice" role="status">{{ notice() }}</p>
+
+  <dl class="facts">
+    <dt>{{ 'feature.due' | tr }}</dt>
+    <dd>{{ due() }}</dd>
+    @if (childNames(); as names) {
+      <dt>{{ 'feature.about' | tr }}</dt>
+      <dd>{{ names }}</dd>
+    }
+    @if (current().details; as details) {
+      <dt>{{ 'feature.details' | tr }}</dt>
+      <dd>{{ details }}</dd>
+    }
+    <dt>{{ 'feature.added.by' | tr }}</dt>
+    <dd>
+      {{ item().isMine ? ('feature.you.08b041' | tr) : item().ownerName }}
+      @if (editedBy(); as editor) {
+        <span class="hint"> {{ 'feature.edited.by' | tr }} {{ editor }}</span>
+      }
+      @if (seenBy(); as seen) {
+        <span class="hint"> {{ 'feature.seen.by' | tr }} {{ seen }}</span>
+      }
+    </dd>
+  </dl>
+
+  @if (hasChecklist()) {
+    <section class="checklist" aria-labelledby="task-checklist-title">
+      <div class="checklist__head">
+        <h3 id="task-checklist-title">{{ 'feature.checklist' | tr }}</h3>
+        <span id="task-progress">{{ progressText() }}</span>
+      </div>
+      <progress
+        [value]="current().progressDone"
+        [max]="current().progressTotal"
+        aria-labelledby="task-checklist-title task-progress"
+      ></progress>
+      <ul>
+        @for (entry of current().items; track entry.id) {
+          <li>
+            <label>
+              <input
+                type="checkbox"
+                [checked]="entry.completedAt !== null"
+                [attr.aria-disabled]="busy() || sessionChanged()"
+                (click)="holdWhileBusy($event)"
+                #box
+                (change)="toggle(entry, box)"
+              />
+              <span class="checklist__text">
+                {{ entry.text }}
+                @if (anyRequired()) {
+                  <span class="tag">{{ entry.required ? ('feature.required' | tr) : ('feature.optional.59be71' | tr) }}</span>
+                }
+                @if (tickedText(entry); as ticked) {
+                  <span class="hint"> {{ ticked }}</span>
+                }
+              </span>
+            </label>
+          </li>
+        }
+      </ul>
+      @if (completedText(); as completed) {
+        <p class="hint">{{ completed }}</p>
+      }
+    </section>
+  }
+
+  @if (error(); as error) {
+    <p class="error" role="alert" [attr.id]="sessionChanged() ? 'task-session-error' : null" tabindex="-1">{{ error }}</p>
+  }
+
+  @if (sessionChanged()) {
+    <!-- A native navigation restarts session initialization and refreshes the token before another explicit action. -->
+    <a mat-stroked-button [href]="reloadUrl">{{ 'feature.reload.calendar' | tr }}</a>
+  } @else {
+  <div class="actions">
+    @if (!confirming()) {
+      @if (!hasChecklist()) {
+        @if (done()) {
+          <p class="done-by">{{ completedText() }}</p>
+        }
+        <button [matButton]="done() ? 'outlined' : 'filled'" type="button" [disabled]="busy()" disabledInteractive (click)="setDone(!done())">
+          @if (!done()) {
+            <app-icon name="check" [size]="20" />
+          }
+          {{ done() ? ('feature.undo.done' | tr) : ('feature.mark.done' | tr) }}
+        </button>
+      }
+      <a mat-stroked-button [routerLink]="['/calendar/tasks', current().id, 'edit']">{{ 'feature.edit.task' | tr }}</a>
+      <button #deleteButton mat-stroked-button type="button" (click)="confirmDelete(true)">{{ 'feature.delete.task' | tr }}</button>
+    } @else {
+      <p class="explain" id="task-delete-explanation">{{ 'feature.this.deletes.the.task.and.its.checklist' | tr }}</p>
+      <div class="actions__row">
+        <button mat-flat-button type="button" class="danger" [disabled]="busy()" disabledInteractive aria-describedby="task-delete-explanation" (click)="remove()">
+          {{ busy() ? ('feature.deleting' | tr) : ('feature.yes.delete' | tr) }}
+        </button>
+        <button #keepButton mat-button type="button" [disabled]="busy()" aria-describedby="task-delete-explanation" (click)="confirmDelete(false)">{{ 'feature.keep.it' | tr }}</button>
+      </div>
+    }
+  </div>
+  }
+</section>

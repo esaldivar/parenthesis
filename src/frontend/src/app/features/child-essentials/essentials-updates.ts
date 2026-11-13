@@ -1,0 +1,133 @@
+import { AppLocale } from '../../core/i18n/locale.service';
+import { translate, TranslationKey } from '../../core/i18n/translations';
+import {
+  DestroyRef, Directive, ElementRef, Signal, afterNextRender, effect, inject, output, signal, untracked,
+} from '@angular/core';
+import { EssentialsBanner, EssentialsSectionId } from '../../core/api/api';
+import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
+
+/** Each shared section's name and the label of each field a notice can name. */
+export const ESSENTIALS_SECTIONS: Record<
+  EssentialsSectionId,
+  { readonly name: TranslationKey; readonly fields: Readonly<Record<string, TranslationKey>> }
+> = {
+  school: {
+    name: 'essentials.section.school',
+    fields: { grade: 'essentials.field.grade', homeroomTeacher: 'essentials.field.homeroomTeacher', parentConcerns: 'essentials.field.parentConcerns' },
+  },
+  allergiesFood: {
+    name: 'essentials.section.allergiesFood',
+    fields: { allergies: 'essentials.field.allergies', noKnownAllergies: 'essentials.field.noKnownAllergies', foodPreferences: 'essentials.field.foodPreferences' },
+  },
+  clothing: {
+    name: 'essentials.section.clothing',
+    fields: { topSize: 'essentials.field.topSize', bottomSize: 'essentials.field.bottomSize', shoeSize: 'essentials.field.shoeSize', fitNotes: 'essentials.field.fitNotes' },
+  },
+  whatHelps: {
+    name: 'essentials.section.whatHelps',
+    fields: { comfortItems: 'essentials.field.comfortItems', calmingStrategies: 'essentials.field.calmingStrategies' },
+  },
+  // Routines are named by id, never by their text (#498), so the banner names the section.
+  routines: {
+    name: 'essentials.section.routines',
+    fields: {},
+  },
+  // The co-parent's own routines at their home: their Routines tab.
+  householdRoutines: {
+    name: 'essentials.section.householdRoutines',
+    fields: {},
+  },
+  // Entries are named by position or id, never by their details, so the banner names the section.
+  emergencyContacts: {
+    name: 'essentials.section.emergencyContacts',
+    fields: {},
+  },
+  caregivers: {
+    name: 'essentials.section.caregivers',
+    fields: {},
+  },
+  // Providers are named by id, never by their details, so the banner names the section.
+  medical: {
+    name: 'essentials.section.medical',
+    fields: {},
+  },
+  // Entries are named by id, never by their details (#127), so the banner names the section.
+  medication: {
+    name: 'essentials.section.medication',
+    fields: {},
+  },
+};
+
+/** "Kai’s shoe size updated" for one field, otherwise "Kai’s Clothing & Shoes updated". Never a value. */
+export function bannerText(childName: string, banner: EssentialsBanner, locale: AppLocale = 'en'): string {
+  const section = ESSENTIALS_SECTIONS[banner.section];
+  const field = banner.fields.length === 1 ? section?.fields[banner.fields[0]] : undefined;
+  return translate('essentials.copy.updated', locale, {
+    name: childName, subject: translate(field ?? section?.name ?? 'feature.child.essentials', locale),
+  });
+}
+
+/** Half the element is on screen, or, for one taller than the screen, it fills at least half the screen. */
+function seen(entry: IntersectionObserverEntry): boolean {
+  if (!entry.isIntersecting) return false;
+  const screen = entry.rootBounds?.height ?? 0;
+  return entry.intersectionRatio >= 0.5 || (screen > 0 && entry.intersectionRect.height >= screen / 2);
+}
+
+/**
+ * Emits once, the first time its element is on screen (half of it, or half the screen for a tall one). Without
+ * IntersectionObserver (old browsers, tests) it never emits, so nothing is cleared that wasn't seen.
+ */
+@Directive({ selector: '[appOnScreen]' })
+export class OnScreen {
+  readonly appOnScreen = output<void>();
+
+  constructor() {
+    const element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      if (typeof IntersectionObserver === 'undefined') return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some(seen)) {
+            observer.disconnect();
+            this.appOnScreen.emit();
+          }
+        },
+        // Fine steps, so an element taller than the screen is noticed as it fills it, not only at half of itself.
+        { threshold: [0, 0.25, 0.5, 0.75, 1] },
+      );
+      observer.observe(element);
+      destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
+}
+
+/**
+ * A section's changed row highlights stay for this visit once shown,
+ * even after the server has been told they were seen, so they don't vanish under the parent's eyes; the next visit
+ * won't show them. A row can cover several fields (Allergies and notes covers the allergy status too).
+ */
+export function sectionUpdates(section: EssentialsSectionId, childId: Signal<string>) {
+  const store = inject(EssentialsUpdatesStore);
+  const highlighted = signal<ReadonlySet<string>>(new Set());
+  let visit = '';
+  effect(() => {
+    const child = childId();
+    const rows = store.rows(child, section);
+    untracked(() => {
+      // A new child is a new visit.
+      if (child !== visit) {
+        visit = child;
+        highlighted.set(new Set());
+      }
+      if (rows.some((row) => !highlighted().has(row))) highlighted.set(new Set([...highlighted(), ...rows]));
+    });
+  });
+  return {
+    updated: (...fields: string[]) => fields.some((field) => highlighted().has(field)),
+    rowOnScreen: (...fields: string[]) => store.rowsSeen(childId(), section, fields),
+  };
+}
+
+export type SectionUpdates = ReturnType<typeof sectionUpdates>;
