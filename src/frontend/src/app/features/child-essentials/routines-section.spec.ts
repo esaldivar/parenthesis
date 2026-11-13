@@ -248,4 +248,43 @@ describe('Routines', () => {
     });
     http.verify();
   });
+
+  it('names whose routines the share buttons act on, announces them and keeps focus when they are replaced', async () => {
+    const { http, host, button, click, settle, next } = setup();
+    const nap = { revision: 1, values: { entries: [{ id: 'r-nap', title: 'Nap', details: null }] } };
+    const other = (shared: boolean) => ({
+      ownerId: 'parent-2', ownerName: 'Parent B', isMine: false, latest: nap, shared: shared ? nap : null, canAccept: !shared,
+    });
+    const status = () => [...host.querySelectorAll('[role="status"]')].map((item) => item.textContent.trim()).join(' ');
+    const focused = () => document.activeElement;
+    (await next({ method: 'GET', url })).flush({ revision: 1, values: { entries: [teeth] } });
+    (await next({ method: 'GET', url: url + '/households' })).flush([other(false)]);
+    await settle();
+
+    click('Parent B’s routines');
+    click('Use in both homes: Parent B’s routines');
+    const accept = await next({ method: 'PUT', url: url + '/households/parent-2' });
+    expect(accept.request.body).toEqual({ revision: 1, action: 'accept' });
+    accept.flush(nap);
+    (await next({ method: 'GET', url: url + '/households' })).flush([other(true)]);
+    await vi.waitFor(async () => {
+      await settle();
+      expect(focused()).toBe(button('Stop sharing: Parent B’s routines'));
+    });
+    expect(status()).toContain('These routines are now used in both homes.');
+
+    click('Shared');
+    expect(status()).not.toContain('now used in both homes');
+    click('Stop sharing: Parent B’s routines');
+    const stop = await next({ method: 'PUT', url: url + '/households/parent-2' });
+    expect(stop.request.body).toEqual({ revision: 1, action: 'stop' });
+    stop.flush(nap);
+    (await next({ method: 'GET', url: url + '/households' })).flush([other(false)]);
+    await vi.waitFor(async () => {
+      await settle();
+      expect(focused()).toBe(button('Shared'));
+    });
+    expect(status()).toContain('These routines are no longer shared.');
+    http.verify();
+  });
 });

@@ -897,6 +897,12 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
   phone width and both themes.
 - [x] Keyboard focus stays in place when the add and edit forms open and close (`fix/498-routine-focus`, November 13,
   2026): the first field on open, the Add routine or Edit button on close.
-- [ ] With the second parent: their view of Shared and My routines, use in both homes, stop sharing and update dots;
-  the section in Spanish; a screen reader pass after the focus fix deploys.
+- [x] Second-parent check on Development, in Spanish (November 13, 2026): update notices and dots, editing Shared
+  with history, the other parent's routines read-only, use in both homes and stop sharing. It found focus falling to
+  the page after those two buttons, which also didn't say whose routines they act on.
+- [x] Use in both homes and stop sharing keep focus (on the button that replaces them, or the selected tab), announce
+  the change, and name whose routines they act on (`fix/498-household-focus`, November 13, 2026).
+- [ ] After both focus fixes deploy: retest focus on Development and do a screen reader pass.
+- [ ] An older history entry from before custom routines (a Bedtime/Naps edit) reads "No routines yet" both before
+  and after; decide whether history should skip entries with no visible change.
 - [ ] Removing a routine isn't in #498; decide whether parents need it before the private beta.
