@@ -1,22 +1,22 @@
-import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { AppLocale, LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { EventThemesService } from '../../core/theme/event-themes.service';
+import { EventThemesService } from '../../../../core/theme/event-themes.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Api, FamilyDetails, InvitationSummary } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { AuthStore } from '../../core/auth/auth.store';
-import { AppearancePicker } from '../../shared/appearance-picker/appearance-picker';
-import { ChildrenAccess } from '../family/components/children-access/children-access.component';
-import { DeviceList } from '../family/components/device-list/device-list.component';
-import { ParentPinSettings } from '../family/components/parent-pin-settings/parent-pin-settings.component';
-import { InviteCoParent } from '../family/components/invite-co-parent/invite-co-parent.component';
-import { DeleteAccount } from './delete-account';
-import { GoogleCalendarSettings } from './google-calendar-settings';
-import { GooglePhotosSettings } from './google-photos-settings';
-import { ProfilePhotoSettings } from './profile-photo-settings';
-import { MemorySettingsSection } from './memory-settings';
+import { Api, FamilyDetails, InvitationSummary } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { AppearancePicker } from '../../../../shared/appearance-picker/appearance-picker';
+import { ChildrenAccess } from '../../../family/components/children-access/children-access.component';
+import { DeviceList } from '../../../family/components/device-list/device-list.component';
+import { ParentPinSettings } from '../../../family/components/parent-pin-settings/parent-pin-settings.component';
+import { InviteCoParent } from '../../../family/components/invite-co-parent/invite-co-parent.component';
+import { DeleteAccount } from '../../components/delete-account/delete-account.component';
+import { GoogleCalendarSettings } from '../../components/google-calendar-settings/google-calendar-settings.component';
+import { GooglePhotosSettings } from '../../components/google-photos-settings/google-photos-settings.component';
+import { ProfilePhotoSettings } from '../../components/profile-photo-settings/profile-photo-settings.component';
+import { MemorySettingsSection } from '../../components/memory-settings/memory-settings.component';
 
 @Component({
   selector: 'app-settings-page',

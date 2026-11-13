@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,11 +11,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { Api, GooglePhotosStatus } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { Icon } from '../../shared/icon/icon';
-import { Toasts } from '../../shared/toast/toasts';
-import { OPEN_EXTERNAL } from './google-calendar-settings';
+import { Api, GooglePhotosStatus } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { Icon } from '../../../../shared/icon/icon';
+import { Toasts } from '../../../../shared/toast/toasts';
+import { OPEN_EXTERNAL } from '../google-calendar-settings/google-calendar-settings.component';
 
 
 /**

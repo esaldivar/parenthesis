@@ -1,5 +1,5 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,10 +11,10 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { Api, MemorySettings } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { Toasts } from '../../shared/toast/toasts';
-import { sizeText } from '../memories/photo-text';
+import { Api, MemorySettings } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { Toasts } from '../../../../shared/toast/toasts';
+import { sizeText } from '../../../memories/photo-text';
 
 /**
  * Settings → Memories (#403): this parent's photo storage and whether their co-parent may download the photos they

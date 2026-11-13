@@ -3,7 +3,7 @@ import { Api, EventExport, PhotoExport, PhotoExportReason } from '../../core/api
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { AppLocale, LocaleService } from '../../core/i18n/locale.service';
 import { translate } from '../../core/i18n/translations';
-import { OPEN_EXTERNAL } from '../settings/google-calendar-settings';
+import { OPEN_EXTERNAL } from '../settings/components/google-calendar-settings/google-calendar-settings.component';
 
 /** How often a memory with photos still on their way asks the server how far they got. Tests shorten it. */
 export const EXPORT_POLL_MS = new InjectionToken<number>('EXPORT_POLL_MS', { factory: () => 4000 });

@@ -1,9 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Toasts } from '../../shared/toast/toasts';
-import { axeViolations } from '../../../testing/axe';
-import { MemorySettingsSection } from './memory-settings';
+import { Toasts } from '../../../../shared/toast/toasts';
+import { axeViolations } from '../../../../../testing/axe';
+import { MemorySettingsSection } from './memory-settings.component';
 
 // Synthetic family only.
 const PATH = '/api/families/family-1/memories/settings';

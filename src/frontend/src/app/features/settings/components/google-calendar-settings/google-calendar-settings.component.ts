@@ -1,6 +1,6 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, TranslationKey, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
 import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -17,9 +17,9 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { Api, GoogleCalendarStatus, GoogleCopyType } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { Toasts } from '../../shared/toast/toasts';
+import { Api, GoogleCalendarStatus, GoogleCopyType } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { Toasts } from '../../../../shared/toast/toasts';
 
 /** Leaves the app for Google's consent page. Tests replace it. */
 export const OPEN_EXTERNAL = new InjectionToken<(url: string) => void>('OPEN_EXTERNAL', {
