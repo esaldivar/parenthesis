@@ -1,8 +1,10 @@
 using CoParent.Modules.Approvals.Contracts;
 using CoParent.Modules.Families.Contracts;
+using CoParent.Modules.SharedRecords.Domain;
+using CoParent.Modules.SharedRecords.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParent.Modules.SharedRecords;
+namespace CoParent.Modules.SharedRecords.Infrastructure;
 
 internal sealed class FundApproval(SharedRecordsDbContext db, IFamilyRoster roster) : IApprovalTargetHandler
 {

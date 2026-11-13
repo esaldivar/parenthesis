@@ -2,7 +2,7 @@ using System.Xml.Linq;
 using CoParent.Infrastructure.Pdf;
 using SkiaSharp;
 
-namespace CoParent.Modules.Messaging.Transcripts;
+namespace CoParent.Modules.Messaging.Infrastructure.Transcripts;
 
 /// <summary>US Letter rendering of the owner-approved transcript in #548.</summary>
 internal static class TranscriptPdf

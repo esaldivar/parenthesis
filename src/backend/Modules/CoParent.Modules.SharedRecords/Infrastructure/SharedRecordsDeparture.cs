@@ -1,7 +1,8 @@
+using CoParent.Modules.SharedRecords.Infrastructure.Persistence;
 using CoParent.SharedKernel.Accounts;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParent.Modules.SharedRecords;
+namespace CoParent.Modules.SharedRecords.Infrastructure;
 
 /// <summary>
 /// When a parent deletes their account (A-12): shared funds stay, because they're the co-parent's record too (the app

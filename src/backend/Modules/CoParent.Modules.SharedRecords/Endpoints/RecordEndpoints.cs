@@ -1,4 +1,7 @@
 using CoParent.Modules.Families.Contracts;
+using CoParent.Modules.SharedRecords.Domain;
+using CoParent.Modules.SharedRecords.Infrastructure;
+using CoParent.Modules.SharedRecords.Infrastructure.Persistence;
 using CoParent.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -7,7 +10,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace CoParent.Modules.SharedRecords;
+namespace CoParent.Modules.SharedRecords.Endpoints;
 
 /// <summary>One report as either parent sees it. No file name is kept or shown: only that a PDF or image is attached.</summary>
 internal sealed record EntryView(

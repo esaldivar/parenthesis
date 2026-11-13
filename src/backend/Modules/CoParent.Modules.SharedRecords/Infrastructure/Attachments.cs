@@ -1,7 +1,7 @@
 using CoParent.Infrastructure.Storage;
 using Microsoft.Extensions.Options;
 
-namespace CoParent.Modules.SharedRecords;
+namespace CoParent.Modules.SharedRecords.Infrastructure;
 
 /// <summary>Where payment attachments are kept (#477): a private blob container, separate from event photos.</summary>
 internal sealed class AttachmentOptions
