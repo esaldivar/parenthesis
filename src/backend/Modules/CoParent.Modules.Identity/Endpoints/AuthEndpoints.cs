@@ -1,19 +1,23 @@
 using System.Net.Mail;
 using System.Security.Claims;
+using CoParent.Modules.Identity.Contracts;
 using CoParent.Modules.Identity.Domain;
+using CoParent.SharedKernel.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 
 namespace CoParent.Modules.Identity.Endpoints;
 
-internal sealed record RegisterRequest(string? Email, string? Password, string? DisplayName);
+internal sealed record RegisterRequest(string? Email, string? Password, string? DisplayName, string? Language = null);
 
 internal sealed record LoginRequest(string? Email, string? Password);
 
-internal sealed record MeResponse(Guid Id, string Email, string DisplayName);
+internal sealed record MeResponse(Guid Id, string Email, string DisplayName, string? Language);
+internal sealed record LanguageRequest(string? Language);
 
 /// <summary>
 /// Cookie sign-in for the same-origin SPA (ADR-0004). Responses never reveal whether an email is registered:
@@ -30,14 +34,16 @@ internal static class AuthEndpoints
         anonymous.MapPost("/login", LoginAsync);
         AccountRecoveryEndpoints.Map(anonymous);
 
-        api.MapPost("/auth/logout", LogoutAsync).WithTags("Auth");
+        api.MapPost("/auth/logout", LogoutAsync).WithTags("Auth").WithMetadata(new ChildSessionAllowed());
         api.MapGet("/me", MeAsync).WithTags("Me");
+        api.MapPut("/me/language", SetLanguageAsync).WithTags("Me");
     }
 
-    private static async Task<Results<Accepted, ValidationProblem>> RegisterAsync(
+    private static async Task<Results<Accepted, ValidationProblem, ProblemHttpResult>> RegisterAsync(
         RegisterRequest request,
         UserManager<AppUser> users,
         AccountEmails emails,
+        IOptions<SignUpOptions> signUp,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {
@@ -48,6 +54,15 @@ internal static class AuthEndpoints
         }
 
         var email = request.Email!.Trim();
+        if (!signUp.Value.Allows(email))
+        {
+            // Checked before anything else, so it says nothing about whether an account exists.
+            return TypedResults.Problem(
+                title: "Sign-up here is by invitation only.",
+                detail: "This is a test site. Ask the Parenthesis team to add your email address.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         var user = new AppUser
         {
             UserName = email,
@@ -69,6 +84,8 @@ internal static class AuthEndpoints
 
         if (result.Succeeded)
         {
+            if (UserLanguage.IsSupported(request.Language))
+                await UserLanguage.SetAsync(users, user, request.Language!);
             await emails.SendConfirmationAsync(user, cancellationToken);
         }
         else if (await users.FindByEmailAsync(email) is { } existing)
@@ -82,25 +99,62 @@ internal static class AuthEndpoints
         return TypedResults.Accepted((string?)null);
     }
 
+    /// <summary>
+    /// Password sign-in. On this parent's shared family device, the session is bound to that device (#153), so revoking
+    /// or expiring the device ends it too.
+    /// </summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> LoginAsync(
-        LoginRequest request, SignInManager<AppUser> signIn)
+        LoginRequest request,
+        HttpContext http,
+        UserManager<AppUser> users,
+        SignInManager<AppUser> signIn,
+        ISharedDeviceSessions devices,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrEmpty(request.Password))
         {
             return InvalidCredentials();
         }
 
-        // Locked-out, unknown and wrong-password attempts all get the same response.
-        var result = await signIn.PasswordSignInAsync(
-            request.Email.Trim(), request.Password, isPersistent: true, lockoutOnFailure: true);
+        // Locked-out, unknown, unconfirmed and wrong-password attempts all get the same response.
+        if (await users.FindByNameAsync(request.Email.Trim()) is not { } user)
+        {
+            return InvalidCredentials();
+        }
 
-        return result.Succeeded ? TypedResults.NoContent() : InvalidCredentials();
+        var result = await signIn.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+        if (!result.Succeeded)
+        {
+            return InvalidCredentials();
+        }
+
+        var device = await devices.FindForParentAsync(http, user.Id, cancellationToken);
+        await signIn.SignInWithClaimsAsync(
+            user, isPersistent: true, device is { } id ? [new Claim(SharedDeviceClaims.DeviceId, id.ToString())] : []);
+        return TypedResults.NoContent();
     }
 
+    /// <summary>
+    /// Sign out. A shared family device stays shared, so the browser goes back to "Who's using Parenthesis?" (owner
+    /// decision, October 28, 2026). Stopping sharing is removing the device in Settings (#153).
+    /// </summary>
     private static async Task<NoContent> LogoutAsync(SignInManager<AppUser> signIn)
     {
         await signIn.SignOutAsync();
         return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<Ok<MeResponse>, UnauthorizedHttpResult, ValidationProblem>> SetLanguageAsync(
+        LanguageRequest request, ClaimsPrincipal principal, UserManager<AppUser> users)
+    {
+        var user = await users.GetUserAsync(principal);
+        if (user is null) return TypedResults.Unauthorized();
+        if (!UserLanguage.IsSupported(request.Language))
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["language"] = ["Choose English or Spanish."] });
+        var result = await UserLanguage.SetAsync(users, user, request.Language!);
+        if (!result.Succeeded)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["language"] = ["Could not save your language preference."] });
+        return TypedResults.Ok(new MeResponse(user.Id, user.Email!, user.DisplayName, request.Language!));
     }
 
     private static async Task<Results<Ok<MeResponse>, UnauthorizedHttpResult>> MeAsync(
@@ -109,7 +163,7 @@ internal static class AuthEndpoints
         var user = await users.GetUserAsync(principal);
         return user is null
             ? TypedResults.Unauthorized()
-            : TypedResults.Ok(new MeResponse(user.Id, user.Email!, user.DisplayName));
+            : TypedResults.Ok(new MeResponse(user.Id, user.Email!, user.DisplayName, await UserLanguage.GetAsync(users, user)));
     }
 
     private static ProblemHttpResult InvalidCredentials() =>

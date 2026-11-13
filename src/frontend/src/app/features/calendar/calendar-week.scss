@@ -1,0 +1,353 @@
+@use 'item' as *;
+
+:host {
+  display: block;
+  container: calendar-week / inline-size;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@include item-button('.item');
+@include item-colors('.item');
+.item {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-1) var(--space-2);
+  overflow: hidden;
+}
+
+.grid {
+  --time-gutter: 56px;
+  --half-hour: 28px;
+  --hour-lines: 4;
+  --week-columns: var(--time-gutter) repeat(7, minmax(0, 1fr));
+
+  display: grid;
+  grid-template-columns: var(--week-columns);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.grid__day-number,
+.grid__hour--extra {
+  display: none;
+}
+
+.grid__head {
+  display: grid;
+  justify-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 0.875rem;
+}
+.grid__head.is-today .grid__date {
+  background: var(--color-action);
+  color: var(--color-on-action);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+}
+.grid__weekday {
+  font-weight: 600;
+}
+.grid__allday-label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--color-divider);
+}
+.allday {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: minmax(var(--target-min), auto);
+  gap: 4px;
+  padding: 4px;
+  min-height: calc(var(--target-min) + 8px);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.grid__body {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: var(--week-columns);
+  height: 560px;
+  overflow-y: auto;
+}
+.grid__body:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+.grid__hours,
+.daycol {
+  display: grid;
+  grid-template-rows: repeat(48, var(--half-hour));
+}
+.grid__hours span {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding-inline-end: var(--space-1);
+  text-align: end;
+  transform: translateY(-0.5em);
+}
+.daycol {
+  grid-template-columns: repeat(var(--lanes), minmax(0, 1fr));
+  gap: 0 2px;
+  padding: 0 2px;
+  border-inline-start: 1px solid var(--color-divider);
+  background-image: linear-gradient(var(--color-divider) 1px, transparent 1px);
+  background-size: 100% calc(var(--half-hour) * var(--hour-lines));
+}
+.daycol li {
+  min-width: 0;
+  padding: 1px 0;
+}
+.timed-slot {
+  grid-row: var(--slot-row);
+  grid-column: var(--slot-column);
+}
+.item--timed {
+  min-height: 0;
+}
+@media (min-width: 1024px) {
+  @container calendar-week (min-width: 720px) {
+    // Fit title, time and one attendee row into the existing shortest timed block.
+    .item--timed,
+    .item--span {
+      padding: 1px 2px;
+    }
+  }
+}
+
+// Hidden unavailable time (#190): a thin strip at the day's edge, over the lanes, widening on hover or focus.
+.daycol li.marker {
+  grid-column: 1 / -1;
+  justify-self: end;
+  width: 12px;
+  z-index: 1;
+  padding: 1px 0;
+  transition: width 120ms ease-out;
+}
+.daycol li.marker:hover,
+.daycol li.marker:focus-within {
+  width: 100%;
+  z-index: 2;
+}
+.item--marker {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  font-size: 0.75rem;
+  span {
+    display: block;
+    padding: 2px 4px;
+    opacity: 0;
+  }
+}
+.daycol li.marker:hover .item--marker,
+.daycol li.marker:focus-within .item--marker {
+  // Opaque once widened, so its label never sits on top of the event below.
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.daycol li.marker:hover .item--marker span,
+.daycol li.marker:focus-within .item--marker span {
+  opacity: 1;
+}
+
+// Adding from a tap (#212): each day column's background is a button behind its events. A tap adds at that half-hour;
+// from the keyboard it adds on that day, and says so where it is.
+.daycol {
+  position: relative;
+}
+.daycol li:not(.slot-add) {
+  position: relative;
+}
+.slot-add {
+  position: absolute;
+  inset: 0;
+}
+.slot-add__button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+  }
+}
+.slot-add__label {
+  // Sticks to the top of the visible hours, so a keyboard user sees which day they're on.
+  position: sticky;
+  top: var(--space-1);
+  display: block;
+  margin: var(--space-1);
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  text-align: start;
+}
+.slot-add__button:not(:focus-visible) .slot-add__label {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+// The pointer-only layer behind the all-day row (#212).
+.allday {
+  position: relative;
+}
+.tap-add {
+  position: absolute;
+  inset: 0;
+}
+.tap-add__button {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.allday > li:not(.tap-add) {
+  position: relative;
+  pointer-events: none;
+}
+.allday > li:not(.tap-add) button {
+  pointer-events: auto;
+}
+
+// The tapped time or day (#237): above the events, so a second tap adds there.
+.daycol li.slot-pick,
+.allday > li.slot-pick {
+  grid-column: 1 / -1;
+  z-index: 3;
+  pointer-events: auto;
+}
+.allday > li.slot-pick {
+  grid-column: auto;
+}
+@container (width < 720px) {
+  .grid {
+    --time-gutter: 2.5rem;
+    --half-hour: 48px;
+    --hour-lines: 2;
+    --week-item-details: none;
+  }
+
+  .grid__head {
+    padding-block: var(--space-1);
+    font-size: 0.75rem;
+  }
+  .grid__date {
+    display: none;
+  }
+  .grid__day-number,
+  .grid__hour--extra {
+    display: block;
+  }
+  .grid__day-number {
+    min-inline-size: 1.5em;
+    text-align: center;
+  }
+  .grid__head.is-today .grid__day-number {
+    background: var(--color-action);
+    color: var(--color-on-action);
+    border-radius: var(--radius-pill);
+  }
+  .grid__allday-label,
+  .grid__hours span {
+    font-size: 0.625rem;
+    padding-inline: 2px;
+  }
+  .grid__hours span {
+    line-height: 1;
+    transform: none;
+  }
+
+  // Keep the all-day lanes aligned with the headers and the timed columns.
+  .allday {
+    grid-auto-rows: minmax(52px, auto);
+    gap: 2px 0;
+    padding: 2px 0;
+    min-height: 36px;
+  }
+  .allday > li:not(.tap-add) {
+    min-width: 0;
+    padding-inline: 1px;
+  }
+  .item--span {
+    min-height: 0;
+  }
+  .item {
+    padding: 1px 2px;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    line-height: 1.1;
+  }
+  .item:focus-visible {
+    outline-offset: -3px;
+  }
+
+  // Only the hours scroll. Avoid a scrollbar gutter that shifts the columns away from the headers.
+  .grid__body {
+    height: clamp(12rem, 60dvh, 35rem);
+    scrollbar-width: none;
+  }
+  .daycol {
+    padding: 0;
+    gap: 0;
+  }
+  .daycol li.timed-slot {
+    position: absolute;
+    grid-area: auto;
+    inset-block-start: var(--slot-top);
+    inset-inline-start: var(--slot-left);
+    block-size: var(--slot-height);
+    inline-size: var(--slot-width);
+    min-width: 0;
+    padding: 0 1px 1px;
+  }
+  .daycol li.marker {
+    transition: none;
+  }
+  .daycol li.marker:hover,
+  .daycol li.marker:focus-within {
+    width: var(--slot-width);
+  }
+  .item--marker {
+    min-height: 0;
+  }
+  .item--marker span {
+    padding: 0;
+    opacity: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .slot-add__label,
+  .slot-pick__button {
+    overflow-wrap: anywhere;
+    font-size: 0.6875rem;
+  }
+}

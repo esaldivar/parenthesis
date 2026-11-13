@@ -72,8 +72,9 @@ describe('auth and onboarding routes', () => {
 
     it('only returns to in-app paths after signing in', async () => {
       const { harness } = await open('/sign-in?returnUrl=%2F%2Fevil.example');
-      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void> };
+      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void>; shouldOfferSharedSetup: () => Promise<boolean> };
       store.signIn = async () => undefined;
+      store.shouldOfferSharedSetup = async () => false;
       const navigated: string[] = [];
       const router = routerOf(harness);
       router.navigateByUrl = (async (url: string) => navigated.push(url)) as never;
@@ -85,6 +86,40 @@ describe('auth and onboarding routes', () => {
 
       expect(navigated).toEqual(['/']);
     });
+
+    it('treats a backslash return URL as leaving the app', async () => {
+      const { harness } = await open('/sign-in?returnUrl=%2F%5Cevil.example');
+      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void>; shouldOfferSharedSetup: () => Promise<boolean> };
+      store.signIn = async () => undefined;
+      store.shouldOfferSharedSetup = async () => false;
+      const navigated: string[] = [];
+      const router = routerOf(harness);
+      router.navigateByUrl = (async (url: string) => navigated.push(url)) as never;
+
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[type=password]', 'correct horse battery staple');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle(harness);
+
+      expect(navigated).toEqual(['/']);
+    });
+
+    it('asks “Is this a shared family device?” after signing in, keeping where the parent was heading (#153)', async () => {
+      const { harness } = await open('/sign-in?returnUrl=%2Fcalendar');
+      const store = TestBed.inject(AuthStore) as unknown as { signIn: () => Promise<void>; shouldOfferSharedSetup: () => Promise<boolean> };
+      store.signIn = async () => undefined;
+      store.shouldOfferSharedSetup = async () => true;
+      const navigated: unknown[] = [];
+      const router = routerOf(harness);
+      router.navigate = (async (commands: unknown[], extras: unknown) => navigated.push([commands, extras])) as never;
+
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[type=password]', 'correct horse battery staple');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle(harness);
+
+      expect(navigated).toEqual([[['/shared-device/setup'], { queryParams: { returnUrl: '/calendar' } }]]);
+    });
   });
 
   describe('register', () => {
@@ -93,7 +128,8 @@ describe('auth and onboarding routes', () => {
 
       await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
       await type(harness, 'input[type=email]', 'alex@example.test');
-      await type(harness, 'input[type=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'twelve chars ok');
       harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
       http.expectOne('/api/auth/register').flush(
         { title: 'One or more validation errors occurred.', errors: { password: ['Passwords must be at least 12 characters.'] } },
@@ -105,17 +141,66 @@ describe('auth and onboarding routes', () => {
       expect(body.querySelector('[role=alert]')).toBeNull();
     });
 
+    it('explains an invite-only site and who to ask', async () => {
+      const { harness, http, body } = await open('/register');
+
+      await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[formcontrolname=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'twelve chars ok');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      http.expectOne('/api/auth/register').flush(
+        {
+          title: 'Sign-up here is by invitation only.',
+          detail: 'This is a test site. Ask the Parenthesis team to add your email address.',
+        },
+        { status: 403, statusText: 'Forbidden' },
+      );
+      await settle(harness);
+
+      expect(body.querySelector('[role=alert]')!.textContent!.trim()).toBe(
+        'Sign-up here is by invitation only. This is a test site. Ask the Parenthesis team to add your email address.',
+      );
+    });
+
     it('checks password length before calling the API', async () => {
       const { harness, http, body } = await open('/register');
 
       await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
       await type(harness, 'input[type=email]', 'alex@example.test');
-      await type(harness, 'input[type=password]', 'short');
+      await type(harness, 'input[formcontrolname=password]', 'short');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'short');
       harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
       await settle(harness);
 
       http.expectNone('/api/auth/register');
       expect(text(body)).toContain('Use at least 12 characters.');
+    });
+
+    it('is for parents and asks for the password twice', async () => {
+      const { harness, http, body } = await open('/register');
+
+      expect(body.querySelector('h1')!.textContent).toBe('Create your Parenthesis account');
+      await type(harness, 'input[autocomplete=name]', 'Alex Rivera');
+      await type(harness, 'input[type=email]', 'alex@example.test');
+      await type(harness, 'input[formcontrolname=password]', 'twelve chars ok');
+      await type(harness, 'input[formcontrolname=confirmPassword]', 'twelve chars no');
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle(harness);
+
+      http.expectNone('/api/auth/register');
+      expect(text(body)).toContain('The passwords don’t match.');
+    });
+
+    it('keeps an invitation from a "sign up to join" email and takes it off the address bar', async () => {
+      localStorage.clear();
+      const { harness, body } = await open('/register?token=invite-123');
+      await settle(harness);
+
+      expect(text(body)).toContain('You’ve been invited to join your co-parent’s family');
+      expect(routerOf(harness).url).toBe('/register');
+      expect(localStorage.getItem('parenthesis.pendingInvitation')).toContain('invite-123');
+      localStorage.clear();
     });
   });
 
@@ -155,7 +240,85 @@ describe('auth and onboarding routes', () => {
     });
   });
 
-  it.each(['/sign-in', '/register', '/forgot-password', '/check-email'])(
+  describe('reset password', () => {
+    const link = '/reset-password?email=alex%40example.test&token=one-time';
+
+    async function submitPassword(harness: RouterTestingHarness, password: string) {
+      await type(harness, 'input[formcontrolname=password]', password);
+      harness.routeNativeElement!.querySelector('form')!.dispatchEvent(new Event('submit'));
+    }
+
+    it('saves the new password with the link’s token and takes the token off the address bar', async () => {
+      const { harness, http, body } = await open(link);
+      await settle(harness);
+      expect(routerOf(harness).url).toBe('/reset-password');
+
+      await submitPassword(harness, 'a new long password');
+      const request = http.expectOne('/api/auth/reset-password');
+      expect(request.request.body).toEqual({ email: 'alex@example.test', token: 'one-time', password: 'a new long password' });
+      request.flush(null, { status: 204, statusText: 'No Content' });
+      await settle(harness);
+
+      expect(body.querySelector('[role=status]')!.textContent).toContain('Your password has been changed. Other devices have been signed out.');
+      expect(body.querySelector('a[href="/sign-in"]')).not.toBeNull();
+    });
+
+    it('checks the length before calling the API', async () => {
+      const { harness, http, body } = await open(link);
+
+      await submitPassword(harness, 'too short');
+      await settle(harness);
+
+      http.expectNone('/api/auth/reset-password');
+      expect(text(body)).toContain('Use at least 12 characters.');
+    });
+
+    it('shows the API’s password rules next to the field', async () => {
+      const { harness, http, body } = await open(link);
+
+      await submitPassword(harness, 'twelve chars ok');
+      http.expectOne('/api/auth/reset-password').flush(
+        { title: 'One or more validation errors occurred.', errors: { password: ['Passwords must have at least one digit.'] } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+      await settle(harness);
+
+      expect(text(body)).toContain('Passwords must have at least one digit.');
+      expect(body.querySelector('[role=alert]')).toBeNull();
+    });
+
+    it('explains a used or expired link and offers a new one', async () => {
+      const { harness, http, body } = await open(link);
+
+      await submitPassword(harness, 'twelve chars ok');
+      http.expectOne('/api/auth/reset-password').flush({ title: 'Invalid token.' }, { status: 400, statusText: 'Bad Request' });
+      await settle(harness);
+
+      expect(body.querySelector('[role=alert]')!.textContent).toContain('This link is invalid or has expired.');
+      expect(body.querySelector('a[href="/forgot-password"]')).not.toBeNull();
+    });
+
+    it('treats a link without its email or token as invalid', async () => {
+      const { body } = await open('/reset-password?token=one-time');
+
+      expect(body.querySelector('[role=alert]')!.textContent).toContain('This link is invalid or has expired.');
+      expect(body.querySelector('form')).toBeNull();
+    });
+
+    it('keeps the form and says what went wrong when the server fails', async () => {
+      const { harness, http, body } = await open(link);
+
+      await submitPassword(harness, 'twelve chars ok');
+      http.expectOne('/api/auth/reset-password').flush({ title: 'Server error' }, { status: 500, statusText: 'Server Error' });
+      await settle(harness);
+
+      expect(body.querySelector('[role=alert]')).not.toBeNull();
+      expect(body.querySelector('form')).not.toBeNull();
+      expect(body.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(false);
+    });
+  });
+
+  it.each(['/sign-in', '/register', '/forgot-password', '/check-email', '/reset-password?email=alex%40example.test&token=t'])(
     'has no automatically detectable accessibility issues at %s',
     async (url) => {
       const { body } = await open(url);

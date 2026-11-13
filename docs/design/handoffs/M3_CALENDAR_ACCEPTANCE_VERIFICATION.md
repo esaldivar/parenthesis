@@ -1,0 +1,19 @@
+# M3 Calendar — implementation acceptance verification
+
+**Status:** Verification checklist, not a claim that implementation is complete.  
+**Base:** `release/0.3.0`  
+**Owner-approved references:** `docs/design/handoffs/2026-10-20-calendar.md`, `docs/design/CALENDAR_DECISIONS.md`, issues #48, #72, #73, #98.
+
+Claude: before marking the calendar work complete, compare the current frontend, API, persistence/migrations and automated tests against every item below. Record evidence (paths/tests) or a linked follow-up issue for each unchecked item. Do not mark a feature complete just because it appears in a mockup or TODO.
+
+- [ ] **Views and states:** Week is default; Month and List exist (not Day). Child filters work. Pending/proposed uses a label plus dashed/hatched treatment, never color alone. Empty/loading/error/rejected/locked states and `Confirmed before your co-parent joined` behave correctly. Verify mobile/desktop, both themes and accessible labels.
+- [ ] **Choice cards:** Entire Event/Task/Reminder and event-type cards are clickable; selection is *only* a sage-green (light) or forest-green (dark) card highlight, with **no radio buttons, checkmarks or selection glyphs**. Preserve category icons. Verify keyboard focus/selection and screen-reader state without adding visual selection controls. Child multi-select controls are not prohibited.
+- [ ] **Unavailability privacy:** Other parent sees only `Unavailable`, not reason/private notes, in calendar, details, API responses, notifications, logs or exports. Enforce server-side authorization and add tests using two different parent identities.
+- [ ] **Recurrence:** All-day defaults, hourly and multi-day blackout support, repeat patterns and end condition; edit/delete **This event**, **This and following**, **All events**. Test exceptions, following-series splits, time zones/daylight saving and persistence/migrations. Blackouts never reassign custody. Own parenting-time overlap warns gently.
+- [ ] **Swap approval:** Existing parenting block → before/after proposal → pending → approve/decline/withdraw with correct actor permissions and history. Overlap with other parent's unavailability offers **Send Anyway** and **Choose Different Dates** without blocking submission. Never alter confirmed parenting time until approval. Test API authorization and transitions.
+- [ ] **Joint family events:** Creator's submission counts as one approval; second parent explicitly approves before confirmation. Both parents are fixed participants; children can be None/some/All. Material edits require reapproval; no first-version joint recurrence, arbitrary approval switch, or automatic custody change. Confirm calendar updates after acceptance and rejected state handling.
+- [ ] **Tasks (#73):** Shared checklist item attribution/timestamps, required-item progress, no completion shortcut past required items; checklist-free tasks support Mark done. Quiet Seen only after opening details; history for either parent's edits/deletes.
+- [ ] **Reminders (#72):** Shared, no task completion checkbox; quiet Seen on detail open; daily/weekly/monthly recurrence with end condition; no location; either parent can edit/delete with history and no approval.
+- [ ] **Quality gate:** Add or identify frontend component/e2e tests and backend integration tests for authorization, approval lifecycle, recurrence, privacy and calendar states. Test 320px/mobile, light/dark, keyboard, WCAG AA contrast and reduced motion. Record any unavailable checks honestly.
+
+**Tracking:** Keep unfinished implementation items in `TODO.md` (the repository's single open-work list) and relevant GitHub issues; do not silently treat this checklist as a replacement. Update the existing handoff if an approved rule is found to be contradictory, and seek owner approval for behavior changes. No feature code, branch policy, or deployment changes are authorized by this document.

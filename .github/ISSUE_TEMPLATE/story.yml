@@ -1,0 +1,46 @@
+name: Story
+description: A piece of user-facing work, written from a user's point of view.
+title: "Story: "
+labels: [story]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: As a <parent / child / co-parent>, I want <something> so that <benefit>.
+      placeholder: As a parent, I want to invite my co-parent by email so that we can share one family calendar.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How we'll know it's done. One per line, as checkboxes.
+      placeholder: |
+        - [ ] The inviter always sees "Invitation sent"
+        - [ ] The invitee's email says "Join" or "Sign up to join"
+    validations:
+      required: true
+  - type: dropdown
+    id: design
+    attributes:
+      label: Needs design?
+      description: If yes, ChatGPT (the design lane) picks it up first and Claude builds from the approved handoff.
+      options:
+        - "Yes: needs design first"
+        - "No: build from the existing design system"
+        - "Not sure"
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: ["P0: needed for MVP", "P1: important", "P2: nice to have"]
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Context, links, mobile considerations, privacy or safety concerns.

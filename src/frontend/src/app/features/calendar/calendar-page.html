@@ -1,0 +1,208 @@
+<header class="head">
+  <h1 #calendarHeading tabindex="-1">{{ 'feature.calendar.d5d0a3' | tr }}</h1>
+  <div class="head__actions">
+    <a mat-stroked-button class="add" routerLink="/approvals">{{ 'feature.approvals' | tr }}</a>
+    <a mat-flat-button class="add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">
+      <app-icon name="plus" [size]="20" /> {{ 'feature.add' | tr }}
+    </a>
+  </div>
+</header>
+
+
+<div class="toolbar">
+  <div class="period">
+    <span class="period__nav">
+      <button mat-icon-button type="button" (click)="step(-1)" [attr.aria-label]="periodLabel('previous') | tr">
+        <app-icon name="chevron-left" />
+      </button>
+      <h2 class="period__label" aria-live="polite">{{ heading() }}</h2>
+      <button mat-icon-button type="button" (click)="step(1)" [attr.aria-label]="periodLabel('next') | tr">
+        <app-icon name="chevron-right" />
+      </button>
+    </span>
+    <button type="button" class="pill" (click)="goToToday()" [attr.aria-disabled]="isCurrentPeriod()">{{ 'feature.today.2b065c' | tr }}</button>
+    @if (family(); as f) {
+      <app-calendar-search [familyId]="f.id" [timeZone]="f.timeZone" [members]="members()" [children]="children()" (picked)="openFound($event)" />
+    }
+  </div>
+  <div class="toolbar__end">
+    <div class="segmented" role="group" aria-label="{{ 'feature.calendar.view' | tr }}">
+      @for (v of views; track v.id) {
+        <button type="button" [attr.aria-pressed]="current() === v.id" (click)="setView(v.id)">{{ v.label | tr }}</button>
+      }
+    </div>
+    <button
+      type="button"
+      class="pill filters-button"
+      aria-haspopup="dialog"
+      [attr.aria-expanded]="filtersOpen()"
+      [attr.aria-label]="activeFilters().length ? ('calendar.filtersActive' | tr: { count: activeFilters().length }) : ('feature.filters' | tr)"
+      (click)="openFilters()"
+    >
+      <app-icon name="filter" [size]="18" /> {{ 'feature.filters' | tr }}
+      @if (activeFilters().length; as count) {
+        <span class="count" aria-hidden="true">{{ count }}</span>
+      }
+    </button>
+  </div>
+</div>
+
+@if (activeFilters().length) {
+  <div class="active-filters" role="group" aria-label="{{ 'feature.active.filters' | tr }}">
+    @for (f of activeFilters(); track f.id) {
+      <button type="button" class="chip chip--active" [attr.aria-label]="('feature.remove.594895' | tr) + f.label + ('feature.filter' | tr) + f.text" (click)="clearFilter(f.id)">
+        {{ f.label }}: {{ f.text }} <app-icon name="close" [size]="16" />
+      </button>
+    }
+    <button mat-button type="button" (click)="resetFilters()">{{ 'feature.reset.filters' | tr }}</button>
+  </div>
+}
+
+@if (activeChildren().length > 0) {
+  <div class="filters" role="group" aria-label="{{ 'feature.show.events.for' | tr }}">
+    <button type="button" class="chip" [attr.aria-pressed]="childFilter() === null" (click)="setChild(null)">{{ 'feature.all' | tr }}</button>
+    @for (child of activeChildren(); track child.id) {
+      <button type="button" class="chip" [attr.aria-pressed]="childFilter() === child.id" (click)="setChild(child.id)">
+        {{ child.firstName }}
+      </button>
+    }
+  </div>
+}
+
+<div class="body" [attr.aria-busy]="state() === 'loading' || refreshing()">
+  @switch (state()) {
+    @case ('loading') {
+      <app-loading-indicator
+        class="loading"
+        [label]="(slow() ? 'calendar.loadingSlow' : 'calendar.loading') | tr"
+      />
+      <div class="skeleton" aria-hidden="true">
+        @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+          <span class="skeleton__bar"></span>
+        }
+      </div>
+    }
+    @case ('error') {
+      <div class="error" role="alert">
+        <p class="error__title">{{ 'feature.we.couldn.t.load.your.calendar' | tr }}</p>
+        <p class="error__body">{{ loadError() }}</p>
+        <div class="error__actions">
+          <button mat-flat-button type="button" (click)="retry()">{{ 'feature.try.again' | tr }}</button>
+          <button mat-stroked-button type="button" (click)="goToToday()">{{ 'feature.go.to.today' | tr }}</button>
+        </div>
+      </div>
+    }
+    @default {
+      <!-- A period seen earlier in this tab is shown while its current version loads (#415). -->
+      <app-loading-indicator class="refreshing" [class.refreshing--on]="refreshing()" [active]="refreshing()" label="{{ 'feature.updating' | tr }}" />
+      @if (items().length === 0) {
+        <app-empty-state
+          icon="calendar"
+          title="{{ 'feature.no.events.yet' | tr }}"
+          body="{{ 'feature.start.by.adding.an.event.or.time' | tr }}"
+        >
+          <a mat-flat-button class="empty-add" routerLink="/calendar/new" [queryParams]="{ date: anchor() }">{{ 'feature.add.to.calendar.f5d6ae' | tr }}</a>
+        </app-empty-state>
+      } @else if (shown().length === 0) {
+        @if (childShown().length === 0) {
+          <p class="filtered-out">
+            {{ 'feature.nothing.for.this.child.here' | tr }}
+            <button mat-button type="button" (click)="setChild(null)">{{ 'feature.show.everyone' | tr }}</button>
+          </p>
+        } @else {
+          <p class="filtered-out">
+            {{ 'feature.no.items.match.your.filters' | tr }}
+            <button mat-button type="button" (click)="resetFilters()">{{ 'feature.reset.filters' | tr }}</button>
+          </p>
+        }
+      } @else if (visibleCount() === 0) {
+        <p class="filtered-out">
+          {{ 'feature.no.items.match.your.filters.hidden.unavailable' | tr }}
+          <button mat-button type="button" (click)="resetFilters()">{{ 'feature.reset.filters' | tr }}</button>
+        </p>
+      }
+      @if (current() === 'week') {
+        <app-calendar-week
+          [class.week--empty]="shown().length === 0"
+          [weekStart]="range().from"
+          [today]="today()"
+          [items]="shown()"
+          (selected)="open($event)"
+          (add)="addAt($event)"
+        />
+      }
+      @if (shown().length > 0) {
+        @switch (current()) {
+          @case ('month') {
+            <app-calendar-month
+              [date]="anchor()"
+              [today]="today()"
+              [items]="shown()"
+              [label]="heading()"
+              (selected)="open($event)"
+              (openDay)="openWeekOf($event)"
+              (add)="addAt($event)"
+            />
+          }
+          @case ('list') {
+            <app-calendar-list [from]="range().from" [to]="range().to" [today]="today()" [items]="shown()" (selected)="open($event)" />
+          }
+        }
+        <ul class="key" aria-label="{{ 'feature.calendar.key' | tr }}">
+          <li><span class="swatch" appCalendarPalette="parent-a"></span><span class="swatch" appCalendarPalette="parent-b"></span>{{ 'feature.parenting.time' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="family" data-kind="family"></span>{{ 'feature.family.event.both.parents' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-category="Activity"></span>{{ 'feature.activity' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="pending"></span>{{ 'feature.pending.approval' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="declined"></span>{{ 'feature.declined' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="unavailable" data-kind="unavailable"></span>{{ 'feature.unavailable' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="reminder" data-kind="reminder"></span>{{ 'feature.reminder' | tr }}</li>
+          <li><span class="swatch" appCalendarPalette="task" data-kind="task"></span>{{ 'feature.task' | tr }}</li>
+        </ul>
+      }
+    }
+  }
+</div>
+
+@if (filtersOpen()) {
+  <app-calendar-filter-panel
+    [filters]="filters()"
+    (changed)="setFilters($event)"
+    (resetAll)="resetFilters()"
+    (closed)="closeFilters()"
+  />
+}
+
+@if (selected(); as item) {
+  @if (selectedReminder(); as reminder) {
+    <app-reminder-details
+      [item]="item"
+      [reminder]="reminder"
+      [members]="members()"
+      [familyId]="family()!.id"
+      (closed)="close()"
+      (changed)="changed($event)"
+    />
+  } @else if (selectedTask(); as task) {
+    <app-task-details
+      [item]="item"
+      [task]="task"
+      [members]="members()"
+      [familyId]="family()!.id"
+      [timeZone]="family()!.timeZone"
+      (closed)="close()"
+      (updated)="taskUpdated($event)"
+      (changed)="changed($event)"
+    />
+  } @else {
+    <app-event-details
+      [item]="item"
+      [event]="selectedEvent()"
+      [members]="members()"
+      [familyId]="family()!.id"
+      [timeZone]="family()!.timeZone"
+      [swapTarget]="swapTarget()"
+      (closed)="close()"
+      (changed)="changed($event)"
+    />
+  }
+}

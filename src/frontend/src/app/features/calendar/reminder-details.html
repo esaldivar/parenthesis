@@ -1,0 +1,73 @@
+<div class="backdrop" (click)="closed.emit()" aria-hidden="true"></div>
+<section
+  class="panel"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="reminder-details-title"
+  cdkTrapFocus
+  [cdkTrapFocusAutoCapture]="true"
+  data-kind="reminder"
+  [appPanelTint]="'reminder'"
+>
+  <div class="panel__head">
+    <span class="panel__icon" [appCalendarPalette]="'reminder'"><app-icon name="bell" [size]="24" /></span>
+    <div class="panel__titles">
+      <h2 id="reminder-details-title" tabindex="-1" cdkFocusInitial>{{ reminder().title }}</h2>
+      <p class="panel__type" [appCalendarPalette]="'reminder'">{{ 'feature.reminder' | tr }}</p>
+    </div>
+    <button mat-icon-button type="button" (click)="closed.emit()" aria-label="{{ 'feature.close.details' | tr }}">
+      <app-icon name="close" />
+    </button>
+  </div>
+
+  <dl class="facts">
+    <dt>{{ 'feature.when' | tr }}</dt>
+    <dd>{{ date() }} · {{ when() }}</dd>
+    @if (repeats(); as repeats) {
+      <dt>{{ 'feature.repeats' | tr }}</dt>
+      <dd>{{ repeats }}</dd>
+    }
+    @if (childNames(); as names) {
+      <dt>{{ 'feature.about' | tr }}</dt>
+      <dd>{{ names }}</dd>
+    }
+    @if (reminder().details; as details) {
+      <dt>{{ 'feature.details' | tr }}</dt>
+      <dd>{{ details }}</dd>
+    }
+    <dt>{{ 'feature.added.by' | tr }}</dt>
+    <dd>
+      {{ item().isMine ? ('feature.you.08b041' | tr) : item().ownerName }}
+      @if (editedBy(); as editor) {
+        <span class="hint"> {{ 'feature.edited.by' | tr }} {{ editor }}</span>
+      }
+      @if (seenBy(); as seen) {
+        <span class="hint"> {{ 'feature.seen.by' | tr }} {{ seen }}</span>
+      }
+    </dd>
+  </dl>
+
+  <div class="actions">
+    @if (!confirming()) {
+      <a mat-flat-button [routerLink]="['/calendar/reminders', reminder().id, 'edit']">{{ 'feature.edit.reminder' | tr }}</a>
+      <button #deleteButton mat-stroked-button type="button" (click)="confirmDelete(true)">{{ 'feature.delete.reminder' | tr }}</button>
+    } @else {
+      <p class="explain" id="reminder-delete-explanation">
+        @if (repeats()) {
+          {{ 'feature.this.deletes.the.reminder.and.every.repeat' | tr }}
+        } @else {
+          {{ 'feature.this.deletes.the.reminder.for.both.of' | tr }}
+        }
+      </p>
+      @if (error(); as error) {
+        <p class="error" role="alert">{{ error }}</p>
+      }
+      <div class="actions__row">
+        <button mat-flat-button type="button" class="danger" [disabled]="busy()" disabledInteractive aria-describedby="reminder-delete-explanation" (click)="remove()">
+          {{ busy() ? ('feature.deleting' | tr) : ('feature.yes.delete' | tr) }}
+        </button>
+        <button #keepButton mat-button type="button" [disabled]="busy()" aria-describedby="reminder-delete-explanation" (click)="confirmDelete(false)">{{ 'feature.keep.it' | tr }}</button>
+      </div>
+    }
+  </div>
+</section>

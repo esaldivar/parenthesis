@@ -33,13 +33,16 @@ following is a starting palette; verify every actual foreground/background pair.
 | --- | --- | --- | --- |
 | Canvas | `#F7F5ED` ivory | `#10251E` forest | App background |
 | Surface | `#FFFFFF` | `#19372D` | Cards, menus, dialogs |
-| Surface soft | `#E4EBDD` sage | `#24483A` | Selected groups, quiet panels |
+| Surface soft | `#E4EBDD` sage | `#24483A` | Quiet panels and fills |
+| Selected | `#D6E4D0` sage | `#24483A` | Selected nav items and segments (#209) |
+| Divider | `#CFD7C9` | `#24483A` | Grid, hour and card hairlines (#209) |
 | Text primary | `#203A31` | `#F7F5ED` | Headings and body |
 | Text secondary | `#4D6258` | `#C0D0C5` | Supporting text |
 | Action | `#176B67` teal | `#91D2C5` | Primary buttons and links |
 | On action | `#FFFFFF` | `#10251E` | Primary button text |
 | Accent | `#DE8F7E` coral | `#EDAA98` | Small decorative emphasis |
 | Border/control outline | `#718478` | `#8AA99A` | Meaningful boundaries |
+| Calendar item edge | category text 60% into its fill | 45% | Tinted edge on every calendar block, at least 3:1 on the surface (#209) |
 | Danger text | `#A13333` | `#FFB4AB` | Destructive actions/errors |
 
 Coral and sage are supporting fills, not default small text on ivory. Use primary
@@ -69,6 +72,16 @@ charts, and empty states in both themes.
   menus, focus traps, or date pickers from scratch.
 - Motion is brief and functional; honor `prefers-reduced-motion`. No essential
   content or feedback depends on animation, hover, or drag gestures alone.
+- Nonmodal popups (date pickers, selects, menus, suggestion lists, search panels)
+  never cover or intercept the phone layout's bottom navigation (#327). Build them
+  on CDK connected overlays: the app treats the navigation, safe-area inset included,
+  as the screen's bottom edge, so a popup opens above it or flips upward, including
+  after scrolling, resizing or rotation. Their invisible backdrop stops at the
+  navigation, so one tap there closes the popup and navigates. Don't raise the
+  navigation's z-index to hide content behind it. Modal dialogs are different: they
+  keep a full-screen backdrop and block the page on purpose. A new shell with its
+  own bottom navigation marks it with `appBottomNav`
+  (`src/frontend/src/app/shared/overlay/bottom-nav-clearance.ts`).
 
 ## Accessible appearance preferences
 
@@ -98,10 +111,10 @@ time zones where relevant, children involved, and neutral empty states. Do not
 expose unnecessary location or family details on public/unauthenticated screens.
 
 Use one primary action per section. On mobile, provide a compact bottom navigation
-for frequent destinations (for example Home, Calendar, Memories, Approvals, More),
-with Children and Settings reachable through More. On larger screens, expand to
-the planned full navigation. Messages remains a clearly labelled future feature
-until implemented. Preserve reading order as cards expand into columns.
+with Home, Calendar, Messages, and More. More lists Shared records, Child Essentials,
+From Your Kids, Family Memories, and Settings. On larger screens, the sidebar lists
+all eight destinations in the same order. Preserve reading order as cards expand into
+columns.
 
 For approval reviews, show the existing value and proposed value, who proposed the
 change, its current status, and explicit Approve/Reject actions. Keep confirmed
@@ -146,6 +159,8 @@ Use synthetic children and media for every prototype and demonstration.
   return from dialogs, accessible names, field errors, and status announcements.
 - Check 320px width, 200% text sizing, and 400% zoom/reflow without lost actions
   or overlapping content. Check mobile touch targets and safe-area spacing.
+- Open each popup near the bottom of a short phone screen: it stays above the
+  bottom navigation, and one tap on the navigation still navigates.
 - Check Light/Dark/System selection, reload, OS changes, and switching between
   two users with different choices, including parent and child accounts.
 - Check reduced motion, high contrast, loading/empty/error/offline states, long

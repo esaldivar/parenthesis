@@ -1,0 +1,4 @@
+# Coverage.py for the Python queue scripts' coverage report in sonar.yml. Pinned with hashes: pip installs only these files.
+coverage==7.16.2 \
+    --hash=sha256:5375ebd99038021b35e99dc88255022912c06565d316212f4a576e4b08d30f5d \
+    --hash=sha256:ca64d9f1f384f151b9511bec01126072acd2f313439f8ed015a22d8790aab6fa

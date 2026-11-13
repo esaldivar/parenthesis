@@ -1,0 +1,116 @@
+{
+  "_note": "Shaped like api/hotspots/search and api/hotspots/show. Synthetic.",
+  "toReview": {
+    "paging": {
+      "pageIndex": 1,
+      "pageSize": 500,
+      "total": 2
+    },
+    "hotspots": [
+      {
+        "key": "AZhot01",
+        "component": "esaldivar_parenthesis:src/backend/CoParent.Api/Example.cs",
+        "project": "esaldivar_parenthesis",
+        "securityCategory": "weak-cryptography",
+        "vulnerabilityProbability": "HIGH",
+        "status": "TO_REVIEW",
+        "line": 7,
+        "message": "Make sure this weak hash algorithm is not used in a sensitive context here.",
+        "author": "",
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "textRange": {
+          "startLine": 7,
+          "endLine": 7,
+          "startOffset": 8,
+          "endOffset": 30
+        },
+        "flows": [],
+        "ruleKey": "csharpsquid:S4790"
+      },
+      {
+        "key": "AZhot02",
+        "component": "esaldivar_parenthesis:src/backend/CoParent.Api/Example.cs",
+        "project": "esaldivar_parenthesis",
+        "securityCategory": "weak-cryptography",
+        "vulnerabilityProbability": "LOW",
+        "status": "TO_REVIEW",
+        "line": 7,
+        "message": "Make sure this weak hash algorithm is not used in a sensitive context here.",
+        "author": "",
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "textRange": {
+          "startLine": 7,
+          "endLine": 7,
+          "startOffset": 8,
+          "endOffset": 30
+        },
+        "flows": [],
+        "ruleKey": "csharpsquid:S4790"
+      }
+    ],
+    "components": []
+  },
+  "reviewedSafe": {
+    "paging": {
+      "pageIndex": 1,
+      "pageSize": 500,
+      "total": 1
+    },
+    "hotspots": [
+      {
+        "key": "AZhot03",
+        "component": "esaldivar_parenthesis:src/backend/CoParent.Api/Example.cs",
+        "project": "esaldivar_parenthesis",
+        "securityCategory": "weak-cryptography",
+        "vulnerabilityProbability": "MEDIUM",
+        "status": "REVIEWED",
+        "line": 7,
+        "message": "Make sure this weak hash algorithm is not used in a sensitive context here.",
+        "author": "",
+        "creationDate": "2026-10-17T21:40:12+0000",
+        "updateDate": "2026-10-17T21:40:12+0000",
+        "textRange": {
+          "startLine": 7,
+          "endLine": 7,
+          "startOffset": 8,
+          "endOffset": 30
+        },
+        "flows": [],
+        "ruleKey": "csharpsquid:S4790",
+        "resolution": "SAFE"
+      }
+    ],
+    "components": []
+  },
+  "showWithComment": {
+    "key": "AZhot03",
+    "status": "REVIEWED",
+    "resolution": "SAFE",
+    "comment": [
+      {
+        "key": "AZcomment000000000001",
+        "login": "esaldivar@github",
+        "htmlText": "Safe: synthetic justification, the hash is only a cache key.",
+        "markdown": "Safe: synthetic justification, the hash is only a cache key.",
+        "updatable": true,
+        "createdAt": "2026-10-19T15:02:44+0000"
+      }
+    ],
+    "changelog": []
+  },
+  "showWithoutComment": {
+    "key": "AZhot03",
+    "status": "REVIEWED",
+    "resolution": "SAFE",
+    "comment": [],
+    "changelog": []
+  },
+  "showMissingCommentField": {
+    "key": "AZhot03",
+    "status": "REVIEWED",
+    "resolution": "SAFE",
+    "changelog": []
+  }
+}

@@ -85,57 +85,57 @@ export function greetingFor(hour: number): string {
   return 'Good evening';
 }
 
-const utcFormat = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(LOCALE, { ...options, timeZone: 'UTC' });
+const utcFormat = (options: Intl.DateTimeFormatOptions, locale = LOCALE) => new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' });
 
 // ICU puts thin and narrow no-break spaces in ranges and times ("Oct 12 – 18", "3:00 PM"); plain spaces read and
 // match predictably.
 const plainSpaces = (text: string) => text.replace(/[\u2009\u202F]/g, ' ');
 
 /** "Oct 12 – 18, 2026", "Sep 28 – Oct 4, 2026" or "Dec 28, 2026 – Jan 3, 2027". */
-export function weekLabel(weekStart: PlainDate): string {
+export function weekLabel(weekStart: PlainDate, locale = LOCALE): string {
   return plainSpaces(
-    utcFormat({ month: 'short', day: 'numeric', year: 'numeric' }).formatRange(toUtc(weekStart), toUtc(addDays(weekStart, 6))),
+    utcFormat({ month: 'short', day: 'numeric', year: 'numeric' }, locale).formatRange(toUtc(weekStart), toUtc(addDays(weekStart, 6))),
   );
 }
 
 /** "October 11 – 17, 2026" (the approved toolbar style). */
-export function weekLabelLong(weekStart: PlainDate): string {
+export function weekLabelLong(weekStart: PlainDate, locale = LOCALE): string {
   return plainSpaces(
-    utcFormat({ month: 'long', day: 'numeric', year: 'numeric' }).formatRange(toUtc(weekStart), toUtc(addDays(weekStart, 6))),
+    utcFormat({ month: 'long', day: 'numeric', year: 'numeric' }, locale).formatRange(toUtc(weekStart), toUtc(addDays(weekStart, 6))),
   );
 }
 
 /** "Oct 11" */
-export const monthDay = (date: PlainDate) => utcFormat({ month: 'short', day: 'numeric' }).format(toUtc(date));
+export const monthDay = (date: PlainDate, locale = LOCALE) => utcFormat({ month: 'short', day: 'numeric' }, locale).format(toUtc(date));
 
 /** "8 AM" */
-export function hourLabel(hour: number): string {
-  return plainSpaces(utcFormat({ hour: 'numeric' }).format(new Date(Date.UTC(2000, 0, 1, hour))));
+export function hourLabel(hour: number, locale = LOCALE): string {
+  return plainSpaces(utcFormat({ hour: 'numeric' }, locale).format(new Date(Date.UTC(2000, 0, 1, hour))));
 }
 
 /** "Mon" */
-export const weekdayShort = (date: PlainDate) => utcFormat({ weekday: 'short' }).format(toUtc(date));
+export const weekdayShort = (date: PlainDate, locale = LOCALE) => utcFormat({ weekday: 'short' }, locale).format(toUtc(date));
 
 /** "Oct 14, 2026" */
-export const dateMedium = (date: PlainDate) =>
-  utcFormat({ month: 'short', day: 'numeric', year: 'numeric' }).format(toUtc(date));
+export const dateMedium = (date: PlainDate, locale = LOCALE) =>
+  utcFormat({ month: 'short', day: 'numeric', year: 'numeric' }, locale).format(toUtc(date));
 
 /** "Monday, October 12" */
-export const dayLong = (date: PlainDate) => utcFormat({ weekday: 'long', month: 'long', day: 'numeric' }).format(toUtc(date));
+export const dayLong = (date: PlainDate, locale = LOCALE) => utcFormat({ weekday: 'long', month: 'long', day: 'numeric' }, locale).format(toUtc(date));
 
 /** "12" */
 export const dayOfMonth = (date: PlainDate) => String(toUtc(date).getUTCDate());
 
 /** "3:00 PM" from "HH:mm" */
-export function timeLabel(time: string): string {
+export function timeLabel(time: string, locale = LOCALE): string {
   const [h, m] = time.split(':').map(Number);
-  return plainSpaces(utcFormat({ hour: 'numeric', minute: '2-digit' }).format(new Date(Date.UTC(2000, 0, 1, h, m))));
+  return plainSpaces(utcFormat({ hour: 'numeric', minute: '2-digit' }, locale).format(new Date(Date.UTC(2000, 0, 1, h, m))));
 }
 
 /** "Fri, Oct 16, 3:00 PM" from a local date-time. */
-export function dateTimeLabel(value: LocalDateTime): string {
+export function dateTimeLabel(value: LocalDateTime, locale = LOCALE): string {
   const [date, time] = value.split('T');
-  return `${utcFormat({ weekday: 'short', month: 'short', day: 'numeric' }).format(toUtc(date))}, ${timeLabel(time)}`;
+  return `${utcFormat({ weekday: 'short', month: 'short', day: 'numeric' }, locale).format(toUtc(date))}, ${timeLabel(time, locale)}`;
 }
 
 export const datePart = (value: LocalDateTime): PlainDate => value.slice(0, 10);

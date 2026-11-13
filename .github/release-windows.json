@@ -1,0 +1,12 @@
+{
+  "comment": "Production release windows (owner decision, October 18, 2026): every other Friday, America/Chicago, from the anchor. 'moved' maps a scheduled Friday to its approved replacement date; 'skipped' lists cancelled windows; 'holidays' lists dates the workflow flags for owner review if a window lands on them. Edit this file to change the calendar. See docs/development-workflow.md.",
+  "timezone": "America/Chicago",
+  "anchor": "2026-10-30",
+  "intervalDays": 14,
+  "moved": {
+    "2026-11-27": "2026-11-25",
+    "2026-12-25": "2026-12-23"
+  },
+  "skipped": [],
+  "holidays": ["2027-01-01", "2027-07-05", "2027-11-25", "2027-11-26", "2027-12-24", "2027-12-31"]
+}

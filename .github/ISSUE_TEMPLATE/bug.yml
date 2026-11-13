@@ -1,0 +1,35 @@
+name: Bug
+description: Something isn't working as it should.
+title: "Bug: "
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to…
+        2. Tap…
+        3. See…
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where?
+      options: ["Phone", "Tablet", "Desktop", "All", "Not sure"]
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Synthetic or sample data only. Never real children's information.
