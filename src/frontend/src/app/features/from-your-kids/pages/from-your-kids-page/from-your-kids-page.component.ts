@@ -1,12 +1,12 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, isDevMode, signal, untracked } from '@angular/core';
-import { Api, Child } from '../../core/api/api';
-import { AuthStore } from '../../core/auth/auth.store';
-import { KidsGallery } from './kids-gallery';
-import { KidsDiary } from './kids-diary';
-import { Avatar } from '../../shared/avatar/avatar';
-import { previewDiary, previewGallery } from './from-your-kids-preview';
+import { Api, Child } from '../../../../core/api/api';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { KidsGallery } from '../../components/kids-gallery/kids-gallery.component';
+import { KidsDiary } from '../../components/kids-diary/kids-diary.component';
+import { Avatar } from '../../../../shared/avatar/avatar';
+import { previewDiary, previewGallery } from '../../from-your-kids-preview';
 
 /**
  * M4 parent-facing presentation shell (#531). Sample content is opt-in in development builds.
@@ -16,8 +16,8 @@ import { previewDiary, previewGallery } from './from-your-kids-preview';
   selector: 'app-from-your-kids-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Avatar, KidsGallery, KidsDiary, TranslatePipe],
-  templateUrl: './from-your-kids-page.html',
-  styleUrl: './from-your-kids-page.scss',
+  templateUrl: './from-your-kids-page.component.html',
+  styleUrl: './from-your-kids-page.component.scss',
 })
 export class FromYourKidsPage {
   protected readonly locale = inject(LocaleService);

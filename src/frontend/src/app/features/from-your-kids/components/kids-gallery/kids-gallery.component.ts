@@ -1,9 +1,9 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { A11yModule } from '@angular/cdk/a11y';
-import { KidsGalleryItem, daysUntilExpiry } from './from-your-kids-contract';
+import { KidsGalleryItem, daysUntilExpiry } from '../../from-your-kids-contract';
 
 /**
  * Read-only M4 gallery. Parent actions are emitted, never persisted locally;

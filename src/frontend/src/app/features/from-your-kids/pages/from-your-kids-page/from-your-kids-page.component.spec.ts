@@ -1,9 +1,9 @@
 import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { Api, Child } from '../../core/api/api';
-import { AuthStore } from '../../core/auth/auth.store';
-import { FromYourKidsPage } from './from-your-kids-page';
+import { Api, Child } from '../../../../core/api/api';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { FromYourKidsPage } from './from-your-kids-page.component';
 
 describe('From Your Kids parent-facing shell (#531)', () => {
   const family = signal<{ id: string; role: 'Parent' } | null>({ id: 'family-1', role: 'Parent' });
