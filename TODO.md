@@ -812,17 +812,10 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 - [ ] Retest on Development with physical iPhone Safari and Android Chrome in both themes, including touch scrolling, dense overlap, event details and bottom navigation.
 
 ## UX test follow-ups (November 11, 2026)
-These issues stay in **Test** on Project #2. Everything checkable from one parent account in desktop Chrome passed
-(details in each issue's comment); these items remain before they can move to Awaiting Deployment.
-- [ ] #125 Parent messaging: live updates failed on November 11 (two replicas, no backplane); fixed by running one
-  replica (#583). Retest two-parent read receipts and reconnect without duplicates.
-- [ ] #128 Child Essentials update indicators: make a shared update from a second parent and check banners, row
-  highlights and independent clearing.
-- [ ] #178 Notifications: from a second parent, check calendar triggers, dot clearing, seven-day ageing and safe
-  navigation.
-- [ ] #534 Spanish (failed November 12, back in Ready For Development): translate the profile-photo hints, the
-  Google Photos export status, chat event card dates, "All day" and "Declined", and the Memories dates and owner
-  label; recheck "Shared Caregivers" after #578 deploys; check system emails in Spanish.
+Items left from the November 11 and 12 test passes on Project #2 (details in each issue's comment).
+- [x] #125 Parent messaging, #128 Child Essentials update indicators and #178 Notifications: two-parent checks passed
+  on November 12, 2026 (live updates fixed by running one replica, #583); moved to Awaiting Deployment.
+- [ ] #534 Spanish: see "Remaining Spanish text (#534)" below.
 - [ ] #513 Favicon: check the tab icon in Safari on the sign-in page and an authenticated route.
 - [ ] #552 Mobile Week grid: physical-device retest above (overlapping timed events passed in emulation on
   November 12).
@@ -832,7 +825,8 @@ These issues stay in **Test** on Project #2. Everything checkable from one paren
   reference.
 - [ ] #497 Shared Records PDF: confirm the PDF's embedded image is header artwork, not a payment attachment; legal and
   privacy review of the export wording.
-- [ ] Owner design decisions: #548 chat transcript PDF layout, #566 Shared Records PDF layout, #477 shared funds design.
+- [x] Owner design decisions: #548 chat transcript PDF layout and #566 Shared Records PDF layout approved (November 12, 2026).
+- [ ] Owner design decision: #477 shared funds design.
 - [ ] Remove the synthetic "UX TEST 555/504/500/499" task, provider, caregiver and emergency contact from the
   Development family when they're no longer useful.
 
