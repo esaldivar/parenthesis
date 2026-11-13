@@ -3,8 +3,8 @@ import { TranslationKey, translate } from '../../core/i18n/translations';
 import { CalendarCategory, CalendarEvent, CalendarWarning, Child, FamilyMember, Reminder, SharedTask } from '../../core/api/api';
 import { CalendarPaletteKey, parentPalette } from './calendar-palette';
 import { IconName } from '../../shared/icon/icon';
-import { LocalDateTime, PlainDate } from '../dashboard/model';
-import { addDays, daysBetween } from '../dashboard/week';
+import { LocalDateTime, PlainDate } from '../../core/dates/plain-date';
+import { addDays, daysBetween } from '../../core/dates/dates';
 import { lastDate, toFamilyLocal } from './time';
 
 /**

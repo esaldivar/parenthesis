@@ -1,5 +1,5 @@
-import { LocalDateTime, PlainDate } from '../dashboard/model';
-import { addDays, nowIn } from '../dashboard/week';
+import { LocalDateTime, PlainDate } from '../../core/dates/plain-date';
+import { addDays, nowIn } from '../../core/dates/dates';
 
 // The calendar API stores instants (UTC). Parents see and enter wall-clock times in the family's time zone, so a
 // 3 PM pickup reads 3 PM for both parents wherever they are.

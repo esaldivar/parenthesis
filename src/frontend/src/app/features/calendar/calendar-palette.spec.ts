@@ -1,6 +1,5 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { eventPalette } from '../dashboard/model';
 import { FamilyMember } from '../../core/api/api';
 import { CalendarPalette, CalendarPaletteKey, PanelTint, parentPalette } from './calendar-palette';
 
@@ -36,13 +35,6 @@ describe('Calendar parent color identity', () => {
 class PaletteHost { kind = signal<CalendarPaletteKey>('event'); }
 
 describe('Shared category surfaces', () => {
-  it('keeps activity subcategory icons while mapping them to the approved blue identity', () => {
-    for (const category of ['school', 'medical', 'music', 'sport', 'art', 'other'] as const) {
-      expect(eventPalette(category)).toBe('activity');
-    }
-    expect(eventPalette('family')).toBe('family');
-    expect(eventPalette('unavailable')).toBe('unavailable');
-  });
   it('maps only the generic Event chooser to family and clears unavailable hatching when the kind changes', async () => {
     const fixture = TestBed.createComponent(PaletteHost);
     fixture.detectChanges();

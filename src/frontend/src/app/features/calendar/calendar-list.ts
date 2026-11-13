@@ -3,8 +3,8 @@ import { LocaleService } from '../../core/i18n/locale.service';
 import { TranslatePipe } from '../../core/i18n/translations';
 import { CalendarPalette } from './calendar-palette';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { PlainDate } from '../dashboard/model';
-import { addDays, dayLong, daysBetween } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays, dayLong, daysBetween } from '../../core/dates/dates';
 import { CalendarItem, byStart, onDate } from './calendar-items';
 import { ItemText } from './item-text';
 

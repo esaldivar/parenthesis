@@ -26,7 +26,7 @@ import { Api, CalendarEvent, ChangeRequest, EditScope, FamilyMember } from '../.
 import { generalMessage, toProblem } from '../../core/api/problem';
 import { Icon } from '../../shared/icon/icon';
 import { EventPhotosSection } from '../memories/event-photos';
-import { dateTimeLabel, dayLong, timeLabel } from '../dashboard/week';
+import { dateTimeLabel, dayLong, timeLabel } from '../../core/dates/dates';
 import { CalendarItem } from './calendar-items';
 import { canManageEvent } from './event-permissions';
 import { statusText, whenText } from './item-text';

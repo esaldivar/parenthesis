@@ -17,8 +17,8 @@ import { generalMessage, toProblem, localizeMessage } from '../../core/api/probl
 import { AuthStore } from '../../core/auth/auth.store';
 import { Icon, IconName } from '../../shared/icon/icon';
 import { FORM_STYLES } from '../auth/form-styles';
-import { PlainDate } from '../dashboard/model';
-import { addDays, monthDay, todayIn, weekdayShort } from '../dashboard/week';
+import { PlainDate } from '../../core/dates/plain-date';
+import { addDays, monthDay, todayIn, weekdayShort } from '../../core/dates/dates';
 import { ReminderForm } from './reminder-form';
 import { MAX_DATES, MAX_INTERVAL, RepeatRule, WEEKDAYS, lastAllowed, ordinal, seriesDates, weekdayOf } from './series';
 import { TaskForm } from './task-form';

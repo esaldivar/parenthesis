@@ -6,8 +6,9 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { parentPalette } from '../../calendar/calendar-palette';
 import { associatedChildIds } from '../../calendar/calendar-items';
 import { fromFamilyLocal, lastDate, toFamilyLocal } from '../../calendar/time';
-import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime, PlainDate } from '../model';
-import { addDays } from '../week';
+import { Caregiver, ChildRef, DashboardWeek, EventCategory, FamilyEvent, ParentingTime } from '../model';
+import { PlainDate } from '../../../core/dates/plain-date';
+import { addDays } from '../../../core/dates/dates';
 import { familyDate, whoseText } from '../../memories/photo-text';
 
 /** Loads one week of dashboard data for a family. `null` means the feature isn't available yet. */

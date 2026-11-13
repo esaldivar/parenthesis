@@ -26,19 +26,11 @@ import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRo
 import { CalendarKey } from '../calendar-key/calendar-key.component';
 import { DashboardChildFilter } from '../dashboard-child-filter/dashboard-child-filter.component';
 import { ScheduleBlock, WeekPlacement, blockRange, childNames, groupParentingTime, placeInWeek } from '../../grouping';
-import { ChildRef, DashboardWeek, FamilyEvent, PlainDate, eventPalette } from '../../model';
+import { ChildRef, DashboardWeek, FamilyEvent, eventPalette } from '../../model';
+import { PlainDate } from '../../../../core/dates/plain-date';
 import { StatusLabel } from '../status-label/status-label.component';
 import { CATEGORY_ICONS, TimedPlacement, placeDay, visibleHours } from '../../timeline';
-import {
-  addDays,
-  dayLong,
-  hourLabel,
-  monthDay,
-  timeLabel,
-  weekDays,
-  weekLabelLong,
-  weekdayShort,
-} from '../../week';
+import { addDays, dayLong, hourLabel, monthDay, timeLabel, weekDays, weekLabelLong, weekdayShort } from '../../../../core/dates/dates';
 
 export type WeekState = 'loading' | 'unavailable' | 'error' | 'ready';
 export type InlineView = 'week' | 'month' | 'list';

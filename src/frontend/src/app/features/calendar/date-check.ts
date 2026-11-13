@@ -1,5 +1,5 @@
 import { computed, signal } from '@angular/core';
-import { PlainDate } from '../dashboard/model';
+import { PlainDate } from '../../core/dates/plain-date';
 import { RangeValue, dateIssues, rangeProblems } from './date-rules';
 
 /** The date fields an API answer can be about. */

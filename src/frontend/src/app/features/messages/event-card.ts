@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { RouterLink } from '@angular/router';
 import { CalendarEvent, ChatEventCard } from '../../core/api/api';
 import { toFamilyLocal } from '../calendar/time';
-import { dateTimeLabel, datePart } from '../dashboard/week';
+import { dateTimeLabel, datePart } from '../../core/dates/dates';
 import { Icon } from '../../shared/icon/icon';
 
 /** A calendar event as a chat card, from a calendar search result. */

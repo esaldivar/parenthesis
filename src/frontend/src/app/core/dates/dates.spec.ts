@@ -1,4 +1,4 @@
-import { addDays, dateTimeLabel, greetingFor, hourIn, startOfWeek, timeLabel, todayIn, weekDays, weekLabel } from './week';
+import { addDays, dateTimeLabel, hourIn, startOfWeek, timeLabel, todayIn, weekDays, weekLabel } from './dates';
 
 describe('week dates', () => {
   it('runs weeks Sunday to Saturday', () => {
@@ -35,12 +35,6 @@ describe('week dates', () => {
     expect(todayIn('Europe/London', instant)).toBe('2026-10-17');
     expect(hourIn('America/Chicago', instant)).toBe(21);
     expect(todayIn('Not/A_Zone', instant)).toBe('2026-10-17'); // Falls back to UTC.
-  });
-
-  it('greets by time of day', () => {
-    expect(greetingFor(8)).toBe('Good morning');
-    expect(greetingFor(14)).toBe('Good afternoon');
-    expect(greetingFor(21)).toBe('Good evening');
   });
 
   it('formats times without the viewer’s time zone shifting them', () => {

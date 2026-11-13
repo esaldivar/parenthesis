@@ -1,4 +1,4 @@
-import { LocalDateTime, PlainDate } from './model';
+import { LocalDateTime, PlainDate } from './plain-date';
 
 // Calendar arithmetic on plain dates ("YYYY-MM-DD") in the family's time zone. Dates are handled as UTC midnights
 // internally so daylight-saving changes in the viewer's own zone can't shift a day.
@@ -76,13 +76,6 @@ export function hourIn(timeZone: string, now: Date): number {
   } catch {
     return now.getUTCHours();
   }
-}
-
-export function greetingFor(hour: number): string {
-  if (hour < 5) return 'Hello';
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
 }
 
 const utcFormat = (options: Intl.DateTimeFormatOptions, locale = LOCALE) => new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' });

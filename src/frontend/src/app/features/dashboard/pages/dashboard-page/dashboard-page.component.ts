@@ -34,11 +34,13 @@ import { EmptyState } from '../../../../shared/empty-state/empty-state';
 import { Icon, IconName } from '../../../../shared/icon/icon';
 import { DashboardDataSource, LiveDashboardDataSource, SampleDashboardDataSource } from '../../data/dashboard-data';
 import { blockRange, childNames, groupParentingTime } from '../../grouping';
-import { DashboardWeek, PlainDate, ScheduleStatus, eventPalette } from '../../model';
+import { DashboardWeek, ScheduleStatus, eventPalette } from '../../model';
+import { PlainDate } from '../../../../core/dates/plain-date';
 import { StatusLabel } from '../../components/status-label/status-label.component';
 import { CATEGORY_ICONS } from '../../timeline';
 import { InlineView, WeekCalendar, WeekState } from '../../components/week-calendar/week-calendar.component';
-import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, greetingFor, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from '../../week';
+import { addDays, dateMedium, datePart, dateTimeLabel, dayLong, hourIn, nowIn, startOfWeek, timeLabel, todayIn } from '../../../../core/dates/dates';
+import { greetingFor } from '../../greeting';
 import { Toasts } from '../../../../shared/toast/toasts';
 
 /** The current time; replaced in tests. */
