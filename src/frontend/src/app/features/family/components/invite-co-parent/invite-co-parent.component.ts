@@ -1,14 +1,14 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Api, InvitationSummary } from '../../core/api/api';
-import { generalMessage, toProblem } from '../../core/api/problem';
-import { Icon } from '../../shared/icon/icon';
-import { FORM_STYLES } from '../auth/form-styles';
+import { Api, InvitationSummary } from '../../../../core/api/api';
+import { generalMessage, toProblem } from '../../../../core/api/problem';
+import { Icon } from '../../../../shared/icon/icon';
+import { FORM_STYLES } from '../../../auth/form-styles';
 
 /**
  * Invite the co-parent by email (FM-03). The answer is always "Invitation sent", whether or not the address has an
