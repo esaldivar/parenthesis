@@ -126,7 +126,7 @@ const MEDICAL_TINT = {
                       @switch (tile.section) {
                         @case ('school') { <app-school-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('allergiesFood') { <app-allergies-food-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
-                        @case ('routines') { <app-routines-section [familyId]="family" [childId]="profile.id" /> }
+                        @case ('routines') { <app-routines-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
                         @case ('clothing') { <app-clothing-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('whatHelps') { <app-what-helps-section [familyId]="family" [childId]="profile.id" /> }
                         @case ('caregivers') { <app-caregivers-section [familyId]="family" [childId]="profile.id" [children]="children()" /> }
