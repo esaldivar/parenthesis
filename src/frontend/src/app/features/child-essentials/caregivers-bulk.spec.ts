@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Api, CaregiverList } from '../../core/api/api';
-import { CaregiversSection } from './caregivers-section';
+import { CaregiversSection } from './components/caregivers-section/caregivers-section.component';
 
 describe('Adding a shared caregiver to all children', () => {
   it('keeps existing ratings and retries a failed child without adding duplicates', async () => {

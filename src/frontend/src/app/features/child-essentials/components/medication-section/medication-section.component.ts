@@ -6,11 +6,11 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { Api, Child, MedicationHistoryEntry, MedicationItem, MedicationValues, MedicationView } from '../../core/api/api';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
-import { Icon } from '../../shared/icon/icon';
-import { localizedMessage } from './localized-message';
+import { Api, Child, MedicationHistoryEntry, MedicationItem, MedicationValues, MedicationView } from '../../../../core/api/api';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../../../core/i18n/translations';
+import { Icon } from '../../../../shared/icon/icon';
+import { localizedMessage } from '../../localized-message';
 
 export const MEDICATION_LIMITS = { name: 100, dose: 100, schedule: 200, instructions: 1000 } as const;
 
@@ -35,7 +35,7 @@ export function isDeletion(entry: MedicationHistoryEntry): boolean {
   selector: 'app-medication-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, AppDatePipe, Icon, NgTemplateOutlet, ReactiveFormsModule],
-  styleUrls: ['./essentials-section.css', './medication-section.css'],
+  styleUrls: ['../../essentials-section.css', './medication-section.component.css'],
   template: `
     <section aria-labelledby="medication-heading">
       <div class="heading-row">

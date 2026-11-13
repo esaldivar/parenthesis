@@ -1,12 +1,12 @@
-import { LocaleService } from '../../core/i18n/locale.service';
-import { localizedMessage } from './localized-message';
-import { essentialsOption } from './essentials-options';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { localizedMessage } from '../../localized-message';
+import { essentialsOption } from '../../essentials-options';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { OnScreen, sectionUpdates } from './essentials-updates';
-import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../core/api/api';
+import { OnScreen, sectionUpdates } from '../../essentials-updates';
+import { Api, Child, EmergencyContact, EmergencyContactsView } from '../../../../core/api/api';
 
 /** The relationships offered for an emergency contact, closest family first. */
 export const RELATIONSHIPS = [
@@ -17,7 +17,7 @@ export const RELATIONSHIPS = [
   selector: 'app-emergency-contacts-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, ReactiveFormsModule, OnScreen],
-  styleUrl: './essentials-section.css',
+  styleUrl: '../../essentials-section.css',
   styles: ':host { display: block; margin-block-start: 1rem; }',
   template: `
     <section aria-labelledby="emergency-contacts-heading">

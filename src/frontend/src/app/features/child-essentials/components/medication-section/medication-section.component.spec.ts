@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { Api, Child, MedicationItem, MedicationValues, MedicationView } from '../../core/api/api';
-import { MedicationSection, isDeletion } from './medication-section';
+import { Api, Child, MedicationItem, MedicationValues, MedicationView } from '../../../../core/api/api';
+import { MedicationSection, isDeletion } from './medication-section.component';
 
 const child = (id: string, firstName: string): Child => ({
   id,

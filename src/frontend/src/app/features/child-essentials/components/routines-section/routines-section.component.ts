@@ -1,17 +1,17 @@
-import { localizedMessage } from './localized-message';
-import { AppDatePipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../core/i18n/translations';
+import { localizedMessage } from '../../localized-message';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, signal, untracked,
 } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { EssentialsUpdatesStore } from '../../core/essentials/essentials-updates.store';
-import { Icon } from '../../shared/icon/icon';
-import { OnScreen, sectionUpdates } from './essentials-updates';
-import { RevisionedSection } from './revisioned-section';
-import { Child, HouseholdRoutine, RoutineEntry, RoutinesHistoryPage, RoutinesValues, RoutinesView } from '../../core/api/api';
+import { EssentialsUpdatesStore } from '../../../../core/essentials/essentials-updates.store';
+import { Icon } from '../../../../shared/icon/icon';
+import { OnScreen, sectionUpdates } from '../../essentials-updates';
+import { RevisionedSection } from '../../revisioned-section';
+import { Child, HouseholdRoutine, RoutineEntry, RoutinesHistoryPage, RoutinesValues, RoutinesView } from '../../../../core/api/api';
 
 /** Which list a routine is added to or edited in: Shared, or the signed-in parent's own household list. */
 type RoutineList = 'shared' | 'mine';
@@ -246,7 +246,7 @@ class SharedEditForm {
       </form>
     </ng-template>
   `,
-  styleUrl: './essentials-section.css',
+  styleUrl: '../../essentials-section.css',
   styles: `
     :host {
       display: block;

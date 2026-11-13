@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { RoutineEntry } from '../../core/api/api';
-import { RoutinesSection } from './routines-section';
+import { RoutineEntry } from '../../../../core/api/api';
+import { RoutinesSection } from './routines-section.component';
 
 describe('Routines', () => {
   const url = '/api/families/family-1/children/child-1/essentials/routines';

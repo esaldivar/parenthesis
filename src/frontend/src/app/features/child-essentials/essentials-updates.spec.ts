@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { Api, Child, EssentialsBanner, EssentialsUpdates } from '../../core/api/api';
 import { axeViolations } from '../../../testing/axe';
 import { fakeAuth } from '../../../testing/fake-auth';
-import { BANNER_MS, ChildEssentialsPage } from './child-essentials-page';
+import { BANNER_MS, ChildEssentialsPage } from './pages/child-essentials-page/child-essentials-page.component';
 import { bannerText } from './essentials-updates';
 
 // Synthetic family only: Kai and Aurora. Jamie (the co-parent) changed Kai's shoe size; the API is faked.

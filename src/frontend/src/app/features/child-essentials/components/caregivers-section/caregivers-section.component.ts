@@ -1,18 +1,18 @@
-import { localizedMessage } from './localized-message';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AppCurrencyPipe } from '../../core/i18n/locale-formatting';
-import { TranslatePipe, translate } from '../../core/i18n/translations';
+import { localizedMessage } from '../../localized-message';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AppCurrencyPipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { OnScreen, sectionUpdates } from './essentials-updates';
-import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../core/api/api';
+import { OnScreen, sectionUpdates } from '../../essentials-updates';
+import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../../../core/api/api';
 
 @Component({
   selector: 'app-caregivers-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, AppCurrencyPipe, ReactiveFormsModule, OnScreen],
-  styleUrl: './essentials-section.css',
+  styleUrl: '../../essentials-section.css',
   styles: `
     :host { display: block; margin-block-start: 1rem; }
     h4 { display: flex; align-items: center; flex-wrap: wrap; gap: .375rem; }

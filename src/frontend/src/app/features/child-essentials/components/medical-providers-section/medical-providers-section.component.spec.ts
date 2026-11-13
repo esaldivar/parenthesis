@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { Api, Child, MedicalProvider } from '../../core/api/api';
-import { MedicalProvidersSection } from './medical-providers-section';
+import { Api, Child, MedicalProvider } from '../../../../core/api/api';
+import { MedicalProvidersSection } from './medical-providers-section.component';
 
 const child = (id: string, firstName: string): Child => ({
   id,

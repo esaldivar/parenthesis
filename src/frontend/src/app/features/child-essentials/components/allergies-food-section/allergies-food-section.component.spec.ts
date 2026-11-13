@@ -1,9 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { LocaleService } from '../../core/i18n/locale.service';
-import { AllergiesFoodValues, attachmentName } from '../../core/api/api';
-import { AllergiesFoodSection } from './allergies-food-section';
+import { LocaleService } from '../../../../core/i18n/locale.service';
+import { AllergiesFoodValues, attachmentName } from '../../../../core/api/api';
+import { AllergiesFoodSection } from './allergies-food-section.component';
 
 describe('Allergies & Food', () => {
   const url = '/api/families/family-1/children/child-1/essentials/allergies-food';
