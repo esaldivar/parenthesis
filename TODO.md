@@ -727,6 +727,25 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   above. macOS/VoiceOver remains unavailable; evidence archival and repeated stability runs remain open.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
 
+### #443 — Desktop macOS VoiceOver with Guidepup
+- [x] VoiceOver project, nine journeys (smoke, navigation, forms, calendar save, event dialog, two date journeys,
+  reminder details, task progress), macOS candidate script and [runbook](docs/runbooks/voiceover-macos.md).
+- [x] Owner-Mac run at 523a9ab (macOS 13.7.8, Chrome 157, Guidepup 0.38.0 / Playwright 0.21.0): 9 of 9 passed,
+  verified by `verify-nvda-results.mjs … VoiceOver`. Per-test speech transcripts weren't kept for that run (the next
+  run cleared the results folder); keep them from the second run.
+- [x] Controlled negative: navigation expecting "zebra quokka" failed at the speech assertion with VoiceOver's actual
+  speech ("Settings … current page link …"); restored.
+- [x] Second full run at 7f13a43: 8 of 9 passed. Smoke failed once because Guidepup's log kept only VoiceOver's hint
+  after `nextHeading`; fixed in c499266 with the bounded heading search. Results kept on the owner's Mac
+  (`~/voiceover-evidence/run2-7f13a43`).
+- [ ] One more full 9 of 9 run on the final PR commit, if the owner wants a clean repeat (about 40 minutes).
+- [ ] App: VoiceOver on macOS 13 sometimes doesn't announce the "… is on the calendar" toast after an activity save
+  (focus moves to main and the week heading changes at the same moment). The VoiceOver test reads it with the cursor
+  when that happens, marked in its transcript. Announced directly in 2 of 3 Calendar runs; the reminder save's toast
+  needed the cursor read in run 2. Tracked in #650 (owner chose a separate issue, November 13, 2026); when fixed, make
+  `toastHeardOrRead` a hard assertion.
+- [ ] Optional later: a manual-only hosted macOS job, only with the owner's approval of its Actions-minute cost.
+
 ### #278/#279 — Coverage follow-up (October 26, 2026)
 - Verified historical release PR #315 browser run 40316038202: 179 passing executions on merge candidate `92be9b9e962751f6e6fa3c273d6cb62836eae46e`; original no-run blocker notes above are historical.
 - Added touch Edit/Swap invalid/corrected/cancel checks, Home/Calendar slot moving/clearing, Chicago spring/fall persisted edit boundaries and controlled overflow detection/restoration. Removed the remaining #259 viewport override.
