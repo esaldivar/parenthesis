@@ -717,7 +717,8 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
 - [ ] App: VoiceOver on macOS 13 sometimes doesn't announce the "… is on the calendar" toast after an activity save
   (focus moves to main and the week heading changes at the same moment). The VoiceOver test reads it with the cursor
   when that happens, marked in its transcript. Announced directly in 2 of 3 Calendar runs; the reminder save's toast
-  needed the cursor read in run 2. Owner to choose the follow-up; then track it in its own issue.
+  needed the cursor read in run 2. Tracked in #650 (owner chose a separate issue, November 13, 2026); when fixed, make
+  `toastHeardOrRead` a hard assertion.
 - [ ] Optional later: a manual-only hosted macOS job, only with the owner's approval of its Actions-minute cost.
 
 ### #278/#279 — Coverage follow-up (October 26, 2026)

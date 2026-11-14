@@ -95,7 +95,7 @@ Restore it and rerun to pass. Never commit the deliberate failure.
   and changes the week heading at the same moment) VoiceOver didn't say it, while the reminder save's toast was
   spoken. If it isn't heard, the journey holds the toast, moves VoiceOver's cursor to its Close button and reads back,
   and the transcript says "[VoiceOver did not announce the notification; reading it with the VoiceOver cursor]".
-  That proves the message is readable, not that it was announced.
+  That proves the message is readable, not that it was announced. The app fix is tracked in #650.
 - Desktop VoiceOver with Chromium only (owner decision, November 13, 2026): Playwright's Chromium, or the installed
   Google Chrome where Playwright's build isn't available. Safari/WebKit VoiceOver and iPhone
   VoiceOver (#112) remain manual checks.
