@@ -27,7 +27,7 @@
 // components share one palette in both themes.
 html {
   @include mat.theme((
-    typography: (plain-family: var(--font-family), brand-family: var(--font-family)),
+    typography: (plain-family: var(--font-family-body), brand-family: var(--font-family-heading)),
     density: 0,
   ));
 
@@ -44,4 +44,53 @@ html {
   --mat-sys-on-secondary-container: var(--color-text);
   --mat-sys-outline: var(--color-outline);
   --mat-sys-error: var(--color-danger);
+}
+
+// Filled buttons (matButton="filled" / mat-flat-button) follow Figma Button/Primary: 56px tall, 12px corners, Inter
+// SemiBold 16px, and solid fills for hover, pressed and disabled rather than Material's translucent state layers.
+// A component recolours a filled button (e.g. a destructive action) through the --button-filled-* properties.
+html {
+  --mat-button-filled-container-height: var(--button-height);
+  --mat-button-filled-container-shape: var(--radius-control);
+  --mat-button-filled-label-text-font: var(--font-family-body);
+  --mat-button-filled-label-text-size: var(--type-button-size);
+  --mat-button-filled-label-text-weight: var(--type-button-weight);
+  --mat-button-filled-label-text-tracking: 0;
+  --mat-button-filled-disabled-container-color: var(--color-disabled-fill);
+  --mat-button-filled-disabled-label-text-color: var(--color-on-disabled-fill);
+  --mat-button-filled-hover-state-layer-opacity: 0;
+  --mat-button-filled-focus-state-layer-opacity: 0;
+  --mat-button-filled-pressed-state-layer-opacity: 0;
+  --mat-button-filled-ripple-color: transparent;
+
+  // Outlined buttons usually sit beside a filled one (Cancel next to Save, Approvals next to Add), so they share its
+  // height, corners and label. Figma doesn't define them yet; their colours and states stay Material's until it does.
+  --mat-button-outlined-container-height: var(--button-height);
+  --mat-button-outlined-container-shape: var(--radius-control);
+  --mat-button-outlined-label-text-font: var(--font-family-body);
+  --mat-button-outlined-label-text-size: var(--type-button-size);
+  --mat-button-outlined-label-text-weight: var(--type-button-weight);
+  --mat-button-outlined-label-text-tracking: 0;
+}
+
+// :where() keeps these at zero specificity, so a component's own --mat-button-filled-* settings still win.
+:where(.mat-mdc-unelevated-button) {
+  --mat-button-filled-container-color: var(--button-filled-bg, var(--color-action));
+  --mat-button-filled-label-text-color: var(--button-filled-fg, var(--color-on-action));
+}
+
+:where(.mat-mdc-unelevated-button:not(:disabled, [aria-disabled='true']):hover) {
+  --mat-button-filled-container-color: var(--button-filled-bg-hover, var(--color-action-hover));
+}
+
+:where(.mat-mdc-unelevated-button:not(:disabled, [aria-disabled='true']):active) {
+  --mat-button-filled-container-color: var(--button-filled-bg-pressed, var(--color-action-pressed));
+}
+
+// Material removes the outline from its buttons and shows focus only as a faint state layer, so the filled button
+// draws the Figma focus ring itself: 3px in the focus colour, 2px outside the button so it sits on the page.
+.mat-mdc-unelevated-button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
 }

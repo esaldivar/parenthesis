@@ -1,5 +1,8 @@
 // The global stylesheet (angular.json). Layers, in output order (ADR-0009):
 // abstracts (token and mixin modules, no CSS), themes, base, then shared controls.
+// Bundled variable fonts for the Figma text styles (latin files load only when that text is on the page).
+@use '@fontsource-variable/inter/wght' as inter;
+@use '@fontsource-variable/nunito-sans/wght' as nunito-sans;
 @use 'styles/themes/themes';
 @use 'styles/base/overlays';
 @use 'styles/base/base';

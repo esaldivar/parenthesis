@@ -248,8 +248,11 @@ button[mat-button] {
   justify-self: start;
 }
 .danger {
-  --mat-button-filled-container-color: var(--color-danger);
-  --mat-button-filled-label-text-color: var(--color-surface);
+  // Destructive filled button. Hover and pressed keep the 8% / 10% tint Material's state layer gave it before.
+  --button-filled-bg: var(--color-danger);
+  --button-filled-bg-hover: color-mix(in srgb, var(--color-danger), var(--color-surface) 8%);
+  --button-filled-bg-pressed: color-mix(in srgb, var(--color-danger), var(--color-surface) 10%);
+  --button-filled-fg: var(--color-surface);
 }
 .danger-outline {
   --mat-button-outlined-label-text-color: var(--color-danger);

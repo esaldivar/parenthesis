@@ -95,10 +95,11 @@ import { FORM_STYLES } from '../../../auth/form-styles';
         border-color: var(--color-danger);
       }
       .danger-fill {
-        --mdc-filled-button-container-color: var(--color-danger);
-        --mat-button-filled-container-color: var(--color-danger);
-        --mdc-filled-button-label-text-color: var(--color-surface);
-        --mat-button-filled-label-text-color: var(--color-surface);
+        // Destructive filled button. Hover and pressed keep the 8% / 10% tint Material's state layer gave it.
+        --button-filled-bg: var(--color-danger);
+        --button-filled-bg-hover: color-mix(in srgb, var(--color-danger), var(--color-surface) 8%);
+        --button-filled-bg-pressed: color-mix(in srgb, var(--color-danger), var(--color-surface) 10%);
+        --button-filled-fg: var(--color-surface);
       }
     `,
   ],

@@ -11,30 +11,89 @@ body {
   min-height: 100dvh;
   background: var(--color-canvas);
   color: var(--color-text);
-  font-family: var(--font-family);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
+  font-family: var(--font-family-body);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
   -webkit-text-size-adjust: 100%;
 }
 
+// Headings and text styles follow the Figma text styles (tokens.scale). Components that need a style without its
+// element use the matching class, e.g. a 14px semibold label is .text-label-strong rather than a one-off font-size.
 h1,
 h2,
-h3 {
-  line-height: 1.25;
+h3,
+h4,
+.text-h1,
+.text-h2,
+.text-h3,
+.text-h4 {
+  font-family: var(--font-family-heading);
   margin: 0 0 var(--space-2);
   overflow-wrap: anywhere;
 }
 
-h1 {
-  font-size: var(--font-size-h1);
+h1,
+.text-h1 {
+  font-size: var(--type-h1-size);
+  line-height: var(--type-h1-line-height);
+  font-weight: var(--type-h1-weight);
 }
 
-h2 {
-  font-size: var(--font-size-h2);
+h2,
+.text-h2 {
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-line-height);
+  font-weight: var(--type-h2-weight);
 }
 
-h3 {
-  font-size: var(--font-size-h3);
+h3,
+.text-h3 {
+  font-size: var(--type-h3-size);
+  line-height: var(--type-h3-line-height);
+  font-weight: var(--type-h3-weight);
+}
+
+h4,
+.text-h4 {
+  font-size: var(--type-h4-size);
+  line-height: var(--type-h4-line-height);
+  font-weight: var(--type-h4-weight);
+}
+
+.text-body,
+.text-body-medium,
+.text-body-strong {
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+}
+
+.text-body-medium {
+  font-weight: 500;
+}
+
+.text-body-strong {
+  font-weight: 600;
+}
+
+.text-body-small {
+  font-size: var(--type-body-small-size);
+  line-height: var(--type-body-small-line-height);
+}
+
+.text-label,
+.text-label-strong {
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line-height);
+  font-weight: 500;
+}
+
+.text-label-strong {
+  font-weight: 600;
+}
+
+.text-caption {
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line-height);
 }
 
 p {

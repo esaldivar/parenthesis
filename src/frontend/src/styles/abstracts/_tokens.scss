@@ -36,13 +36,18 @@
   --color-danger: #a13333;
   // New-notification dot (owner request, November 7, 2026): at least 3:1 on the canvas in each theme.
   --color-notify: #1e8e3e;
-  --color-focus: #176b67;
+  // Focus ring (Figma Button/Primary focus state): text colour, drawn 2px outside the control. 11:1 on the canvas.
+  --color-focus: #203a31;
   --color-selected: #d6e4d0;
   // Hairlines between grid cells, rows and cards (#209). Calm, but visible on white and ivory.
   --color-divider: #cfd7c9;
   // How much of an item's category text colour tints its edge (#209), as in the approved calendar boards.
   --calendar-item-edge-mix: 60%;
   --color-disabled-text: #5f6f66;
+  // Disabled filled button (Figma Button/Primary disabled). The label is one step darker than Figma's #4d6258 so it
+  // keeps 4.5:1 on the fill (owner decision, November 15, 2026); Figma is being updated to match.
+  --color-disabled-fill: #cfd7c9;
+  --color-on-disabled-fill: #4a5f55;
   --color-status-pending-bg: #fbeee0;
   --color-status-confirmed-bg: #dcefe9;
   --color-status-rejected-bg: #f8e1df;
@@ -117,11 +122,13 @@
   --color-outline: #8aa99a;
   --color-danger: #ffb4ab;
   --color-notify: #3ddc84;
-  --color-focus: #91d2c5;
+  --color-focus: #f7f5ed;
   --color-selected: #24483a;
   --color-divider: #24483a;
   --calendar-item-edge-mix: 45%;
   --color-disabled-text: #9db2a6;
+  --color-disabled-fill: #24483a;
+  --color-on-disabled-fill: #c0d0c5;
   --color-status-pending-bg: #4a3a22;
   --color-status-confirmed-bg: #1f4a3f;
   --color-status-rejected-bg: #4d2724;
@@ -183,11 +190,46 @@
   // The minimized bar at the bottom right (#547: the calendar legend only needs to clear this while it's collapsed).
   --chat-dock-bar-width: 18rem;
   --chat-dock-open-height: min(36rem, calc(100dvh - 6rem));
+  // Typography mirrors the Figma text styles (Parenthesis - Design System, page 01 Typography): Nunito Sans headings,
+  // Inter for everything else, both bundled with the app (@fontsource-variable, no third-party font requests).
+  // --type-<style>-* is Figma's <Group>/<Style>, e.g. --type-label-strong-* = Label/Strong. Sizes are in rem so text
+  // enlargement still works. Line heights are unitless ratios that give Figma's pixel values (noted beside each style)
+  // at its size, so a component that resizes a heading keeps a proportional line height.
+  // The platform stack is the fallback while the fonts load, and the text wordmark's face until its artwork lands
+  // (docs/design/BRANDING.md: the brand is locked, so the wordmark doesn't follow the UI typeface).
   --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-size-body: 1rem;
+  --font-family-body: 'Inter Variable', var(--font-family);
+  --font-family-heading: 'Nunito Sans Variable', var(--font-family);
+  --type-h1-size: 2rem; // 32 / 40px, Bold
+  --type-h1-line-height: 1.25;
+  --type-h1-weight: 700;
+  --type-h2-size: 1.5rem; // 24 / 32px, Bold
+  --type-h2-line-height: 1.3333;
+  --type-h2-weight: 700;
+  --type-h3-size: 1.25rem; // 20 / 28px, SemiBold
+  --type-h3-line-height: 1.4;
+  --type-h3-weight: 600;
+  --type-h4-size: 1.125rem; // 18 / 26px, SemiBold
+  --type-h4-line-height: 1.4444;
+  --type-h4-weight: 600;
+  --type-body-size: 1rem; // Body/Regular, Medium (500) and Strong (600): 16 / 24px
+  --type-body-line-height: 1.5;
+  --type-body-small-size: 0.875rem; // 14 / 21px, Regular
+  --type-body-small-line-height: 1.5;
+  --type-label-size: 0.875rem; // Label/Regular (500) and Label/Strong (600): 14 / 20px
+  --type-label-line-height: 1.4286;
+  --type-caption-size: 0.75rem; // 12 / 18px, Regular
+  --type-caption-line-height: 1.5;
+  --type-button-size: 1rem; // 16 / 24px, SemiBold
+  --type-button-line-height: 1.5;
+  --type-button-weight: 600;
+  // Earlier names, kept so existing components keep working.
+  --font-size-body: var(--type-body-size);
   --line-height-body: 1.5;
-  --font-size-h3: 1.25rem;
-  --font-size-h2: 1.5rem;
-  --font-size-h1: 2rem;
+  --font-size-h3: var(--type-h3-size);
+  --font-size-h2: var(--type-h2-size);
+  --font-size-h1: var(--type-h1-size);
+  // Filled (primary) button, Figma Button/Primary: 56px tall, 12px corners.
+  --button-height: 56px;
   --motion-fast: 120ms;
 }
