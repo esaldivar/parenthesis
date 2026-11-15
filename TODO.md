@@ -958,3 +958,21 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
 - [ ] An older history entry from before custom routines (a Bedtime/Naps edit) reads "No routines yet" both before
   and after; decide whether history should skip entries with no visible change.
 - [ ] Removing a routine isn't in #498; decide whether parents need it before the private beta.
+
+## Figma design-system alignment (November 15, 2026)
+Proposal and owner decisions in the "Align design tokens with Figma" thread; tokens follow Figma file
+"Parenthesis - Design System" (pages 01 Typography, 02 Color Palette, 03 Themes).
+- [x] Bundle Inter and Nunito Sans, add `--type-*` tokens and `.text-*` classes, filled buttons to Figma
+  Button/Primary (56px, 12px corners, solid hover/pressed/disabled fills, text-colour focus ring 2px outside)
+  (`feat/figma-typography-tokens`, November 15, 2026).
+- [ ] Owner check on the development site: 56px filled buttons in tight spots (dialogs, calendar panels, chat),
+  both themes, 320px.
+- [ ] Hand ChatGPT the list of code-only tokens to add in Figma (`figma-variables-for-chatgpt.md` in the project
+  files), plus the two Button/Primary fixes (focus ring outside, light disabled label #4A5F55).
+- [ ] Outlined, text and icon Material buttons still show keyboard focus only as Material's faint state layer (no
+  outline). Give them the same focus ring once Figma defines those buttons.
+- [ ] Move the one-off font sizes in component styles (13px, 15px, 17px and others) onto the Figma text styles,
+  screen by screen as the Figma page designs arrive.
+- [ ] Some pages use Georgia serif headings (From Your Kids, Child Essentials, Family Memories) and the text
+  wordmark uses the system font; neither is in Figma yet. Confirm with the owner when those designs land (the
+  wordmark stays as it is: the brand is locked).

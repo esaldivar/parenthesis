@@ -58,9 +58,15 @@ charts, and empty states in both themes.
 
 ## Typography, spacing, and components
 
-- Prefer the platform system sans-serif stack; use readable fallbacks rather than
-  requiring an Apple-only font. Start body text at 16px with 1.5 line height and
-  a restrained 20/24/32px heading scale. Use relative sizing and permit wrapping.
+- Typography follows the Figma text styles (Parenthesis - Design System, page
+  01 Typography): Nunito Sans for headings (H1 32/40, H2 24/32, H3 20/28, H4 18/26)
+  and Inter for body, label, caption and button text (body 16/24). Both fonts are
+  bundled with the app, never loaded from a third party, with the platform sans-serif
+  stack as the fallback. Use the `--type-*` tokens or `.text-*` classes rather than
+  one-off font sizes, keep sizes relative, and permit wrapping.
+- Filled (primary) buttons follow Figma Button/Primary: 56px tall, 12px corners,
+  solid hover, pressed and disabled fills, and a 3px text-colour focus ring 2px
+  outside the button.
 - Use a 4px spacing grid with 8/12/16/24/32px steps. Begin with 16px mobile gutters,
   24–32px on wider screens, and a constrained readable content width.
 - Start cards at 16–20px radii and controls at 10–12px. Reserve pill shapes for
