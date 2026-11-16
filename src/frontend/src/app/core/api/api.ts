@@ -984,6 +984,11 @@ export interface SchoolValues {
   readonly homeroomTeacher: string | null;
   readonly grade: string | null;
   readonly parentConcerns: string | null;
+  /** Added in #655; absent or null on saves made before then. */
+  readonly schoolName?: string | null;
+  readonly schoolAddress?: string | null;
+  readonly teacherEmail?: string | null;
+  readonly teacherPhone?: string | null;
 }
 
 export interface SchoolView {

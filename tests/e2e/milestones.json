@@ -16,6 +16,10 @@
     {
       "tag": "@m4",
       "name": "v0.4.0 Communication (messages between parents)"
+    },
+    {
+      "tag": "@m5",
+      "name": "v0.5.0 Design Refresh & UX Overhaul (Child Essentials redesign, category by category)"
     }
   ],
   "regressionTag": "@regression"

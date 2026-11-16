@@ -11,10 +11,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Families.Endpoints;
 
-internal sealed record SchoolValues(string? Grade, string? HomeroomTeacher, string? ParentConcerns)
+/// <summary>School values in display order (#655). The contact and address fields are optional and kept as typed.</summary>
+internal sealed record SchoolValues(
+    string? Grade, string? HomeroomTeacher, string? ParentConcerns,
+    string? SchoolName = null, string? SchoolAddress = null, string? TeacherEmail = null, string? TeacherPhone = null)
 {
     public static SchoolValues From(SchoolRevision? row) =>
-        new(row?.Grade, row?.HomeroomTeacher, row?.ParentConcerns);
+        new(row?.Grade, row?.HomeroomTeacher, row?.ParentConcerns,
+            row?.SchoolName, row?.SchoolAddress, row?.TeacherEmail, row?.TeacherPhone);
 }
 
 internal sealed record SchoolView(int Revision, SchoolValues Values)
@@ -83,9 +87,20 @@ internal static class SchoolEndpoints
             errors["homeroomTeacher"] = ["Homeroom teacher is available for pre-K through fifth grade."];
         }
 
+        var email = ChildEssentialsAccess.Normalize(
+            request.Values.TeacherEmail, "teacherEmail", SchoolRevision.EmailLimit, errors);
+        if (email is not null && !errors.ContainsKey("teacherEmail") && !LooksLikeEmail(email))
+        {
+            errors["teacherEmail"] = ["Enter an email address like name@example.com."];
+        }
+
         var values = new SchoolValues(
             grade, teacher,
-            ChildEssentialsAccess.Normalize(request.Values.ParentConcerns, "parentConcerns", SchoolRevision.TextLimit, errors));
+            ChildEssentialsAccess.Normalize(request.Values.ParentConcerns, "parentConcerns", SchoolRevision.TextLimit, errors),
+            ChildEssentialsAccess.Normalize(request.Values.SchoolName, "schoolName", SchoolRevision.TextLimit, errors),
+            ChildEssentialsAccess.Normalize(request.Values.SchoolAddress, "schoolAddress", SchoolRevision.TextLimit, errors),
+            email,
+            ChildEssentialsAccess.Normalize(request.Values.TeacherPhone, "teacherPhone", SchoolRevision.PhoneLimit, errors));
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -121,12 +136,20 @@ internal static class SchoolEndpoints
                 Grade = values.Grade,
                 HomeroomTeacher = values.HomeroomTeacher,
                 ParentConcerns = values.ParentConcerns,
+                SchoolName = values.SchoolName,
+                SchoolAddress = values.SchoolAddress,
+                TeacherEmail = values.TeacherEmail,
+                TeacherPhone = values.TeacherPhone,
             };
             db.SchoolRevisions.Add(next);
             await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.School, next.Revision,
                 EssentialsUpdateEndpoints.Changed(
+                ("schoolName", current.Values.SchoolName, values.SchoolName),
+                ("schoolAddress", current.Values.SchoolAddress, values.SchoolAddress),
                 ("grade", current.Values.Grade, values.Grade),
                 ("homeroomTeacher", current.Values.HomeroomTeacher, values.HomeroomTeacher),
+                ("teacherEmail", current.Values.TeacherEmail, values.TeacherEmail),
+                ("teacherPhone", current.Values.TeacherPhone, values.TeacherPhone),
                 ("parentConcerns", current.Values.ParentConcerns, values.ParentConcerns)),
                 next.EditedAt, ct);
             await db.SaveChangesAsync(ct);
@@ -138,6 +161,13 @@ internal static class SchoolEndpoints
         Guid childId, int? beforeRevision, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
         IUserDirectory directory, CancellationToken cancellationToken) =>
         EssentialsHistory.PageAsync(childId, beforeRevision, http, tenant, db, directory, Revisions(db, childId), SchoolValues.From, cancellationToken);
+
+    /// <summary>One @ with text on both sides and no spaces: enough to catch typos without rejecting real addresses.</summary>
+    internal static bool LooksLikeEmail(string value)
+    {
+        var at = value.IndexOf('@');
+        return at > 0 && at == value.LastIndexOf('@') && at < value.Length - 1 && !value.Any(char.IsWhiteSpace);
+    }
 
     private static IQueryable<SchoolRevision> Revisions(FamiliesDbContext db, Guid childId) =>
         db.SchoolRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId)

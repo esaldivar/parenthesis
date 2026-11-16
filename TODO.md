@@ -313,6 +313,12 @@ that points back here.
     card: approved by the owner October 30, 2026. The `design approved` label is the owner's to apply.
   - [ ] Mobile WebKit Playwright profiles in CI, physical iPhone (HEIC photo conversion by Safari) and Android
     photo pickers, real screen reader pass of the editor.
+- [ ] **Child Essentials School redesign (#655, M5, owner-approved Figma page 133:2).** School only; other categories
+  follow category by category.
+  - [ ] Owner review of the PR and its Figma comparison sheets, then a dev-site check in both themes and on a phone.
+  - [ ] Long values on 320px phones wrap right-aligned under the value column (Figma shows short values only); a
+    U.S. phone number can break after its hyphen. Ask the owner whether long values should stack under the label.
+  - [ ] The phone topbar wraps the bell and account menu onto a second line at 320px (existing shell, not School).
 - [ ] **One shared photo per child for both parents (#653, owner decision November 16, 2026).** Either parent sets it;
   the picker shows the child's own photo, else the shared one.
   - [ ] Owner retest on the dev site: Dad, signed in on the shared device, sees the photo Mom chose for each child.

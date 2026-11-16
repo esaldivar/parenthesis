@@ -73,7 +73,7 @@ const MEDICAL_TINT = {
           }
         }
       } @else {
-      <div class="layout" [class.focused]="openSection() !== null">
+      <div class="layout" [class.focused]="openSection() !== null" [class.school-open]="openSection() === 'school'">
         <div class="children" role="group" aria-label="{{ 'feature.choose.a.child' | tr }}">
           @for (item of children(); track item.id) {
             <button type="button" [attr.aria-pressed]="child.id === item.id" (click)="selectChild(item.id)">
@@ -83,7 +83,8 @@ const MEDICAL_TINT = {
                 <span class="child-dot" aria-hidden="true"></span>
                 <span class="visually-hidden">{{ 'feature.has.updates' | tr }}</span>
               }
-              @if (child.id === item.id) {
+              <!-- School's approved design (#655) shows the selection by the highlighted row alone. -->
+              @if (child.id === item.id && openSection() !== 'school') {
                 <app-icon class="child-check" name="check" [size]="20" />
               }
             </button>
@@ -118,9 +119,12 @@ const MEDICAL_TINT = {
                     </summary>
                     <div class="tile-content">
                       @if (openSection() === tile.section) {
-                        <header class="section-hero">
+                        <header class="section-hero" [class.section-hero--plain]="tile.section === 'school'">
                           <h2 id="section-heading" tabindex="-1">{{ tile.name | tr }}</h2>
-                          <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
+                          <!-- School puts its illustration behind the content instead (#655). -->
+                          @if (tile.section !== 'school') {
+                            <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
+                          }
                         </header>
                       }
                       @switch (tile.section) {
@@ -297,6 +301,20 @@ const MEDICAL_TINT = {
     .focused details[open] > summary { display: none; }
     .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
     .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+    /* School (#655, Figma 133:2): the title on the theme background, no tinted box or border. */
+    .section-hero.section-hero--plain {
+      min-block-size: 3.5rem;
+      margin-block-end: 0.75rem;
+      padding: 0.75rem 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-text);
+    }
+    .section-hero--plain h2 { font: 700 1.5rem / 1.875rem var(--font-family-heading); }
+    /* Its faint illustration may reach past the column; it never scrolls the page sideways. */
+    .layout.school-open { overflow-x: clip; overflow-clip-margin: 0.5rem; }
+    /* School's frames (#655) set the chosen child in Inter Semi Bold. */
+    .school-open .children button[aria-pressed='true'] { font-weight: 600; }
 
     @media (max-width: 47.999rem) {
       .layout.focused { grid-template-columns: minmax(0, 1fr); }
@@ -309,6 +327,8 @@ const MEDICAL_TINT = {
       .children button { flex: none; min-height: 64px; }
       h2 { font-size: 1.75rem; }
       .section-hero { min-block-size: 7rem; }
+      .section-hero.section-hero--plain { min-block-size: 4rem; }
+      .section-hero--plain h2 { font-size: 2rem; line-height: 2.5rem; }
       .section-hero img { inline-size: min(32%, 11rem); max-block-size: 6rem; object-fit: contain; }
     }
     .layout > section { container-type: inline-size; }

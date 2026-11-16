@@ -1,0 +1,174 @@
+/*
+ * Child Essentials, School (#655): built to the approved Figma page 133:2. A 640px column on the theme background,
+ * the original School illustration faint behind it, translucent value panels, outlined rounded-rectangle actions and a plain
+ * teal "Updated" beside (desktop) or under (phone) a changed field's label.
+ * Only School uses this sheet; the other categories keep essentials-section.css.
+ */
+:host {
+  --school-panel: color-mix(in srgb, var(--color-surface) 76%, transparent);
+  --school-art-opacity: 0.22;
+  position: relative;
+  display: block;
+  max-inline-size: 40rem;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Desktop: 760x720, starting 56px left of the column and 93px above the panel (frames 133:108, 133:319). */
+.art {
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -5.8125rem;
+  inset-inline-start: -3.5rem;
+  inline-size: 47.5rem;
+  max-inline-size: none;
+  block-size: 45rem;
+  object-fit: contain;
+  opacity: var(--school-art-opacity);
+  filter: grayscale(1);
+  mix-blend-mode: luminosity;
+  pointer-events: none;
+  user-select: none;
+}
+
+section {
+  display: grid;
+  gap: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+p { margin: 0; }
+p[role='status']:empty { display: none; }
+
+/* Saved values: rows of a bold label and its value, the value at the end. */
+.panel {
+  display: grid;
+  margin: 0;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.875rem;
+  background: var(--school-panel);
+  overflow: hidden;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(min(14rem, 45%), 1fr) minmax(0, max-content);
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 3.25rem;
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
+}
+.row + .row { border-block-start: 1px solid var(--color-divider); }
+dt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.75rem;
+  min-inline-size: 0;
+}
+.label { font-weight: 600; }
+dd {
+  margin: 0;
+  min-inline-size: 0;
+  text-align: end;
+  white-space: pre-wrap;
+}
+/* A changed field: small plain teal text, no pill or border (the word carries it, not the colour). */
+.updated {
+  color: var(--color-action);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* Edit, History, Save, Cancel: outlined rounded rectangles (12px corners) at the end of the column. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.action {
+  box-sizing: border-box;
+  min-inline-size: 7rem;
+  min-block-size: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+.action:hover { background: color-mix(in srgb, var(--color-selected) 60%, var(--color-surface)); }
+.action:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+fieldset:disabled .action { cursor: progress; }
+
+/* Edit: a bold label above each control. */
+form { display: grid; gap: 0.75rem; }
+fieldset {
+  display: grid;
+  gap: 0.75rem;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.field { display: grid; gap: 0.375rem; }
+input, select, textarea {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+textarea { min-block-size: 5.25rem; resize: vertical; }
+input[aria-invalid='true'] { border-color: var(--color-error, currentColor); border-width: 2px; }
+.field-error { color: var(--color-error, var(--color-text)); font-size: 0.875rem; }
+
+/* History: newest first, each with its previous and saved values. */
+.history { display: grid; gap: 0.75rem; }
+.history[hidden] { display: none; }
+.history h4, .history h5, .history h6, .latest h4 {
+  margin: 0;
+  font: 600 1rem / 1.5 var(--font-family-body);
+}
+.history article, .comparison, .comparison > div { display: grid; gap: 0.75rem; }
+.history > .action { justify-self: start; }
+.latest { display: grid; gap: 0.75rem; }
+
+/* Phones: the row's label column wraps, "Updated" goes under the label, actions share the row (frames 144:194, 150:234). */
+@media (max-width: 47.999rem) {
+  :host { max-inline-size: none; }
+  .art {
+    inset-block-start: -7.4375rem;
+    inset-inline-start: -0.375rem;
+    inline-size: calc(100% + 0.75rem);
+    block-size: 26.875rem;
+  }
+  .row { grid-template-columns: minmax(0, 54fr) minmax(0, 42fr); }
+  dt { flex-direction: column; align-items: flex-start; row-gap: 0.25rem; }
+  .actions { flex-wrap: nowrap; }
+  .actions > .action { flex: 1 1 0; min-inline-size: 0; }
+}
+
+@media (prefers-color-scheme: dark) {
+  :host-context(:root:not([data-theme='light'])) { --school-art-opacity: 0.18; }
+}
+:host-context([data-theme='dark']) { --school-art-opacity: 0.18; }
+
+@media (forced-colors: active) {
+  .art { display: none; }
+  .panel, .action, input, select, textarea { border-color: CanvasText; }
+}
