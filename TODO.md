@@ -313,6 +313,11 @@ that points back here.
     card: approved by the owner October 30, 2026. The `design approved` label is the owner's to apply.
   - [ ] Mobile WebKit Playwright profiles in CI, physical iPhone (HEIC photo conversion by Safari) and Android
     photo pickers, real screen reader pass of the editor.
+- [ ] **One shared photo per child for both parents (#653, owner decision November 16, 2026).** Either parent sets it;
+  the picker shows the child's own photo, else the shared one.
+  - [ ] Owner retest on the dev site: Dad, signed in on the shared device, sees the photo Mom chose for each child.
+  - [ ] Update the Figma Settings frame (12 · Parent · Settings): "Your children's photos", the shared-photo note and
+    "You and your co-parent see this photo." under each child, replacing "Only you see these…" copy.
   - [ ] Owner test on the dev site after the release reaches `develop`; #388 stays open until then.
   - [ ] Move profile photos from PostgreSQL to private Azure Blob storage before the parent beta (v0.7.0, moved from v1.0.0 on November 13, 2026): change
     the photo endpoints' storage and copy existing photos once. Owner decision October 30, 2026: Postgres for now.

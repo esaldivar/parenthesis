@@ -9,9 +9,9 @@ using SkiaSharp;
 namespace CoParent.IntegrationTests.Api;
 
 /// <summary>
-/// Profile photos (#388): each parent's own photo, each parent's personal photo for each child, and each child's own
-/// photo, with two parents, two siblings, a shared kitchen device and a separate household. Images are generated
-/// solid colours; names are synthetic.
+/// Profile photos (#388, #653): each parent's own photo, one photo of each child that both parents share, and each
+/// child's own photo, with two parents, two siblings, a shared kitchen device and a separate household. Images are
+/// generated solid colours; names are synthetic.
 /// </summary>
 [Collection(ApiCollectionDefinition.Name)]
 public sealed class ProfilePhotoTests(ApiFactory api) : IAsyncLifetime
@@ -67,38 +67,73 @@ public sealed class ProfilePhotoTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Each_parent_keeps_their_own_photo_for_the_same_child_and_never_sees_the_others()
+    public async Task Both_parents_share_one_photo_of_each_child_and_either_can_change_or_remove_it()
     {
         using var family = await FamilyAsync();
 
-        var dads = (await UploadAsync(family.Dad, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Red))).GetProperty("url").GetString()!;
+        // Mom chooses Kai's photo: Dad sees the same photo, including after a fresh sign-in (#653).
         var moms = (await UploadAsync(family.Mom, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Blue))).GetProperty("url").GetString()!;
-
-        // A fresh sign-in (a reload or another browser) keeps each parent's own choice.
         using var dadAgain = await ApiSession.StartAsync(api);
         Assert.Equal(HttpStatusCode.NoContent, (await dadAgain.LoginAsync(family.DadEmail)).StatusCode);
-        Assert.Equal(dads, await PhotoUrlAsync(dadAgain, family, "child", family.KaiId));
-        Assert.Equal(moms, await PhotoUrlAsync(family.Mom, family, "child", family.KaiId));
-        Assert.Equal(SKColors.Red, await CentreColourAsync(dadAgain, dads));
+        Assert.Equal(moms, await PhotoUrlAsync(dadAgain, family, "child", family.KaiId));
+        Assert.Equal(SKColors.Blue, await CentreColourAsync(dadAgain, moms));
+        Assert.Null(await PhotoUrlAsync(dadAgain, family, "child", family.MiaId)); // Mia has none yet: initials
 
-        // Neither can read the other's choice, even with its URL.
-        Assert.Equal(HttpStatusCode.NotFound, (await family.Mom.GetAsync(dads)).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await dadAgain.GetAsync(moms)).StatusCode);
+        // Dad replaces it: both parents now see Dad's, and Mom's is gone.
+        var dads = (await UploadAsync(dadAgain, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Red))).GetProperty("url").GetString()!;
+        Assert.Equal(dads, await PhotoUrlAsync(family.Mom, family, "child", family.KaiId));
+        Assert.Equal(SKColors.Red, await CentreColourAsync(family.Mom, dads));
+        Assert.Equal(HttpStatusCode.NotFound, (await family.Mom.GetAsync(moms)).StatusCode);
+        Assert.Equal(1, await PhotoRowsAsync());
 
-        // Removing Dad's leaves Mom's; Dad's view falls back to initials (no photo), not Mom's choice.
-        Assert.Equal(HttpStatusCode.NoContent, (await dadAgain.SendAsync(HttpMethod.Delete, family.Path($"photos/children/{family.KaiId}"))).StatusCode);
+        // Mom removes it: both parents fall back to the initial.
+        Assert.Equal(HttpStatusCode.NoContent, (await family.Mom.SendAsync(HttpMethod.Delete, family.Path($"photos/children/{family.KaiId}"))).StatusCode);
         Assert.Null(await PhotoUrlAsync(dadAgain, family, "child", family.KaiId));
-        Assert.Equal(moms, await PhotoUrlAsync(family.Mom, family, "child", family.KaiId));
+        Assert.Null(await PhotoUrlAsync(family.Mom, family, "child", family.KaiId));
+        Assert.Equal(0, await PhotoRowsAsync());
     }
 
     [Fact]
-    public async Task A_child_sets_only_their_own_photo_and_the_picker_shows_it_instead_of_the_parents_choices()
+    public async Task A_child_with_a_photo_from_each_parent_before_653_shows_the_newest_until_either_parent_changes_it()
+    {
+        using var family = await FamilyAsync();
+        var dads = (await UploadAsync(family.Dad, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Red))).GetProperty("url").GetString()!;
+
+        // Before #653 each parent kept their own photo of a child: recreate Mom's older one beside Dad's.
+        await api.QueryScalarAsync<Guid>(
+            """
+            INSERT INTO families.profile_photos (id, family_id, chooser_kind, chooser_id, subject_id, content, content_type, side, created_at)
+            SELECT gen_random_uuid(), p.family_id, p.chooser_kind, m.id, p.subject_id, p.content, p.content_type, p.side, p.created_at - interval '1 day'
+            FROM families.profile_photos p
+            JOIN families.memberships m ON m.family_id = p.family_id AND m.role = 'Parent' AND m.id <> @dad
+            WHERE p.id = @photo
+            RETURNING id
+            """,
+            ("dad", family.DadMembershipId),
+            ("photo", IdOf(dads)));
+        Assert.Equal(2, await PhotoRowsAsync());
+
+        Assert.Equal(dads, await PhotoUrlAsync(family.Mom, family, "child", family.KaiId));
+        Assert.Equal(dads, await PhotoUrlAsync(family.Dad, family, "child", family.KaiId));
+
+        var moms = (await UploadAsync(family.Mom, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Blue))).GetProperty("url").GetString()!;
+        Assert.Equal(1, await PhotoRowsAsync());
+        Assert.Equal(moms, await PhotoUrlAsync(family.Dad, family, "child", family.KaiId));
+    }
+
+    [Fact]
+    public async Task The_picker_shows_the_childs_own_photo_or_else_the_parents_shared_photo()
     {
         using var family = await FamilyAsync();
         await UploadAsync(family.Dad, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Red));
-        await UploadAsync(family.Mom, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Blue));
+        var shared = (await UploadAsync(family.Mom, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Blue))).GetProperty("url").GetString()!;
         using var kitchen = await KitchenAsync(family);
-        Assert.Null(TilePhoto(await PickerAsync(kitchen), family.KaiId)); // the parents' choices never reach the picker
+
+        // Kai hasn't chosen a photo: the picker shows the one the parents share (#653); Mia has none, so her initial.
+        var sharedTile = TilePhoto(await PickerAsync(kitchen), family.KaiId)!;
+        Assert.StartsWith("/api/device/photos/", sharedTile, StringComparison.Ordinal);
+        Assert.Equal(SKColors.Blue, await CentreColourAsync(kitchen, sharedTile));
+        Assert.Null(TilePhoto(await PickerAsync(kitchen), family.MiaId));
 
         await ChildSignInAsync(kitchen, family.KaiId, KaisPin);
         var kais = await UploadAsync(kitchen, family.Path("photos/me"), Jpeg(SKColors.Green));
@@ -108,15 +143,15 @@ public sealed class ProfilePhotoTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(own, await PhotoUrlAsync(kitchen, family, "child", family.KaiId));
         Assert.Equal(SKColors.Green, await CentreColourAsync(kitchen, own));
 
-        // The picker and PIN screen use Kai's own photo; each parent's personal choice is unchanged.
+        // The picker and PIN screen now use Kai's own photo; the parents' shared photo is unchanged for both of them.
         var tile = TilePhoto(await PickerAsync(kitchen), family.KaiId)!;
-        Assert.StartsWith("/api/device/photos/", tile, StringComparison.Ordinal);
         Assert.Equal(SKColors.Green, await CentreColourAsync(kitchen, tile));
-        Assert.Equal(SKColors.Red, await CentreColourAsync(family.Dad, (await PhotoUrlAsync(family.Dad, family, "child", family.KaiId))!));
-        Assert.Equal(SKColors.Blue, await CentreColourAsync(family.Mom, (await PhotoUrlAsync(family.Mom, family, "child", family.KaiId))!));
+        Assert.Equal(shared, await PhotoUrlAsync(family.Dad, family, "child", family.KaiId));
+        Assert.Equal(shared, await PhotoUrlAsync(family.Mom, family, "child", family.KaiId));
 
-        // A parent's view of Kai never shows Kai's own photo either.
+        // A parent's view of Kai never shows Kai's own photo, and Kai's session can't read the parents' one.
         Assert.Equal(HttpStatusCode.NotFound, (await family.Dad.GetAsync(own)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await kitchen.GetAsync(shared)).StatusCode);
 
         // It persists into Kai's next session.
         await SwitchAsync(kitchen);
@@ -139,7 +174,7 @@ public sealed class ProfilePhotoTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await kitchen.SendBytesAsync(HttpMethod.Put, family.Path($"photos/children/{family.MiaId}"), Jpeg(SKColors.Green))).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await kitchen.SendAsync(HttpMethod.Delete, family.Path($"photos/children/{family.KaiId}"))).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await kitchen.GetAsync(miasOwn)).StatusCode); // a sibling's photo
-        Assert.Equal(HttpStatusCode.NotFound, (await kitchen.GetAsync(dadsForKai)).StatusCode); // a parent's personal choice
+        Assert.Equal(HttpStatusCode.NotFound, (await kitchen.GetAsync(dadsForKai)).StatusCode); // the parents' shared photo of Kai
         Assert.Equal(HttpStatusCode.NotFound, (await kitchen.GetAsync(dadsOwn)).StatusCode);
         var kaisView = await JsonAsync(await kitchen.GetAsync(family.Path("photos")));
         Assert.Equal("child", kaisView.GetProperty("youKind").GetString());
@@ -250,18 +285,20 @@ public sealed class ProfilePhotoTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Deleting_an_account_removes_that_parents_photos_and_keeps_the_co_parents()
+    public async Task Deleting_an_account_removes_that_parents_own_photo_and_keeps_the_childrens_shared_photos()
     {
         using var family = await FamilyAsync();
         await UploadAsync(family.Dad, family.Path("photos/me"), Jpeg(SKColors.Red));
-        await UploadAsync(family.Dad, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Red));
-        var moms = (await UploadAsync(family.Mom, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Blue))).GetProperty("url").GetString()!;
+        var kais = (await UploadAsync(family.Dad, family.Path($"photos/children/{family.KaiId}"), Jpeg(SKColors.Red))).GetProperty("url").GetString()!;
+        var mias = (await UploadAsync(family.Mom, family.Path($"photos/children/{family.MiaId}"), Jpeg(SKColors.Blue))).GetProperty("url").GetString()!;
 
         var deleted = await family.Dad.PostAsync("/api/me/delete", new { password = ApiSession.Password });
 
+        // Dad's own photo goes with him; the children's photos are the family's (#653), so Mom keeps both.
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
-        Assert.Equal(1, await PhotoRowsAsync());
-        Assert.Equal(moms, await PhotoUrlAsync(family.Mom, family, "child", family.KaiId));
+        Assert.Equal(2, await PhotoRowsAsync());
+        Assert.Equal(kais, await PhotoUrlAsync(family.Mom, family, "child", family.KaiId));
+        Assert.Equal(mias, await PhotoUrlAsync(family.Mom, family, "child", family.MiaId));
         Assert.Null(await PhotoUrlAsync(family.Mom, family, "parent", family.DadMembershipId));
     }
 

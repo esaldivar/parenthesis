@@ -25,11 +25,11 @@ internal sealed record PhotoRef(string Kind, Guid Id, string Url);
 internal sealed record PhotoSet(string YouKind, Guid YouId, IReadOnlyList<PhotoRef> Photos);
 
 /// <summary>
-/// Profile photos (#388). Everyone edits only their own choices, and only from Settings in the app:
+/// Profile photos (#388, #653), edited only from Settings in the app:
 /// <list type="bullet">
-/// <item>A parent sets their own photo, which both parents see.</item>
-/// <item>A parent sets a personal photo for each child, which only that parent ever sees. The other parent's choice
-/// and the child's own photo are never substituted for it.</item>
+/// <item>A parent sets their own photo, which both parents see. Only they can change it.</item>
+/// <item>Each child has one family photo that both parents share (#653). Either parent may choose, replace or remove
+/// it, with equal authority; the audit log records who did. The child's own photo is never substituted for it.</item>
 /// <item>A signed-in child sets their own photo, which they see and which the shared-device picker shows.</item>
 /// </list>
 /// Uploads are raw image bodies (JPEG, PNG or WebP) processed by <see cref="AvatarImages"/>. Photos are stored in the
@@ -59,7 +59,7 @@ internal static class PhotoEndpoints
     public static string DeviceUrl(Guid photoId) => $"/api/device/photos/{photoId}";
 
     /// <summary>
-    /// The photos this viewer sees. A parent: each active parent's own photo, plus their own personal photo for each
+    /// The photos this viewer sees. A parent: each active parent's own photo, plus the shared family photo of each
     /// active child. A child: their own photo.
     /// </summary>
     private static async Task<Ok<PhotoSet>> ListAsync(ITenantContext tenant, FamiliesDbContext db, CancellationToken cancellationToken)
@@ -80,10 +80,15 @@ internal static class PhotoEndpoints
             .Where(p => p.ChooserKind == PhotoChooser.Parent && p.ChooserId == p.SubjectId && parents.Contains(p.ChooserId))
             .Select(p => new { p.Id, p.SubjectId })
             .ToListAsync(cancellationToken);
-        var childPhotos = await db.ProfilePhotos
-            .Where(p => p.ChooserKind == PhotoChooser.Parent && p.ChooserId == tenant.MembershipId && children.Contains(p.SubjectId))
-            .Select(p => new { p.Id, p.SubjectId })
-            .ToListAsync(cancellationToken);
+        // Photos chosen before #653 were per parent, so a child can still have one from each parent: the newest is the
+        // family photo, and the next change by either parent clears the older one.
+        var childPhotos = (await db.ProfilePhotos
+                .Where(p => p.ChooserKind == PhotoChooser.Parent && p.ChooserId != p.SubjectId && children.Contains(p.SubjectId))
+                .Select(p => new { p.Id, p.SubjectId, p.CreatedAt })
+                .ToListAsync(cancellationToken))
+            .GroupBy(p => p.SubjectId)
+            .Select(g => g.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id).First())
+            .ToList();
 
         return TypedResults.Ok(new PhotoSet(
             "parent",
@@ -107,8 +112,9 @@ internal static class PhotoEndpoints
             FamilyRole.Parent => photo.ChooserKind == PhotoChooser.Parent
                 && (photo.ChooserId == tenant.MembershipId
                     || (photo.ChooserId == photo.SubjectId
-                        && await db.Memberships.AnyAsync(
-                            m => m.Id == photo.ChooserId && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active, cancellationToken))),
+                        ? await db.Memberships.AnyAsync(
+                            m => m.Id == photo.ChooserId && m.Role == FamilyRole.Parent && m.Status == MembershipStatus.Active, cancellationToken)
+                        : await db.Children.AnyAsync(c => c.Id == photo.SubjectId, cancellationToken))),
             _ => false,
         };
 
@@ -117,8 +123,8 @@ internal static class PhotoEndpoints
 
     /// <summary>
     /// A photo on the shared-device picker or a PIN screen, read with this browser's device cookie only: the device
-    /// owner's own photo on a shared household device, and each child's own photo for the children this device shows.
-    /// Revoked or expired devices, other families' photos and parents' personal child photos answer 404.
+    /// owner's own photo on a shared household device, and for each child this device shows, the child's own photo or
+    /// the family photo both parents share (#653). Revoked or expired devices and other families' photos answer 404.
     /// </summary>
     private static async Task<IResult> ReadOnDeviceAsync(
         Guid photoId, HttpContext http, FamiliesDbContext db, TimeProvider clock, CancellationToken cancellationToken)
@@ -130,21 +136,21 @@ internal static class PhotoEndpoints
 
         var photos = db.ProfilePhotos.IgnoreQueryFilters(_filter).Where(p => p.Id == photoId && p.FamilyId == device.FamilyId);
         var photo = await photos.Select(p => new { p.ChooserKind, p.ChooserId, p.SubjectId }).SingleOrDefaultAsync(cancellationToken);
-        if (photo is null || photo.ChooserId != photo.SubjectId)
+        if (photo is null)
         {
             return TypedResults.NotFound();
         }
 
-        var allowed = photo.ChooserKind switch
-        {
-            PhotoChooser.Parent => device.Kind == DeviceKind.Household
+        // A parent's own photo (chooser and subject the same membership), or any photo of a child: the child's own, or
+        // the family photo the parents share.
+        var allowed = photo.ChooserKind == PhotoChooser.Parent && photo.ChooserId == photo.SubjectId
+            ? device.Kind == DeviceKind.Household
                 && await SharedDevices.OwnerAsync(db, device, null, cancellationToken) is { } owner
-                && owner.Id == photo.ChooserId,
-            PhotoChooser.Child => (device.Kind == DeviceKind.Household || device.ChildProfileId == photo.ChooserId)
+                && owner.Id == photo.ChooserId
+            : (photo.ChooserKind == PhotoChooser.Parent || photo.ChooserId == photo.SubjectId)
+                && (device.Kind == DeviceKind.Household || device.ChildProfileId == photo.SubjectId)
                 && await db.Children.IgnoreQueryFilters(_filter).AnyAsync(
-                    c => c.Id == photo.ChooserId && c.FamilyId == device.FamilyId && c.Status == ChildStatus.Active, cancellationToken),
-            _ => false,
-        };
+                    c => c.Id == photo.SubjectId && c.FamilyId == device.FamilyId && c.Status == ChildStatus.Active, cancellationToken);
 
         return allowed ? await ServeAsync(http, photos, photoId, cancellationToken) : TypedResults.NotFound();
     }
@@ -185,7 +191,10 @@ internal static class PhotoEndpoints
         return await RemoveAsync(http, tenant, db, unitOfWork, audit, chooser, tenant.MembershipId, cancellationToken);
     }
 
-    /// <summary>This parent's personal photo for an active child of the family. Only parents; only for themselves.</summary>
+    /// <summary>
+    /// The shared family photo of an active child (#653). Either parent may set it; it replaces whichever parent's
+    /// photo of that child was there, for both parents.
+    /// </summary>
     private static async Task<IResult> SetForChildAsync(
         Guid childId, HttpContext http, ITenantContext tenant, FamiliesDbContext db, IUnitOfWork unitOfWork, IAuditLog audit,
         TimeProvider clock, CancellationToken cancellationToken)
@@ -254,9 +263,7 @@ internal static class PhotoEndpoints
             await unitOfWork.ExecuteAsync(async ct =>
             {
                 // The previous photo goes in the same transaction as the new one arrives: a failure keeps it.
-                var previous = await db.ProfilePhotos
-                    .Where(p => p.ChooserKind == chooser && p.ChooserId == tenant.MembershipId && p.SubjectId == subjectId)
-                    .ToListAsync(ct);
+                var previous = await Existing(db, tenant, chooser, subjectId).ToListAsync(ct);
                 db.ProfilePhotos.RemoveRange(previous);
                 await db.SaveChangesAsync(ct);
                 db.ProfilePhotos.Add(photo);
@@ -285,9 +292,7 @@ internal static class PhotoEndpoints
         Guid subjectId,
         CancellationToken cancellationToken)
     {
-        var existing = await db.ProfilePhotos
-            .Where(p => p.ChooserKind == chooser && p.ChooserId == tenant.MembershipId && p.SubjectId == subjectId)
-            .ToListAsync(cancellationToken);
+        var existing = await Existing(db, tenant, chooser, subjectId).ToListAsync(cancellationToken);
         if (existing.Count == 0)
         {
             return TypedResults.NoContent();
@@ -309,6 +314,15 @@ internal static class PhotoEndpoints
 
         return TypedResults.NoContent();
     }
+
+    /// <summary>
+    /// The photo a change replaces or removes: the viewer's own photo, or a child's shared family photo whichever parent
+    /// chose it (#653).
+    /// </summary>
+    private static IQueryable<ProfilePhoto> Existing(FamiliesDbContext db, ITenantContext tenant, PhotoChooser chooser, Guid subjectId) =>
+        chooser == PhotoChooser.Parent && subjectId != tenant.MembershipId
+            ? db.ProfilePhotos.Where(p => p.ChooserKind == PhotoChooser.Parent && p.SubjectId == subjectId && p.ChooserId != subjectId)
+            : db.ProfilePhotos.Where(p => p.ChooserKind == chooser && p.ChooserId == tenant.MembershipId && p.SubjectId == subjectId);
 
     private static string SubjectKind(PhotoChooser chooser, Guid subjectId, ITenantContext tenant) =>
         chooser == PhotoChooser.Parent && subjectId == tenant.MembershipId ? "parent" : "child";

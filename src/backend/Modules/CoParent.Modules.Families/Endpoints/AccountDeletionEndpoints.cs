@@ -149,9 +149,10 @@ internal static class AccountDeletionEndpoints
                 invitation.Revoke(now);
             }
 
-            // Their own photo and their personal photos for the children go with them (#388).
+            // Their own photo goes with them (#388). A child's photo is the family's shared photo (#653): it stays for
+            // the co-parent, who can change or remove it.
             db.ProfilePhotos.RemoveRange(await db.ProfilePhotos
-                .Where(p => p.ChooserKind == PhotoChooser.Parent && p.ChooserId == membershipId)
+                .Where(p => p.ChooserKind == PhotoChooser.Parent && p.ChooserId == membershipId && p.SubjectId == membershipId)
                 .ToListAsync(ct));
 
             // The invitation they accepted holds their email address; it isn't needed once they've gone.

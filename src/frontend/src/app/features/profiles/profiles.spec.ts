@@ -220,7 +220,7 @@ describe('profile picker, parent PIN, parent password and child PIN (ADR-0006, #
   });
 
   describe('photos (#388)', () => {
-    // The API puts each person's own photo on their tile; a parent's personal photo of a child never reaches it.
+    // The API puts each person's photo on their tile: a child's own, or else the one their parents share (#653).
     const withPhotos: DeviceProfiles = {
       ...PICKER,
       profiles: PICKER.profiles.map((p) =>
