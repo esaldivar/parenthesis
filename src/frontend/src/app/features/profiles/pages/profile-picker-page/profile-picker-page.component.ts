@@ -11,7 +11,7 @@ import { FORM_STYLES } from '../../../auth/form-styles';
 
 /**
  * "Who's using Parenthesis?" on a registered device (ADR-0006, #153). Names, and each person's own photo or initial
- * (#388): a child's tile shows the photo the child chose, never a parent's personal photo of them. No ages or other
+ * (#388): a child's tile shows the photo the child chose, or else the one their parents share (#653). No ages or other
  * family data. A shared device shows only the parent who set it up and the family's approved children; a
  * child's tablet shows only that child. A parent tile asks for that parent's PIN (or password if they have no PIN);
  * a child tile asks for the child's PIN. If the picker can't be loaded, no earlier profile data is shown.

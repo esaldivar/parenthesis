@@ -280,14 +280,22 @@ internal static class ChildAccessEndpoints
 
         var owner = device.Kind == DeviceKind.Household ? await SharedDevices.OwnerAsync(db, device, null, cancellationToken) : null;
 
-        // Each tile shows that person's own photo (#388): never a parent's personal photo for a child.
+        // The owner's tile shows their own photo (#388). A child's tile shows the photo the child chose, or else the
+        // family photo both parents share (#653); the newest wins if one from each parent is left from before #653.
         var subjects = childIds.Append(owner?.Id ?? Guid.Empty).ToList();
         var photos = await db.ProfilePhotos.IgnoreQueryFilters(filter)
-            .Where(p => p.FamilyId == device.FamilyId && p.ChooserId == p.SubjectId && subjects.Contains(p.SubjectId))
-            .Select(p => new { p.Id, p.SubjectId, p.ChooserKind })
+            .Where(p => p.FamilyId == device.FamilyId && subjects.Contains(p.SubjectId)
+                && (p.ChooserId == p.SubjectId || (p.ChooserKind == PhotoChooser.Parent && childIds.Contains(p.SubjectId))))
+            .Select(p => new { p.Id, p.SubjectId, p.ChooserKind, p.ChooserId, p.CreatedAt })
             .ToListAsync(cancellationToken);
         string? PhotoOf(Guid subject, PhotoChooser kind) =>
-            photos.FirstOrDefault(p => p.SubjectId == subject && p.ChooserKind == kind) is { } photo ? PhotoEndpoints.DeviceUrl(photo.Id) : null;
+            photos.Where(p => p.SubjectId == subject && p.ChooserKind == kind)
+                .OrderByDescending(p => p.ChooserId == p.SubjectId)
+                .ThenByDescending(p => p.CreatedAt)
+                .ThenByDescending(p => p.Id)
+                .FirstOrDefault() is { } photo
+                ? PhotoEndpoints.DeviceUrl(photo.Id)
+                : null;
 
         var tiles = new List<ProfileTile>();
         var isYours = false;
@@ -305,7 +313,7 @@ internal static class ChildAccessEndpoints
 
         tiles.AddRange(children.Select(c => Tile("child", c.Id, c.FirstName, credentials.GetValueOrDefault(c.Id), now) with
         {
-            PhotoUrl = PhotoOf(c.Id, PhotoChooser.Child),
+            PhotoUrl = PhotoOf(c.Id, PhotoChooser.Child) ?? PhotoOf(c.Id, PhotoChooser.Parent),
         }));
         return TypedResults.Ok(new DeviceProfiles(familyName, device.Kind, tiles, isYours));
     }

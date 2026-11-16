@@ -10,11 +10,11 @@ internal enum PhotoChooser
 }
 
 /// <summary>
-/// A profile photo one person chose for one person (#388). Each choice belongs to whoever made it, and nobody else can
-/// change it or see it unless the display rules say so:
+/// A profile photo one person chose for one person (#388, #653):
 /// <list type="bullet">
-/// <item>A parent's own photo: chooser and subject are the parent's membership. Both parents see it.</item>
-/// <item>A parent's personal photo for a child: chooser is the parent, subject the child. Only that parent sees it.</item>
+/// <item>A parent's own photo: chooser and subject are the parent's membership. Both parents see it; only they change it.</item>
+/// <item>A child's family photo: chooser is the parent who last chose it, subject the child. Both parents share it and
+/// either may replace or remove it (#653); the picker shows it when the child hasn't chosen their own.</item>
 /// <item>A child's own photo: chooser and subject are the child. The child sees it, and the shared-device picker shows it.</item>
 /// </list>
 /// Replacing a photo adds a new row and removes the old one in the same transaction, so each id always means the same

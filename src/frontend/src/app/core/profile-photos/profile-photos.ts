@@ -9,9 +9,9 @@ export interface PhotoSubject {
 
 /**
  * The signed-in viewer's profile photos (#388), as the API resolves them for that viewer only:
- * - a parent sees each parent's own photo and their own personal photo for each child;
+ * - a parent sees each parent's own photo and each child's photo that both parents share (#653);
  * - a child sees their own photo.
- * Anything missing falls back to the initial; another person's private choice is never substituted. The store is
+ * Anything missing falls back to the initial; a child's own photo is never substituted for the parents' one. The store is
  * cleared whenever the viewer changes, and every image URL is checked by the server again, so a stale URL from an
  * earlier profile can't show anything.
  *
@@ -61,7 +61,7 @@ export class ProfilePhotos {
     }
   }
 
-  /** Saves the viewer's own photo, or a parent's personal photo of a child. Throws the HTTP error; nothing changes then. */
+  /** Saves the viewer's own photo, or a child's shared photo (#653). Throws the HTTP error; nothing changes then. */
   async save(familyId: string, childId: string | null, file: Blob): Promise<PhotoRef> {
     const api = this.injector.get(Api);
     const saved = childId ? await api.setChildPhoto(familyId, childId, file) : await api.setOwnPhoto(familyId, file);
@@ -69,7 +69,7 @@ export class ProfilePhotos {
     return saved;
   }
 
-  /** Removes the viewer's own photo, or a parent's personal photo of a child, so the initial shows. */
+  /** Removes the viewer's own photo, or a child's shared photo for both parents (#653), so the initial shows. */
   async remove(familyId: string, subject: PhotoSubject, childId: string | null): Promise<void> {
     const api = this.injector.get(Api);
     await (childId ? api.removeChildPhoto(familyId, childId) : api.removeOwnPhoto(familyId));

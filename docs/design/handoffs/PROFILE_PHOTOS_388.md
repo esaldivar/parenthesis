@@ -4,18 +4,27 @@ Status: implemented for release 0.3.0 (Milestone M3), awaiting owner review. Own
 recorded in issue #388. This replaces the earlier initials-only rule wherever a person has chosen a photo; initials
 stay the fallback.
 
+**Changed by #653 (owner decision November 16, 2026):** each child has **one photo that both parents share**, instead
+of a private photo per parent. Either parent can choose, replace or remove it; the audit log records who did. The
+picker tile and child PIN screen show the child's own photo when the child picked one, otherwise the parents' shared
+photo. The tables below reflect this. The Figma Settings frame (12 · Parent · Settings) still shows the earlier
+"Only you see these…" copy and needs the same update.
+
 ## Who chooses what, and who sees it
 
 | Photo | Chosen by | Seen by | Edited in |
 |---|---|---|---|
 | A parent's own photo | That parent | Both parents; the shared-device picker and parent PIN screen of that parent's own shared device | Parent Settings → Profile photos |
-| A parent's photo of a child | That parent | Only that parent (calendar circles, Settings → Children) | Parent Settings → Profile photos |
+| A child's shared photo (#653) | Either parent; the newest choice replaces the other's | Both parents (calendar circles, Settings → Children); the picker tile and child PIN screen when the child hasn't picked their own | Parent Settings → Profile photos |
 | A child's own photo | That child, signed in | The child (Settings); the picker tile and child PIN screen on devices that show the child | Child Settings → Your picture |
 
-- Nobody can change another person's photo, and no choice approves or overwrites anyone else's. There is no mutual
-  approval: appearance is personal.
-- When the relevant photo is missing, the existing initial shows. Another person's private choice is never used
-  instead: a parent who hasn't picked a photo of Kai sees "K", even if the co-parent or Kai has one.
+- Nobody can change another person's own photo. A child's shared photo is the exception: parents have equal authority,
+  so either may replace or remove it without the other's approval (#653).
+- When the relevant photo is missing, the existing initial shows. A child's own photo is never shown to parents, and
+  the parents' shared photo is never shown inside the child's own space.
+- Photos chosen before #653 were per parent, so a child may still have one from each parent. The newest shows to
+  both parents, and the next change by either parent clears the other. Nothing was deleted to migrate.
+- Deleting a parent's account removes their own photo; the children's shared photos stay with the family.
 - Editing happens **only in Settings**. The account corner, calendar circles, picker and PIN screens only display.
 
 ## Where photos show
@@ -23,8 +32,8 @@ stay the fallback.
 | Surface | Phone (under 1024px) | Desktop (1024px and up) |
 |---|---|---|
 | Account corner (top bar) | Own photo | Own photo |
-| Picker tiles and the PIN screens | Each person's own photo | Each person's own photo |
-| Calendar circles (dashboard week/list, Calendar views) | **First-letter initials** | Parent: their own photo. Child: the viewing parent's photo of that child |
+| Picker tiles and the PIN screens | Each person's own photo (a child's falls back to the shared photo) | Each person's own photo (a child's falls back to the shared photo) |
+| Calendar circles (dashboard week/list, Calendar views) | **First-letter initials** | Parent: their own photo. Child: the parents' shared photo of that child |
 | Settings (Profile photos, Children) | Photos | Photos |
 
 The calendar rule is CSS-only (`app-avatar photoOn="desktop"`): the circle keeps its size, ring and initial, and the
@@ -49,8 +58,9 @@ Defined before uploads were enabled; implemented in `AvatarImages` and `PhotoEnd
   actually decoded (large JPEGs decode at a reduced scale).
 - **Stored:** a centred square, turned upright from the camera orientation, at most 512×512, re-encoded as WebP and
   at most 200 KB. Re-encoding keeps pixels only, so EXIF, GPS location and other metadata are removed.
-- **How many:** one photo per chooser and pictured person (unique index). A family therefore holds at most
-  2 parents × (1 + 12 children) + 12 children = 38 photos, about 7.6 MB in the worst case.
+- **How many:** one photo per chooser and pictured person (unique index); since #653 a change to a child's shared
+  photo also removes the other parent's row. A family therefore holds at most 2 parents + 12 shared + 12 children's
+  own = 26 photos (38 only for families with photos left from before #653), about 7.6 MB in the worst case.
 - **Where:** in the family's PostgreSQL rows (`families.profile_photos`), behind the tenant filter. Replacing adds the
   new row and deletes the old one in one transaction, so nothing is orphaned and a failure keeps the old photo.
   Removing deletes the row. Deleting an account deletes that parent's photos; closing a family deletes all of them.

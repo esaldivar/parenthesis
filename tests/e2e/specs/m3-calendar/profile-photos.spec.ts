@@ -55,7 +55,7 @@ const week = monday.toISOString().slice(0, 10);
 
 test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
   for (const theme of ['light', 'dark'] as const) {
-    test(`each parent sets their own photo and their own photo of a child; calendar circles show them on every screen size, ${theme} (#388)`, async ({ page, family }, info) => {
+    test(`each parent sets their own photo, both share one photo of each child; calendar circles show them on every screen size, ${theme} (#388, #653)`, async ({ page, family }, info) => {
       await page.emulateMedia({ colorScheme: theme });
       const phone = (page.viewportSize()?.width ?? 1280) < 1024;
       const members = await family.dad.json<{ members: { membershipId: string; displayName: string }[] }>(family.dad.get(`/api/families/${family.familyId}`));
@@ -65,7 +65,7 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
         startsAt: addHours(monday, 24 + 9).toISOString(), endsAt: addHours(monday, 24 + 17).toISOString(),
       }));
 
-      // Mom picks her own photo of Kai first. Dad must never see it.
+      // Mom picks Kai's photo first. Dad sees the same photo (#653).
       const moms = await family.mom.http.put(`/api/families/${family.familyId}/photos/children/${family.kaiId}`, {
         data: BLUE, headers: { 'Content-Type': 'image/png', 'X-XSRF-TOKEN': (await family.mom.http.storageState()).cookies.find((c) => c.name === 'XSRF-TOKEN')!.value },
       });
@@ -78,9 +78,10 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
       await expect(page.getByRole('heading', { level: 2, name: 'Profile photos' })).toBeVisible();
       const own = photos.locator('app-photo-editor').first();
       const kai = photos.locator('app-photo-editor').filter({ hasText: 'Kai' });
-      await expect(kai.getByText('No photo yet, so the initial K shows.')).toBeVisible();
+      await expect(kai.locator('app-avatar img')).toHaveAttribute('src', momsKai);
+      await expect(photos.getByText('You and your co-parent share these. Either of you can change them.', { exact: false })).toBeVisible();
 
-      await test.step('Dad saves his own photo and his photo of Kai, only in Settings', async () => {
+      await test.step('Dad saves his own photo and replaces Kai’s, only in Settings', async () => {
         await pickPhoto(page, own, RED, 'dad.png');
         await pickPhoto(page, kai, GREEN, 'kai.png');
         await fitsPage(page);
@@ -101,7 +102,7 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
         await page.keyboard.press('Escape');
       });
 
-      await test.step('calendar circles: Dad’s own photo choices on phones and desktop', async () => {
+      await test.step('calendar circles: Dad’s photo and Kai’s shared photo on phones and desktop', async () => {
         await page.goto(`/?week=${week}`);
         const block = page.locator(phone ? '.agenda .pt' : '.grid .pt', { hasText: 'Dad time' }).first();
         await expect(block).toBeVisible();
@@ -129,20 +130,20 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
         expect(await shownPhoto(listed.locator('app-avatar[title="Kai"]'))).toBe(dadsKai);
       });
 
-      await test.step('Mom still sees only her own photo of Kai, and Dad can’t read hers', async () => {
+      await test.step('Mom now sees Dad’s photo of Kai, and the replaced one is gone', async () => {
         const momsView = await family.mom.json<{ photos: { kind: string; id: string; url: string }[] }>(family.mom.get(`/api/families/${family.familyId}/photos`));
-        expect(momsView.photos.find((p) => p.kind === 'child' && p.id === family.kaiId)?.url).toBe(momsKai);
+        expect(momsView.photos.find((p) => p.kind === 'child' && p.id === family.kaiId)?.url).toBe(dadsKai);
         expect((await page.request.get(momsKai)).status()).toBe(404);
       });
     });
   }
 
   // One theme only: each run of this test uses a child PIN try, and the suite keeps those lean (rate limit).
-  test('a child picks their own photo in their Settings, and the picker and PIN screen show it, dark (#388)', async ({ page, family }, info) => {
+  test('the picker shows the parents’ shared photo until a child picks their own in Settings, dark (#388, #653)', async ({ page, family }, info) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     expect((await family.dad.put(`/api/families/${family.familyId}/children/${family.kaiId}/pin`, { pin: KAI_PIN })).status()).toBe(204);
 
-    // Dad's personal photo of Kai must never reach the shared picker.
+    // The photo the parents share for Kai shows on the picker until Kai picks one (#653).
     const token = (await family.dad.http.storageState()).cookies.find((c) => c.name === 'XSRF-TOKEN')!.value;
     expect((await family.dad.http.put(`/api/families/${family.familyId}/photos/children/${family.kaiId}`, {
       data: RED, headers: { 'Content-Type': 'image/png', 'X-XSRF-TOKEN': token },
@@ -161,8 +162,9 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Who’s using Parenthesis?' })).toBeVisible();
 
     const kaiTile = page.getByRole('link', { name: /Kai/ });
-    expect(await shownPhoto(kaiTile.locator('app-avatar'))).toBeNull();
-    await expect(kaiTile.locator('app-avatar')).toHaveText('K');
+    await expect(kaiTile.locator('app-avatar img')).toBeVisible();
+    const sharedTile = await shownPhoto(kaiTile.locator('app-avatar'));
+    expect(sharedTile).toMatch(/^\/api\/device\/photos\//);
 
     await activate(kaiTile, info);
     await page.getByLabel('PIN').fill(KAI_PIN);
@@ -181,6 +183,7 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Who’s using Parenthesis?' })).toBeVisible();
     const tilePhoto = await shownPhoto(page.getByRole('link', { name: /Kai/ }).locator('app-avatar'));
     expect(tilePhoto).toMatch(/^\/api\/device\/photos\//);
+    expect(tilePhoto).not.toBe(sharedTile);
     // The picker shows photos on phones too, and Dad's tile keeps his initial while he has no photo.
     await expect(page.getByRole('link', { name: /Dad/ }).locator('app-avatar')).toHaveText('D');
     await evidence(page, info, 'dark-profile-photos-picker');

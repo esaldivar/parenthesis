@@ -349,8 +349,8 @@ devices: 30 days from setup), pause and concurrency columns on `child_credential
 ## M3 addition: profile photos (#388, October 30, 2026)
 `families.profile_photos` replaces the single planned `child_profile.avatar_blob_key`: each photo belongs to whoever
 chose it, so one row per **chooser and pictured person** (unique `(family_id, chooser_kind, chooser_id, subject_id)`).
-A parent's own photo (chooser = subject = their membership), a parent's private photo of a child, and a child's own
-photo are separate rows and never overwrite each other. Small processed WebP bytes live in the row (at most 38 per
+A parent's own photo (chooser = subject = their membership), a child's photo that both parents share (chooser = the
+parent who last chose it; since #653 either parent's change replaces it), and a child's own photo are separate rows. Small processed WebP bytes live in the row (at most 38 per
 family); replacing deletes the old row in the same transaction. Details:
 [profile photos handoff](../design/handoffs/PROFILE_PHOTOS_388.md).
 
