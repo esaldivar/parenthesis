@@ -978,6 +978,26 @@ namespace CoParent.Modules.Families.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("revision");
 
+                    b.Property<string>("SchoolAddress")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("school_address");
+
+                    b.Property<string>("SchoolName")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("school_name");
+
+                    b.Property<string>("TeacherEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("teacher_email");
+
+                    b.Property<string>("TeacherPhone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("teacher_phone");
+
                     b.HasKey("Id")
                         .HasName("pk_child_school_revisions");
 

@@ -87,6 +87,10 @@ describe('Child Essentials Spanish (#577)', () => {
     const { host, locale, settle } = await render(SchoolSection);
     expect(host.textContent).toContain('Kínder');
     expect(host.textContent).toContain('Keep my English notes');
+    expect(host.textContent).toContain('Nombre de la escuela');
+    expect(host.textContent).toContain('Teléfono del docente (opcional)');
+    expect(host.textContent).toContain('Sin especificar');
+    expect(host.textContent).not.toContain('Not set');
     host.querySelector<HTMLButtonElement>('.actions button')!.click(); await settle();
     const grade = host.querySelector<HTMLSelectElement>('[formcontrolname="grade"]')!;
     expect(grade.value).toBe('Kindergarten');

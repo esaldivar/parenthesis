@@ -13,7 +13,12 @@ export const ESSENTIALS_SECTIONS: Record<
 > = {
   school: {
     name: 'essentials.section.school',
-    fields: { grade: 'essentials.field.grade', homeroomTeacher: 'essentials.field.homeroomTeacher', parentConcerns: 'essentials.field.parentConcerns' },
+    fields: {
+      schoolName: 'essentials.field.schoolName', schoolAddress: 'essentials.field.schoolAddress',
+      grade: 'essentials.field.grade', homeroomTeacher: 'essentials.field.homeroomTeacher',
+      teacherEmail: 'essentials.field.teacherEmail', teacherPhone: 'essentials.field.teacherPhone',
+      parentConcerns: 'essentials.field.parentConcerns',
+    },
   },
   allergiesFood: {
     name: 'essentials.section.allergiesFood',

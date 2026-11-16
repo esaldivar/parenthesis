@@ -54,7 +54,7 @@ export default defineConfig({
     },
     ...(['chromium', 'webkit'] as const).flatMap(browserName => [320, 390].map(width => ({
       name: `mobile-${browserName}-${width}`,
-      testMatch: ['**/m3-calendar/**/*.spec.ts', '**/m4-communication/**/*.spec.ts', '**/regression/issue-208-*.spec.ts', '**/regression/issue-259-*.spec.ts'],
+      testMatch: ['**/m3-calendar/**/*.spec.ts', '**/m4-communication/**/*.spec.ts', '**/m5-design-refresh/**/*.spec.ts', '**/regression/issue-208-*.spec.ts', '**/regression/issue-259-*.spec.ts'],
       // Desktop-only journeys (the compact chat); the gate counts a skipped test as a failure, so phones don't load them.
       testIgnore: ['**/*.desktop.spec.ts'],
       use: {
