@@ -68,6 +68,34 @@ public sealed class SchoolTests(ApiFactory api) : IAsyncLifetime
         var stale = await mom.SendAsync(HttpMethod.Put, school, new { revision = 1, values = new { grade = "4" } });
         Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
         Assert.Equal("Example Elementary", (await JsonAsync(stale)).GetProperty("values").GetProperty("schoolName").GetString());
+
+        // A tab still running the app from before these fields leaves them out: they keep their saved values.
+        Assert.Equal(HttpStatusCode.OK,
+            (await mom.SendAsync(HttpMethod.Put, school, new { revision = 2, values = new { grade = "4", homeroomTeacher = (string?)null } })).StatusCode);
+        var kept = (await JsonAsync(await dad.GetAsync(school))).GetProperty("values");
+        Assert.Equal("4", kept.GetProperty("grade").GetString());
+        Assert.Equal("Example Elementary", kept.GetProperty("schoolName").GetString());
+        Assert.Equal("1 Sample Way\nTestville", kept.GetProperty("schoolAddress").GetString());
+        Assert.Equal("teacher@example.com", kept.GetProperty("teacherEmail").GetString());
+        Assert.Equal("+44 20 7946 0000 ext. 12", kept.GetProperty("teacherPhone").GetString());
+
+        // Sent as null or empty, a field is cleared.
+        Assert.Equal(HttpStatusCode.OK, (await dad.SendAsync(HttpMethod.Put, school, new
+        {
+            revision = 3,
+            values = new
+            {
+                grade = "4",
+                schoolName = (string?)null,
+                schoolAddress = "1 Sample Way\nTestville",
+                teacherEmail = "",
+                teacherPhone = "+44 20 7946 0000 ext. 12",
+            },
+        })).StatusCode);
+        var cleared = (await JsonAsync(await mom.GetAsync(school))).GetProperty("values");
+        Assert.Equal(JsonValueKind.Null, cleared.GetProperty("schoolName").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cleared.GetProperty("teacherEmail").ValueKind);
+        Assert.Equal("1 Sample Way\nTestville", cleared.GetProperty("schoolAddress").GetString());
     }
 
     [Fact]
