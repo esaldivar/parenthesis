@@ -406,6 +406,11 @@ export const translations = {
   'essentials.changes.error': ["Changes couldn’t be saved. Your draft is still here.", "No se pudieron guardar los cambios. Tu borrador sigue aquí."],
   'essentials.school.saved': ["School saved.", "Se guardó la información escolar."],
   'essentials.clothing.saved': ["Clothing and shoes saved.", "Se guardó la información de ropa y calzado."],
+  // Clothing & Shoes (#660): the notes field shows as Clothing notes; it is still saved as fitNotes.
+  'essentials.clothing.notes': ["Clothing notes", "Notas sobre la ropa"],
+  'essentials.clothing.notesOptional': ["Clothing notes (optional)", "Notas sobre la ropa (opcional)"],
+  'essentials.clothing.notesHelp': ["What’s needed, what fits, and any preferences.", "Lo que necesita, lo que le queda bien y cualquier preferencia."],
+  'essentials.clothing.legend': ["Sizes and clothing notes", "Tallas y notas sobre la ropa"],
   'essentials.medical.saved': ["Medical providers saved.", "Se guardaron los profesionales de salud."],
   'essentials.caregiver.savedAll': ["Shared caregiver saved for all children.", "Se guardó el cuidador compartido para todos los hijos."],
   'essentials.caregiver.updated': ["Shared caregivers updated.", "Se actualizaron los cuidadores compartidos."],

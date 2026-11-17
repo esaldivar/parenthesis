@@ -73,7 +73,7 @@ const MEDICAL_TINT = {
           }
         }
       } @else {
-      <div class="layout" [class.focused]="openSection() !== null" [class.school-open]="openSection() === 'school'">
+      <div class="layout" [class.focused]="openSection() !== null" [class.plain-open]="plainOpen()">
         <div class="children" role="group" aria-label="{{ 'feature.choose.a.child' | tr }}">
           @for (item of children(); track item.id) {
             <button type="button" [attr.aria-pressed]="child.id === item.id" (click)="selectChild(item.id)">
@@ -83,8 +83,8 @@ const MEDICAL_TINT = {
                 <span class="child-dot" aria-hidden="true"></span>
                 <span class="visually-hidden">{{ 'feature.has.updates' | tr }}</span>
               }
-              <!-- School's approved design (#655) shows the selection by the highlighted row alone. -->
-              @if (child.id === item.id && openSection() !== 'school') {
+              <!-- School's and Clothing's approved designs (#655, #660) show the selection by the highlighted row alone. -->
+              @if (child.id === item.id && !plainOpen()) {
                 <app-icon class="child-check" name="check" [size]="20" />
               }
             </button>
@@ -119,10 +119,10 @@ const MEDICAL_TINT = {
                     </summary>
                     <div class="tile-content">
                       @if (openSection() === tile.section) {
-                        <header class="section-hero" [class.section-hero--plain]="tile.section === 'school'">
+                        <header class="section-hero" [class.section-hero--plain]="plainSections.has(tile.section)">
                           <h2 id="section-heading" tabindex="-1">{{ tile.name | tr }}</h2>
-                          <!-- School puts its illustration behind the content instead (#655). -->
-                          @if (tile.section !== 'school') {
+                          <!-- School and Clothing put their illustration behind the content instead (#655, #660). -->
+                          @if (!plainSections.has(tile.section)) {
                             <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
                           }
                         </header>
@@ -301,7 +301,7 @@ const MEDICAL_TINT = {
     .focused details[open] > summary { display: none; }
     .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
     .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-    /* School (#655, Figma 133:2): the title on the theme background, no tinted box or border. */
+    /* School and Clothing (#655 Figma 133:2, #660 Figma 279:2): the title on the theme background, no tinted box or border. */
     .section-hero.section-hero--plain {
       min-block-size: 3.5rem;
       margin-block-end: 0.75rem;
@@ -312,9 +312,9 @@ const MEDICAL_TINT = {
     }
     .section-hero--plain h2 { font: 700 1.5rem / 1.875rem var(--font-family-heading); }
     /* Its faint illustration may reach past the column; it never scrolls the page sideways. */
-    .layout.school-open { overflow-x: clip; overflow-clip-margin: 0.5rem; }
-    /* School's frames (#655) set the chosen child in Inter Semi Bold. */
-    .school-open .children button[aria-pressed='true'] { font-weight: 600; }
+    .layout.plain-open { overflow-x: clip; overflow-clip-margin: 0.5rem; }
+    /* School's and Clothing's frames (#655, #660) set the chosen child in Inter Semi Bold. */
+    .plain-open .children button[aria-pressed='true'] { font-weight: 600; }
 
     @media (max-width: 47.999rem) {
       .layout.focused { grid-template-columns: minmax(0, 1fr); }
@@ -361,6 +361,12 @@ export class ChildEssentialsPage {
   }
 
   protected readonly openSection = signal<EssentialsSectionId | null>(null);
+  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660). */
+  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing']);
+  protected readonly plainOpen = computed(() => {
+    const open = this.openSection();
+    return open !== null && this.plainSections.has(open);
+  });
   private readonly opened = signal<readonly EssentialsBanner[] | null>(null);
   private readonly dismissed = signal<ReadonlySet<string>>(new Set());
   private timer: ReturnType<typeof setTimeout> | undefined;

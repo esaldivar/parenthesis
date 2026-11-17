@@ -319,6 +319,14 @@ that points back here.
   - [ ] Long values on 320px phones wrap right-aligned under the value column (Figma shows short values only); a
     U.S. phone number can break after its hyphen. Ask the owner whether long values should stack under the label.
   - [ ] The phone topbar wraps the bell and account menu onto a second line at 320px (existing shell, not School).
+- [ ] **Child Essentials Clothing & Shoes redesign (#660, M5, owner-approved Figma page 279:2).** Clothing & Shoes
+  only; "Fit notes" shows as "Clothing notes" and is still stored as `fitNotes`.
+  - [ ] Owner review of the PR and its Figma comparison sheets, then a dev-site check in both themes and on a phone.
+  - [ ] The Clothing & Shoes tile still reads "Sizes and fit notes" (no tile frame in the approved set). Ask the owner
+    whether it should become "Sizes and clothing notes".
+  - [ ] School keeps its own 76% panels and outlined Save (its approved frames). If School should match Clothing's
+    45% panels, translucent fields and filled Save, move it onto the new `--color-panel-translucent` and
+    `--color-field-translucent` tokens.
 - [ ] **One shared photo per child for both parents (#653, owner decision November 16, 2026).** Either parent sets it;
   the picker shows the child's own photo, else the shared one.
   - [ ] Owner retest on the dev site: Dad, signed in on the shared device, sees the photo Mom chose for each child.
