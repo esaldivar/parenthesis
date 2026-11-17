@@ -40,7 +40,7 @@ export const essentialsTranslations = {
   "essentials.field.topSize": ["top size", "talla de prendas superiores"],
   "essentials.field.bottomSize": ["bottom size", "talla de prendas inferiores"],
   "essentials.field.shoeSize": ["shoe size", "talla de calzado"],
-  "essentials.field.fitNotes": ["fit notes", "notas sobre el ajuste"],
+  "essentials.field.fitNotes": ["clothing notes", "notas sobre la ropa"],
   "essentials.field.comfortItems": ["comfort items", "objetos de consuelo"],
   "essentials.field.calmingStrategies": ["calming strategies", "estrategias para calmarse"],
   "essentials.option.Grandparent": ["Grandparent", "Abuelo o abuela"],
