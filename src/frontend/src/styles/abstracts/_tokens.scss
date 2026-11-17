@@ -39,6 +39,8 @@
   // Focus ring (Figma Button/Primary focus state): text colour, drawn 2px outside the control. 11:1 on the canvas.
   --color-focus: #203a31;
   --color-selected: #d6e4d0;
+  // Soft secondary action fill (Figma Medical "History", #659), drawn translucent over the page artwork.
+  --color-soft-action: rgb(209 225 224 / 76%);
   // Hairlines between grid cells, rows and cards (#209). Calm, but visible on white and ivory.
   --color-divider: #cfd7c9;
   // How much of an item's category text colour tints its edge (#209), as in the approved calendar boards.
@@ -124,6 +126,7 @@
   --color-notify: #3ddc84;
   --color-focus: #f7f5ed;
   --color-selected: #24483a;
+  --color-soft-action: rgb(49 86 75 / 76%);
   --color-divider: #24483a;
   --calendar-item-edge-mix: 45%;
   --color-disabled-text: #9db2a6;

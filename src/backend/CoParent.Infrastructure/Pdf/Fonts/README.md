@@ -7,3 +7,8 @@ Taken from the `@expo-google-fonts/noto-sans` 0.4.2 npm package, which repackage
 They cover Latin, Greek and Cyrillic; other scripts and emoji print as empty boxes.
 
 Transcript exports also use a regular-weight instance of [Noto Emoji](https://github.com/google/fonts/tree/5bb28733cec313b63fbd415b574b5ae35c8aa8b8/ofl/notoemoji), with its accompanying OFL, to render monochrome emoji. The title uses a Latin subset of [Noto Serif Regular](https://github.com/notofonts/noto-fonts/tree/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSerif), also distributed with its OFL.
+
+The Medical reference (#659) follows the app's typography: Inter Regular and Semi Bold for text and Nunito Sans Bold
+for headings, taken from the `@expo-google-fonts/inter` and `@expo-google-fonts/nunito-sans` 0.4.2 npm packages
+(static Google Fonts instances). Both are licensed under the SIL Open Font License 1.1 (`Inter-OFL.txt`,
+`NunitoSans-OFL.txt`). Text with characters these fonts don't have falls back to Noto Sans.

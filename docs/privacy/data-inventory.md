@@ -73,7 +73,7 @@ No analytics, advertising, third-party scripts or third-party fonts are loaded i
 
 Allergies, medical providers and medication are health information (decisions in
 [medication-preflight-127.md](medication-preflight-127.md)). Only the family's active parents can read them, children
-never can, and they aren't sent by email or to any service but Azure. Allergy and medication PDFs are made on request
+never can, and they aren't sent by email or to any service but Azure. Allergy PDFs and the Medical reference PDF (providers and medication, #659) are made on request
 and never stored on the server. A deleted medication entry leaves database backups within 7 days.
 
 Account deletion (A-12) removes the sign-in, name and email at once; with a co-parent, the family's shared history

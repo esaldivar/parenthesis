@@ -112,7 +112,7 @@ describe('Child Essentials Spanish (#577)', () => {
 
   it('localizes provider types and validation, with stable API values', async () => {
     const { host, settle } = await render(MedicalProvidersSection);
-    host.querySelector<HTMLButtonElement>('section > .primary')!.click(); await settle();
+    host.querySelector<HTMLButtonElement>('section > .action.filled')!.click(); await settle();
     expect(host.querySelector('option[value="Doctor"]')?.textContent).toBe('Médico');
     const phone = host.querySelector<HTMLInputElement>('[formcontrolname="phone"]')!;
     phone.dispatchEvent(new Event('blur')); await settle();

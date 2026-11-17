@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { Api, Child, MedicalProvider } from '../../../../core/api/api';
+import { Api, Child, EssentialsUpdates, MedicalProvider } from '../../../../core/api/api';
+import { EssentialsUpdatesStore } from '../../../../core/essentials/essentials-updates.store';
 import { MedicalProvidersSection } from './medical-providers-section.component';
 
 const child = (id: string, firstName: string): Child => ({
@@ -37,7 +38,7 @@ describe('Medical provider contacts', () => {
       field(name).dispatchEvent(new Event('input'));
     };
     await render();
-    el.querySelector<HTMLButtonElement>('section > .primary')!.click();
+    el.querySelector<HTMLButtonElement>('section > .action.filled')!.click();
     await render();
 
     const submit = el.querySelector<HTMLButtonElement>('button[type=submit]')!;
@@ -82,7 +83,7 @@ describe('Medical provider contacts', () => {
   it('makes phone and address required only for a doctor or dentist', async () => {
     const { el, render } = setup(async () => ({ revision: 0, providers: [] }));
     await render();
-    el.querySelector<HTMLButtonElement>('section > .primary')!.click();
+    el.querySelector<HTMLButtonElement>('section > .action.filled')!.click();
     await render();
     const field = (name: string) => el.querySelector<HTMLInputElement | HTMLSelectElement>(`[formcontrolname="${name}"]`)!;
     const submit = () => el.querySelector<HTMLButtonElement>('button[type=submit]')!;
@@ -134,5 +135,61 @@ describe('Medical provider contacts', () => {
     answerSecond({ revision: 1, providers: [provider('Jo’s clinic')] });
     await render();
     expect(el.textContent).toContain('Jo’s clinic');
+  });
+
+  it('shows the approved card (#659): plain "Updated" beside the type, U.S. phones formatted, no child chips', async () => {
+    const providers: MedicalProvider[] = [
+      { id: 'p1', type: 'Doctor', name: 'Dr. Reed', specialty: null, practice: 'Example Clinic', phone: '5125550142', address: '120 Example Lane' },
+      { id: 'p2', type: 'Dentist', name: 'Dr. Ames', specialty: null, practice: null, phone: '+44 20 7946 0958', address: '1 Sample Road' },
+    ];
+    const { fixture, el, render } = setup(async () => ({ revision: 1, providers }));
+    await render();
+    TestBed.inject(EssentialsUpdatesStore).view.set({
+      newUpdates: false, sections: [{ childId: 'first', section: 'medical', unopened: false, rows: ['p1'] }],
+    } as unknown as EssentialsUpdates);
+    await render();
+    const [first, second] = el.querySelectorAll('article.provider');
+    // The cue sits in the same line as the type, as small plain text rather than a pill.
+    expect(first.querySelector('.type')?.textContent?.trim()).toBe('Doctor, Updated');
+    expect(first.querySelector('.type .badge + .visually-hidden + .updated')).not.toBeNull();
+    expect(first.querySelector('.updated')?.classList.contains('badge')).toBe(false);
+    expect(second.querySelector('.updated')).toBeNull();
+    // Display only: the saved value and the dialled number are unchanged; other countries' numbers show as typed.
+    expect(first.textContent).toContain('(512) 555-0142');
+    expect(first.querySelector('a[href^="tel:"]')?.getAttribute('href')).toBe('tel:5125550142');
+    expect(second.textContent).toContain('+44 20 7946 0958');
+    expect(first.querySelector('a[href^="tel:"]')?.textContent?.trim()).toBe('Call');
+    expect(first.querySelector('a[href^="tel:"] app-icon')).not.toBeNull();
+    expect(first.querySelector('a[target="_blank"] app-icon')).toBeNull();
+    // The page's column of children chooses the child; the section has no chips of its own.
+    expect(el.querySelector('[aria-pressed]')).toBeNull();
+    expect(el.querySelector('.back')?.textContent?.trim()).toBe('All of Sam’s essentials');
+    expect(fixture.componentInstance).toBeTruthy();
+  });
+
+  it('formats history lines as name, type, practice, phone and address', async () => {
+    const provider: MedicalProvider = {
+      id: 'p1', type: 'Doctor', name: 'Dr. Reed', specialty: null, practice: 'Example Clinic', phone: '512-555-0142 ext. 4', address: '120 Example Lane',
+    };
+    TestBed.configureTestingModule({ providers: [{ provide: Api, useValue: {
+      medicalProviders: vi.fn(async () => ({ revision: 1, providers: [provider] })),
+      medicalProvidersHistory: vi.fn(async () => ({ beforeRevision: null, entries: [{
+        revision: 1, editedBy: 'Sample Parent', editedAt: '2026-11-11T12:45:58Z', previous: [], current: [provider],
+      }] })),
+    } }] });
+    const fixture = TestBed.createComponent(MedicalProvidersSection);
+    fixture.componentRef.setInput('familyId', 'family');
+    fixture.componentRef.setInput('childId', 'first');
+    fixture.componentRef.setInput('children', [child('first', 'Sam')]);
+    const el = fixture.nativeElement as HTMLElement;
+    const render = async () => { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); };
+    await render();
+    el.querySelector<HTMLButtonElement>('.action.soft')!.click();
+    await render();
+    const history = el.querySelector('#medical-history')!;
+    expect(history.querySelector('h3')?.textContent?.trim()).toBe('Medical provider history');
+    expect(history.textContent).toContain('No medical providers.');
+    expect(history.querySelector('li')?.textContent?.trim())
+      .toBe('Dr. Reed · Doctor · Example Clinic · (512) 555-0142 ext. 4 · 120 Example Lane');
   });
 });
