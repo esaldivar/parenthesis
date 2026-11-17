@@ -328,6 +328,14 @@ that points back here.
     date, discontinued medications shown in the PDF only when there are any, and Noto Sans Bold for the PDF wordmark
     (the frame's Segoe UI isn't embeddable).
   - [ ] Medication records have no "Updated" cue: the frames show none. Ask the owner whether they should.
+- [ ] **Child Essentials Clothing & Shoes redesign (#660, M5, owner-approved Figma page 279:2).** Clothing & Shoes
+  only; "Fit notes" shows as "Clothing notes" and is still stored as `fitNotes`.
+  - [ ] Owner review of the PR and its Figma comparison sheets, then a dev-site check in both themes and on a phone.
+  - [ ] The Clothing & Shoes tile still reads "Sizes and fit notes" (no tile frame in the approved set). Ask the owner
+    whether it should become "Sizes and clothing notes".
+  - [ ] School keeps its own 76% panels and outlined Save (its approved frames). If School should match Clothing's
+    45% panels, translucent fields and filled Save, move it onto the new `--color-panel-translucent` and
+    `--color-field-translucent` tokens.
 - [ ] **One shared photo per child for both parents (#653, owner decision November 16, 2026).** Either parent sets it;
   the picker shows the child's own photo, else the shared one.
   - [ ] Owner retest on the dev site: Dad, signed in on the shared device, sees the photo Mom chose for each child.

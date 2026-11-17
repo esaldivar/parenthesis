@@ -53,6 +53,11 @@
   --color-status-pending-bg: #fbeee0;
   --color-status-confirmed-bg: #dcefe9;
   --color-status-rejected-bg: #f8e1df;
+  // Child Essentials redesign (Figma Clothing & Shoes 279:2, #660): saved-value panels and edit fields stay
+  // translucent so the faint category artwork shows through; text keeps its contrast on the canvas underneath.
+  --color-panel-translucent: rgb(255 255 255 / 45%);
+  --color-field-translucent: rgb(247 245 237 / 45%);
+  --essentials-art-opacity: 0.22;
   // Wordmark (docs/design/BRANDING.md): sage "Parent", charcoal "hesis".
   --brand-wordmark-parent: #5e8f7e;
   --brand-wordmark-hesis: #20303f;
@@ -135,6 +140,9 @@
   --color-status-pending-bg: #4a3a22;
   --color-status-confirmed-bg: #1f4a3f;
   --color-status-rejected-bg: #4d2724;
+  --color-panel-translucent: rgb(25 55 45 / 45%);
+  --color-field-translucent: rgb(25 55 45 / 40%);
+  --essentials-art-opacity: 0.3;
   // Charcoal "hesis" is invisible on forest green (1.2:1), so dark mode uses ivory. Sage "Parent" is unchanged.
   --brand-wordmark-parent: #5e8f7e;
   --brand-wordmark-hesis: #f7f5ed;
