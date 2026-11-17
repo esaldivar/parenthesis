@@ -11,10 +11,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Families.Endpoints;
 
-internal sealed record SchoolValues(string? Grade, string? HomeroomTeacher, string? ParentConcerns)
+/// <summary>School values in display order (#655). The contact and address fields are optional and kept as typed.</summary>
+internal sealed record SchoolValues(
+    string? Grade, string? HomeroomTeacher, string? ParentConcerns,
+    string? SchoolName = null, string? SchoolAddress = null, string? TeacherEmail = null, string? TeacherPhone = null)
 {
     public static SchoolValues From(SchoolRevision? row) =>
-        new(row?.Grade, row?.HomeroomTeacher, row?.ParentConcerns);
+        new(row?.Grade, row?.HomeroomTeacher, row?.ParentConcerns,
+            row?.SchoolName, row?.SchoolAddress, row?.TeacherEmail, row?.TeacherPhone);
 }
 
 internal sealed record SchoolView(int Revision, SchoolValues Values)
@@ -22,7 +26,21 @@ internal sealed record SchoolView(int Revision, SchoolValues Values)
     public static SchoolView From(SchoolRevision? row) => new(row?.Revision ?? 0, SchoolValues.From(row));
 }
 
-internal sealed record SaveSchoolRequest(int? Revision, SchoolValues? Values);
+/// <summary>
+/// A School save. A field the client leaves out keeps its saved value, so a tab still running the app from before the
+/// contact fields (#655) can't clear them; an explicit <c>null</c> or empty value still clears a field.
+/// </summary>
+internal sealed record SaveSchoolRequest(int? Revision, SchoolInput? Values);
+
+/// <summary>The School values a client sends. The newer fields default to <see cref="Omitted"/> when absent.</summary>
+internal sealed record SchoolInput(
+    string? Grade, string? HomeroomTeacher, string? ParentConcerns,
+    string? SchoolName = SchoolInput.Omitted, string? SchoolAddress = SchoolInput.Omitted,
+    string? TeacherEmail = SchoolInput.Omitted, string? TeacherPhone = SchoolInput.Omitted)
+{
+    /// <summary>Marks a field the client didn't send. Saved text can't contain NUL, so it never matches a real value.</summary>
+    public const string Omitted = "\0omitted";
+}
 
 internal static class SchoolEndpoints
 {
@@ -83,9 +101,19 @@ internal static class SchoolEndpoints
             errors["homeroomTeacher"] = ["Homeroom teacher is available for pre-K through fifth grade."];
         }
 
-        var values = new SchoolValues(
+        var email = Optional(request.Values.TeacherEmail, "teacherEmail", SchoolRevision.EmailLimit, errors);
+        if (email is not null and not SchoolInput.Omitted && !errors.ContainsKey("teacherEmail") && !LooksLikeEmail(email))
+        {
+            errors["teacherEmail"] = ["Enter an email address like name@example.com."];
+        }
+
+        var sent = new SchoolValues(
             grade, teacher,
-            ChildEssentialsAccess.Normalize(request.Values.ParentConcerns, "parentConcerns", SchoolRevision.TextLimit, errors));
+            ChildEssentialsAccess.Normalize(request.Values.ParentConcerns, "parentConcerns", SchoolRevision.TextLimit, errors),
+            Optional(request.Values.SchoolName, "schoolName", SchoolRevision.TextLimit, errors),
+            Optional(request.Values.SchoolAddress, "schoolAddress", SchoolRevision.TextLimit, errors),
+            email,
+            Optional(request.Values.TeacherPhone, "teacherPhone", SchoolRevision.PhoneLimit, errors));
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -106,6 +134,13 @@ internal static class SchoolEndpoints
                 return TypedResults.Conflict(current);
             }
 
+            var values = sent with
+            {
+                SchoolName = Keep(sent.SchoolName, current.Values.SchoolName),
+                SchoolAddress = Keep(sent.SchoolAddress, current.Values.SchoolAddress),
+                TeacherEmail = Keep(sent.TeacherEmail, current.Values.TeacherEmail),
+                TeacherPhone = Keep(sent.TeacherPhone, current.Values.TeacherPhone),
+            };
             if (values == current.Values)
             {
                 return TypedResults.Ok(current);
@@ -121,12 +156,20 @@ internal static class SchoolEndpoints
                 Grade = values.Grade,
                 HomeroomTeacher = values.HomeroomTeacher,
                 ParentConcerns = values.ParentConcerns,
+                SchoolName = values.SchoolName,
+                SchoolAddress = values.SchoolAddress,
+                TeacherEmail = values.TeacherEmail,
+                TeacherPhone = values.TeacherPhone,
             };
             db.SchoolRevisions.Add(next);
             await EssentialsUpdateEndpoints.RecordAsync(db, tenant, childId, EssentialsSections.School, next.Revision,
                 EssentialsUpdateEndpoints.Changed(
+                ("schoolName", current.Values.SchoolName, values.SchoolName),
+                ("schoolAddress", current.Values.SchoolAddress, values.SchoolAddress),
                 ("grade", current.Values.Grade, values.Grade),
                 ("homeroomTeacher", current.Values.HomeroomTeacher, values.HomeroomTeacher),
+                ("teacherEmail", current.Values.TeacherEmail, values.TeacherEmail),
+                ("teacherPhone", current.Values.TeacherPhone, values.TeacherPhone),
                 ("parentConcerns", current.Values.ParentConcerns, values.ParentConcerns)),
                 next.EditedAt, ct);
             await db.SaveChangesAsync(ct);
@@ -138,6 +181,18 @@ internal static class SchoolEndpoints
         Guid childId, int? beforeRevision, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
         IUserDirectory directory, CancellationToken cancellationToken) =>
         EssentialsHistory.PageAsync(childId, beforeRevision, http, tenant, db, directory, Revisions(db, childId), SchoolValues.From, cancellationToken);
+
+    private static string? Optional(string? value, string field, int limit, Dictionary<string, string[]> errors) =>
+        value == SchoolInput.Omitted ? value : ChildEssentialsAccess.Normalize(value, field, limit, errors);
+
+    private static string? Keep(string? sent, string? saved) => sent == SchoolInput.Omitted ? saved : sent;
+
+    /// <summary>One @ with text on both sides and no spaces: enough to catch typos without rejecting real addresses.</summary>
+    internal static bool LooksLikeEmail(string value)
+    {
+        var at = value.IndexOf('@');
+        return at > 0 && at == value.LastIndexOf('@') && at < value.Length - 1 && !value.Any(char.IsWhiteSpace);
+    }
 
     private static IQueryable<SchoolRevision> Revisions(FamiliesDbContext db, Guid childId) =>
         db.SchoolRevisions.AsNoTracking().Where(row => row.ChildProfileId == childId)

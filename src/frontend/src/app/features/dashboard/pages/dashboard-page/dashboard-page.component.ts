@@ -153,8 +153,11 @@ export class DashboardPage {
     return this.t(greeting === 'Hello' ? 'dash.hello' : greeting === 'Good afternoon' ? 'dash.afternoon' : greeting === 'Good evening' ? 'dash.evening' : 'dash.morning');
   });
   protected readonly greeting = computed(() => {
-    const hello = this.localizedGreeting();
-    return this.firstName() ? `${hello}, ${this.firstName()}!` : `${hello}!`;
+    const greeting = this.localizedGreeting();
+    const name = this.firstName();
+    return name
+      ? translate('dash.greetingNamed', this.locale.locale(), { greeting, name })
+      : translate('dash.greetingPlain', this.locale.locale(), { greeting });
   });
 
   /** Proposals awaiting this parent, then this week's parenting time and activities from today on. */

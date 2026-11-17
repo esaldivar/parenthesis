@@ -26,7 +26,16 @@ export default withGuidepup({
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
   },
-  projects: [{
+  // macOS runs real VoiceOver (#443); every other host keeps the NVDA projects, so the Windows gate's report is
+  // unchanged. Each host only lists the reader it actually has.
+  projects: process.platform === 'darwin' ? [{
+    name: 'screen-reader-app-voiceover',
+    testMatch: '**/*-voiceover.spec.ts',
+    // VoiceOver waits for each phrase to settle; reading a dialog item by item on an Intel Mac takes minutes.
+    timeout: 600_000,
+    // Playwright doesn't install its Chromium on macOS 13; E2E_BROWSER_CHANNEL=chrome uses the installed Chrome.
+    use: { ...devices['Desktop Chrome'], headless: false, channel: process.env['E2E_BROWSER_CHANNEL'] || undefined },
+  }] : [{
     name: 'screen-reader-desktop',
     testMatch: '**/real-reader-smoke.spec.ts',
     use: { ...devices['Desktop Chrome'], headless: false },

@@ -313,8 +313,19 @@ that points back here.
     card: approved by the owner October 30, 2026. The `design approved` label is the owner's to apply.
   - [ ] Mobile WebKit Playwright profiles in CI, physical iPhone (HEIC photo conversion by Safari) and Android
     photo pickers, real screen reader pass of the editor.
+- [ ] **Child Essentials School redesign (#655, M5, owner-approved Figma page 133:2).** School only; other categories
+  follow category by category.
+  - [ ] Owner review of the PR and its Figma comparison sheets, then a dev-site check in both themes and on a phone.
+  - [ ] Long values on 320px phones wrap right-aligned under the value column (Figma shows short values only); a
+    U.S. phone number can break after its hyphen. Ask the owner whether long values should stack under the label.
+  - [ ] The phone topbar wraps the bell and account menu onto a second line at 320px (existing shell, not School).
+- [ ] **One shared photo per child for both parents (#653, owner decision November 16, 2026).** Either parent sets it;
+  the picker shows the child's own photo, else the shared one.
+  - [ ] Owner retest on the dev site: Dad, signed in on the shared device, sees the photo Mom chose for each child.
+  - [ ] Update the Figma Settings frame (12 · Parent · Settings): "Your children's photos", the shared-photo note and
+    "You and your co-parent see this photo." under each child, replacing "Only you see these…" copy.
   - [ ] Owner test on the dev site after the release reaches `develop`; #388 stays open until then.
-  - [ ] Move profile photos from PostgreSQL to private Azure Blob storage before the private beta (v1.0.0): change
+  - [ ] Move profile photos from PostgreSQL to private Azure Blob storage before the parent beta (v0.7.0, moved from v1.0.0 on November 13, 2026): change
     the photo endpoints' storage and copy existing photos once. Owner decision October 30, 2026: Postgres for now.
 - [ ] **Open an event's location in Google Maps (#113, owner-approved stretch, October 29, 2026).**
   - [x] Event details show **Open in Google Maps** under Where: a Google Maps directions link
@@ -499,6 +510,20 @@ that points back here.
   - [ ] Owner retest on development: phone and desktop in light mode, with the original "too bright, hard to see"
     complaint in mind. If light mode still feels too bright, the deferred option is dimming the ivory canvas and
     adding card hairlines (owner chose not to include it on October 30, 2026).
+
+## Roadmap M5–M8 (owner direction, November 13, 2026)
+See [the roadmap](docs/planning/roadmap.md). Milestones renamed and created, issues moved, epics #641 (M5), #643 and
+#644 (M6), #645 (M7), #648 (M8) created (`docs/roadmap-m5-m8`, November 13, 2026).
+- [x] Owner: the external parent beta is **v0.7.0 (M7)**, not v1.0.0 (November 13, 2026).
+- [ ] Owner: decide v1.0.0's scope and the name of milestone #5 (still titled "v1.0 — Private Beta").
+- [ ] Owner: close the finished milestones **M2 — Onboarding** and **M3 — Calendar** (no open issues), if wanted.
+- [ ] Owner: resolve the child-experience rule conflicts in #647 before M8 design approval.
+- [ ] Owner: add Gwenny's approved reference photo, with provenance, under `docs/design/companions/` before concept
+  art starts (#646).
+- [ ] Owner: decide whether Child Essentials needs an **insurance information** section (named in the M5 brief; it
+  doesn't exist today, so it would be a new feature with its own issue).
+- [ ] Fix the Google Calendar runbook's scope tier: it says the Calendar scope is sensitive, but the console reading in
+  the Photos tracker says non-sensitive; re-check in the console first (#643).
 
 ## Calendar follow-ups
 
@@ -713,6 +738,25 @@ and checks: `docs/runbooks/application-insights-monitoring.md`.
   above. macOS/VoiceOver remains unavailable; evidence archival and repeated stability runs remain open.
 - See [prerequisite report](docs/runbooks/screen-reader-prerequisites.md) for actual versions, failed control evidence, controlled runner requirements, coverage map and residual mobile checks. No application transcript, CI runner or system permission change is claimed.
 
+### #443 — Desktop macOS VoiceOver with Guidepup
+- [x] VoiceOver project, nine journeys (smoke, navigation, forms, calendar save, event dialog, two date journeys,
+  reminder details, task progress), macOS candidate script and [runbook](docs/runbooks/voiceover-macos.md).
+- [x] Owner-Mac run at 523a9ab (macOS 13.7.8, Chrome 157, Guidepup 0.38.0 / Playwright 0.21.0): 9 of 9 passed,
+  verified by `verify-nvda-results.mjs … VoiceOver`. Per-test speech transcripts weren't kept for that run (the next
+  run cleared the results folder); keep them from the second run.
+- [x] Controlled negative: navigation expecting "zebra quokka" failed at the speech assertion with VoiceOver's actual
+  speech ("Settings … current page link …"); restored.
+- [x] Second full run at 7f13a43: 8 of 9 passed. Smoke failed once because Guidepup's log kept only VoiceOver's hint
+  after `nextHeading`; fixed in c499266 with the bounded heading search. Results kept on the owner's Mac
+  (`~/voiceover-evidence/run2-7f13a43`).
+- [ ] One more full 9 of 9 run on the final PR commit, if the owner wants a clean repeat (about 40 minutes).
+- [ ] App: VoiceOver on macOS 13 sometimes doesn't announce the "… is on the calendar" toast after an activity save
+  (focus moves to main and the week heading changes at the same moment). The VoiceOver test reads it with the cursor
+  when that happens, marked in its transcript. Announced directly in 2 of 3 Calendar runs; the reminder save's toast
+  needed the cursor read in run 2. Tracked in #650 (owner chose a separate issue, November 13, 2026); when fixed, make
+  `toastHeardOrRead` a hard assertion.
+- [ ] Optional later: a manual-only hosted macOS job, only with the owner's approval of its Actions-minute cost.
+
 ### #278/#279 — Coverage follow-up (October 26, 2026)
 - Verified historical release PR #315 browser run 40316038202: 179 passing executions on merge candidate `92be9b9e962751f6e6fa3c273d6cb62836eae46e`; original no-run blocker notes above are historical.
 - Added touch Edit/Swap invalid/corrected/cancel checks, Home/Calendar slot moving/clearing, Chicago spring/fall persisted edit boundaries and controlled overflow detection/restoration. Removed the remaining #259 viewport override.
@@ -870,9 +914,11 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
   and Home), Home's memory date, and day-first dates for Spanish (`fix/534-approvals-dates`, November 13, 2026).
 - [x] Home's status chips ("Proposed", "Confirmed", "Rejected", "Change pending") follow the language; found while
   testing #517 on November 13, 2026 (`fix/534-status-chip`).
-- [ ] Retest Approvals (pending and history, including a repeating request), Home's pending reviews, status chips and
-  memory date, chat message times and Shared records dates in Spanish after `fix/534-approvals-dates` and
-  `fix/534-status-chip` deploy.
+- [x] Retested in Spanish on Development after #629 (November 13, 2026): Approvals history (including a weekly
+  request), status chips, Home's memory date, chat message times and Shared records dates passed. Nothing was
+  pending, so Approvals' pending list and Home's pending reviews weren't seen with data.
+- [x] Home's greeting opens with "¡" in Spanish (`fix/534-spanish-greeting`, found in that retest).
+- [ ] Retest Approvals' pending list and Home's pending reviews in Spanish with a real pending request.
 - [ ] Request summaries are still stored in English: summaries cut short at 200 characters, and approval emails, stay
   English. Storing structured request details would remove the English-only server text.
 - [x] Sweep the remaining hard-coded English built in code (`fix/534-english-sweep`): privacy notice storage list
@@ -923,3 +969,21 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
 - [ ] An older history entry from before custom routines (a Bedtime/Naps edit) reads "No routines yet" both before
   and after; decide whether history should skip entries with no visible change.
 - [ ] Removing a routine isn't in #498; decide whether parents need it before the private beta.
+
+## Figma design-system alignment (November 15, 2026)
+Proposal and owner decisions in the "Align design tokens with Figma" thread; tokens follow Figma file
+"Parenthesis - Design System" (pages 01 Typography, 02 Color Palette, 03 Themes).
+- [x] Bundle Inter and Nunito Sans, add `--type-*` tokens and `.text-*` classes, filled buttons to Figma
+  Button/Primary (56px, 12px corners, solid hover/pressed/disabled fills, text-colour focus ring 2px outside)
+  (`feat/figma-typography-tokens`, November 15, 2026).
+- [ ] Owner check on the development site: 56px filled buttons in tight spots (dialogs, calendar panels, chat),
+  both themes, 320px.
+- [ ] Hand ChatGPT the list of code-only tokens to add in Figma (`figma-variables-for-chatgpt.md` in the project
+  files), plus the two Button/Primary fixes (focus ring outside, light disabled label #4A5F55).
+- [ ] Outlined, text and icon Material buttons still show keyboard focus only as Material's faint state layer (no
+  outline). Give them the same focus ring once Figma defines those buttons.
+- [ ] Move the one-off font sizes in component styles (13px, 15px, 17px and others) onto the Figma text styles,
+  screen by screen as the Figma page designs arrive.
+- [ ] Some pages use Georgia serif headings (From Your Kids, Child Essentials, Family Memories) and the text
+  wordmark uses the system font; neither is in Figma yet. Confirm with the owner when those designs land (the
+  wordmark stays as it is: the brand is locked).

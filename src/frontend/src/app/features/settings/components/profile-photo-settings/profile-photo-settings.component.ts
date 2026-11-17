@@ -7,9 +7,9 @@ import { ProfilePhotos } from '../../../../core/profile-photos/profile-photos';
 import { PhotoEditor } from '../../../../shared/components/photo-editor/photo-editor';
 
 /**
- * A parent's profile photos (#388), edited only here in Settings: their own photo, which their co-parent sees too,
- * and their personal photo for each child, which only they see. Each child chooses their own photo for the sign-in
- * screen in their own Settings; nothing here changes it, and the co-parent's choices are never shown.
+ * A parent's profile photos (#388, #653), edited only here in Settings: their own photo, which their co-parent sees
+ * too, and each child's photo, which both parents share and either can change. Each child can choose their own photo
+ * for the sign-in screen in their own Settings; nothing here changes it.
  */
 @Component({
   selector: 'app-profile-photo-settings',
@@ -32,9 +32,9 @@ import { PhotoEditor } from '../../../../shared/components/photo-editor/photo-ed
       <p class="alert" role="alert">{{ error }}</p>
     } @else if (children(); as children) {
       @if (children.length > 0) {
-        <h3>{{ 'feature.your.photos.of.your.children' | tr }}</h3>
+        <h3>{{ 'feature.your.childrens.photos' | tr }}</h3>
         <p class="muted">
-          {{ 'feature.only.you.see.these.your.co.parent' | tr }}
+          {{ 'feature.you.and.your.co.parent.share.these' | tr }}
         </p>
         <ul>
           @for (child of children; track child.id) {
@@ -45,7 +45,7 @@ import { PhotoEditor } from '../../../../shared/components/photo-editor/photo-ed
                 [childId]="child.id"
                 [name]="child.firstName"
                 [label]="child.firstName"
-                [hint]="'settings.photo.hintOnlyYou' | tr"
+                [hint]="'settings.photo.hintShared' | tr"
                 [forWhom]="'settings.photo.forChild' | tr: { name: child.firstName }"
               />
             </li>

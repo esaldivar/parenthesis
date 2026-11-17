@@ -46,6 +46,9 @@ const pairs: [foreground: string, background: string, minimum: number][] = [
   ['color-text', 'color-status-rejected-bg', TEXT],
   ['color-focus', 'color-canvas', NON_TEXT],
   ['color-focus', 'color-surface', NON_TEXT],
+  ['color-focus', 'color-surface-soft', NON_TEXT],
+  // Disabled filled button (Figma Button/Primary). WCAG exempts disabled controls; the project keeps 4.5:1 anyway.
+  ['color-on-disabled-fill', 'color-disabled-fill', TEXT],
   ['color-outline', 'color-canvas', NON_TEXT],
   ['color-outline', 'color-surface', NON_TEXT],
   // The wordmark is bold display text (>= 20px), so the large-text minimum applies.

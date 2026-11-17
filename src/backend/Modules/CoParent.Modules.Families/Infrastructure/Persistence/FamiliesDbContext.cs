@@ -189,6 +189,10 @@ internal sealed class FamiliesDbContext(DbContextOptions<FamiliesDbContext> opti
             revision.Property(row => row.HomeroomTeacher).HasMaxLength(SchoolRevision.TextLimit);
             revision.Property(row => row.Grade).HasMaxLength(SchoolRevision.TextLimit);
             revision.Property(row => row.ParentConcerns).HasMaxLength(SchoolRevision.TextLimit);
+            revision.Property(row => row.SchoolName).HasMaxLength(SchoolRevision.TextLimit);
+            revision.Property(row => row.SchoolAddress).HasMaxLength(SchoolRevision.TextLimit);
+            revision.Property(row => row.TeacherEmail).HasMaxLength(SchoolRevision.EmailLimit);
+            revision.Property(row => row.TeacherPhone).HasMaxLength(SchoolRevision.PhoneLimit);
             revision.HasOne<ChildProfile>().WithMany().HasForeignKey(row => row.ChildProfileId);
             revision.HasIndex(row => new { row.ChildProfileId, row.Revision }).IsUnique();
             revision.HasQueryFilter(TenantContext.QueryFilterName, row => row.FamilyId == CurrentFamilyId);

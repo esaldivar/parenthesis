@@ -317,7 +317,7 @@ export interface ParentPinStatus {
 
 /**
  * A profile photo this viewer may see (#388): a parent's own photo (`kind` "parent", membership id), or, for a parent
- * viewer, their personal photo of a child; for a child viewer, the child's own photo (`kind` "child", child id).
+ * viewer, a child's photo that both parents share (#653); for a child viewer, the child's own photo (`kind` "child", child id).
  */
 export interface PhotoRef {
   readonly kind: 'parent' | 'child';
@@ -984,6 +984,11 @@ export interface SchoolValues {
   readonly homeroomTeacher: string | null;
   readonly grade: string | null;
   readonly parentConcerns: string | null;
+  /** Added in #655; absent or null on saves made before then. */
+  readonly schoolName?: string | null;
+  readonly schoolAddress?: string | null;
+  readonly teacherEmail?: string | null;
+  readonly teacherPhone?: string | null;
 }
 
 export interface SchoolView {
@@ -1311,7 +1316,7 @@ export class Api {
   setOwnPhoto = (familyId: string, file: Blob) =>
     this.call(this.http.put<PhotoRef>(`/api/families/${familyId}/photos/me`, file, { headers: { 'Content-Type': file.type || 'application/octet-stream' } }));
   removeOwnPhoto = (familyId: string) => this.call(this.http.delete<void>(`/api/families/${familyId}/photos/me`));
-  /** This parent's personal photo of a child, seen only by them. */
+  /** A child's photo that both parents share; either parent may set or remove it (#653). */
   setChildPhoto = (familyId: string, childId: string, file: Blob) =>
     this.call(
       this.http.put<PhotoRef>(`/api/families/${familyId}/photos/children/${childId}`, file, {

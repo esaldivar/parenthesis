@@ -33,6 +33,7 @@ Accepted Architecture Decision Records (ADRs):
 ## Product plans and design
 
 - [Prioritized backlog and release map](planning/mvp-backlog.md).
+- [Roadmap after Milestone 4 (M5–M8)](planning/roadmap.md), with plans for [M5](design/m5-design-refresh.md), [M6](planning/m6-google-and-native-mobile.md), [M7](planning/m7-beta-readiness.md) and [M8](planning/m8-child-experience.md).
 - [Milestone 1 foundation plan](planning/milestone-1-plan.md) — original implementation plan, retained for reference.
 - [Open and deferred work](../TODO.md).
 - [Design handoff index](design/README.md), [visual design system](design-system.md), and

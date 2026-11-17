@@ -38,9 +38,9 @@ export function photoErrorMessage(error: unknown, locale: AppLocale = 'en'): str
 }
 
 /**
- * Choose, preview, save, replace or remove one profile photo (#388). Used only in Settings: a parent's own photo, a
- * parent's personal photo of a child, or a signed-in child's own photo. Nothing changes until Save; a failed save
- * keeps the previous photo. Removing it brings back the initial.
+ * Choose, preview, save, replace or remove one profile photo (#388). Used only in Settings: a parent's own photo,
+ * a child's photo that both parents share (#653), or a signed-in child's own photo. Nothing changes until Save; a
+ * failed save keeps the previous photo. Removing it brings back the initial.
  */
 @Component({
   selector: 'app-photo-editor',
@@ -144,13 +144,13 @@ export class PhotoEditor {
   readonly familyId = input.required<string>();
   /** Whose photo this is. */
   readonly subject = input.required<PhotoSubject>();
-  /** For a parent's personal photo of a child: that child's id. Null for the viewer's own photo. */
+  /** For a child's shared photo (#653): that child's id. Null for the viewer's own photo. */
   readonly childId = input<string | null>(null);
   /** The pictured person's name, for the initial. */
   readonly name = input.required<string>();
   /** Shown above the buttons, for example "Your photo" or "Kai". */
   readonly label = input.required<string>();
-  /** Who sees it, for example "Only you see this photo." */
+  /** Who sees it, for example "You and your co-parent see this photo." */
   readonly hint = input('');
   /** Read by screen readers after the button text, for example "for Kai". */
   readonly forWhom = input('');

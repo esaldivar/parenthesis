@@ -105,9 +105,14 @@ Each milestone is one release. The backlog's items are mapped to them in [the ba
 | v0.1.0 | 1. Foundation | Architecture, configuration, design system, foundational UI, dashboard foundation, development infrastructure |
 | v0.2.0 | 2. Accounts and profiles | Parent registration, authentication, invitations, child profiles, child PINs, profile picker, permissions |
 | v0.3.0 | 3. Calendar and approvals | Shared calendar, parenting schedules, event proposals and approvals, change requests, calendar notifications |
-| v0.4.0 | 4. Communication (proposed) | Parent messaging, family communication, notifications, shared family information |
-| v0.5.0 | 5. Child experience (proposed) | Child dashboard, artwork and photos, journal, child privacy controls |
-| v1.0.0 | Private beta | All milestones integrated, security validation, end-to-end tests, production readiness, invitation-only |
+| v0.4.0 | 4. Communication | Parent messaging, family communication, notifications, shared family information |
+| v0.5.0 | 5. Design Refresh & UX Overhaul | Layout system, content widths, forms, cards, states, light/dark polish of the parent app |
+| v0.6.0 | 6. Google Integrations & Native Mobile | Google Calendar, Maps, Photos, Sign in with Google and OAuth verification; iOS and Android apps |
+| v0.7.0 | 7. Beta Readiness & Quality | The external parent beta (invitation-only): quality gates, security validation, end-to-end tests, production readiness |
+| v0.8.0 | 8. Child Experience | Child home, calendar, memories, artwork, diary, consent and companions, behind design, privacy and legal gates |
+| v1.0.0 | To be decided | After M8; scope and name to be decided (the private beta moved to v0.7.0, owner decision November 13, 2026) |
+
+The M5–M8 order is the owner's November 13, 2026 roadmap; see [the roadmap](planning/roadmap.md).
 
 **Starting point (owner decision, October 18, 2026):** `main` holds the Milestone 1 foundation. `develop` already
 holds Milestone 2 work and some Milestone 3 backend work (calendar, approvals). `release/0.2.0` is cut from `develop`

@@ -100,6 +100,9 @@ export const translations = {
   'dash.morning': ["Good morning","Buenos días"],
   'dash.afternoon': ["Good afternoon","Buenas tardes"],
   'dash.evening': ["Good evening","Buenas noches"],
+  // Spanish exclamations open with ¡ (#534).
+  'dash.greetingNamed': ['{greeting}, {name}!', '¡{greeting}, {name}!'],
+  'dash.greetingPlain': ['{greeting}!', '¡{greeting}!'],
   'dash.lead': ["Here’s what’s happening with your family.","Esto es lo que sucede en tu familia."],
   'dash.upcoming': ["Upcoming","Próximos eventos"],
   'dash.seeAll': ["See all","Ver todo"],
@@ -510,7 +513,6 @@ export const translations = {
   'memory.upload.storageFailed': ['The photo couldn’t be saved. Try again.', 'No se pudo guardar la foto. Inténtalo de nuevo.'],
   'memory.upload.storageFull': ['You don’t have enough photo storage left. Delete photos you no longer need, or wait for older ones to be deleted.', 'No te queda suficiente espacio para fotos. Elimina las que ya no necesites o espera a que se eliminen las más antiguas.'],
   'settings.photo.hintShared': ['You and your co-parent see this photo.', 'Tú y el otro padre o madre ven esta foto.'],
-  'settings.photo.hintOnlyYou': ['Only you see this photo.', 'Solo tú ves esta foto.'],
   'settings.photo.forChild': ['for {name}', 'para {name}'],
   'google.photos.oneAlbum': ['1 album', '1 álbum'],
   'google.photos.albumCount': ['{count} albums', '{count} álbumes'],
