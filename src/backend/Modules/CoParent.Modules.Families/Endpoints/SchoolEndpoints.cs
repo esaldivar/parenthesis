@@ -26,7 +26,21 @@ internal sealed record SchoolView(int Revision, SchoolValues Values)
     public static SchoolView From(SchoolRevision? row) => new(row?.Revision ?? 0, SchoolValues.From(row));
 }
 
-internal sealed record SaveSchoolRequest(int? Revision, SchoolValues? Values);
+/// <summary>
+/// A School save. A field the client leaves out keeps its saved value, so a tab still running the app from before the
+/// contact fields (#655) can't clear them; an explicit <c>null</c> or empty value still clears a field.
+/// </summary>
+internal sealed record SaveSchoolRequest(int? Revision, SchoolInput? Values);
+
+/// <summary>The School values a client sends. The newer fields default to <see cref="Omitted"/> when absent.</summary>
+internal sealed record SchoolInput(
+    string? Grade, string? HomeroomTeacher, string? ParentConcerns,
+    string? SchoolName = SchoolInput.Omitted, string? SchoolAddress = SchoolInput.Omitted,
+    string? TeacherEmail = SchoolInput.Omitted, string? TeacherPhone = SchoolInput.Omitted)
+{
+    /// <summary>Marks a field the client didn't send. Saved text can't contain NUL, so it never matches a real value.</summary>
+    public const string Omitted = "\0omitted";
+}
 
 internal static class SchoolEndpoints
 {
@@ -87,20 +101,19 @@ internal static class SchoolEndpoints
             errors["homeroomTeacher"] = ["Homeroom teacher is available for pre-K through fifth grade."];
         }
 
-        var email = ChildEssentialsAccess.Normalize(
-            request.Values.TeacherEmail, "teacherEmail", SchoolRevision.EmailLimit, errors);
-        if (email is not null && !errors.ContainsKey("teacherEmail") && !LooksLikeEmail(email))
+        var email = Optional(request.Values.TeacherEmail, "teacherEmail", SchoolRevision.EmailLimit, errors);
+        if (email is not null and not SchoolInput.Omitted && !errors.ContainsKey("teacherEmail") && !LooksLikeEmail(email))
         {
             errors["teacherEmail"] = ["Enter an email address like name@example.com."];
         }
 
-        var values = new SchoolValues(
+        var sent = new SchoolValues(
             grade, teacher,
             ChildEssentialsAccess.Normalize(request.Values.ParentConcerns, "parentConcerns", SchoolRevision.TextLimit, errors),
-            ChildEssentialsAccess.Normalize(request.Values.SchoolName, "schoolName", SchoolRevision.TextLimit, errors),
-            ChildEssentialsAccess.Normalize(request.Values.SchoolAddress, "schoolAddress", SchoolRevision.TextLimit, errors),
+            Optional(request.Values.SchoolName, "schoolName", SchoolRevision.TextLimit, errors),
+            Optional(request.Values.SchoolAddress, "schoolAddress", SchoolRevision.TextLimit, errors),
             email,
-            ChildEssentialsAccess.Normalize(request.Values.TeacherPhone, "teacherPhone", SchoolRevision.PhoneLimit, errors));
+            Optional(request.Values.TeacherPhone, "teacherPhone", SchoolRevision.PhoneLimit, errors));
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -121,6 +134,13 @@ internal static class SchoolEndpoints
                 return TypedResults.Conflict(current);
             }
 
+            var values = sent with
+            {
+                SchoolName = Keep(sent.SchoolName, current.Values.SchoolName),
+                SchoolAddress = Keep(sent.SchoolAddress, current.Values.SchoolAddress),
+                TeacherEmail = Keep(sent.TeacherEmail, current.Values.TeacherEmail),
+                TeacherPhone = Keep(sent.TeacherPhone, current.Values.TeacherPhone),
+            };
             if (values == current.Values)
             {
                 return TypedResults.Ok(current);
@@ -161,6 +181,11 @@ internal static class SchoolEndpoints
         Guid childId, int? beforeRevision, HttpContext http, ITenantContext tenant, FamiliesDbContext db,
         IUserDirectory directory, CancellationToken cancellationToken) =>
         EssentialsHistory.PageAsync(childId, beforeRevision, http, tenant, db, directory, Revisions(db, childId), SchoolValues.From, cancellationToken);
+
+    private static string? Optional(string? value, string field, int limit, Dictionary<string, string[]> errors) =>
+        value == SchoolInput.Omitted ? value : ChildEssentialsAccess.Normalize(value, field, limit, errors);
+
+    private static string? Keep(string? sent, string? saved) => sent == SchoolInput.Omitted ? saved : sent;
 
     /// <summary>One @ with text on both sides and no spaces: enough to catch typos without rejecting real addresses.</summary>
     internal static bool LooksLikeEmail(string value)
