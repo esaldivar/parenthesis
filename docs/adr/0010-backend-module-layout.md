@@ -60,6 +60,6 @@ antiforgery or transaction change, and `dotnet ef migrations has-pending-model-c
 moved DbContext. Progress is tracked in [TODO.md](../../TODO.md).
 
 Known exceptions to the dependency direction, left as they were because removing them changes more than folders:
-`MedicationPdf` renders the `MedicationEntry` API record from `Endpoints/`, and Messaging's `ChatNotifier` and
+`MedicalReferencePdf` (formerly `MedicationPdf`, #659) renders the `MedicationEntry` and `MedicalProvider` API records from `Endpoints/`, and Messaging's `ChatNotifier` and
 `HubOriginCheck` use the hub and message views in `Endpoints/`. A later change can move those shared records into
 `Contracts/` or `Domain/` if a module needs the boundary enforced.

@@ -49,7 +49,7 @@ flowchart LR
   boundary; the API returns 403 to child sessions.
 - **Third parties:** Microsoft Azure (hosting, database, backups, logs). No email (Brevo), Google, analytics or
   other services receive medication data.
-- **PDF:** generated on request, `Cache-Control: no-store`, never written to the server. Filename
+- **PDF:** the combined Medical reference (#659), with each selected child's saved medical providers and medication, generated on request, `Cache-Control: no-store`, never written to the server. Filename
   `medications-YYYY-MM-DD.pdf`, with no child or medication name in it. Once downloaded, the copy on the parent's
   device is outside the app's control.
 - **Update indicators (#128):** `essentials_updates` stores the child, section `medication`, revision and changed

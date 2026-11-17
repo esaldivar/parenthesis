@@ -64,16 +64,8 @@ const MEDICAL_TINT = {
       <p role="alert">{{ 'feature.child.profiles.couldn.t.be.loaded' | tr }}</p>
       <button type="button" (click)="retryLoad()">{{ 'feature.try.again' | tr }}</button>
     } @else if (selectedChild(); as child) {
-      @if (medicalOpen()) {
-        @if (familyId(); as family) {
-          @for (profile of [child]; track profile.id) {
-            <app-medical-providers-section [familyId]="family" [childId]="profile.id" [children]="children()"
-              (childSelected)="selectChild($event)" (back)="closeMedical()" />
-            <app-medication-section [familyId]="family" [childId]="profile.id" [children]="children()" />
-          }
-        }
-      } @else {
-      <div class="layout" [class.focused]="openSection() !== null" [class.plain-open]="plainOpen()">
+      <div class="layout" [class.focused]="openSection() !== null || medicalOpen()" [class.plain-open]="plainOpen()"
+        [class.medical-open]="medicalOpen()">
         <div class="children" role="group" aria-label="{{ 'feature.choose.a.child' | tr }}">
           @for (item of children(); track item.id) {
             <button type="button" [attr.aria-pressed]="child.id === item.id" (click)="selectChild(item.id)">
@@ -83,13 +75,26 @@ const MEDICAL_TINT = {
                 <span class="child-dot" aria-hidden="true"></span>
                 <span class="visually-hidden">{{ 'feature.has.updates' | tr }}</span>
               }
-              <!-- School's and Clothing's approved designs (#655, #660) show the selection by the highlighted row alone. -->
-              @if (child.id === item.id && !plainOpen()) {
+              <!-- School's, Clothing's and Medical's approved designs (#655, #660, #659) show the selection by the highlighted row alone. -->
+              @if (child.id === item.id && !plainOpen() && !medicalOpen()) {
                 <app-icon class="child-check" name="check" [size]="20" />
               }
             </button>
           }
         </div>
+        @if (medicalOpen()) {
+          <!-- Medical (#659, Figma 174:2): a 640px column beside the children, the faint artwork behind it. -->
+          <div class="medical">
+            <img class="medical-art" src="art/child-essentials/medical.webp" alt="" />
+            @if (familyId(); as family) {
+              @for (profile of [child]; track profile.id) {
+                <app-medical-providers-section [familyId]="family" [childId]="profile.id" [children]="children()"
+                  (back)="closeMedical()" />
+                <app-medication-section [familyId]="family" [childId]="profile.id" [children]="children()" />
+              }
+            }
+          </div>
+        } @else {
         <section aria-labelledby="essentials-heading">
           <h2 id="essentials-heading">{{ 'essentials.copy.childHeading' | tr: { name: child.firstName } }}</h2>
           @if (openSection() !== null) {
@@ -154,8 +159,8 @@ const MEDICAL_TINT = {
             }
           }
         </section>
+        }
       </div>
-      }
     } @else {
       <p>{{ 'feature.no.active.child.profiles.yet' | tr }}</p>
     }
@@ -312,9 +317,48 @@ const MEDICAL_TINT = {
     }
     .section-hero--plain h2 { font: 700 1.5rem / 1.875rem var(--font-family-heading); }
     /* Its faint illustration may reach past the column; it never scrolls the page sideways. */
-    .layout.plain-open { overflow-x: clip; overflow-clip-margin: 0.5rem; }
-    /* School's and Clothing's frames (#655, #660) set the chosen child in Inter Semi Bold. */
-    .plain-open .children button[aria-pressed='true'] { font-weight: 600; }
+    .layout.plain-open, .layout.medical-open { overflow-x: clip; overflow-clip-margin: 0.5rem; }
+    /* School's, Clothing's and Medical's frames (#655, #660, #659) set the chosen child in Inter Semi Bold. */
+    .plain-open .children button[aria-pressed='true'],
+    .medical-open .children button[aria-pressed='true'] { font-weight: 600; }
+
+    /* Medical (#659, Figma 174:2): a 640px column with the original artwork large and faint behind it. */
+    .medical { position: relative; display: grid; align-content: start; min-inline-size: 0; max-inline-size: 40rem; }
+    /* Desktop: 760x720, 56px left of the column and 39px below its top (frames 174:3, 174:4). */
+    .medical-art {
+      --medical-art-opacity: 0.22;
+      position: absolute;
+      z-index: -1;
+      inset-block-start: 2.4375rem;
+      inset-inline-start: -3.5rem;
+      inline-size: 47.5rem;
+      max-inline-size: none;
+      block-size: 45rem;
+      object-fit: contain;
+      opacity: var(--medical-art-opacity);
+      filter: grayscale(1);
+      mix-blend-mode: luminosity;
+      pointer-events: none;
+      user-select: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      :host-context(:root:not([data-theme='light'])) .medical-art { --medical-art-opacity: 0.18; }
+    }
+    :host-context([data-theme='dark']) .medical-art { --medical-art-opacity: 0.18; }
+    /* Phones: held in the middle of the screen between the top bar and the navigation as the page scrolls (174:357). */
+    @media (max-width: 47.999rem) {
+      .medical-art {
+        position: fixed;
+        inset-block-start: 50%;
+        inset-inline: 0.625rem;
+        inline-size: auto;
+        block-size: 26.875rem;
+        transform: translateY(-50%);
+      }
+    }
+    @media (forced-colors: active) {
+      .medical-art { display: none; }
+    }
 
     @media (max-width: 47.999rem) {
       .layout.focused { grid-template-columns: minmax(0, 1fr); }

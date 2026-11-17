@@ -284,6 +284,8 @@ internal static class MedicationEndpoints
                 child.FirstName,
                 Json = db.MedicationRevisions.Where(row => row.ChildProfileId == child.Id)
                     .OrderByDescending(row => row.Revision).Select(row => row.EntriesJson).FirstOrDefault(),
+                Providers = db.MedicalProvidersRevisions.Where(row => row.ChildProfileId == child.Id)
+                    .OrderByDescending(row => row.Revision).Select(row => row.ProvidersJson).FirstOrDefault(),
             })
             .ToListAsync(cancellationToken);
         if (children.Count == 0)
@@ -291,11 +293,14 @@ internal static class MedicationEndpoints
             return TypedResults.NotFound();
         }
 
+        // The combined Medical reference (#659): each child's saved providers, then their medication.
         var sections = children.Select(child =>
         {
             var entries = Parse(child.Json);
-            return new MedicationPdfSection(
+            var providers = child.Providers is null ? [] : JsonSerializer.Deserialize<MedicalProvider[]>(child.Providers) ?? [];
+            return new MedicalReferenceSection(
                 child.FirstName,
+                providers,
                 entries.Where(item => !item.Discontinued).ToList(),
                 currentOnly == true ? null : entries.Where(item => item.Discontinued).ToList());
         }).ToList();
@@ -303,7 +308,7 @@ internal static class MedicationEndpoints
         var date = generatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         // The backend runs with invariant globalization; named cultures are unavailable.
         var displayDate = generatedAt.ToString(spanish ? "dd/MM/yyyy" : "yyyy-MM-dd", CultureInfo.InvariantCulture);
-        return TypedResults.File(MedicationPdf.Render(sections, generatedAt, displayDate, spanish),
+        return TypedResults.File(MedicalReferencePdf.Render(sections, generatedAt, displayDate, spanish),
             MediaTypeNames.Application.Pdf, $"medications-{date}.pdf");
     }
 

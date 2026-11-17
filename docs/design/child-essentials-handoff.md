@@ -41,7 +41,7 @@ The affected child’s section keeps its own dot until the parent opens it. Insi
 
 ## PDF downloads
 
-Place **Download medication PDF** and **Download allergy PDF** beside the respective section headings. Use the same picker for one child or all children. Each download is a printable PDF dated when generated, with a separate section for each selected child.
+Place **Download medication PDF** and **Download allergy PDF** beside the respective section headings. Use the same picker for one child or all children. Each download is a printable PDF dated when generated, with a separate section for each selected child. Since #659 the medication download is the combined Medical reference (Figma `221:2`): providers and medication for each child, each child starting a new page.
 
 - **Medication** puts current entries first and discontinued entries below under a distinct heading. Include the recorded dose, schedule, and instructions. Offer **Current medications only**.
 - **Allergies** lists recorded allergies and notes, or the applicable **No known allergies** or **No allergies listed** state. Keep the export focused on allergy information.

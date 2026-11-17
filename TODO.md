@@ -319,6 +319,15 @@ that points back here.
   - [ ] Long values on 320px phones wrap right-aligned under the value column (Figma shows short values only); a
     U.S. phone number can break after its hyphen. Ask the owner whether long values should stack under the label.
   - [ ] The phone topbar wraps the bell and account menu onto a second line at 320px (existing shell, not School).
+- [ ] **Child Essentials Medical redesign and reference PDF (#659, M5, owner-approved Figma page 174:2).** Providers,
+  medication and the combined Medical reference PDF (branch `feat/659-medical-redesign`, November 17, 2026).
+  - [ ] Owner review of the PR, the Figma review notes and the PDF evidence, then a dev-site check in both themes, on a
+    phone, and of a downloaded PDF for one child, all children and current medications only, in English and Spanish.
+  - [ ] Confirm the deviations listed in the PR: Add provider drawn solid (the empty-state frames show it at 76%), the
+    PDF options kept behind "Download medication PDF" (the frames show the panel open), the PDF footer's generated
+    date, discontinued medications shown in the PDF only when there are any, and Noto Sans Bold for the PDF wordmark
+    (the frame's Segoe UI isn't embeddable).
+  - [ ] Medication records have no "Updated" cue: the frames show none. Ask the owner whether they should.
 - [ ] **Child Essentials Clothing & Shoes redesign (#660, M5, owner-approved Figma page 279:2).** Clothing & Shoes
   only; "Fit notes" shows as "Clothing notes" and is still stored as `fitNotes`.
   - [ ] Owner review of the PR and its Figma comparison sheets, then a dev-site check in both themes and on a phone.
@@ -942,13 +951,13 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
 
 - [x] Backend (revisions, one-time confirmation, permanent delete, PDF), Medical screen section, Privacy Notice and
   inventory, breach runbook (branch `feat/127-medication-reference`, November 12, 2026).
-- [ ] CI: first run of `MedicationTests` and the child-session check in `ChildAccessTests` (Docker wasn't available
-  locally, so these integration tests haven't run yet).
+- [x] CI: first run of `MedicationTests` and the child-session check in `ChildAccessTests` (ran locally with Docker,
+  November 17, 2026, #659).
 - [ ] After deploy, test on Development with synthetic data and two parents: first-save confirmation, add, edit,
   discontinue, resume, delete permanently (history and the other parent's banner show no details), concurrent edits,
   PDF for one child, all children and current only, in English and Spanish, phone and desktop, both themes,
   keyboard, screen reader and reduced motion. A kid tablet must never show medication.
-- [ ] A Playwright spec for the Medical screen's medication flow.
+- [x] A Playwright spec for the Medical screen's medication flow (`m5-design-refresh/medical-redesign.spec.ts`, #659).
 - [ ] Lawyer review before production (see the Privacy audit item above).
 
 ## Shared Records submit indicator (#496)
