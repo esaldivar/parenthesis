@@ -155,6 +155,13 @@ for (const theme of ['light', 'dark'] as const) {
       await activate(page.getByRole('button', { name: 'All of Kai’s essentials' }), info);
     }
 
+    // #679: not even for the moment between the tile opening and the page marking the section open.
+    expect(await page.locator('[data-section=school]').evaluate((el: HTMLDetailsElement) => {
+      el.open = true;
+      return getComputedStyle(el).borderTopWidth;
+    })).toBe('0px');
+    await activate(page.getByRole('button', { name: 'All of Kai’s essentials' }), info);
+
     // #680: beside the open section (desktop), choosing Aurora shows Aurora's same section.
     await activate(page.locator('[data-section=caregivers] > summary'), info);
     await expect(page.getByRole('heading', { level: 2, name: 'Shared Caregivers' })).toBeFocused();
