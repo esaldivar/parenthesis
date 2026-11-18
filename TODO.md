@@ -330,6 +330,9 @@ that points back here.
     date, discontinued medications shown in the PDF only when there are any, and Noto Sans Bold for the PDF wordmark
     (the frame's Segoe UI isn't embeddable).
   - [ ] Medication records have no "Updated" cue: the frames show none. Ask the owner whether they should.
+- [ ] **Playwright gate: cached browser system packages (#684).** Confirm on a run with a warm cache that "Install
+  browser system libraries" finishes in about a minute without downloading. The cache is keyed on the Playwright version,
+  so Ubuntu package updates are still downloaded until the next Playwright update.
 - [ ] **Child Essentials section fixes (#679, #680, M5).** No outline around an open section; choosing another child
   keeps the open section for that child.
   - [ ] Owner check on the dev site, desktop and phone, both themes.
