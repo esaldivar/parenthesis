@@ -77,6 +77,8 @@ describe('Child Essentials updates (#128)', () => {
         ],
       })),
       emergencyContacts: vi.fn(async () => ({ version: 0, contacts: [] })),
+      medicalProviders: vi.fn(async () => ({ revision: 0, providers: [] })),
+      medication: vi.fn(async () => ({ revision: 0, acknowledged: true, entries: [] })),
       essentialsUpdates: vi.fn(async () => updates),
       essentialsOpened: vi.fn(async () => banners),
       essentialsSectionOpened: vi.fn(async () => undefined),
@@ -256,6 +258,37 @@ describe('Child Essentials updates (#128)', () => {
     expect(document.activeElement).toBe(auroras.querySelector('.section-hero h2'));
     expect(api.essentialsSectionOpened).toHaveBeenCalledWith('family-1', 'aurora', 'caregivers');
     expect(el.querySelectorAll('details[open]')).toHaveLength(1);
+  });
+
+  it('choosing the child already shown keeps their open section, and on Medical opens the next child’s (#680)', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+    updates = { newUpdates: true, sections: [
+      { childId: 'aurora', section: 'medical', unopened: true, rows: [] },
+      { childId: 'aurora', section: 'medication', unopened: true, rows: [] },
+    ] };
+    const { fixture, el, api } = await render();
+    const choose = async (name: string) => {
+      [...el.querySelectorAll<HTMLButtonElement>('.children button')].find((b) => text(b).includes(name))!.click();
+      await settle(fixture);
+    };
+    const school = el.querySelector<HTMLDetailsElement>('[data-section=school]')!;
+    school.open = true;
+    school.dispatchEvent(new Event('toggle'));
+    await settle(fixture);
+    await choose('Kai');
+    expect(el.querySelector('[data-section=school]')).toBe(school);
+    expect(school.open).toBe(true);
+    expect(el.querySelector('.layout')?.classList).toContain('focused');
+
+    el.querySelector<HTMLButtonElement>('.back')!.click();
+    await settle(fixture);
+    el.querySelector<HTMLButtonElement>('.medical-tile')!.click();
+    await settle(fixture);
+    await choose('Aurora');
+    expect(api.essentialsSectionOpened).toHaveBeenCalledWith('family-1', 'aurora', 'medical');
+    expect(api.essentialsSectionOpened).toHaveBeenCalledWith('family-1', 'aurora', 'medication');
+    expect(el.querySelector('.medical')).not.toBeNull();
+    expect(el.querySelectorAll('details[open]')).toHaveLength(0);
   });
 
   it('a banner leaves by itself after about ten seconds, but not while the parent is reading it', async () => {
