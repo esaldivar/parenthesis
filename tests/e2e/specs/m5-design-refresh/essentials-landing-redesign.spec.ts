@@ -135,3 +135,39 @@ test('Child Essentials landing fits long Spanish labels @m5 @mobile @regression'
   await page.goto('/settings');
   await page.getByLabel('Idioma de la aplicación').selectOption('en');
 });
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`an open section has no outline and stays open for the child chosen next (${theme}) #679 #680 @m5 @mobile @regression`, async ({ page, family }, info) => {
+    await page.emulateMedia({ colorScheme: theme });
+    const { dad, mom, familyId } = family;
+    const aurora = await dad.json<{ changeRequestId: string }>(dad.post(`/api/families/${familyId}/children`, { firstName: 'Aurora' }));
+    await mom.json(mom.post(`/api/families/${familyId}/approvals/${aurora.changeRequestId}/approve`, {}));
+    await signIn(page, dad.email);
+    await page.goto('/child-essentials');
+    await expect(page.getByRole('heading', { level: 2, name: 'Kai’s essentials' })).toBeVisible();
+
+    for (const section of ['school', 'caregivers', 'emergencyContacts']) {
+      await activate(page.locator(`[data-section=${section}] > summary`), info);
+      const open = page.locator(`[data-section=${section}][open]`);
+      await expect(open).toBeVisible();
+      // #679: the category card's outline doesn't wrap the open section.
+      expect(await open.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe('0px');
+      await activate(page.getByRole('button', { name: 'All of Kai’s essentials' }), info);
+    }
+
+    // #680: beside the open section (desktop), choosing Aurora shows Aurora's same section.
+    await activate(page.locator('[data-section=caregivers] > summary'), info);
+    await expect(page.getByRole('heading', { level: 2, name: 'Shared Caregivers' })).toBeFocused();
+    if (!info.project.use.isMobile) {
+      await activate(page.getByRole('button', { name: /^Aurora/ }), info);
+      await expect(page.getByRole('button', { name: /^Aurora/ })).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByRole('heading', { level: 2, name: 'Shared Caregivers' })).toBeFocused();
+      await expect(page.getByRole('button', { name: 'All of Aurora’s essentials' })).toBeVisible();
+      await expect(page.locator('details[open]')).toHaveCount(1);
+      await activate(page.getByRole('button', { name: 'All of Aurora’s essentials' }), info);
+      await expect(page.getByRole('heading', { level: 2, name: 'Aurora’s essentials' })).toBeVisible();
+      await expect(page.locator('[data-section=caregivers] > summary')).toBeFocused();
+    }
+    await fitsPage(page);
+  });
+}
