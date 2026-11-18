@@ -65,6 +65,10 @@
   --color-sheet-text: #1f3833;
   // Emergency Contacts (#665): the soft mint copy dropdown.
   --color-select-soft: rgb(219 236 224 / 90%);
+  // Routines (#666): the inactive folder tabs, the routine subcards, and the chosen tab's solid join.
+  --color-routine-tab: rgb(209 224 209 / 65%);
+  --color-routine-card: rgb(249 248 241 / 58%);
+  --color-routine-panel-solid: color-mix(in srgb, rgb(227 236 223) 62%, var(--color-canvas));
   // Hairlines between grid cells, rows and cards (#209). Calm, but visible on white and ivory.
   --color-divider: #cfd7c9;
   // How much of an item's category text colour tints its edge (#209), as in the approved calendar boards.
@@ -176,6 +180,9 @@
   --color-sheet-field: #2b423b;
   --color-sheet-text: #ebf7f2;
   --color-select-soft: rgb(33 66 55 / 90%);
+  --color-routine-tab: rgb(36 72 58 / 65%);
+  --color-routine-card: rgb(16 37 30 / 50%);
+  --color-routine-panel-solid: color-mix(in srgb, rgb(25 55 45) 72%, var(--color-canvas));
   --color-divider: #24483a;
   --calendar-item-edge-mix: 45%;
   --color-disabled-text: #9db2a6;
