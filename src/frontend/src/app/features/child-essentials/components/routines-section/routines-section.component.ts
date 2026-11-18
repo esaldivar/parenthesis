@@ -58,18 +58,21 @@ class SharedEditForm {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
   template: `
+    <!-- The existing moon and stars artwork, centered and faint behind the panel (#666). Decorative. -->
+    <img class="art" src="art/child-essentials/routines.webp" alt="" />
     <section aria-labelledby="routines-heading">
-      <h3 id="routines-heading">{{ 'feature.routines' | tr }}
-      </h3>
-      <div class="actions" role="group" aria-label="{{ 'feature.routine.views' | tr }}">
-        <button type="button" data-routine-view [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">{{ 'feature.shared' | tr }}</button>
+      <h3 id="routines-heading" class="visually-hidden">{{ 'feature.routines' | tr }}</h3>
+      <!-- Folder tabs on the panel's top edge (Figma 816:3): the chosen one opens straight into the panel. -->
+      <div class="tabs" role="group" aria-label="{{ 'feature.routine.views' | tr }}">
+        <button type="button" class="tab" data-routine-view [attr.aria-pressed]="selectedOwner() === null" (click)="openHousehold(null)">{{ 'feature.shared' | tr }}</button>
         @for (home of households(); track home.ownerId) {
-          <button type="button" data-routine-view [attr.aria-pressed]="selectedOwner() === home.ownerId"
+          <button type="button" class="tab" data-routine-view [attr.aria-pressed]="selectedOwner() === home.ownerId"
             (click)="openHousehold(home)">{{ home.isMine ? ('feature.my.routines' | tr) : ('essentials.copy.ownerRoutines' | tr: { name: home.ownerName }) }}@if (
               !home.isMine && updates.unopened(childId(), 'householdRoutines')
             ) {<span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span><span class="updated-dot tab-dot" aria-hidden="true"></span>}</button>
         }
       </div>
+      <div class="panel">
       <p role="status">{{ householdNotice() }}</p>
       @if (householdError()) {
         <p role="alert">{{ householdError() }}</p>
@@ -105,7 +108,7 @@ class SharedEditForm {
           } @else {
             <ng-container *ngTemplateOutlet="list; context: { $implicit: home.latest.values, editable: 'mine' }" />
             <p role="status">{{ notice() }}</p>
-            <button type="button" data-routine-add (click)="startAdd('mine')">{{ 'essentials.routines.add' | tr }}</button>
+            <div class="add-row"><button type="button" data-routine-add (click)="startAdd('mine')">{{ 'essentials.routines.add' | tr }}</button></div>
           }
         } @else {
           <ng-container *ngTemplateOutlet="list; context: { $implicit: home.latest.values, rowMarks: homeMarks }" />
@@ -124,7 +127,7 @@ class SharedEditForm {
             <button type="button" data-routine-share [disabled]="householdSaving()" (click)="updateHousehold(home, 'stop')">{{ 'feature.stop.sharing' | tr }}<span class="visually-hidden">{{ home.isMine ? ('essentials.routines.ofMine' | tr) : ('essentials.routines.ofOwner' | tr: { name: home.ownerName }) }}</span></button>
           }
         }
-      <p>{{ 'feature.shared.routines.for.both.homes' | tr }}</p>
+      <p class="intro">{{ 'feature.shared.routines.for.both.homes' | tr }}</p>
       @if (error()) {
         <p role="alert">{{ error() }}</p>
       }
@@ -154,12 +157,12 @@ class SharedEditForm {
           <ng-container *ngTemplateOutlet="addRoutine" />
         } @else {
           <ng-container *ngTemplateOutlet="list; context: { $implicit: saved.values, rowMarks: marks, editable: 'shared' }" />
-          <div class="actions">
-            <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="routines-history"
+          <div class="actions end">
+            <button type="button" class="history-button" [attr.aria-expanded]="historyOpen()" aria-controls="routines-history"
               (click)="toggleHistory()"><app-icon name="history" [size]="18" />{{ 'feature.history' | tr }}</button>
           </div>
           <p role="status">{{ notice() }}</p>
-          <button type="button" data-routine-add (click)="startAdd('shared')">{{ 'essentials.routines.add' | tr }}</button>
+          <div class="add-row"><button type="button" data-routine-add (click)="startAdd('shared')">{{ 'essentials.routines.add' | tr }}</button></div>
         }
         <div id="routines-history" [hidden]="!historyOpen() || editing() || adding() !== null">
           <h4>{{ 'feature.routines.history' | tr }}</h4>
@@ -194,6 +197,7 @@ class SharedEditForm {
         <p role="status">{{ 'feature.loading.routines' | tr }}</p>
       }
       }
+      </div>
     </section>
     <ng-template #list let-values let-rowMarks="rowMarks" let-editable="editable">
       @if (values.entries.length) {
@@ -201,7 +205,7 @@ class SharedEditForm {
           @for (entry of values.entries; track entry.id) {
             <li class="row" [class.row--updated]="rowMarks?.updated(entry.id)" (appOnScreen)="rowMarks?.rowOnScreen(entry.id)">
               <div class="routine">
-                <strong>{{ entry.title }}</strong>@if (rowMarks?.updated(entry.id)) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }
+                <strong>{{ entry.title }}</strong>@if (rowMarks?.updated(entry.id)) { <span class="updated">{{ 'feature.updated' | tr }}</span> }
                 @if (entry.details) { <p>{{ entry.details }}</p> }
               </div>
               @if (editable) {
@@ -246,41 +250,7 @@ class SharedEditForm {
       </form>
     </ng-template>
   `,
-  styleUrl: '../../essentials-section.css',
-  styles: `
-    :host {
-      display: block;
-      --essentials-section-bg: var(--color-calendar-family-bg);
-      --essentials-section-fg: var(--color-calendar-family-fg);
-    }
-    /* The routines as a card of rows, like the other sections' saved values. */
-    .routines {
-      display: grid;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      border-radius: 0.875rem;
-      background: var(--color-surface);
-      color: var(--color-text);
-      box-shadow: inset 0 0 0 1px var(--color-outline);
-      overflow: hidden;
-    }
-    .routine { display: grid; gap: 0.25rem; flex: 1 1 12rem; min-inline-size: 0; }
-    .routine p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .edit { display: inline-flex; align-items: center; gap: 0.375rem; min-height: 44px; border-radius: 999px; }
-    .empty { margin: 0; }
-    .child-picker { margin: 0.75rem 0; }
-    .child-picker legend { font-weight: 600; }
-    .child-picker p { margin: 0; }
-    .child-picker > div { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-    .child-picker label {
-      flex: 1 1 8rem;
-      padding: 0 0.75rem;
-      border: 1px solid var(--color-outline);
-      border-radius: 0.75rem;
-    }
-    .child-picker label:has(:checked) { background: var(--color-selected); }
-  `,
+  styleUrl: './routines-section.component.css',
 })
 export class RoutinesSection extends RevisionedSection<RoutinesView, RoutinesValues, RoutinesHistoryPage['entries'][number]> {
   /** The family's children, to add a routine to several at once; this child alone when not given. */

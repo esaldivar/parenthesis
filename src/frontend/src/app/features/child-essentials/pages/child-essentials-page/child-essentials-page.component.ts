@@ -125,7 +125,7 @@ const MEDICAL_TINT = {
                     <div class="tile-content">
                       @if (openSection() === tile.section) {
                         <header class="section-hero" [class.section-hero--plain]="plainSections.has(tile.section)"
-                          [class.section-hero--compact]="tile.section === 'whatHelps'"
+                          [class.section-hero--compact]="tile.section === 'whatHelps' || tile.section === 'routines'"
                           [class.section-hero--caregivers]="tile.section === 'caregivers'"
                           [class.section-hero--tall]="tile.section === 'emergencyContacts'">
                           <h2 id="section-heading" tabindex="-1">{{ tile.name | tr }}</h2>
@@ -419,8 +419,8 @@ export class ChildEssentialsPage {
   }
 
   protected readonly openSection = signal<EssentialsSectionId | null>(null);
-  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660, #662, #667, #664, #665). */
-  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing', 'allergiesFood', 'whatHelps', 'caregivers', 'emergencyContacts']);
+  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660, #662, #667, #664, #665, #666). */
+  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing', 'allergiesFood', 'whatHelps', 'caregivers', 'emergencyContacts', 'routines']);
   protected readonly plainOpen = computed(() => {
     const open = this.openSection();
     return open !== null && this.plainSections.has(open);
