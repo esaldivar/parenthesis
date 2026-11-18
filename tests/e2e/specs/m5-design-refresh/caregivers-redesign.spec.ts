@@ -81,6 +81,6 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(section.locator('.card').filter({ hasText: 'Jordan Lee' })).toHaveCount(0);
     const saved = await dad.json<{ caregivers: { details: { name: string; role: string | null } }[] }>(dad.get(caregivers));
     expect(saved.caregivers.map((item) => item.details.name)).toEqual(['Riley Moreno']);
-    expect(saved.caregivers[0].details.role).toBe('Sitter');
+    expect(saved.caregivers[0]?.details.role).toBe('Sitter');
   });
 }
