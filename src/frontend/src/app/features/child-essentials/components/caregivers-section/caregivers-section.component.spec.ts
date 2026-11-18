@@ -68,6 +68,42 @@ describe('Shared Caregivers sheet', () => {
     });
   });
 
+  it('requires a selected child, then saves only for the newly selected child', async () => {
+    const api = {
+      caregivers: vi.fn(async () => ({ version: 0, caregivers: [] })),
+      saveCaregiver: vi.fn(async () => undefined),
+    };
+    const { fixture, host, button, type } = await setup(api);
+    fixture.componentRef.setInput('children', [{ id: 'kai', firstName: 'Kai' }, { id: 'aurora', firstName: 'Aurora' }]);
+    button('Add caregiver').click();
+    fixture.detectChanges();
+    type('input[formcontrolname="name"]', details.name);
+    type('input[formcontrolname="phone"]', details.phone);
+    const choices = host.querySelectorAll<HTMLInputElement>('.children input');
+    choices[0].click();
+    fixture.detectChanges();
+    button('Save').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(api.saveCaregiver).not.toHaveBeenCalled();
+    expect(host.querySelector('dialog')?.hasAttribute('open')).toBe(true);
+    expect(host.querySelector('.children')?.getAttribute('aria-invalid')).toBe('true');
+    expect(host.querySelector('#caregiver-children-error')?.textContent).toContain('Choose one or more children');
+
+    choices[1].click();
+    fixture.detectChanges();
+    expect(host.querySelector('#caregiver-children-error')).toBeNull();
+    button('Save').click();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(host.querySelector('dialog')?.hasAttribute('open')).toBe(false);
+    });
+    expect(api.saveCaregiver).toHaveBeenCalledExactlyOnceWith('family', 'aurora', null, {
+      version: 0, allowDuplicate: false,
+      details: { ...details, city: '' },
+    });
+  });
+
   it('confirms removal in the sheet and keeps the record until confirmed', async () => {
     const list: CaregiverList = { version: 5, caregivers: [{ id: 'cg-1', details, myRating: null, averageRating: null, addedBy: 'Parent' }] };
     const api = { caregivers: vi.fn(async () => list), removeCaregiver: vi.fn(async () => undefined) };

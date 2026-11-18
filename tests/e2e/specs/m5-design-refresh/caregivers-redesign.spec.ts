@@ -27,6 +27,9 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(card.locator('.phone')).toHaveText('512-555-0101');
     await expect(card.getByRole('link', { name: 'Call Riley Moreno' })).toHaveAttribute('href', 'tel:5125550101');
     await expect(card.locator('.call app-icon')).toBeVisible();
+    for (const name of ['Edit', 'Remove', 'Rate caregiver']) {
+      await expect(card.getByRole('button', { name, exact: true })).toHaveCSS('border-radius', '12px');
+    }
     await expect(page.locator('.children app-icon')).toHaveCount(0);
     await fitsPage(page);
     await evidence(page, info, `caregivers-main-${theme}`);

@@ -113,11 +113,15 @@ import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../..
               <label class="field"><span class="field-label">{{ 'essentials.caregiver.rate' | tr }}</span>
                 <input type="number" min="0" max="10000" step="0.01" formControlName="hourlyRate" [placeholder]="'essentials.caregiver.ratePlaceholder' | tr" /></label>
               @if (!editId() && children().length > 1) {
-                <fieldset class="field children">
+                <fieldset class="field children" [attr.aria-invalid]="showInvalid() && !chosen().length"
+                  [attr.aria-describedby]="showInvalid() && !chosen().length ? 'caregiver-children-error' : null">
                   <legend class="field-label">{{ 'essentials.caregiver.children' | tr }}</legend>
                   @for (child of children(); track child.id) {
                     <label class="check"><input type="checkbox" [checked]="chosen().includes(child.id)" (change)="toggleChild(child.id)" />
                       <span>{{ child.firstName }}</span></label>
+                  }
+                  @if (showInvalid() && !chosen().length) {
+                    <p id="caregiver-children-error" role="alert" class="sheet-text">{{ 'feature.choose.one.or.more.children' | tr }}</p>
                   }
                 </fieldset>
               }
@@ -228,7 +232,7 @@ export class CaregiversSection {
   protected async save(allowDuplicate = false): Promise<void> {
     const current = this.list();
     if (!current || this.busy()) return;
-    if (this.form.invalid) {
+    if (this.form.invalid || (!this.editId() && !this.chosen().length)) {
       this.showInvalid.set(true);
       return;
     }
