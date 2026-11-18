@@ -113,6 +113,8 @@ jobs:
       # November 18, 2026, #684). The downloaded packages are cached like the browser and put back where apt looks for
       # them, so apt installs them without downloading. apt still reads the mirror's package lists and downloads only
       # packages newer than the cached ones; nothing about what is installed or tested changes.
+      # A PR's run can only read its own caches and its base branch's, so playwright-cache.yml saves both on the branches
+      # PRs target after each push; a PR's first run restores them from there.
       - name: Cache the browser system packages
         id: deps-cache
         uses: actions/cache@v6
