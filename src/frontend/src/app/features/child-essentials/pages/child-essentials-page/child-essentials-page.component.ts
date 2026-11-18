@@ -125,7 +125,8 @@ const MEDICAL_TINT = {
                     <div class="tile-content">
                       @if (openSection() === tile.section) {
                         <header class="section-hero" [class.section-hero--plain]="plainSections.has(tile.section)"
-                          [class.section-hero--compact]="tile.section === 'whatHelps'">
+                          [class.section-hero--compact]="tile.section === 'whatHelps'"
+                          [class.section-hero--caregivers]="tile.section === 'caregivers'">
                           <h2 id="section-heading" tabindex="-1">{{ tile.name | tr }}</h2>
                           <!-- Redesigned categories put their illustration behind the content instead (#655, #660, #662). -->
                           @if (!plainSections.has(tile.section)) {
@@ -320,6 +321,9 @@ const MEDICAL_TINT = {
     /* What Helps (#667, Figma 878:194): Inter Semi Bold in a 64px (phone) / 72px box with 16px side padding. */
     .section-hero.section-hero--compact { padding-inline: 1rem; }
     .section-hero--compact h2 { font: 600 1.5rem / 1.875rem var(--font-family-body); }
+    /* Shared Caregivers (#664, Figma 626:194): Nunito Sans 24/32 in its teal, in a 120px header with 16px padding. */
+    .section-hero.section-hero--caregivers { min-block-size: 6rem; padding-inline: 1rem; }
+    .section-hero--caregivers h2 { color: var(--color-caregivers-title); font: 700 1.5rem / 2rem var(--font-family-heading); }
     /* Its faint illustration may reach past the column; it never scrolls the page sideways. */
     .layout.plain-open, .layout.medical-open { overflow-x: clip; overflow-clip-margin: 0.5rem; }
     /* School's, Clothing's and Medical's frames (#655, #660, #659) set the chosen child in Inter Semi Bold. */
@@ -378,6 +382,7 @@ const MEDICAL_TINT = {
       .section-hero.section-hero--plain { min-block-size: 4rem; }
       .section-hero--plain h2 { font-size: 2rem; line-height: 2.5rem; }
       .section-hero.section-hero--compact { min-block-size: 4.5rem; }
+      .section-hero.section-hero--caregivers { min-block-size: 7.5rem; }
       .section-hero--compact h2 { font-size: 1.5rem; line-height: 2.5rem; }
       .section-hero img { inline-size: min(32%, 11rem); max-block-size: 6rem; object-fit: contain; }
     }
@@ -411,8 +416,8 @@ export class ChildEssentialsPage {
   }
 
   protected readonly openSection = signal<EssentialsSectionId | null>(null);
-  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660, #662, #667). */
-  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing', 'allergiesFood', 'whatHelps']);
+  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660, #662, #667, #664). */
+  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing', 'allergiesFood', 'whatHelps', 'caregivers']);
   protected readonly plainOpen = computed(() => {
     const open = this.openSection();
     return open !== null && this.plainSections.has(open);

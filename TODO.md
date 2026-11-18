@@ -345,6 +345,12 @@ that points back here.
 - [ ] **Child Essentials What Helps redesign (#667, M5, owner-approved Figma page 878:194).** What Helps only; the
   cleaned bunny is `art/child-essentials/what-helps-cutout.webp` (the tile keeps `what-helps.webp`).
   - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
+- [ ] **Child Essentials Shared Caregivers redesign (#664, M5, owner-approved Figma page 626:194).** Role, Notes and
+  the Children choice added (owner decision, November 18, 2026).
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
+  - [ ] Owner decision: the frames show "Archive caregiver … can be restored later", but caregivers are removed
+    permanently today. Decide whether to build a recoverable archive (with restore) or keep permanent removal.
+  - [ ] School pickup isn't in the approved sheet; it stays as a checkbox so saved values aren't lost. Confirm with the owner.
 - [ ] **One shared photo per child for both parents (#653, owner decision November 16, 2026).** Either parent sets it;
   the picker shows the child's own photo, else the shared one.
   - [ ] Owner retest on the dev site: Dad, signed in on the shared device, sees the photo Mom chose for each child.

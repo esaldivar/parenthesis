@@ -14,3 +14,8 @@ illustration exports, at about 400px wide, when they're available (tracked in TO
 `878:194`, layer "Centered original What Helps artwork behind translucent content"), downloaded from Figma on November
 18, 2026 and saved as WebP with its transparency intact: the gaps between the ears, arms, body and legs are fully
 transparent. It sits behind the What Helps section; the tile keeps `what-helps.webp`.
+
+`caregivers-landscape.webp` and `caregivers-portrait.webp` (#664) are the exact uploaded artworks embedded in the
+approved Shared Caregivers Figma frames (page `626:194`): the full landscape behind the desktop content and the
+caregiver reading with two children behind the mobile content. Downloaded from Figma on November 18, 2026 and saved as
+WebP without editing; the app mirrors the portrait horizontally, as the frames do.
