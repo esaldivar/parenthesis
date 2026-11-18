@@ -330,6 +330,9 @@ that points back here.
     date, discontinued medications shown in the PDF only when there are any, and Noto Sans Bold for the PDF wordmark
     (the frame's Segoe UI isn't embeddable).
   - [ ] Medication records have no "Updated" cue: the frames show none. Ask the owner whether they should.
+- [ ] **VoiceOver: calendar save toast announced after focus settles (#650).** On the owner's Mac
+  (`docs/runbooks/voiceover-macos.md`), run `calendar-voiceover` and `dates-voiceover` several times. The transcripts
+  must never fall back to reading the toast with the VoiceOver cursor. Then make `toastHeardOrRead` a hard assertion.
 - [ ] **Child Essentials section fixes (#679, #680, M5).** No outline around an open section; choosing another child
   keeps the open section for that child.
   - [ ] Owner check on the dev site, desktop and phone, both themes.
