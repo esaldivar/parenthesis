@@ -19,3 +19,7 @@ transparent. It sits behind the What Helps section; the tile keeps `what-helps.w
 approved Shared Caregivers Figma frames (page `626:194`): the full landscape behind the desktop content and the
 caregiver reading with two children behind the mobile content. Downloaded from Figma on November 18, 2026 and saved as
 WebP without editing; the app mirrors the portrait horizontally, as the frames do.
+
+`emergency-telephone.webp` (#665) is the emergency telephone artwork embedded in the approved Emergency Contacts Figma
+frames (page `715:194`, layer "Centered original emergency artwork behind translucent content"), downloaded from Figma
+on November 18, 2026 at its embedded size (224x145) and saved losslessly as WebP.

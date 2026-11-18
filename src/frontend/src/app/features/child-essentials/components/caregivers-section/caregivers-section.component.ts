@@ -7,6 +7,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, injec
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OnScreen, sectionUpdates } from '../../essentials-updates';
 import { Icon } from '../../../../shared/components/icon/icon';
+import { dashedPhone } from '../../phone-display';
 import { Api, Caregiver, CaregiverDetails, CaregiverList, Child } from '../../../../core/api/api';
 
 @Component({
@@ -372,12 +373,7 @@ export class CaregiversSection {
   }
 
   protected displayPhone(phone: string): string {
-    const value = phone.trim();
-    if (!/^(?:\+1|1)?[\d(). -]+$/.test(value)) return phone;
-    const digits = value.replace(/\D/g, '');
-    if (value.startsWith('+') && digits.length !== 11) return phone;
-    const usNumber = /^(?:1)?(\d{3})(\d{3})(\d{4})$/.exec(digits);
-    return usNumber ? usNumber.slice(1).join('-') : phone;
+    return dashedPhone(phone);
   }
 
   protected phoneLink(phone: string): string {
