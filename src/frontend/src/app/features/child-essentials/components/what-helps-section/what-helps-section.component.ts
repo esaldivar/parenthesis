@@ -105,13 +105,13 @@ const LIMIT = 1000;
     </section>
     <!-- A field: label, translucent textarea, and the over-limit message with its count (frame 882:2457). -->
     <ng-template #limit let-key let-label="label">
-      <label class="field" [formGroup]="form">
-        <span class="field-label">{{ label | tr }}</span>
+      <div class="field" [formGroup]="form">
+        <label class="field-label" [for]="key + '-field'">{{ label | tr }}</label>
         @if (key === 'comfortItems') {
-          <textarea formControlName="comfortItems" [attr.aria-invalid]="tooLong(key)"
+          <textarea id="comfortItems-field" formControlName="comfortItems" [attr.aria-invalid]="tooLong(key)"
             [attr.aria-describedby]="tooLong(key) ? key + '-limit' : null"></textarea>
         } @else {
-          <textarea formControlName="calmingStrategies" [attr.aria-invalid]="tooLong(key)"
+          <textarea id="calmingStrategies-field" formControlName="calmingStrategies" [attr.aria-invalid]="tooLong(key)"
             [attr.aria-describedby]="tooLong(key) ? key + '-limit' : null"></textarea>
         }
         @if (tooLong(key)) {
@@ -120,7 +120,7 @@ const LIMIT = 1000;
             <span>{{ 'essentials.whatHelps.count' | tr: { count: count(key) } }}</span>
           </span>
         }
-      </label>
+      </div>
     </ng-template>
     <!-- Latest, previous or saved values in a compact inset: "Label: value" lines (frames 882:1061, 882:3245). -->
     <ng-template #inset let-values let-title="title">
