@@ -1,119 +1,174 @@
 import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../../../core/i18n/translations';
+import { TranslatePipe, TranslationKey } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, effect, inject, Injector, viewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Icon } from '../../../../shared/components/icon/icon';
 import { OnScreen, sectionUpdates } from '../../essentials-updates';
 import { RevisionedSection } from '../../revisioned-section';
+import { LocaleService } from '../../../../core/i18n/locale.service';
 import { WhatHelpsHistoryPage, WhatHelpsView } from '../../../../core/api/api';
+
+type WhatHelpsField = 'comfortItems' | 'calmingStrategies';
+
+/** The two reference fields in the approved order (#667). */
+const FIELDS: readonly { readonly key: WhatHelpsField; readonly label: TranslationKey }[] = [
+  { key: 'comfortItems', label: 'feature.comfort.items' },
+  { key: 'calmingStrategies', label: 'feature.calming.strategies' },
+];
+const LIMIT = 1000;
 
 @Component({
   selector: 'app-what-helps-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
+  imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
+    <!-- The approved cleaned bunny, centered and faint behind the translucent panels (#667). Decorative. -->
+    <img class="art" src="art/child-essentials/what-helps-cutout.webp" alt="" />
     <section aria-labelledby="what-helps-heading">
-      <h3 id="what-helps-heading">{{ 'feature.what.helps' | tr }}
-      </h3>
-      @if (error()) {
-        <p role="alert">{{ error() }}</p>
-      }
+      <h3 id="what-helps-heading" class="visually-hidden">{{ 'feature.what.helps' | tr }}</h3>
       @if (current(); as saved) {
         @if (editing()) {
-          <form [formGroup]="form" (ngSubmit)="save()">
+          <form class="state" [formGroup]="form" (ngSubmit)="save()" aria-labelledby="what-helps-form-heading">
+            <h4 id="what-helps-form-heading" class="state-heading">{{ 'feature.comfort.items.and.calming.strategies' | tr }}</h4>
             @if (conflict(); as latest) {
-              <div class="latest">
-                <p role="alert">{{ 'feature.your.co.parent.saved.changes.first.review' | tr }}</p>
-                <h4>{{ 'feature.latest.saved.values' | tr }}</h4>
-                <ng-container *ngTemplateOutlet="values; context: { $implicit: latest.values }" />
-              </div>
+              <p role="alert" class="message">{{ 'feature.your.co.parent.saved.changes.first.review' | tr }}</p>
+              <ng-container *ngTemplateOutlet="inset; context: { $implicit: latest.values, title: 'feature.latest.saved.values' }" />
+            } @else if (error()) {
+              <p role="alert" class="message">{{ error() }}</p>
             }
             <fieldset [disabled]="saving()">
-              <legend>{{ 'feature.comfort.items.and.calming.strategies' | tr }}</legend>
-              <label>{{ 'feature.comfort.items' | tr }} <textarea formControlName="comfortItems" maxlength="1000"></textarea></label>
-              <label>{{ 'feature.calming.strategies.optional' | tr }} <textarea formControlName="calmingStrategies" maxlength="1000"></textarea></label>
+              <legend class="visually-hidden">{{ 'feature.comfort.items.and.calming.strategies' | tr }}</legend>
+              <ng-container *ngTemplateOutlet="limit; context: { $implicit: 'comfortItems', label: 'feature.comfort.items' }" />
+              <ng-container *ngTemplateOutlet="limit; context: { $implicit: 'calmingStrategies', label: 'feature.calming.strategies.optional' }" />
               <div class="actions">
-                <button type="submit" [disabled]="form.invalid">
-                  {{ saving() ? ('feature.saving' | tr) : conflict() ? ('feature.save.my.draft' | tr) : ('feature.save' | tr) }}
+                <button type="submit" class="action primary" [class.wide]="!!conflict()" [disabled]="form.invalid">
+                  {{ saving() ? ('feature.saving' | tr) : conflict() ? ('feature.save.my.draft' | tr) : error() ? ('feature.retry' | tr) : ('feature.save' | tr) }}
                 </button>
-                <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
+                <button type="button" class="action secondary" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>
             </fieldset>
           </form>
+        } @else if (historyOpen()) {
+          <div id="what-helps-history" class="state">
+            <h4 class="state-heading">{{ 'feature.what.helps.history' | tr }}</h4>
+            @if (historyError()) {
+              <p role="alert" class="muted">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
+              <div class="actions">
+                <button type="button" class="action primary" (click)="loadHistory(nextRevision())">{{ 'feature.retry' | tr }}</button>
+              </div>
+            } @else if (historyLoading() && !history().length) {
+              <p role="status" class="muted">{{ 'feature.loading.history' | tr }}</p>
+            } @else if (!history().length) {
+              <p class="muted">{{ 'feature.no.changes.yet' | tr }}</p>
+            }
+            @for (entry of history(); track entry.revision) {
+              <article class="change">
+                <h5 class="muted">{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | appDate: 'medium' }}</time></h5>
+                <ng-container *ngTemplateOutlet="inset; context: { $implicit: entry.previous, title: 'feature.previous.values' }" />
+                <ng-container *ngTemplateOutlet="inset; context: { $implicit: entry.current, title: 'feature.saved.values' }" />
+              </article>
+            }
+            <div class="actions">
+              @if (nextRevision() !== null && !historyLoading() && !historyError()) {
+                <button type="button" class="action secondary" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
+              }
+              <button #closeHistory type="button" class="action secondary wide" aria-controls="what-helps-history"
+                [attr.aria-expanded]="true" (click)="hideHistory()">{{ 'essentials.history.close' | tr }}</button>
+            </div>
+          </div>
         } @else {
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
+          <dl class="panel">
+            @for (field of fields; track field.key) {
+              <div class="row" [class.row--updated]="marks.updated(field.key)" (appOnScreen)="marks.rowOnScreen(field.key)">
+                <dt><span class="label">{{ field.label | tr }}</span>
+                  @if (marks.updated(field.key)) { <span class="updated">{{ 'feature.updated' | tr }}</span> }
+                </dt>
+                <dd>{{ saved.values[field.key] ?? ('essentials.copy.notSet' | tr) }}</dd>
+              </div>
+            }
+          </dl>
           <div class="actions">
-            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ 'feature.what.helps' | tr }}</span></button>
-            <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="what-helps-history"
-              (click)="toggleHistory()"><app-icon name="history" [size]="18" />{{ 'feature.history' | tr }}</button>
+            <button type="button" class="action primary" (click)="edit(saved)">{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ 'feature.what.helps' | tr }}</span></button>
+            <button #openHistory type="button" class="action secondary outlined wide" [attr.aria-expanded]="false" aria-controls="what-helps-history"
+              (click)="toggleHistory()">{{ 'feature.history' | tr }}</button>
           </div>
           <p role="status">{{ notice() }}</p>
         }
-        <div id="what-helps-history" [hidden]="!historyOpen() || editing()">
-          <h4>{{ 'feature.what.helps.history' | tr }}</h4>
-          @if (historyError()) {
-            <p role="alert">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
-            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
-          } @else if (historyLoading()) {
-            <p role="status">{{ 'feature.loading.history' | tr }}</p>
-          } @else if (!history().length) {
-            <p>{{ 'feature.no.changes.yet' | tr }}</p>
-          }
-          @for (entry of history(); track entry.revision) {
-            <article>
-              <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | appDate: 'medium' }}</time></h5>
-              <div class="comparison">
-                <div><strong>{{ 'feature.previous.values' | tr }}</strong>
-                  <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.previous }" />
-                </div>
-                <div><strong>{{ 'feature.saved.values' | tr }}</strong>
-                  <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.current }" />
-                </div>
-              </div>
-            </article>
-          }
-          @if (nextRevision() !== null && !historyLoading() && !historyError()) {
-            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
-          }
-        </div>
       } @else if (error()) {
-        <button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
+        <div class="state">
+          <p role="alert" class="muted body">{{ error() }}</p>
+          <div class="actions"><button type="button" class="action primary" (click)="load()">{{ 'feature.retry' | tr }}</button></div>
+        </div>
       } @else {
-        <p role="status">{{ 'feature.loading.what.helps' | tr }}</p>
+        <div class="state"><p role="status" class="muted body">{{ 'feature.loading.what.helps' | tr }}</p></div>
       }
     </section>
-    <ng-template #values let-entry let-current="current">
-      <dl>
-        <div class="row" [class.row--updated]="current && marks.updated('comfortItems')" (appOnScreen)="current && marks.rowOnScreen('comfortItems')">
-          <dt>{{ 'feature.comfort.items' | tr }}@if (current && marks.updated('comfortItems')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.comfortItems ?? ('essentials.copy.notSet' | tr) }}</dd>
-        </div>
-        <div class="row" [class.row--updated]="current && marks.updated('calmingStrategies')" (appOnScreen)="current && marks.rowOnScreen('calmingStrategies')">
-          <dt>{{ 'feature.calming.strategies' | tr }}@if (current && marks.updated('calmingStrategies')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.calmingStrategies ?? ('essentials.copy.notSet' | tr) }}</dd>
-        </div>
-      </dl>
+    <!-- A field: label, translucent textarea, and the over-limit message with its count (frame 882:2457). -->
+    <ng-template #limit let-key let-label="label">
+      <label class="field" [formGroup]="form">
+        <span class="field-label">{{ label | tr }}</span>
+        @if (key === 'comfortItems') {
+          <textarea formControlName="comfortItems" [attr.aria-invalid]="tooLong(key)"
+            [attr.aria-describedby]="tooLong(key) ? key + '-limit' : null"></textarea>
+        } @else {
+          <textarea formControlName="calmingStrategies" [attr.aria-invalid]="tooLong(key)"
+            [attr.aria-describedby]="tooLong(key) ? key + '-limit' : null"></textarea>
+        }
+        @if (tooLong(key)) {
+          <span [id]="key + '-limit'" class="invalid">
+            <span>{{ 'essentials.whatHelps.tooLong' | tr }}</span>
+            <span>{{ 'essentials.whatHelps.count' | tr: { count: count(key) } }}</span>
+          </span>
+        }
+      </label>
+    </ng-template>
+    <!-- Latest, previous or saved values in a compact inset: "Label: value" lines (frames 882:1061, 882:3245). -->
+    <ng-template #inset let-values let-title="title">
+      <div class="inset">
+        <h6>{{ title | tr }}</h6>
+        @for (field of fields; track field.key) {
+          <p>{{ field.label | tr }}: {{ values[field.key] ?? ('essentials.copy.notSet' | tr) }}</p>
+        }
+      </div>
     </ng-template>
   `,
-  styleUrl: '../../essentials-section.css',
-  styles: `
-    :host {
-      display: block;
-      --essentials-section-bg: var(--color-calendar-family-bg);
-      --essentials-section-fg: var(--color-calendar-family-fg);
-    }
-  `,
+  styleUrl: './what-helps-section.component.css',
 })
 export class WhatHelpsSection extends RevisionedSection<WhatHelpsView, WhatHelpsView['values'], WhatHelpsHistoryPage['entries'][number]> {
+  protected readonly fields = FIELDS;
   protected readonly marks = sectionUpdates('whatHelps', this.childId);
+  private readonly injector = inject(Injector);
+  private readonly locale = inject(LocaleService);
+  private readonly openHistory = viewChild<ElementRef<HTMLButtonElement>>('openHistory');
   protected readonly savedNoticeKey = 'essentials.whatHelps.saved';
   protected readonly form = new FormGroup({
-    comfortItems: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
-    calmingStrategies: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
+    comfortItems: new FormControl('', { nonNullable: true, validators: Validators.maxLength(LIMIT) }),
+    calmingStrategies: new FormControl('', { nonNullable: true, validators: Validators.maxLength(LIMIT) }),
   });
 
   constructor() {
     super();
     effect(() => { void this.load(); });
+  }
+
+  /** Over the 1,000-character limit: the field shows the message and its count, and Save stays off (frame 882:2457). */
+  protected tooLong(field: WhatHelpsField): boolean {
+    return this.length(field) > LIMIT;
+  }
+
+  protected length(field: WhatHelpsField): number {
+    return this.form.controls[field].value.length;
+  }
+
+  /** The field's length in the reader's number format, for the "1,012 / 1,000 characters" counter. */
+  protected count(field: WhatHelpsField): string {
+    return new Intl.NumberFormat(this.locale.locale()).format(this.length(field));
+  }
+
+  /** Close history and put focus back on the History button it replaced. */
+  protected hideHistory(): void {
+    this.toggleHistory();
+    afterNextRender(() => this.openHistory()?.nativeElement.focus(), { injector: this.injector });
   }
 
   protected async load(): Promise<void> {

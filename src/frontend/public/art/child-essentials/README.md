@@ -9,3 +9,8 @@ illustration exports, at about 400px wide, when they're available (tracked in TO
 `routines`, `clothing`, `what-helps`, `caregivers`, `emergency` (`.webp`, transparent).
 
 `medical.webp` (#501) uses the approved standalone watercolor bag and stethoscope from the Medical mockup. It was cropped to its transparent bounds and exported for the section tile and header.
+
+`what-helps-cutout.webp` (#667) is the cleaned bunny raster embedded in the approved What Helps Figma frames (page
+`878:194`, layer "Centered original What Helps artwork behind translucent content"), downloaded from Figma on November
+18, 2026 and saved as WebP with its transparency intact: the gaps between the ears, arms, body and legs are fully
+transparent. It sits behind the What Helps section; the tile keeps `what-helps.webp`.

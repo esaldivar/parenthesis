@@ -43,6 +43,18 @@
   --color-soft-action: rgb(209 225 224 / 76%);
   // Solid soft button fill (Figma Allergies & Food "Download allergy PDF", #662).
   --color-soft-button: #d1e1e0;
+  // State panels, fields and secondary actions in the What Helps (#667) and Routines (#666) frames.
+  --color-state-panel: rgb(227 236 223 / 62%);
+  --color-state-panel-border: rgb(92 125 105 / 35%);
+  --color-state-field: rgb(219 236 224 / 70%);
+  --color-state-field-border: rgb(92 125 105 / 70%);
+  --color-state-inset: rgb(219 236 224 / 60%);
+  --color-state-secondary: #d4e8db;
+  --color-state-secondary-border: rgb(92 125 105 / 70%);
+  --color-state-muted: #52695c;
+  --color-state-invalid: rgb(166 64 51 / 70%);
+  --color-state-invalid-text: #8c2e21;
+  --color-state-art-opacity: 0.17;
   // Hairlines between grid cells, rows and cards (#209). Calm, but visible on white and ivory.
   --color-divider: #cfd7c9;
   // How much of an item's category text colour tints its edge (#209), as in the approved calendar boards.
@@ -135,6 +147,17 @@
   --color-selected: #24483a;
   --color-soft-action: rgb(49 86 75 / 76%);
   --color-soft-button: #31564b;
+  --color-state-panel: rgb(25 55 45 / 72%);
+  --color-state-panel-border: rgb(145 184 163 / 35%);
+  --color-state-field: rgb(33 66 55 / 70%);
+  --color-state-field-border: rgb(145 184 163 / 70%);
+  --color-state-inset: rgb(33 66 55 / 60%);
+  --color-state-secondary: #30574a;
+  --color-state-secondary-border: rgb(145 184 163 / 70%);
+  --color-state-muted: #b0ccbd;
+  --color-state-invalid: rgb(255 153 128 / 70%);
+  --color-state-invalid-text: #ffb299;
+  --color-state-art-opacity: 0.2;
   --color-divider: #24483a;
   --calendar-item-edge-mix: 45%;
   --color-disabled-text: #9db2a6;
