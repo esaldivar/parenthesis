@@ -330,6 +330,9 @@ that points back here.
     date, discontinued medications shown in the PDF only when there are any, and Noto Sans Bold for the PDF wordmark
     (the frame's Segoe UI isn't embeddable).
   - [ ] Medication records have no "Updated" cue: the frames show none. Ask the owner whether they should.
+- [ ] **Child Essentials section fixes (#679, #680, M5).** No outline around an open section; choosing another child
+  keeps the open section for that child.
+  - [ ] Owner check on the dev site, desktop and phone, both themes.
 - [ ] **Child Essentials warm landing page (#669, M5, owner-approved Figma 1321:2, 1321:56, 1321:110, 1321:168).**
   Landing only; the cleaned category art is `art/child-essentials/tiles/`.
   - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
