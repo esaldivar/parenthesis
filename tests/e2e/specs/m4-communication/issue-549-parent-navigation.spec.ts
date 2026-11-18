@@ -32,6 +32,35 @@ for (const language of ['en', 'es-419'] as const) {
         }
         await fitsPage(page);
 
+        const decor = page.locator('.sidebar__decor');
+        for (const theme of ['light', 'dark'] as const) for (const height of [900, 768, 600, 480]) {
+          await page.emulateMedia({ colorScheme: theme });
+          await page.setViewportSize({ width: 1280, height });
+          await expect(decor.locator('app-leaves')).toBeInViewport();
+          await expect(decor.locator('.tagline')).toBeInViewport();
+          await expect(page.locator('.sidebar')).not.toHaveCSS('overflow-y', 'auto');
+          const shell = await page.locator('.sidebar').boundingBox();
+          expect(shell!.y).toBe(0);
+          expect(shell!.height).toBe(height);
+          // Force long content without depending on a particular feature's data volume (#676).
+          await page.locator('main').evaluate(main => {
+            const filler = document.createElement('div');
+            filler.dataset['sidebarScrollFixture'] = '';
+            filler.style.height = '2000px';
+            main.append(filler);
+            main.scrollTop = 800;
+          });
+          expect(await page.locator('main').evaluate(main => main.scrollTop)).toBeGreaterThan(0);
+          expect(await page.evaluate(() => window.scrollY)).toBe(0);
+          expect((await page.locator('.sidebar').boundingBox())!.y).toBe(0);
+          await expect(links.last()).toBeInViewport();
+          await page.locator('main').evaluate(main => {
+            main.querySelector('[data-sidebar-scroll-fixture]')!.remove();
+            main.scrollTop = 0;
+          });
+        }
+        await page.setViewportSize({ width: 1280, height: 900 });
+
         for (const path of order) {
           const link = sidebar.locator(`a[href="${path}"]`);
           await link.click();

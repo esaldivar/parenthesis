@@ -9,6 +9,8 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Stationary desktop sidebar and leaf footer (#676).** Restore the full-height sidebar and visible leaf/tagline,
+  with only the main desktop pane scrolling. Verify owner acceptance after the fix reaches the development site.
 - [ ] **Backend module layout (#570).** Move map and conventions in
   [ADR-0010](docs/adr/0010-backend-module-layout.md).
   - [x] Approvals DbContext pilot (#572).
@@ -319,6 +321,52 @@ that points back here.
   - [ ] Long values on 320px phones wrap right-aligned under the value column (Figma shows short values only); a
     U.S. phone number can break after its hyphen. Ask the owner whether long values should stack under the label.
   - [ ] The phone topbar wraps the bell and account menu onto a second line at 320px (existing shell, not School).
+- [ ] **Child Essentials Medical redesign and reference PDF (#659, M5, owner-approved Figma page 174:2).** Providers,
+  medication and the combined Medical reference PDF (branch `feat/659-medical-redesign`, November 17, 2026).
+  - [ ] Owner review of the PR, the Figma review notes and the PDF evidence, then a dev-site check in both themes, on a
+    phone, and of a downloaded PDF for one child, all children and current medications only, in English and Spanish.
+  - [ ] Confirm the deviations listed in the PR: Add provider drawn solid (the empty-state frames show it at 76%), the
+    PDF options kept behind "Download medication PDF" (the frames show the panel open), the PDF footer's generated
+    date, discontinued medications shown in the PDF only when there are any, and Noto Sans Bold for the PDF wordmark
+    (the frame's Segoe UI isn't embeddable).
+  - [ ] Medication records have no "Updated" cue: the frames show none. Ask the owner whether they should.
+- [ ] **Child Essentials warm landing page (#669, M5, owner-approved Figma 1321:2, 1321:56, 1321:110, 1321:168).**
+  Landing only; the cleaned category art is `art/child-essentials/tiles/`.
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
+  - [ ] The frames set the card text in Segoe UI; the app uses the system font stack, which is Segoe UI on Windows and
+    the platform's own UI font elsewhere. Confirm, or choose an embedded font.
+- [ ] **Child Essentials Clothing & Shoes redesign (#660, M5, owner-approved Figma page 279:2).** Clothing & Shoes
+  only; "Fit notes" shows as "Clothing notes" and is still stored as `fitNotes`.
+  - [ ] Owner review of the PR and its Figma comparison sheets, then a dev-site check in both themes and on a phone.
+  - [x] The Clothing & Shoes tile reads "Sizes and clothing notes" (owner decision in #669; done in its PR).
+  - [ ] School keeps its own 76% panels and outlined Save (its approved frames). If School should match Clothing's
+    45% panels, translucent fields and filled Save, move it onto the new `--color-panel-translucent` and
+    `--color-field-translucent` tokens.
+- [ ] **Child Essentials Allergies & Food redesign and branded allergy PDF (#662, M5, owner-approved Figma page
+  331:2 and print frame 332:2).** Allergies & Food only; allergy notes only in the PDF.
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone, and a
+    printed (grayscale) copy of the PDF.
+  - [ ] The frames draw "Download allergy PDF" in Segoe UI (the old website baseline); the app uses Inter like every
+    other control. Confirm with the owner.
+- [ ] **Child Essentials What Helps redesign (#667, M5, owner-approved Figma page 878:194).** What Helps only; the
+  cleaned bunny is `art/child-essentials/what-helps-cutout.webp` (the tile keeps `what-helps.webp`).
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
+- [ ] **Child Essentials Shared Caregivers redesign (#664, M5, owner-approved Figma page 626:194).** Role, Notes and
+  the Children choice added (owner decision, November 18, 2026).
+  - [x] Address promotion #674 review findings: require a child selection before adding a caregiver and use
+    12px outlined management buttons (November 18, 2026). Local checks are recorded in the fix PR;
+    integrated browser and owner acceptance remain pending below.
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
+  - [ ] Owner decision: the frames show "Archive caregiver … can be restored later", but caregivers are removed
+    permanently today. Decide whether to build a recoverable archive (with restore) or keep permanent removal.
+  - [ ] School pickup isn't in the approved sheet; it stays as a checkbox so saved values aren't lost. Confirm with the owner.
+- [ ] **Child Essentials Emergency Contacts redesign (#665, M5, owner-approved Figma page 715:194).**
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
+  - [ ] "Add to all children" isn't in the approved form; it stays as a checkbox so the existing workflow isn't lost.
+    Confirm with the owner.
+- [ ] **Child Essentials Routines redesign (#666, M5, owner-approved Figma page 811:194).**
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
+  - [ ] Dark-mode tab and subcard fills were matched from the dark frames' look, not read value by value; confirm.
 - [ ] **One shared photo per child for both parents (#653, owner decision November 16, 2026).** Either parent sets it;
   the picker shows the child's own photo, else the shared one.
   - [ ] Owner retest on the dev site: Dad, signed in on the shared device, sees the photo Mom chose for each child.
@@ -934,13 +982,13 @@ and the Memories photo helpers (deletion dates, upload refusals, file problems).
 
 - [x] Backend (revisions, one-time confirmation, permanent delete, PDF), Medical screen section, Privacy Notice and
   inventory, breach runbook (branch `feat/127-medication-reference`, November 12, 2026).
-- [ ] CI: first run of `MedicationTests` and the child-session check in `ChildAccessTests` (Docker wasn't available
-  locally, so these integration tests haven't run yet).
+- [x] CI: first run of `MedicationTests` and the child-session check in `ChildAccessTests` (ran locally with Docker,
+  November 17, 2026, #659).
 - [ ] After deploy, test on Development with synthetic data and two parents: first-save confirmation, add, edit,
   discontinue, resume, delete permanently (history and the other parent's banner show no details), concurrent edits,
   PDF for one child, all children and current only, in English and Spanish, phone and desktop, both themes,
   keyboard, screen reader and reduced motion. A kid tablet must never show medication.
-- [ ] A Playwright spec for the Medical screen's medication flow.
+- [x] A Playwright spec for the Medical screen's medication flow (`m5-design-refresh/medical-redesign.spec.ts`, #659).
 - [ ] Lawyer review before production (see the Privacy audit item above).
 
 ## Shared Records submit indicator (#496)

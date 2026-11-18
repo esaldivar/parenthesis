@@ -9,7 +9,6 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Api, Child, MedicationHistoryEntry, MedicationItem, MedicationValues, MedicationView } from '../../../../core/api/api';
 import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
 import { TranslatePipe } from '../../../../core/i18n/translations';
-import { Icon } from '../../../../shared/components/icon/icon';
 import { localizedMessage } from '../../localized-message';
 
 export const MEDICATION_LIMITS = { name: 100, dose: 100, schedule: 200, instructions: 1000 } as const;
@@ -34,18 +33,18 @@ export function isDeletion(entry: MedicationHistoryEntry): boolean {
 @Component({
   selector: 'app-medication-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, AppDatePipe, Icon, NgTemplateOutlet, ReactiveFormsModule],
-  styleUrls: ['../../essentials-section.css', './medication-section.component.css'],
+  imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule],
+  styleUrl: './medication-section.component.css',
   template: `
     <section aria-labelledby="medication-heading">
       <div class="heading-row">
         <h2 id="medication-heading">{{ 'medication.heading' | tr }}</h2>
-        <button type="button" [attr.aria-expanded]="exportOpen()" aria-controls="medication-pdf-options"
+        <button type="button" class="action" [attr.aria-expanded]="exportOpen()" aria-controls="medication-pdf-options"
           (click)="exportOpen.set(!exportOpen())">{{ 'medication.pdf.open' | tr }}</button>
       </div>
-      <p class="reference">{{ 'medication.reference' | tr }}</p>
-      <div id="medication-pdf-options" class="pdf-options" [hidden]="!exportOpen()">
-        <label>{{ 'medication.pdf.include' | tr }}
+      <p>{{ 'medication.reference' | tr }}</p>
+      <div id="medication-pdf-options" class="panel pdf-options" [hidden]="!exportOpen()">
+        <label class="field"><span>{{ 'medication.pdf.include' | tr }}</span>
           <select #exportChild [disabled]="exporting()">
             <option [value]="childId()">{{ 'feature.current.child' | tr }}</option>
             @for (child of children(); track child.id) {
@@ -55,7 +54,7 @@ export function isDeletion(entry: MedicationHistoryEntry): boolean {
           </select>
         </label>
         <label class="check"><input type="checkbox" #currentOnly [disabled]="exporting()" /> {{ 'medication.pdf.currentOnly' | tr }}</label>
-        <button type="button" [disabled]="exporting()" (click)="downloadPdf(exportChild.value, currentOnly.checked)">
+        <button type="button" class="action filled strong" [disabled]="exporting()" (click)="downloadPdf(exportChild.value, currentOnly.checked)">
           {{ exporting() ? ('feature.preparing.pdf' | tr) : ('feature.download.pdf' | tr) }}
         </button>
         <p role="status">{{ exportNotice() }}</p>
@@ -67,7 +66,7 @@ export function isDeletion(entry: MedicationHistoryEntry): boolean {
       @if (view(); as saved) {
         @if (step(); as active) {
           <div class="editor">
-            <h3 tabindex="-1" #stepHeading>
+            <h3 class="subheading" tabindex="-1" #stepHeading>
               @switch (active.kind) {
                 @case ('edit') { {{ (active.entry ? 'medication.edit' : 'medication.add') | tr }} }
                 @case ('status') { {{ (active.entry.discontinued ? 'medication.resume' : 'medication.discontinue') | tr }} }
@@ -79,19 +78,21 @@ export function isDeletion(entry: MedicationHistoryEntry): boolean {
               <fieldset [disabled]="saving()">
                 @switch (active.kind) {
                   @case ('edit') {
-                    <label>{{ 'medication.field.name' | tr }}
-                      <input formControlName="name" [maxLength]="limits.name" required autocomplete="off" />
+                    <label class="field"><span class="label">{{ 'medication.field.name' | tr }}</span>
+                      <input formControlName="name" [maxLength]="limits.name" required autocomplete="off"
+                        [attr.aria-invalid]="form.controls.name.touched && !form.controls.name.value.trim()"
+                        [attr.aria-describedby]="form.controls.name.touched && !form.controls.name.value.trim() ? 'medication-name-error' : null" />
+                      @if (form.controls.name.touched && !form.controls.name.value.trim()) {
+                        <span id="medication-name-error" class="field-error" role="alert">{{ 'medication.nameRequired' | tr }}</span>
+                      }
                     </label>
-                    @if (form.controls.name.touched && form.controls.name.invalid) {
-                      <p role="alert">{{ 'medication.nameRequired' | tr }}</p>
-                    }
-                    <label>{{ 'medication.field.dose' | tr }} {{ 'feature.optional' | tr }}
+                    <label class="field"><span class="label">{{ 'medication.field.dose' | tr }} {{ 'feature.optional' | tr }}</span>
                       <input formControlName="dose" [maxLength]="limits.dose" autocomplete="off" />
                     </label>
-                    <label>{{ 'medication.field.schedule' | tr }} {{ 'feature.optional' | tr }}
+                    <label class="field"><span class="label">{{ 'medication.field.schedule' | tr }} {{ 'feature.optional' | tr }}</span>
                       <input formControlName="schedule" [maxLength]="limits.schedule" autocomplete="off" />
                     </label>
-                    <label>{{ 'medication.field.instructions' | tr }} {{ 'feature.optional' | tr }}
+                    <label class="field"><span class="label">{{ 'medication.field.instructions' | tr }} {{ 'feature.optional' | tr }}</span>
                       <textarea formControlName="instructions" rows="3" [maxLength]="limits.instructions"></textarea>
                     </label>
                   }
@@ -103,13 +104,13 @@ export function isDeletion(entry: MedicationHistoryEntry): boolean {
                   }
                 }
                 @if (active.kind !== 'delete' && !saved.acknowledged) {
-                  <div class="acknowledge">
+                  <div class="panel acknowledge">
                     <p>{{ 'medication.ack.text' | tr }}</p>
                     <label class="check"><input type="checkbox" formControlName="acknowledge" required /> {{ 'medication.ack.label' | tr }}</label>
                   </div>
                 }
                 <div class="actions">
-                  <button type="submit" class="primary" [class.danger]="active.kind === 'delete'" [disabled]="!canSubmit()">
+                  <button type="submit" class="action filled tall save" [class.danger]="active.kind === 'delete'" [disabled]="!canSubmit()">
                     @if (saving()) { {{ 'feature.saving' | tr }} } @else {
                       @switch (active.kind) {
                         @case ('edit') { {{ 'medication.save' | tr }} }
@@ -118,26 +119,25 @@ export function isDeletion(entry: MedicationHistoryEntry): boolean {
                       }
                     }
                   </button>
-                  <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
+                  <button type="button" class="action filled tall cancel" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
                 </div>
               </fieldset>
             </form>
           </div>
         } @else {
-          <h3>{{ 'medication.current' | tr }}</h3>
+          <h3 class="list-heading">{{ 'medication.current' | tr }}</h3>
           @for (entry of currentEntries(); track entry.id) {
             <ng-container *ngTemplateOutlet="row; context: { $implicit: entry }" />
           } @empty {
             <p>{{ 'medication.current.empty' | tr }}</p>
           }
           <div class="actions">
-            <button type="button" class="primary" #addButton (click)="open({ kind: 'edit', entry: null })">
-              <app-icon name="plus" [size]="20" /> {{ 'medication.add' | tr }}
-            </button>
-            <button type="button" [attr.aria-expanded]="historyOpen()" (click)="toggleHistory()">{{ 'feature.history' | tr }}</button>
+            <button type="button" class="action filled strong" #addButton (click)="open({ kind: 'edit', entry: null })">{{ 'medication.add' | tr }}</button>
+            <button type="button" class="action" [attr.aria-expanded]="historyOpen()" [attr.aria-controls]="historyOpen() ? 'medication-history' : null"
+              (click)="toggleHistory()">{{ 'feature.history' | tr }}</button>
           </div>
           @if (discontinuedEntries().length) {
-            <h3>{{ 'medication.discontinued' | tr }}</h3>
+            <h3 class="list-heading">{{ 'medication.discontinued' | tr }}</h3>
             @for (entry of discontinuedEntries(); track entry.id) {
               <ng-container *ngTemplateOutlet="row; context: { $implicit: entry }" />
             }
@@ -145,58 +145,60 @@ export function isDeletion(entry: MedicationHistoryEntry): boolean {
         }
 
         @if (historyOpen() && !step()) {
-          <h3>{{ 'medication.history' | tr }}</h3>
+        <div id="medication-history" class="history">
+          <h3 class="subheading">{{ 'medication.history' | tr }}</h3>
           @if (historyError()) {
             <p role="alert">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
-            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
+            <button type="button" class="action" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
           } @else if (historyLoading()) {
             <p role="status">{{ 'feature.loading.history' | tr }}</p>
           } @else if (!history().length) {
             <p>{{ 'feature.no.changes.yet' | tr }}</p>
           }
           @for (change of history(); track change.revision) {
-            <article class="history">
+            <article>
               <h4>{{ change.editedBy }} · <time [attr.datetime]="change.editedAt">{{ change.editedAt | appDate:'medium' }}</time></h4>
               @if (deletion(change)) {
                 <p>{{ 'medication.history.deleted' | tr }}</p>
               } @else {
-                <div class="comparison">
-                  <div><strong>{{ 'medication.history.before' | tr }}</strong>
-                    <ng-container *ngTemplateOutlet="summary; context: { $implicit: change.previous }" /></div>
-                  <div><strong>{{ 'medication.history.after' | tr }}</strong>
-                    <ng-container *ngTemplateOutlet="summary; context: { $implicit: change.current }" /></div>
-                </div>
+                <h5>{{ 'medication.history.before' | tr }}</h5>
+                <ng-container *ngTemplateOutlet="summary; context: { $implicit: change.previous }" />
+                <h5>{{ 'medication.history.after' | tr }}</h5>
+                <ng-container *ngTemplateOutlet="summary; context: { $implicit: change.current }" />
               }
             </article>
           }
           @if (nextRevision() !== null && !historyLoading() && !historyError()) {
-            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
+            <button type="button" class="action" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
           }
+        </div>
         }
       } @else if (error()) {
-        <button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
+        <button type="button" class="action" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       } @else {
         <p role="status">{{ 'medication.loading' | tr }}</p>
       }
     </section>
 
     <ng-template #row let-entry>
-      <article class="entry medication" [class.discontinued]="entry.discontinued">
-        <h4>{{ entry.name }}</h4>
-        <dl>
-          @if (entry.dose) { <div class="row"><dt>{{ 'medication.field.dose' | tr }}</dt><dd>{{ entry.dose }}</dd></div> }
-          @if (entry.schedule) { <div class="row"><dt>{{ 'medication.field.schedule' | tr }}</dt><dd>{{ entry.schedule }}</dd></div> }
-          @if (entry.instructions) { <div class="row"><dt>{{ 'medication.field.instructions' | tr }}</dt><dd>{{ entry.instructions }}</dd></div> }
-        </dl>
-        <p class="updated">{{ 'medication.updatedBy' | tr: { name: entry.updatedBy } }}
+      <article class="panel medication" [class.discontinued]="entry.discontinued" [attr.aria-labelledby]="'medication-' + entry.id">
+        <h4 [id]="'medication-' + entry.id">{{ entry.name }}</h4>
+        @if (entry.dose || entry.schedule || entry.instructions) {
+          <dl>
+            @if (entry.dose) { <div><dt>{{ 'medication.field.dose' | tr }}</dt><dd>{{ entry.dose }}</dd></div> }
+            @if (entry.schedule) { <div><dt>{{ 'medication.field.schedule' | tr }}</dt><dd>{{ entry.schedule }}</dd></div> }
+            @if (entry.instructions) { <div><dt>{{ 'medication.field.instructions' | tr }}</dt><dd>{{ entry.instructions }}</dd></div> }
+          </dl>
+        }
+        <p class="updated-by">{{ 'medication.updatedBy' | tr: { name: entry.updatedBy } }}
           <time [attr.datetime]="entry.updatedAt">{{ entry.updatedAt | appDate:'medium' }}</time></p>
-        <div class="actions management">
+        <div class="actions record">
           @if (!entry.discontinued) {
-            <button type="button" [attr.aria-label]="('medication.edit.for' | tr: { name: entry.name })" (click)="open({ kind: 'edit', entry })">{{ 'feature.edit' | tr }}</button>
+            <button type="button" class="action" [attr.aria-label]="('medication.edit.for' | tr: { name: entry.name })" (click)="open({ kind: 'edit', entry })">{{ 'feature.edit' | tr }}</button>
           }
-          <button type="button" [attr.aria-label]="((entry.discontinued ? 'medication.resume.for' : 'medication.discontinue.for') | tr: { name: entry.name })"
+          <button type="button" class="action" [attr.aria-label]="((entry.discontinued ? 'medication.resume.for' : 'medication.discontinue.for') | tr: { name: entry.name })"
             (click)="open({ kind: 'status', entry })">{{ (entry.discontinued ? 'medication.resume' : 'medication.discontinue') | tr }}</button>
-          <button type="button" [attr.aria-label]="('medication.delete.for' | tr: { name: entry.name })" (click)="open({ kind: 'delete', entry })">{{ 'medication.delete' | tr }}</button>
+          <button type="button" class="action" [attr.aria-label]="('medication.delete.for' | tr: { name: entry.name })" (click)="open({ kind: 'delete', entry })">{{ 'medication.delete' | tr }}</button>
         </div>
       </article>
     </ng-template>

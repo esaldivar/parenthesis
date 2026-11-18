@@ -1,0 +1,147 @@
+/*
+ * Child Essentials, What Helps (#667): built to the approved Figma page 878:194. A 640px column, the cleaned bunny
+ * centered and faint behind it, a translucent panel of label | value rows, and compact centered 12px-corner actions
+ * (filled primary, soft secondary). Edit, history and every state open in the same translucent panel, with the
+ * shared state surfaces (--color-state-*) the Routines frames use too.
+ */
+:host {
+  position: relative;
+  display: block;
+  max-inline-size: 40rem;
+  color: var(--color-text);
+  font: 400 1rem / 1.5 var(--font-family-body);
+}
+
+/* 420x480, centered on the column, 40px above the section (frames 878:296, 878:195): 17% light, 20% dark. */
+.art {
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -2.5rem;
+  inset-inline-start: calc(50% - 13.125rem);
+  inline-size: 26.25rem;
+  max-inline-size: none;
+  block-size: 30rem;
+  object-fit: contain;
+  opacity: var(--color-state-art-opacity);
+  mix-blend-mode: luminosity;
+  pointer-events: none;
+  user-select: none;
+}
+
+section { display: grid; gap: 0.75rem; overflow-wrap: anywhere; }
+p, h4, h5, h6 { margin: 0; }
+p[role='status']:empty { display: none; }
+
+/* Saved values: 12px corners, 8px top and bottom, rows of a 200px bold label and the value at the end. */
+.panel, .state {
+  margin: 0;
+  border: 1px solid var(--color-state-panel-border);
+  border-radius: 0.75rem;
+  background: var(--color-state-panel);
+}
+.panel { display: grid; padding-block: 0.5rem; }
+.row {
+  display: grid;
+  grid-template-columns: 12.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-block-size: 3.25rem;
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
+}
+.row + .row { border-block-start: 1px solid var(--color-divider); }
+dt { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.625rem; min-inline-size: 0; }
+.label { font-weight: 600; }
+dd { margin: 0; min-inline-size: 0; text-align: end; white-space: pre-wrap; }
+/* A changed field: plain teal 14px "Updated" beside the label (frame 882:741), no pill. */
+.updated { color: var(--color-action); font-size: 0.875rem; line-height: 1.25rem; }
+
+/* Every other state: one translucent panel, 16px padding and gaps. */
+.state, fieldset { display: grid; gap: 1rem; }
+.state { padding: 1rem; }
+fieldset { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+.state-heading { font-size: 1.125rem; font-weight: 600; line-height: 1.5rem; }
+.message { font-size: 0.875rem; font-weight: 600; line-height: 1.25rem; }
+.muted { color: var(--color-state-muted); font-size: 0.875rem; font-weight: 400; line-height: 1.25rem; }
+.muted.body { font-size: 1rem; line-height: 1.5rem; }
+.change { display: grid; gap: 1rem; }
+
+/* "Label: value" lines in a soft inset (history, latest saved values). */
+.inset {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--color-state-inset);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.inset h6 { font: inherit; font-weight: 600; }
+.inset p { white-space: pre-wrap; }
+
+/* Fields: a 14px bold label over a 112px translucent textarea that grows with the parent's notes. */
+.field { display: grid; gap: 0.375rem; }
+.field-label { font-size: 0.875rem; font-weight: 600; line-height: 1.25rem; }
+textarea {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: 7rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-state-field-border);
+  border-radius: 0.5rem;
+  background: var(--color-state-field);
+  color: var(--color-text);
+  font: inherit;
+  field-sizing: content;
+  resize: vertical;
+}
+textarea[aria-invalid='true'] { border-color: var(--color-state-invalid); }
+.invalid { display: grid; gap: 0.375rem; color: var(--color-state-invalid-text); font-size: 0.875rem; line-height: 1.25rem; }
+
+/* Compact centered actions: 44px, 12px corners; Edit/Save 112-128px, History/Cancel 128px, wider labels grow. */
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-inline-size: 8rem;
+  min-block-size: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  font: 600 1rem / 1.5rem var(--font-family-body);
+  text-align: center;
+  cursor: pointer;
+}
+section > .actions > .action.primary { min-inline-size: 7rem; }
+.action.wide { min-inline-size: 10rem; }
+.state .action.wide { min-inline-size: 11rem; }
+.action.primary { background: var(--color-action); color: var(--color-on-action); }
+.action.secondary { background: var(--color-state-secondary); color: var(--color-text); }
+.action.outlined { border-color: var(--color-state-secondary-border); }
+section > .actions > .action.outlined { min-inline-size: 8rem; }
+.action:hover:not(:disabled) { filter: brightness(0.95); }
+.action:disabled { opacity: 0.45; cursor: not-allowed; }
+fieldset:disabled .action { cursor: progress; }
+.action:focus-visible, textarea:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+
+/* Phones: the bunny held mid-screen (300x400, frame 878:458); labels take a 150px column, Updated under them. */
+@media (max-width: 47.999rem) {
+  :host { max-inline-size: none; }
+  .art {
+    position: fixed;
+    inset-block-start: 50%;
+    inset-inline-start: calc(50% - 9.375rem);
+    inline-size: 18.75rem;
+    block-size: 25rem;
+    transform: translateY(-50%);
+  }
+  .row { grid-template-columns: minmax(min(9.375rem, 45%), 1fr) minmax(0, 1fr); }
+  dt { flex-direction: column; align-items: flex-start; row-gap: 0.125rem; }
+}
+
+@media (forced-colors: active) {
+  .art { display: none; }
+  .panel, .state, .action, textarea { border-color: CanvasText; }
+}

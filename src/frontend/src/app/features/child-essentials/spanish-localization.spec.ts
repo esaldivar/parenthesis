@@ -21,7 +21,7 @@ const child = { id: 'child', firstName: 'Sam', status: 'Active', changeRequestId
 const api = () => ({
   children: vi.fn(async () => [child]),
   school: vi.fn(async () => ({ revision: 0, values: { grade: 'Kindergarten', homeroomTeacher: null, parentConcerns: 'Keep my English notes' } })),
-  clothing: vi.fn(async () => ({ revision: 0, values: { topSize: null, bottomSize: null, shoeSize: null, fitNotes: null } })),
+  clothing: vi.fn(async () => ({ revision: 0, values: { topSize: null, bottomSize: null, shoeSize: null, fitNotes: null as string | null } })),
   allergiesFood: vi.fn(async () => ({ revision: 0, values: { allergies: null, foodPreferences: null, noKnownAllergies: true } })),
   whatHelps: vi.fn(async () => ({ revision: 0, values: { comfortItems: null, calmingStrategies: null } })),
   routines: vi.fn(async () => ({ revision: 0, values: { entries: [] } })),
@@ -102,9 +102,24 @@ describe('Child Essentials Spanish (#577)', () => {
     expect(notes.value).toBe('My unmodified draft');
   });
 
+  it('shows Clothing notes in Spanish, keeps saved notes verbatim and describes the field (#660)', async () => {
+    const service = api();
+    service.clothing.mockResolvedValue({ revision: 0, values: { topSize: null, bottomSize: null, shoeSize: null, fitNotes: 'Keep my English notes' } });
+    const { host, settle } = await render(ClothingSection, service);
+    expect(host.textContent).toContain('Notas sobre la ropa');
+    expect(host.textContent).toContain('Keep my English notes');
+    expect(host.textContent).not.toContain('Fit notes');
+    host.querySelector<HTMLButtonElement>('.actions button')!.click(); await settle();
+    expect(host.textContent).toContain('Notas sobre la ropa (opcional)');
+    const notes = host.querySelector<HTMLTextAreaElement>('[formcontrolname="fitNotes"]')!;
+    expect(notes.value).toBe('Keep my English notes');
+    expect(host.querySelector(`#${notes.getAttribute('aria-describedby')}`)?.textContent)
+      .toBe('Lo que necesita, lo que le queda bien y cualquier preferencia.');
+  });
+
   it('localizes relationship choices while preserving their API values', async () => {
     const { host, settle } = await render(EmergencyContactsSection);
-    host.querySelector<HTMLButtonElement>('section > button')!.click(); await settle();
+    host.querySelector<HTMLButtonElement>('section .add')!.click(); await settle();
     const option = host.querySelector<HTMLOptionElement>('option[value="Grandparent"]')!;
     expect(option.textContent).toBe('Abuelo o abuela');
     expect(option.value).toBe('Grandparent');
@@ -112,7 +127,7 @@ describe('Child Essentials Spanish (#577)', () => {
 
   it('localizes provider types and validation, with stable API values', async () => {
     const { host, settle } = await render(MedicalProvidersSection);
-    host.querySelector<HTMLButtonElement>('section > .primary')!.click(); await settle();
+    host.querySelector<HTMLButtonElement>('section > .action.filled')!.click(); await settle();
     expect(host.querySelector('option[value="Doctor"]')?.textContent).toBe('Médico');
     const phone = host.querySelector<HTMLInputElement>('[formcontrolname="phone"]')!;
     phone.dispatchEvent(new Event('blur')); await settle();

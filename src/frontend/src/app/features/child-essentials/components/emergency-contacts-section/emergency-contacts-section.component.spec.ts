@@ -44,7 +44,7 @@ describe('Emergency Contacts', () => {
     type('input[formcontrolname="phone"]', '555-733-5189');
     expect(host.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
     type('select[formcontrolname="relationshipKind"]', 'Grandparent', 'change');
-    click('Save contact');
+    click('Save');
 
     const save = http.expectOne({ method: 'PUT', url });
     expect(save.request.body.contacts).toEqual([expect.objectContaining({ name: 'Jordan Lee', relationship: 'Grandparent' })]);
@@ -63,7 +63,7 @@ describe('Emergency Contacts', () => {
     type('input[formcontrolname="relationship"]', '  ');
     expect(host.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
     type('input[formcontrolname="relationship"]', 'Soccer coach');
-    click('Save contact');
+    click('Save');
 
     const save = http.expectOne({ method: 'PUT', url });
     expect(save.request.body.contacts).toEqual([expect.objectContaining({ id: 'c1', relationship: 'Soccer coach' })]);
@@ -80,7 +80,7 @@ describe('Emergency Contacts', () => {
     type('select[formcontrolname="relationshipKind"]', added.relationship, 'change');
     host.querySelector<HTMLInputElement>('input[formcontrolname="callFirst"]')!.click();
     host.querySelector<HTMLInputElement>('input[formcontrolname="addToAll"]')!.click();
-    click('Save contact');
+    click('Save');
     http.expectOne({ method: 'GET', url }).flush({ version: 3, contacts: [] });
     await Promise.resolve();
     const current = http.expectOne({ method: 'PUT', url });
@@ -97,7 +97,7 @@ describe('Emergency Contacts', () => {
       expect(host.querySelector('[role="alert"]')?.textContent).toContain('Taylor');
     });
 
-    click('Save contact');
+    click('Save');
     http.expectOne({ method: 'GET', url }).flush({ version: 4, contacts: [added] });
     await Promise.resolve();
     http.expectNone({ method: 'PUT', url });
@@ -110,6 +110,54 @@ describe('Emergency Contacts', () => {
       fixture.detectChanges();
       expect(host.textContent).toContain('Emergency contact saved for all children.');
     });
+    http.verify();
+  });
+
+  it('confirms a copy to the chosen child without duplicating it, and confirms removal (#665)', async () => {
+    const morgan = { id: 'c1', name: 'Morgan Lee', relationship: 'Aunt', phone: '512-555-0101', address: '1 Sample Way', callFirst: true };
+    const { http, host, click, fixture } = await render([morgan], [{ id: 'child-1', firstName: 'Kai' }, { id: 'child-2', firstName: 'Taylor' }]);
+    const siblingUrl = url.replace('child-1', 'child-2');
+    expect(host.querySelector('.card a[href^="https://www.google.com/maps"]')).not.toBeNull();
+    click('Copy Morgan Lee');
+    expect(host.querySelector('.state')?.textContent).toContain('Copy Morgan Lee to another child.');
+    expect(host.querySelector('.state')?.textContent).toContain('Taylor’s Call first selection stays separate from Kai’s.');
+    click('Copy contact');
+    await vi.waitFor(() => http.expectOne({ method: 'GET', url: siblingUrl }).flush({ version: 1, contacts: [] }));
+    await Promise.resolve();
+    const copied = http.expectOne({ method: 'PUT', url: siblingUrl });
+    expect(copied.request.body.contacts).toEqual([{ ...morgan, id: null, callFirst: false }]);
+    copied.flush({ version: 2, contacts: [{ ...morgan, callFirst: false }] });
+    await vi.waitFor(() => { fixture.detectChanges(); expect(host.textContent).toContain('Emergency contact copied.'); });
+
+    // Copying again finds the contact already there and saves nothing.
+    click('Copy Morgan Lee');
+    click('Copy contact');
+    await vi.waitFor(() => http.expectOne({ method: 'GET', url: siblingUrl }).flush({ version: 2, contacts: [{ ...morgan, callFirst: false }] }));
+    await vi.waitFor(() => { fixture.detectChanges(); expect(host.querySelector('.state')).toBeNull(); });
+    http.expectNone({ method: 'PUT', url: siblingUrl });
+
+    click('Remove');
+    expect(host.querySelector('.state')?.textContent).toContain('Remove Morgan Lee from Kai’s emergency contacts?');
+    click('Remove contact');
+    const removed = http.expectOne({ method: 'PUT', url });
+    expect(removed.request.body.contacts).toEqual([]);
+    removed.flush({ version: 4, contacts: [] });
+    http.verify();
+  });
+
+  it('warns about a number already on the list and offers the existing contact to review (#665)', async () => {
+    const morgan = { id: 'c1', name: 'Morgan Lee', relationship: 'Aunt', phone: '512-555-0101', address: null, callFirst: false };
+    const { http, host, click, type } = await render([morgan], [{ id: 'child-1', firstName: 'Kai' }]);
+    click('Add emergency contact');
+    type('input[formcontrolname="name"]', 'Avery Lee');
+    type('input[formcontrolname="phone"]', '(512) 555-0101');
+    type('select[formcontrolname="relationshipKind"]', 'Sibling', 'change');
+    click('Save');
+    expect(host.querySelector('form [role="alert"]')?.textContent).toContain('This phone number is already on Kai’s emergency contact list.');
+    http.expectNone({ method: 'PUT', url });
+    click('Review contact');
+    expect(host.querySelector('form')).toBeNull();
+    expect(host.querySelector('#contact-0')).not.toBeNull();
     http.verify();
   });
 });

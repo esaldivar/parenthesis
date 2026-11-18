@@ -41,7 +41,7 @@ describe('What Helps', () => {
     save.flush({ revision: 1, values: { ...empty, calmingStrategies: 'Listen to quiet music' } }, { status: 409, statusText: 'Conflict' });
     await settle();
     expect(calmingStrategies.value).toBe('Read together');
-    expect(host.querySelector('.latest')?.textContent).toContain('Listen to quiet music');
+    expect(host.querySelector('form .inset')?.textContent).toContain('Calming strategies: Listen to quiet music');
     click('Save my draft');
     const retry = http.expectOne({ method: 'PUT', url });
     expect(retry.request.body.revision).toBe(1);
@@ -62,8 +62,54 @@ describe('What Helps', () => {
     const history = host.querySelector('#what-helps-history')!;
     expect(history.textContent).toContain('Parent A');
     expect(history.querySelector('time')?.getAttribute('datetime')).toBe('2026-11-06T20:00:00Z');
-    expect(history.querySelector('.comparison > div:first-child')?.textContent).toContain('Listen to quiet music');
-    expect(history.querySelector('.comparison > div:last-child')?.textContent).toContain('Read together');
+    expect(history.querySelectorAll('.change .inset')[0]?.textContent).toContain('Listen to quiet music');
+    expect(history.querySelectorAll('.change .inset')[1]?.textContent).toContain('Read together');
+    // Close history puts the saved values back (#667).
+    click('Close history');
+    expect(host.querySelector('#what-helps-history')).toBeNull();
+    expect(host.querySelector('.panel')?.textContent).toContain('Read together');
+    http.verify();
+  });
+
+  it('blocks saving over 1,000 characters with a message and count, and offers Retry after a failed save (#667)', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const fixture = TestBed.createComponent(WhatHelpsSection);
+    fixture.componentRef.setInput('familyId', 'family-1');
+    fixture.componentRef.setInput('childId', 'child-1');
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne({ method: 'GET', url }).flush({ revision: 4, values: { comfortItems: 'Soft blanket', calmingStrategies: null } });
+    await fixture.whenStable(); fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    const button = (label: string) => [...host.querySelectorAll('button')].find((item) => item.textContent.trim() === label)!;
+    button('Edit What Helps').click();
+    fixture.detectChanges();
+    const comfort = host.querySelector<HTMLTextAreaElement>('textarea[formcontrolname="comfortItems"]')!;
+    expect(comfort.value).toBe('Soft blanket');
+    comfort.value = 'x'.repeat(1012);
+    comfort.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(comfort.getAttribute('aria-invalid')).toBe('true');
+    const limit = host.querySelector(`#${comfort.getAttribute('aria-describedby')}`)!;
+    expect(limit.textContent).toContain('Keep this to 1,000 characters or fewer.');
+    expect(limit.textContent).toContain('1,012 / 1,000 characters');
+    expect(button('Save').disabled).toBe(true);
+
+    comfort.value = 'Soft blanket and bunny';
+    comfort.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(comfort.hasAttribute('aria-describedby')).toBe(false);
+    button('Save').click();
+    http.expectOne({ method: 'PUT', url }).flush(null, { status: 500, statusText: 'Server Error' });
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(host.querySelector('[role="alert"]')!.textContent).toContain('Your draft is still here.');
+    expect(comfort.value).toBe('Soft blanket and bunny');
+    button('Retry').click();
+    const retry = http.expectOne({ method: 'PUT', url });
+    expect(retry.request.body).toEqual({ revision: 4, values: { comfortItems: 'Soft blanket and bunny', calmingStrategies: '' } });
+    retry.flush({ revision: 5, values: { comfortItems: 'Soft blanket and bunny', calmingStrategies: null } });
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(host.textContent).toContain('What Helps saved.');
     http.verify();
   });
 });

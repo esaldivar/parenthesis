@@ -133,12 +133,44 @@ describe('Child Essentials updates (#128)', () => {
     expect(text(kai)).toContain(', has updates');
     const aurora = [...el.querySelectorAll<HTMLButtonElement>('.children button')].find((b) => text(b).includes('Aurora'))!;
     expect(text(aurora)).not.toContain('has updates');
-    expect(text(el.querySelector('[data-section=clothing] summary'))).toBe('Clothing & Shoes, Sizes and fit notes, updated');
+    expect(text(el.querySelector('[data-section=clothing] summary'))).toBe('Clothing & Shoes, Sizes and clothing notes, updated');
     expect(shoeRow(el).classList).toContain('row--updated');
     expect(text(shoeRow(el))).toContain('Updated');
     const top = [...el.querySelectorAll('.row')].find((row) => text(row).startsWith('Top size'))!;
     expect(top.classList).not.toContain('row--updated');
     expect(await axeViolations(el)).toEqual([]);
+  });
+
+  it('lands on warm category cards with full-color art and name-only children, highlighted with no checkmark (#669)', async () => {
+    const { el, fixture } = await render();
+
+    expect(el.querySelector('.layout')!.classList).toContain('landing');
+    const choices = [...el.querySelectorAll<HTMLButtonElement>('.children button')];
+    expect(choices.map((b) => b.querySelector('.child-name')!.textContent)).toEqual(['Kai', 'Aurora']);
+    expect(choices.map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+    expect(el.querySelector('.children app-avatar')).toBeNull();
+    expect(el.querySelector('.children app-icon')).toBeNull();
+    // Eight categories in their order, each with its cleaned full-color illustration.
+    const tiles = [...el.querySelectorAll('.section-tiles > details, .section-tiles > .medical-tile')];
+    expect(tiles.map((tile) => text(tile.querySelector('.tile-name')))).toEqual([
+      'School', 'Allergies & Food', 'Routines', 'Clothing & Shoes', 'What Helps', 'Shared Caregivers', 'Emergency Contacts', 'Medical',
+    ]);
+    expect(tiles.map((tile) => tile.querySelector('.tile-art')!.getAttribute('src'))).toEqual([
+      'school', 'allergies', 'routines', 'clothing', 'what-helps', 'caregivers', 'emergency', 'medical',
+    ].map((name) => `art/child-essentials/tiles/${name}.webp`));
+    expect(el.querySelector<HTMLElement>('[data-section=caregivers]')!.style.getPropertyValue('--tile-outline')).toBe('#b4cdc8');
+
+    // Choosing a child keeps the landing; opening a section brings the avatars back with the approved section design.
+    choices[1].click();
+    await settle(fixture);
+    expect([...el.querySelectorAll('.children button')].map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
+    expect(text(el.querySelector('#essentials-heading'))).toBe('Aurora’s essentials');
+    const school = el.querySelector<HTMLDetailsElement>('[data-section=school]')!;
+    school.open = true;
+    school.dispatchEvent(new Event('toggle'));
+    await settle(fixture);
+    expect(el.querySelector('.layout')!.classList).not.toContain('landing');
+    expect(el.querySelectorAll('.children app-avatar')).toHaveLength(2);
   });
 
   it('clears each indicator on its own: banner on X, section dot when opened, row when on screen', async () => {
@@ -162,7 +194,7 @@ describe('Child Essentials updates (#128)', () => {
     await settle(fixture);
     expect(api.essentialsSectionOpened).toHaveBeenCalledWith('family-1', 'kai', 'clothing');
     expect(api.essentialsRowsSeen).not.toHaveBeenCalled();
-    expect(text(tile.querySelector('summary'))).toBe('Clothing & Shoes, Sizes and fit notes');
+    expect(text(tile.querySelector('summary'))).toBe('Clothing & Shoes, Sizes and clothing notes');
 
     FakeObserver.show((element) => element === shoeRow(el));
     await settle(fixture);
@@ -185,7 +217,9 @@ describe('Child Essentials updates (#128)', () => {
     expect(el.querySelector('.layout')?.classList).toContain('focused');
     expect(hero.closest('section')?.getAttribute('aria-labelledby')).toBe('essentials-heading');
     expect(text(hero.querySelector('h2'))).toBe('Shared Caregivers');
-    expect(hero.querySelector('img')?.getAttribute('src')).toBe('art/child-essentials/caregivers.webp');
+    // Redesigned categories put their artwork behind the content, not in the header (#664).
+    expect(hero.classList).toContain('section-hero--caregivers');
+    expect(hero.querySelector('img')).toBeNull();
     expect(document.activeElement).toBe(hero.querySelector('h2'));
     expect(await axeViolations(el)).toEqual([]);
 
@@ -240,15 +274,15 @@ describe('Child Essentials updates (#128)', () => {
     const ava = el.querySelector('app-caregivers-section article')!;
     expect(ava.classList).toContain('row--updated');
     expect(text(ava.querySelector('.caregiver-name'))).toBe('Ava Park');
-    expect(text(ava.querySelector('.updated-pill'))).toBe('Updated');
+    expect(text(ava.querySelector('.updated'))).toBe('· Updated');
     expect(ava.querySelector('h4 [role="img"]')?.getAttribute('aria-label')).toBe('Unrated');
     expect(text(ava.querySelector('.contact-line > span'))).toBe('512-555-0100');
     expect(text(ava.querySelector('.call'))).toBe('Call');
     expect(ava.querySelector('.call')?.getAttribute('href')).toBe('tel:+15125550100');
-    expect([...ava.querySelectorAll('p:not(.contact-line)')].map(text)).toEqual([
-      'School pickup', 'City: Katy', 'Hourly rate: $20.00', 'Added by Jamie',
+    expect([...ava.querySelectorAll('p')].map(text)).toEqual([
+      'Hourly rate: $20.00/hour · City: Katy', 'School pickup', 'Added by Jamie',
     ]);
-    expect([...ava.querySelectorAll('.management button')].map(text)).toEqual(['Edit', 'Remove', 'Rate']);
+    expect([...ava.querySelectorAll('.manage button')].map(text)).toEqual(['Edit', 'Remove', 'Rate']);
 
     tab.click();
     await settle(fixture);

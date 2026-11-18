@@ -28,7 +28,9 @@ export async function scan(page: Page, info: TestInfo, state: string) {
   // contrast spatial grid can otherwise treat it as permanently covering offscreen document controls (#3720).
   // This scrolls the real page only: no style changes, exclusions, disabled rules or hidden overlays.
   await page.evaluate(() => {
-    const root = document.scrollingElement;
+    const main = document.querySelector('main');
+    const root = main && /auto|scroll/.test(getComputedStyle(main).overflowY)
+      ? main : document.scrollingElement;
     root?.scrollTo({ top: root.scrollHeight, behavior: 'instant' });
     return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
   });

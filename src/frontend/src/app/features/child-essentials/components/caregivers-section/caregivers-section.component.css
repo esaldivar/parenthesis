@@ -1,0 +1,170 @@
+/*
+ * Child Essentials, Shared Caregivers (#664): built to the approved Figma page 626:194. A 720px column, the exact
+ * uploaded landscape behind the desktop content and the mirrored portrait behind the phone content (14%, difference
+ * blend), translucent caregiver cards (soft sage with a subtle border on desktop light), a filled Call with its phone
+ * icon first, a full-width Add caregiver, and a side sheet (full screen on phones) for adding, editing and removing.
+ */
+:host {
+  display: block;
+  max-inline-size: 45rem;
+  color: var(--color-text);
+  font: 400 1rem / 1.5 var(--font-family-body);
+}
+
+/* Desktop: the landscape fills the content area under the top bar, behind everything (frame 617:301, layer 631:6). */
+.art {
+  position: fixed;
+  z-index: -1;
+  opacity: 0.14;
+  mix-blend-mode: difference;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+.art--wide { inset: 4.25rem 0 0 19.5rem; inline-size: calc(100% - 19.5rem); block-size: calc(100% - 4.25rem); }
+.art--narrow { display: none; }
+
+section { display: grid; gap: 0.75rem; overflow-wrap: anywhere; }
+p, h4 { margin: 0; }
+p[role='status']:empty { display: none; }
+.message, .empty { font-size: 0.875rem; line-height: 1.3125rem; }
+
+/* Cards: 14px corners, 14/16 padding, 6px between lines; 16px above each (frame 617:385). */
+.card {
+  display: grid;
+  gap: 0.375rem;
+  margin-block-start: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-caregiver-card-border);
+  border-radius: 0.875rem;
+  background: var(--color-caregiver-card);
+}
+.heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; font-size: 1rem; line-height: 1.5rem; }
+.caregiver-name { font-weight: 700; }
+.stars { display: inline-flex; color: #856612; font-weight: 400; }
+.star { position: relative; }
+.filled { position: absolute; inset-inline-start: 0; overflow: hidden; }
+.updated { font-weight: 400; }
+.tag { font-size: 0.875rem; }
+.notes { white-space: pre-wrap; }
+.contact-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.phone { flex: 1 1 auto; }
+
+/* Actions: rounded rectangles, 12px corners, labels centered on both axes. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  min-block-size: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  font: 600 1rem / 1.5rem var(--font-family-body);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.action.primary { background: var(--color-action); color: var(--color-on-action); }
+.action.secondary { border-color: var(--color-outline); background: var(--color-surface); color: var(--color-text); }
+.action:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Call: 120x44, the 18px phone icon before the label in the label's colour (as on Medical). */
+.call { inline-size: 7.5rem; }
+.add { inline-size: 100%; }
+.manage { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.manage button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 600 1rem / 1.5rem var(--font-family-body);
+  cursor: pointer;
+}
+.manage button:disabled { opacity: 0.45; cursor: not-allowed; }
+.manage button:hover:not(:disabled) { background: var(--color-surface-soft); }
+.rating { display: grid; gap: 0.5rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.action:focus-visible, .manage button:focus-visible, .text-button:focus-visible,
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+
+/* The sheet: 430px at the right under the top bar, #fafcfa, Save and Cancel anchored at the bottom (frame 635:1171). */
+.sheet {
+  position: fixed;
+  inset: 4.25rem 0 0 auto;
+  box-sizing: border-box;
+  inline-size: min(26.875rem, 100%);
+  max-inline-size: 100%;
+  block-size: calc(100% - 4.25rem);
+  max-block-size: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--color-sheet);
+  color: var(--color-sheet-text);
+}
+.sheet::backdrop { background: rgb(32 58 49 / 20%); }
+.sheet-form { display: grid; grid-template-rows: minmax(0, 1fr) auto; block-size: 100%; }
+.sheet-body { display: grid; align-content: start; gap: 0.5rem; padding: 1.5rem 1.75rem; overflow-y: auto; }
+.sheet-title { margin-block-end: 1rem; font: 700 1.5rem / 2rem var(--font-family-heading); }
+.sheet-text { font-size: 0.875rem; line-height: 1.3125rem; }
+fieldset { display: grid; gap: 1rem; min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+.field { display: grid; gap: 0.125rem; }
+.field-label { padding: 0; font-size: 0.875rem; line-height: 1.3125rem; }
+input:not([type='checkbox']), textarea, select {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: 2.625rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: var(--color-sheet-field);
+  color: var(--color-sheet-text);
+  font: 400 0.875rem / 1.3125rem var(--font-family-body);
+}
+input::placeholder, textarea::placeholder { color: var(--color-sheet-text); opacity: 0.85; }
+input[aria-invalid='true'] { border-color: var(--color-state-invalid); }
+textarea { field-sizing: content; resize: vertical; }
+.children { padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: var(--color-sheet-field); }
+.check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+.check input { inline-size: 1.25rem; block-size: 1.25rem; margin: 0; accent-color: var(--color-action); }
+.discard { font-size: 1rem; line-height: 1.5rem; }
+.sheet-actions { display: flex; gap: 1.125rem; padding: 0.75rem 1.75rem; background: var(--color-sheet); }
+.sheet-actions .action { flex: 1 1 0; min-block-size: 3rem; }
+.block { inline-size: 100%; }
+.text-button {
+  justify-self: start;
+  min-block-size: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 600 0.875rem / 1.3125rem var(--font-family-body);
+  cursor: pointer;
+}
+
+/* Phones: the portrait, mirrored, behind the content (375x420, frame 617:475); the sheet takes the whole screen. */
+@media (max-width: 47.999rem) {
+  :host { max-inline-size: none; }
+  .art--wide { display: none; }
+  .art--narrow {
+    display: block;
+    inset-block-start: 50%;
+    inset-inline-start: 0;
+    inline-size: min(23.4375rem, 100%);
+    block-size: 26.25rem;
+    transform: translateY(-50%) scaleX(-1);
+  }
+  .card { background: var(--color-caregiver-card-phone); border-color: transparent; }
+  .sheet { inset: 0; inline-size: 100%; block-size: 100%; }
+}
+
+@media (forced-colors: active) {
+  .art { display: none; }
+  .card, .action, input, textarea, select { border-color: CanvasText; }
+}

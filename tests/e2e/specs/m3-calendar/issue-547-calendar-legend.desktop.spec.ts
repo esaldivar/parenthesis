@@ -47,7 +47,7 @@ test('the desktop Calendar legend stays visible and clear of Messages while scro
           ? page.locator('app-calendar-month .day__number').last()
           : page.locator(`app-calendar-${view} button.item:visible`).filter({ hasText: lateEvent });
         await last.scrollIntoViewIfNeeded();
-        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        await page.locator('main').evaluate(main => main.scrollTo(0, main.scrollHeight));
         await expect(legend).toBeInViewport({ ratio: 1 });
         expect((await last.boundingBox())!.y + (await last.boundingBox())!.height).toBeLessThan((await legend.boundingBox())!.y);
         await last.click({ trial: true });
@@ -63,7 +63,7 @@ test('the desktop Calendar legend stays visible and clear of Messages while scro
         await last.evaluate((el, dockTop) => {
           const target = el.getBoundingClientRect();
           const top = Math.max(4, (dockTop - target.height) / 2);
-          window.scrollBy(0, target.top - top);
+          el.closest('main')!.scrollBy(0, target.top - top);
         }, dock.y);
         await expect(legend).toBeInViewport({ ratio: 1 });
         const lastBox = (await last.boundingBox())!;

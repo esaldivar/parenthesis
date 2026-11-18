@@ -147,6 +147,9 @@ export interface CaregiverDetails {
   readonly city: string | null;
   readonly hourlyRate: number | null;
   readonly schoolPickup: boolean;
+  /** Optional role and notes (#664); caregivers saved before them have neither. */
+  readonly role?: string | null;
+  readonly notes?: string | null;
 }
 
 export interface Caregiver {

@@ -39,6 +39,40 @@
   // Focus ring (Figma Button/Primary focus state): text colour, drawn 2px outside the control. 11:1 on the canvas.
   --color-focus: #203a31;
   --color-selected: #d6e4d0;
+  // Soft secondary action fill (Figma Medical "History", #659), drawn translucent over the page artwork.
+  --color-soft-action: rgb(209 225 224 / 76%);
+  // Solid soft button fill (Figma Allergies & Food "Download allergy PDF", #662).
+  --color-soft-button: #d1e1e0;
+  // State panels, fields and secondary actions in the What Helps (#667) and Routines (#666) frames.
+  --color-state-panel: rgb(227 236 223 / 62%);
+  --color-state-panel-border: rgb(92 125 105 / 35%);
+  --color-state-field: rgb(219 236 224 / 70%);
+  --color-state-field-border: rgb(92 125 105 / 70%);
+  --color-state-inset: rgb(219 236 224 / 60%);
+  --color-state-secondary: #d4e8db;
+  --color-state-secondary-border: rgb(92 125 105 / 70%);
+  --color-state-muted: #52695c;
+  --color-state-invalid: rgb(166 64 51 / 70%);
+  --color-state-invalid-text: #8c2e21;
+  --color-state-art-opacity: 0.17;
+  // Shared Caregivers (#664): its title teal, the desktop card's soft sage and the sheet surfaces.
+  --color-caregivers-title: #24534c;
+  --color-caregiver-card: rgb(227 236 223 / 78%);
+  --color-caregiver-card-border: rgb(112 133 120 / 28%);
+  --color-caregiver-card-phone: rgb(255 255 255 / 82%);
+  --color-sheet: #fafcfa;
+  --color-sheet-field: #e8f2ed;
+  --color-sheet-text: #1f3833;
+  // Emergency Contacts (#665): the soft mint copy dropdown.
+  --color-select-soft: rgb(219 236 224 / 90%);
+  // Routines (#666): the inactive folder tabs, the routine subcards, and the chosen tab's solid join.
+  --color-routine-tab: rgb(209 224 209 / 65%);
+  --color-routine-card: rgb(249 248 241 / 58%);
+  --color-routine-panel-solid: color-mix(in srgb, rgb(227 236 223) 62%, var(--color-canvas));
+  // Child Essentials landing child selector (#669, Figma 1321:2): highlighted when chosen, outlined otherwise.
+  --color-child-choice: #f0f1e8;
+  --color-child-choice-border: rgb(92 125 105 / 50%);
+  --color-child-choice-selected: #d4e3c9;
   // Hairlines between grid cells, rows and cards (#209). Calm, but visible on white and ivory.
   --color-divider: #cfd7c9;
   // How much of an item's category text colour tints its edge (#209), as in the approved calendar boards.
@@ -51,6 +85,11 @@
   --color-status-pending-bg: #fbeee0;
   --color-status-confirmed-bg: #dcefe9;
   --color-status-rejected-bg: #f8e1df;
+  // Child Essentials redesign (Figma Clothing & Shoes 279:2, #660): saved-value panels and edit fields stay
+  // translucent so the faint category artwork shows through; text keeps its contrast on the canvas underneath.
+  --color-panel-translucent: rgb(255 255 255 / 45%);
+  --color-field-translucent: rgb(247 245 237 / 45%);
+  --essentials-art-opacity: 0.22;
   // Wordmark (docs/design/BRANDING.md): sage "Parent", charcoal "hesis".
   --brand-wordmark-parent: #5e8f7e;
   --brand-wordmark-hesis: #20303f;
@@ -124,6 +163,33 @@
   --color-notify: #3ddc84;
   --color-focus: #f7f5ed;
   --color-selected: #24483a;
+  --color-soft-action: rgb(49 86 75 / 76%);
+  --color-soft-button: #31564b;
+  --color-state-panel: rgb(25 55 45 / 72%);
+  --color-state-panel-border: rgb(145 184 163 / 35%);
+  --color-state-field: rgb(33 66 55 / 70%);
+  --color-state-field-border: rgb(145 184 163 / 70%);
+  --color-state-inset: rgb(33 66 55 / 60%);
+  --color-state-secondary: #30574a;
+  --color-state-secondary-border: rgb(145 184 163 / 70%);
+  --color-state-muted: #b0ccbd;
+  --color-state-invalid: rgb(255 153 128 / 70%);
+  --color-state-invalid-text: #ffb299;
+  --color-state-art-opacity: 0.2;
+  --color-caregivers-title: #def7f1;
+  --color-caregiver-card: rgb(25 55 45 / 82%);
+  --color-caregiver-card-border: transparent;
+  --color-caregiver-card-phone: rgb(25 55 45 / 82%);
+  --color-sheet: #1a2b29;
+  --color-sheet-field: #2b423b;
+  --color-sheet-text: #ebf7f2;
+  --color-select-soft: rgb(33 66 55 / 90%);
+  --color-routine-tab: rgb(36 72 58 / 65%);
+  --color-routine-card: rgb(16 37 30 / 50%);
+  --color-routine-panel-solid: color-mix(in srgb, rgb(25 55 45) 72%, var(--color-canvas));
+  --color-child-choice: #19372d;
+  --color-child-choice-border: rgb(145 184 163 / 50%);
+  --color-child-choice-selected: #214a3b;
   --color-divider: #24483a;
   --calendar-item-edge-mix: 45%;
   --color-disabled-text: #9db2a6;
@@ -132,6 +198,9 @@
   --color-status-pending-bg: #4a3a22;
   --color-status-confirmed-bg: #1f4a3f;
   --color-status-rejected-bg: #4d2724;
+  --color-panel-translucent: rgb(25 55 45 / 45%);
+  --color-field-translucent: rgb(25 55 45 / 40%);
+  --essentials-art-opacity: 0.3;
   // Charcoal "hesis" is invisible on forest green (1.2:1), so dark mode uses ivory. Sage "Parent" is unchanged.
   --brand-wordmark-parent: #5e8f7e;
   --brand-wordmark-hesis: #f7f5ed;

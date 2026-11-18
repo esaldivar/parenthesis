@@ -1,117 +1,132 @@
-import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
-import { TranslatePipe } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Icon } from '../../../../shared/components/icon/icon';
+import { ClothingHistoryPage, ClothingValues, ClothingView } from '../../../../core/api/api';
+import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
+import { TranslatePipe, TranslationKey } from '../../../../core/i18n/translations';
 import { OnScreen, sectionUpdates } from '../../essentials-updates';
 import { RevisionedSection } from '../../revisioned-section';
-import { ClothingHistoryPage, ClothingView } from '../../../../core/api/api';
+
+type ClothingField = keyof ClothingValues;
+
+/**
+ * The Clothing & Shoes rows in the approved order (#660). The notes field shows as "Clothing notes" but is still
+ * stored as fitNotes, so notes saved before the redesign keep showing and saving unchanged.
+ */
+const FIELDS: readonly { readonly key: ClothingField; readonly label: TranslationKey }[] = [
+  { key: 'topSize', label: 'feature.top.size' },
+  { key: 'bottomSize', label: 'feature.bottom.size' },
+  { key: 'shoeSize', label: 'feature.shoe.size' },
+  { key: 'fitNotes', label: 'essentials.clothing.notes' },
+];
 
 @Component({
   selector: 'app-clothing-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen, Icon],
+  imports: [TranslatePipe, AppDatePipe, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
   template: `
-    <section class="clothing" aria-labelledby="clothing-heading">
-      <h3 id="clothing-heading">{{ 'feature.clothing.shoes' | tr }}
-      </h3>
+    <!-- The original clothing illustration, large and faint behind the panels and fields (#660). Decorative. -->
+    <img class="art" src="art/child-essentials/clothing.webp" alt="" />
+    <section aria-labelledby="clothing-heading">
+      <h3 id="clothing-heading" class="visually-hidden">{{ 'feature.clothing.shoes' | tr }}</h3>
       @if (error()) {
-        <p role="alert">{{ error() }}</p>
+        <p role="alert" class="message">{{ error() }}</p>
       }
       @if (current(); as saved) {
         @if (editing()) {
           <form [formGroup]="form" (ngSubmit)="save()">
             @if (conflict(); as latest) {
               <div class="latest">
-                <p role="alert">{{ 'feature.your.co.parent.saved.changes.first.review' | tr }}</p>
-                <h4>{{ 'feature.latest.saved.values' | tr }}</h4>
+                <p role="alert" class="message">{{ 'feature.your.co.parent.saved.changes.first.review' | tr }}</p>
+                <h4 class="caption">{{ 'feature.latest.saved.values' | tr }}</h4>
                 <ng-container *ngTemplateOutlet="values; context: { $implicit: latest.values }" />
               </div>
             }
             <fieldset [disabled]="saving()">
-              <legend>{{ 'feature.sizes.and.fit.notes' | tr }}</legend>
-              <label>{{ 'feature.top.size' | tr }} <input formControlName="topSize" maxlength="64" /></label>
-              <label>{{ 'feature.bottom.size' | tr }} <input formControlName="bottomSize" maxlength="64" /></label>
-              <label>{{ 'feature.shoe.size' | tr }} <input formControlName="shoeSize" maxlength="64" /></label>
-              <label>{{ 'feature.fit.notes.optional' | tr }} <textarea formControlName="fitNotes" maxlength="1000"></textarea></label>
-              <div class="actions">
-                <button type="submit" [disabled]="form.invalid">
+              <legend class="visually-hidden">{{ 'essentials.clothing.legend' | tr }}</legend>
+              <label class="field"><span class="label">{{ 'feature.top.size' | tr }}</span>
+                <input formControlName="topSize" maxlength="64" autocomplete="off" />
+              </label>
+              <label class="field"><span class="label">{{ 'feature.bottom.size' | tr }}</span>
+                <input formControlName="bottomSize" maxlength="64" autocomplete="off" />
+              </label>
+              <label class="field"><span class="label">{{ 'feature.shoe.size' | tr }}</span>
+                <input formControlName="shoeSize" maxlength="64" autocomplete="off" />
+              </label>
+              <label class="field"><span class="label">{{ 'essentials.clothing.notesOptional' | tr }}</span>
+                <span id="clothing-notes-help" class="help">{{ 'essentials.clothing.notesHelp' | tr }}</span>
+                <textarea formControlName="fitNotes" maxlength="1000" aria-describedby="clothing-notes-help"></textarea>
+              </label>
+              <div class="actions actions--tall">
+                <button type="submit" class="action filled" [disabled]="form.invalid">
                   {{ saving() ? ('feature.saving' | tr) : conflict() ? ('feature.save.my.draft' | tr) : ('feature.save' | tr) }}
                 </button>
-                <button type="button" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
+                <button type="button" class="action" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
               </div>
             </fieldset>
           </form>
         } @else {
           <ng-container *ngTemplateOutlet="values; context: { $implicit: saved.values, current: true }" />
           <div class="actions">
-            <button type="button" class="pill" (click)="edit(saved)"><app-icon name="pencil" [size]="18" />{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ 'feature.clothing.and.shoes' | tr }}</span></button>
-            <button type="button" class="pill" [attr.aria-expanded]="historyOpen()" aria-controls="clothing-history"
-              (click)="toggleHistory()"><app-icon name="history" [size]="18" />{{ 'feature.history' | tr }}</button>
+            <button type="button" class="action" (click)="edit(saved)">{{ 'feature.edit' | tr }}<span class="visually-hidden"> {{ 'feature.clothing.and.shoes' | tr }}</span></button>
+            <button type="button" class="action" [attr.aria-expanded]="historyOpen()" aria-controls="clothing-history"
+              (click)="toggleHistory()">{{ 'feature.history' | tr }}</button>
           </div>
           <p role="status">{{ notice() }}</p>
         }
-        <div id="clothing-history" [hidden]="!historyOpen() || editing()">
+        <div id="clothing-history" class="history" [hidden]="!historyOpen() || editing()">
           <h4>{{ 'feature.clothing.shoes.history' | tr }}</h4>
           @if (historyError()) {
-            <p role="alert">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
-            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
+            <p role="alert" class="small">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
+            <button type="button" class="action" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
           } @else if (historyLoading()) {
-            <p role="status">{{ 'feature.loading.history' | tr }}</p>
+            <p role="status" class="small">{{ 'feature.loading.history' | tr }}</p>
           } @else if (!history().length) {
-            <p>{{ 'feature.no.changes.yet' | tr }}</p>
+            <p class="small">{{ 'feature.no.changes.yet' | tr }}</p>
           }
           @for (entry of history(); track entry.revision) {
             <article>
               <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | appDate: 'medium' }}</time></h5>
               <div class="comparison">
-                <div><strong>{{ 'feature.previous.values' | tr }}</strong>
+                <div><h6 class="caption">{{ 'feature.previous.values' | tr }}</h6>
                   <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.previous }" />
                 </div>
-                <div><strong>{{ 'feature.saved.values' | tr }}</strong>
+                <div><h6 class="caption">{{ 'feature.saved.values' | tr }}</h6>
                   <ng-container *ngTemplateOutlet="values; context: { $implicit: entry.current }" />
                 </div>
               </div>
             </article>
           }
           @if (nextRevision() !== null && !historyLoading() && !historyError()) {
-            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
+            <button type="button" class="action" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
           }
         </div>
       } @else if (error()) {
-        <button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
+        <button type="button" class="action" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       } @else {
         <p role="status">{{ 'feature.loading.clothing.and.shoes' | tr }}</p>
       }
     </section>
     <ng-template #values let-entry let-current="current">
-      <dl>
-        <div class="row" [class.row--updated]="current && marks.updated('topSize')" (appOnScreen)="current && marks.rowOnScreen('topSize')">
-          <dt>{{ 'feature.top.size' | tr }}@if (current && marks.updated('topSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.topSize ?? ('essentials.copy.notSet' | tr) }}</dd>
-        </div>
-        <div class="row" [class.row--updated]="current && marks.updated('bottomSize')" (appOnScreen)="current && marks.rowOnScreen('bottomSize')">
-          <dt>{{ 'feature.bottom.size' | tr }}@if (current && marks.updated('bottomSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.bottomSize ?? ('essentials.copy.notSet' | tr) }}</dd>
-        </div>
-        <div class="row" [class.row--updated]="current && marks.updated('shoeSize')" (appOnScreen)="current && marks.rowOnScreen('shoeSize')">
-          <dt>{{ 'feature.shoe.size' | tr }}@if (current && marks.updated('shoeSize')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.shoeSize ?? ('essentials.copy.notSet' | tr) }}</dd>
-        </div>
-        <div class="row" [class.row--updated]="current && marks.updated('fitNotes')" (appOnScreen)="current && marks.rowOnScreen('fitNotes')">
-          <dt>{{ 'feature.fit.notes' | tr }}@if (current && marks.updated('fitNotes')) { <span class="updated-pill">{{ 'feature.updated' | tr }}</span> }</dt><dd>{{ entry.fitNotes ?? ('essentials.copy.notSet' | tr) }}</dd>
-        </div>
+      <dl class="panel">
+        @for (field of fields; track field.key) {
+          <!-- Notes with text sit under their label, full width (Figma populated frames); everything else is label | value. -->
+          <div class="row" [class.row--stacked]="field.key === 'fitNotes' && !!entry[field.key]"
+            [class.row--updated]="current && marks.updated(field.key)"
+            (appOnScreen)="current && marks.rowOnScreen(field.key)">
+            <dt><span class="label">{{ field.label | tr }}</span>
+              @if (current && marks.updated(field.key)) { <span class="updated">{{ 'feature.updated' | tr }}</span> }
+            </dt>
+            <dd>{{ entry[field.key] || ('essentials.copy.notSet' | tr) }}</dd>
+          </div>
+        }
       </dl>
     </ng-template>
   `,
-  styleUrl: '../../essentials-section.css',
-  styles: `
-    :host {
-      display: block;
-      --essentials-section-bg: var(--color-calendar-task-bg);
-      --essentials-section-fg: var(--color-calendar-task-fg);
-    }
-  `,
+  styleUrl: '../../redesigned-section.css',
 })
-export class ClothingSection extends RevisionedSection<ClothingView, ClothingView['values'], ClothingHistoryPage['entries'][number]> {
+export class ClothingSection extends RevisionedSection<ClothingView, ClothingValues, ClothingHistoryPage['entries'][number]> {
+  protected readonly fields = FIELDS;
   protected readonly marks = sectionUpdates('clothing', this.childId);
   protected readonly savedNoticeKey = 'essentials.clothing.saved';
   protected readonly form = new FormGroup({
@@ -145,7 +160,7 @@ export class ClothingSection extends RevisionedSection<ClothingView, ClothingVie
     this.editing.set(true);
   }
 
-  protected store(revision: number, values: ClothingView['values']): Promise<ClothingView> {
+  protected store(revision: number, values: ClothingValues): Promise<ClothingView> {
     return this.api.saveClothing(this.familyId(), this.childId(), { revision, values });
   }
 

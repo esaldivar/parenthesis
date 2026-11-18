@@ -26,7 +26,20 @@ public static class PdfLayout
     private static readonly Lazy<SKTypeface> _serif = new(() => Load("TranscriptSerif.ttf"));
     private static readonly Lazy<SKTypeface> _emoji = new(() => Load("NotoEmoji-Regular.ttf"));
 
+    private static readonly Lazy<SKTypeface> _inter = new(() => Load("Inter-Regular.ttf"));
+    private static readonly Lazy<SKTypeface> _interSemiBold = new(() => Load("Inter-SemiBold.ttf"));
+    private static readonly Lazy<SKTypeface> _headingBold = new(() => Load("NunitoSans-Bold.ttf"));
+
     public static SKTypeface Serif => _serif.Value;
+
+    /// <summary>Inter Regular, the app's body text (Medical reference, #659).</summary>
+    public static SKTypeface Inter => _inter.Value;
+
+    /// <summary>Inter Semi Bold, the app's labels and emphasis.</summary>
+    public static SKTypeface InterSemiBold => _interSemiBold.Value;
+
+    /// <summary>Nunito Sans Bold, the app's headings.</summary>
+    public static SKTypeface HeadingBold => _headingBold.Value;
 
     internal static SKTypeface Emoji => _emoji.Value;
 

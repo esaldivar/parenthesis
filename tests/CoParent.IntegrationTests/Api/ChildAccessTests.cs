@@ -545,7 +545,9 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         var singlePdf = System.Text.Encoding.ASCII.GetString(await single.Content.ReadAsByteArrayAsync(token));
         var allPdf = System.Text.Encoding.ASCII.GetString(await all.Content.ReadAsByteArrayAsync(token));
         Assert.Equal(1, System.Text.RegularExpressions.Regex.Count(singlePdf, @"/Type /Page\b"));
-        Assert.Equal(2, System.Text.RegularExpressions.Regex.Count(allPdf, @"/Type /Page\b"));
+        // The branded layout (#662) gives each 12-line section 405pt: one fits under the title, and each later one
+        // moves whole to a new page instead of splitting, so five children take five pages.
+        Assert.Equal(5, System.Text.RegularExpressions.Regex.Count(allPdf, @"/Type /Page\b"));
     }
 
     [Fact]
@@ -608,6 +610,46 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NoContent, (await tablet.PostAsync("/api/device/child-session",
             new { childId = family.KaiId, pin = KaisPin })).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await tablet.GetAsync(path)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Caregiver_role_and_notes_are_optional_persist_and_respect_their_limits()
+    {
+        using var family = await FamilyWithKaiAsync();
+        var path = $"/api/families/{family.FamilyId}/children/{family.KaiId}/essentials/caregivers";
+
+        // Saved without Role or Notes (as before #664): both read back empty.
+        Assert.Equal(HttpStatusCode.NoContent, (await family.Dad.PostAsync(path,
+            new { version = 0, details = new { name = "Neighbor Sam", phone = "214-555-0110" } })).StatusCode);
+        var first = (await JsonAsync(await family.Mom.GetAsync(path))).GetProperty("caregivers")[0];
+        Assert.Equal(JsonValueKind.Null, first.GetProperty("details").GetProperty("role").ValueKind);
+        Assert.Equal(JsonValueKind.Null, first.GetProperty("details").GetProperty("notes").ValueKind);
+
+        // Mom adds them; they're trimmed and kept with the other details.
+        var id = first.GetProperty("id").GetGuid();
+        var version = (await JsonAsync(await family.Mom.GetAsync(path))).GetProperty("version").GetInt32();
+        Assert.Equal(HttpStatusCode.NoContent, (await family.Mom.SendAsync(HttpMethod.Put, $"{path}/{id}", new
+        {
+            version,
+            details = new { name = "Neighbor Sam", phone = "214-555-0110", role = "  Babysitter ", notes = "Knows the bedtime routine.\nHas a car seat." },
+        })).StatusCode);
+        var edited = (await JsonAsync(await family.Dad.GetAsync(path))).GetProperty("caregivers")[0].GetProperty("details");
+        Assert.Equal("Babysitter", edited.GetProperty("role").GetString());
+        Assert.Equal("Knows the bedtime routine.\nHas a car seat.", edited.GetProperty("notes").GetString());
+
+        // Over the limits: a validation problem naming each field, and nothing changes.
+        version = (await JsonAsync(await family.Dad.GetAsync(path))).GetProperty("version").GetInt32();
+        using var tooLong = await family.Dad.SendAsync(HttpMethod.Put, $"{path}/{id}", new
+        {
+            version,
+            details = new { name = "Neighbor Sam", phone = "214-555-0110", role = new string('r', 61), notes = new string('n', 1001) },
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, tooLong.StatusCode);
+        var problem = (await JsonAsync(tooLong)).GetProperty("errors");
+        Assert.True(problem.TryGetProperty("role", out _));
+        Assert.True(problem.TryGetProperty("notes", out _));
+        Assert.Equal("Babysitter", (await JsonAsync(await family.Dad.GetAsync(path))).GetProperty("caregivers")[0]
+            .GetProperty("details").GetProperty("role").GetString());
     }
 
     private async Task<ApiSession> PairedTabletAsync(TestFamily family)

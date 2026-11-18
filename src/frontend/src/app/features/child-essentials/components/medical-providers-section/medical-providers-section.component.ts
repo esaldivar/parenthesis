@@ -3,7 +3,7 @@ import { essentialsOption } from '../../essentials-options';
 import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
 import { TranslatePipe } from '../../../../core/i18n/translations';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import {
@@ -11,6 +11,8 @@ import {
 } from '../../../../core/api/api';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { LOCATION_MAX_LENGTH, mapsDirectionsUrl } from '../../../calendar/maps-link';
+import { OnScreen, sectionUpdates } from '../../essentials-updates';
+import { phoneDisplay } from '../../phone-display';
 import { RevisionedSection } from '../../revisioned-section';
 
 type ProviderFields = Omit<MedicalProvider, 'id'>;
@@ -21,132 +23,138 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
   return (type === 'Doctor' || type === 'Dentist') && !String(control.value ?? '').trim() ? { required: true } : null;
 }
 
+/**
+ * A child's medical providers, built to the approved Figma page 174:2 (#659): the title on the theme background,
+ * translucent provider cards with the type and a plain teal "Updated" beside it, Call and Directions beside the
+ * details, and rounded-rectangle actions. The page shows the faint Medical artwork behind this and Medication.
+ */
 @Component({
   selector: 'app-medical-providers-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, AppDatePipe, Icon, NgTemplateOutlet, ReactiveFormsModule],
-  styleUrls: ['../../essentials-section.css', './medical-providers-section.component.css'],
+  imports: [TranslatePipe, AppDatePipe, Icon, NgTemplateOutlet, ReactiveFormsModule, OnScreen],
+  styleUrl: './medical-providers-section.component.css',
   template: `
     <section aria-labelledby="medical-heading">
       <button type="button" class="back" #backButton (click)="editing() ? cancel() : back.emit()" [disabled]="saving()">
         <app-icon name="chevron-left" [size]="20" />
-        {{ editing() ? ('feature.medical' | tr) : ('feature.child.essentials' | tr) }}
+        @if (editing()) { {{ 'feature.medical' | tr }} } @else { {{ 'essentials.copy.allEssentials' | tr: { name: childName() } }} }
       </button>
-      @if (!editing()) {
-        <div class="hero">
-          <h2 id="medical-heading">{{ 'feature.medical' | tr }}</h2>
-          <img src="art/child-essentials/medical.webp" alt="" />
-        </div>
-        <div class="actions" role="group" aria-label="{{ 'feature.choose.a.child' | tr }}">
-          @for (child of children(); track child.id) {
-            <button type="button" [attr.aria-pressed]="child.id === childId()" (click)="childSelected.emit(child.id)">
-              {{ child.firstName }}
-            </button>
-          }
-        </div>
-      } @else {
-        <h2 id="medical-heading" tabindex="-1" #editorHeading>
-          {{ removing() ? ('feature.remove.provider' | tr) : existing() ? ('feature.edit.provider' | tr) : ('feature.add.provider' | tr) }}
-        </h2>
-      }
+      <h2 id="medical-heading" class="title" tabindex="-1" #editorHeading>
+        @if (!editing()) { {{ 'feature.medical' | tr }} }
+        @else if (removing()) { {{ 'feature.remove.provider' | tr }} }
+        @else if (existing()) { {{ 'feature.edit.provider' | tr }} }
+        @else { {{ 'feature.add.provider' | tr }} }
+      </h2>
       @if (error()) { <p role="alert">{{ error() }}</p> }
-      @if (notice()) { <p role="status">{{ notice() }}</p> }
+      <p role="status">{{ notice() }}</p>
 
       @if (current(); as saved) {
         @if (!editing()) {
           @if (!saved.providers.length) { <p>{{ 'feature.no.medical.providers.added.yet' | tr }}</p> }
           @for (provider of saved.providers; track provider.id) {
-            <article class="entry provider">
-              <div>
-                <span class="tag">{{ provider.specialty || optionLabel(provider.type, locale.locale()) }}</span>
-                <h3>{{ provider.name }}</h3>
+            <article class="provider" [attr.aria-labelledby]="'provider-' + provider.id" (appOnScreen)="marks.rowOnScreen(provider.id)">
+              <div class="details">
+                <p class="type">
+                  <span class="badge">{{ provider.specialty || optionLabel(provider.type, locale.locale()) }}</span>
+                  @if (marks.updated(provider.id)) { <span class="visually-hidden">, </span><span class="updated">{{ 'feature.updated' | tr }}</span> }
+                </p>
+                <h3 class="name" [id]="'provider-' + provider.id">{{ provider.name }}</h3>
                 @if (provider.practice) { <p>{{ provider.practice }}</p> }
-                @if (provider.phone) { <p>{{ provider.phone }}</p> }
-                @if (provider.address) { <p>{{ provider.address }}</p> }
+                @if (provider.phone) { <p>{{ phone(provider.phone) }}</p> }
+                @if (provider.address) { <p class="address">{{ provider.address }}</p> }
               </div>
-              <div class="contact-actions">
+              <div class="contact">
                 @if (provider.phone) {
-                  <a class="primary" [href]="callUrl(provider.phone)" [attr.aria-label]="('feature.call.14e218' | tr) + provider.name"><app-icon name="phone" [size]="18" /> {{ 'feature.call' | tr }}</a>
+                  <a class="action filled" [href]="callUrl(provider.phone)" [attr.aria-label]="('feature.call.14e218' | tr) + provider.name"><app-icon name="phone" [size]="18" /> {{ 'feature.call' | tr }}</a>
                 }
                 @if (directionsUrl(provider.address); as url) {
-                  <a [href]="url" target="_blank" rel="noopener noreferrer"
-                    [attr.aria-label]="('feature.directions.to' | tr) + provider.name + ('feature.opens.in.a.new.tab.708573' | tr)"><app-icon name="map-pin" [size]="18" /> {{ 'feature.directions' | tr }}</a>
+                  <a class="action" [href]="url" target="_blank" rel="noopener noreferrer"
+                    [attr.aria-label]="('feature.directions.to' | tr) + provider.name + ('feature.opens.in.a.new.tab.708573' | tr)">{{ 'feature.directions' | tr }}</a>
                 }
               </div>
-              <div class="actions management">
-                <button type="button" [attr.aria-label]="('feature.edit.4a683d' | tr) + provider.name" (click)="edit(provider)">{{ 'feature.edit' | tr }}</button>
-                <button type="button" [attr.aria-label]="('feature.remove.594895' | tr) + provider.name" (click)="remove(provider)">{{ 'feature.remove' | tr }}</button>
+              <div class="manage">
+                <button type="button" class="action" [attr.aria-label]="('feature.edit.4a683d' | tr) + provider.name" (click)="edit(provider)">{{ 'feature.edit' | tr }}</button>
+                <button type="button" class="action" [attr.aria-label]="('feature.remove.594895' | tr) + provider.name" (click)="remove(provider)">{{ 'feature.remove' | tr }}</button>
               </div>
             </article>
           }
-        }
-        @if (editing()) {
+          <button type="button" class="action filled wide" #addButton (click)="edit(null)">{{ 'feature.add.provider' | tr }}</button>
+          <button type="button" class="action soft wide" [attr.aria-expanded]="historyOpen()" aria-controls="medical-history"
+            (click)="toggleHistory()">{{ 'feature.history' | tr }}</button>
+        } @else {
           @if (conflict(); as latest) {
-            <p role="alert">{{ 'feature.your.co.parent.saved.changes.first.review.4d6a45' | tr }}</p>
-            <ng-container *ngTemplateOutlet="providerList; context: { $implicit: latest.providers }" />
+            <div class="latest">
+              <p role="alert">{{ 'feature.your.co.parent.saved.changes.first.review.4d6a45' | tr }}</p>
+              <ng-container *ngTemplateOutlet="providerList; context: { $implicit: latest.providers }" />
+            </div>
           }
           @if (removing()) {
-            <p>{{ 'feature.remove' | tr }} {{ removing()?.name }} {{ 'feature.from.this.child.s.medical.providers' | tr }}</p>
-            <button type="button" [disabled]="saving()" (click)="save()">{{ 'feature.confirm.removal' | tr }}</button>
-            <button type="button" [disabled]="saving()" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
+            <p class="small">{{ 'feature.remove' | tr }} {{ removing()?.name }} {{ 'feature.from.this.child.s.medical.providers' | tr }}</p>
+            <div class="confirm">
+              <button type="button" class="action filled tall" [disabled]="saving()" (click)="save()">{{ 'feature.confirm.removal' | tr }}</button>
+              <button type="button" class="action filled tall" [disabled]="saving()" (click)="cancel()">{{ 'feature.cancel' | tr }}</button>
+            </div>
           } @else {
             <form [formGroup]="form" (ngSubmit)="save()">
               <fieldset [disabled]="saving()">
-                <label>{{ 'feature.provider.type' | tr }}
+                <legend class="visually-hidden">{{ (existing() ? 'feature.edit.provider' : 'feature.add.provider') | tr }}</legend>
+                <label class="field"><span class="label">{{ 'feature.provider.type' | tr }}</span>
                   <select formControlName="type">
                     @for (type of types; track type) { <option [value]="type">{{ optionLabel(type, locale.locale()) }}</option> }
                   </select>
                 </label>
                 @if (form.controls.type.value === 'Other') {
-                  <label>{{ 'feature.specialty.or.label.optional' | tr }} <input formControlName="specialty" maxlength="100" /></label>
+                  <label class="field"><span class="label">{{ 'feature.specialty.or.label.optional' | tr }}</span>
+                    <input formControlName="specialty" maxlength="100" autocomplete="off" />
+                  </label>
                 }
-                <label>{{ 'feature.provider.name' | tr }} <input formControlName="name" maxlength="100" required /></label>
-                <label>{{ 'feature.practice.name.optional' | tr }} <input formControlName="practice" maxlength="100" /></label>
-                <label>{{ 'feature.phone.number' | tr }} {{ contactRequired() ? ('feature.required.89db19' | tr) : ('feature.optional' | tr) }}
-                  <input type="tel" formControlName="phone" maxlength="32" [required]="contactRequired()" />
+                <label class="field"><span class="label">{{ 'feature.provider.name' | tr }}</span>
+                  <input formControlName="name" maxlength="100" required autocomplete="off" />
                 </label>
-                @if (form.controls.phone.touched && form.controls.phone.invalid) {
-                  <p role="alert">{{ form.controls.phone.hasError('required') ? ('feature.enter.a.phone.number.for.a.doctor' | tr) : ('feature.enter.a.phone.number.with.7.to' | tr) }}</p>
-                }
-                <label>{{ 'feature.practice.address' | tr }} {{ contactRequired() ? ('feature.required.89db19' | tr) : ('feature.optional' | tr) }}
-                  <input formControlName="address" [maxLength]="addressLimit" [required]="contactRequired()" />
+                <label class="field"><span class="label">{{ 'feature.practice.name.optional' | tr }}</span>
+                  <input formControlName="practice" maxlength="100" autocomplete="off" />
                 </label>
-                @if (form.controls.address.touched && form.controls.address.invalid) {
-                  <p role="alert">{{ form.controls.address.hasError('required') ? ('feature.enter.a.practice.address.for.a.doctor' | tr) : ('feature.enter.a.practice.address' | tr) }}</p>
-                }
+                <label class="field"><span class="label">{{ 'feature.phone.number' | tr }} {{ contactRequired() ? ('feature.required.89db19' | tr) : ('feature.optional' | tr) }}</span>
+                  <input type="tel" inputmode="tel" formControlName="phone" maxlength="32" autocomplete="off" [required]="contactRequired()"
+                    [attr.aria-invalid]="form.controls.phone.touched && form.controls.phone.invalid"
+                    [attr.aria-describedby]="form.controls.phone.touched && form.controls.phone.invalid ? 'provider-phone-error' : null" />
+                  @if (form.controls.phone.touched && form.controls.phone.invalid) {
+                    <span id="provider-phone-error" class="field-error" role="alert">{{ form.controls.phone.hasError('required') ? ('feature.enter.a.phone.number.for.a.doctor' | tr) : ('feature.enter.a.phone.number.with.7.to' | tr) }}</span>
+                  }
+                </label>
+                <label class="field"><span class="label">{{ 'feature.practice.address' | tr }} {{ contactRequired() ? ('feature.required.89db19' | tr) : ('feature.optional' | tr) }}</span>
+                  <input formControlName="address" [maxLength]="addressLimit" autocomplete="off" [required]="contactRequired()"
+                    [attr.aria-invalid]="form.controls.address.touched && form.controls.address.invalid"
+                    [attr.aria-describedby]="form.controls.address.touched && form.controls.address.invalid ? 'provider-address-error' : null" />
+                  @if (form.controls.address.touched && form.controls.address.invalid) {
+                    <span id="provider-address-error" class="field-error" role="alert">{{ form.controls.address.hasError('required') ? ('feature.enter.a.practice.address.for.a.doctor' | tr) : ('feature.enter.a.practice.address' | tr) }}</span>
+                  }
+                </label>
                 @if (!existing()) {
                   <fieldset class="child-picker">
                     <legend>{{ 'feature.add.to.children' | tr }}</legend>
                     <p>{{ 'feature.choose.one.or.more.children' | tr }}</p>
-                    <div>
-                      @for (child of children(); track child.id) {
-                        <label>
-                          <input type="checkbox" [checked]="targetIds().includes(child.id)"
-                            (change)="toggleTarget(child.id)" />
-                          {{ child.firstName }}
-                        </label>
-                      }
-                    </div>
+                    @for (child of children(); track child.id) {
+                      <label class="check">
+                        <input type="checkbox" [checked]="targetIds().includes(child.id)" (change)="toggleTarget(child.id)" />
+                        {{ child.firstName }}
+                      </label>
+                    }
                   </fieldset>
                 }
-                <button class="primary" type="submit"
+                <button class="action filled tall wide" type="submit"
                   [disabled]="form.invalid || (!existing() && !targetIds().length)">
                   {{ saving() ? ('feature.saving' | tr) : ('feature.save.provider' | tr) }}
                 </button>
               </fieldset>
             </form>
           }
-        } @else {
-          <button type="button" class="primary" #addButton (click)="edit(null)">
-            <app-icon name="plus" [size]="20" /> {{ 'feature.add.provider' | tr }}
-          </button>
-          <button type="button" [attr.aria-expanded]="historyOpen()" (click)="toggleHistory()">{{ 'feature.history' | tr }}</button>
         }
-        @if (historyOpen()) {
-          <h3 class="history-heading">{{ 'feature.medical.provider.history' | tr }}</h3>
+        <div id="medical-history" class="history" [hidden]="!historyOpen() || editing()">
+          <h3>{{ 'feature.medical.provider.history' | tr }}</h3>
           @if (historyError()) {
             <p role="alert">{{ 'feature.history.couldn.t.be.loaded' | tr }}</p>
-            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
+            <button type="button" class="action" (click)="loadHistory(nextRevision())">{{ 'feature.try.again' | tr }}</button>
           } @else if (historyLoading()) {
             <p role="status">{{ 'feature.loading.history' | tr }}</p>
           } @else if (!history().length) {
@@ -154,23 +162,19 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
           }
           @for (entry of history(); track entry.revision) {
             <article>
-              <h5>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | appDate:'medium' }}</time></h5>
-              <div class="comparison">
-                <div><strong>{{ 'feature.previous.providers' | tr }}</strong>
-                  <ng-container *ngTemplateOutlet="providerList; context: { $implicit: entry.previous }" />
-                </div>
-                <div><strong>{{ 'feature.saved.providers' | tr }}</strong>
-                  <ng-container *ngTemplateOutlet="providerList; context: { $implicit: entry.current }" />
-                </div>
-              </div>
+              <h4>{{ entry.editedBy }} · <time [attr.datetime]="entry.editedAt">{{ entry.editedAt | appDate:'medium' }}</time></h4>
+              <h5>{{ 'feature.previous.providers' | tr }}</h5>
+              <ng-container *ngTemplateOutlet="providerList; context: { $implicit: entry.previous }" />
+              <h5>{{ 'feature.saved.providers' | tr }}</h5>
+              <ng-container *ngTemplateOutlet="providerList; context: { $implicit: entry.current }" />
             </article>
           }
           @if (nextRevision() !== null && !historyLoading() && !historyError()) {
-            <button type="button" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
+            <button type="button" class="action" (click)="loadHistory(nextRevision())">{{ 'feature.show.older.changes' | tr }}</button>
           }
-        }
+        </div>
       } @else if (error()) {
-        <button type="button" (click)="load()">{{ 'feature.try.again' | tr }}</button>
+        <button type="button" class="action" (click)="load()">{{ 'feature.try.again' | tr }}</button>
       } @else {
         <p role="status">{{ 'feature.loading.medical.providers' | tr }}</p>
       }
@@ -179,11 +183,7 @@ function requiredForContact(control: AbstractControl): ValidationErrors | null {
       @if (providers.length) {
         <ul>
           @for (provider of providers; track provider.id) {
-            <li>{{ provider.name }} · {{ provider.specialty || optionLabel(provider.type, locale.locale()) }}
-              @if (provider.practice) { · {{ provider.practice }} }
-              @if (provider.phone) { · {{ provider.phone }} }
-              @if (provider.address) { · {{ provider.address }} }
-            </li>
+            <li>{{ providerLine(provider) }}</li>
           }
         </ul>
       } @else { <p>{{ 'feature.no.medical.providers' | tr }}</p> }
@@ -194,8 +194,10 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
   protected readonly locale = inject(LocaleService);
   protected readonly optionLabel = essentialsOption;
   readonly children = input.required<readonly Child[]>();
-  readonly childSelected = output<string>();
   readonly back = output<void>();
+  protected readonly marks = sectionUpdates('medical', this.childId);
+  protected readonly phone = phoneDisplay;
+  protected readonly childName = computed(() => this.children().find(child => child.id === this.childId())?.firstName ?? '');
   private readonly injector = inject(Injector);
   private readonly backButton = viewChild<ElementRef<HTMLButtonElement>>('backButton');
   private readonly addButton = viewChild<ElementRef<HTMLButtonElement>>('addButton');
@@ -241,6 +243,14 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
 
   protected toggleTarget(id: string): void {
     this.targetIds.update(ids => ids.includes(id) ? ids.filter(target => target !== id) : [...ids, id]);
+  }
+
+  /** A history line: "Name · Type · Practice · (512) 555-0100 · Address", leaving out what isn't set. */
+  protected providerLine(provider: MedicalProvider): string {
+    return [
+      provider.name, provider.specialty || this.optionLabel(provider.type, this.locale.locale()), provider.practice,
+      provider.phone ? phoneDisplay(provider.phone) : null, provider.address,
+    ].filter(Boolean).join(' · ');
   }
 
   protected callUrl(phone: string): string {
