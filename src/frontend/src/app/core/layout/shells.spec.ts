@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
 import { CHAT_CONNECTION, ChatStore } from '../chat/chat.store';
@@ -27,6 +27,15 @@ describe('application shells', () => {
     [...root.querySelectorAll('a')].map((a) => a.textContent!.replace(/\s+/g, ' ').trim());
 
   describe('parent shell', () => {
+    it('starts a newly opened section at the top of the main scrolling pane (#676)', async () => {
+      const body = await open('/more');
+      const main = body.querySelector('main')!;
+      main.scrollTop = 500;
+      await TestBed.inject(Router).navigateByUrl('/child-essentials');
+      TestBed.tick();
+      expect(main.scrollTop).toBe(0);
+    });
+
     it('offers the approved navigation, in its exact order, with Calendar as one standalone item', async () => {
       const body = await open('/');
       const sidenav = body.querySelector('nav.sidenav')!;

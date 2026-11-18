@@ -232,7 +232,9 @@ a.is-active {
     // Shared with overlays (event details) that leave the side navigation clear (#431).
     --shell-sidebar-width: 19.5rem;
     grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100dvh;
+    overflow: hidden;
   }
 
   // How much width at the bottom right the Messages dock takes: the bar while minimized, the panel while open (#547).
@@ -247,10 +249,8 @@ a.is-active {
 
   .sidebar {
     grid-area: sidebar;
-    position: sticky;
-    top: 0;
-    align-self: start;
-    min-height: 100dvh;
+    height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
@@ -260,9 +260,12 @@ a.is-active {
   }
 
   .sidebar .brand {
+    flex: none;
     font-size: 1.75rem;
     padding-inline: var(--space-2);
   }
+
+  .sidenav { flex: none; }
 
   .sidenav a {
     display: flex;
@@ -287,7 +290,7 @@ a.is-active {
 
   .sidebar__decor {
     position: relative;
-    flex: 1;
+    flex: 1 0 9rem;
     min-height: 9rem;
 
     app-leaves {
@@ -322,6 +325,8 @@ a.is-active {
   }
 
   main {
+    min-height: 0;
+    overflow: auto;
     /* Room at the bottom so the chat bar never covers the end of a page. */
     padding: 0 var(--space-6) 5rem;
   }
@@ -343,15 +348,42 @@ a.is-active {
   }
 
   .sidebar__decor {
-    display: none;
+    flex-basis: 6rem;
+    min-height: 6rem;
+
+    app-leaves {
+      width: 7rem;
+      height: 6rem;
+    }
+  }
+
+  .tagline {
+    inset-inline-start: 4rem;
+    bottom: 0.75rem;
+    font-size: 1.25rem;
   }
 }
 
 @media (min-width: 1024px) and (max-height: 35rem) {
   .sidebar {
-    position: static;
-    align-self: stretch;
+    gap: var(--space-1);
+    padding-block: var(--space-2);
   }
+
+  .sidenav a {
+    min-height: 2.25rem;
+    padding-block: var(--space-1);
+    font-size: 1rem;
+  }
+
+  .sidebar__decor {
+    flex-basis: 3.5rem;
+    min-height: 3.5rem;
+
+    app-leaves { width: 4rem; height: 3.5rem; }
+  }
+
+  .tagline { inset-inline-start: 3rem; bottom: 0.25rem; font-size: 1.125rem; }
 }
 
 // Messages on phones and tablets: the conversation has its own header with Back, so the bars step aside.
