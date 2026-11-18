@@ -69,6 +69,10 @@
   --color-routine-tab: rgb(209 224 209 / 65%);
   --color-routine-card: rgb(249 248 241 / 58%);
   --color-routine-panel-solid: color-mix(in srgb, rgb(227 236 223) 62%, var(--color-canvas));
+  // Child Essentials landing child selector (#669, Figma 1321:2): highlighted when chosen, outlined otherwise.
+  --color-child-choice: #f0f1e8;
+  --color-child-choice-border: rgb(92 125 105 / 50%);
+  --color-child-choice-selected: #d4e3c9;
   // Hairlines between grid cells, rows and cards (#209). Calm, but visible on white and ivory.
   --color-divider: #cfd7c9;
   // How much of an item's category text colour tints its edge (#209), as in the approved calendar boards.
@@ -183,6 +187,9 @@
   --color-routine-tab: rgb(36 72 58 / 65%);
   --color-routine-card: rgb(16 37 30 / 50%);
   --color-routine-panel-solid: color-mix(in srgb, rgb(25 55 45) 72%, var(--color-canvas));
+  --color-child-choice: #19372d;
+  --color-child-choice-border: rgb(145 184 163 / 50%);
+  --color-child-choice-selected: #214a3b;
   --color-divider: #24483a;
   --calendar-item-edge-mix: 45%;
   --color-disabled-text: #9db2a6;
