@@ -97,6 +97,12 @@ export class ParentShell {
 
   constructor() {
     focusMainOnNavigation(() => this.main());
+    // Desktop scroll belongs to the main pane (#676), so a new section must start at its top.
+    effect(() => {
+      this.section();
+      const main = this.main()?.nativeElement;
+      if (main) main.scrollTop = 0;
+    });
     // The compact chat (#125): Minimize on Messages returns to the last other page; opening Messages folds the
     // compact chat back to its bar, since it's the same conversation.
     effect(() => {

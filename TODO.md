@@ -9,6 +9,8 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+- [ ] **Stationary desktop sidebar and leaf footer (#676).** Restore the full-height sidebar and visible leaf/tagline,
+  with only the main desktop pane scrolling. Verify owner acceptance after the fix reaches the development site.
 - [ ] **Backend module layout (#570).** Move map and conventions in
   [ADR-0010](docs/adr/0010-backend-module-layout.md).
   - [x] Approvals DbContext pilot (#572).
