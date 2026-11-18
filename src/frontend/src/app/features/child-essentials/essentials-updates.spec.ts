@@ -185,7 +185,9 @@ describe('Child Essentials updates (#128)', () => {
     expect(el.querySelector('.layout')?.classList).toContain('focused');
     expect(hero.closest('section')?.getAttribute('aria-labelledby')).toBe('essentials-heading');
     expect(text(hero.querySelector('h2'))).toBe('Shared Caregivers');
-    expect(hero.querySelector('img')?.getAttribute('src')).toBe('art/child-essentials/caregivers.webp');
+    // Redesigned categories put their artwork behind the content, not in the header (#664).
+    expect(hero.classList).toContain('section-hero--caregivers');
+    expect(hero.querySelector('img')).toBeNull();
     expect(document.activeElement).toBe(hero.querySelector('h2'));
     expect(await axeViolations(el)).toEqual([]);
 
@@ -240,15 +242,15 @@ describe('Child Essentials updates (#128)', () => {
     const ava = el.querySelector('app-caregivers-section article')!;
     expect(ava.classList).toContain('row--updated');
     expect(text(ava.querySelector('.caregiver-name'))).toBe('Ava Park');
-    expect(text(ava.querySelector('.updated-pill'))).toBe('Updated');
+    expect(text(ava.querySelector('.updated'))).toBe('· Updated');
     expect(ava.querySelector('h4 [role="img"]')?.getAttribute('aria-label')).toBe('Unrated');
     expect(text(ava.querySelector('.contact-line > span'))).toBe('512-555-0100');
     expect(text(ava.querySelector('.call'))).toBe('Call');
     expect(ava.querySelector('.call')?.getAttribute('href')).toBe('tel:+15125550100');
-    expect([...ava.querySelectorAll('p:not(.contact-line)')].map(text)).toEqual([
-      'School pickup', 'City: Katy', 'Hourly rate: $20.00', 'Added by Jamie',
+    expect([...ava.querySelectorAll('p')].map(text)).toEqual([
+      'Hourly rate: $20.00/hour · City: Katy', 'School pickup', 'Added by Jamie',
     ]);
-    expect([...ava.querySelectorAll('.management button')].map(text)).toEqual(['Edit', 'Remove', 'Rate']);
+    expect([...ava.querySelectorAll('.manage button')].map(text)).toEqual(['Edit', 'Remove', 'Rate']);
 
     tab.click();
     await settle(fixture);

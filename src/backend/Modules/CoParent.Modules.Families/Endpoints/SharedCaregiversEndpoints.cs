@@ -11,7 +11,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoParent.Modules.Families.Endpoints;
 
-internal sealed record CaregiverDetails(string? Name, string? Phone, string? City, decimal? HourlyRate, bool SchoolPickup);
+/// <summary>
+/// A shared caregiver's details. Role and Notes (#664) are optional and were added later, so caregivers saved before
+/// them read back with both empty.
+/// </summary>
+internal sealed record CaregiverDetails(
+    string? Name, string? Phone, string? City, decimal? HourlyRate, bool SchoolPickup, string? Role = null, string? Notes = null);
 internal sealed record StoredCaregiver(Guid Id, CaregiverDetails Details, Guid AddedBy, Dictionary<Guid, int> Ratings);
 internal sealed record CaregiverView(Guid Id, CaregiverDetails Details, decimal? AverageRating, int? MyRating, string AddedBy);
 internal sealed record CaregiverListView(int Version, IReadOnlyList<CaregiverView> Caregivers);
@@ -95,6 +100,8 @@ internal static class SharedCaregiversEndpoints
             var name = ChildEssentialsAccess.Normalize(input.Name, "name", 100, errors);
             var phone = ChildEssentialsAccess.Normalize(input.Phone, "phone", 32, errors);
             var city = ChildEssentialsAccess.Normalize(input.City, "city", 100, errors);
+            var role = ChildEssentialsAccess.Normalize(input.Role, "role", 60, errors);
+            var notes = ChildEssentialsAccess.Normalize(input.Notes, "notes", 1000, errors);
             if (name is null)
             {
                 errors["name"] = ["Enter a caregiver name."];
@@ -123,7 +130,7 @@ internal static class SharedCaregiversEndpoints
                 return TypedResults.Conflict(new { duplicateName = duplicate.Details.Name, duplicatePhone = duplicate.Details.Phone });
             }
 
-            var details = new CaregiverDetails(name, phone, city, input.HourlyRate, input.SchoolPickup);
+            var details = new CaregiverDetails(name, phone, city, input.HourlyRate, input.SchoolPickup, role, notes);
             if (caregiverId is Guid id)
             {
                 var index = entries.FindIndex(item => item.Id == id);
