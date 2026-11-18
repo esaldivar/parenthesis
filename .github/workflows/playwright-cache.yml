@@ -14,9 +14,11 @@ on:
 permissions:
   contents: read
 
+# A push while a warm-up is running waits for it instead of cancelling it, so merges in quick succession can't keep
+# stopping each other before anything is saved. The queued run then finds the caches and installs nothing.
 concurrency:
   group: playwright-cache-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   warm:
