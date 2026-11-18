@@ -119,7 +119,7 @@ describe('Child Essentials Spanish (#577)', () => {
 
   it('localizes relationship choices while preserving their API values', async () => {
     const { host, settle } = await render(EmergencyContactsSection);
-    host.querySelector<HTMLButtonElement>('section > button')!.click(); await settle();
+    host.querySelector<HTMLButtonElement>('section .add')!.click(); await settle();
     const option = host.querySelector<HTMLOptionElement>('option[value="Grandparent"]')!;
     expect(option.textContent).toBe('Abuelo o abuela');
     expect(option.value).toBe('Grandparent');

@@ -126,7 +126,8 @@ const MEDICAL_TINT = {
                       @if (openSection() === tile.section) {
                         <header class="section-hero" [class.section-hero--plain]="plainSections.has(tile.section)"
                           [class.section-hero--compact]="tile.section === 'whatHelps'"
-                          [class.section-hero--caregivers]="tile.section === 'caregivers'">
+                          [class.section-hero--caregivers]="tile.section === 'caregivers'"
+                          [class.section-hero--tall]="tile.section === 'emergencyContacts'">
                           <h2 id="section-heading" tabindex="-1">{{ tile.name | tr }}</h2>
                           <!-- Redesigned categories put their illustration behind the content instead (#655, #660, #662). -->
                           @if (!plainSections.has(tile.section)) {
@@ -383,6 +384,8 @@ const MEDICAL_TINT = {
       .section-hero--plain h2 { font-size: 2rem; line-height: 2.5rem; }
       .section-hero.section-hero--compact { min-block-size: 4.5rem; }
       .section-hero.section-hero--caregivers { min-block-size: 7.5rem; }
+      /* Emergency Contacts (#665): Nunito Sans 32/40 in a 120px header with 16px side padding. */
+      .section-hero.section-hero--tall { min-block-size: 7.5rem; padding-inline: 1rem; }
       .section-hero--compact h2 { font-size: 1.5rem; line-height: 2.5rem; }
       .section-hero img { inline-size: min(32%, 11rem); max-block-size: 6rem; object-fit: contain; }
     }
@@ -416,8 +419,8 @@ export class ChildEssentialsPage {
   }
 
   protected readonly openSection = signal<EssentialsSectionId | null>(null);
-  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660, #662, #667, #664). */
-  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing', 'allergiesFood', 'whatHelps', 'caregivers']);
+  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660, #662, #667, #664, #665). */
+  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing', 'allergiesFood', 'whatHelps', 'caregivers', 'emergencyContacts']);
   protected readonly plainOpen = computed(() => {
     const open = this.openSection();
     return open !== null && this.plainSections.has(open);
