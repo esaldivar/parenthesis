@@ -23,3 +23,11 @@ WebP without editing; the app mirrors the portrait horizontally, as the frames d
 `emergency-telephone.webp` (#665) is the emergency telephone artwork embedded in the approved Emergency Contacts Figma
 frames (page `715:194`, layer "Centered original emergency artwork behind translucent content"), downloaded from Figma
 on November 18, 2026 at its embedded size (224x145) and saved losslessly as WebP.
+
+`tiles/*.webp` (#669) are the eight cleaned, high-resolution, full-color category illustrations embedded in the approved
+Child Essentials landing-page Figma frames (`1321:2`, `1321:56`, `1321:110`, `1321:168`), downloaded from Figma on
+November 18, 2026. All four frames embed byte-identical files. Each was scaled (premultiplied, so the edges gain no
+fringe) to fit 336x240, three times the largest card slot (112x80), and saved losslessly as WebP with its transparency,
+uncropped so it sits in the card exactly as in the frames. Shared Caregivers is the approved caregiver reading with two
+children, not the old hands or line art. They are used on the landing cards only; the section screens keep their own
+artwork.

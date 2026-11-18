@@ -371,7 +371,7 @@ export const translations = {
   'essentials.tile.school': ["Grade, teacher, parent concerns", "Grado escolar, docente e inquietudes"],
   'essentials.tile.allergies': ["Allergies and food preferences", "Alergias y preferencias alimentarias"],
   'essentials.tile.routines': ["Routines you add, shared and at each home", "Rutinas que agregas, compartidas y de cada hogar"],
-  'essentials.tile.clothing': ["Sizes and fit notes", "Tallas y notas sobre el ajuste"],
+  'essentials.tile.clothing': ["Sizes and clothing notes", "Tallas y notas sobre la ropa"],
   'essentials.tile.whatHelps': ["Comfort items and calming strategies", "Objetos de consuelo y estrategias para calmarse"],
   'essentials.tile.caregivers': ["Sitters and helpers, school pickup", "Cuidadores, personas de apoyo y recogida en la escuela"],
   'essentials.tile.emergency': ["Who to call, and who first", "A quién llamar y en qué orden"],

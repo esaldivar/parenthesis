@@ -65,19 +65,18 @@ const MEDICAL_TINT = {
       <button type="button" (click)="retryLoad()">{{ 'feature.try.again' | tr }}</button>
     } @else if (selectedChild(); as child) {
       <div class="layout" [class.focused]="openSection() !== null || medicalOpen()" [class.plain-open]="plainOpen()"
-        [class.medical-open]="medicalOpen()">
+        [class.medical-open]="medicalOpen()" [class.landing]="landing()">
         <div class="children" role="group" aria-label="{{ 'feature.choose.a.child' | tr }}">
           @for (item of children(); track item.id) {
             <button type="button" [attr.aria-pressed]="child.id === item.id" (click)="selectChild(item.id)">
-              <app-avatar [name]="item.firstName" [personId]="item.id" />
+              <!-- The landing (#669, Figma 1321:2) shows the name alone, centered; the sections keep the avatar. -->
+              @if (!landing()) {
+                <app-avatar [name]="item.firstName" [personId]="item.id" />
+              }
               <span class="child-name">{{ item.firstName }}</span>
               @if (updates.unopened(item.id)) {
                 <span class="child-dot" aria-hidden="true"></span>
                 <span class="visually-hidden">{{ 'feature.has.updates' | tr }}</span>
-              }
-              <!-- School's, Clothing's and Medical's approved designs (#655, #660, #659) show the selection by the highlighted row alone. -->
-              @if (child.id === item.id && !plainOpen() && !medicalOpen()) {
-                <app-icon class="child-check" name="check" [size]="20" />
               }
             </button>
           }
@@ -109,9 +108,10 @@ const MEDICAL_TINT = {
                 @for (tile of tiles; track tile.section) {
                   <details #disclosure [attr.data-section]="tile.section" (toggle)="tileToggled($event, child.id, tile.section)"
                     [style.--tile-bg]="tile.bg" [style.--tile-fg]="tile.fg"
-                    [style.--tile-dark-bg]="tile.darkBg" [style.--tile-dark-fg]="tile.darkFg">
+                    [style.--tile-dark-bg]="tile.darkBg" [style.--tile-dark-fg]="tile.darkFg"
+                    [style.--tile-outline]="tile.outline" [style.--tile-dark-outline]="tile.darkOutline">
                     <summary>
-                      <img class="tile-art" [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
+                      <img class="tile-art" [src]="'art/child-essentials/tiles/' + tile.image + '.webp'" alt="" />
                       <span class="tile-text">
                         <span class="tile-name">{{ tile.name | tr }}</span><span class="visually-hidden">, </span>
                         <span class="tile-about">{{ tile.aboutKey | tr }}</span>
@@ -155,7 +155,7 @@ const MEDICAL_TINT = {
                     <span class="child-dot" aria-hidden="true"></span>
                     <span class="visually-hidden">{{ 'feature.updated.8b35ce' | tr }}</span>
                   }
-                  <img class="tile-art" src="art/child-essentials/medical.webp" alt="" />
+                  <img class="tile-art" src="art/child-essentials/tiles/medical.webp" alt="" />
                   <app-icon class="tile-chevron" name="chevron-right" [size]="22" />
                 </button>
               </div>
@@ -199,42 +199,68 @@ const MEDICAL_TINT = {
       font-weight: 700;
     }
     .child-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-    .child-check { color: var(--color-text); }
 
-    /* Section tiles: tinted, with a title, what it holds, its illustration and a chevron. */
+    /* Landing (#669, Figma 1321:2 / 1321:110): the name alone, centered on both axes, in a 12px-corner choice that is
+       highlighted when chosen (no checkmark) and outlined otherwise; 52px on phones, 60px beside the categories. */
+    .landing .children { gap: 0.75rem; }
+    .landing .children button {
+      position: relative;
+      justify-content: center;
+      padding-inline: 1.75rem;
+      border-color: var(--color-child-choice-border);
+      border-radius: 0.75rem;
+      background: var(--color-child-choice);
+      font: 600 1rem / 1.5rem var(--font-family-body);
+      text-align: center;
+    }
+    .landing .children button[aria-pressed='true'] {
+      border-color: transparent;
+      background: var(--color-child-choice-selected);
+      font-weight: 600;
+    }
+    .landing .child-name { flex: 0 1 auto; }
+    /* The update dot sits at the end, so it never pushes the name off center. */
+    .landing .children .child-dot { position: absolute; inset-block-start: calc(50% - 0.3125rem); inset-inline-end: 0.875rem; }
+    #essentials-heading { font: 600 1.25rem / 1.75rem var(--font-family-body); }
+
+    /* Category cards (#669): each category's original color and outline, its full-color illustration, the text in the
+       frames' system font, and a chevron. Phones: text, then the 88x68 art, then the chevron, in a 112px card. */
     .section-tiles { display: grid; gap: 0.75rem; align-items: start; }
     .section-tiles > details {
       min-width: 0;
+      border: 1px solid light-dark(var(--tile-outline), var(--tile-dark-outline));
       border-radius: 1rem;
       --essentials-tile-bg: light-dark(var(--tile-bg), var(--tile-dark-bg));
       --essentials-tile-fg: light-dark(var(--tile-fg), var(--tile-dark-fg));
       background: var(--essentials-tile-bg);
       color: var(--essentials-tile-fg);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
     }
     .section-tiles summary {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      min-height: 5.25rem;
-      padding: 0.5rem 0.75rem 0.5rem 1rem;
-      border-radius: 1rem;
+      min-height: 6.875rem;
+      padding: 0.5rem 0.6875rem 0.5rem 0.9375rem;
+      border-radius: 0.9375rem;
       cursor: pointer;
       list-style: none;
     }
+    /* Medical: the theme's soft green with the standard outline (Figma 1643:99). */
     .medical-tile {
-      display: flex; align-items: center; gap: 0.75rem; min-height: 5.25rem; width: 100%;
+      display: flex; align-items: center; gap: 0.75rem; min-height: 7rem; width: 100%;
       padding: 0.5rem 0.75rem 0.5rem 1rem; border: 1px solid var(--color-outline);
       border-radius: 1rem; background: var(--color-surface-soft); color: var(--color-text);
       text-align: start; font: inherit; cursor: pointer;
     }
     summary::-webkit-details-marker { display: none; }
     summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
-    .tile-text { display: grid; gap: 0.125rem; flex: 1; min-width: 0; }
-    .tile-name { font-size: 1.25rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
-    .tile-about { font-size: 0.875rem; line-height: 1.35; }
+    .tile-text { display: grid; gap: 0.125rem; flex: 1; min-width: 0; font-family: var(--font-family); }
+    .tile-name { font-size: 1.25rem; font-weight: 700; line-height: 1.5625rem; overflow-wrap: anywhere; }
+    .tile-about { font-size: 0.875rem; line-height: 1.18125rem; }
     .tile-art { order: 1; flex: none; width: 5.5rem; height: 4.25rem; object-fit: contain; }
-    .tile-chevron { order: 2; flex: none; }
+    /* The frames draw every chevron in the page text color except Allergies & Food's, which takes its own. */
+    .tile-chevron { order: 2; flex: none; color: var(--color-text); }
+    [data-section='allergiesFood'] .tile-chevron { color: inherit; }
     summary .child-dot { order: 1; margin-inline-start: 0; background: currentColor; }
 
     .back {
@@ -379,6 +405,17 @@ const MEDICAL_TINT = {
       .children { flex-direction: column; flex-wrap: nowrap; }
       .children button { flex: none; min-height: 64px; }
       h2 { font-size: 1.75rem; }
+      /* Landing beside the categories: a 210px column of 60px choices, 24px from the cards. */
+      .layout.landing { grid-template-columns: 13.125rem minmax(0, 1fr); column-gap: 1.5rem; }
+      .landing .children { gap: 0.625rem; }
+      .landing .children button { min-height: 60px; }
+      .layout.landing > section { gap: 0.875rem; }
+      #essentials-heading { font-size: 1.5rem; line-height: 2rem; }
+      /* Desktop cards (Figma 1321:2), in one column or two: 128px tall, the 112x80 art first, then the text and chevron. */
+      .section-tiles summary { min-height: 7.875rem; gap: 1rem; padding-inline: 0.6875rem; }
+      .medical-tile { min-height: 8rem; padding-inline: 1rem 0.75rem; }
+      .tile-art { order: -1; width: 7rem; height: 5rem; }
+      .tile-name { font-size: 1.375rem; line-height: 1.71875rem; }
       .section-hero { min-block-size: 7rem; }
       .section-hero.section-hero--plain { min-block-size: 4rem; }
       .section-hero--plain h2 { font-size: 2rem; line-height: 2.5rem; }
@@ -391,14 +428,16 @@ const MEDICAL_TINT = {
     }
     .layout > section { container-type: inline-size; }
     @container (min-width: 46rem) {
-      .section-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      /* Two columns of cards up to the frames' 470px, 14px apart; the text block keeps its 224px width there. */
+      .section-tiles { grid-template-columns: repeat(2, minmax(0, 29.375rem)); gap: 0.875rem; }
       .focused .section-tiles { grid-template-columns: minmax(0, 1fr); }
-      .section-tiles summary { min-height: 6rem; gap: 1rem; padding-inline-start: 0.75rem; }
-      .tile-art { order: -1; width: 7rem; height: 5rem; }
-      .tile-name { font-size: 1.375rem; }
+      .tile-text { flex: 0 1 14rem; }
+      .medical-tile .tile-text { flex-basis: 14.125rem; }
     }
     @media (forced-colors: active) {
       .section-tiles > details, .banner { border: 1px solid CanvasText; }
+      /* Without its highlight, the chosen child still reads as chosen. */
+      .landing .children button[aria-pressed='true'] { outline: 3px solid Highlight; outline-offset: -3px; }
     }
   `,
 })
@@ -425,6 +464,8 @@ export class ChildEssentialsPage {
     const open = this.openSection();
     return open !== null && this.plainSections.has(open);
   });
+  /** The category list itself (#669), not an open section or Medical. */
+  protected readonly landing = computed(() => this.openSection() === null && !this.medicalOpen());
   private readonly opened = signal<readonly EssentialsBanner[] | null>(null);
   private readonly dismissed = signal<ReadonlySet<string>>(new Set());
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -452,19 +493,26 @@ export class ChildEssentialsPage {
 
   protected readonly tiles = [
     { section: 'school', name: ESSENTIALS_SECTIONS.school.name, image: 'school', aboutKey: 'essentials.tile.school', art: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6M12 7v3',
-      bg: '#e1edf9', fg: '#233f63', darkBg: '#263b54', darkFg: '#dbeaff' },
+      bg: '#e1edf9', fg: '#233f63', darkBg: '#263b54', darkFg: '#dbeaff',
+      outline: '#b7c7d8', darkOutline: '#4e627a' },
     { section: 'allergiesFood', name: ESSENTIALS_SECTIONS.allergiesFood.name, image: 'allergies', aboutKey: 'essentials.tile.allergies', art: 'M3 13h18c-1 5-4 7-9 7s-8-2-9-7zM12 12c0-5 3-8 8-8-1 5-4 8-8 8z',
-      bg: '#faedc5', fg: '#614718', darkBg: '#493b24', darkFg: '#fff0c7' },
+      bg: '#faedc5', fg: '#614718', darkBg: '#493b24', darkFg: '#fff0c7',
+      outline: '#d8c89f', darkOutline: '#716348' },
     { section: 'routines', name: ESSENTIALS_SECTIONS.routines.name, image: 'routines', aboutKey: 'essentials.tile.routines', art: 'M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5zM17 4v6m-3-3h6',
-      bg: '#e0ebdb', fg: '#344f36', darkBg: '#2c4230', darkFg: '#dfefd9' },
+      bg: '#e0ebdb', fg: '#344f36', darkBg: '#2c4230', darkFg: '#dfefd9',
+      outline: '#bac9b7', darkOutline: '#536855' },
     { section: 'clothing', name: ESSENTIALS_SECTIONS.clothing.name, image: 'clothing', aboutKey: 'essentials.tile.clothing', art: 'M9 4 4 6l-2 5 4 2 2-3v10h8V10l2 3 4-2-2-5-5-2c-1 4-5 4-6 0z',
-      bg: '#ebe3fa', fg: '#4f386d', darkBg: '#403451', darkFg: '#f1e5ff' },
+      bg: '#ebe3fa', fg: '#4f386d', darkBg: '#403451', darkFg: '#f1e5ff',
+      outline: '#c9bddb', darkOutline: '#675b77' },
     { section: 'whatHelps', name: ESSENTIALS_SECTIONS.whatHelps.name, image: 'what-helps', aboutKey: 'essentials.tile.whatHelps', art: 'M12 20S3 15 3 9a4 4 0 0 1 9-1 4 4 0 0 1 9 1c0 6-9 11-9 11z',
-      bg: '#f8e2d4', fg: '#643d2b', darkBg: '#50382f', darkFg: '#ffe9de' },
+      bg: '#f8e2d4', fg: '#643d2b', darkBg: '#50382f', darkFg: '#ffe9de',
+      outline: '#d7beaf', darkOutline: '#775f56' },
     { section: 'caregivers', name: ESSENTIALS_SECTIONS.caregivers.name, image: 'caregivers', aboutKey: 'essentials.tile.caregivers', art: 'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8 1a3 3 0 1 0 0-6M2 20v-2a6 6 0 0 1 12 0v2m2-6a5 5 0 0 1 6 5v1',
-      bg: '#dcefeb', fg: '#24534c', darkBg: '#254542', darkFg: '#def7f1' },
+      bg: '#dcefeb', fg: '#24534c', darkBg: '#254542', darkFg: '#def7f1',
+      outline: '#b4cdc8', darkOutline: '#4e6c69' },
     { section: 'emergencyContacts', name: ESSENTIALS_SECTIONS.emergencyContacts.name, image: 'emergency', aboutKey: 'essentials.tile.emergency', art: 'M5 3h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 2-2 3-4 2C9 19 5 15 3 7c-1-2 0-4 2-4z',
-      bg: '#f7e0e8', fg: '#66384a', darkBg: '#503342', darkFg: '#ffe6ef' },
+      bg: '#f7e0e8', fg: '#66384a', darkBg: '#503342', darkFg: '#ffe6ef',
+      outline: '#d7bbc5', darkOutline: '#775a68' },
   ] as const;
 
   private bannerTint(section: EssentialsSectionId): Pick<ShownBanner, 'bg' | 'fg' | 'art'> {

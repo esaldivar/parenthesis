@@ -328,11 +328,15 @@ that points back here.
     date, discontinued medications shown in the PDF only when there are any, and Noto Sans Bold for the PDF wordmark
     (the frame's Segoe UI isn't embeddable).
   - [ ] Medication records have no "Updated" cue: the frames show none. Ask the owner whether they should.
+- [ ] **Child Essentials warm landing page (#669, M5, owner-approved Figma 1321:2, 1321:56, 1321:110, 1321:168).**
+  Landing only; the cleaned category art is `art/child-essentials/tiles/`.
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
+  - [ ] The frames set the card text in Segoe UI; the app uses the system font stack, which is Segoe UI on Windows and
+    the platform's own UI font elsewhere. Confirm, or choose an embedded font.
 - [ ] **Child Essentials Clothing & Shoes redesign (#660, M5, owner-approved Figma page 279:2).** Clothing & Shoes
   only; "Fit notes" shows as "Clothing notes" and is still stored as `fitNotes`.
   - [ ] Owner review of the PR and its Figma comparison sheets, then a dev-site check in both themes and on a phone.
-  - [ ] The Clothing & Shoes tile still reads "Sizes and fit notes" (no tile frame in the approved set). Ask the owner
-    whether it should become "Sizes and clothing notes".
+  - [x] The Clothing & Shoes tile reads "Sizes and clothing notes" (owner decision in #669; done in its PR).
   - [ ] School keeps its own 76% panels and outlined Save (its approved frames). If School should match Clothing's
     45% panels, translucent fields and filled Save, move it onto the new `--color-panel-translucent` and
     `--color-field-translucent` tokens.
