@@ -578,10 +578,9 @@ export class ChildEssentialsPage {
     // so open the same one, which marks it seen and moves focus to its heading like opening it from the list.
     const section = this.openSection();
     if (section === null) return;
+    // Every child gets every section's tile, and the open section always comes from one of them.
     afterNextRender({ write: () => {
-      const tile = this.disclosures().find((item) => item.nativeElement.dataset['section'] === section)?.nativeElement;
-      if (tile) tile.open = true;
-      else this.openSection.set(null);
+      this.disclosures().find((item) => item.nativeElement.dataset['section'] === section)!.nativeElement.open = true;
     } }, { injector: this.injector });
   }
 
