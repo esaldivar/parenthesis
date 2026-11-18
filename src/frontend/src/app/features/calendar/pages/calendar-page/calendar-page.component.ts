@@ -60,6 +60,8 @@ type LoadState = 'loading' | 'error' | 'ready';
 
 /** After this long, the loading state explains that the app may be starting up after a quiet spell (#415). */
 export const SLOW_LOAD_MS = 4000;
+/** How long after arriving the handed-over confirmation is announced, so VoiceOver has spoken the focus move (#650). */
+export const NOTICE_DELAY_MS = 600;
 /** How long to wait before the one automatic retry of a load that failed while the app was starting. */
 export const COLD_START_RETRY_MS = 1500;
 /** Statuses a starting replica or its ingress can return for a moment: worth one quiet retry, never more. */
@@ -253,11 +255,19 @@ export class CalendarPage {
   });
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => clearTimeout(this.slowTimer));
-    // A message handed over by the Add, Edit, Swap, Reminder and Task pages: shown as a toast (#226).
+    inject(DestroyRef).onDestroy(() => {
+      clearTimeout(this.slowTimer);
+      clearTimeout(this.noticeTimer);
+    });
+    // A message handed over by the Add, Edit, Swap, Reminder and Task pages: shown as a toast (#226). Arriving here
+    // moves focus to the main region and renders the week heading; VoiceOver speaks those and can drop a polite
+    // announcement made at the same moment (#650). So the message joins the live region once the page has rendered
+    // and that has settled: still one announcement, and focus never moves to it.
     const handed = this.router.currentNavigation()?.extras.state?.['calendarNotice'];
     if (typeof handed === 'string') {
-      this.toasts.show(handed);
+      afterNextRender(() => {
+        this.noticeTimer = setTimeout(() => this.toasts.show(handed), NOTICE_DELAY_MS);
+      });
     }
 
     effect(() => {
@@ -291,6 +301,7 @@ export class CalendarPage {
 
   private loadToken = 0;
   private slowTimer: ReturnType<typeof setTimeout> | undefined;
+  private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
   /**
    * Shows a period at once when it was seen earlier in this tab (memory only, #415), and always fetches the server's
