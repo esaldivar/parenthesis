@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Api, CaregiverList } from '../../core/api/api';
 import { CaregiversSection } from './components/caregivers-section/caregivers-section.component';
 
-describe('Adding a shared caregiver to all children', () => {
+describe('Adding a shared caregiver to the chosen children', () => {
   it('keeps existing ratings and retries a failed child without adding duplicates', async () => {
     const details = { name: 'Casey Park', phone: '512-555-0100', city: null, hourlyRate: null, schoolPickup: false };
     const saved: CaregiverList = {
@@ -30,21 +30,23 @@ describe('Adding a shared caregiver to all children', () => {
       input.value = value;
       input.dispatchEvent(new Event('input', { bubbles: true }));
     }
-    host.querySelector<HTMLInputElement>('input[formcontrolname="addToAll"]')!.click();
+    // The sheet's Children choice (#664): this child is ticked to start with; tick Taylor too.
+    const taylor = [...host.querySelectorAll<HTMLLabelElement>('.children label')].find(label => label.textContent.includes('Taylor'))!;
+    taylor.querySelector('input')!.click();
     fixture.detectChanges();
-    click('Save caregiver');
+    click('Save');
     await vi.waitFor(() => {
       fixture.detectChanges();
       expect(host.querySelector('[role="alert"]')?.textContent).toContain('Taylor');
     });
-    click('Save caregiver');
+    click('Save');
     await vi.waitFor(() => {
       fixture.detectChanges();
       expect(host.textContent).toContain('Shared caregiver saved for all children.');
     });
     expect(api.saveCaregiver.mock.calls).toEqual([
-      ['family', 'second', null, { version: 0, details: { ...details, city: '' }, allowDuplicate: false }],
-      ['family', 'second', null, { version: 0, details: { ...details, city: '' }, allowDuplicate: false }],
+      ['family', 'second', null, { version: 0, details: { ...details, city: '', role: null, notes: null }, allowDuplicate: false }],
+      ['family', 'second', null, { version: 0, details: { ...details, city: '', role: null, notes: null }, allowDuplicate: false }],
     ]);
   });
 });

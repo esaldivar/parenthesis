@@ -19,3 +19,16 @@ export function phoneDisplay(value: string): string {
   const formatted = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   return extension ? `${formatted} ${extension[0].trim()}` : formatted;
 }
+
+/**
+ * A U.S. number as 512-555-0100 (the dashed 3-3-4 form the Shared Caregivers and Emergency Contacts designs use,
+ * #664, #665); anything else, such as an international number, exactly as the parent typed it.
+ */
+export function dashedPhone(phone: string): string {
+  const value = phone.trim();
+  if (!/^(?:\+1|1)?[\d(). -]+$/.test(value)) return phone;
+  const digits = value.replace(/\D/g, '');
+  if (value.startsWith('+') && digits.length !== 11) return phone;
+  const usNumber = /^(?:1)?(\d{3})(\d{3})(\d{4})$/.exec(digits);
+  return usNumber ? usNumber.slice(1).join('-') : phone;
+}
