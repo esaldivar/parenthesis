@@ -333,8 +333,10 @@ const MEDICAL_TINT = {
     .focused .medical-tile,
     .focused details:not([open]),
     .focused details[open] > summary { display: none; }
-    /* The open section loses its card look entirely, including the category outline (#679). */
-    .focused details[open] { border: 0; border-radius: 0; background: transparent; color: var(--color-text); box-shadow: none; }
+    /* The open section loses its card look entirely, including the category outline (#679). A tile is only open when
+       its section is showing, so this doesn't wait for .focused, which arrives on the toggle event a moment later. */
+    .section-tiles > details[open] { border: 0; border-radius: 0; }
+    .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
     .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
     /* School and Clothing (#655 Figma 133:2, #660 Figma 279:2): the title on the theme background, no tinted box or border. */
     .section-hero.section-hero--plain {
