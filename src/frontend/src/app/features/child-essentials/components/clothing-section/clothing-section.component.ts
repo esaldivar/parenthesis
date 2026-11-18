@@ -123,7 +123,7 @@ const FIELDS: readonly { readonly key: ClothingField; readonly label: Translatio
       </dl>
     </ng-template>
   `,
-  styleUrl: './clothing-section.component.css',
+  styleUrl: '../../redesigned-section.css',
 })
 export class ClothingSection extends RevisionedSection<ClothingView, ClothingValues, ClothingHistoryPage['entries'][number]> {
   protected readonly fields = FIELDS;

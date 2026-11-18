@@ -1,8 +1,9 @@
 /*
- * Child Essentials, Clothing & Shoes (#660): built to the approved Figma page 279:2. A 640px column on the theme
- * background, the original clothing illustration faint behind it, translucent value panels and edit fields
- * (--color-panel-translucent, --color-field-translucent), 12px-corner actions with a filled Save, and a plain teal
- * "Updated" beside (desktop) or under (phone) a changed field's label.
+ * Child Essentials categories redesigned to the approved Figma pages (Clothing & Shoes #660, Allergies & Food #662,
+ * and the categories after them): a 640px column on the theme background, the category's original illustration faint
+ * behind it, translucent value panels and edit fields (--color-panel-translucent, --color-field-translucent),
+ * 12px-corner actions with a filled Save, and a plain teal "Updated" beside (desktop) or under (phone) a changed
+ * field's label. A section adds only what is its own in its component stylesheet.
  */
 :host {
   position: relative;
@@ -40,7 +41,7 @@ p[role='status']:empty { display: none; }
 .message, .caption { font-size: 0.875rem; font-weight: 600; line-height: 1.3125rem; }
 .small { font-size: 0.875rem; line-height: 1.3125rem; }
 
-/* Saved values: rows of a bold label and its value at the end; Clothing notes with text stack full width. */
+/* Saved values: rows of a bold label and its value at the end; long text stacks full width under its label. */
 .panel {
   display: grid;
   margin: 0;
@@ -75,6 +76,9 @@ dd {
   white-space: pre-wrap;
 }
 .row--stacked dd { text-align: start; }
+/* Categories whose every row is a label over its value (Allergies & Food). */
+.panel--stacked .row { grid-template-columns: minmax(0, 1fr); gap: 0.375rem; }
+.panel--stacked dd { text-align: start; }
 /* A changed field: small plain teal text, no pill or border (the word carries it, not the colour). */
 .updated {
   color: var(--color-action);
@@ -162,7 +166,7 @@ textarea { min-block-size: 5.25rem; field-sizing: content; resize: vertical; }
     transform: translateY(-50%);
   }
   .row { grid-template-columns: minmax(min(7.0625rem, 40%), 1fr) minmax(0, max-content); }
-  .row--stacked { grid-template-columns: minmax(0, 1fr); }
+  .row--stacked, .panel--stacked .row { grid-template-columns: minmax(0, 1fr); }
   dt { flex-direction: column; align-items: flex-start; row-gap: 0.25rem; }
   .actions { flex-wrap: nowrap; }
   .actions > .action { flex: 1 1 0; min-inline-size: 0; }

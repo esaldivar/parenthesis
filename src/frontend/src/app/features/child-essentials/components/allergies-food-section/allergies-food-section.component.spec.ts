@@ -156,4 +156,61 @@ describe('Allergies & Food', () => {
     expect(history.querySelector('.comparison > div:last-child')?.textContent).toContain('Vegetarian meals');
     http.verify();
   });
+
+  it('keeps nothing recorded, an explicit No known allergies and allergy text apart (#662)', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const fixture = TestBed.createComponent(AllergiesFoodSection);
+    fixture.componentRef.setInput('familyId', 'family-1');
+    fixture.componentRef.setInput('childId', 'child-1');
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne({ method: 'GET', url }).flush({ revision: 0, values: empty });
+    await fixture.whenStable(); fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    const allergies = () => host.querySelector('section > .panel .row dd')!.textContent!.trim();
+    expect(allergies()).toBe('No allergies listed');
+    expect(host.querySelector('.panel')!.classList).toContain('panel--stacked');
+
+    const component = fixture.componentInstance as unknown as { current: { set(v: unknown): void } };
+    component.current.set({ revision: 1, values: { ...empty, noKnownAllergies: true } });
+    fixture.detectChanges();
+    expect(allergies()).toBe('No known allergies');
+    component.current.set({ revision: 2, values: { ...empty, allergies: 'Sesame', noKnownAllergies: true } });
+    fixture.detectChanges();
+    expect(allergies()).toBe('Sesame');
+
+    // Edit starts from the saved values, with a real checkbox described by the replacement hint.
+    [...host.querySelectorAll('button')].find((button) => button.textContent.trim().startsWith('Edit'))!.click();
+    fixture.detectChanges();
+    const box = host.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    expect(box.checked).toBe(true);
+    expect(host.querySelector(`#${box.getAttribute('aria-describedby')}`)!.textContent).toContain('replaces the No known allergies status');
+    expect(host.querySelector<HTMLTextAreaElement>('textarea[formcontrolname="allergies"]')!.value).toBe('Sesame');
+    http.verify();
+  });
+
+  it('keeps the draft and the form open when a save fails (#662)', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const fixture = TestBed.createComponent(AllergiesFoodSection);
+    fixture.componentRef.setInput('familyId', 'family-1');
+    fixture.componentRef.setInput('childId', 'child-1');
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne({ method: 'GET', url }).flush({ revision: 3, values: { ...empty, allergies: 'Sesame' } });
+    await fixture.whenStable(); fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    [...host.querySelectorAll('button')].find((button) => button.textContent.trim().startsWith('Edit'))!.click();
+    fixture.detectChanges();
+    const notes = host.querySelector<HTMLTextAreaElement>('textarea[formcontrolname="allergies"]')!;
+    notes.value = 'Sesame and kiwi';
+    notes.dispatchEvent(new Event('input'));
+    host.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    const save = http.expectOne({ method: 'PUT', url });
+    expect(save.request.body).toEqual({ revision: 3, values: { allergies: 'Sesame and kiwi', noKnownAllergies: false, foodPreferences: '' } });
+    save.flush(null, { status: 500, statusText: 'Server Error' });
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(host.querySelector('[role="alert"]')!.textContent).toContain('Your draft is still here.');
+    expect(host.querySelector<HTMLTextAreaElement>('textarea[formcontrolname="allergies"]')!.value).toBe('Sesame and kiwi');
+    http.verify();
+  });
 });
