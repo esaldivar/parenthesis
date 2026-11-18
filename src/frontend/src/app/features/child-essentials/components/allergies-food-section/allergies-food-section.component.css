@@ -1,0 +1,90 @@
+/*
+ * Allergies & Food (#662, Figma 331:2) on top of the shared redesigned-section styles: the soft "Download allergy PDF"
+ * button and its options panel, the No known allergies checkbox with its hint, and 100px notes fields.
+ */
+
+/* Soft teal, 210x44, 12px corners (frames 331:3, 331:370); it doesn't stretch on phones. */
+.action.soft {
+  justify-self: start;
+  min-inline-size: 13.125rem;
+  border-color: transparent;
+  background: var(--color-soft-button);
+}
+.action.soft:hover { background: color-mix(in srgb, var(--color-soft-button) 85%, var(--color-text)); }
+
+/* PDF options (frame 334:207): a translucent panel with the child choice and a full-width filled Download PDF. */
+.export {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.75rem;
+  background: var(--color-panel-translucent);
+}
+.export[hidden] { display: none; }
+select {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+select:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.action.wide { inline-size: 100%; font-weight: 600; }
+.export p[role='status']:empty { display: none; }
+
+/* Notes fields are 100px tall empty and grow with the parent's text. */
+textarea { min-block-size: 6.25rem; }
+
+/* No known allergies: a 20px square with 4px corners, filled teal with a check when chosen (frames 331:110, 334:542). */
+.check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.3125rem;
+  cursor: pointer;
+}
+.check input {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 0;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin: 0;
+  transform: translateY(-50%);
+  opacity: 0;
+  cursor: pointer;
+}
+.box {
+  display: grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.25rem;
+  background: var(--color-field-translucent);
+}
+.check input:checked + .box { border-color: var(--color-action); background: var(--color-action); }
+.check input:checked + .box::after {
+  content: '✓';
+  color: var(--color-on-action);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.check input:focus-visible + .box { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+fieldset:disabled .check { cursor: progress; }
+
+@media (forced-colors: active) {
+  .box, .export, select { border-color: CanvasText; }
+  .check input:checked + .box { background: Highlight; }
+  .check input:checked + .box::after { color: HighlightText; }
+}

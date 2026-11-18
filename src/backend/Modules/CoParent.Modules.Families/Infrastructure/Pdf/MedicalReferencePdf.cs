@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using CoParent.Infrastructure.Pdf;
 using CoParent.Modules.Families.Endpoints;
 using SkiaSharp;
+using static CoParent.Modules.Families.Infrastructure.Pdf.BrandedPdf;
 
 namespace CoParent.Modules.Families.Infrastructure.Pdf;
 
@@ -25,22 +25,11 @@ internal sealed record MedicalReferenceSection(
 /// </summary>
 internal static partial class MedicalReferencePdf
 {
-    private const float Left = 42;
-    private const float Width = 528;
-    private const float Right = Left + Width;
-
     /// <summary>The body stops above the footer rule (y 698).</summary>
     private const float Bottom = 686;
 
     private const float ContinuedTop = 95;
 
-    private static readonly SKColor _heading = new(0x20, 0x3A, 0x31);
-    private static readonly SKColor _muted = new(0x4D, 0x62, 0x58);
-    private static readonly SKColor _rule = new(0xCF, 0xD7, 0xC9);
-    private static readonly SKColor _band = new(0xED, 0xF2, 0xE8);
-    private static readonly SKColor _wordmarkParent = new(0x5E, 0x8F, 0x7E);
-    private static readonly SKColor _wordmarkHesis = new(0x20, 0x30, 0x3F);
-    private static readonly Lazy<SKPicture> _icon = new(LoadIcon);
 
     /// <summary>Medication table columns (x, width), as in the approved layout.</summary>
     private static readonly (float X, float Width)[] _columns = [(42, 145), (194, 130), (335, 115), (461, 109)];
@@ -139,15 +128,15 @@ internal static partial class MedicalReferencePdf
         {
             _page = new Page();
             pages.Add(_page);
-            Text(labels.Title, PdfLayout.HeadingBold, 28, 36.4f, _heading, Left, 90, Width);
-            Text(labels.Subtitle, PdfLayout.Inter, 10, 13, _muted, Left, 130, Width);
+            Text(labels.Title, PdfLayout.HeadingBold, 28, 36.4f, Ink, Left, 90, Width);
+            Text(labels.Subtitle, PdfLayout.Inter, 10, 13, Muted, Left, 130, Width);
             Band(160, continued: false);
             _y = 212;
 
             Heading(labels.Providers, 33, 91);
             if (child.Providers.Count == 0)
             {
-                Text(labels.NoProviders, PdfLayout.InterSemiBold, 11, 14.3f, _heading, Left, _y, Width);
+                Text(labels.NoProviders, PdfLayout.InterSemiBold, 11, 14.3f, Ink, Left, _y, Width);
                 _y += 26;
             }
 
@@ -187,7 +176,7 @@ internal static partial class MedicalReferencePdf
         private void Heading(string text, float advance, float keep)
         {
             Fit(advance + keep);
-            Text(text, PdfLayout.HeadingBold, 17, 22.1f, _heading, Left, _y, Width);
+            Text(text, PdfLayout.HeadingBold, 17, 22.1f, Ink, Left, _y, Width);
             _y += advance;
         }
 
@@ -199,15 +188,15 @@ internal static partial class MedicalReferencePdf
             var name = continued ? $"{child.ChildName} {labels.Continued}" : child.ChildName;
             _page.Draws.Add(canvas =>
             {
-                using var fill = new SKPaint { Color = _band, IsAntialias = true };
+                using var fill = new SKPaint { Color = BandFill, IsAntialias = true };
                 canvas.DrawRoundRect(SKRect.Create(Left, top, Width, 37), 8, 8, fill);
             });
             // The name starts 61pt in (Figma), or further when a translated label is wider ("NIÑO O NIÑA").
             var nameX = Left + Math.Max(61, 14 + Measure(labels.Child, PdfLayout.InterSemiBold, 8) + 10);
-            Text(labels.Child, PdfLayout.InterSemiBold, 8, 11, _muted, Left + 14, top + 13, null);
+            Text(labels.Child, PdfLayout.InterSemiBold, 8, 11, Muted, Left + 14, top + 13, null);
             Text(Fit(name, PdfLayout.InterSemiBold, 12, Right - 6 - countsWidth - 12 - nameX), PdfLayout.InterSemiBold, 12, 16,
-                _heading, nameX, top + 11, null);
-            Text(counts, PdfLayout.Inter, 9, 12, _muted, Right - 6, top + 12, null, SKTextAlign.Right);
+                Ink, nameX, top + 11, null);
+            Text(counts, PdfLayout.Inter, 9, 12, Muted, Right - 6, top + 12, null, SKTextAlign.Right);
         }
 
         /// <summary>A provider's box: type, name and practice on the left; phone and address on the right.</summary>
@@ -229,33 +218,33 @@ internal static partial class MedicalReferencePdf
             {
                 var box = new SKRoundRect(SKRect.Create(Left, top, Width, height), 8);
                 using var fill = new SKPaint { Color = SKColors.White, IsAntialias = true };
-                using var stroke = new SKPaint { Color = _rule, IsStroke = true, StrokeWidth = 0.65f, IsAntialias = true };
+                using var stroke = new SKPaint { Color = RuleColor, IsStroke = true, StrokeWidth = 0.65f, IsAntialias = true };
                 canvas.DrawRoundRect(box, fill);
                 canvas.DrawRoundRect(box, stroke);
             });
 
             var x = Left + 15.65f;
             var y = top + 12.65f;
-            Text(type, PdfLayout.InterSemiBold, 8, 11, _muted, x, y, column);
+            Text(type, PdfLayout.InterSemiBold, 8, 11, Muted, x, y, column);
             y += 17;
-            y = Block(name, PdfLayout.InterSemiBold, 12, 16, _heading, x, y);
+            y = Block(name, PdfLayout.InterSemiBold, 12, 16, Ink, x, y);
             if (practice.Count > 0)
             {
-                Block(practice, PdfLayout.Inter, 10, 13, _muted, x, y + 6);
+                Block(practice, PdfLayout.Inter, 10, 13, Muted, x, y + 6);
             }
 
             x = Left + 275.65f;
             y = top + 12.65f;
             if (phone.Count > 0)
             {
-                Text(labels.Phone, PdfLayout.InterSemiBold, 8, 11, _muted, x, y, 238);
-                y = Block(phone, PdfLayout.InterSemiBold, 10, 13, _heading, x, y + 16) + 5;
+                Text(labels.Phone, PdfLayout.InterSemiBold, 8, 11, Muted, x, y, 238);
+                y = Block(phone, PdfLayout.InterSemiBold, 10, 13, Ink, x, y + 16) + 5;
             }
 
             if (address.Count > 0)
             {
-                Text(labels.Address, PdfLayout.InterSemiBold, 8, 11, _muted, x, y, 238);
-                Block(address, PdfLayout.Inter, 9, 12, _heading, x, y + 16);
+                Text(labels.Address, PdfLayout.InterSemiBold, 8, 11, Muted, x, y, 238);
+                Block(address, PdfLayout.Inter, 9, 12, Ink, x, y + 16);
             }
 
             _y = top + height + 12;
@@ -270,8 +259,8 @@ internal static partial class MedicalReferencePdf
             _y += 46;
             if (entries.Count == 0)
             {
-                Text(empty!, PdfLayout.InterSemiBold, 11, 14.3f, _heading, Left, _y, Width);
-                Text(labels.EmptyHint, PdfLayout.Inter, 9, 12, _muted, Left, _y + 23, Width);
+                Text(empty!, PdfLayout.InterSemiBold, 11, 14.3f, Ink, Left, _y, Width);
+                Text(labels.EmptyHint, PdfLayout.Inter, 9, 12, Muted, Left, _y + 23, Width);
                 ColumnLabels(_y + 44);
                 Rule(_y + 67);
                 _y += 86;
@@ -304,7 +293,7 @@ internal static partial class MedicalReferencePdf
                     for (var i = 0; i < cells.Count; i++)
                     {
                         var part = cells[i].Skip(line).Take(take).ToList();
-                        Block(part, i == 0 ? PdfLayout.InterSemiBold : PdfLayout.Inter, 9, 12, _heading, _columns[i].X, _y);
+                        Block(part, i == 0 ? PdfLayout.InterSemiBold : PdfLayout.Inter, 9, 12, Ink, _columns[i].X, _y);
                     }
 
                     line += take;
@@ -329,7 +318,7 @@ internal static partial class MedicalReferencePdf
             string[] names = [labels.ColumnName, labels.ColumnDose, labels.ColumnSchedule, labels.ColumnInstructions];
             for (var i = 0; i < names.Length; i++)
             {
-                Text(names[i], PdfLayout.InterSemiBold, 8, 11, _muted, _columns[i].X, top, _columns[i].Width - 6);
+                Text(names[i], PdfLayout.InterSemiBold, 8, 11, Muted, _columns[i].X, top, _columns[i].Width - 6);
             }
         }
 
@@ -337,11 +326,11 @@ internal static partial class MedicalReferencePdf
         {
             var lines = labels.AboutLines.Select(line => Lines(line, PdfLayout.Inter, 8, Width)).ToList();
             Fit(20 + lines.Sum(line => (line.Count * 11) + 5));
-            Text(labels.About, PdfLayout.InterSemiBold, 10, 13, _heading, Left, _y, Width);
+            Text(labels.About, PdfLayout.InterSemiBold, 10, 13, Ink, Left, _y, Width);
             var y = _y + 20;
             foreach (var line in lines)
             {
-                y = Block(line, PdfLayout.Inter, 8, 11, _muted, Left, y) + 5;
+                y = Block(line, PdfLayout.Inter, 8, 11, Muted, Left, y) + 5;
             }
 
             _y = y;
@@ -396,86 +385,12 @@ internal static partial class MedicalReferencePdf
         }
     }
 
-    private static List<string> Lines(string text, SKTypeface face, float size, float width) =>
-        PdfLayout.Wrap(text, Face(face, text), size, SKColors.Black, 0, 0, width).Select(line => line.Text).ToList();
-
-    private static float Measure(string text, SKTypeface face, float size)
-    {
-        using var font = PdfLayout.Font(Face(face, text), size);
-        return font.MeasureText(text);
-    }
-
-    /// <summary>The app's typeface, or Noto Sans for text it has no characters for (such as Vietnamese or Cyrillic names).</summary>
-    private static SKTypeface Face(SKTypeface face, string text)
-    {
-        using var font = PdfLayout.Font(face, 10);
-        if (font.ContainsGlyphs(text.Replace("\n", "", StringComparison.Ordinal)))
-        {
-            return face;
-        }
-
-        return face == PdfLayout.Inter ? PdfLayout.Regular : PdfLayout.Bold;
-    }
-
-    /// <summary>Draws a line vertically centred in its line box, as the design tool places text.</summary>
-    private static void DrawText(SKCanvas canvas, string text, SKTypeface face, float size, float lineHeight, SKColor color,
-        float x, float top, SKTextAlign align = SKTextAlign.Left)
-    {
-        using var font = PdfLayout.Font(Face(face, text), size);
-        using var paint = new SKPaint { Color = color, IsAntialias = true };
-        var metrics = font.Metrics;
-        var baseline = top + ((lineHeight - (metrics.Descent - metrics.Ascent)) / 2) - metrics.Ascent;
-        canvas.DrawText(text, x, baseline, align, font, paint);
-    }
-
-    private static void DrawRule(SKCanvas canvas, float y)
-    {
-        using var fill = new SKPaint { Color = _rule, IsAntialias = true };
-        canvas.DrawRect(SKRect.Create(Left, y, Width, 0.6f), fill);
-    }
-
-    /// <summary>The logo (icon unchanged, then the text wordmark in its approved colours) and the rule under it.</summary>
-    private static void DrawHeader(SKCanvas canvas)
-    {
-        canvas.Save();
-        canvas.Translate(Left, 34);
-        canvas.Scale(41.366f / 188);
-        canvas.DrawPicture(_icon.Value);
-        canvas.Restore();
-        var x = Left + 47.41f;
-        using var font = PdfLayout.Font(PdfLayout.Bold, 25.2f);
-        DrawText(canvas, "Parent", PdfLayout.Bold, 25.2f, 26, _wordmarkParent, x, 40.15f);
-        DrawText(canvas, "hesis", PdfLayout.Bold, 25.2f, 26, _wordmarkHesis, x + font.MeasureText("Parent"), 40.15f);
-        DrawRule(canvas, 83);
-    }
-
     private static void DrawFooter(SKCanvas canvas, Labels labels, string page, string date)
     {
-        DrawRule(canvas, 698);
-        DrawText(canvas, labels.Private, PdfLayout.InterSemiBold, 8, 11, _muted, Left, 709);
-        DrawText(canvas, string.Format(CultureInfo.InvariantCulture, labels.Generated, date), PdfLayout.Inter, 8, 11, _muted, Left, 722);
-        DrawText(canvas, page, PdfLayout.Inter, 8, 11, _muted, Right, 718, SKTextAlign.Right);
-    }
-
-    private static SKPicture LoadIcon()
-    {
-        using var source = typeof(MedicalReferencePdf).Assembly.GetManifestResourceStream("Parenthesis.MedicalReferenceIcon.svg")
-            ?? throw new InvalidOperationException("The Medical reference icon isn't embedded.");
-        // The repository's fixed icon: even-odd filled paths in one group translated by (19, 25), in its own colours.
-        var svg = XDocument.Load(source);
-        using var recorder = new SKPictureRecorder();
-        var canvas = recorder.BeginRecording(SKRect.Create(188, 174));
-        canvas.Translate(19, 25);
-        using var paint = new SKPaint { IsAntialias = true };
-        foreach (var element in svg.Descendants(XName.Get("path", "http://www.w3.org/2000/svg")))
-        {
-            paint.Color = SKColor.Parse((string?)element.Attribute("fill") ?? "#000000");
-            using var path = SKPath.ParseSvgPathData((string?)element.Attribute("d") ?? "");
-            path.FillType = SKPathFillType.EvenOdd;
-            canvas.DrawPath(path, paint);
-        }
-
-        return recorder.EndRecording();
+        DrawRule(canvas, FooterRule);
+        DrawText(canvas, labels.Private, PdfLayout.InterSemiBold, 8, 11, Muted, Left, 709);
+        DrawText(canvas, string.Format(CultureInfo.InvariantCulture, labels.Generated, date), PdfLayout.Inter, 8, 11, Muted, Left, 722);
+        DrawText(canvas, page, PdfLayout.Inter, 8, 11, Muted, Right, 718, SKTextAlign.Right);
     }
 
     private sealed record Labels(

@@ -336,6 +336,12 @@ that points back here.
   - [ ] School keeps its own 76% panels and outlined Save (its approved frames). If School should match Clothing's
     45% panels, translucent fields and filled Save, move it onto the new `--color-panel-translucent` and
     `--color-field-translucent` tokens.
+- [ ] **Child Essentials Allergies & Food redesign and branded allergy PDF (#662, M5, owner-approved Figma page
+  331:2 and print frame 332:2).** Allergies & Food only; allergy notes only in the PDF.
+  - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone, and a
+    printed (grayscale) copy of the PDF.
+  - [ ] The frames draw "Download allergy PDF" in Segoe UI (the old website baseline); the app uses Inter like every
+    other control. Confirm with the owner.
 - [ ] **One shared photo per child for both parents (#653, owner decision November 16, 2026).** Either parent sets it;
   the picker shows the child's own photo, else the shared one.
   - [ ] Owner retest on the dev site: Dad, signed in on the shared device, sees the photo Mom chose for each child.

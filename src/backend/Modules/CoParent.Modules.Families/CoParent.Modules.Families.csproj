@@ -19,6 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- The approved icon, unchanged, drawn in its own colours at the top of the Medical reference PDF (#659). -->
-    <EmbeddedResource Include="../../../frontend/public/brand/parenthesis-icon.svg" LogicalName="Parenthesis.MedicalReferenceIcon.svg" />
+    <EmbeddedResource Include="../../../frontend/public/brand/parenthesis-icon.svg" LogicalName="Parenthesis.BrandIcon.svg" />
   </ItemGroup>
 </Project>

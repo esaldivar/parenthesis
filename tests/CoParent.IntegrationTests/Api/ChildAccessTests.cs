@@ -545,7 +545,9 @@ public sealed class ChildAccessTests(ApiFactory api) : IAsyncLifetime
         var singlePdf = System.Text.Encoding.ASCII.GetString(await single.Content.ReadAsByteArrayAsync(token));
         var allPdf = System.Text.Encoding.ASCII.GetString(await all.Content.ReadAsByteArrayAsync(token));
         Assert.Equal(1, System.Text.RegularExpressions.Regex.Count(singlePdf, @"/Type /Page\b"));
-        Assert.Equal(2, System.Text.RegularExpressions.Regex.Count(allPdf, @"/Type /Page\b"));
+        // The branded layout (#662) gives each 12-line section 405pt: one fits under the title, and each later one
+        // moves whole to a new page instead of splitting, so five children take five pages.
+        Assert.Equal(5, System.Text.RegularExpressions.Regex.Count(allPdf, @"/Type /Page\b"));
     }
 
     [Fact]

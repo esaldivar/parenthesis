@@ -126,7 +126,7 @@ const MEDICAL_TINT = {
                       @if (openSection() === tile.section) {
                         <header class="section-hero" [class.section-hero--plain]="plainSections.has(tile.section)">
                           <h2 id="section-heading" tabindex="-1">{{ tile.name | tr }}</h2>
-                          <!-- School and Clothing put their illustration behind the content instead (#655, #660). -->
+                          <!-- Redesigned categories put their illustration behind the content instead (#655, #660, #662). -->
                           @if (!plainSections.has(tile.section)) {
                             <img [src]="'art/child-essentials/' + tile.image + '.webp'" alt="" />
                           }
@@ -405,8 +405,8 @@ export class ChildEssentialsPage {
   }
 
   protected readonly openSection = signal<EssentialsSectionId | null>(null);
-  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660). */
-  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing']);
+  /** Categories redesigned with the title on the theme background and their artwork behind the content (#655, #660, #662). */
+  protected readonly plainSections: ReadonlySet<EssentialsSectionId> = new Set<EssentialsSectionId>(['school', 'clothing', 'allergiesFood']);
   protected readonly plainOpen = computed(() => {
     const open = this.openSection();
     return open !== null && this.plainSections.has(open);
