@@ -72,17 +72,21 @@ p[role='status']:empty { display: none; }
 /* Call: 120x44, the 18px phone icon before the label in the label's colour (as on Medical). */
 .call { inline-size: 7.5rem; }
 .add { inline-size: 100%; }
-.manage { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.manage { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .manage button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-block-size: 2.75rem;
-  padding: 0 0.5rem;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: 600 1rem / 1.5rem var(--font-family-body);
   cursor: pointer;
 }
+.manage button:disabled { opacity: 0.45; cursor: not-allowed; }
 .manage button:hover:not(:disabled) { background: var(--color-surface-soft); }
 .rating { display: grid; gap: 0.5rem; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }

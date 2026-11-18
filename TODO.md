@@ -347,6 +347,9 @@ that points back here.
   - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
 - [ ] **Child Essentials Shared Caregivers redesign (#664, M5, owner-approved Figma page 626:194).** Role, Notes and
   the Children choice added (owner decision, November 18, 2026).
+  - [x] Address promotion #674 review findings: require a child selection before adding a caregiver and use
+    12px outlined management buttons (November 18, 2026). Local checks are recorded in the fix PR;
+    integrated browser and owner acceptance remain pending below.
   - [ ] Owner review of the PR and its Figma comparison, then a dev-site check in both themes and on a phone.
   - [ ] Owner decision: the frames show "Archive caregiver … can be restored later", but caregivers are removed
     permanently today. Decide whether to build a recoverable archive (with restore) or keep permanent removal.
