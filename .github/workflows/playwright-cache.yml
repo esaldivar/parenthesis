@@ -1,0 +1,89 @@
+name: Playwright cache
+
+# The release gate (playwright-release.yml) runs only on pull requests, and a pull request's run can restore caches saved
+# by that same pull request or on its base branch, not other pull requests' caches. So each new PR's first gate run
+# downloaded the browsers and their Ubuntu system packages again, and a slow Ubuntu mirror made those downloads time out
+# before any test ran (#684). This saves both caches on the branches PRs target, after each push, with the gate's own
+# keys, so the gate's first run on a PR restores them. It installs nothing when both are already cached. It is not a
+# check and gates nothing.
+on:
+  push:
+    branches: [develop, 'release/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: playwright-cache-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  warm:
+    name: Warm the Playwright caches
+    # The release gate's runner image, so the cached browser and packages fit it.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: tests/e2e
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: src/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      # No dependency install scripts (issue #65).
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Find the Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # The same paths and keys as the release gate's caches.
+      - name: Look for the cached browser
+        id: browser
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-mobile-v2-ubuntu-24.04-${{ steps.playwright.outputs.version }}
+          lookup-only: true
+
+      - name: Look for the cached system packages
+        id: debs
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/playwright-debs
+          key: playwright-debs-v1-ubuntu-24.04-${{ steps.playwright.outputs.version }}
+          lookup-only: true
+
+      - name: Install Chromium, WebKit and their system packages
+        id: install
+        if: steps.browser.outputs.cache-hit != 'true' || steps.debs.outputs.cache-hit != 'true'
+        timeout-minutes: 30
+        run: |
+          echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99keep-playwright-debs > /dev/null
+          npm run browser:install
+          if compgen -G '/var/cache/apt/archives/*.deb' > /dev/null; then
+            mkdir -p ~/.cache/playwright-debs
+            cp /var/cache/apt/archives/*.deb ~/.cache/playwright-debs/
+            echo "debs=kept" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save the browser
+        if: steps.browser.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-mobile-v2-ubuntu-24.04-${{ steps.playwright.outputs.version }}
+
+      - name: Save the system packages
+        if: steps.debs.outputs.cache-hit != 'true' && steps.install.outputs.debs == 'kept'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.cache/playwright-debs
+          key: playwright-debs-v1-ubuntu-24.04-${{ steps.playwright.outputs.version }}

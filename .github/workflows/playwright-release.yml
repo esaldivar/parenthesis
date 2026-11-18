@@ -108,6 +108,27 @@ jobs:
           # v2: browsers cached on Ubuntu 26.04 must not be restored on the pinned 24.04 runner.
           key: playwright-mobile-v2-ubuntu-24.04-${{ steps.playwright.outputs.version }}
 
+      # The browsers' system packages (about 150, mostly WebKit's media libraries) came from the Ubuntu mirror on every
+      # run; when the mirror was slow, downloading them used the step's whole 25 minutes before any test ran (six runs on
+      # November 18, 2026, #684). The downloaded packages are cached like the browser and put back where apt looks for
+      # them, so apt installs them without downloading. apt still reads the mirror's package lists and downloads only
+      # packages newer than the cached ones; nothing about what is installed or tested changes.
+      # A PR's run can only read its own caches and its base branch's, so playwright-cache.yml saves both on the branches
+      # PRs target after each push; a PR's first run restores them from there.
+      - name: Cache the browser system packages
+        id: deps-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/playwright-debs
+          key: playwright-debs-v1-ubuntu-24.04-${{ steps.playwright.outputs.version }}
+
+      - name: Reuse the cached system packages
+        run: |
+          echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99keep-playwright-debs > /dev/null
+          if [ -d ~/.cache/playwright-debs ]; then
+            sudo find ~/.cache/playwright-debs -name '*.deb' -exec cp -t /var/cache/apt/archives/ {} +
+          fi
+
       # A stuck download once used the whole 60-minute job before any test ran (PRs #448 and #450). The step now stops
       # after 25 minutes, failing the job with the step named, instead of using up the job. No retry: the package
       # installer the step starts can outlive a stopped try and hold its lock, so a second try fails anyway.
@@ -120,6 +141,16 @@ jobs:
         if: steps.browser-cache.outputs.cache-hit == 'true'
         timeout-minutes: 25
         run: npm run browser:deps
+
+      # Only on a cache miss: keep what apt downloaded for the next run (the cache saves when the job ends). Nothing is
+      # saved if apt kept no packages, so an empty cache never hides a download.
+      - name: Keep the system packages for the next run
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          if compgen -G '/var/cache/apt/archives/*.deb' > /dev/null; then
+            mkdir -p ~/.cache/playwright-debs
+            cp /var/cache/apt/archives/*.deb ~/.cache/playwright-debs/
+          fi
 
       # This shard's share of every milestone's tests. The report job merges all shards and summarizes them.
       - name: Run the release gate (every milestone, this shard)

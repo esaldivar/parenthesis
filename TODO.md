@@ -333,6 +333,9 @@ that points back here.
 - [ ] **VoiceOver: calendar save toast announced after focus settles (#650).** On the owner's Mac
   (`docs/runbooks/voiceover-macos.md`), run `calendar-voiceover` and `dates-voiceover` several times. The transcripts
   must never fall back to reading the toast with the VoiceOver cursor. Then make `toastHeardOrRead` a hard assertion.
+- [ ] **Playwright gate: cached browser system packages (#684).** Confirm on a run with a warm cache that "Install
+  browser system libraries" finishes in about a minute without downloading. The cache is keyed on the Playwright version,
+  so Ubuntu package updates are still downloaded until the next Playwright update.
 - [ ] **Child Essentials section fixes (#679, #680, M5).** No outline around an open section; choosing another child
   keeps the open section for that child.
   - [ ] Owner check on the dev site, desktop and phone, both themes.
