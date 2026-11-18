@@ -258,7 +258,7 @@
   app-calendar-month,
   app-calendar-list {
     display: block;
-    padding-block-end: var(--chat-dock-clearance, 0px);
+    padding-block-end: calc(var(--chat-dock-clearance, 0px) + var(--space-4));
   }
 
   .key {

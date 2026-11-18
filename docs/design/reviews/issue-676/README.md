@@ -21,3 +21,12 @@ without horizontal overflow. This is 32 desktop and 8 mobile synthetic browser c
 Screenshots in `implementation/` include English light/dark at 768/480px and Spanish light/dark at 480px.
 The existing navigation Playwright journey now covers the viewport/scroll assertions against the real test app;
 the full Release E2E gate and owner acceptance remain required.
+
+## Release-gate follow-up
+
+The desktop Calendar regression now scrolls the main pane. The first full rerun revealed a small remaining
+overlap between the last list item and the sticky legend. Calendar's end clearance now includes a 16px gap;
+local production-build checks with synthetic events at 1440x900 and 1024x600 in both themes measured an 11.77px
+gap and verified the last item was clickable. Toast entrance keeps full opacity to preserve text contrast during
+its slide animation. Whole-page accessibility scans now scroll the actual main pane on desktop and continue to
+use the document on mobile, without exclusions or disabled rules.
