@@ -6,7 +6,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../../../app.routes';
 import { CalendarEvent, Reminder } from '../../../../core/api/api';
 import { CalendarCache } from '../../../../core/cache/calendar-cache';
-import { COLD_START_RETRY_MS, SLOW_LOAD_MS } from './calendar-page.component';
+import { COLD_START_RETRY_MS, NOTICE_DELAY_MS, SLOW_LOAD_MS } from './calendar-page.component';
 import { axeViolations } from '../../../../../testing/axe';
 import { CHILDREN, MEMBERS, event, reminder } from '../../../../../testing/calendar-fixtures';
 import { fakeAuth } from '../../../../../testing/fake-auth';
@@ -451,6 +451,22 @@ describe('the calendar page', () => {
     expect(text(dialog)).toContain('Cancellation pending');
     expect(text(dialog)).not.toContain('Cancel event…');
     expect(http.match((r) => r.method !== 'GET')).toHaveLength(0);
+  });
+
+  it('announces a handed-over confirmation once, after arriving has moved focus and rendered the week (#650)', async () => {
+    // As in the app: the shell is already showing (here, the calendar, then Home) when a page hands over its message.
+    const { harness } = await open('/calendar?date=2026-10-27');
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
+    await settle(harness);
+    void router.navigateByUrl('/calendar?date=2026-10-20', { state: { calendarNotice: '“Soccer practice” is on the calendar.' } });
+    (await eventsRequest()).flush([]);
+    await settle(harness);
+    // Not while focus moves to the page and its heading renders...
+    expect(toastText()).toBe('');
+    // ...but shortly after, once, in the polite live region.
+    await new Promise((resolve) => setTimeout(resolve, NOTICE_DELAY_MS + 50));
+    expect(toastText()).toBe('“Soccer practice” is on the calendar.');
   });
 
   it.each([403, 404])('removes an unavailable stale block after a %s and refreshes without showing actions', async (status) => {

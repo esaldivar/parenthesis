@@ -333,6 +333,9 @@ const MEDICAL_TINT = {
     .focused .medical-tile,
     .focused details:not([open]),
     .focused details[open] > summary { display: none; }
+    /* The open section loses its card look entirely, including the category outline (#679). A tile is only open when
+       its section is showing, so this doesn't wait for .focused, which arrives on the toggle event a moment later. */
+    .section-tiles > details[open] { border: 0; border-radius: 0; }
     .focused details[open] { background: transparent; color: var(--color-text); box-shadow: none; }
     .section-hero h2:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
     /* School and Clothing (#655 Figma 133:2, #660 Figma 279:2): the title on the theme background, no tinted box or border. */
@@ -565,13 +568,22 @@ export class ChildEssentialsPage {
   }
 
   protected selectChild(id: string): void {
-    this.openSection.set(null);
+    if (id === this.selectedChild()?.id) return;
     this.selectedId.set(id);
     // On the Medical screen, choosing a child opens their providers and medication.
     if (this.medicalOpen()) {
       this.updates.sectionOpened(id, 'medical');
       this.updates.sectionOpened(id, 'medication');
+      return;
     }
+    // Inside a section, the parent stays on it for the child they chose (#680): the new child's tiles render closed,
+    // so open the same one, which marks it seen and moves focus to its heading like opening it from the list.
+    const section = this.openSection();
+    if (section === null) return;
+    // Every child gets every section's tile, and the open section always comes from one of them.
+    afterNextRender({ write: () => {
+      this.disclosures().find((item) => item.nativeElement.dataset['section'] === section)!.nativeElement.open = true;
+    } }, { injector: this.injector });
   }
 
   protected retryLoad(): void {
