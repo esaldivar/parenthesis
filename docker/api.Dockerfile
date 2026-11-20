@@ -3,7 +3,7 @@
 
 # 1. Angular app
 # Match src/frontend/.nvmrc and the frontend engine range; Node 25 is unsupported.
-FROM node:24-alpine AS spa
+FROM node:26-alpine AS spa
 WORKDIR /spa
 COPY src/frontend/package.json src/frontend/package-lock.json ./
 # --ignore-scripts: no dependency install scripts run (issue #65). The build doesn't need them: esbuild and
