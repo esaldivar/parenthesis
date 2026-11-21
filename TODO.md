@@ -579,6 +579,9 @@ See [the roadmap](docs/planning/roadmap.md). Milestones renamed and created, iss
   art starts (#646).
 - [ ] Owner: decide whether Child Essentials needs an **insurance information** section (named in the M5 brief; it
   doesn't exist today, so it would be a new feature with its own issue).
+- [ ] #697 (Request #1 sign-up and profile picker designs): Owner checks the picker, PIN, pairing, Settings
+  › Children/Devices and Approvals screens on the dev site in both themes; they need a signed-in family, so only
+  sign-in, sign-up and /pair were screenshotted locally.
 - [ ] Fix the Google Calendar runbook's scope tier: it says the Calendar scope is sensitive, but the console reading in
   the Photos tracker says non-sensitive; re-check in the console first (#643).
 

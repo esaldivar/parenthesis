@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { FORM_STYLES } from '../../../auth/form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../../auth/form-styles';
 
 /** 8 letters and numbers, with or without the dash; case and spaces don't matter (the API normalizes them). */
 const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;
@@ -68,7 +68,7 @@ const CODE_PATTERN = /^\s*[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}\s*$/;
       <a routerLink="/sign-in">{{ 'feature.sign.in.instead' | tr }}</a>
     </div>
   `,
-  styles: FORM_STYLES,
+  styles: [FORM_STYLES, AUTH_PAGE_STYLES],
 })
 export class PairDevicePage {
   private readonly copyLocale = inject(LocaleService);

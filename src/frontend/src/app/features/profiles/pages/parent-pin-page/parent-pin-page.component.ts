@@ -11,7 +11,7 @@ import { Api } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
-import { FORM_STYLES } from '../../../auth/form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../../auth/form-styles';
 import { PARENT_PIN_PATTERN } from '../../pin-rules';
 
 /**
@@ -108,6 +108,7 @@ import { PARENT_PIN_PATTERN } from '../../pin-rules';
   `,
   styles: [
     FORM_STYLES,
+    AUTH_PAGE_STYLES,
     `
       .who {
         display: flex;

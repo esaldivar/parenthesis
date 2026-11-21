@@ -7,7 +7,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { TranslatePipe } from '../../../../core/i18n/translations';
-import { FORM_STYLES } from '../../form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../form-styles';
 
 /** Opened from the reset email. Reads the one-time token, then removes it from the address bar. */
 @Component({
@@ -42,7 +42,7 @@ import { FORM_STYLES } from '../../form-styles';
       </form>
     }
   `,
-  styles: FORM_STYLES,
+  styles: [FORM_STYLES, AUTH_PAGE_STYLES],
 })
 export class ResetPasswordPage implements OnInit {
   private readonly api = inject(Api);

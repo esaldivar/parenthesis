@@ -7,7 +7,7 @@ import { ProfileTile } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
-import { FORM_STYLES } from '../../../auth/form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../../auth/form-styles';
 
 /**
  * "Who's using Parenthesis?" on a registered device (ADR-0006, #153). Names, and each person's own photo or initial
@@ -78,6 +78,7 @@ import { FORM_STYLES } from '../../../auth/form-styles';
   `,
   styles: [
     FORM_STYLES,
+    AUTH_PAGE_STYLES,
     `
       h1 {
         text-align: center;
@@ -93,6 +94,7 @@ import { FORM_STYLES } from '../../../auth/form-styles';
         padding: 0;
         list-style: none;
       }
+      /* Photo circles with names, no tile box (Figma Request #1, owner's choice, #697). */
       .tile {
         display: flex;
         flex-direction: column;
@@ -100,19 +102,29 @@ import { FORM_STYLES } from '../../../auth/form-styles';
         gap: var(--space-2);
         min-height: 9.5rem;
         padding: var(--space-4) var(--space-2);
-        border: 1px solid var(--color-divider);
+        border: 1px solid transparent;
         border-radius: var(--radius-card);
-        background: var(--color-surface);
         color: var(--color-text);
         text-align: center;
         text-decoration: none;
       }
-      a.tile:hover {
-        border-color: var(--color-outline);
+      a.tile:hover .tile__name {
+        text-decoration: underline;
       }
       .tile__name {
         font-weight: 600;
         overflow-wrap: anywhere;
+      }
+      @media (min-width: 768px) {
+        .tile app-avatar {
+          /* Overrides the 72 px phone size set on the element: larger photos on wider screens. */
+          --size: 152px !important;
+        }
+        .tile__name {
+          font-family: var(--font-family-heading);
+          font-size: var(--font-size-h2);
+          font-weight: 700;
+        }
       }
       .tile--off {
         color: var(--color-text-secondary);

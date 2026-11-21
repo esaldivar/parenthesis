@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { TranslatePipe } from '../../../../core/i18n/translations';
-import { FORM_STYLES } from '../../form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../form-styles';
 
 type State = 'working' | 'confirmed' | 'invalid' | 'error';
 
@@ -34,7 +34,7 @@ type State = 'working' | 'confirmed' | 'invalid' | 'error';
       }
     </div>
   `,
-  styles: FORM_STYLES,
+  styles: [FORM_STYLES, AUTH_PAGE_STYLES],
 })
 export class ConfirmEmailPage implements OnInit {
   private readonly api = inject(Api);

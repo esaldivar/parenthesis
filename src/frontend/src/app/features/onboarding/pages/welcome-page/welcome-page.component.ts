@@ -23,7 +23,7 @@ import { AuthStore } from '../../../../core/auth/auth.store';
 import { PendingInvitation } from '../../../../core/invitations/pending-invitation';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { Icon } from '../../../../shared/components/icon/icon';
-import { FORM_STYLES } from '../../../auth/form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../../auth/form-styles';
 import { InviteCoParent } from '../../../family/components/invite-co-parent/invite-co-parent.component';
 
 function deviceTimeZone(): string {
@@ -208,6 +208,7 @@ const STEPS: readonly Step[] = ['family', 'count', 'children', 'invite'];
   `,
   styles: [
     FORM_STYLES,
+    AUTH_PAGE_STYLES,
     `
       .step-count {
         margin: 0 0 var(--space-2);

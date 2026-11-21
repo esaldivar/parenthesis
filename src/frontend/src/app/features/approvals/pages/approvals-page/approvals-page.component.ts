@@ -217,9 +217,14 @@ const COMMENT_MAX = 500;
     button {
       min-height: var(--target-min);
     }
+    /* The decline reason sits in a soft inline panel (Figma Request #1, #697). */
     .panel {
       display: grid;
-      gap: var(--space-2);
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--color-surface-soft);
+      border: 1px solid transparent;
+      border-radius: var(--radius-control);
     }
     mat-form-field {
       width: 100%;

@@ -194,11 +194,13 @@ interface Panel {
     button {
       min-height: var(--target-min);
     }
+    /* Inline panels on the soft surface (Figma Request #1, #697); the transparent border keeps an edge in forced colours. */
     .panel {
       display: grid;
-      gap: var(--space-2);
-      padding: var(--space-3);
-      border: 1px solid var(--color-divider);
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--color-surface-soft);
+      border: 1px solid transparent;
       border-radius: var(--radius-control);
     }
     .panel p {

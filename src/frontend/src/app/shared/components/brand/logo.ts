@@ -25,6 +25,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     '[attr.role]': 'decorative() ? null : "img"',
     '[attr.aria-label]': 'decorative() ? null : "Parenthesis"',
     '[attr.aria-hidden]': 'decorative() ? "true" : null',
+    '[attr.data-layout]': 'layout()',
   },
   template: `
     <img class="logo__icon" src="/brand/parenthesis-icon.svg" alt="" width="188" height="174" />
@@ -40,6 +41,23 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .logo__icon {
       width: auto;
       height: 1.9em;
+    }
+    /* Stacked: the icon above the wordmark, as in the Figma brand lockup. Responsive stacks only on narrow screens. */
+    :host([data-layout='stacked']) {
+      flex-direction: column;
+      gap: 0.35em;
+    }
+    :host([data-layout='stacked']) .logo__icon {
+      height: 3.2em;
+    }
+    @media (max-width: 479.98px) {
+      :host([data-layout='responsive']) {
+        flex-direction: column;
+        gap: 0.35em;
+      }
+      :host([data-layout='responsive']) .logo__icon {
+        height: 3.2em;
+      }
     }
     .logo__wordmark {
       font-family: var(--font-family);
@@ -65,4 +83,6 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export class Logo {
   /** Hide from assistive technology when nearby text already names the link. */
   readonly decorative = input(false);
+  /** Inline (icon beside the wordmark), stacked (icon above it), or responsive (stacked on phones, inline wider). */
+  readonly layout = input<'inline' | 'stacked' | 'responsive'>('inline');
 }

@@ -9,7 +9,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { FORM_STYLES } from '../../../auth/form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../../auth/form-styles';
 import { PARENT_PIN_PATTERN, isTrivialPin } from '../../pin-rules';
 
 /** Where the link's token waits, in this tab only, while the parent signs in. */
@@ -108,7 +108,7 @@ type Step = 'checking' | 'sign-in' | 'form' | 'saved' | 'unusable' | 'wrong-acco
       }
     }
   `,
-  styles: FORM_STYLES,
+  styles: [FORM_STYLES, AUTH_PAGE_STYLES],
 })
 export class ParentPinResetPage implements OnInit {
   private readonly copyLocale = inject(LocaleService);

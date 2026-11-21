@@ -16,7 +16,7 @@ import { Logo } from '../../../../shared/components/brand/logo';
     <a class="skip-link" href="#auth-main">{{ 'auth.skip' | tr }}</a>
     <header class="auth-header">
       <a [routerLink]="wide ? '/' : '/sign-in'" aria-label="Parenthesis">
-        <app-logo [decorative]="true" />
+        <app-logo [decorative]="true" layout="responsive" />
       </a>
       <div class="language-picker">
         <label for="auth-language">{{ 'auth.language' | tr }}</label>
@@ -27,7 +27,7 @@ import { Logo } from '../../../../shared/components/brand/logo';
       </div>
     </header>
     <main id="auth-main" tabindex="-1">
-      <div class="card" [class.wide]="wide">
+      <div class="card" [class.wide]="wide" [class.bare]="bare">
         <router-outlet />
       </div>
     </main>
@@ -47,9 +47,30 @@ import { Logo } from '../../../../shared/components/brand/logo';
       min-height: 100dvh;
       padding: var(--space-6) var(--space-4) var(--space-8);
     }
+    /* Decorative botanical art behind the card on wider screens (Figma Request #1, #697). */
+    @media (min-width: 768px) {
+      :host {
+        background: url('/art/auth/botanical-light.webp') center bottom / cover no-repeat;
+      }
+      :host-context(html[data-theme='dark']) {
+        background-image: url('/art/auth/botanical-dark.webp');
+      }
+    }
+    @media (min-width: 768px) and (prefers-color-scheme: dark) {
+      :host-context(html:not([data-theme])) {
+        background-image: url('/art/auth/botanical-dark.webp');
+      }
+    }
+    @media (forced-colors: active), print {
+      :host {
+        background-image: none !important;
+      }
+    }
     .auth-header {
       display: flex;
       flex-wrap: wrap;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
       gap: var(--space-2) var(--space-3);
       margin-bottom: var(--space-6);
@@ -79,16 +100,20 @@ import { Logo } from '../../../../shared/components/brand/logo';
     main:focus {
       outline: none;
     }
+    /* Phones show the page straight on the canvas; from 480 px it sits in a card (Figma Request #1). */
     .card {
       width: 100%;
       max-width: 28rem;
       margin-inline: auto;
-      padding: var(--space-6) var(--space-4);
-      background: var(--color-surface);
-      border: 1px solid var(--color-divider);
+      padding: 0;
+      border: 1px solid transparent;
       border-radius: var(--radius-card);
     }
     .card.wide {
+      max-width: 48rem;
+    }
+    /* The profile picker: photo circles straight on the page at every width, no card. */
+    .card.bare {
       max-width: 48rem;
     }
     .auth-footer {
@@ -103,8 +128,13 @@ import { Logo } from '../../../../shared/components/brand/logo';
       padding-inline: var(--space-2);
     }
     @media (min-width: 480px) {
-      .card {
+      .auth-header {
+        flex-direction: row;
+      }
+      .card:not(.bare) {
         padding: var(--space-8);
+        background: var(--color-surface);
+        border-color: var(--color-divider);
       }
     }
   `,
@@ -122,4 +152,6 @@ export class AuthLayout {
   }
 
   protected readonly wide = inject(ActivatedRoute).snapshot.data['wide'] === true;
+  /** Pages that draw their own layout straight on the page, without the card (the profile picker). */
+  protected readonly bare = inject(ActivatedRoute).snapshot.data['bare'] === true;
 }
