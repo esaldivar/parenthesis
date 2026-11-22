@@ -10,7 +10,7 @@ import { PendingInvitation } from '../../../../core/invitations/pending-invitati
 import { safeReturnUrl } from '../../../profiles/safe-return-url';
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
-import { FORM_STYLES } from '../../form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../form-styles';
 
 @Component({
   selector: 'app-sign-in-page',
@@ -58,7 +58,7 @@ import { FORM_STYLES } from '../../form-styles';
       <a routerLink="/register">{{ 'signIn.register' | tr }}</a>
     </div>
   `,
-  styles: FORM_STYLES,
+  styles: [FORM_STYLES, AUTH_PAGE_STYLES],
 })
 export class SignInPage {
   private readonly auth = inject(AuthStore);

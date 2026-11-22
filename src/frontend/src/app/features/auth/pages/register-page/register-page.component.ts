@@ -9,7 +9,7 @@ import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { PendingInvitation } from '../../../../core/invitations/pending-invitation';
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe } from '../../../../core/i18n/translations';
-import { FORM_STYLES } from '../../form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../form-styles';
 
 const MIN_PASSWORD = 12; // Matches the API's policy (NIST 800-63B: length, not composition rules).
 
@@ -95,6 +95,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   `,
   styles: [
     FORM_STYLES,
+    AUTH_PAGE_STYLES,
     `
       .field-error {
         margin: 0;

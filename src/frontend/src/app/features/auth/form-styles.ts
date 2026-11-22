@@ -54,3 +54,22 @@ export const FORM_STYLES = `
     min-height: var(--target-min);
   }
 `;
+
+/**
+ * Pages in the auth layout (sign-in, sign-up, onboarding, invitations, profiles and PINs): a centred heading and lead,
+ * with the secondary links stacked in the middle, as in the Figma Request #1 designs (#697). Pages' own styles follow
+ * this, so they can still override it.
+ */
+export const AUTH_PAGE_STYLES = `
+  h1 {
+    font-size: var(--font-size-h1);
+    text-align: center;
+  }
+  .lead {
+    text-align: center;
+  }
+  .links {
+    flex-direction: column;
+    align-items: center;
+  }
+`;
