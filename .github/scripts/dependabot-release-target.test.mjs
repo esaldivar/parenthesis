@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { selectRelease, routeUpdates } from './dependabot-release-target.mjs';
+import { nextLink, selectRelease, routeUpdates } from './dependabot-release-target.mjs';
 
 const branches = (...names) => names.map(name => ({ name }));
 const milestones = (...titles) => titles.map(title => ({ title, state: 'open' }));
@@ -75,4 +75,15 @@ test('routing failure logs do not echo malformed event data or workflow commands
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test('reads the next page from a GitHub Link header without a backtracking regex', () => {
+  const link = '<https://api.github.com/repos/o/r/pulls?page=2>; rel="next", <https://api.github.com/repos/o/r/pulls?page=5>; rel="last"';
+  assert.equal(nextLink(link), 'https://api.github.com/repos/o/r/pulls?page=2');
+  assert.equal(nextLink('<https://api.github.com/x?page=1>; rel="prev"'), undefined);
+  assert.equal(nextLink(null), undefined);
+  // Pathological input stays fast: many unclosed '<' with no rel.
+  const start = Date.now();
+  assert.equal(nextLink('<'.repeat(50_000)), undefined);
+  assert.ok(Date.now() - start < 500);
 });

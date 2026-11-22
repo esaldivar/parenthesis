@@ -8,13 +8,15 @@ import { isDependabotUpdate } from './dependabot-release-target.mjs';
 function withoutFences(text) {
   const lines = text.split('\n');
   const kept = [];
-  for (let i = 0; i < lines.length; i++) {
+  let i = 0;
+  while (i < lines.length) {
     const marker = /^[ \t]*(`{3,}|~{3,})/.exec(lines[i])?.[1];
     const close = marker ? lines.findIndex((line, j) => j > i && line.replace(/^[ \t]*/, '').startsWith(marker)) : -1;
     if (close === -1) {
       kept.push(lines[i]);
+      i += 1;
     } else {
-      i = close;
+      i = close + 1;
     }
   }
   return kept.join('\n');

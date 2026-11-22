@@ -309,9 +309,20 @@ internal sealed class RecordExportPdf(bool spanish, DateTimeZone zone)
 
     private sealed record Block(IReadOnlyList<List<PdfLine>> Columns, float Gap, bool Rule = false, bool Shaded = false, List<PdfLine>? Heading = null)
     {
-        public float Height => (Heading?.Sum(line => line.Height) ?? 0) + Columns.Max(c => c.Sum(line => line.Height)) + Gap;
+        public float Height => (Heading is null ? 0 : TotalHeight(Heading)) + Columns.Max(TotalHeight) + Gap;
 
         public static Block Of(List<PdfLine> lines, float gap = 0) => new([lines], gap);
+
+        private static float TotalHeight(List<PdfLine> lines)
+        {
+            var total = 0f;
+            foreach (var line in lines)
+            {
+                total += line.Height;
+            }
+
+            return total;
+        }
     }
 
     private sealed class Page

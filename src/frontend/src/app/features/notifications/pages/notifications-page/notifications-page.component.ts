@@ -1,6 +1,6 @@
 import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
 import { TranslatePipe } from '../../../../core/i18n/translations';
-import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, OnInit, afterNextRender, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, NotificationItem } from '../../../../core/api/api';
 import { AuthStore } from '../../../../core/auth/auth.store';
@@ -82,7 +82,7 @@ import { NotificationsStore } from '../../../../core/notifications/notifications
     }
   `,
 })
-export class NotificationsPage {
+export class NotificationsPage implements OnInit {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly store = inject(NotificationsStore);
@@ -100,7 +100,7 @@ export class NotificationsPage {
     Cancelled: 'notification.cancelled',
   } as const;
 
-  constructor() {
+  ngOnInit(): void {
     void this.load(false);
   }
 

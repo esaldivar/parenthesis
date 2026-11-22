@@ -103,9 +103,10 @@ internal static class PhotoRules
 
         if (photoEvent.IsParentingTime)
         {
-            return photoEvent.CaregiverMembershipId is { } caregiver && activeParents.Contains(caregiver)
-                ? new HashSet<Guid> { caregiver }
-                : new HashSet<Guid>();
+            HashSet<Guid> uploaders = photoEvent.CaregiverMembershipId is { } caregiver && activeParents.Contains(caregiver)
+                ? [caregiver]
+                : [];
+            return uploaders;
         }
 
         return activeParents;
