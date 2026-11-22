@@ -1,0 +1,94 @@
+@if (ordered().length === 0) {
+  <div class="empty-book" role="img" aria-label="{{ 'feature.empty.diary' | tr }}">
+    <span class="visually-hidden">{{ 'feature.no.diary.entries.shared.with.you.yet' | tr }}</span>
+  </div>
+} @else {
+  <section class="desktop-book" aria-label="{{ 'feature.shared.diary' | tr }}">
+    <div class="spread-pages">
+      @for (entry of current(); track entry.id) {
+        <article
+          class="paper"
+          [attr.aria-label]="entry.title || ('feature.diary.entry.fallback' | tr)"
+        >
+          <div
+            class="entry-scroll"
+            tabindex="0"
+            role="region"
+            [attr.aria-label]="entry.title || ('feature.diary.entry.fallback' | tr)"
+          >
+            <time [attr.datetime]="entry.createdAt">{{
+              entry.createdAt | appDate: 'longDate'
+            }}</time>
+            <h3>{{ entry.title || ('feature.diary.entry.fallback' | tr) }}</h3>
+            <p class="entry-body">{{ entry.body }}</p>
+          </div>
+        </article>
+      }
+    </div>
+    @for (revision of [turnId()]; track revision) {
+      @if (turn()) {
+        <span class="turning-sheet" [class.to-newer]="turn() === 'newer'" aria-hidden="true"></span>
+      }
+    }
+    <nav class="page-controls" aria-label="{{ 'feature.diary.pages' | tr }}">
+      <div class="newer-controls">
+        @if (spread() > 0) {
+          <button
+            type="button"
+            class="brass-control"
+            (click)="newest()"
+            aria-label="{{ 'kids.diary.newest' | tr }}"
+          >
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 7v18M24 8l-8 8 8 8" /></svg>
+          </button>
+          <button
+            type="button"
+            class="brass-control"
+            (click)="newer()"
+            aria-label="{{ 'kids.diary.newer' | tr }}"
+          >
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="m21 8-8 8 8 8" /></svg>
+          </button>
+        }
+      </div>
+      @if (spread() < spreadCount() - 1) {
+        <button
+          type="button"
+          class="brass-control older-control"
+          (click)="older()"
+          aria-label="{{ 'kids.diary.older' | tr }}"
+        >
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="m11 8 8 8-8 8" /></svg>
+        </button>
+      }
+    </nav>
+    <p class="visually-hidden" role="status">
+      {{ 'feature.diary.page.count' | tr: { page: spread() + 1, total: spreadCount() } }}
+    </p>
+  </section>
+  <section class="mobile-sheets" aria-label="{{ 'feature.shared.diary' | tr }}">
+    @for (entry of ordered(); track entry.id; let i = $index) {
+      <article
+        class="diary-sheet"
+        [class.right-sheet]="i % 2 === 1"
+        [attr.aria-label]="entry.title || ('feature.diary.entry.fallback' | tr)"
+        tabindex="-1"
+        #sheet
+      >
+        <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | appDate: 'longDate' }}</time>
+        <h3>{{ entry.title || ('feature.diary.entry.fallback' | tr) }}</h3>
+        <p class="entry-body">{{ entry.body }}</p>
+      </article>
+    }
+  </section>
+  @if (awayFromTop()) {
+    <button
+      type="button"
+      class="back-to-newest brass-control"
+      (click)="top()"
+      aria-label="{{ 'kids.diary.newest' | tr }}"
+    >
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 25V7m-7 8 7-8 7 8" /></svg>
+    </button>
+  }
+}

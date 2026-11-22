@@ -55,7 +55,7 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     toggle.click();
     fixture.detectChanges();
     expect(host.textContent).toContain('Showing synthetic examples');
-    expect(host.querySelector('article .mood')?.textContent).toContain('Happy');
+    expect(host.querySelector('.desktop-book h3')?.textContent).toContain('A little garden');
     const [, artwork, photos] = host.querySelectorAll<HTMLButtonElement>('.sections button');
     artwork.click();
     fixture.detectChanges();
