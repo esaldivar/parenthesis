@@ -1,0 +1,344 @@
+@use 'sass:math';
+
+// #710, Figma "From Your Kids" Photos frames. The board is drawn on fixed Figma boards, 1065 × 473.33 on desktop and
+// 358 × 380 on phones, so every pin, photo and note is placed as a share of the board and scales with it.
+
+$wide-w: 1065;
+$wide-h: 473.333;
+$narrow-w: 358;
+$narrow-h: 380;
+// The approved board artwork (1881 × 836) as a 9-slice: its wooden frame and corners never stretch.
+$board-px: 1881;
+$board-slice: 130;
+
+$photo-paper: #fffcf4;
+$glow: 0 0 12px 6px rgb(255 232 133 / 75%), 0 0 32px 15px rgb(255 212 77 / 85%);
+
+@function pct($value, $of) { @return math.div($value, $of) * 100%; }
+@function cqi($value, $of) { @return calc(#{math.div($value, $of) * 100} * 1cqi); }
+
+/// Places a box by its Figma centre and size on a board of `$bw` × `$bh`.
+@mixin place($cx, $cy, $w, $h, $bw, $bh) {
+  left: pct($cx - math.div($w, 2), $bw);
+  top: pct($cy - math.div($h, 2), $bh);
+  width: pct($w, $bw);
+}
+
+:host {
+  display: block;
+  container-type: inline-size;
+  color: var(--color-text);
+}
+
+p { margin: 0; }
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+// ---------- Corkboard ----------
+
+.board-area { container: board / inline-size; }
+
+.board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: #{$narrow-w} / #{$narrow-h};
+  border: 0 solid transparent;
+  border-image: url('/art/from-your-kids/photos/corkboard.webp') #{$board-slice} fill / #{cqi($board-slice, $board-px)};
+}
+
+.deco, .slot, .post-it { position: absolute; }
+.deco { display: block; height: auto; pointer-events: none; }
+.wide { display: none; }
+
+.pins-note.narrow { left: pct(25, $narrow-w); top: pct(35, $narrow-h); width: pct(190, $narrow-w); }
+.corner.narrow { left: pct(211, $narrow-w); top: pct(237, $narrow-h); width: pct(125, $narrow-w); }
+
+.pinned { margin: 0; padding: 0; list-style: none; }
+
+.slot {
+  --tilt: 0deg;
+  aspect-ratio: 245 / 169.05;
+  transform: rotate(var(--tilt));
+  &[data-slot='0'] { --tilt: -7deg; @include place(116.441, 94.968, 142, 97.98, $narrow-w, $narrow-h); }
+  &[data-slot='1'] { @include place(247, 180.99, 142, 97.98, $narrow-w, $narrow-h); }
+  &[data-slot='2'] { --tilt: 7deg; @include place(104.501, 277.278, 142, 97.98, $narrow-w, $narrow-h); }
+  // Hovered or focused, a photo comes in front of every other photo; the others don't move.
+  &:hover, &:focus-within { z-index: 5; }
+}
+
+.pinned-photo {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: #{cqi(6, $narrow-w)} solid $photo-paper;
+  background: $photo-paper;
+  box-shadow: 0 4px 8px rgb(0 0 0 / 22%);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.snapshot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tack {
+  position: absolute;
+  top: pct(-10, 97.98);
+  left: 50%;
+  width: pct(22, 142);
+  height: auto;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.slot:hover .pinned-photo, .pinned-photo:focus-visible {
+  transform: scale(1.25);
+  box-shadow: 0 8px 14px rgb(0 0 0 / 20%), $glow;
+}
+
+.slot:hover .tack, .pinned-photo:focus-visible .tack { visibility: hidden; }
+
+.post-it {
+  @include place(266.471, 327.911, 116, 76, $narrow-w, $narrow-h);
+  display: grid;
+  place-items: center;
+  aspect-ratio: 116 / 76;
+  padding: 0 0.3em;
+  border: 0;
+  border-radius: 1px;
+  background: #f1dea0;
+  box-shadow: 1px 3px 4px rgb(51 33 15 / 20%);
+  color: #34494a;
+  font-family: 'Patrick Hand', 'Comic Sans MS', cursive;
+  font-size: max(0.875rem, #{cqi(23, $narrow-w)});
+  line-height: 1.2;
+  text-align: center;
+  transform: rotate(5deg);
+  transition: transform 0.18s ease;
+  &:hover { transform: rotate(5deg) translateY(-2px); }
+}
+
+@container board (min-width: 36rem) {
+  .board { aspect-ratio: #{$wide-w} / #{$wide-h}; }
+  .wide { display: block; }
+  .narrow { display: none; }
+  .pins-note.wide { left: pct(60, $wide-w); top: pct(45, $wide-h); width: pct(300, $wide-w); }
+  .corner.wide { left: pct(815, $wide-w); top: pct(247.333, $wide-h); width: pct(200, $wide-w); }
+  .slot {
+    &[data-slot='0'] { @include place(361.888, 143.964, 245, 169.05, $wide-w, $wide-h); }
+    &[data-slot='1'] { @include place(637.5, 199.525, 245, 169.05, $wide-w, $wide-h); }
+    &[data-slot='2'] { @include place(831.288, 333.824, 245, 169.05, $wide-w, $wide-h); }
+  }
+  .pinned-photo { border-width: #{cqi(10, $wide-w)}; }
+  .tack { top: pct(-10, 169.05); width: pct(22, 245); }
+  .post-it {
+    @include place(504.471, 412.911, 116, 76, $wide-w, $wide-h);
+    font-size: max(0.875rem, #{cqi(23, $wide-w)});
+  }
+}
+
+// ---------- Gallery ----------
+
+.latest {
+  margin: 0;
+  font-family: var(--font-family-heading);
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.newest {
+  margin-block: 0.75rem 1.25rem;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  > li { position: relative; }
+  > li:hover, > li:focus-within { z-index: 5; }
+}
+
+.tile {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+}
+
+.frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 341.667 / 225.5;
+  border-radius: 12px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+  }
+}
+
+.badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f3f5eb;
+}
+
+.when {
+  color: var(--color-text-secondary);
+  font-size: 0.6875rem;
+}
+
+.tile:hover .frame, .tile:focus-visible .frame {
+  transform: scale(1.15);
+  box-shadow: $glow;
+}
+
+.tile:hover .badge, .tile:focus-visible .badge { visibility: hidden; }
+
+.empty { color: var(--color-text-secondary); }
+
+@container (min-width: 40rem) {
+  .gallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+  .when { font-size: 0.8125rem; }
+}
+
+// ---------- Photo detail ----------
+
+.back-photos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: var(--target-min);
+  margin-block-end: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.9375rem;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.photo-frame {
+  position: relative;
+  aspect-ratio: 650 / 440;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.full {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+}
+
+.heart {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: rgb(255 252 244 / 91%);
+  &[aria-disabled='true'] { cursor: progress; opacity: 0.7; }
+}
+
+.aside {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  min-width: 0;
+}
+
+.shared {
+  display: grid;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.comment-label { font-weight: 700; }
+
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 112px;
+  padding: 12px 14px;
+  border: 1px solid light-dark(#b5c9b5, #507361);
+  border-radius: 12px;
+  background: light-dark(#ffffff, #1e3b30);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  resize: vertical;
+  &::placeholder { color: var(--color-text-secondary); }
+  &:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+}
+
+.save {
+  min-height: var(--target-min);
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #286c68;
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  &[aria-disabled='true'] { cursor: progress; opacity: 0.8; }
+}
+
+.status:empty { display: none; }
+.problem { color: var(--color-danger); }
+.note { color: var(--color-text-secondary); font-size: 0.875rem; }
+
+@container (min-width: 50rem) {
+  .detail {
+    grid-template-columns: minmax(0, 650fr) minmax(16rem, 355fr);
+    gap: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pinned-photo, .frame, .post-it { transition: none; }
+  .post-it:hover { transform: rotate(5deg); }
+}
