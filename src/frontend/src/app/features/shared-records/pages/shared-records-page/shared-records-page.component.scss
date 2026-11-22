@@ -29,14 +29,12 @@ article,
 }
 
 .records-hero {
+  position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 30%);
-  align-items: center;
-  gap: var(--space-2);
-  padding: clamp(0.75rem, 2vw, 1.5rem);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-card);
-  background: var(--color-surface-soft);
+  min-block-size: 8rem;
+  padding: clamp(0.5rem, 2vw, 1.25rem) 0;
+  overflow: hidden;
 }
 
 .records-hero__copy {
@@ -46,13 +44,28 @@ article,
   min-inline-size: 0;
 }
 
+/* #721: the paper-and-ribbon art is a large, faint background behind the title, not a picture in a box. */
 .records-hero__art {
+  position: absolute;
+  z-index: -1;
+  inset-block-start: 50%;
+  inset-inline-end: -4%;
   display: block;
-  inline-size: 100%;
-  max-inline-size: 14rem;
+  inline-size: min(28rem, 62%);
   block-size: auto;
-  justify-self: end;
+  opacity: 0.2;
+  transform: translateY(-50%);
   pointer-events: none;
+}
+
+:host-context(html[data-theme='dark']) .records-hero__art {
+  opacity: 0.16;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host-context(html:not([data-theme])) .records-hero__art {
+    opacity: 0.16;
+  }
 }
 
 .records-hero .privacy app-icon {
@@ -153,26 +166,8 @@ button:focus-visible, [tabindex]:focus-visible {
   outline-offset: 2px;
 }
 
-.record-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.record-link[aria-pressed='true'] {
-  background: var(--color-selected);
-}
-
-.record-link span {
-  font-size: 0.75rem;
-}
-
 /* Child Support always reads as its own type: a distinct label colour, never colour alone (the text says it). */
 .badge.support,
-.record-link.support span,
 .request-type.support strong {
   color: var(--color-support-fg);
 }
@@ -323,4 +318,203 @@ h3 {
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+}
+
+/* ---------- #721: overview cards ---------- */
+
+.needs {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-soft);
+}
+
+.needs h2 {
+  font-size: 1.0625rem;
+}
+
+.needs p {
+  grid-column: 2;
+}
+
+.needs__dot {
+  display: inline-block;
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: 50%;
+  background: light-dark(#e0714f, #f08a6b);
+}
+
+.group {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.group__title {
+  font-size: 1.125rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.record-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  /* The page's button rule centres content; a card reads from the left edge. */
+  justify-content: stretch;
+  justify-items: start;
+  font-weight: 400;
+  align-content: start;
+  gap: var(--space-2);
+  inline-size: 100%;
+  block-size: 100%;
+  padding: var(--space-4);
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 12px rgb(25 36 31 / 8%);
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.record-card:hover .record-card__title {
+  text-decoration: underline;
+}
+
+.record-card:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* A proposal that isn't agreed never looks agreed: dashed amber, and no progress. */
+.record-card.pending {
+  border: 1.5px dashed light-dark(#e9c27a, #9a7433);
+  background: light-dark(#fffcf5, #262c1f);
+}
+
+.record-card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.record-card .amount strong {
+  margin-inline-end: var(--space-1);
+  font-size: 1.5rem;
+}
+
+.record-card .bar {
+  display: block;
+  inline-size: 100%;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: light-dark(#e3eae6, #2c463b);
+  overflow: hidden;
+}
+
+.record-card .bar > span {
+  display: block;
+  block-size: 100%;
+  min-inline-size: 0.5rem;
+  border-radius: inherit;
+  background: light-dark(#5e8f7e, #8dbba8);
+}
+
+.record-card.support .bar > span {
+  background: light-dark(#4e79a7, #8fb2da);
+}
+
+.pending-note {
+  color: light-dark(#7a4e10, #f3d08f);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.needs-you {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.small {
+  font-size: 0.8125rem;
+}
+
+.cta {
+  margin-block-start: var(--space-1);
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cta.filled {
+  border-color: transparent;
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.badge.status.waiting {
+  border: 1px dashed light-dark(#e9c27a, #9a7433);
+  background: light-dark(#fdf1dc, #3e321c);
+  color: light-dark(#7a4e10, #f3d08f);
+}
+
+/* ---------- #721: the record page ---------- */
+
+.all-records {
+  justify-self: start;
+}
+
+.ledger {
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid light-dark(#e8dcc2, #3e5a4c);
+  border-radius: 16px;
+  background: light-dark(#fffbf2, #22392f);
+  box-shadow: 0 4px 12px rgb(25 36 31 / 8%);
+}
+
+.ledger.pending {
+  border: 1.5px dashed light-dark(#e9c27a, #9a7433);
+}
+
+.ledger .target {
+  border-color: transparent;
+  background: light-dark(#fdf1dc, #3e321c);
+  color: light-dark(#7a4e10, #f3d08f);
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border-radius: 18px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 12px rgb(25 36 31 / 8%);
+  text-align: center;
+}
+
+.empty__title {
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.empty .muted {
+  max-inline-size: 32rem;
 }
