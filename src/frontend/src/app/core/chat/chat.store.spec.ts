@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Api, ChatConversation, ChatMessage } from '../api/api';
 import { fakeAuth } from '../../../testing/fake-auth';
 import { AuthStore } from '../auth/auth.store';
-import { CHAT_CONNECTION, ChatConnection, ChatStore, TYPING_SHOWN_MS } from './chat.store';
+import { CHAT_CONNECTION, ChatConnection, ChatStore, HIDDEN_DISCONNECT_MS, TYPING_SHOWN_MS } from './chat.store';
 
 // Synthetic family only: Alex (this parent) and Sam. The server and the hub are faked.
 const message = (id: string, overrides: Partial<ChatMessage> = {}): ChatMessage => ({
@@ -90,7 +90,20 @@ describe('ChatStore (#125)', () => {
     return store;
   }
 
-  afterEach(() => vi.useRealTimers());
+  let visibility: DocumentVisibilityState = 'visible';
+  beforeEach(() => {
+    visibility = 'visible';
+    vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  function show(state: DocumentVisibilityState) {
+    visibility = state;
+    document.dispatchEvent(new Event('visibilitychange'));
+  }
 
   it('watches the parent’s family and loads the unread count for the navigation dot', async () => {
     const store = await create();
@@ -261,5 +274,89 @@ describe('ChatStore (#125)', () => {
     await vi.waitFor(() => expect(connection.stopped).toBe(1));
     expect(store.messages()).toBeNull();
     expect(store.draft()).toBe('');
+  });
+  describe('while the page is hidden (scale to zero)', () => {
+    it('closes the live connection a minute after the page is hidden, and keeps the draft', async () => {
+      const store = await create();
+      vi.useFakeTimers();
+      store.draft.set('Running late');
+
+      show('hidden');
+      await vi.advanceTimersByTimeAsync(HIDDEN_DISCONNECT_MS - 1);
+      expect(connection.stopped).toBe(0);
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(connection.stopped).toBe(1);
+      expect(store.draft()).toBe('Running late');
+      // Nothing restarts it while the page stays hidden.
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+      expect(connection.started).toBe(1);
+    });
+
+    it('keeps the connection when the page is shown again within the minute', async () => {
+      await create();
+      vi.useFakeTimers();
+
+      show('hidden');
+      await vi.advanceTimersByTimeAsync(30_000);
+      show('visible');
+      await vi.advanceTimersByTimeAsync(HIDDEN_DISCONNECT_MS);
+
+      expect(connection.stopped).toBe(0);
+      expect(connection.started).toBe(1);
+    });
+
+    it('reconnects when the page is shown again, and catches up on what was missed', async () => {
+      const store = await create();
+      await store.open();
+      vi.useFakeTimers();
+      show('hidden');
+      await vi.advanceTimersByTimeAsync(HIDDEN_DISCONNECT_MS);
+      api.conversation.mockResolvedValueOnce(page({ messages: [message('1'), message('2'), message('3')] }));
+      api.chatUnread.mockResolvedValueOnce({ count: 1, hasUnread: true });
+
+      show('visible');
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(connection.started).toBe(2);
+      expect(connection.invoked.filter(([method]) => method === 'Watch')).toHaveLength(2);
+      expect(store.messages()!.map((m) => m.id)).toEqual(['1', '2', '3']);
+      expect(store.unread()).toBe(1);
+      expect(store.reloaded()).toBe(1);
+    });
+
+    it('ignores a closed connection’s events once it’s paused, so it doesn’t restart in the background', async () => {
+      await create();
+      vi.useFakeTimers();
+      const closed = connection.closed!;
+      show('hidden');
+      await vi.advanceTimersByTimeAsync(HIDDEN_DISCONNECT_MS);
+
+      closed();
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+
+      expect(connection.started).toBe(1);
+    });
+
+    it('waits to connect until a page that was hidden at sign-in is shown', async () => {
+      visibility = 'hidden';
+      connection = new FakeConnection();
+      const factory = vi.fn(async () => connection);
+      TestBed.configureTestingModule({
+        providers: [
+          fakeAuth(),
+          { provide: Api, useValue: { chatUnread: vi.fn(async () => ({ count: 0, hasUnread: false })), conversation: vi.fn() } },
+          { provide: CHAT_CONNECTION, useValue: factory },
+        ],
+      });
+      TestBed.inject(ChatStore);
+      TestBed.tick();
+      await Promise.resolve();
+      expect(factory).not.toHaveBeenCalled();
+
+      show('visible');
+
+      await vi.waitFor(() => expect(connection.invoked).toContainEqual(['Watch', 'family-1']));
+    });
   });
 });

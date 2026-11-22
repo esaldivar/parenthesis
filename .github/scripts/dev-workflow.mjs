@@ -1,13 +1,11 @@
 #!/usr/bin/env node
-// Development workflow automation: weekly PR and Copilot review limits, Discord notices and the weekly status
-// report. The rules live in docs/development-workflow.md; this file only implements them.
+// Development workflow automation: Copilot review limits, Discord notices and the weekly status report. The rules live in docs/development-workflow.md; this file only implements them.
 //
 // Commands (run by the workflows in .github/workflows, or locally by Claude Code sessions):
-//   pr-limit        Weekly PR limit check for the PR in $GITHUB_EVENT_PATH.
 //   copilot-usage   Counts Copilot reviews when one is requested on the PR in $GITHUB_EVENT_PATH.
 //   notify-pr       Discord notice for a major or release PR in $GITHUB_EVENT_PATH.
 //   weekly-status   Weekly report. Env: PERIOD=last|current, DRY_RUN=true to print instead of sending.
-//   usage           Prints this week's PR and Copilot review usage (for Claude before opening a PR).
+//   usage           Prints this week's release promotions and Copilot review usage.
 //   send FILE       Sends FILE's text to Discord (Claude's notice before opening a major PR).
 //
 // Needs GITHUB_TOKEN (or GH_TOKEN) and GITHUB_REPOSITORY. Discord needs DISCORD_WEBHOOK_URL. Never print the
@@ -16,7 +14,8 @@
 import { readFileSync, appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-export const LIMITS = { prsPerWeek: 3, copilotPerWeek: 6, copilotPerPr: 2 };
+// The weekly cap on release/* -> develop PRs was removed (owner decision, November 22, 2026); only Copilot is limited.
+export const LIMITS = { copilotPerWeek: 6, copilotPerPr: 2 };
 
 /** The limits apply to PRs opened from this moment (Monday, October 19, 2026, 12:00 AM Central). Earlier PRs stay valid. */
 export const LIMITS_START = new Date("2026-10-19T05:00:00Z");
@@ -24,7 +23,6 @@ export const LIMITS_START = new Date("2026-10-19T05:00:00Z");
 export const LABELS = {
   major: "major", // Owner or Claude marks a PR as major.
   notMajor: "not-major", // Turns off automatic major detection (release PRs are still announced).
-  extraPr: "owner-approved-pr", // Owner allows a PR beyond the weekly limit.
   extraReview: "owner-approved-review", // Owner allows a Copilot review beyond the limits.
   replacement: "replacement", // Replaces an earlier PR (for example, a renamed branch); not a new PR.
   blocked: "blocked", // A significant risk or blocker.
@@ -87,13 +85,16 @@ const labelNames = (pr) => (pr.labels ?? []).map((l) => (typeof l === "string" ?
 const isBot = (user) => user?.type === "Bot" || /\[bot\]$/.test(user?.login ?? "");
 const isPermanent = (ref) => ["main", "develop", "development"].includes(ref) || ref.startsWith("release/");
 
-/** Owner policy (2026-10-20): only release/* -> develop PRs consume the weekly cap. */
+/**
+ * Whether a PR is a release promotion (release/* -> develop), which the weekly report lists. The weekly cap on them
+ * was removed on November 22, 2026; nothing is blocked by this.
+ */
 export function countsTowardLimit(pr) {
   const base = pr.base.ref;
   const head = pr.head.ref;
   if (new Date(pr.created_at) < LIMITS_START) return { counts: false, reason: "opened before the weekly limits started" };
   if (base !== "develop" || !head.startsWith("release/") || head.length <= "release/".length) {
-    return { counts: false, reason: "only release/* source branches targeting develop consume the cap" };
+    return { counts: false, reason: "only release/* source branches targeting develop are release promotions" };
   }
   return { counts: true, reason: "release-branch promotion into develop" };
 }
@@ -184,7 +185,6 @@ export function buildPrMessage(pr, classification, kind, { commitTitles = [] } =
     "release-ready": "PARENTHESIS — RELEASE PR READY",
     "major-ready": "PARENTHESIS — MAJOR PR READY",
     blocked: "PARENTHESIS — MAJOR PR BLOCKED",
-    "pr-limit": "PARENTHESIS — WEEKLY PR LIMIT REACHED",
   }[kind];
   const types = checkedItems(section(s, "type of change"));
   const checklist = section(s, "checklist");
@@ -397,34 +397,6 @@ const summary = (text) => {
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${text}\n`);
 };
 
-export async function prLimit(gh, number = event().pull_request.number) {
-  const pr = await gh.get(`/repos/${gh.repo}/pulls/${number}`);
-  const rule = countsTowardLimit(pr);
-  if (!rule.counts) return summary(`#${pr.number} doesn't count toward the weekly PR limit: ${rule.reason}.`);
-  const week = weekRange(new Date(pr.created_at));
-  const prs = await developmentPrs(gh, week);
-  const position = prs.findIndex((p) => p.number === pr.number) + 1;
-  if (position === 0) throw new Error('PR count changed during verification; rerun the latest event.');
-  const limit = LIMITS.prsPerWeek;
-  const weekText = `the week of ${formatChicagoDate(week.start)}`;
-  summary(`#${pr.number} is release promotion ${position} of ${limit} allowed in ${weekText}.`);
-  const existing = await comments(gh, pr.number);
-  if (position === limit) {
-    await commentOnce(gh, pr.number, existing, "pr-limit-last",
-      `ℹ️ This is release promotion ${limit} of ${limit} for ${weekText}. Any further release/* -> develop PR this week needs the owner's \`${LABELS.extraPr}\` label. The limit resets Monday at 12:00 AM Central. See docs/development-workflow.md.`);
-  }
-  if (position <= limit) return;
-  if (await ownerApproved(gh, pr, LABELS.extraPr)) return summary(`Over the limit, but the owner approved it with \`${LABELS.extraPr}\`.`);
-  const others = prs.slice(0, position - 1).map((p) => `#${p.number}`).join(", ");
-  const posted = await commentOnce(gh, pr.number, existing, "pr-limit-over",
-    `⛔ Weekly PR limit reached: this is release promotion ${position}, and the limit is ${limit} per week (${others} came first, ${weekText}). It can stay open, but it shouldn't merge until the owner adds the \`${LABELS.extraPr}\` label or a later promotion is created in a new week. The limit resets Monday at 12:00 AM Central. See docs/development-workflow.md.`);
-  if (posted) {
-    await sendDiscord(`**PARENTHESIS — WEEKLY PR LIMIT REACHED**\n\nPR: #${pr.number} — ${pr.title}\nBranch: ${pr.head.ref} → ${pr.base.ref}\nThis is release promotion ${position}; the limit is ${limit} per week (${others} came first).\nTo allow it, add the \`${LABELS.extraPr}\` label.\nGitHub: ${pr.html_url}`)
-      .catch((e) => summary(`⚠️ ${e.message}`));
-  }
-  throw new Error(`Weekly PR limit reached (${position} of ${limit}). The owner can allow it with the "${LABELS.extraPr}" label.`);
-}
-
 async function copilotCheck(gh) {
   const ev = event();
   if (!isCopilot(ev.requested_reviewer?.login)) return summary("The requested reviewer isn't Copilot; nothing to count.");
@@ -500,11 +472,8 @@ export async function weeklyReport(gh, { period = "last", now = new Date() } = {
   const unavailable = [];
 
   const prs = await developmentPrs(gh, week);
-  lines.push(`**Release promotions created:** ${prs.length} of ${LIMITS.prsPerWeek}${prs.length > LIMITS.prsPerWeek ? " (over the limit)" : ""}`);
+  lines.push(`**Release promotions created:** ${prs.length}`);
   for (const p of prs) lines.push(`- #${p.number} ${p.title}`);
-  lines.push(period === "last"
-    ? `**Release-promotion allowance this week:** ${LIMITS.prsPerWeek} (reset Monday; unused slots don't roll over)`
-    : `**Release-promotion allowance left:** ${Math.max(0, LIMITS.prsPerWeek - prs.length)} of ${LIMITS.prsPerWeek}`);
 
   try {
     const usage = await copilotUsage(gh, week);
@@ -581,8 +550,6 @@ async function main([command, ...args]) {
   }
   const gh = github();
   switch (command) {
-    case "pr-limit":
-      return prLimit(gh);
     case "copilot-usage":
       return copilotCheck(gh);
     case "notify-pr":
@@ -599,7 +566,7 @@ async function main([command, ...args]) {
       const prs = await developmentPrs(gh, week);
       const copilot = await copilotUsage(gh, week);
       console.log(`Week of ${formatChicagoDate(week.start)} (resets Monday 12:00 AM Central)`);
-      console.log(`Release promotions: ${prs.length} of ${LIMITS.prsPerWeek}${prs.length ? ` (${prs.map((p) => `#${p.number}`).join(", ")})` : ""}`);
+      console.log(`Release promotions: ${prs.length}${prs.length ? ` (${prs.map((p) => `#${p.number}`).join(", ")})` : ""}`);
       console.log(`Copilot reviews: ${copilot.used} of ${LIMITS.copilotPerWeek}${copilot.pending ? `, plus ${copilot.pending} pending` : ""}`);
       return;
     }

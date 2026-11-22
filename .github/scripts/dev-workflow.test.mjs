@@ -16,7 +16,6 @@ import {
   ownerApproved,
   copilotUsage,
   copilotWeeklyExempt,
-  prLimit,
   apiUrl,
   nextLink,
 } from "./dev-workflow.mjs";
@@ -38,8 +37,8 @@ const pr = (over = {}) => ({
   ...over,
 });
 
-test("limits match the owner's brief", () => {
-  assert.deepEqual(LIMITS, { prsPerWeek: 3, copilotPerWeek: 6, copilotPerPr: 2 });
+test("limits match the owner's brief: Copilot only, no weekly PR cap (November 22, 2026)", () => {
+  assert.deepEqual(LIMITS, { copilotPerWeek: 6, copilotPerPr: 2 });
 });
 
 test("week starts Monday 12:00 AM Central in daylight time (UTC-5)", () => {
@@ -75,7 +74,7 @@ test("only release sources into exact develop count, independent of author and r
   assert.equal(countsTowardLimit(pr({ head: { ref: "release/0.3.0" }, labels: [{ name: "replacement" }] })).counts, true);
 });
 
-test("ordinary work cannot consume the cap for any target; release sources count only into develop", () => {
+test("ordinary work is never a release promotion; release sources are only into develop", () => {
   for (const head of ['feature/calendar', 'feat/a', 'fix/a', 'bugfix/a', 'docs/a', 'chore/a', 'chore/sync-main', 'hotfix/a', 'develop', 'release/']) {
     for (const base of ['develop', 'release/0.3.0', 'main', 'development', 'feature/stack']) {
       assert.equal(countsTowardLimit(pr({ head: { ref: head }, base: { ref: base } })).counts, false, `${head} -> ${base}`);
@@ -90,26 +89,6 @@ test("ordinary work cannot consume the cap for any target; release sources count
 
 test("PRs opened before the limits started stay valid and don't count", () => {
   assert.equal(countsTowardLimit(pr({ created_at: "2026-10-17T12:17:46Z" })).counts, false);
-});
-
-test("ordinary PR check passes without counting or looking for override", async () => {
-  await prLimit({ repo: 'esaldivar/parenthesis', get: async () => pr(),
-    async *paginate() { throw Error('ordinary PR must not query allowance'); } }, 70);
-});
-
-test("fourth promotion fails, first three pass, and owner override keeps its meaning", async () => {
-  const all = [4, 3, 2, 1].map(number => pr({ number, head: { ref: 'release/0.3.0' }, created_at: `2026-10-2${number}T12:00:00Z` }));
-  const fake = (number, approved = false) => ({ repo: 'esaldivar/parenthesis',
-    get: async () => ({ ...all.find(p => p.number === number), labels: approved ? [{ name: 'owner-approved-pr' }] : [] }),
-    async *paginate(path) {
-      if (path.includes('/pulls?')) yield* all;
-      else if (path.includes('/events?')) yield { event: 'labeled', label: { name: 'owner-approved-pr' }, actor: { login: 'esaldivar' } };
-      else yield { user: { type: 'Bot' }, body: '<!-- dev-workflow:pr-limit-over -->' };
-    }, post: async () => ({}),
-  });
-  for (const number of [1, 2, 3]) await prLimit(fake(number), number);
-  await assert.rejects(prLimit(fake(4), 4), /Weekly PR limit reached/);
-  await prLimit(fake(4, true), 4);
 });
 
 test("weekly count is half-open across the Monday reset and excludes future creations", async () => {
@@ -272,16 +251,16 @@ test("weekly PR count uses creation time, oldest first, and skips what doesn't c
 });
 
 test("only the owner's label counts as approval", async () => {
-  const labeled = pr({ labels: [{ name: "owner-approved-pr" }] });
-  const byOwner = fakeGh([["/repos/example/repo/issues/70/events", [{ event: "labeled", label: { name: "owner-approved-pr" }, actor: { login: "Example" } }]]]);
+  const labeled = pr({ labels: [{ name: "owner-approved-review" }] });
+  const byOwner = fakeGh([["/repos/example/repo/issues/70/events", [{ event: "labeled", label: { name: "owner-approved-review" }, actor: { login: "Example" } }]]]);
   const bySomeoneElse = fakeGh([["/repos/example/repo/issues/70/events", [
-    { event: "labeled", label: { name: "owner-approved-pr" }, actor: { login: "example" } },
-    { event: "unlabeled", label: { name: "owner-approved-pr" }, actor: { login: "example" } },
-    { event: "labeled", label: { name: "owner-approved-pr" }, actor: { login: "claude-bot" } },
+    { event: "labeled", label: { name: "owner-approved-review" }, actor: { login: "example" } },
+    { event: "unlabeled", label: { name: "owner-approved-review" }, actor: { login: "example" } },
+    { event: "labeled", label: { name: "owner-approved-review" }, actor: { login: "claude-bot" } },
   ]]]);
-  assert.equal(await ownerApproved(byOwner, labeled, "owner-approved-pr", "example"), true);
-  assert.equal(await ownerApproved(bySomeoneElse, labeled, "owner-approved-pr", "example"), false);
-  assert.equal(await ownerApproved(byOwner, pr(), "owner-approved-pr", "example"), false);
+  assert.equal(await ownerApproved(byOwner, labeled, "owner-approved-review", "example"), true);
+  assert.equal(await ownerApproved(bySomeoneElse, labeled, "owner-approved-review", "example"), false);
+  assert.equal(await ownerApproved(byOwner, pr(), "owner-approved-review", "example"), false);
 });
 
 test("Copilot reviews on PRs into develop don't count toward the weekly limit", async () => {

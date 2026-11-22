@@ -59,7 +59,7 @@ internal sealed class SmtpEmailSender(IOptions<EmailOptions> options) : IEmailSe
             await client.AuthenticateAsync(smtp.Username, smtp.Password ?? string.Empty, cancellationToken);
         }
 
-        await client.SendAsync(mime, cancellationToken);
+        await client.SendAsync(new SmtpSendRequest(mime), cancellationToken);
         await client.DisconnectAsync(quit: true, cancellationToken);
     }
 }

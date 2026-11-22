@@ -2,8 +2,10 @@
 #   docker build -f docker/api.Dockerfile -t parenthesis-api .
 
 # 1. Angular app
-# Match src/frontend/.nvmrc and the frontend engine range; Node 25 is unsupported.
-FROM node:24-alpine AS spa
+# Within the frontend engine range (^24.15.0 || >=26.0.0); Node 25 is unsupported. The image builds with Node 26
+# (#690), while src/frontend/.nvmrc and CI still use 24, so both supported versions are exercised: the Playwright
+# release gate tests this image. Move .nvmrc and the workflows to 26 together, in one change, when that's wanted.
+FROM node:26-alpine AS spa
 WORKDIR /spa
 COPY src/frontend/package.json src/frontend/package-lock.json ./
 # --ignore-scripts: no dependency install scripts run (issue #65). The build doesn't need them: esbuild and

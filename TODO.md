@@ -333,9 +333,24 @@ that points back here.
 - [ ] **VoiceOver: calendar save toast announced after focus settles (#650).** On the owner's Mac
   (`docs/runbooks/voiceover-macos.md`), run `calendar-voiceover` and `dates-voiceover` several times. The transcripts
   must never fall back to reading the toast with the VoiceOver cursor. Then make `toastHeardOrRead` a hard assertion.
-- [ ] **Playwright gate: cached browser system packages (#684).** Confirm on a run with a warm cache that "Install
-  browser system libraries" finishes in about a minute without downloading. The cache is keyed on the Playwright version,
-  so Ubuntu package updates are still downloaded until the next Playwright update.
+- [ ] **Weekly PR cap retired (#702, November 22, 2026).** The owner removed the 3-a-week release/* -> develop cap.
+  - [ ] Owner: remove **Weekly PR limit** from the required status checks in any ruleset (for example `develop`)
+    before this change reaches `main`. The check runs from `main`'s copy of the workflow (`pull_request_target`), so
+    once `main` no longer has it, a required check that never reports would block PRs. Until then the old check still
+    runs; the `owner-approved-pr` label still overrides it.
+  - [ ] Remove the dead cap code from `scripts/claude_queue_run.py` (`parse_usage`, `weekly_limit_applies`,
+    `weekly_usage`, `weekly_limit_reached`) and its tests, through a supervised runner change.
+- [x] **Playwright gate: cached browser system packages (#684).** Confirmed with a warm cache on #682's release gate
+  (November 18, 2026): the shards took 7–9 minutes instead of 20–35, and the warm-up job found both caches and
+  installed nothing. The cache is keyed on the Playwright version, so Ubuntu package updates are still downloaded until
+  the next Playwright update.
+- [ ] **Chat keeps the site awake (#700).** The chat connection now closes a minute after the page is hidden and
+  reconnects when it's shown, so the container app can scale to zero.
+  - [ ] Owner check after deploy: with no signed-in tab visible, Development's replica count drops to 0 within about
+    10 minutes, and the daily container app cost falls in Cost analysis.
+  - [ ] Optional: the Azure budget shutdown (Automation runbook `Stop-Parenthesis`, action group
+    `ag-parenthesis-budget-stop`, budget `parenthesis-shutdown`) set up in the portal on November 22 is not yet
+    recorded in `docs/runbooks/azure-environments.md`; add it and the script there.
 - [ ] **Child Essentials section fixes (#679, #680, M5).** No outline around an open section; choosing another child
   keeps the open section for that child.
   - [ ] Owner check on the dev site, desktop and phone, both themes.
@@ -579,6 +594,9 @@ See [the roadmap](docs/planning/roadmap.md). Milestones renamed and created, iss
   art starts (#646).
 - [ ] Owner: decide whether Child Essentials needs an **insurance information** section (named in the M5 brief; it
   doesn't exist today, so it would be a new feature with its own issue).
+- [ ] #697 (Request #1 sign-up and profile picker designs): Owner checks the picker, PIN, pairing, Settings
+  › Children/Devices and Approvals screens on the dev site in both themes; they need a signed-in family, so only
+  sign-in, sign-up and /pair were screenshotted locally.
 - [ ] Fix the Google Calendar runbook's scope tier: it says the Calendar scope is sensitive, but the console reading in
   the Photos tracker says non-sensitive; re-check in the console first (#643).
 
