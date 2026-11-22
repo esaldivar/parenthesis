@@ -215,7 +215,10 @@ export class MemoryPage {
     // #717: the cover and when the first photo the viewer can see goes, as on the memory's card.
     const photos = view.batches.flatMap((b) => b.photos);
     const cover = photos[0]?.thumbnailUrl ?? null;
-    const first = photos.map((p) => p.expiresAt).sort()[0];
+    const first = photos.reduce<string | null>(
+      (soonest, p) => (!soonest || Date.parse(p.expiresAt) < Date.parse(soonest) ? p.expiresAt : soonest),
+      null,
+    );
     let when: { soon: boolean; text: string; left: number } | null = null;
     if (first) {
       const e = expiry(first, this.timeZone(), this.now(), locale);
