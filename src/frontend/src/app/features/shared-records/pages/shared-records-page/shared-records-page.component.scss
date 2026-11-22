@@ -373,7 +373,6 @@ h3 {
   /* The page's button rule centres content; a card reads from the left edge. */
   justify-content: stretch;
   justify-items: start;
-  font-weight: 400;
   align-content: start;
   gap: var(--space-2);
   inline-size: 100%;
@@ -385,6 +384,8 @@ h3 {
   box-shadow: 0 4px 12px rgb(25 36 31 / 8%);
   color: var(--color-text);
   font: inherit;
+  /* After the shorthand: the page's button rule is bold, a card's text isn't. */
+  font-weight: 400;
   text-align: start;
   cursor: pointer;
 }
