@@ -82,10 +82,41 @@ export class SharedRecordsPage {
     return [...funds, ...support];
   });
   private readonly selectedKey = signal<string | null>(null);
-  protected readonly selected = computed(() => {
-    const records = this.records();
-    return records.find(item => item.key === this.selectedKey()) ?? records[0] ?? null;
+  /** The open record page; null shows the overview of cards (#721). */
+  protected readonly selected = computed(() => this.records().find(item => item.key === this.selectedKey()) ?? null);
+  /**
+   * The overview (#721): Shared Funds then Child Support, each record as one card with its status, progress and the
+   * one thing it may need from this parent. A proposal awaiting agreement shows no progress: nothing is owed yet.
+   */
+  protected readonly groups = computed(() => {
+    const workspace = this.workspace();
+    if (!workspace) return [];
+    const cards = this.records().map(item => {
+      const entries = item.kind === 'fund' ? item.fund.entries ?? [] : item.record.entries;
+      const totals = (item.kind === 'fund' ? item.fund.totals : item.record.totals) ?? empty;
+      const currency = item.kind === 'fund' ? item.fund.currency : item.record.currency;
+      const fund = item.kind === 'fund' ? item.fund : null;
+      const mine = fund?.proposerId === workspace.membershipId;
+      const pending = fund?.status === 'AwaitingAgreement';
+      const proposalForYou = pending && !mine;
+      const reportForYou = entries.some(entry => entry.canRespond);
+      const target = fund ? fund.proposerShareMinor + fund.coParentShareMinor : item.kind === 'support' ? item.record.referenceMinor : null;
+      const yours = fund ? (mine ? fund.proposerShareMinor : fund.coParentShareMinor) : null;
+      const theirs = fund ? (mine ? fund.coParentShareMinor : fund.proposerShareMinor) : null;
+      return {
+        item, currency, pending, ended: fund?.status === 'ProposalEnded', needsYou: proposalForYou || reportForYou,
+        acknowledged: totals.acknowledgedMinor, target, yours, theirs,
+        percent: target ? Math.min(100, (totals.acknowledgedMinor / target) * 100) : null,
+        cta: (proposalForYou ? 'records.card.reviewProposal' : reportForYou ? 'records.card.reviewReport' : 'records.card.open') as TranslationKey,
+      };
+    });
+    return [
+      { kind: 'fund' as const, title: 'records.overview.funds' as TranslationKey, cards: cards.filter(card => card.item.kind === 'fund') },
+      { kind: 'support' as const, title: 'feature.child.support' as TranslationKey, cards: cards.filter(card => card.item.kind === 'support') },
+    ].filter(group => group.cards.length);
   });
+  /** What waits on this parent: a co-parent's proposal to agree to, or a report to confirm or flag. */
+  protected readonly needs = computed(() => this.groups().flatMap(group => group.cards).filter(card => card.needsYou));
   protected readonly composer = signal<Composer | null>(null);
   protected readonly requestType = signal<'fund' | 'support'>('fund');
   protected readonly reporting = computed(() => {
@@ -232,6 +263,17 @@ export class SharedRecordsPage {
   protected select(item: Listed): void {
     this.selectedKey.set(item.key);
     this.focus(this.recordHeading);
+  }
+
+  /** Back to the overview, with focus on the card of the record that was open. */
+  protected showAll(): void {
+    const key = this.selectedKey();
+    this.selectedKey.set(null);
+    if (key) afterNextRender(() => this.document.getElementById(this.cardId(key))?.focus(), { injector: this.injector });
+  }
+
+  protected cardId(key: string): string {
+    return `record-card-${key.replace(/[^a-z0-9-]/gi, '-')}`;
   }
 
   protected childrenOf(fund: SharedFund): string {

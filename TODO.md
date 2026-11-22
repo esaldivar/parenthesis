@@ -78,6 +78,11 @@ that points back here.
     Photos above). Until then they only change the development sample, and the page says nothing was sent.
   - [ ] Bookmark (keep past 60 days), download and Google Photos export from the M4 handoff aren't in the approved
     design; decide whether Artwork needs them before the API lands.
+- [ ] **Shared Records redesign (#721, M5).** Overview cards (a "needs your response" summary, dashed amber proposals
+  that say nothing is owed, progress against the target) and a ledger-style record page, with the paper-and-ribbon
+  art as a faint background. Every action, the PDF report and the attention dot are unchanged.
+  - [ ] Owner check on Development: overview, an agreed fund, a proposal from the co-parent, a Child Support record
+    and the empty state, on phone and desktop, in both themes and in English and Spanish.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
 - [ ] **Family Memories timeline redesign (#717, M5).** Month headings on a thin rail, album-style covers, and a coral
   time-left bar with "Open to save photos" in each memory's final week; an album-sheet empty state; the memory

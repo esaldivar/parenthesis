@@ -40,25 +40,17 @@
           <p class="muted">{{ 'feature.your.co.parent.must.join.before.you' | tr }}</p>
         }
         @if (selected(); as item) {
-          @if (records().length > 1) {
-            <ul class="record-list" aria-label="{{ 'feature.shared.records' | tr }}">
-              @for (entry of records(); track entry.key) {
-                <li>
-                  <button type="button" class="record-link" [class.support]="entry.kind === 'support'"
-                    [attr.aria-pressed]="entry.key === item.key" (click)="select(entry)">
-                    <span>{{ entry.kind === 'fund' ? ('feature.shared.fund' | tr) : ('feature.child.support' | tr) }}</span> {{ entry.title }}
-                  </button>
-                </li>
-              }
-            </ul>
-          }
+          <button type="button" class="secondary all-records" [disabled]="composer() !== null" (click)="showAll()">
+            <app-icon name="chevron-left" /> {{ 'records.back.all' | tr }}
+          </button>
+          <div class="ledger" [class.pending]="item.kind === 'fund' && item.fund.status === 'AwaitingAgreement'">
           @switch (item.kind) {
             @case ('fund') {
               @let fund = item.fund;
               <article aria-labelledby="record-title">
                 <div class="badges">
                   <span class="badge">{{ 'feature.shared.fund' | tr }}</span>
-                  <span class="badge" [class.agreed]="fund.status === 'Open'">{{ labels[fund.status] | tr }}</span>
+                  <span class="badge status" [class.agreed]="fund.status === 'Open'" [class.waiting]="fund.status === 'AwaitingAgreement'">{{ labels[fund.status] | tr }}</span>
                 </div>
                 <h2 #recordHeading id="record-title" tabindex="-1">{{ fund.title }}</h2>
                 @let mine = fund.proposerId === data.membershipId;
@@ -84,6 +76,7 @@
                     <strong>{{ (fund.proposerShareMinor + fund.coParentShareMinor) / 100 | appCurrency: fund.currency : 'symbol' }}</strong>
                   </div>
                   @if (fund.status === 'AwaitingAgreement') {
+                    <p class="pending-note">{{ 'records.card.nothingOwed' | tr }}</p>
                     @if (mine) {
                       <p class="muted">{{ 'feature.waiting.for.your.co.parent.to.agree' | tr }}</p>
                     } @else {
@@ -117,8 +110,73 @@
               </article>
             }
           }
+          </div>
+        } @else if (records().length) {
+          @if (needs().length; as count) {
+            <section class="needs" aria-labelledby="needs-title">
+              <span class="needs__dot" aria-hidden="true"></span>
+              <h2 id="needs-title">{{ count === 1 ? ('records.overview.needsOne' | tr) : ('records.overview.needsMany' | tr: { count: count }) }}</h2>
+              <p class="muted">
+                @for (card of needs(); track card.item.key; let last = $last) {
+                  <span>{{ card.item.title }}</span>@if (!last) { · }
+                }
+              </p>
+            </section>
+          }
+          @for (group of groups(); track group.kind) {
+            <section class="group" [attr.aria-labelledby]="'group-' + group.kind">
+              <h2 class="group__title" [id]="'group-' + group.kind">{{ group.title | tr }}</h2>
+              <ul class="cards">
+                @for (card of group.cards; track card.item.key) {
+                  <li>
+                    <button type="button" class="record-card" [id]="cardId(card.item.key)" [class.pending]="card.pending"
+                      [class.support]="card.item.kind === 'support'" (click)="select(card.item)">
+                      <span class="badges">
+                        <span class="badge" [class.support]="card.item.kind === 'support'">{{ card.item.kind === 'fund' ? ('feature.shared.fund' | tr) : ('feature.child.support' | tr) }}</span>
+                        @if (card.item.kind === 'fund') {
+                          <span class="badge status" [class.agreed]="card.item.fund.status === 'Open'" [class.waiting]="card.pending">{{ labels[card.item.fund.status] | tr }}</span>
+                        }
+                        @if (card.needsYou) {
+                          <span class="needs-you"><span class="needs__dot" aria-hidden="true"></span>{{ 'records.card.needsYou' | tr }}</span>
+                        }
+                      </span>
+                      <span class="record-card__title">{{ card.item.title }}</span>
+                      @if (card.item.kind === 'fund') {
+                        <span class="muted">@if (childrenOf(card.item.fund); as names) { {{ names }} · }{{ card.currency }}</span>
+                      } @else {
+                        <span class="muted">{{ card.currency }} · {{ card.item.record.youPay ? ('feature.you.pay' | tr) : ('feature.your.co.parent.pays' | tr) }}</span>
+                      }
+                      @if (card.pending) {
+                        <span>{{ 'records.card.proposedTarget' | tr: { amount: ((card.target ?? 0) / 100 | appCurrency: card.currency : 'symbol') ?? '' } }}</span>
+                        <span class="pending-note">{{ 'records.card.nothingOwed' | tr }}</span>
+                      } @else if (!card.ended) {
+                        <span class="amount">
+                          <strong>{{ card.acknowledged / 100 | appCurrency: card.currency : 'symbol' }}</strong>
+                          @if (card.target) {
+                            {{ 'records.card.acknowledgedOf' | tr: { target: (card.target / 100 | appCurrency: card.currency : 'symbol') ?? '' } }}
+                          } @else {
+                            {{ 'records.card.acknowledged' | tr }}
+                          }
+                        </span>
+                        @if (card.percent !== null) {
+                          <span class="bar" aria-hidden="true"><span [style.width.%]="card.percent"></span></span>
+                        }
+                      }
+                      @if (card.yours !== null && !card.ended) {
+                        <span class="muted small">{{ 'feature.you.08b041' | tr }} {{ card.yours / 100 | appCurrency: card.currency : 'symbol' }} · {{ 'feature.co.parent' | tr }} {{ (card.theirs ?? 0) / 100 | appCurrency: card.currency : 'symbol' }}</span>
+                      }
+                      <span class="cta" [class.filled]="card.needsYou">{{ card.cta | tr }}</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
         } @else {
-          <p class="muted">{{ 'feature.no.shared.records.yet' | tr }}</p>
+          <div class="empty">
+            <p class="empty__title">{{ 'feature.no.shared.records.yet' | tr }}</p>
+            <p class="muted">{{ 'records.empty.hint' | tr }}</p>
+          </div>
         }
       } @else if (!error()) {
         <p class="muted" role="status">{{ 'feature.loading.shared.records' | tr }}</p>
