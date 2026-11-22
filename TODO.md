@@ -9,6 +9,8 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+
+- [ ] **Approved parent Diary redesign (#712).** Implementation includes newest-first desktop spreads, brass page controls, reduced-motion-aware page turns, alternating mobile sheets and a return-to-newest arrow. After deployment, review the approved Figma layouts in both themes with keyboard and a real screen reader. Live shared-entry API integration remains outside this presentation change; sample entries stay opt-in and development-only. Artwork still needs its own approved design handoff; Photos is tracked by #710.
 - [ ] **Stationary desktop sidebar and leaf footer (#676).** Restore the full-height sidebar and visible leaf/tagline,
   with only the main desktop pane scrolling. Verify owner acceptance after the fix reaches the development site.
 - [ ] **Backend module layout (#570).** Move map and conventions in
@@ -57,6 +59,15 @@ that points back here.
 - [ ] **From Your Kids (#531).** Verify the integrated release candidate in both themes and with a real screen reader.
   The owner approved the rendered artwork and photos preview on November 8, 2026. Connect parent-authorized
   content and actions once the M5 service is available.
+- [ ] **From Your Kids Photos redesign (#710, M5).** Corkboard, newest-first gallery and photo detail from the
+  approved Figma Photos frames (desktop/mobile, light/dark).
+  - [ ] Owner check on Development: the empty board in a production build; the populated board, hover and keyboard
+    glow, gallery and detail with **Development preview with sample content** in a local development build, both
+    themes, phone and desktop, English and Spanish.
+  - [ ] Save hearts and the single parent comment through the From Your Kids API (`KidsContentReader.heart` and
+    `.comment`) once it exists. Until then they only change the development sample, and the page says nothing was
+    sent. Real photos, `heartPending`, `commentState` and failure states are already wired in `KidsPhotos`.
+  - [ ] Diary entries and Artwork still need their design handoff; they keep their earlier layout.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
 - [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523). Morning
   sunrise verified November 11, 2026; afternoon sun and evening moon still need a live check.
@@ -351,6 +362,11 @@ that points back here.
   - [ ] Optional: the Azure budget shutdown (Automation runbook `Stop-Parenthesis`, action group
     `ag-parenthesis-budget-stop`, budget `parenthesis-shutdown`) set up in the portal on November 22 is not yet
     recorded in `docs/runbooks/azure-environments.md`; add it and the script there.
+- [ ] **Accepted Sonar findings on develop (#706).** 11 code findings accepted without a reason are fixed in code.
+  - [ ] After this reaches `develop`, confirm Sonar shows them as fixed.
+  - [ ] Owner: add a reason in SonarQube Cloud for the `Web:S6845` `tabindex` finding in
+    `calendar-week.component.html`. It's the same labelled, scrollable region as the week calendar's, which has the
+    owner's October 19 WCAG 2.1.1 decision.
 - [ ] **Child Essentials section fixes (#679, #680, M5).** No outline around an open section; choosing another child
   keeps the open section for that child.
   - [ ] Owner check on the dev site, desktop and phone, both themes.

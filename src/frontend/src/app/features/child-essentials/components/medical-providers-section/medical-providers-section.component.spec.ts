@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { Api, Child, EssentialsUpdates, MedicalProvider } from '../../../../core/api/api';
 import { EssentialsUpdatesStore } from '../../../../core/essentials/essentials-updates.store';
-import { MedicalProvidersSection } from './medical-providers-section.component';
+import { FormControl } from '@angular/forms';
+import { MedicalProvidersSection, phoneNumber } from './medical-providers-section.component';
 
 const child = (id: string, firstName: string): Child => ({
   id,
@@ -191,5 +192,32 @@ describe('Medical provider contacts', () => {
     expect(history.textContent).toContain('No medical providers.');
     expect(history.querySelector('li')?.textContent?.trim())
       .toBe('Dr. Reed · Doctor · Example Clinic · (512) 555-0142 ext. 4 · 120 Example Lane');
+  });
+});
+
+describe('phoneNumber validator (Sonar S8786: no backtracking pattern)', () => {
+  const check = (value: string) => phoneNumber(new FormControl(value, { nonNullable: true }));
+
+  it('accepts 7 to 15 digits written with spaces, +, (, ), . and -', () => {
+    for (const ok of ['555-0134', ' (312) 555-0134 ', '+1 312.555.0134', '123456789012345']) {
+      expect(check(ok), ok).toBeNull();
+    }
+  });
+
+  it('leaves an empty value to the required check', () => {
+    expect(check('')).toBeNull();
+    expect(check('   ')).toBeNull();
+  });
+
+  it('refuses too few or too many digits, and other characters', () => {
+    for (const bad of ['555-013', '1234567890123456', '555-0134 ext 2', 'call me']) {
+      expect(check(bad), bad).toEqual({ phone: true });
+    }
+  });
+
+  it('stays fast on long input', () => {
+    const start = performance.now();
+    expect(check(`${'1 '.repeat(5_000)}x`)).toEqual({ phone: true });
+    expect(performance.now() - start).toBeLessThan(200);
   });
 });

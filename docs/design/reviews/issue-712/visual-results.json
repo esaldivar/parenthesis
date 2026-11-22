@@ -1,0 +1,86 @@
+[
+  {
+    "language": "en",
+    "theme": "light",
+    "width": 1440,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "en",
+    "theme": "light",
+    "width": 390,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "en",
+    "theme": "light",
+    "width": 320,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "en",
+    "theme": "dark",
+    "width": 1440,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "en",
+    "theme": "dark",
+    "width": 390,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "en",
+    "theme": "dark",
+    "width": 320,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "es-419",
+    "theme": "light",
+    "width": 1440,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "es-419",
+    "theme": "light",
+    "width": 390,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "es-419",
+    "theme": "light",
+    "width": 320,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "es-419",
+    "theme": "dark",
+    "width": 1440,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "es-419",
+    "theme": "dark",
+    "width": 390,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  },
+  {
+    "language": "es-419",
+    "theme": "dark",
+    "width": 320,
+    "checks": "paging/scroll, no overflow, keyboard focus, reduced motion, axe",
+    "axeViolations": 0
+  }
+]

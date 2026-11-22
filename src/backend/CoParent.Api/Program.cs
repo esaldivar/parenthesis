@@ -91,6 +91,3 @@ app.MapMessagingHub();
 app.MapSpaFallback();
 
 await app.RunAsync();
-
-// Exposed for WebApplicationFactory in integration tests.
-public partial class Program;

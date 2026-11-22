@@ -32,6 +32,8 @@ describe('NotificationsPage (#178)', () => {
       ],
     });
     const fixture = TestBed.createComponent(NotificationsPage);
+    // The first load starts in ngOnInit, during the first change detection; then wait for it and render the result.
+    fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture;

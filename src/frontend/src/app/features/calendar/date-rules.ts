@@ -57,7 +57,7 @@ export const TOO_LONG = `Choose an end within ${MAX_EVENT_DAYS} days of the star
  * measured as the server measures it, across a daylight-saving change too. NaN for an unreadable time.
  */
 function instantMinutes(date: PlainDate, time: string, timeZone: string): number {
-  return /^\d{2}:\d{2}$/.test(time) ? Date.parse(fromFamilyLocal(`${date}T${time}`, timeZone)) / 60_000 : NaN;
+  return /^\d{2}:\d{2}$/.test(time) ? Date.parse(fromFamilyLocal(`${date}T${time}`, timeZone)) / 60_000 : Number.NaN;
 }
 
 /**

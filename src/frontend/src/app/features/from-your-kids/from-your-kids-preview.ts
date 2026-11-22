@@ -20,20 +20,15 @@ export function previewDiary(now: number, locale: AppLocale = 'en'): readonly Ki
 }
 
 export function previewGallery(kind: KidsGalleryItem['kind'], now: number, locale: AppLocale = 'en'): readonly KidsGalleryItem[] {
+  if (kind === 'Photo') return previewPhotos(now, locale);
   const t = (en: string, es: string) => pick(locale, en, es);
-  const examples = kind === 'Artwork'
-    ? [
-      { label: t('Sample flower drawing', 'Dibujo de ejemplo de una flor'), asset: 'art-flower' },
-      { label: t('Sample rainbow drawing', 'Dibujo de ejemplo de un arcoíris'), asset: 'art-rainbow' },
-      { label: t('Sample cat drawing', 'Dibujo de ejemplo de un gato'), asset: 'art-cat' },
-      { label: t('Sample rocket drawing', 'Dibujo de ejemplo de un cohete'), asset: 'art-rocket' },
-      { label: t('Sample heart drawing', 'Dibujo de ejemplo de un corazón'), asset: 'art-heart' },
-    ]
-    : [
-      { label: t('Sample sunset photo', 'Foto de ejemplo de un atardecer'), asset: 'sample-sunset' },
-      { label: t('Sample dog photo', 'Foto de ejemplo de un perro'), asset: 'sample-dog' },
-      { label: t('Sample playground photo', 'Foto de ejemplo de un parque infantil'), asset: 'sample-swing' },
-    ];
+  const examples = [
+    { label: t('Sample flower drawing', 'Dibujo de ejemplo de una flor'), asset: 'art-flower' },
+    { label: t('Sample rainbow drawing', 'Dibujo de ejemplo de un arcoíris'), asset: 'art-rainbow' },
+    { label: t('Sample cat drawing', 'Dibujo de ejemplo de un gato'), asset: 'art-cat' },
+    { label: t('Sample rocket drawing', 'Dibujo de ejemplo de un cohete'), asset: 'art-rocket' },
+    { label: t('Sample heart drawing', 'Dibujo de ejemplo de un corazón'), asset: 'art-heart' },
+  ];
   return examples.map(({ label, asset }, index) => {
     const imageUrl = `/art/from-your-kids/${asset}.webp`;
     const createdAt = now - index * day;
@@ -42,6 +37,30 @@ export function previewGallery(kind: KidsGalleryItem['kind'], now: number, local
       ...previewSource, kind, id: asset, altText: label, createdAt: new Date(createdAt).toISOString(),
       imageUrl, thumbnailUrl: imageUrl, bookmarked, expiresAt: bookmarked ? null : new Date(createdAt + 60 * day).toISOString(),
       heartedByViewer: false, viewerComment: null, downloadUrl: null,
+    };
+  });
+}
+
+/**
+ * Six synthetic photos for the Photos board, gallery and detail (#710), newest first and a day apart, alternating
+ * afternoon times; every other one is already hearted. The Figma mock photos are illustrative only.
+ */
+export function previewPhotos(now: number, locale: AppLocale = 'en'): readonly KidsGalleryItem[] {
+  const t = (en: string, es: string) => pick(locale, en, es);
+  const photos = [
+    { label: t('Sample photo of a kite over a park', 'Foto de ejemplo de un papalote sobre un parque'), asset: 'sample-kite' },
+    { label: t('Sample photo of a sandcastle on the beach', 'Foto de ejemplo de un castillo de arena en la playa'), asset: 'sample-beach' },
+    { label: t('Sample photo of a chalk rainbow on a path', 'Foto de ejemplo de un arcoíris de gis en un camino'), asset: 'sample-chalk' },
+  ];
+  const today = new Date(now);
+  return Array.from({ length: 6 }, (_, index) => {
+    const { label, asset } = photos[index % photos.length];
+    const shared = new Date(today.getFullYear(), today.getMonth(), today.getDate() - index, index % 2 ? 16 : 14, index % 2 ? 42 : 15);
+    const imageUrl = `/art/from-your-kids/photos/${asset}.webp`;
+    return {
+      ...previewSource, kind: 'Photo' as const, id: `${asset}-${index}`, altText: label, createdAt: shared.toISOString(),
+      imageUrl, thumbnailUrl: imageUrl, bookmarked: false, expiresAt: null,
+      heartedByViewer: index % 2 === 1, viewerComment: null, downloadUrl: null,
     };
   });
 }
