@@ -79,6 +79,11 @@ that points back here.
   - [ ] Bookmark (keep past 60 days), download and Google Photos export from the M4 handoff aren't in the approved
     design; decide whether Artwork needs them before the API lands.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
+- [ ] **Family Memories timeline redesign (#717, M5).** Month headings on a thin rail, album-style covers, and a coral
+  time-left bar with "Open to save photos" in each memory's final week; an album-sheet empty state; the memory
+  detail header with the cover and time-left panel. The event photos section is unchanged.
+  - [ ] Owner check on Development: the empty state in both themes, then a memory with photos (phone and desktop,
+    English and Spanish). The final-week state needs photos added more than 21 days earlier, or the PR's screenshots.
 - [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523). Morning
   sunrise verified November 11, 2026; afternoon sun and evening moon still need a live check.
 - [x] Verify the desktop sidebar fits without an inner scrollbar on Development at laptop sizes, and all links remain reachable in short windows (#514). Verified November 11, 2026.

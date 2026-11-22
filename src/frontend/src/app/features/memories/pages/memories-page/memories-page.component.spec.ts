@@ -94,13 +94,39 @@ describe('Family Memories (#403)', () => {
     expect(el.querySelector('.memories-header__art')?.getAttribute('aria-hidden')).toBe('true');
     expect(rows.map(text)).toEqual([
       'Science fair.Oct 28 · 5 photos · Sam.Deleted Nov 25',
-      'Soccer final.Oct 12 · 7 photos · You and Sam.Deleted in 3 days',
+      'Soccer final.Oct 12 · 7 photos · You and Sam.Deleted in 3 days. Open to save photosSave photos',
     ]);
     expect(rows[1].getAttribute('href')).toBe('/memories/soccer');
     expect(rows[1].querySelector('.chip')!.getAttribute('data-soon')).toBe('true');
+    // #717: one month heading here, a time-left bar and the save cue only in the final week, and no nested controls.
+    expect([...el.querySelectorAll('.month h2')].map(text)).toEqual(['October 2026']);
+    expect(rows[0].querySelector('app-time-left, .save-cue')).toBeNull();
+    expect(rows[1].querySelector('app-time-left')).not.toBeNull();
+    expect(rows.every((row) => row.querySelector('a, button') === null)).toBe(true);
+    expect(rows[1].querySelector('app-memory-cover img')!.getAttribute('src')).toBe(`${F}/memories/photos/soccer-1/thumbnail`);
     expect(text(el)).toContain(
       'Each photo is deleted 28 days after it’s added, so download the ones you want to keep.',
     );
+    expect(await axeViolations(el)).toEqual([]);
+  });
+
+  it('groups memories by month on the timeline and marks the one deleted soonest (#717)', async () => {
+    const { fixture, el } = await renderList();
+    http.expectOne(`${F}/memories`).flush([
+      memory('beach', { title: 'Beach day', startsAt: '2026-11-03T15:00:00Z', expiresAt: '2026-12-01T17:00:00Z' }),
+      memory('chalk', { title: 'Chalk art', startsAt: '2026-10-31T15:00:00Z', expiresAt: '2026-11-11T17:00:00Z' }),
+      memory('picnic', { title: 'Picnic', startsAt: '2026-10-26T15:00:00Z', expiresAt: '2026-11-07T17:00:00Z' }),
+    ]);
+    http.expectOne(F).flush(FAMILY);
+    await settle(fixture);
+
+    const months = [...el.querySelectorAll('.month')];
+    expect(months.map((m) => text(m.querySelector('h2')))).toEqual(['November 2026', 'October 2026']);
+    expect(months.map((m) => m.querySelectorAll('.memory').length)).toEqual([1, 2]);
+    expect(months[0].getAttribute('aria-labelledby')).toBe(months[0].querySelector('h2')!.id);
+    const dots = [...el.querySelectorAll('.entry__dot')].map((d) => d.getAttribute('data-soonest'));
+    expect(dots).toEqual(['false', 'false', 'true']);
+    expect(text(el.querySelectorAll('.memory')[2].querySelector('.chip'))).toBe('Deleted tomorrow');
     expect(await axeViolations(el)).toEqual([]);
   });
 
@@ -115,6 +141,8 @@ describe('Family Memories (#403)', () => {
       'Add photos to a confirmed event on the calendar and they’ll show here.',
     );
     expect(el.querySelector('a[href="/calendar"]')).not.toBeNull();
+    expect(el.querySelector('.empty__sheets')?.getAttribute('aria-hidden')).toBe('true');
+    expect(text(el.querySelector('.empty h2'))).toBe('No memories yet');
   });
 
   it('offers to try again when memories can’t load', async () => {
@@ -241,6 +269,11 @@ describe('Family Memories (#403)', () => {
 
       expect(text(el.querySelector('h1'))).toBe('Soccer final');
       expect(text(el)).toContain('Monday, October 12 · 1 photo from you · 2 shared by Sam');
+      // #717: the album header shows the cover and, in the final week, a coral time-left panel.
+      expect(el.querySelector('.memory-head app-memory-cover img')!.getAttribute('src')).toBe('t');
+      expect(el.querySelector('.time-left-panel')!.getAttribute('data-soon')).toBe('true');
+      expect(text(el.querySelector('.time-left-panel__when'))).toBe('Deleted in 3 days (Nov 9)');
+      expect(el.querySelector('.time-left-panel app-time-left')).not.toBeNull();
       expect(text(el)).toContain(
         'Sam hasn’t allowed downloads of their photos, so you can view them here but not download them.',
       );

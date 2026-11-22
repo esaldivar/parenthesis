@@ -100,6 +100,11 @@ export function weekLabelLong(weekStart: PlainDate, locale = LOCALE): string {
 
 /** "Oct 11" */
 export const monthDay = (date: PlainDate, locale = LOCALE) => utcFormat({ month: 'short', day: 'numeric' }, locale).format(toUtc(date));
+/** "November 2026" or "Noviembre de 2026", capitalised for a heading (#717). */
+export function monthYear(date: PlainDate, locale = LOCALE): string {
+  const text = utcFormat({ month: 'long', year: 'numeric' }, locale).format(toUtc(date));
+  return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
+}
 
 /** "8 AM" */
 export function hourLabel(hour: number, locale = LOCALE): string {
