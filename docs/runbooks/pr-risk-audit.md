@@ -32,7 +32,6 @@ the owner merges. Deletion and force-pushes are blocked on all three.
 | `pr-branch-policy.yml` | Every PR | Allowed source → target combinations |
 | `pr-issue-links.yml` | Every PR (`pull_request_target`, read-only) | Verified tracking issues (#132) |
 | `pr-milestones.yml` | Every PR (`pull_request_target`, read-only) | Report-only milestone inheritance (#140) |
-| `pr-weekly-limit.yml` | Every PR (`pull_request_target`) | Release-promotion weekly cap and its owner label |
 | `copilot-review-usage.yml` | Review requests (`pull_request_target`) | Copilot review weekly usage |
 | `discord-pr-notify.yml` | PR events (`pull_request_target`, pull-requests: write) | Discord summaries |
 | `sonar.yml`, `sonar-sunday.yml` | PRs into and pushes to develop and main; Sundays | SonarQube Cloud analysis of develop (main reuses it, #373) and the weekly report on develop |
