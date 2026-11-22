@@ -118,7 +118,7 @@ describe('KidsDiary approved design (#712)', () => {
     host.querySelector<HTMLButtonElement>('.back-to-newest')!.click();
     expect(scroll).toHaveBeenCalledWith({ block: 'start', behavior: 'instant' });
     expect(focus).toHaveBeenCalledWith({ preventScroll: true });
-    rect.mockReturnValue({ top: 20 } as DOMRect);
+    rect.mockReturnValue({ top: -0.5 } as DOMRect);
     window.dispatchEvent(new Event('scroll'));
     fixture.detectChanges();
     expect(host.querySelector('.back-to-newest')).toBeNull();

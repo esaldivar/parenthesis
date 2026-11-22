@@ -236,6 +236,10 @@ try {
           await page.emulateMedia({ reducedMotion: "no-preference" });
           await page.locator(".older-control").click();
           await page.locator(".turning-sheet").waitFor({ state: "attached" });
+          await page.waitForFunction(() => {
+            const sheet = document.querySelector('.turning-sheet');
+            return sheet && !sheet.classList.contains('to-newer') && sheet.getAnimations().length > 0;
+          });
           const animated = await page
             .locator(".turning-sheet")
             .evaluate((n) => {

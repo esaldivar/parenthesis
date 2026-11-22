@@ -115,7 +115,8 @@ export class KidsDiary {
     this.awayFromTop.set(
       !!sheet &&
         window.matchMedia('(max-width: 48rem)').matches &&
-        sheet.getBoundingClientRect().top < 0,
+        // Fractional layout rounding can leave a sheet a fraction of a pixel above zero after scrollIntoView.
+        sheet.getBoundingClientRect().top < -2,
     );
   }
 }
