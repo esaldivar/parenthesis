@@ -178,8 +178,8 @@ inspection.
 - A scheduled run that stopped keeps its branch, so the next hour moves on to the next issue instead of retrying.
   Fix the cause, discard the run (below), and it's picked up again.
 - To discard a run: `git worktree remove ../parenthesis-claude-<n>` and `git branch -D feature/<n>-<slug>`.
-- `--commit-only` remains an explicit manual no-push/no-PR option. Ordinary work is no longer forced into it by
-  a promotion allowance; follow "Before opening a PR" in [the workflow guide](../development-workflow.md).
+- `--commit-only` remains an explicit manual no-push/no-PR option. There is no PR cap (November 22, 2026);
+  follow "Before opening a PR" in [the workflow guide](../development-workflow.md).
 
 ## October 20 policy rollout (#134)
 
@@ -191,6 +191,11 @@ has demonstrated pass/fail behavior. Preserve all required checks and owner appr
 its checkout from the remote active release at the beginning of each scheduled run, so editing that checkout alone
 is temporary and could be overwritten. Removing the old limit can allow already-approved #98 to run at the next
 hour: coordinate explicit activation before applying unreviewed live edits. Do not start the task to validate this.
+
+**November 22, 2026:** the release-promotion cap is retired too (owner decision), along with the Weekly PR limit check
+and the `owner-approved-pr` label. The runner's `weekly_limit_reached` only ever applied to `release/*` -> `develop`
+branches, which the queue never creates, so it can't block queue work. Removing that dead code is tracked in
+`TODO.md`, as a supervised change to the runner.
 
 ## When the release changes
 

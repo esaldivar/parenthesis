@@ -333,6 +333,13 @@ that points back here.
 - [ ] **VoiceOver: calendar save toast announced after focus settles (#650).** On the owner's Mac
   (`docs/runbooks/voiceover-macos.md`), run `calendar-voiceover` and `dates-voiceover` several times. The transcripts
   must never fall back to reading the toast with the VoiceOver cursor. Then make `toastHeardOrRead` a hard assertion.
+- [ ] **Weekly PR cap retired (#702, November 22, 2026).** The owner removed the 3-a-week release/* -> develop cap.
+  - [ ] Owner: remove **Weekly PR limit** from the required status checks in any ruleset (for example `develop`)
+    before this change reaches `main`. The check runs from `main`'s copy of the workflow (`pull_request_target`), so
+    once `main` no longer has it, a required check that never reports would block PRs. Until then the old check still
+    runs; the `owner-approved-pr` label still overrides it.
+  - [ ] Remove the dead cap code from `scripts/claude_queue_run.py` (`parse_usage`, `weekly_limit_applies`,
+    `weekly_usage`, `weekly_limit_reached`) and its tests, through a supervised runner change.
 - [x] **Playwright gate: cached browser system packages (#684).** Confirmed with a warm cache on #682's release gate
   (November 18, 2026): the shards took 7–9 minutes instead of 20–35, and the warm-up job found both caches and
   installed nothing. The cache is keyed on the Playwright version, so Ubuntu package updates are still downloaded until
