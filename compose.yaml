@@ -23,7 +23,7 @@ services:
 
   # Azure Blob Storage emulator. Uses the well-known public Azurite dev account (not a secret).
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
+    image: mcr.microsoft.com/azure-storage/azurite:3.38.0
     command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --loose --skipApiVersionCheck
     ports:
       - "127.0.0.1:${AZURITE_BLOB_PORT:-10000}:10000"
