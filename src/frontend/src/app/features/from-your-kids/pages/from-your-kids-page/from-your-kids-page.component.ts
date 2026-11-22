@@ -3,9 +3,8 @@ import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, isDevMode, signal, untracked, viewChild } from '@angular/core';
 import { Api, Child } from '../../../../core/api/api';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { KidsGallery } from '../../components/kids-gallery/kids-gallery.component';
 import { KidsDiary } from '../../components/kids-diary/kids-diary.component';
-import { CommentState, KidsPhotos, KidsPhotosView } from '../../components/kids-photos/kids-photos.component';
+import { CommentState, KidsPhotos, KidsPhotosView, kidsCopy } from '../../components/kids-photos/kids-photos.component';
 import { KidsGalleryItem } from '../../from-your-kids-contract';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { previewDiary, previewGallery } from '../../from-your-kids-preview';
@@ -14,14 +13,15 @@ import { previewDiary, previewGallery } from '../../from-your-kids-preview';
  * M4 parent-facing presentation shell (#531). Sample content is opt-in in development builds.
  * M5 will supply parent-authorized entries, artwork and photos through an API.
  *
- * Photos (#710): the corkboard here, then the newest-first gallery and a photo's detail in place of the page, each
- * with "Back to From Your Kids" at the top and the same child selected. There's no From Your Kids API yet, so
- * hearts and comments only change the development sample (and say so); nothing is sent to the child.
+ * Photos (#710) and Artwork (#714): the corkboard or the fridge here, then the newest-first gallery and one item's
+ * detail in place of the page, each with "Back to From Your Kids" at the top and the same child selected. There's no
+ * From Your Kids API yet, so hearts and comments only change the development sample (and say so); nothing is sent
+ * to the child.
  */
 @Component({
   selector: 'app-from-your-kids-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, KidsGallery, KidsDiary, KidsPhotos, TranslatePipe],
+  imports: [Avatar, KidsDiary, KidsPhotos, TranslatePipe],
   templateUrl: './from-your-kids-page.component.html',
   styleUrl: './from-your-kids-page.component.scss',
 })
@@ -39,18 +39,14 @@ export class FromYourKidsPage {
     const now = this.previewAt();
     return now === null ? [] : previewDiary(now, this.locale.locale());
   });
-  protected readonly artwork = computed(() => {
-    const now = this.previewAt();
-    return now === null ? [] : previewGallery('Artwork', now, this.locale.locale());
-  });
-  /** The parent's hearts and comment on sample photos, kept only while the preview is on. */
+  /** The parent's hearts and comment on sample photos and artwork, kept only while the preview is on. */
   private readonly photoChanges = signal<Readonly<Record<string, Partial<Pick<KidsGalleryItem, 'heartedByViewer' | 'viewerComment'>>>>>({});
-  protected readonly photos = computed(() => {
-    const now = this.previewAt();
-    if (now === null) return [];
-    const changes = this.photoChanges();
-    return previewGallery('Photo', now, this.locale.locale()).map(photo => ({ ...photo, ...changes[photo.id] }));
-  });
+  protected readonly artwork = computed(() => this.sample('Artwork'));
+  protected readonly photos = computed(() => this.sample('Photo'));
+  /** Which gallery the gallery or detail view shows. */
+  protected readonly viewKind = signal<KidsGalleryItem['kind']>('Photo');
+  protected readonly viewItems = computed(() => this.viewKind() === 'Artwork' ? this.artwork() : this.photos());
+  protected readonly viewTitle = computed(() => kidsCopy(this.viewKind(), 'title'));
   protected readonly photoView = signal<KidsPhotosView>('board');
   protected readonly photoId = signal<string | null>(null);
   protected readonly heartPending = signal(false);
@@ -79,10 +75,9 @@ export class FromYourKidsPage {
   protected selectChild(childId: string): void {
     if (!this.children().some(child => child.id === childId) || childId === this.selectedChildId()) return;
     this.selectedChildId.set(childId);
-    // Photos stay on Photos for the chosen child (#710); an open photo was the other child's, so show their gallery.
-    // Diary and Artwork keep their earlier behavior and open the chosen child's Diary.
+    // The open section stays open for the chosen child (#710, #714); an open photo or drawing was the other child's,
+    // so show their gallery instead.
     if (this.photoView() === 'detail') this.showPhotos('gallery', null);
-    else if (this.section() !== 'photos') this.section.set('diary');
   }
 
   protected setPreview(event: Event): void {
@@ -91,11 +86,15 @@ export class FromYourKidsPage {
     this.previewAt.set(this.developmentBuild && checked ? Date.now() : null);
   }
 
-  /** Shows the board, the gallery or one photo, and moves focus to the new view's heading. */
-  protected showPhotos(view: KidsPhotosView, photoId: string | null = null): void {
+  /**
+   * Shows the board, the gallery or one item of the open kind (Photos or Artwork), and moves focus to the new view's
+   * heading. `kind` switches galleries when a board opens one.
+   */
+  protected showPhotos(view: KidsPhotosView, photoId: string | null = null, kind = this.viewKind()): void {
+    this.viewKind.set(kind);
     this.photoView.set(view);
     this.photoId.set(photoId);
-    this.section.set('photos');
+    this.section.set(kind === 'Artwork' ? 'artwork' : 'photos');
     this.heartPending.set(false);
     this.commentState.set('idle');
     afterNextRender({ write: () => this.viewHeading()?.nativeElement.focus() }, { injector: this.injector });
@@ -110,6 +109,14 @@ export class FromYourKidsPage {
     if (this.previewAt() === null) return;
     this.photoChanges.update(changes => ({ ...changes, [id]: { ...changes[id], viewerComment: text || null } }));
     this.commentState.set('saved');
+  }
+
+  /** Development sample items of one kind with the parent's preview hearts and comments applied. */
+  private sample(kind: KidsGalleryItem['kind']): readonly KidsGalleryItem[] {
+    const now = this.previewAt();
+    if (now === null) return [];
+    const changes = this.photoChanges();
+    return previewGallery(kind, now, this.locale.locale()).map(item => ({ ...item, ...changes[item.id] }));
   }
 
   protected retry(): void {

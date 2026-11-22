@@ -15,7 +15,7 @@
       <button type="button" class="back-link" (click)="showPhotos('board')">
         {{ 'kids.photos.backToKids' | tr }}<span class="back-arrow" aria-hidden="true"></span>
       </button>
-      <h1 id="kids-title" class="photos-title" tabindex="-1" #viewHeading>{{ 'kids.photos.title' | tr }}</h1>
+      <h1 id="kids-title" class="photos-title" tabindex="-1" #viewHeading>{{ viewTitle() | tr }}</h1>
     </header>
   }
 
@@ -38,7 +38,7 @@
     </nav>
 
     @if (photoView() !== 'board') {
-      <app-kids-photos [view]="photoView()" [photos]="photos()" [photoId]="photoId()" [childName]="contentName() ?? ''"
+      <app-kids-photos [kind]="viewKind()" [view]="photoView()" [photos]="viewItems()" [photoId]="photoId()" [childName]="contentName() ?? ''"
         [timeZone]="timeZone()" [preview]="previewAt() !== null"
         [heartPending]="heartPending()" [commentState]="commentState()"
         (openPhoto)="showPhotos('detail', $event)" (backToPhotos)="showPhotos('gallery')"
@@ -72,15 +72,15 @@
           <app-kids-diary [entries]="diaryEntries()" [scope]="selectedChildId()" />
         }
         @case ('artwork') {
-          <section class="gallery" aria-labelledby="artwork-title">
-            <h2 id="artwork-title" class="section-heading">{{ 'feature.child.artwork.heading' | tr: { name: contentName() ?? '' } }}</h2>
-            <app-kids-gallery kind="Artwork" [items]="artwork()" />
-            @if (!artwork().length) { <p class="empty">{{ 'feature.no.artwork.shared.with.you.yet' | tr }}</p> }
-          </section>
+          <h2 class="section-heading">{{ 'feature.child.artwork.heading' | tr: { name: contentName() ?? '' } }}</h2>
+          <app-kids-photos kind="Artwork" view="board" [photos]="artwork()" [childName]="contentName() ?? ''"
+            [timeZone]="timeZone()" (viewAll)="showPhotos('gallery', null, 'Artwork')"
+            (openPhoto)="showPhotos('detail', $event, 'Artwork')" />
         }
         @case ('photos') {
           <app-kids-photos view="board" [photos]="photos()" [childName]="contentName() ?? ''"
-            [timeZone]="timeZone()" (viewAll)="showPhotos('gallery')" (openPhoto)="showPhotos('detail', $event)" />
+            [timeZone]="timeZone()" (viewAll)="showPhotos('gallery', null, 'Photo')"
+            (openPhoto)="showPhotos('detail', $event, 'Photo')" />
         }
       }
       @if (previewAt() === null) {
