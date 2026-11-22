@@ -381,8 +381,10 @@ export class MemoriesPage {
   protected readonly months = computed(() => {
     const locale = this.copyLocale.locale();
     const rows = this.rows();
-    const soon = rows.filter((row) => row.soon);
-    const soonest = soon.length ? soon.reduce((a, b) => (b.days < a.days ? b : a)) : null;
+    const soonest = rows.reduce<(typeof rows)[number] | null>(
+      (best, row) => (row.soon && (!best || row.days < best.days) ? row : best),
+      null,
+    );
     const groups: { key: string; label: string; rows: (typeof rows[number] & { soonest: boolean })[] }[] = [];
     for (const row of rows) {
       const key = row.day.slice(0, 7);
