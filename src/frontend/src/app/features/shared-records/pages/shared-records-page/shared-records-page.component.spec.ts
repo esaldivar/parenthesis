@@ -52,7 +52,12 @@ describe('SharedRecordsPage', () => {
       expect(page.textContent).not.toContain('Loading shared records');
     });
     const button = (label: string) => Array.from(page.querySelectorAll('button')).find(item => item.textContent?.trim() === label);
-    return { api, button, currentFamily, fixture, page };
+    /** #721: the page opens on the overview; a record's card opens its page. */
+    const open = (title: string) => {
+      Array.from(page.querySelectorAll<HTMLButtonElement>('.record-card')).find(card => card.textContent!.includes(title))!.click();
+      fixture.detectChanges();
+    };
+    return { api, button, currentFamily, fixture, open, page };
   }
 
   it('keeps the chosen range for a retry and drops a pending export on profile switch', async () => {
@@ -152,7 +157,8 @@ describe('SharedRecordsPage', () => {
   });
 
   it('shows the viewer’s share and agrees to the exact request as the other parent', async () => {
-    const { api, button, fixture, page } = await render([fund]);
+    const { open, api, button, fixture, page } = await render([fund]);
+    open('School supplies');
     expect(page.textContent).toContain('You $120.00');
     api.sharedRecordsAttention.mockClear();
     button('Agree to proposal')!.click();
@@ -195,27 +201,28 @@ describe('SharedRecordsPage', () => {
   };
 
   it('updates the fund status badges when the locale changes on the open page', async () => {
-    const { fixture, page } = await render([
+    const { button, fixture, open, page } = await render([
       fund,
-      { ...openFund, id: 'open-fund' },
-      { ...fund, id: 'ended-fund', status: 'ProposalEnded' },
+      { ...openFund, id: 'open-fund', title: 'Soccer season' },
+      { ...fund, id: 'ended-fund', title: 'Piano lessons', status: 'ProposalEnded' },
     ]);
     const locale = TestBed.inject(LocaleService);
-    const badge = () => page.querySelector('.badges .badge:last-child')?.textContent?.trim();
-    const records = page.querySelectorAll<HTMLButtonElement>('.record-link');
+    const badge = () => page.querySelector('.ledger .badges .badge:last-child')?.textContent?.trim();
+    const back = () => { button(locale.locale() === 'en' ? 'All shared records' : 'Todos los registros compartidos')!.click(); fixture.detectChanges(); };
 
+    open('School supplies');
     expect(badge()).toBe('Awaiting agreement');
     try {
       locale.setLocale('es-419');
       fixture.detectChanges();
       expect(badge()).toBe('Pendiente de acuerdo');
 
-      records[1].click();
-      fixture.detectChanges();
+      back();
+      open('Soccer season');
       expect(badge()).toBe('Aprobado');
 
-      records[2].click();
-      fixture.detectChanges();
+      back();
+      open('Piano lessons');
       expect(badge()).toBe('Propuesta finalizada');
     } finally {
       locale.setLocale('en');
@@ -223,7 +230,8 @@ describe('SharedRecordsPage', () => {
   });
 
   it('shows only acknowledged contributions as progress, with pending amounts in text', async () => {
-    const { page } = await render([openFund]);
+    const { open, page } = await render([openFund]);
+    open('School supplies');
     const progress = Array.from(page.querySelectorAll('app-record-progress p'), p => p.textContent!.trim()).join(' ');
     expect(progress).toContain('Acknowledged $160.00');
     expect(progress).toContain('of $300.00 agreed target');
@@ -244,7 +252,11 @@ describe('SharedRecordsPage', () => {
   it('lets the other parent confirm receipt or flag a mismatch, and a mismatch never counts', async () => {
     const pending = { ...openFund, entries: [entry({ id: 'transfer', paidTo: 'CoParent', canRespond: true })],
       totals: { acknowledgedMinor: 0, pendingMinor: 4000, disputedMinor: 0 } };
-    const { api, button, fixture, page } = await render([pending]);
+    const { api, button, fixture, open, page } = await render([pending]);
+    // #721: the overview says this record waits on this parent before it's opened.
+    expect(page.querySelector('.needs h2')!.textContent).toBe('1 thing needs your response');
+    expect(page.querySelector('.record-card .cta')!.textContent!.trim()).toBe('Review report');
+    open('School supplies');
     expect(button('Acknowledge contribution')).toBeUndefined();
     api.respondToEntry.mockResolvedValue(entry({ id: 'transfer', paidTo: 'CoParent', status: 'Disputed', respondedAt: '2026-11-07T15:00:00Z' }));
     Array.from(page.querySelectorAll('button')).find(b => b.textContent!.includes('Flag a mismatch'))!.click();
@@ -259,7 +271,8 @@ describe('SharedRecordsPage', () => {
   });
 
   it('keeps the report and its request id when sending fails, then records it on retry', async () => {
-    const { api, button, fixture, page } = await render([openFund]);
+    const { open, api, button, fixture, page } = await render([openFund]);
+    open('School supplies');
     button('Report contribution')!.click();
     fixture.detectChanges();
     await fixture.whenStable();
@@ -316,7 +329,7 @@ describe('SharedRecordsPage', () => {
       totals: { acknowledgedMinor: 25000, pendingMinor: 0, disputedMinor: 0 },
     };
     const { button, fixture, page } = await render([openFund], [record]);
-    const support = Array.from(page.querySelectorAll<HTMLButtonElement>('.record-link')).find(b => b.textContent!.includes('November 2026'))!;
+    const support = Array.from(page.querySelectorAll<HTMLButtonElement>('.record-card')).find(b => b.textContent!.includes('November 2026'))!;
     expect(support.textContent).toContain('Child Support');
     support.click();
     fixture.detectChanges();
@@ -360,7 +373,8 @@ describe('SharedRecordsPage', () => {
   });
 
   it('says up front that reports can’t be sent while attachments can’t be saved', async () => {
-    const { button, fixture, page } = await render([openFund], [], false);
+    const { open, button, fixture, page } = await render([openFund], [], false);
+    open('School supplies');
     button('Report contribution')!.click();
     fixture.detectChanges();
     await fixture.whenStable();
@@ -376,7 +390,8 @@ describe('SharedRecordsPage', () => {
   });
 
   it('shows the "can’t be sent yet" state when the server says attachments can’t be saved', async () => {
-    const { api, button, fixture, page } = await render([openFund]);
+    const { open, api, button, fixture, page } = await render([openFund]);
+    open('School supplies');
     button('Report contribution')!.click();
     fixture.detectChanges();
     await fixture.whenStable();
@@ -399,5 +414,47 @@ describe('SharedRecordsPage', () => {
       expect(page.querySelector('app-report-form [role="status"]')?.textContent).toContain('Attachments can’t be saved yet');
     });
     expect(page.textContent).not.toContain('couldn’t reach Parenthesis');
+  });
+
+  describe('overview cards (#721)', () => {
+    it('groups records into cards, marks a proposal as not agreed, and returns focus to the card', async () => {
+      const record: SupportRecord = {
+        id: 'support-1', title: 'November 2026', currency: 'USD', youPay: true, referenceMinor: 50000,
+        createdAt: '2026-11-07T12:00:00Z', createdByYou: true, entries: [],
+        totals: { acknowledgedMinor: 25000, pendingMinor: 0, disputedMinor: 0 },
+      };
+      const { button, fixture, open, page } = await render([fund, { ...openFund, id: 'open-fund', title: 'Soccer season' }], [record]);
+      expect(Array.from(page.querySelectorAll('.group__title'), h => h.textContent!.trim())).toEqual(['Shared Funds', 'Child Support']);
+      expect(page.querySelector('article')).toBeNull();
+
+      const cards = Array.from(page.querySelectorAll<HTMLButtonElement>('.record-card'));
+      expect(cards.map(card => card.querySelector('.record-card__title')!.textContent)).toEqual(['School supplies', 'Soccer season', 'November 2026']);
+      // The co-parent's proposal: dashed, no progress, nothing owed, and it's what needs this parent.
+      expect(cards[0].classList).toContain('pending');
+      expect(cards[0].querySelector('.bar')).toBeNull();
+      expect(cards[0].textContent).toContain('Proposed target $300.00');
+      expect(cards[0].textContent).toContain('Nothing is owed until you both agree.');
+      expect(cards[0].querySelector('.cta')!.textContent!.trim()).toBe('Review proposal');
+      expect(page.querySelector('.needs h2')!.textContent).toBe('1 thing needs your response');
+      // Agreed fund and support: acknowledged amount against the target, with a bar.
+      expect(cards[1].textContent!.replace(/\s+/g, ' ')).toContain('$160.00 acknowledged of $300.00');
+      expect(parseFloat(cards[1].querySelector<HTMLElement>('.bar span')!.style.width)).toBeCloseTo(53.33, 1);
+      expect(cards[2].textContent!.replace(/\s+/g, ' ')).toContain('$250.00 acknowledged of $500.00');
+      expect(cards[2].querySelector('.cta')!.textContent!.trim()).toBe('Open record');
+
+      open('Soccer season');
+      expect(page.querySelector('.record-card')).toBeNull();
+      expect(page.querySelector('.ledger h2')!.textContent).toBe('Soccer season');
+      button('All shared records')!.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement?.textContent).toContain('Soccer season');
+    });
+
+    it('says when there are no shared records yet', async () => {
+      const { page } = await render();
+      expect(page.querySelector('.empty__title')!.textContent).toBe('No shared records yet.');
+      expect(page.querySelector('.record-card, .needs')).toBeNull();
+    });
   });
 });

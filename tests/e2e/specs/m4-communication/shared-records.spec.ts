@@ -31,6 +31,15 @@ for (const theme of ['light', 'dark'] as const) {
       await activate(page.getByRole('link', { name: /^Shared records.*waiting on your response/ }), info);
     }
     await expect(page.getByRole('heading', { level: 1, name: /Shared records/ })).toBeVisible();
+    // #721: the overview says the proposal waits on Dad, marks it as not agreed, and opens it from its card.
+    await expect(page.getByRole('heading', { level: 2, name: '1 thing needs your response' })).toBeVisible();
+    const proposal = page.getByRole('button', { name: /Fall soccer fees.*Review proposal/ });
+    await expect(proposal).toContainText('Awaiting agreement');
+    await expect(proposal).toContainText('Nothing is owed until you both agree.');
+    await fitsPage(page);
+    await evidence(page, info, `${theme}-overview`);
+    await scan(page, info, `${theme}-overview`);
+    await activate(proposal, info);
     await expect(page.getByText('Awaiting agreement')).toBeVisible();
     await expect(page.getByText(/You \$180\.00/)).toBeVisible();
 
@@ -56,6 +65,7 @@ for (const theme of ['light', 'dark'] as const) {
     const funds = await mom.json<{ entries: { id: string }[] }[]>(mom.get(`${root}/shared-funds`));
     expect((await mom.post(`${root}/shared-records/entries/${funds[0]!.entries[0]!.id}/acknowledge`, {})).status()).toBe(200);
     await page.reload();
+    await activate(page.getByRole('button', { name: /Fall soccer fees/ }), info);
     await expect(page.locator('app-record-progress')).toContainText('Acknowledged');
     await expect(page.locator('app-record-progress')).toContainText('$260.00 to reach target');
     await expect(page.locator('app-record-history li').first()).toContainText('Acknowledged');

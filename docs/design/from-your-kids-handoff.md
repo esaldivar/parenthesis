@@ -12,7 +12,13 @@ Status: **implementation in progress**. Source branch: `feature/531-from-your-ki
 ## Product behavior
 1. Parent selects child, then Diary / Artwork / Photos.
 2. Diary: latest first, desktop facing pages, mobile single page, turn arrows/swipe; mood character and entry content, **no reactions/comments**. Entries are visible only to selected parents.
-3. Artwork: refrigerator stays **CLOSED**; up to two drawings are magnetically attached to its upper door. Remaining drawings sit in a grid to its right on desktop and on the lower door on phones. On desktop, hovering a drawing tilts and enlarges it briefly, then it settles when the pointer leaves. Reduced motion keeps the drawing still. Open artwork details on tap/click; parent heart, short one-way comment, bookmark, download, explicit Google Photos export.
+3. Artwork (redesigned in #714 from the approved Figma Artwork frames): a closed sage retro fridge, the same when
+   empty (with "No artwork shared with you yet."). The three newest drawings hang on it with coloured magnets, one
+   on the top door and two on the bottom, slightly tilted; a handwritten "View all artwork" Post-it on a magnet
+   opens the gallery when there are more. Hover or keyboard focus straightens and enlarges one drawing in front of
+   the others with the Photos yellow glow and hides its magnet. The newest-first gallery shows drawings whole on
+   cream mats, and the detail matches Photos: a heart over the corner and one editable parent comment. Bookmark,
+   download and Google Photos export aren't part of the approved Artwork design.
 4. Photos (redesigned in #710 from the approved Figma Photos frames): a decorated corkboard with no name plaque or
    on-board message when empty; three newest photos pinned left tilt, straight, opposite tilt, with thumbtacks; a
    handwritten "View all photos" Post-it when there are more. Hover or keyboard focus enlarges one photo in front of
@@ -29,9 +35,10 @@ M4 owns parent-facing layout, accessible state machine and content contracts. M5
 ## QA
 - In a local development build, select an active child and enable **Development preview with sample content**.
   Open Diary, Artwork, and Photos to exercise the populated states. The toggle is off by default and unavailable
-  in production builds. Preview images and entries are synthetic. Artwork's parent actions remain unavailable;
-  on sample Photos the heart and comment change only the page, which says nothing was sent (#710).
+  in production builds. Preview images and entries are synthetic (the sample drawings and the fridge are
+  AI-generated). On sample Photos and Artwork the heart and comment change only the page, which says nothing was
+  sent (#710, #714).
 - Viewports 320/390/768/1280+, both themes, keyboard and screen reader.
-- Closed fridge visible at all sizes; no open-door animation.
+- Closed sage fridge visible at all sizes, empty or not; no open-door animation.
 - Confirm child selection, diary page controls, empty states, privacy placeholders, no parent creation affordances.
 - Compare the rendered overview and galleries with the approved responsive previews above, and use the original collage for the diary and broader visual direction.

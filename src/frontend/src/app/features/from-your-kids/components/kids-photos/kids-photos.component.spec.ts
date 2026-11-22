@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { KidsGalleryItem } from '../../from-your-kids-contract';
-import { KidsPhotos, KidsPhotosView, newestFirst, sharedParts } from './kids-photos.component';
+import { KidsPhotos, KidsPhotosView, kidsCopy, newestFirst, sharedParts } from './kids-photos.component';
 
 // Synthetic photos only (#710).
 const photo = (id: string, createdAt: string, overrides: Partial<KidsGalleryItem> = {}): KidsGalleryItem => ({
@@ -18,8 +18,9 @@ const photos = [
 ];
 
 describe('KidsPhotos (#710)', () => {
-  function render(view: KidsPhotosView, items: readonly KidsGalleryItem[] = photos, photoId: string | null = null) {
+  function render(view: KidsPhotosView, items: readonly KidsGalleryItem[] = photos, photoId: string | null = null, kind: KidsGalleryItem['kind'] = 'Photo') {
     const fixture = TestBed.createComponent(KidsPhotos);
+    fixture.componentRef.setInput('kind', kind);
     fixture.componentRef.setInput('view', view);
     fixture.componentRef.setInput('photos', items);
     fixture.componentRef.setInput('photoId', photoId);
@@ -157,6 +158,65 @@ describe('KidsPhotos (#710)', () => {
       expect(host.querySelector('.shared span')?.textContent).toContain('Compartida el');
       expect(host.querySelector('.save')?.textContent).toContain('Guardar comentario');
       expect(host.querySelector('.note')?.textContent).toContain('no se envían a Kai');
+      TestBed.inject(LocaleService).setLocale('en');
+    });
+  });
+  describe('Artwork (#714)', () => {
+    const art = photos.map(item => ({ ...item, kind: 'Artwork' as const }));
+
+    it('names Photos and Artwork copy separately', () => {
+      expect(kidsCopy('Photo', 'viewAll')).toBe('kids.photos.viewAll');
+      expect(kidsCopy('Artwork', 'viewAll')).toBe('kids.artwork.viewAll');
+    });
+
+    it('shows the empty fridge with its message and no drawings', () => {
+      const { host } = render('board', [], null, 'Artwork');
+      expect(host.querySelector('.fridge')).not.toBeNull();
+      expect(host.querySelector('.board, .drawing, .fridge-note')).toBeNull();
+      expect(host.querySelector('.fridge-empty')?.textContent).toContain('No artwork shared with you yet.');
+      expect(host.querySelector('.fridge-area')?.getAttribute('aria-label')).toBe('Kai’s artwork fridge');
+    });
+
+    it('holds the three newest drawings with magnets and offers View all for the rest', () => {
+      const { fixture, host } = render('board', art, null, 'Artwork');
+      const drawings = [...host.querySelectorAll<HTMLButtonElement>('.fridge .drawing')];
+      expect(drawings.map(button => button.querySelector('img')!.getAttribute('src'))).toEqual(['/thumb/kite.webp', '/thumb/beach.webp', '/thumb/chalk.webp']);
+      expect(host.querySelectorAll('.drawing .magnet')).toHaveLength(3);
+      expect(drawings[0].getAttribute('aria-label')).toBe('Open artwork: Sample kite, shared Nov 18, 2026 · 2:15 PM');
+      const opened: string[] = [];
+      let viewAll = 0;
+      fixture.componentInstance.openPhoto.subscribe(id => opened.push(id));
+      fixture.componentInstance.viewAll.subscribe(() => viewAll++);
+      drawings[2].click();
+      host.querySelector<HTMLButtonElement>('.fridge-note')!.click();
+      expect(opened).toEqual(['chalk']);
+      expect(viewAll).toBe(1);
+      expect(host.querySelector('.fridge-note')?.textContent).toContain('View all artwork');
+    });
+
+    it('hides View all when every drawing is on the fridge', () => {
+      const { host } = render('board', art.slice(0, 2), null, 'Artwork');
+      expect(host.querySelectorAll('.fridge .drawing')).toHaveLength(2);
+      expect(host.querySelector('.fridge-note')).toBeNull();
+    });
+
+    it('uses Artwork copy and mats in the gallery and detail', () => {
+      const gallery = render('gallery', art, null, 'Artwork').host;
+      expect(gallery.querySelector('h2')?.textContent).toContain('Latest artwork');
+      expect(gallery.querySelectorAll('.frame.mat')).toHaveLength(4);
+      expect(gallery.querySelectorAll<HTMLButtonElement>('.tile')[1].getAttribute('aria-label')).toContain('You hearted this artwork');
+      const detail = render('detail', art, 'kite', 'Artwork').host;
+      expect(detail.querySelector('.photo-frame.mat')).not.toBeNull();
+      expect(detail.querySelector('.back-photos')?.textContent).toContain('Back to artwork');
+      expect(detail.querySelector('.heart')?.getAttribute('aria-label')).toBe('Heart this artwork');
+      expect(render('detail', art, 'gone', 'Artwork').host.querySelector('[role="alert"]')?.textContent).toContain('This artwork isn’t available anymore.');
+    });
+
+    it('is translated in Spanish', () => {
+      TestBed.inject(LocaleService).setLocale('es-419');
+      const { host } = render('board', art, null, 'Artwork');
+      expect(host.querySelector('.fridge-note')?.textContent).toContain('Ver todos los dibujos');
+      expect(host.querySelector('.fridge-area')?.getAttribute('aria-label')).toBe('Refrigerador de dibujos de Kai');
       TestBed.inject(LocaleService).setLocale('en');
     });
   });

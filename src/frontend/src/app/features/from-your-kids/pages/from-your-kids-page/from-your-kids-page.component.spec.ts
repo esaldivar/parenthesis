@@ -62,8 +62,9 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     const [, artwork, photos] = host.querySelectorAll<HTMLButtonElement>('.sections button');
     artwork.click();
     fixture.detectChanges();
-    expect(host.querySelectorAll('.fridge-door .memory')).toHaveLength(2);
-    expect(host.querySelectorAll('.artwork-grid .memory')).toHaveLength(3);
+    // #714: the three newest drawings on the fridge and the View all note for the other two.
+    expect(host.querySelectorAll('.fridge .drawing')).toHaveLength(3);
+    expect(host.querySelector('.fridge-note')?.textContent).toContain('View all artwork');
     expect(host.textContent).not.toContain('No artwork shared with you yet');
     photos.click();
     fixture.detectChanges();
@@ -143,6 +144,61 @@ describe('From Your Kids parent-facing shell (#531)', () => {
       fixture.detectChanges();
       expect(host.querySelector('.detail')).toBeNull();
       expect(host.querySelector('.gallery')).not.toBeNull();
+    });
+  });
+
+  describe('Artwork fridge, gallery and detail (#714)', () => {
+    async function artworkPage(preview: boolean) {
+      const fixture = TestBed.createComponent(FromYourKidsPage);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      if (preview) {
+        host.querySelector<HTMLInputElement>('.preview-toggle input')!.click();
+        fixture.detectChanges();
+      }
+      [...host.querySelectorAll<HTMLButtonElement>('.sections button')].find(button => button.textContent.includes('Artwork'))!.click();
+      fixture.detectChanges();
+      return { fixture, host };
+    }
+
+    it('shows the same empty fridge with an honest message and no drawings', async () => {
+      const { host } = await artworkPage(false);
+      expect(host.querySelector('.fridge')).not.toBeNull();
+      expect(host.querySelector('.fridge .drawing, .fridge-note')).toBeNull();
+      expect(host.querySelector('.fridge-empty')?.textContent).toContain('No artwork shared with you yet.');
+      expect(host.querySelector('[aria-label="Kai’s artwork fridge"]')).not.toBeNull();
+    });
+
+    it('opens the artwork gallery and a drawing, with back links, and keeps Artwork when switching child', async () => {
+      const { fixture, host } = await artworkPage(true);
+      host.querySelector<HTMLButtonElement>('.fridge-note')!.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(host.querySelector('h1')?.textContent).toContain('Artwork from your kids');
+      expect(document.activeElement).toBe(host.querySelector('h1'));
+      expect(host.querySelector('.latest')?.textContent).toContain('Latest artwork');
+      expect(host.querySelectorAll('.gallery .tile')).toHaveLength(5);
+      expect(host.querySelector('.gallery .frame.mat')).not.toBeNull();
+      host.querySelectorAll<HTMLButtonElement>('.gallery .tile')[1].click();
+      fixture.detectChanges();
+      expect(host.querySelector('.photo-frame.mat .full')?.getAttribute('alt')).toBe('Sample drawing of a rocket and the moon');
+      expect(host.querySelector('.back-photos')?.textContent).toContain('Back to artwork');
+      host.querySelector<HTMLButtonElement>('.heart')!.click();
+      fixture.detectChanges();
+      expect(host.querySelector('.heart')!.getAttribute('aria-pressed')).toBe('false');
+      host.querySelectorAll<HTMLButtonElement>('.child-tabs button')[1].click();
+      fixture.detectChanges();
+      expect(host.querySelector('.gallery')).not.toBeNull();
+      expect(host.querySelector('h1')?.textContent).toContain('Artwork from your kids');
+      host.querySelector<HTMLButtonElement>('.back-link')!.click();
+      fixture.detectChanges();
+      expect(host.querySelector('.fridge')).not.toBeNull();
+      expect(host.querySelector('.sections button[aria-current="page"]')?.textContent).toContain('Artwork');
+      host.querySelectorAll<HTMLButtonElement>('.child-tabs button')[0].click();
+      fixture.detectChanges();
+      expect(host.querySelector('.sections button[aria-current="page"]')?.textContent).toContain('Artwork');
     });
   });
 

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
-import { TranslatePipe } from '../../../../core/i18n/translations';
+import { TranslatePipe, TranslationKey } from '../../../../core/i18n/translations';
 import { AppLocale, LocaleService } from '../../../../core/i18n/locale.service';
 import { KidsGalleryItem } from '../../from-your-kids-contract';
 
@@ -9,8 +9,20 @@ export type KidsPhotosView = 'board' | 'gallery' | 'detail';
 /** The single parent comment's save state for the open photo. */
 export type CommentState = 'idle' | 'saving' | 'saved' | 'failed';
 
-/** How many photos the corkboard previews: left tilt, straight, opposite tilt (#710). */
+/** How many items the board previews: the corkboard's three photos (#710) or the fridge's three drawings (#714). */
 export const BOARD_PHOTOS = 3;
+
+/** Copy that differs between Photos and Artwork; each name exists as `kids.photos.*` and `kids.artwork.*`. */
+export type KidsCopy = 'boardLabel' | 'boardEmpty' | 'viewAll' | 'open' | 'backToGallery' | 'title' | 'latest'
+  | 'newestFirst' | 'hearted' | 'heart' | 'detail' | 'sharedOn' | 'sharedAt' | 'yourComment' | 'commentPlaceholder'
+  | 'saveComment' | 'saving' | 'commentSaved' | 'commentKeptPreview' | 'commentFailed' | 'heartFailed' | 'previewOnly'
+  | 'missing';
+
+/** The Photos or Artwork translation key for `name`. */
+export function kidsCopy(kind: KidsGalleryItem['kind'], name: KidsCopy): TranslationKey {
+  const area = kind === 'Artwork' ? 'artwork' as const : 'photos' as const;
+  return `kids.${area}.${name}` as const;
+}
 
 /** "Nov 18, 2026" and "2:15 PM" in the family's zone and the parent's language. */
 export function sharedParts(iso: string, locale: AppLocale, timeZone: string | undefined): { date: string; time: string } {
@@ -31,9 +43,10 @@ export function newestFirst(photos: readonly KidsGalleryItem[]): readonly KidsGa
 }
 
 /**
- * Parent-facing Photos from a child (#710, Figma "From Your Kids" Photos frames): the decorated corkboard, the
- * newest-first gallery and a photo's detail with the parent's heart and single comment. It only shows what it's given:
- * the page passes photos the child shared with this parent, and saves hearts and comments; it never uploads.
+ * Parent-facing Photos or Artwork from a child: the decorated corkboard for photos (#710) or the closed fridge with
+ * magnet-held drawings for artwork (#714), then the newest-first gallery and one item's detail with the parent's heart
+ * and single comment. It only shows what it's given: the page passes items the child shared with this parent, and
+ * saves hearts and comments; it never uploads.
  */
 @Component({
   selector: 'app-kids-photos',
@@ -43,6 +56,7 @@ export function newestFirst(photos: readonly KidsGalleryItem[]): readonly KidsGa
   styleUrl: './kids-photos.component.scss',
 })
 export class KidsPhotos {
+  readonly kind = input<KidsGalleryItem['kind']>('Photo');
   readonly view = input<KidsPhotosView>('board');
   readonly photos = input<readonly KidsGalleryItem[]>([]);
   readonly photoId = input<string | null>(null);
@@ -70,6 +84,10 @@ export class KidsPhotos {
   constructor() {
     // The comment field starts from the parent's saved comment whenever another photo opens.
     effect(() => this.draft.set(this.selected()?.viewerComment ?? ''));
+  }
+
+  protected copy(name: KidsCopy): TranslationKey {
+    return kidsCopy(this.kind(), name);
   }
 
   protected when(photo: KidsGalleryItem): string {

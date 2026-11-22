@@ -18,7 +18,8 @@ import { AuthStore } from '../../../../core/auth/auth.store';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { dayLong } from '../../../../core/dates/dates';
 import { EventPhotosSection } from '../../components/event-photos/event-photos.component';
-import { familyDate } from '../../photo-text';
+import { PHOTOS_NOW, RETENTION_DAYS, expiry, expiryChip, familyDate } from '../../photo-text';
+import { MemoryCover, TimeLeft } from '../../components/memory-cover/memory-cover.component';
 
 /**
  * One Family Memory (#403): an event's photos the viewer may see, with the same sharing, viewing, downloading and
@@ -30,7 +31,7 @@ import { familyDate } from '../../photo-text';
 @Component({
   selector: 'app-memory-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, MatButtonModule, RouterLink, Icon, EventPhotosSection],
+  imports: [TranslatePipe, MatButtonModule, RouterLink, Icon, EventPhotosSection, MemoryCover, TimeLeft],
   template: `
     <a mat-button class="back" routerLink="/memories"
       ><app-icon name="chevron-left" [size]="18" /> {{ 'feature.family.memories' | tr }}</a
@@ -53,8 +54,23 @@ import { familyDate } from '../../photo-text';
       }
       @case ('ready') {
         @if (summary(); as s) {
-          <h1>{{ s.title }}</h1>
-          <p class="muted">{{ s.line }}</p>
+          <header class="memory-head">
+            @if (s.cover) {
+              <app-memory-cover class="memory-head__cover" [src]="s.cover" [lazy]="false" />
+            }
+            <div class="memory-head__text">
+              <h1>{{ s.title }}</h1>
+              <p class="muted">{{ s.line }}</p>
+              @if (s.expiry; as e) {
+                <div class="time-left-panel" [attr.data-soon]="e.soon">
+                  <p class="time-left-panel__when">{{ e.text }}</p>
+                  @if (e.soon) {
+                    <app-time-left [percent]="e.left" />
+                  }
+                </div>
+              }
+            </div>
+          </header>
           @if (s.downloads) {
             <p>{{ s.downloads }}</p>
           }
@@ -98,6 +114,46 @@ import { familyDate } from '../../photo-text';
     .error {
       color: var(--color-danger);
     }
+    /* #717: the album-style header, matching the memory's card on the timeline. */
+    .memory-head {
+      display: grid;
+      gap: var(--space-3);
+      container: memory-head / inline-size;
+    }
+    .memory-head__cover {
+      width: min(10rem, 60%);
+    }
+    .memory-head__text {
+      display: grid;
+      gap: var(--space-2);
+      min-width: 0;
+    }
+    .time-left-panel {
+      display: grid;
+      gap: var(--space-2);
+      justify-self: start;
+      color: var(--color-text-secondary);
+    }
+    .time-left-panel[data-soon='true'] {
+      padding: var(--space-3);
+      border: 1px solid light-dark(#f2b9a5, #7a3f2e);
+      border-radius: 14px;
+      background: light-dark(#fcebe4, #3d2620);
+      color: light-dark(#9a3b1f, #f5b7a3);
+    }
+    .time-left-panel__when {
+      font-weight: 600;
+    }
+    @media (min-width: 48rem) {
+      .memory-head {
+        grid-template-columns: 13.75rem minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-6);
+      }
+      .memory-head__cover {
+        width: auto;
+      }
+    }
     .back,
     a[mat-stroked-button],
     button[mat-stroked-button] {
@@ -110,6 +166,7 @@ export class MemoryPage {
   private readonly copyLocale = inject(LocaleService);
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
+  private readonly now = inject(PHOTOS_NOW);
 
   /** From the route. */
   readonly eventId = input.required<string>();
@@ -155,7 +212,25 @@ export class MemoryPage {
     const downloads = blocked
       ? translate('memory.details.noDownload', this.copyLocale.locale(), { name: this.coParent() ?? translate('common.coParent', this.copyLocale.locale()) })
       : null;
-    return { title: view.title, line: parts.join(' · '), downloads };
+    // #717: the cover and when the first photo the viewer can see goes, as on the memory's card.
+    const photos = view.batches.flatMap((b) => b.photos);
+    const cover = photos[0]?.thumbnailUrl ?? null;
+    const first = photos.reduce<string | null>(
+      (soonest, p) => (!soonest || Date.parse(p.expiresAt) < Date.parse(soonest) ? p.expiresAt : soonest),
+      null,
+    );
+    let when: { soon: boolean; text: string; left: number } | null = null;
+    if (first) {
+      const e = expiry(first, this.timeZone(), this.now(), locale);
+      when = {
+        soon: e.soon,
+        left: Math.min(100, (e.days / RETENTION_DAYS) * 100),
+        text: e.soon
+          ? translate('memory.details.deletedSoon', locale, { when: expiryChip(e, locale), date: e.on })
+          : expiryChip(e, locale),
+      };
+    }
+    return { title: view.title, line: parts.join(' · '), downloads, cover, expiry: when };
   });
 
   constructor() {

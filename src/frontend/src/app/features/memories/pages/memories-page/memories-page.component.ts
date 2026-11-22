@@ -14,8 +14,6 @@ import { RouterLink } from '@angular/router';
 import { Api, FamilyMember, Memory } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
-import { Icon } from '../../../../shared/components/icon/icon';
 import {
   PHOTOS_NOW,
   RETENTION_DAYS,
@@ -25,6 +23,8 @@ import {
   shortDate,
   whoseText,
 } from '../../photo-text';
+import { monthYear } from '../../../../core/dates/dates';
+import { MemoryCover, TimeLeft } from '../../components/memory-cover/memory-cover.component';
 
 /**
  * Family Memories (#403): one memory per event with photos the viewer may see, newest event first. It replaces the
@@ -33,7 +33,7 @@ import {
 @Component({
   selector: 'app-memories-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, MatButtonModule, RouterLink, EmptyState, Icon],
+  imports: [TranslatePipe, MatButtonModule, RouterLink, MemoryCover, TimeLeft],
   template: `
     <header class="memories-header">
       <div>
@@ -56,29 +56,39 @@ import {
       }
       @case ('ready') {
         @if (rows().length === 0) {
-          <app-empty-state
-            icon="album"
-            title="{{ 'feature.no.memories.yet' | tr }}"
-            body="{{ 'feature.add.photos.to.a.confirmed.event.on' | tr }}"
-          >
+          <div class="empty">
+            <span class="empty__sheets" aria-hidden="true"></span>
+            <h2 class="empty__title">{{ 'feature.no.memories.yet' | tr }}</h2>
+            <p class="muted">{{ 'feature.add.photos.to.a.confirmed.event.on' | tr }}</p>
             <a mat-stroked-button routerLink="/calendar">{{ 'feature.open.calendar' | tr }}</a>
-          </app-empty-state>
+          </div>
         } @else {
-          <ul class="memories">
-            @for (row of rows(); track row.memory.eventId) {
-              <li>
-                <a class="memory" [routerLink]="['/memories', row.memory.eventId]">
-                  <img [src]="row.memory.coverThumbnailUrl" alt="" loading="lazy" />
-                  <span class="memory__text">
-                    <span class="memory__title">{{ row.memory.title }}<span class="visually-hidden">.</span></span>
-                    <span class="muted">{{ row.date }} · {{ row.count }} · {{ row.whose }}<span class="visually-hidden">.</span></span>
-                    <span class="chip" [attr.data-soon]="row.soon">{{ row.expiry }}</span>
-                  </span>
-                  <app-icon name="chevron-right" [size]="20" aria-hidden="true" />
-                </a>
-              </li>
-            }
-          </ul>
+          @for (group of months(); track group.key) {
+            <section class="month" [attr.aria-labelledby]="'month-' + group.key">
+              <h2 class="month__title" [id]="'month-' + group.key">{{ group.label }}</h2>
+              <ul class="memories">
+                @for (row of group.rows; track row.memory.eventId) {
+                  <li class="entry" [class.entry--soon]="row.soon">
+                    <span class="entry__dot" [attr.data-soonest]="row.soonest" aria-hidden="true"></span>
+                    <a class="memory" [routerLink]="['/memories', row.memory.eventId]">
+                      <app-memory-cover [src]="row.memory.coverThumbnailUrl" />
+                      <span class="memory__text">
+                        <span class="memory__title">{{ row.memory.title }}<span class="visually-hidden">.</span></span>
+                        <span class="muted">{{ row.date }} · {{ row.count }} · {{ row.whose }}<span class="visually-hidden">.</span></span>
+                        @if (row.soon) {
+                          <app-time-left [percent]="row.left" />
+                        }
+                        <span class="chip" [attr.data-soon]="row.soon">{{ row.expiry }}</span>
+                        @if (row.soon) {
+                          <span class="save-cue"><span class="visually-hidden">. </span><span class="save-cue__wide">{{ 'memory.list.openToSave' | tr }}</span><span class="save-cue__narrow">{{ 'memory.list.savePhotos' | tr }}</span></span>
+                        }
+                      </span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
         }
       }
     }
@@ -91,6 +101,7 @@ import {
       container: memories / inline-size;
     }
     h1,
+    h2,
     p {
       margin: 0;
     }
@@ -141,26 +152,65 @@ import {
     .error {
       color: var(--color-danger);
     }
+    /* #717: an album timeline. Months are headings; each memory is one link on a thin rail. */
+    .month {
+      display: grid;
+      gap: var(--space-2);
+    }
+    .month__title {
+      margin: var(--space-2) 0 0;
+      font-size: 1.125rem;
+      font-weight: 800;
+    }
     .memories {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+      --rail: light-dark(#d3dfd8, #355446);
+      --soon: light-dark(#e0714f, #f08a6b);
+      --soon-ink: light-dark(#9a3b1f, #f5b7a3);
+      --soon-line: light-dark(#f2b9a5, #7a3f2e);
+      position: relative;
       display: grid;
       gap: var(--space-3);
-      grid-template-columns: minmax(0, 1fr);
+      margin: 0;
+      padding: 0 0 0 1.5rem;
+      list-style: none;
+    }
+    .memories::before {
+      content: '';
+      position: absolute;
+      inset: 0 auto 0 0.3rem;
+      width: 1.5px;
+      background: var(--rail);
+    }
+    .entry {
+      position: relative;
+    }
+    .entry__dot {
+      position: absolute;
+      top: 2.25rem;
+      left: calc(-1.5rem + 0.3rem - 4.25px);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-leaf-strong);
+    }
+    .entry__dot[data-soonest='true'] {
+      background: var(--soon);
     }
     .memory {
       display: grid;
-      grid-template-columns: clamp(3.5rem, 23cqi, 6rem) minmax(0, 1fr) auto;
-      gap: var(--space-2);
+      grid-template-columns: clamp(5.5rem, 30cqi, 6.5rem) minmax(0, 1fr);
+      gap: var(--space-3);
       align-items: center;
-      min-height: var(--target-min);
-      padding: var(--space-2);
-      border: 1px solid var(--color-divider);
-      border-radius: var(--radius-card);
+      padding: var(--space-3);
+      border: 1px solid transparent;
+      border-radius: 18px;
       background: var(--color-surface);
+      box-shadow: 0 4px 12px rgb(25 36 31 / 10%);
       color: var(--color-text);
       text-decoration: none;
+    }
+    .entry--soon .memory {
+      border-color: var(--soon-line);
     }
     .memory:hover .memory__title {
       text-decoration: underline;
@@ -169,22 +219,36 @@ import {
       outline: 3px solid var(--color-focus);
       outline-offset: 2px;
     }
-    .memory img {
-      width: 100%;
-      aspect-ratio: 1;
-      object-fit: cover;
-      border-radius: 8px;
-      background: var(--color-surface-soft);
-    }
     .memory__text {
       display: grid;
+      justify-items: start;
       gap: var(--space-1);
       min-width: 0;
       overflow-wrap: anywhere;
     }
     .memory__title {
-      font-family: Georgia, serif;
+      font-size: 1.0625rem;
       font-weight: 700;
+    }
+    .chip {
+      color: var(--color-text-secondary);
+      font-size: 0.8125rem;
+    }
+    .chip[data-soon='true'] {
+      color: var(--soon-ink);
+      font-weight: 600;
+    }
+    .save-cue {
+      margin-top: var(--space-1);
+      padding: 0.45rem 0.9rem;
+      border-radius: 12px;
+      background: var(--color-action);
+      color: var(--color-on-action);
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .save-cue__wide {
+      display: none;
     }
     @container memories (min-width: 42rem) {
       .memories-header {
@@ -193,36 +257,80 @@ import {
       .memories-header > div {
         padding-left: var(--space-6);
       }
+      .month__title {
+        font-size: 1.25rem;
+      }
       .memories {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding-left: 2rem;
+      }
+      .memories::before {
+        left: 0.4rem;
+      }
+      .entry__dot {
+        top: 3.4rem;
+        left: calc(-2rem + 0.4rem - 4.25px);
       }
       .memory {
-        grid-template-columns: minmax(0, 1fr) auto;
-        padding: 0;
-        overflow: hidden;
+        grid-template-columns: 12.5rem minmax(0, 1fr);
+        gap: var(--space-6);
+        padding: var(--space-4) var(--space-6) var(--space-4) var(--space-4);
       }
-      .memory img {
-        grid-column: 1 / -1;
-        aspect-ratio: 2.35;
-        border-radius: 0;
+      .memory__title {
+        font-size: 1.375rem;
       }
-      .memory__text {
-        padding: 0 0 var(--space-3) var(--space-3);
+      .save-cue__wide {
+        display: inline;
       }
-      .memory app-icon {
-        margin-right: var(--space-3);
+      .save-cue__narrow {
+        display: none;
       }
     }
-    .chip {
-      justify-self: start;
-      padding: 0 var(--space-2);
-      border-radius: var(--radius-pill);
-      border: 1px solid var(--color-outline);
-      font-size: 0.8125rem;
+    /* Empty (#717): blank album sheets, the honest copy and the way to add photos. */
+    .empty {
+      --paper: light-dark(#fffdf8, #e9e4d8);
+      /* Keeps the sheets' paper (z-index -1) above the card's background. */
+      isolation: isolate;
+      display: grid;
+      justify-items: center;
+      gap: var(--space-3);
+      padding: var(--space-6) var(--space-4);
+      border-radius: 18px;
+      background: var(--color-surface);
+      box-shadow: 0 4px 12px rgb(25 36 31 / 10%);
+      text-align: center;
     }
-    .chip[data-soon='true'] {
-      background: var(--color-status-pending-bg);
-      font-weight: 600;
+    .empty__sheets {
+      position: relative;
+      width: 7rem;
+      aspect-ratio: 1.38;
+      margin-block: var(--space-2) var(--space-3);
+      border: 4px solid #ffffff;
+      border-radius: 8px;
+      background: light-dark(#e3eae6, #2c463b);
+      box-shadow: 0 2px 6px rgb(0 0 0 / 12%);
+    }
+    .empty__sheets::before,
+    .empty__sheets::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      z-index: -1;
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 2px 6px rgb(0 0 0 / 12%);
+      transform: translate(-8px, 2px) rotate(-6deg);
+    }
+    .empty__sheets::after {
+      transform: translate(8px, 4px) rotate(5deg);
+    }
+    .empty__title {
+      font-size: 1.375rem;
+    }
+    .empty .muted {
+      max-width: 30rem;
+    }
+    .empty a[mat-stroked-button] {
+      justify-self: center;
     }
     a[mat-stroked-button],
     button[mat-stroked-button] {
@@ -254,6 +362,9 @@ export class MemoriesPage {
       const e = expiry(memory.expiresAt, zone, now, locale);
       return {
         memory,
+        day: familyDate(memory.startsAt, zone),
+        left: Math.min(100, (e.days / RETENTION_DAYS) * 100),
+        days: e.days,
         date: shortDate(familyDate(memory.startsAt, zone), locale),
         count: translate(memory.photoCount === 1 ? 'memory.onePhoto' : 'memory.photoCount', locale, { count: memory.photoCount }),
         whose: whoseText(memory, coParent, locale),
@@ -261,6 +372,30 @@ export class MemoriesPage {
         soon: e.soon,
       };
     });
+  });
+
+  /**
+   * The timeline (#717): memories grouped by the month of their event in the family's zone, in the server's
+   * newest-first order. The memory deleted soonest within the final week gets the coral dot.
+   */
+  protected readonly months = computed(() => {
+    const locale = this.copyLocale.locale();
+    const rows = this.rows();
+    const soonest = rows.reduce<(typeof rows)[number] | null>(
+      (best, row) => (row.soon && (!best || row.days < best.days) ? row : best),
+      null,
+    );
+    const groups: { key: string; label: string; rows: (typeof rows[number] & { soonest: boolean })[] }[] = [];
+    for (const row of rows) {
+      const key = row.day.slice(0, 7);
+      let group = groups.find((g) => g.key === key);
+      if (!group) {
+        group = { key, label: monthYear(row.day, locale === 'en' ? 'en-US' : locale), rows: [] };
+        groups.push(group);
+      }
+      group.rows.push({ ...row, soonest: row === soonest });
+    }
+    return groups;
   });
 
   constructor() {
