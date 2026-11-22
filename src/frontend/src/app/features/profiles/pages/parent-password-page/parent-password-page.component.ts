@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { FORM_STYLES } from '../../../auth/form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../../auth/form-styles';
 
 /**
  * Password sign-in from the picker: for a parent without a parent PIN yet, and for recovering a forgotten, paused or
@@ -57,7 +57,7 @@ import { FORM_STYLES } from '../../../auth/form-styles';
       <a routerLink="/forgot-password">{{ 'feature.forgot.your.password' | tr }}</a>
     </div>
   `,
-  styles: FORM_STYLES,
+  styles: [FORM_STYLES, AUTH_PAGE_STYLES],
 })
 export class ParentPasswordPage {
   private readonly copyLocale = inject(LocaleService);

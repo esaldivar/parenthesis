@@ -7,7 +7,7 @@ import { RouterLink } from '@angular/router';
 import { Api } from '../../../../core/api/api';
 import { generalMessage, toProblem } from '../../../../core/api/problem';
 import { TranslatePipe } from '../../../../core/i18n/translations';
-import { FORM_STYLES } from '../../form-styles';
+import { AUTH_PAGE_STYLES, FORM_STYLES } from '../../form-styles';
 
 @Component({
   selector: 'app-forgot-password-page',
@@ -41,7 +41,7 @@ import { FORM_STYLES } from '../../form-styles';
 
     <div class="links"><a routerLink="/sign-in">{{ 'auth.back' | tr }}</a></div>
   `,
-  styles: FORM_STYLES,
+  styles: [FORM_STYLES, AUTH_PAGE_STYLES],
 })
 export class ForgotPasswordPage {
   private readonly api = inject(Api);

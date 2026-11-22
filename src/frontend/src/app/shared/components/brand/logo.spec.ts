@@ -40,4 +40,17 @@ describe('Logo (approved icon, wordmark asset pending)', () => {
     expect(host.getAttribute('aria-hidden')).toBe('true');
     expect(host.getAttribute('role')).toBeNull();
   });
+
+  it('is inline by default and can stack the icon above the wordmark (#697)', () => {
+    const fixture = TestBed.createComponent(Logo);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.getAttribute('data-layout')).toBe('inline');
+
+    fixture.componentRef.setInput('layout', 'responsive');
+    fixture.detectChanges();
+    expect(host.getAttribute('data-layout')).toBe('responsive');
+    // The same approved icon file in every layout.
+    expect(host.querySelector('img')!.getAttribute('src')).toBe('/brand/parenthesis-icon.svg');
+  });
 });

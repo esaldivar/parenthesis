@@ -40,7 +40,7 @@ export const routes: Routes = [
   // "Who's using Parenthesis?" on a registered device (ADR-0006, ADR-0007).
   authPage('profiles', 'Who’s using Parenthesis?', () => import('./features/profiles/pages/profile-picker-page/profile-picker-page.component').then((m) => m.ProfilePickerPage), [
     pickerAvailable,
-  ]),
+  ], { bare: true }),
   authPage('profiles/parent/:id', 'Enter your parent PIN', () =>
     import('./features/profiles/pages/parent-pin-page/parent-pin-page.component').then((m) => m.ParentPinPage), [pickerAvailable],
   ),
