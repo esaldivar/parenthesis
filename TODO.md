@@ -9,6 +9,8 @@ something is a to-do, or work is left incomplete or deferred, it's added here, i
 that points back here.
 
 ## Big projects
+
+- [ ] **Approved parent Diary redesign (#712).** Implementation includes newest-first desktop spreads, brass page controls, reduced-motion-aware page turns, alternating mobile sheets and a return-to-newest arrow. After deployment, review the approved Figma layouts in both themes with keyboard and a real screen reader. Live shared-entry API integration remains outside this presentation change; sample entries stay opt-in and development-only. Artwork still needs its own approved design handoff; Photos is tracked by #710.
 - [ ] **Stationary desktop sidebar and leaf footer (#676).** Restore the full-height sidebar and visible leaf/tagline,
   with only the main desktop pane scrolling. Verify owner acceptance after the fix reaches the development site.
 - [ ] **Backend module layout (#570).** Move map and conventions in

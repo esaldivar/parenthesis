@@ -1,0 +1,208 @@
+@use '@fontsource/caveat/700.css' as caveat;
+:host {
+  display: block;
+  position: relative;
+  isolation: isolate;
+}
+.desktop-book,
+.empty-book {
+  position: relative;
+  min-height: 38.75rem;
+  background: url('/art/from-your-kids/diary-blank.png') center / 100% 100% no-repeat;
+  color: #493c2d;
+}
+.spread-pages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 4.5rem 8% 10rem;
+  gap: 12%;
+}
+.paper {
+  min-width: 0;
+}
+.entry-scroll {
+  height: 20rem;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #9b742c transparent;
+  padding: 0.25rem 0.5rem;
+  overscroll-behavior: contain;
+}
+time {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+h3 {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 2.0625rem;
+  line-height: 1.15;
+  color: #253f50;
+  margin: 0.75rem 0 1rem;
+  overflow-wrap: anywhere;
+}
+.entry-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+  margin: 0;
+  font-size: 1rem;
+}
+.page-controls {
+  position: absolute;
+  inset-inline: 10%;
+  top: 64%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+.newer-controls {
+  display: flex;
+  gap: 0.35rem;
+}
+.brass-control {
+  pointer-events: auto;
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: #91621d;
+  cursor: pointer;
+  border-radius: 0.5rem;
+}
+.brass-control svg {
+  width: 2rem;
+  height: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 0 #ffe29a);
+}
+.brass-control:hover {
+  color: #68400e;
+  background: #d9b65b30;
+}
+.brass-control:focus-visible,
+.entry-scroll:focus-visible {
+  outline: 3px solid #76531a;
+  outline-offset: 3px;
+}
+.mobile-sheets,
+.back-to-newest {
+  display: none;
+}
+.turning-sheet {
+  position: absolute;
+  inset-block: 6%;
+  inset-inline-start: 50%;
+  width: 40%;
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: #f9e9c6 url('/art/from-your-kids/journal-page.webp') center / 100% 100% no-repeat;
+  box-shadow: -4px 2px 12px #49371933;
+  transform-origin: left center;
+  pointer-events: none;
+  animation: diary-turn 0.6s ease-in-out both;
+}
+.turning-sheet.to-newer {
+  inset-inline-start: 10%;
+  border-radius: 0.5rem 0 0 0.5rem;
+  transform-origin: right center;
+  animation-name: diary-turn-back;
+}
+@keyframes diary-turn {
+  0% {
+    opacity: 0.9;
+    transform: perspective(1000px) rotateY(0);
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(-170deg);
+  }
+}
+@keyframes diary-turn-back {
+  0% {
+    opacity: 0.9;
+    transform: perspective(1000px) rotateY(0);
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(170deg);
+  }
+}
+@media (max-width: 48rem) {
+  .desktop-book {
+    display: none;
+  }
+  .mobile-sheets {
+    display: grid;
+    gap: 2rem;
+  }
+  .diary-sheet,
+  .empty-book {
+    position: relative;
+    min-width: 0;
+    min-height: 29.375rem;
+    box-sizing: border-box;
+    background: url('/art/from-your-kids/diary-blank.png') left center / 200% 100% no-repeat;
+    padding: 3rem 19% 4rem 18%;
+    color: #493c2d;
+  }
+  .right-sheet {
+    background-position: right center;
+    padding-inline: 20% 18%;
+  }
+  .back-to-newest {
+    display: inline-grid;
+    position: fixed;
+    inset-inline-end: 1rem;
+    bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    width: 48px;
+    height: 48px;
+    border: 1px solid #9b7129;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #f5de97, #d5ae53 70%, #916520);
+    box-shadow: 0 2px 4px #49371933;
+  }
+  .back-to-newest:hover {
+    background: #e7ca80;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .turning-sheet {
+    display: none;
+    animation: none;
+  }
+}
+@media (forced-colors: active) {
+  .desktop-book,
+  .empty-book,
+  .diary-sheet {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+  }
+  h3,
+  .brass-control {
+    color: CanvasText;
+  }
+  .brass-control {
+    border: 1px solid ButtonText;
+  }
+  .turning-sheet {
+    display: none;
+  }
+}

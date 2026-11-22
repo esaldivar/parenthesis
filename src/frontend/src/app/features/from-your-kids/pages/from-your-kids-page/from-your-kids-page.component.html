@@ -1,11 +1,11 @@
-<section class="kids" [class.photo-view]="photoView() !== 'board'" aria-labelledby="kids-title">
+<section class="kids" [class.photo-view]="photoView() !== 'board'" [class.diary-selected]="section() === 'diary'" aria-labelledby="kids-title">
   @if (photoView() === 'board') {
     <img class="background-leaves start" src="/art/from-your-kids/photos/background-leaves.webp" alt="" width="880" height="799" />
     <img class="background-leaves end" src="/art/from-your-kids/photos/background-leaves.webp" alt="" width="880" height="799" />
     <header class="intro">
       <h1 id="kids-title" class="title-ribbon" tabindex="-1" #viewHeading>
         @if (locale.locale() === 'en') {
-          <img src="/art/from-your-kids/hand-lettered-title.webp" alt="" width="279" height="52" />
+          <img [src]="section() === 'diary' ? '/art/from-your-kids/diary-title-clean.png' : '/art/from-your-kids/hand-lettered-title.webp'" alt="" width="279" height="52" />
         }
         <span [class.visually-hidden]="locale.locale() === 'en'">{{ 'feature.from.your.kids' | tr }}</span>
       </h1>
@@ -48,7 +48,7 @@
         @for (item of sections; track item.id) {
           <button type="button" [attr.aria-current]="section() === item.id ? 'page' : null"
             (click)="section.set(item.id)">
-            <img [src]="'/art/from-your-kids/' + item.id + '-icon.webp'" alt="" />
+            <img [src]="item.id === 'diary' && section() === 'diary' ? '/art/from-your-kids/diary-icon-clean.png' : '/art/from-your-kids/' + item.id + '-icon.webp'" alt="" />
             <span class="section-copy"><strong>{{ item.title | tr }}</strong><small>{{ item.description | tr }}</small></span>
           </button>
         }
@@ -68,8 +68,8 @@
 
       @switch (section()) {
         @case ('diary') {
-          <h2 class="section-heading">{{ 'feature.child.diary.heading' | tr: { name: contentName() ?? '' } }} <span aria-hidden="true">♡</span></h2>
-          <app-kids-diary [entries]="diaryEntries()" />
+          <h2 class="section-heading">{{ 'feature.child.diary.heading' | tr: { name: contentName() ?? '' } }}</h2>
+          <app-kids-diary [entries]="diaryEntries()" [scope]="selectedChildId()" />
         }
         @case ('artwork') {
           <section class="gallery" aria-labelledby="artwork-title">
