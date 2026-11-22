@@ -20,6 +20,11 @@ the build stage with existing development and CI configuration. Keep npm
 `--ignore-scripts`, lockfile installation, .NET stages and the chiseled runtime.
 Node is used only in the SPA build stage, not the final application runtime.
 
+**Update, November 22, 2026 (#692, #690):** the SPA build stage now uses `node:26-alpine`, which is inside the
+engine range. Local development and CI still use Node 24 from `.nvmrc`; both versions are supported, and the
+Playwright release gate tests the Node 26 image. Don't move the image back to 24 because of the paragraph above:
+that correction was about Node 25, which is unsupported.
+
 Official compatibility references, checked October 26, 2026:
 
 - [Angular version compatibility](https://angular.dev/reference/versions)
