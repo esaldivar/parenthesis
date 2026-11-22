@@ -1,4 +1,5 @@
-import { Injectable, InjectionToken, computed, effect, inject, signal, untracked } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { DestroyRef, Injectable, InjectionToken, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Api, ChatEventCard, ChatMessage, FamilyMember } from '../api/api';
 import { toProblem } from '../api/problem';
 import { AuthStore } from '../auth/auth.store';
@@ -52,6 +53,12 @@ export const TYPING_SHOWN_MS = 6000;
 /** At most one "typing" signal this often (the server allows 30 a minute). */
 export const TYPING_EVERY_MS = 3000;
 const RESTART_DELAYS_MS = [2000, 5000, 15000, 30000, 60000];
+/**
+ * How long the page stays hidden (a background tab, a locked phone) before the live connection closes. An open
+ * connection keeps the server awake, so closing it lets the site scale to zero when nobody is looking. Coming back
+ * reconnects and reloads what was missed.
+ */
+export const HIDDEN_DISCONNECT_MS = 60_000;
 
 /**
  * The parents' conversation (#125, docs/design/m4-chat.md): the messages loaded so far, this device's unsent ones, both
@@ -59,12 +66,16 @@ const RESTART_DELAYS_MS = [2000, 5000, 15000, 30000, 60000];
  * the live connection only says something changed, and the conversation reloads after a reconnect.
  *
  * Children never get here: the store connects only for a signed-in parent, and the API refuses child sessions anyway.
+ *
+ * The live connection is open only while the page is visible: a minute after it's hidden the connection closes, and
+ * when it's shown again it reconnects and catches up, as after any reconnect. REST and the draft are unaffected.
  */
 @Injectable({ providedIn: 'root' })
 export class ChatStore {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly connect = inject(CHAT_CONNECTION);
+  private readonly document = inject(DOCUMENT);
 
   /** The family whose conversation this is: the signed-in parent's current family. */
   readonly familyId = computed(() => {
@@ -101,6 +112,9 @@ export class ChatStore {
   private typingTimer: ReturnType<typeof setTimeout> | null = null;
   private lastTypingSent = 0;
   private reading: string | null = null;
+  private hiddenTimer: ReturnType<typeof setTimeout> | null = null;
+  /** True while the page has been hidden long enough that the connection is closed. */
+  private paused = false;
 
   readonly hasUnread = computed(() => this.unread() > 0);
 
@@ -108,6 +122,12 @@ export class ChatStore {
     effect(() => {
       const familyId = this.familyId();
       untracked(() => void this.switchTo(familyId));
+    });
+    const visibilityChanged = () => this.visibilityChanged();
+    this.document.addEventListener('visibilitychange', visibilityChanged);
+    inject(DestroyRef).onDestroy(() => {
+      this.document.removeEventListener('visibilitychange', visibilityChanged);
+      this.clearHiddenTimer();
     });
   }
 
@@ -306,10 +326,67 @@ export class ChatStore {
     this.dock.set(familyId ? 'minimized' : 'closed');
     this.members.set([]);
     this.stopTyping();
+    this.clearHiddenTimer();
+    this.paused = false;
     await this.disconnect();
-    if (familyId) {
-      void this.refreshUnread();
-      await this.start(familyId, generation, 0);
+    if (!familyId) {
+      return;
+    }
+    void this.refreshUnread();
+    if (this.hidden()) {
+      // Signed in behind a hidden page: connect once it's shown.
+      this.paused = true;
+      return;
+    }
+    await this.start(familyId, generation, 0);
+  }
+
+  private hidden(): boolean {
+    return this.document.visibilityState === 'hidden';
+  }
+
+  /** Closes the connection a while after the page is hidden, and reopens it when the page is shown again. */
+  private visibilityChanged(): void {
+    if (this.hidden()) {
+      if (!this.paused && !this.hiddenTimer && this.familyId()) {
+        this.hiddenTimer = setTimeout(() => void this.pause(), HIDDEN_DISCONNECT_MS);
+      }
+      return;
+    }
+    this.clearHiddenTimer();
+    if (this.paused) {
+      void this.resume();
+    }
+  }
+
+  private async pause(): Promise<void> {
+    this.hiddenTimer = null;
+    if (!this.hidden() || !this.familyId()) {
+      return;
+    }
+    this.paused = true;
+    // Ends this connection's listeners and pending restarts.
+    this.generation++;
+    this.stopTyping();
+    await this.disconnect();
+  }
+
+  /** Reconnects as after any reconnect (attempt 1), so the conversation and unread count catch up. */
+  private async resume(): Promise<void> {
+    this.paused = false;
+    const familyId = this.familyId();
+    if (!familyId) {
+      return;
+    }
+    const generation = ++this.generation;
+    await this.disconnect();
+    await this.start(familyId, generation, 1);
+  }
+
+  private clearHiddenTimer(): void {
+    if (this.hiddenTimer) {
+      clearTimeout(this.hiddenTimer);
+      this.hiddenTimer = null;
     }
   }
 
