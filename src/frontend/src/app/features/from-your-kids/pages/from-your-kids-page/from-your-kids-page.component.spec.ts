@@ -40,7 +40,10 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     photos.click();
     fixture.detectChanges();
     expect(host.textContent).toContain('No photos shared with you yet');
-    expect(host.querySelector('.corkboard-sticker')).toBeNull();
+    // #710: the empty board is decorated, says nothing on the board itself, and has no parent upload action.
+    expect(host.querySelector('.board .visually-hidden')?.textContent).toContain('No photos shared with you yet');
+    expect(host.querySelectorAll('.board .deco').length).toBeGreaterThan(0);
+    expect(host.querySelector('.pinned-photo, .post-it')).toBeNull();
     expect(host.querySelector('button[aria-label="Add Photo"]')).toBeNull();
   });
 
@@ -64,13 +67,83 @@ describe('From Your Kids parent-facing shell (#531)', () => {
     expect(host.textContent).not.toContain('No artwork shared with you yet');
     photos.click();
     fixture.detectChanges();
-    expect(host.querySelectorAll('.corkboard .memory')).toHaveLength(3);
-    expect(host.querySelectorAll('.corkboard-sticker')).toHaveLength(2);
+    expect(host.querySelectorAll('.board .pinned-photo')).toHaveLength(3);
+    expect(host.querySelector('.post-it')?.textContent).toContain('View all photos');
     toggle.click();
     fixture.detectChanges();
-    expect(host.querySelector('.corkboard .memory')).toBeNull();
-    expect(host.querySelector('.corkboard-sticker')).toBeNull();
+    expect(host.querySelector('.board .pinned-photo')).toBeNull();
     expect(host.textContent).toContain('No photos shared with you yet');
+  });
+
+  describe('Photos gallery and detail (#710)', () => {
+    async function photosPreview() {
+      const fixture = TestBed.createComponent(FromYourKidsPage);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      host.querySelector<HTMLInputElement>('.preview-toggle input')!.click();
+      fixture.detectChanges();
+      [...host.querySelectorAll<HTMLButtonElement>('.sections button')].find(button => button.textContent.includes('Photos'))!.click();
+      fixture.detectChanges();
+      return { fixture, host };
+    }
+
+    it('opens the newest-first gallery from the Post-it, with the back link at the top and the same child', async () => {
+      const { fixture, host } = await photosPreview();
+      host.querySelectorAll<HTMLButtonElement>('.child-tabs button')[1].click();
+      fixture.detectChanges();
+      expect(host.querySelector('.board')).not.toBeNull();
+      host.querySelector<HTMLButtonElement>('.post-it')!.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(host.querySelector('.kids')!.firstElementChild!.querySelector('.back-link')?.textContent).toContain('Back to From Your Kids');
+      expect(host.querySelector('h1')?.textContent).toContain('Photos from your kids');
+      expect(document.activeElement).toBe(host.querySelector('h1'));
+      expect(host.querySelectorAll('.child-tabs button')[1].getAttribute('aria-pressed')).toBe('true');
+      expect(host.querySelector('.sections')).toBeNull();
+      expect(host.querySelectorAll('.gallery .tile')).toHaveLength(6);
+      host.querySelector<HTMLButtonElement>('.back-link')!.click();
+      fixture.detectChanges();
+      expect(host.querySelector('.board')).not.toBeNull();
+      expect(host.querySelector('.sections button[aria-current="page"]')?.textContent).toContain('Photos');
+      expect(host.querySelectorAll('.child-tabs button')[1].getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('hearts and comments a sample photo on the page only, and says nothing was sent', async () => {
+      const { fixture, host } = await photosPreview();
+      host.querySelector<HTMLButtonElement>('.pinned-photo')!.click();
+      fixture.detectChanges();
+      const heart = host.querySelector<HTMLButtonElement>('.heart')!;
+      expect(heart.getAttribute('aria-pressed')).toBe('false');
+      heart.click();
+      fixture.detectChanges();
+      expect(host.querySelector('.heart')!.getAttribute('aria-pressed')).toBe('true');
+      const field = host.querySelector<HTMLTextAreaElement>('#photo-comment')!;
+      field.value = '  Love this kite!  ';
+      field.dispatchEvent(new Event('input'));
+      host.querySelector<HTMLButtonElement>('.save')!.click();
+      fixture.detectChanges();
+      expect(host.querySelector('.status')?.textContent).toContain('Nothing was sent');
+      expect(host.querySelector('.status')?.textContent).not.toContain('Comment saved');
+      host.querySelector<HTMLButtonElement>('.back-photos')!.click();
+      fixture.detectChanges();
+      expect(host.querySelector('.gallery .tile')?.getAttribute('aria-label')).toContain('You hearted this photo');
+      host.querySelector<HTMLButtonElement>('.gallery .tile')!.click();
+      fixture.detectChanges();
+      expect(host.querySelector<HTMLTextAreaElement>('#photo-comment')!.value).toBe('Love this kite!');
+    });
+
+    it('shows the other child’s gallery when switching child on an open photo', async () => {
+      const { fixture, host } = await photosPreview();
+      host.querySelector<HTMLButtonElement>('.pinned-photo')!.click();
+      fixture.detectChanges();
+      expect(host.querySelector('.detail')).not.toBeNull();
+      host.querySelectorAll<HTMLButtonElement>('.child-tabs button')[1].click();
+      fixture.detectChanges();
+      expect(host.querySelector('.detail')).toBeNull();
+      expect(host.querySelector('.gallery')).not.toBeNull();
+    });
   });
 
   it('never renders pending child profiles', async () => {

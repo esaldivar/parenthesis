@@ -59,6 +59,15 @@ that points back here.
 - [ ] **From Your Kids (#531).** Verify the integrated release candidate in both themes and with a real screen reader.
   The owner approved the rendered artwork and photos preview on November 8, 2026. Connect parent-authorized
   content and actions once the M5 service is available.
+- [ ] **From Your Kids Photos redesign (#710, M5).** Corkboard, newest-first gallery and photo detail from the
+  approved Figma Photos frames (desktop/mobile, light/dark).
+  - [ ] Owner check on Development: the empty board in a production build; the populated board, hover and keyboard
+    glow, gallery and detail with **Development preview with sample content** in a local development build, both
+    themes, phone and desktop, English and Spanish.
+  - [ ] Save hearts and the single parent comment through the From Your Kids API (`KidsContentReader.heart` and
+    `.comment`) once it exists. Until then they only change the development sample, and the page says nothing was
+    sent. Real photos, `heartPending`, `commentState` and failure states are already wired in `KidsPhotos`.
+  - [ ] Diary entries and Artwork still need their design handoff; they keep their earlier layout.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
 - [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523). Morning
   sunrise verified November 11, 2026; afternoon sun and evening moon still need a live check.
