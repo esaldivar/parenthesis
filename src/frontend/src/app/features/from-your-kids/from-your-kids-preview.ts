@@ -20,47 +20,45 @@ export function previewDiary(now: number, locale: AppLocale = 'en'): readonly Ki
 }
 
 export function previewGallery(kind: KidsGalleryItem['kind'], now: number, locale: AppLocale = 'en'): readonly KidsGalleryItem[] {
-  if (kind === 'Photo') return previewPhotos(now, locale);
-  const t = (en: string, es: string) => pick(locale, en, es);
-  const examples = [
-    { label: t('Sample flower drawing', 'Dibujo de ejemplo de una flor'), asset: 'art-flower' },
-    { label: t('Sample rainbow drawing', 'Dibujo de ejemplo de un arcoíris'), asset: 'art-rainbow' },
-    { label: t('Sample cat drawing', 'Dibujo de ejemplo de un gato'), asset: 'art-cat' },
-    { label: t('Sample rocket drawing', 'Dibujo de ejemplo de un cohete'), asset: 'art-rocket' },
-    { label: t('Sample heart drawing', 'Dibujo de ejemplo de un corazón'), asset: 'art-heart' },
-  ];
-  return examples.map(({ label, asset }, index) => {
-    const imageUrl = `/art/from-your-kids/${asset}.webp`;
-    const createdAt = now - index * day;
-    const bookmarked = index === 1;
-    return {
-      ...previewSource, kind, id: asset, altText: label, createdAt: new Date(createdAt).toISOString(),
-      imageUrl, thumbnailUrl: imageUrl, bookmarked, expiresAt: bookmarked ? null : new Date(createdAt + 60 * day).toISOString(),
-      heartedByViewer: false, viewerComment: null, downloadUrl: null,
-    };
-  });
+  return kind === 'Photo' ? previewPhotos(now, locale) : previewArtwork(now, locale);
 }
 
 /**
- * Six synthetic photos for the Photos board, gallery and detail (#710), newest first and a day apart, alternating
- * afternoon times; every other one is already hearted. The Figma mock photos are illustrative only.
+ * Synthetic gallery items for the board, gallery and detail views, newest first and a day apart, alternating
+ * afternoon times; every other one is already hearted. The Figma mock images are illustrative only.
  */
-export function previewPhotos(now: number, locale: AppLocale = 'en'): readonly KidsGalleryItem[] {
-  const t = (en: string, es: string) => pick(locale, en, es);
-  const photos = [
-    { label: t('Sample photo of a kite over a park', 'Foto de ejemplo de un papalote sobre un parque'), asset: 'sample-kite' },
-    { label: t('Sample photo of a sandcastle on the beach', 'Foto de ejemplo de un castillo de arena en la playa'), asset: 'sample-beach' },
-    { label: t('Sample photo of a chalk rainbow on a path', 'Foto de ejemplo de un arcoíris de gis en un camino'), asset: 'sample-chalk' },
-  ];
+function previewItems(kind: KidsGalleryItem['kind'], folder: string, count: number, samples: readonly { label: string; asset: string }[], now: number): readonly KidsGalleryItem[] {
   const today = new Date(now);
-  return Array.from({ length: 6 }, (_, index) => {
-    const { label, asset } = photos[index % photos.length];
+  return Array.from({ length: count }, (_, index) => {
+    const { label, asset } = samples[index % samples.length];
     const shared = new Date(today.getFullYear(), today.getMonth(), today.getDate() - index, index % 2 ? 16 : 14, index % 2 ? 42 : 15);
-    const imageUrl = `/art/from-your-kids/photos/${asset}.webp`;
+    const imageUrl = `/art/from-your-kids/${folder}/${asset}.webp`;
     return {
-      ...previewSource, kind: 'Photo' as const, id: `${asset}-${index}`, altText: label, createdAt: shared.toISOString(),
+      ...previewSource, kind, id: `${asset}-${index}`, altText: label, createdAt: shared.toISOString(),
       imageUrl, thumbnailUrl: imageUrl, bookmarked: false, expiresAt: null,
       heartedByViewer: index % 2 === 1, viewerComment: null, downloadUrl: null,
     };
   });
+}
+
+/** Six sample photos (three images, each twice) for Photos (#710). */
+export function previewPhotos(now: number, locale: AppLocale = 'en'): readonly KidsGalleryItem[] {
+  const t = (en: string, es: string) => pick(locale, en, es);
+  return previewItems('Photo', 'photos', 6, [
+    { label: t('Sample photo of a kite over a park', 'Foto de ejemplo de un papalote sobre un parque'), asset: 'sample-kite' },
+    { label: t('Sample photo of a sandcastle on the beach', 'Foto de ejemplo de un castillo de arena en la playa'), asset: 'sample-beach' },
+    { label: t('Sample photo of a chalk rainbow on a path', 'Foto de ejemplo de un arcoíris de gis en un camino'), asset: 'sample-chalk' },
+  ], now);
+}
+
+/** Five different sample drawings for Artwork (#714): three on the fridge, and more behind View all. */
+export function previewArtwork(now: number, locale: AppLocale = 'en'): readonly KidsGalleryItem[] {
+  const t = (en: string, es: string) => pick(locale, en, es);
+  return previewItems('Artwork', 'artwork', 5, [
+    { label: t('Sample drawing of a family under a smiling sun', 'Dibujo de ejemplo de una familia bajo un sol sonriente'), asset: 'sample-sun-family' },
+    { label: t('Sample drawing of a rocket and the moon', 'Dibujo de ejemplo de un cohete y la luna'), asset: 'sample-rocket' },
+    { label: t('Sample drawing of a fish jumping under a rainbow', 'Dibujo de ejemplo de un pez saltando bajo un arcoíris'), asset: 'sample-rainbow-fish' },
+    { label: t('Sample drawing of a cat in a flower garden', 'Dibujo de ejemplo de un gato en un jardín de flores'), asset: 'sample-cat-garden' },
+    { label: t('Sample drawing of a dinosaur eating leaves', 'Dibujo de ejemplo de un dinosaurio comiendo hojas'), asset: 'sample-dinosaur' },
+  ], now);
 }

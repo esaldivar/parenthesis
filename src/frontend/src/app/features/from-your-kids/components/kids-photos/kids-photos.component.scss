@@ -148,6 +148,101 @@ button:focus-visible {
   }
 }
 
+// ---------- Artwork fridge (#714) ----------
+// Figma "Artwork · Populated": the closed sage fridge is a 334 × 560 box; drawings and the View all note are placed as
+// shares of it, so the phone fridge is the same layout scaled down.
+
+$fridge-w: 334;
+$fridge-h: 560;
+$drawing-paper: #ffffff;
+$mat: #fcfaf4;
+
+.fridge-area {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+.fridge {
+  container: fridge / inline-size;
+  position: relative;
+  width: clamp(14rem, 70cqi, 20.875rem);
+  aspect-ratio: 668 / 1120;
+  background: url('/art/from-your-kids/artwork/fridge.webp') center / 100% 100% no-repeat;
+}
+
+.fridge-empty { color: var(--color-text-secondary); text-align: center; }
+
+.on-fridge { margin: 0; padding: 0; list-style: none; }
+
+.spot {
+  --tilt: 0deg;
+  position: absolute;
+  transform: rotate(var(--tilt));
+  transition: transform 0.18s ease;
+  &[data-spot='0'] { --tilt: -4deg; aspect-ratio: 150 / 113; @include place(130, 80, 150, 113, $fridge-w, $fridge-h); }
+  &[data-spot='1'] { --tilt: 4deg; aspect-ratio: 105 / 140; @include place(100, 300, 105, 140, $fridge-w, $fridge-h); }
+  &[data-spot='2'] { --tilt: -3deg; aspect-ratio: 150 / 113; @include place(240, 292, 150, 113, $fridge-w, $fridge-h); }
+  // Hovered or focused, a drawing straightens and comes in front of every other drawing; the others don't move.
+  &:hover, &:focus-within { z-index: 5; --tilt: 0deg; }
+}
+
+.drawing {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: max(2px, #{cqi(3, $fridge-w)}) solid $drawing-paper;
+  background: $drawing-paper;
+  box-shadow: 0 4px 8px rgb(0 0 0 / 22%);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.paper {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// A round fridge magnet: a coloured body, a soft highlight and a small shadow.
+.magnet {
+  --magnet: #f08a6b;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: #{cqi(22, $fridge-w)};
+  aspect-ratio: 1;
+  border: 1px solid rgb(0 0 0 / 18%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgb(255 255 255 / 60%) 0 18%, transparent 24%), var(--magnet);
+  box-shadow: 0 2px 3px rgb(26 26 26 / 35%);
+  transform: translate(-50%, -45%);
+  pointer-events: none;
+}
+
+.spot[data-spot='1'] .magnet { --magnet: #f4c15d; }
+.spot[data-spot='2'] .magnet { --magnet: #4e79a7; }
+
+.spot:hover .drawing, .drawing:focus-visible {
+  transform: scale(1.25);
+  box-shadow: 0 8px 14px rgb(0 0 0 / 20%), $glow;
+}
+
+.spot:hover .magnet, .drawing:focus-visible .magnet { visibility: hidden; }
+
+.fridge-note {
+  @include place(185, 452, 153, 76, $fridge-w, $fridge-h);
+  aspect-ratio: auto;
+  min-height: pct(76, $fridge-h);
+  padding: 0.35em 0.4em 0.2em;
+  font-size: max(0.875rem, #{cqi(21, $fridge-w)});
+  > .magnet { --magnet: #5e8f7e; width: #{cqi(19, $fridge-w)}; }
+}
+
+// Artwork is shown whole on a cream mat, so tall and wide drawings both fit (#714).
+.frame.mat, .photo-frame.mat { background: $mat; }
+.frame.mat > img { object-fit: contain; }
+
 // ---------- Gallery ----------
 
 .latest {
@@ -339,6 +434,6 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinned-photo, .frame, .post-it { transition: none; }
+  .pinned-photo, .frame, .post-it, .spot, .drawing { transition: none; }
   .post-it:hover { transform: rotate(5deg); }
 }

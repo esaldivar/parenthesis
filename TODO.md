@@ -10,7 +10,7 @@ that points back here.
 
 ## Big projects
 
-- [ ] **Approved parent Diary redesign (#712).** Implementation includes newest-first desktop spreads, brass page controls, reduced-motion-aware page turns, alternating mobile sheets and a return-to-newest arrow. After deployment, review the approved Figma layouts in both themes with keyboard and a real screen reader. Live shared-entry API integration remains outside this presentation change; sample entries stay opt-in and development-only. Artwork still needs its own approved design handoff; Photos is tracked by #710.
+- [ ] **Approved parent Diary redesign (#712).** Implementation includes newest-first desktop spreads, brass page controls, reduced-motion-aware page turns, alternating mobile sheets and a return-to-newest arrow. After deployment, review the approved Figma layouts in both themes with keyboard and a real screen reader. Live shared-entry API integration remains outside this presentation change; sample entries stay opt-in and development-only. Photos is tracked by #710 and Artwork by #714.
 - [ ] **Stationary desktop sidebar and leaf footer (#676).** Restore the full-height sidebar and visible leaf/tagline,
   with only the main desktop pane scrolling. Verify owner acceptance after the fix reaches the development site.
 - [ ] **Backend module layout (#570).** Move map and conventions in
@@ -67,7 +67,17 @@ that points back here.
   - [ ] Save hearts and the single parent comment through the From Your Kids API (`KidsContentReader.heart` and
     `.comment`) once it exists. Until then they only change the development sample, and the page says nothing was
     sent. Real photos, `heartPending`, `commentState` and failure states are already wired in `KidsPhotos`.
-  - [ ] Diary entries and Artwork still need their design handoff; they keep their earlier layout.
+  - [x] Diary (#712) and Artwork (#714) design handoffs.
+- [ ] **From Your Kids Artwork redesign (#714, M5).** The new sage fridge (also when empty) with up to three newest
+  drawings on magnets and a "View all artwork" Post-it, then the newest-first gallery on cream mats and the artwork
+  detail, from the approved Figma Artwork frames (desktop/mobile, light/dark). It shares `KidsPhotos` with Photos.
+  - [ ] Owner check on Development: the empty fridge in a production build; the fridge with drawings, hover and
+    keyboard glow, gallery and detail with **Development preview with sample content** in a local development
+    build, both themes, phone and desktop, English and Spanish.
+  - [ ] Save Artwork hearts and the single parent comment through the From Your Kids API once it exists (same as
+    Photos above). Until then they only change the development sample, and the page says nothing was sent.
+  - [ ] Bookmark (keep past 60 days), download and Google Photos export from the M4 handoff aren't in the approved
+    design; decide whether Artwork needs them before the API lands.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
 - [ ] Verify the Home greeting icons on the development site on phone and desktop in both themes (#523). Morning
   sunrise verified November 11, 2026; afternoon sun and evening moon still need a live check.
