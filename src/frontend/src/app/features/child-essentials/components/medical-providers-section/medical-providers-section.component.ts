@@ -17,6 +17,19 @@ import { RevisionedSection } from '../../revisioned-section';
 
 type ProviderFields = Omit<MedicalProvider, 'id'>;
 
+/**
+ * A phone number of 7 to 15 digits, written with digits, spaces, +, (, ), . and -. Empty passes (required is checked
+ * separately). Counted rather than matched with one pattern, which backtracked on long input (Sonar S8786).
+ */
+export function phoneNumber(control: AbstractControl<string>): ValidationErrors | null {
+  const value = control.value.trim();
+  if (!value) {
+    return null;
+  }
+  const digits = value.replace(/\D/g, '').length;
+  return /^[0-9+ ().-]+$/.test(value) && digits >= 7 && digits <= 15 ? null : { phone: true };
+}
+
 /** A doctor's or dentist's phone and address are required; for the other types they're optional. */
 function requiredForContact(control: AbstractControl): ValidationErrors | null {
   const type = control.parent?.get('type')?.value;
@@ -217,7 +230,7 @@ export class MedicalProvidersSection extends RevisionedSection<MedicalProvidersV
     practice: new FormControl('', { nonNullable: true }),
     phone: new FormControl('', {
       nonNullable: true,
-      validators: [requiredForContact, Validators.pattern(/^\s*(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)[0-9+ ().-]+\s*$/)],
+      validators: [requiredForContact, phoneNumber],
     }),
     address: new FormControl('', { nonNullable: true, validators: [requiredForContact, Validators.pattern(/\S/)] }),
   });

@@ -351,6 +351,11 @@ that points back here.
   - [ ] Optional: the Azure budget shutdown (Automation runbook `Stop-Parenthesis`, action group
     `ag-parenthesis-budget-stop`, budget `parenthesis-shutdown`) set up in the portal on November 22 is not yet
     recorded in `docs/runbooks/azure-environments.md`; add it and the script there.
+- [ ] **Accepted Sonar findings on develop (#706).** 11 code findings accepted without a reason are fixed in code.
+  - [ ] After this reaches `develop`, confirm Sonar shows them as fixed.
+  - [ ] Owner: add a reason in SonarQube Cloud for the `Web:S6845` `tabindex` finding in
+    `calendar-week.component.html`. It's the same labelled, scrollable region as the week calendar's, which has the
+    owner's October 19 WCAG 2.1.1 decision.
 - [ ] **Child Essentials section fixes (#679, #680, M5).** No outline around an open section; choosing another child
   keeps the open section for that child.
   - [ ] Owner check on the dev site, desktop and phone, both themes.

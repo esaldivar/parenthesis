@@ -39,6 +39,15 @@ export async function routeUpdates(api, repository, event = {}) {
   return target;
 }
 
+/** The `rel="next"` URL of a GitHub Link header, parsed without a backtracking regex; undefined when there is none. */
+export function nextLink(link) {
+  for (const part of String(link ?? '').split(',')) {
+    const [target, ...params] = part.split(';').map((p) => p.trim());
+    if (params.includes('rel="next"') && target.startsWith('<') && target.endsWith('>')) return target.slice(1, -1);
+  }
+  return undefined;
+}
+
 export function githubApi(repository, token, fetchImpl = fetch) {
   if (!/^[\w.-]+\/[\w.-]+$/.test(repository ?? '') || !token) {
     throw new Error('Missing or invalid GitHub workflow context.');
@@ -58,7 +67,7 @@ export function githubApi(repository, token, fetchImpl = fetch) {
       const data = await response.json();
       if (!Array.isArray(data)) return data;
       result.push(...data);
-      url = response.headers.get('link')?.match(/<([^>]+)>; rel="next"/)?.[1];
+      url = nextLink(response.headers.get('link'));
       if (url && !url.startsWith(root)) throw new Error('Unexpected pagination origin.');
     } while (url);
     return result;

@@ -12,8 +12,8 @@ export function gitDirectory(start = process.cwd()) {
     const dotGit = join(dir, '.git');
     if (existsSync(dotGit)) {
       if (statSync(dotGit).isDirectory()) return dotGit;
-      const pointer = /^gitdir:\s*(.+)$/m.exec(read(dotGit));
-      if (pointer?.[1]) return resolve(dir, pointer[1].trim());
+      const pointer = read(dotGit).split(/\r?\n/).find((line) => line.startsWith('gitdir:'))?.slice('gitdir:'.length).trim();
+      if (pointer) return resolve(dir, pointer);
     }
     if (dirname(dir) === dir) throw new Error(`No git checkout found at or above ${start}.`);
   }
