@@ -28,7 +28,7 @@ common=(
 # Event photos go to a local blob emulator, never Azure. It's started here, not as a service container, because it
 # needs its own command line. The API creates the private container on first upload.
 echo "Starting the blob emulator"
-docker run -d --name azurite --network host mcr.microsoft.com/azure-storage/azurite:3.37.0 \
+docker run -d --name azurite --network host mcr.microsoft.com/azure-storage/azurite:3.38.0 \
   azurite-blob --blobHost 127.0.0.1 --blobPort 10000 --skipApiVersionCheck --loose >/dev/null
 
 echo "Applying migrations"

@@ -7,7 +7,7 @@ namespace CoParent.IntegrationTests.Infrastructure;
 /// <summary>One Azurite blob emulator for the whole test run (event photos, #403), on the same image as compose.yaml.</summary>
 public sealed class AzuriteFixture : IAsyncLifetime
 {
-    private readonly AzuriteContainer _container = new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:3.37.0")
+    private readonly AzuriteContainer _container = new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:3.38.0")
         .WithCommand("--skipApiVersionCheck", "--loose")
         .Build();
 
