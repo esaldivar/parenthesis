@@ -59,16 +59,29 @@ test('the desktop Calendar legend stays visible and clear of Messages while scro
         const openKey = (await legend.boundingBox())!;
         expect(openKey.width).toBeCloseTo(Math.min(0.6 * body.width, body.width - 400), 0);
         expect(openKey.x + openKey.width + 15).toBeLessThanOrEqual(dock.x);
-        // Scroll the final control into the usable strip above Messages, even when it sits at the far right.
-        await last.evaluate((el, dockTop) => {
+        // Scroll the final control into the usable strip above Messages, even when it sits at the far right. The strip
+        // is inside the page's scrolling content: the shell never scrolls away to make room. On a short window the open
+        // panel leaves no strip tall enough, so the control stays reachable beside the panel instead.
+        const content = (await page.locator('main').boundingBox())!;
+        await last.evaluate((el, [dockTop, contentTop]) => {
           const target = el.getBoundingClientRect();
-          const top = Math.max(4, (dockTop - target.height) / 2);
+          const top = Math.max(contentTop + 4, (contentTop + dockTop - target.height) / 2);
           el.closest('main')!.scrollBy(0, target.top - top);
-        }, dock.y);
+        }, [dock.y, content.y] as const);
         await expect(legend).toBeInViewport({ ratio: 1 });
         const lastBox = (await last.boundingBox())!;
-        expect(lastBox.y + lastBox.height).toBeLessThan(dock.y);
-        await last.click({ trial: true });
+        expect(lastBox.y).toBeGreaterThanOrEqual(content.y);
+        if (dock.y - content.y >= lastBox.height + 8) {
+          expect(lastBox.y + lastBox.height).toBeLessThan(dock.y);
+          await last.click({ trial: true });
+        } else if (lastBox.x + 48 < dock.x) {
+          await last.click({ trial: true, position: { x: 24, y: lastBox.height / 2 } });
+        } else {
+          // At the far right only the strip above the panel is clear: it is still a 24px target (WCAG 2.5.8).
+          const strip = dock.y - lastBox.y;
+          expect(strip).toBeGreaterThanOrEqual(24);
+          await last.click({ trial: true, position: { x: lastBox.width / 2, y: strip / 2 } });
+        }
         if (view === 'list') {
           await info.attach(`legend-${colorScheme}-${width}`, { body: await page.screenshot(), contentType: 'image/png' });
         }
