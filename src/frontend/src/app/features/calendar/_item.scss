@@ -42,3 +42,33 @@
     outline-offset: 2px;
   }
 }
+
+// A Quiet Planner card (#729, Figma 2158:642/842 and dark versions): List rows and the phone day agendas. The whole
+// card takes its type's colour (56% on phones, `$soft`) with nothing on its edge (owner decision, November 23, 2026),
+// and its text keeps the theme's own colours. Set `--tint` and `--marker` on the card (see `cardTint` in item-card).
+@mixin qp-card($item, $soft: false) {
+  #{$item} {
+    position: relative;
+    display: block;
+    inline-size: 100%;
+    min-block-size: var(--target-min);
+    border: 1px solid transparent;
+    border-radius: 7px;
+    @if $soft {
+      background: color-mix(in srgb, var(--tint, var(--color-surface-soft)) 56%, transparent);
+    } @else {
+      background: var(--tint, var(--color-surface-soft));
+    }
+    color: var(--color-text);
+  }
+  // A proposal keeps a dashed edge besides its "Proposed" label, so it never reads as confirmed.
+  #{$item}[data-status='pending'] {
+    border: 1.5px dashed color-mix(in srgb, var(--marker, currentColor) 60%, transparent);
+  }
+  // Hidden by this parent's filters (#190): faint, dashed and labelled, never with private details.
+  #{$item}[data-concealed='true'] {
+    background: transparent;
+    border: 1px dashed var(--color-outline);
+    color: var(--color-text-secondary);
+  }
+}

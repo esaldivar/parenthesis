@@ -41,6 +41,14 @@ export function cardStatus(item: CalendarItem, locale: AppLocale = 'en'): string
   return statusWord(item, locale) ?? (item.kind === 'task' && item.done ? translate('feature.done', locale) : null);
 }
 
+/** The palette a Quiet Planner card takes its tint and marker from (#729). */
+export const cardPalette = (item: CalendarItem): string => (item.concealed ? 'concealed' : (item.palette ?? item.kind));
+/** `--tint` and `--marker` for a Quiet Planner card's style (#729): its type's fill and its type's own colour. */
+export const cardTint = (item: CalendarItem): Record<string, string> => {
+  const key = cardPalette(item);
+  return { '--tint': `var(--color-calendar-${key}-bg)`, '--marker': `var(--color-calendar-${key}-fg)` };
+};
+
 const AVATAR_SIZES: Record<CardLayout, number> = { list: 24, agenda: 26, week: 16, span: 22, row: 16 };
 /** Photos a list or agenda card shows before "+N": enough for both parents and two children. */
 const MAX_PEOPLE = 4;
@@ -95,11 +103,24 @@ const STACK_BELOW = 160;
       min-inline-size: 0;
     }
     :host([data-layout='list']) {
-      grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+      /* The title starts 120px into the card, as in the frames (15px padding, 93px time, 12px gap). */
+      grid-template-columns: 5.8125rem minmax(0, 1fr) auto;
       gap: var(--space-3);
     }
-    .time {
+    :host([data-layout='list']) .line {
+      font-size: 0.9375rem;
+    }
+    :host([data-layout='agenda']) .line {
       font-size: 0.875rem;
+    }
+    :host([data-layout='list']) .sub,
+    :host([data-layout='agenda']) .sub {
+      font-size: 0.75rem;
+    }
+    .time {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
       overflow-wrap: anywhere;
     }
     .text {

@@ -322,12 +322,17 @@
   padding: 0;
   list-style: none;
 }
+@include qp-card('.agenda__item', $soft: true);
 .agenda__item {
-  display: block;
-  inline-size: 100%;
-  min-block-size: var(--target-min);
-  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
-  box-shadow: inset 4px 0 0 0 currentColor;
+  min-block-size: 48px;
+  padding: 4px 8px 4px 12px;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.agenda__item:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 .agenda__empty {
   margin: 0;

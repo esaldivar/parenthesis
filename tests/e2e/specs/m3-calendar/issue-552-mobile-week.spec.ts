@@ -68,7 +68,10 @@ test('Week shows seven aligned days, one multi-day span and individually reachab
       await expect(days.nth(1)).toHaveAttribute('aria-pressed', 'true');
       expect((await strip.boundingBox())!.y).toBe(stripY);
       await expect(agenda.getByRole('button', { name: /School holiday/ })).toBeVisible();
-      await expect(agenda.locator('.item[data-kind="unavailable"]')).toHaveCSS('background-image', /repeating-linear-gradient/);
+      // Unavailable time is a plain grey card in the agenda, as in the approved frames (#729).
+      const away = agenda.locator('[data-kind="unavailable"]');
+      await expect(away).toBeVisible();
+      await expect(away).toHaveCSS('background-image', 'none');
       await activate(days.nth(2), info);
       await expect(piano).toBeVisible();
       await evidence(page, info, `week-${theme}`);

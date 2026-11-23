@@ -150,9 +150,9 @@
           <li>
             <button
               type="button"
-              class="item agenda__item"
+              class="agenda__item"
               [attr.data-kind]="item.kind"
-              [appCalendarPalette]="item.palette ?? item.kind"
+              [style]="tint(item)"
               [attr.data-category]="item.category"
               [attr.data-status]="item.status"
               (click)="selected.emit(item)"

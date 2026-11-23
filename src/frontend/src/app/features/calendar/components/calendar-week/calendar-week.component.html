@@ -152,7 +152,7 @@
         <ul class="agenda__items">
           @for (item of day.allDay; track item.id) {
             <li>
-              <button type="button" class="item agenda__item" [attr.data-kind]="item.kind" [appCalendarPalette]="item.palette ?? item.kind" [attr.data-category]="item.category" [attr.data-status]="item.status" (click)="selected.emit(item)">
+              <button type="button" class="agenda__item" [attr.data-kind]="item.kind" [style]="tint(item)" [attr.data-category]="item.category" [attr.data-status]="item.status" (click)="selected.emit(item)">
                 <app-item-card [item]="item" layout="agenda" />
               </button>
             </li>
@@ -165,7 +165,7 @@
               <ul class="agenda__items" [attr.aria-label]="group.heading">
                 @for (item of group.items; track item.id) {
                   <li>
-                    <button type="button" class="item agenda__item" [attr.data-kind]="item.kind" [appCalendarPalette]="item.palette ?? item.kind" [attr.data-category]="item.category" [attr.data-status]="item.status" (click)="selected.emit(item)">
+                    <button type="button" class="agenda__item" [attr.data-kind]="item.kind" [style]="tint(item)" [attr.data-category]="item.category" [attr.data-status]="item.status" (click)="selected.emit(item)">
                       <app-item-card [item]="item" layout="agenda" />
                     </button>
                   </li>

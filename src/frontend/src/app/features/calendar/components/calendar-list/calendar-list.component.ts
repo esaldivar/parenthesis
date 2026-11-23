@@ -1,13 +1,12 @@
 import { inject } from '@angular/core';
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe } from '../../../../core/i18n/translations';
-import { CalendarPalette } from '../../calendar-palette';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PlainDate } from '../../../../core/dates/plain-date';
 import { addDays, dayLong, daysBetween, monthDay, weekdayShort } from '../../../../core/dates/dates';
 import { NarrowHost } from '../../narrow';
 import { CalendarItem, byStart, onDate } from '../../calendar-items';
-import { ItemCard } from '../item-card/item-card.component';
+import { ItemCard, cardPalette, cardTint } from '../item-card/item-card.component';
 
 /**
  * The List view (#729, Quiet Planner): every day in the range that has something on it, under its date, each item a card
@@ -16,7 +15,7 @@ import { ItemCard } from '../item-card/item-card.component';
 @Component({
   selector: 'app-calendar-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, CalendarPalette, ItemCard],
+  imports: [TranslatePipe, ItemCard],
   template: `
     <ol class="days">
       @for (day of days(); track day.date) {
@@ -33,9 +32,12 @@ import { ItemCard } from '../item-card/item-card.component';
             @for (item of day.items; track item.id) {
               <li>
                 <button
+                  [class.item--soft]="narrow()"
                   type="button"
                   class="item"
-                  [attr.data-kind]="item.kind" [appCalendarPalette]="item.concealed ? 'concealed' : (item.palette ?? item.kind)"
+                  [attr.data-kind]="item.kind"
+                  [attr.data-palette]="palette(item)"
+                  [style]="tint(item)"
                   [attr.data-category]="item.category"
                   [attr.data-status]="item.status"
                   [attr.data-concealed]="item.concealed ? 'true' : null"
@@ -60,6 +62,8 @@ export class CalendarList extends NarrowHost {
   readonly today = input.required<PlainDate>();
   readonly items = input.required<readonly CalendarItem[]>();
   readonly selected = output<CalendarItem>();
+  protected readonly palette = cardPalette;
+  protected readonly tint = cardTint;
 
   protected readonly days = computed(() =>
     Array.from({ length: daysBetween(this.from(), this.to()) }, (_, i) => addDays(this.from(), i))

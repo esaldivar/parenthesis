@@ -21,7 +21,7 @@ import { dayLong, dayOfMonth, hourLabel, monthDay, timeLabel, weekDays, weekdayS
 import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRows, pickText } from '../../slot';
 import { CalendarItem, byStart, onDate } from '../../calendar-items';
 import { itemSummary } from '../item-text/item-text.component';
-import { ItemCard } from '../item-card/item-card.component';
+import { ItemCard, cardTint } from '../item-card/item-card.component';
 import { NarrowHost } from '../../narrow';
 import { minutesOfDay } from '../../time';
 
@@ -189,6 +189,7 @@ export class CalendarWeek extends NarrowHost {
     }),
   );
 
+  protected readonly tint = cardTint;
   protected readonly markerLabel = (item: CalendarItem) => itemSummary(item, this.locale.locale());
 
   protected readonly hourMarks = computed(() =>

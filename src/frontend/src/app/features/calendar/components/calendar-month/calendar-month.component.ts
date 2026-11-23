@@ -10,7 +10,7 @@ import { CalendarItem, byStart, onDate } from '../../calendar-items';
 import { MonthBar, layOutWeek } from '../../month-layout';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { Icon } from '../../../../shared/components/icon/icon';
-import { ItemCard, displayTitle } from '../item-card/item-card.component';
+import { ItemCard, cardTint, displayTitle } from '../item-card/item-card.component';
 import { itemSummary } from '../item-text/item-text.component';
 import { NarrowHost } from '../../narrow';
 
@@ -159,6 +159,7 @@ export class CalendarMonth extends NarrowHost {
   /** A confirmed single-day item reads as a line with a dot; proposals and longer items are tinted bars. */
   protected readonly isLine = (bar: MonthBar) =>
     bar.row === 'items' && bar.item.status !== 'pending' && bar.item.status !== 'change-pending' && bar.start + 1 === bar.end;
+  protected readonly tint = cardTint;
   protected readonly concealedLabel = (item: CalendarItem) => itemSummary(item, this.locale.locale());
   protected readonly displayTitle = (item: CalendarItem) => displayTitle(item, this.locale.locale());
   /** A bar's name starts with what it shows when that differs from its title ("Sam · Unavailable"; WCAG 2.5.3). */
