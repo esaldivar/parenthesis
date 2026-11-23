@@ -83,6 +83,11 @@ that points back here.
   art as a faint background. Every action, the PDF report and the attention dot are unchanged.
   - [ ] Owner check on Development: overview, an agreed fund, a proposal from the co-parent, a Child Support record
     and the empty state, on phone and desktop, in both themes and in English and Spanish.
+- [ ] **Desktop shell fills the laptop window (#727, M5).** Owner check on Development: on a laptop window in both
+  themes, Home, Records and Calendar keep the sidebar and content to the window's bottom with no empty strip.
+- [ ] **Short desktop window with Messages open (#727 follow-up).** At 1024×600 the open Messages panel covers all but
+  about 28px of the content height, so a far-right late event in the Calendar week is reachable only through a 24px
+  strip above the panel. Decide whether the open panel should be shorter on short windows.
 - [ ] **Messages background leaves (#724, M5).** Faint theme leaves behind the Messages conversation and the phone
   Transcripts screen (the compact chat stays plain). Owner check on Development in both themes on phone and desktop.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).

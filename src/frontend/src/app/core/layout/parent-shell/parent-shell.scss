@@ -325,6 +325,9 @@ a.is-active {
   }
 
   main {
+    // The containing block for absolutely positioned content (screen-reader-only labels among it), so it scrolls
+    // inside the page rather than lengthening the document and lifting the whole shell off the window's bottom.
+    position: relative;
     min-height: 0;
     overflow: auto;
     /* Room at the bottom so the chat bar never covers the end of a page. */
