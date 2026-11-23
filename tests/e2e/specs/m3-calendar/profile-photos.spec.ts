@@ -52,6 +52,9 @@ async function pickPhoto(page: Page, editor: Locator, file: Buffer, name: string
 
 const monday = nextMonday();
 const week = monday.toISOString().slice(0, 10);
+// "Dad time" is on the Tuesday. The List view shows the month of the date it opens on, so it opens on that Tuesday:
+// when next Monday is the last day of a month, the Tuesday is in the next month.
+const tuesday = addHours(monday, 24).toISOString().slice(0, 10);
 
 test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
   for (const theme of ['light', 'dark'] as const) {
@@ -116,7 +119,7 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
         await expect(page.locator('.agenda .pt', { hasText: 'Dad time' }).first().locator('app-avatar[title="Kai"] img')).toBeVisible();
         await evidence(page, info, `${theme}-profile-photos-calendar`);
 
-        await page.goto(`/calendar?date=${week}`);
+        await page.goto(`/calendar?date=${tuesday}`);
         const slot = page.locator('app-calendar-week .grid').getByRole('button', { name: /^Dad time/ });
         const attendee = slot.locator('.week-people app-avatar[title="Kai"]');
         await expect(slot.locator('.week-people app-avatar[data-kind="parent"] img')).toBeVisible();

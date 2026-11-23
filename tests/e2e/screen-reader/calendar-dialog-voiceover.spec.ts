@@ -13,7 +13,8 @@ test('VoiceOver opens an event, traps dialog focus, cancels confirmation and res
     },
   ));
   expect(event.status).toBe('Confirmed');
-  await page.goto(`/calendar?date=${isoDate(monday)}&view=list`);
+  // The List view shows the month of its date; open it on the event's own day, which can be next month's first.
+  await page.goto(`/calendar?date=${isoDate(addHours(monday, 24))}&view=list`);
   const opener = page.locator('app-calendar-list').getByRole('button', { name: new RegExp(title) });
   await expect(opener).toBeVisible();
   await page.bringToFront();
