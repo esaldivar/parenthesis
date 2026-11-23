@@ -220,7 +220,7 @@ describe('event photos (#403)', () => {
       view({ uploads: { ...view().uploads, used: 0, remaining: 10 } }),
     );
     expect(text(el)).toContain(
-      'No photos yet. Add up to 10 of your own, 5 at a time. Only you see them unless you share them.',
+      'No photos yet. Add up to 10 of your own, 5 at a time. Only you can see them unless you share them.',
     );
 
     const raw = new File(['x'], 'IMG_2043.dng', { type: 'image/x-adobe-dng' });

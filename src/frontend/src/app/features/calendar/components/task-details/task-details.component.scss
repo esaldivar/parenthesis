@@ -1,9 +1,8 @@
+@use './clipboard-celebration';
+
 // Task details (#176): the checklist, Mark done, and a short celebration that never covers or blocks a control.
 .status[data-done='true'] {
   background: var(--color-status-confirmed-bg);
-}
-.status:not([data-done]) {
-  background: var(--color-surface);
 }
 .notice {
   margin: 0;
@@ -30,9 +29,31 @@
   }
 }
 progress {
+  appearance: none;
   width: 100%;
-  height: 8px;
+  height: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
   accent-color: var(--color-action);
+
+  &::-webkit-progress-bar {
+    border-radius: inherit;
+    background: var(--color-surface-soft);
+  }
+  &::-webkit-progress-value {
+    border-radius: inherit;
+    background: var(--color-action);
+  }
+  &::-moz-progress-bar {
+    border-radius: inherit;
+    background: var(--color-action);
+  }
+}
+@media (forced-colors: active) {
+  progress {
+    appearance: auto;
+  }
 }
 .checklist ul {
   list-style: none;
@@ -74,7 +95,7 @@ progress {
 }
 
 // Confetti: decorative, above the panel's top edge, never catching a click. Reduced motion never starts it.
-.confetti {
+.confetti:not(.clipboard-celebration) {
   position: absolute;
   inset: 0 0 auto;
   height: 0;

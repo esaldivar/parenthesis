@@ -35,12 +35,13 @@
   align-items: start;
 }
 .panel__icon {
+  --calendar-palette-fill: transparent;
   display: inline-grid;
   place-items: center;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--color-surface-soft);
+  background: transparent;
   // On a panel in the same category colour, a ring keeps the circle visible.
   box-shadow: inset 0 0 0 2px currentColor;
 }
@@ -56,8 +57,7 @@
   margin: 0;
   color: var(--color-text-secondary);
 }
-// On a panel already in the category colour the label keeps only its text colour; its own fill would cover the
-// event's artwork as a band.
+// The panel provides the category background.
 .panel[data-tint] .panel__type {
   --calendar-palette-fill: transparent;
 }
@@ -77,6 +77,27 @@
 }
 .status[data-status='declined'] {
   background: var(--color-status-rejected-bg);
+}
+.status[data-status='confirmed'] {
+  position: relative;
+  margin-block: 3px;
+  padding: 1px 9px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  transform: rotate(-5deg);
+
+  &::before {
+    position: absolute;
+    inset: 0;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 28' preserveAspectRatio='none'%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' d='M4 18 3 7Q3 2 8 2L20 1.7 24 2.2 29 1.8M31 2 56 1.5 68 2 84 1.6 88 2.2 110 1.5Q117 1.5 117 7L117.5 12M117 14 117.5 21Q117 26 111 26L98 26.1 92 25.4 75 26.3M71 25.7 62 26.3 43 25.8 28 26.4 9 26Q3 26 3 21L3.5 19'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+    pointer-events: none;
+    content: '';
+  }
 }
 .explain {
   margin: 0;
@@ -175,14 +196,6 @@ button[mat-button] {
 .panel[data-tint='unavailable'] [mat-stroked-button] {
   --mat-button-outlined-outline-color: var(--color-text-secondary);
 }
-
-// On a tinted panel the artwork is fainter, so text over its strokes keeps AA contrast (#431).
-.panel[data-tint] app-event-decoration {
-  --event-art-opacity: var(--event-art-tinted-opacity, 0.06);
-}
-
-// Decoration never receives input or changes the reading/focus order.
-.panel > :not(app-event-decoration) { position: relative; z-index: 1; }
 
 // Slides in from the right after a short pause while the calendar fades behind it (#431). Without motion it just
 // appears.
