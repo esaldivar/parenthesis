@@ -50,18 +50,26 @@ for (const theme of ['light', 'dark'] as const) {
 
     // Month: a parenting-time row per week, continuous; proposals labelled; a busy day counts what doesn't fit.
     await open(page, 'month');
-    const momBar = page.locator('app-calendar-month').getByRole('button', { name: /^With Mom/ }).and(page.locator('.bar--parenting'));
+    const momBar = page.locator('app-calendar-month').getByRole('button', { name: /^(Mom, )?With Mom/ }).and(page.locator('.bar--parenting'));
     await expect(momBar.first()).toBeVisible();
     expect(await momBar.first().evaluate(el => getComputedStyle(el).gridRowStart)).toBe('2');
     if (phone) {
       // Phones: names only on the bars, and the chosen day's agenda lists everyone with their photos.
       await expect(momBar.first().locator('.bar__title')).toHaveText('Mom');
+      // The bar's name starts with what it shows (WCAG 2.5.3, #733).
+      await expect(page.locator('app-calendar-month .bar--parenting').first()).toHaveAccessibleName(/^Mom, /);
       await expect(key).toHaveCount(0);
       await expect(art).toBeHidden();
       const agenda = page.locator('app-calendar-month .agenda');
       await expect(agenda.getByRole('heading', { level: 3 })).toContainText('Tuesday');
       await expect(agenda.getByText(/1 proposed/)).toBeVisible();
       await expect(agenda.getByRole('button', { name: /^Dinner/ }).locator('app-avatar')).toHaveCount(4);
+      // A neighbouring month's day in the grid can be chosen too (#733).
+      const outside = page.locator('app-calendar-month .day--outside .day__number').last();
+      const outsideName = /^[^.,]+, [^.,]+/.exec((await outside.getAttribute('aria-label')) ?? '')?.[0] ?? '';
+      await activate(outside, info);
+      await expect(outside).toHaveAttribute('aria-pressed', 'true');
+      await expect(agenda.getByRole('heading', { level: 3 })).toHaveText(outsideName);
     } else {
       await expect(momBar.first().locator('app-avatar')).not.toHaveCount(0);
       await expect(page.locator('app-calendar-month .bar[data-status="pending"]', { hasText: 'Proposed · Dinner' })).toBeVisible();
@@ -109,7 +117,8 @@ for (const theme of ['light', 'dark'] as const) {
       // Reduced motion: the day changes at once.
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await activate(days.nth(5), info);
-      expect(await agenda.locator('.agenda__day').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+      await expect(agenda.getByRole('heading', { level: 3 })).toContainText('Friday');
+      await expect.poll(() => agenda.locator('.agenda__day').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
       await activate(days.nth(2), info);
     } else {
