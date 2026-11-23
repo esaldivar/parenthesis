@@ -23,7 +23,7 @@ export { MESSAGE_MAX_LENGTH } from '../../components/chat-conversation/chat-conv
     <aside class="transcripts" aria-label="{{ 'feature.transcripts' | tr }}">
       <app-chat-transcripts [level]="2" />
     </aside>
-    <app-chat-conversation class="conversation" [level]="1">
+    <app-chat-conversation class="conversation leaves" [level]="1">
       <a chatLead class="round" routerLink="/" aria-label="{{ 'feature.back.to.home' | tr }}"><app-icon name="chevron-left" [size]="26" /></a>
       <a chatActions class="round transcripts-link" routerLink="/messages/transcripts" aria-label="{{ 'feature.transcripts' | tr }}">
         <app-icon name="note" [size]="24" />

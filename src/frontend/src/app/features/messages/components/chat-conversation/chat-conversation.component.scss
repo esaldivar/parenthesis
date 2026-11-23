@@ -13,6 +13,50 @@ p {
   margin: 0;
 }
 
+/*
+ * #724: on the Messages page (the host carries .leaves), faint theme leaves sit behind the conversation: one sprig top
+ * right and one mirrored bottom left. They're placed in the message log's grid row, so they stay still while messages
+ * scroll over them, and they paint behind the header, log and composer. Decorative only: no pointer events, and the
+ * compact chat doesn't use them.
+ */
+:host(.leaves) {
+  isolation: isolate;
+}
+
+:host(.leaves)::before,
+:host(.leaves)::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  grid-row: 2;
+  inline-size: min(24rem, 55%);
+  aspect-ratio: 880 / 799;
+  background: url('/art/from-your-kids/photos/background-leaves.webp') center / contain no-repeat;
+  opacity: var(--leaves-opacity, 0.11);
+  pointer-events: none;
+}
+
+:host(.leaves)::before {
+  inset-block-start: -2rem;
+  inset-inline-end: -4rem;
+}
+
+:host(.leaves)::after {
+  inset-block-end: -3rem;
+  inset-inline-start: -5rem;
+  transform: scaleX(-1);
+}
+
+:host-context(html[data-theme='dark']) {
+  --leaves-opacity: 0.08;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host-context(html:not([data-theme])) {
+    --leaves-opacity: 0.08;
+  }
+}
+
 .muted {
   color: var(--color-text-secondary);
 }
