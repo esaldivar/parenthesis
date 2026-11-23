@@ -91,6 +91,11 @@ export function weekLabel(weekStart: PlainDate, locale = LOCALE): string {
   );
 }
 
+/** "Oct 11 – 17": a phone's week heading (#729). */
+export function weekLabelShort(weekStart: PlainDate, locale = LOCALE): string {
+  return plainSpaces(utcFormat({ month: 'short', day: 'numeric' }, locale).formatRange(toUtc(weekStart), toUtc(addDays(weekStart, 6))));
+}
+
 /** "October 11 – 17, 2026" (the approved toolbar style). */
 export function weekLabelLong(weekStart: PlainDate, locale = LOCALE): string {
   return plainSpaces(

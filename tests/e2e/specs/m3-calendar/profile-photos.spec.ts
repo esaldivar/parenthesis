@@ -120,13 +120,12 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
         await evidence(page, info, `${theme}-profile-photos-calendar`);
 
         await page.goto(`/calendar?date=${tuesday}`);
-        const slot = page.locator('app-calendar-week .grid').getByRole('button', { name: /^Dad time/ });
-        const attendee = slot.locator('.week-people app-avatar[title="Kai"]');
-        await expect(slot.locator('.week-people app-avatar[data-kind="parent"] img')).toBeVisible();
-        if (!phone) {
-          await expect(attendee.locator('img')).toBeVisible();
-          expect(await shownPhoto(attendee)).toBe(dadsKai);
-        }
+        // Desktop: the time grid. Phones: the chosen day's agenda, which shows every photo too (#729).
+        const slot = page.locator(phone ? 'app-calendar-week .agenda' : 'app-calendar-week .grid').getByRole('button', { name: /^Dad time/ });
+        const attendee = slot.locator('.people app-avatar[title="Kai"]');
+        await expect(slot.locator('.people app-avatar[data-kind="parent"] img')).toBeVisible();
+        await expect(attendee.locator('img')).toBeVisible();
+        expect(await shownPhoto(attendee)).toBe(dadsKai);
         await page.getByRole('button', { name: 'List', exact: true }).click();
         const listed = page.locator('app-calendar-list').getByRole('button', { name: /^Dad time/ });
         await expect(listed.locator('app-avatar[title="Kai"] img')).toBeVisible();
