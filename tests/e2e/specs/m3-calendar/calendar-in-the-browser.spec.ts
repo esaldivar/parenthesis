@@ -475,6 +475,16 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
             await expect(page.locator('input[formcontrolname="endTime"]')).toHaveValue('10:00');
             return;
           }
+          if (where === 'Calendar') await expect(page.locator('app-calendar-week .grid, app-calendar-week .strip').first()).toBeVisible();
+          if (where === 'Calendar' && await page.locator('app-calendar-week .strip').isVisible()) {
+            // The phone Calendar week is a day agenda (#729): it adds on the chosen day, which opens on Tuesday here.
+            await page.locator('app-calendar-week .agenda').getByRole('button', { name: /^Add on Tuesday/ }).tap();
+            await expect(page).toHaveURL(new RegExp(`/calendar/new\\?date=${tuesday}$`));
+            await page.getByRole('button', { name: /Activity/ }).click();
+            await expect(page.locator('input[formcontrolname="startTime"]')).toHaveValue('09:00');
+            await expect(page.locator('input[formcontrolname="endTime"]')).toHaveValue('10:00');
+            return;
+          }
           await tapFivePm(page.getByRole('button', { name: /^Add on Tuesday/ }));
           // The first tap highlights the hour (#237); tapping the highlight opens Add there.
           const highlight = page.getByRole('button', { name: /^Add on Tuesday, .* at 5:00 PM$/ });
@@ -551,7 +561,7 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       // One bar on Friday's row, continued on the next row (when the month grid shows it: whichever month the
       // dates fall in, the first segment always says it continues).
       const bars = page.locator('app-calendar-month .bar', { hasText: 'Robotics camp' });
-      await expect(bars.first()).toHaveAttribute('aria-label', /Continues into next week/);
+      await expect(bars.first()).toHaveAccessibleName(/Continues into next week/);
       expect(await bars.count()).toBeLessThanOrEqual(2);
       await expect(page.locator('app-calendar-month .dot')).toHaveCount(0);
       await bars.last().click();

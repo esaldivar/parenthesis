@@ -1,3 +1,4 @@
+import { PageArt } from '../page-art';
 import { ChangeDetectionStrategy, Component, ElementRef, Type, computed, effect, inject, input, isDevMode, untracked, viewChild } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -74,6 +75,7 @@ export class ParentShell {
   protected readonly sample = computed(
     () => isDevMode() && new URLSearchParams(this.url().split('?')[1] ?? '').get('sample') === '1',
   );
+  protected readonly pageArt = inject(PageArt);
   protected readonly notifications = inject(NotificationsStore);
 
   /** The parents' conversation: its connection lives as long as the shell, for the unread dot (#125). */

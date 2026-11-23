@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { LocaleService } from '../../../../core/i18n/locale.service';
-import { TranslatePipe } from '../../../../core/i18n/translations';
+import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { CalendarPalette } from '../../calendar-palette';
 import {
   ChangeDetectionStrategy,
@@ -12,21 +12,28 @@ import {
   effect,
   input,
   output,
+  signal,
   untracked,
   viewChild,
 } from '@angular/core';
 import { PlainDate } from '../../../../core/dates/plain-date';
-import { dayLong, dayOfMonth, hourLabel, monthDay, weekDays, weekdayShort } from '../../../../core/dates/dates';
+import { dayLong, dayOfMonth, hourLabel, monthDay, timeLabel, weekDays, weekdayShort } from '../../../../core/dates/dates';
 import { AddAt, SlotPick, addFromColumn, clearsPick, dayInRow, pickLabel, pickRows, pickText } from '../../slot';
 import { CalendarItem, byStart, onDate } from '../../calendar-items';
-import { ItemText, itemSummary } from '../item-text/item-text.component';
+import { itemSummary } from '../item-text/item-text.component';
+import { ItemCard } from '../item-card/item-card.component';
+import { NarrowHost } from '../../narrow';
 import { minutesOfDay } from '../../time';
 
 const SLOT = 30;
 const MIN_SLOTS = 2;
-const DAY_MINUTES = 24 * 60;
-// Leave room for a title, compact attendee photos and status in short mobile events.
-const MOBILE_MIN_MINUTES = 32;
+/** The desktop grid's half-hour height in pixels: one full hour row is 44px (#729). */
+const HALF_HOUR_PX = 22;
+/** A group of events at the same time: its heading, then each event on its own readable row (#729). */
+const GROUP_HEAD_PX = 16;
+const GROUP_ROW_PX = 24;
+/** The grid opens on a complete hour row: 8 AM, or the week's earliest event if sooner. */
+const OPENING_HOUR = 8;
 
 interface Span {
   readonly item: CalendarItem;
@@ -48,54 +55,28 @@ function lanes<T extends { start: number; end: number }>(entries: readonly T[]):
   });
 }
 
-/** Give each cluster of overlapping events its own set of lanes. Later events can use the full column again. */
-function narrowPlacements(entries: readonly { item: CalendarItem; minute: number; endMinute: number }[]) {
-  const placed = lanes(entries.map(({ item, minute, endMinute }) => ({
-    item,
-    start: minute,
-    end: Math.min(DAY_MINUTES, Math.max(minute + MOBILE_MIN_MINUTES, endMinute)),
-  })));
-  const positions = new Map<CalendarItem, { top: number; height: number; left: number; width: number }>();
-
-  for (let first = 0; first < placed.length;) {
-    let last = first + 1;
-    let end = placed[first].end;
-    let count = placed[first].lane;
-    while (last < placed.length && placed[last].start < end) {
-      end = Math.max(end, placed[last].end);
-      count = Math.max(count, placed[last].lane);
-      last++;
-    }
-    for (const entry of placed.slice(first, last)) {
-      positions.set(entry.item, {
-        top: entry.start / DAY_MINUTES * 100,
-        height: (entry.end - entry.start) / DAY_MINUTES * 100,
-        left: (entry.lane - 1) / count * 100,
-        width: 100 / count,
-      });
-    }
-    first = last;
-  }
-  return positions;
-}
-
 /**
- * The Week view (the default). All-day and multi-day items sit in the all-day row across their own dates only;
- * timed items sit in their slots, side by side when they overlap. The same grid adapts to narrow screens.
- * Every item is a button that opens its details.
+ * The Week view (the default; Quiet Planner #729). Desktop: all-day and multi-day items, parenting time among them,
+ * sit in the all-day row across their own dates only; timed items sit in their slots, side by side when they overlap,
+ * and events starting at the same time are stacked under that time so every title stays readable.
+ *
+ * Phones: the seven days stay fixed in a strip and the chosen day's agenda slides in under it (later days from the
+ * right, earlier ones from the left; no movement with reduced motion). Every item is a button that opens its details.
  */
 @Component({
   selector: 'app-calendar-week',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, CalendarPalette, ItemText],
+  imports: [TranslatePipe, CalendarPalette, ItemCard],
   templateUrl: './calendar-week.component.html',
   styleUrl: './calendar-week.component.scss',
 })
-export class CalendarWeek {
+export class CalendarWeek extends NarrowHost {
   private readonly locale = inject(LocaleService);
   readonly weekStart = input.required<PlainDate>();
   readonly today = input.required<PlainDate>();
   readonly items = input.required<readonly CalendarItem[]>();
+  /** The date the page is showing: a phone opens its agenda there when it's in this week (#729). */
+  readonly anchor = input<PlainDate | null>(null);
   readonly selected = output<CalendarItem>();
   /** A tap on empty space (#212): add on that day, at the half-hour tapped in the time grid. */
   readonly add = output<AddAt>();
@@ -146,7 +127,11 @@ export class CalendarWeek {
       longLabel: dayLong(date, this.locale.locale()),
       isToday: date === this.today(),
       items: onDate(this.items(), date).sort(byStart),
-    })),
+    })).map((day) => {
+      const count = day.items.filter((i) => !i.concealed).length;
+      const key = count === 0 ? 'calendar.qp.showDay' : count === 1 ? 'calendar.qp.showDayOne' : 'calendar.qp.showDayMany';
+      return { ...day, count, chooseLabel: translate(key, this.locale.locale(), { date: day.longLabel, count }) };
+    }),
   );
 
   /** All-day and multi-day items, clipped to this week, in lanes. Columns are 1–7. */
@@ -163,28 +148,42 @@ export class CalendarWeek {
     return lanes(entries);
   });
 
-  /** Timed items per day, using the desktop grid and exact minute positions on narrow screens. */
+  /**
+   * Timed items per day on the desktop grid. Two or more starting at the same minute are one group (#729): their time,
+   * then each on its own row, tall enough to read. Hidden unavailable time stays an edge marker.
+   */
   protected readonly timed = computed(() =>
     this.days().map((day) => {
       const entries = day.items
         .filter((i) => !i.spansDays)
         .map((item) => {
           const minute = minutesOfDay(item.start);
-          const endMinute = item.end.slice(0, 10) > day.date ? DAY_MINUTES : minutesOfDay(item.end);
           const row = Math.floor(minute / SLOT) + 1;
           const span = Math.max(MIN_SLOTS, Math.ceil((minutesOfDay(item.end) - minute || 60) / SLOT));
-          return { item, start: row, end: row + span, row, span, minute, endMinute };
+          return { item, start: row, end: row + span, row, span, minute };
         });
-      // Desktop keeps hidden unavailable time as an edge marker. On narrow screens give it its own
-      // space in an overlap so it can't cover an already narrow event button.
-      const placed = lanes(entries.filter((e) => !e.item.concealed));
-      const markers = entries.filter((e) => e.item.concealed);
-      const narrow = narrowPlacements(entries);
+      const shown = entries.filter((e) => !e.item.concealed);
+      const byMinute = new Map<number, typeof shown>();
+      for (const entry of shown) byMinute.set(entry.minute, [...(byMinute.get(entry.minute) ?? []), entry]);
+      const blocks = [...byMinute.values()].flatMap((same) => {
+        if (same.length < 2) return same.map((entry) => ({ ...entry, group: null as CalendarItem[] | null, heading: '' }));
+        const needed = Math.ceil((GROUP_HEAD_PX + same.length * GROUP_ROW_PX) / HALF_HOUR_PX);
+        const span = Math.max(needed, ...same.map((e) => e.span));
+        const time = timeLabel(same[0].item.start.slice(11), this.locale.locale() === 'en' ? 'en-US' : this.locale.locale());
+        return [{
+          ...same[0],
+          span,
+          end: same[0].row + span,
+          group: same.map((e) => e.item),
+          heading: translate('calendar.qp.sameTimeShort', this.locale.locale(), { time, count: same.length }),
+        }];
+      }).sort((a, b) => a.start - b.start);
+      const placed = lanes(blocks);
       return {
         date: day.date,
         label: day.longLabel,
-        placed: placed.map((entry) => ({ ...entry, narrow: narrow.get(entry.item)! })),
-        markers: markers.map((entry) => ({ ...entry, narrow: narrow.get(entry.item)! })),
+        placed,
+        markers: entries.filter((e) => e.item.concealed),
         lanes: Math.max(1, ...placed.map((p) => p.lane)),
       };
     }),
@@ -199,23 +198,79 @@ export class CalendarWeek {
     })),
   );
 
-  /** The earliest timed item this week, or 7 AM. */
+  /** The earliest timed item this week, or 8 AM (#729). */
   private readonly firstHour = computed(() =>
-    Math.min(7, ...this.items().filter((i) => !i.spansDays).map((i) => Math.floor(minutesOfDay(i.start) / 60))),
+    Math.min(OPENING_HOUR, ...this.items().filter((i) => !i.spansDays && !i.concealed).map((i) => Math.floor(minutesOfDay(i.start) / 60))),
   );
 
+  /** Phones (#729): the chosen day, and which way its agenda slides in. */
+  private readonly chosen = signal<PlainDate | null>(null);
+  protected readonly slide = signal<'next' | 'previous' | null>(null);
+  protected readonly selectedDay = computed(() => {
+    const dates = weekDays(this.weekStart());
+    const chosen = this.chosen();
+    if (chosen && dates.includes(chosen)) return chosen;
+    const anchor = this.anchor();
+    if (anchor && dates.includes(anchor)) return anchor;
+    return dates.includes(this.today()) ? this.today() : dates[0];
+  });
+
+  protected choose(date: PlainDate): void {
+    const current = this.selectedDay();
+    if (date === current) return;
+    this.slide.set(date > current ? 'next' : 'previous');
+    this.chosen.set(date);
+  }
+
+  /** The chosen day's agenda: all-day items first, then by time; events at the same time are grouped. */
+  protected readonly agenda = computed(() => {
+    const date = this.selectedDay();
+    const locale = this.locale.locale();
+    const day = this.days().find((d) => d.date === date)!;
+    const shown = day.items.filter((i) => !i.concealed);
+    const allDay = shown.filter((i) => i.spansDays);
+    const timed = shown.filter((i) => !i.spansDays);
+    const groups: { key: string; heading: string | null; items: CalendarItem[] }[] = [];
+    for (const item of timed) {
+      const last = groups.at(-1);
+      if (last && last.items[0].start === item.start) last.items.push(item);
+      else groups.push({ key: item.id, heading: null, items: [item] });
+    }
+    for (const group of groups) {
+      if (group.items.length > 1) {
+        const time = timeLabel(group.items[0].start.slice(11), locale === 'en' ? 'en-US' : locale);
+        group.heading = translate('calendar.qp.sameTime', locale, { time, count: group.items.length });
+      }
+    }
+    return {
+      date,
+      title: day.longLabel,
+      isToday: day.isToday,
+      allDay,
+      groups,
+      concealed: day.items.filter((i) => i.concealed),
+      empty: shown.length === 0,
+    };
+  });
+
   constructor() {
-    // Another week clears the highlight.
+    super();
+    // Another week clears the highlight and the chosen day.
     effect(() => {
       this.weekStart();
-      untracked(() => this.pick.clear());
+      untracked(() => {
+        this.pick.clear();
+        this.chosen.set(null);
+        this.slide.set(null);
+      });
     });
     afterRenderEffect(() => {
       const scroller = this.scroller()?.nativeElement;
       const hour = this.firstHour();
       this.weekStart();
       if (scroller) {
-        scroller.scrollTop = (hour / 24) * scroller.scrollHeight;
+        // Exactly on an hour line, so the grid opens on a complete time row (#729).
+        scroller.scrollTop = hour * 2 * HALF_HOUR_PX;
       }
     });
   }

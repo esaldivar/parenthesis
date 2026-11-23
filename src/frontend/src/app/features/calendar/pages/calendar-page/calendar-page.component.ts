@@ -1,6 +1,6 @@
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, TranslationKey, translate } from '../../../../core/i18n/translations';
-import { CalendarPalette } from '../../calendar-palette';
+import { parentPalette } from '../../calendar-palette';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,8 +28,9 @@ import { LoadingIndicator } from '../../../../shared/components/brand/loading-in
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { PlainDate } from '../../../../core/dates/plain-date';
-import { addDays, startOfWeek, todayIn, weekLabelLong } from '../../../../core/dates/dates';
+import { addDays, startOfWeek, todayIn, weekLabelLong, weekLabelShort } from '../../../../core/dates/dates';
 import { CalendarFilterPanel } from '../../components/calendar-filter-panel/calendar-filter-panel.component';
+import { PageArt } from '../../../../core/layout/page-art';
 import {
   ALL_FILTERS,
   CalendarFilters,
@@ -99,7 +100,7 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
 @Component({
   selector: 'app-calendar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, CalendarPalette,
+  imports: [TranslatePipe,
     MatButtonModule,
     RouterLink,
     EmptyState,
@@ -114,6 +115,8 @@ const previousMonth = (date: PlainDate): PlainDate => startOfMonth(addDays(start
     CalendarSearch,
     LoadingIndicator,
   ],
+  // Week and List fill the window on desktop so their key stays pinned under them (#729).
+  host: { '[class.fills]': "current() !== 'month'" },
   templateUrl: './calendar-page.component.html',
   styleUrl: './calendar-page.component.scss',
 })
@@ -180,6 +183,10 @@ export class CalendarPage {
   protected readonly heading = computed(() =>
     this.current() === 'week' ? weekLabelLong(startOfWeek(this.anchor()), this.locale.locale()) : monthLabel(this.anchor(), this.locale.locale()),
   );
+  /** Phones show the week as "Nov 15–21" (#729); the full period stays the heading's name. */
+  protected readonly headingShort = computed(() =>
+    this.current() === 'week' ? weekLabelShort(startOfWeek(this.anchor()), this.locale.locale()) : this.heading(),
+  );
   protected readonly isCurrentPeriod = computed(() => {
     const { from, to } = this.range();
     const today = this.today();
@@ -228,6 +235,18 @@ export class CalendarPage {
     ...concealedUnavailable(this.childShown(), this.filters(), this.me()),
   ]);
   protected readonly activeChildren = computed(() => this.children().filter((c) => c.status === 'Active'));
+  /** The key's parenting-time entries (#729): each parent by name in their colour, or one plain entry without slots. */
+  protected readonly parentKeys = computed(() => {
+    const members = this.members();
+    const keys = members
+      .filter((m) => m.role === 'Parent')
+      .map((m) => ({ name: m.displayName, palette: parentPalette(m.membershipId, members) }))
+      .filter((k) => k.palette !== 'parenting')
+      .sort((a, b) => a.palette.localeCompare(b.palette));
+    return keys.length ? keys : [{ name: '', palette: 'parenting' as const }];
+  });
+  /** Kinds on screen, so the key explains reminders and tasks only when they show. */
+  protected readonly shownKinds = computed(() => new Set(this.shown().map((i) => i.kind)));
 
   protected readonly selected = signal<CalendarItem | null>(null);
   protected readonly selectedEvent = computed(() => this.events().find((e) => e.id === this.selected()?.id) ?? null);
@@ -255,6 +274,8 @@ export class CalendarPage {
   });
 
   constructor() {
+    // The approved children-playing artwork above the calendar, desktop only (#729).
+    inject(PageArt).show('calendar');
     inject(DestroyRef).onDestroy(() => {
       clearTimeout(this.slowTimer);
       clearTimeout(this.noticeTimer);

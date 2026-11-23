@@ -85,9 +85,14 @@ that points back here.
     and the empty state, on phone and desktop, in both themes and in English and Spanish.
 - [ ] **Desktop shell fills the laptop window (#727, M5).** Owner check on Development: on a laptop window in both
   themes, Home, Records and Calendar keep the sidebar and content to the window's bottom with no empty strip.
-- [ ] **Short desktop window with Messages open (#727 follow-up).** At 1024×600 the open Messages panel covers all but
+- [x] **Short desktop window with Messages open (#727 follow-up).** At 1024×600 the open Messages panel covers all but
   about 28px of the content height, so a far-right late event in the Calendar week is reachable only through a 24px
-  strip above the panel. Decide whether the open panel should be shorter on short windows.
+  strip above the panel. Done in #729: while Messages is open the calendar gives up the panel's width, so nothing sits
+  under it (Week shows the day agenda when that leaves too little room for seven columns).
+- [ ] **Quiet Planner calendar (#729, M5).** Month, Week and List redesign with the desktop children-playing artwork,
+  the pinned Week and List key, same-time groups, the phone day strip and agenda, and date-grouped tinted List cards.
+  Owner check on Development: desktop and phone, light and dark, with Messages open and closed, at a short desktop
+  window, and with reduced motion. Review the Figma deviations listed in the PR.
 - [ ] **Messages background leaves (#724, M5).** Faint theme leaves behind the Messages conversation and the phone
   Transcripts screen (the compact chat stays plain). Owner check on Development in both themes on phone and desktop.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).

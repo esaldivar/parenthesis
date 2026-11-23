@@ -1,0 +1,183 @@
+<section class="month" [class.month--narrow]="narrow()" [attr.aria-label]="label()">
+  <div class="month__head" aria-hidden="true">
+    @for (name of weekdays(); track name) {
+      <div class="month__weekday">{{ name }}</div>
+    }
+  </div>
+  @for (week of weeks(); track week.days[0].date) {
+    <div class="week">
+      <!-- The week's parenting-time row (#729), behind its bars. -->
+      <div class="week__band" aria-hidden="true"></div>
+      @for (day of week.days; track day.date; let i = $index) {
+        <div
+          class="day"
+          [style.grid-column]="i + 1"
+          [class.day--outside]="!day.inMonth"
+          [class.is-today]="day.isToday"
+          [class.is-chosen]="narrow() && day.date === selectedDay()"
+          [class.is-picked]="pick.onDay(day.date)"
+          [attr.aria-current]="day.isToday ? 'date' : null"
+        >
+          <!-- A tap on the day's empty space adds on that date (#212). Pointer only: keyboards open the day's week. -->
+          <button type="button" class="day__add" tabindex="-1" aria-hidden="true" (click)="pick.tap({ date: day.date }, true)"></button>
+          <div class="day__top">
+            <button
+              type="button"
+              class="day__number"
+              (click)="dayNumber(day.date)"
+              [attr.aria-label]="narrow() ? day.chooseLabel : day.label"
+              [attr.aria-pressed]="narrow() ? day.date === selectedDay() : null"
+            >
+              <span class="day__digit">{{ day.number }}</span>
+            </button>
+            @for (column of week.concealed; track column.date) {
+              @if (column.date === day.date) {
+                @for (hidden of column.items; track hidden.id) {
+                  <button
+                    type="button"
+                    class="item marker"
+                    data-kind="unavailable"
+                    data-concealed="true"
+                    [attr.aria-label]="concealedLabel(hidden)"
+                    (click)="selected.emit(hidden)"
+                  >
+                    <span aria-hidden="true">{{ 'feature.hidden.unavailable' | tr }}</span>
+                  </button>
+                }
+              }
+            }
+          </div>
+          @if (pick.onDay(day.date)) {
+            <div class="slot-pick">
+              <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
+                {{ 'feature.add' | tr }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+      @for (bar of week.bars; track bar.key) {
+        <button
+          type="button"
+          class="item bar"
+          [class.bar--parenting]="bar.row === 'parenting'"
+          [class.bar--line]="isLine(bar)"
+          [style.grid-column]="bar.start + ' / ' + bar.end"
+          [style.grid-row]="bar.row === 'parenting' ? 2 : bar.lane + 3"
+          [attr.data-kind]="bar.item.kind"
+          [appCalendarPalette]="isLine(bar) ? undefined : (bar.item.palette ?? bar.item.kind)"
+          [style.--dot]="isLine(bar) ? 'var(--color-calendar-' + (bar.item.palette ?? bar.item.kind) + '-fg)' : null"
+          [attr.data-category]="bar.item.category"
+          [attr.data-status]="bar.item.status"
+          [class.bar--before]="bar.continuesBefore"
+          [class.bar--after]="bar.continuesAfter"
+          (click)="selected.emit(bar.item)"
+        >
+          <!-- Named from this text, not aria-label, so its decorative photos never compete with it (WCAG 2.5.3). -->
+          <span class="visually-hidden">{{ barLabel(bar) }}</span>
+          @if (bar.continuesBefore) {
+            <app-icon class="bar__cut" name="chevron-left" [size]="12" aria-hidden="true" />
+          }
+          @if (isLine(bar)) {
+            <span class="bar__dot" aria-hidden="true"></span>
+          }
+          @if (bar.row === 'parenting' && !narrow()) {
+            @for (parent of bar.item.parents; track parent.id) {
+              <app-avatar class="bar__lead" [name]="parent.name" kind="parent" [size]="16" [personId]="parent.id" />
+            }
+          }
+          @if (bar.status; as status) {
+            <span class="bar__status" aria-hidden="true">{{ status }} ·{{ ' ' }}</span>
+          }
+          <span class="bar__title" [class.bar__title--declined]="bar.item.status === 'declined'" aria-hidden="true">{{
+            bar.row === 'parenting' && narrow() ? caregiver(bar.item) : displayTitle(bar.item)
+          }}</span>
+          @if (bar.row === 'parenting' && !narrow() && bar.item.children.length) {
+            <span class="bar__people" aria-hidden="true">
+              @for (child of bar.item.children; track child.id) {
+                <app-avatar [name]="child.name" [size]="16" [personId]="child.id" />
+              }
+            </span>
+          }
+          @if (bar.continuesAfter) {
+            <app-icon class="bar__cut bar__cut--after" name="chevron-right" [size]="12" aria-hidden="true" />
+          }
+        </button>
+      }
+      @if (narrow()) {
+        <!-- Phones: each day's one-day items as dots under its bars, and how many are proposed (#729). Its agenda lists them. -->
+        @for (day of week.days; track day.date; let i = $index) {
+          <span class="day__dots" [style.grid-column]="i + 1" aria-hidden="true">
+            @for (dot of day.dots; track dot.id) {
+              <span class="day__dot" [style.--dot]="'var(--color-calendar-' + dot.palette + '-fg)'"></span>
+            }
+            @if (day.proposed) {
+              <span class="day__proposed">{{ 'calendar.qp.proposedShort' | tr: { count: day.proposed } }}</span>
+            }
+          </span>
+        }
+      }
+      @for (more of week.more; track more.date) {
+        <button
+          type="button"
+          class="more"
+          [class.more--pending]="more.pending > 0"
+          [style.grid-column]="more.column"
+          [style.grid-row]="5"
+          [attr.aria-label]="more.label"
+          (click)="openDay.emit(more.date)"
+        >
+          +{{ more.count }}<span class="more__word"> {{ 'feature.more' | tr }}</span>
+        </button>
+      }
+    </div>
+  }
+</section>
+
+@if (narrow()) {
+  @let day = agenda();
+  <!-- The chosen day on a phone (#729): its items with everyone's photos; "+N more" opens its week. -->
+  <section class="agenda" aria-labelledby="month-agenda-title" aria-live="polite">
+    <header class="agenda__head">
+      <h3 id="month-agenda-title">{{ day.title }}</h3>
+      @if (day.proposed) {
+        <span class="agenda__proposed">{{ 'calendar.qp.proposedCount' | tr: { count: day.proposed } }}</span>
+      }
+    </header>
+    @if (day.items.length) {
+      <ul class="agenda__items">
+        @for (item of day.items; track item.id) {
+          <li>
+            <button
+              type="button"
+              class="item agenda__item"
+              [attr.data-kind]="item.kind"
+              [appCalendarPalette]="item.palette ?? item.kind"
+              [attr.data-category]="item.category"
+              [attr.data-status]="item.status"
+              (click)="selected.emit(item)"
+            >
+              <app-item-card [item]="item" layout="agenda" />
+              <span class="visually-hidden">, {{ day.fullDate }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="agenda__empty">{{ 'calendar.qp.nothing' | tr }}</p>
+    }
+    <div class="agenda__foot">
+        @if (day.more) {
+          <button type="button" class="agenda__link" [attr.aria-label]="'calendar.month.more' | tr: { count: day.more, date: day.title }" (click)="openDay.emit(day.date)">
+            {{ 'calendar.qp.moreOn' | tr: { count: day.more } }}
+          </button>
+        }
+        @if (day.concealed.length) {
+          <button type="button" class="agenda__link agenda__hidden" [attr.aria-label]="concealedLabel(day.concealed[0])" (click)="selected.emit(day.concealed[0])">
+            {{ 'calendar.qp.hiddenCount' | tr: { count: day.concealed.length } }}
+          </button>
+        }
+        <button type="button" class="agenda__link" (click)="add.emit({ date: day.date })">{{ 'feature.add.on' | tr }} {{ day.title }}</button>
+    </div>
+  </section>
+}

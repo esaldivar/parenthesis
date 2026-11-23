@@ -45,6 +45,11 @@ ul {
   font-size: 1.05rem;
 }
 
+// Decorative page artwork (#729) is desktop only.
+.topbar__art {
+  display: none;
+}
+
 .account {
   display: inline-flex;
   align-items: center;
@@ -237,16 +242,6 @@ a.is-active {
     overflow: hidden;
   }
 
-  // How much width at the bottom right the Messages dock takes: the bar while minimized, the panel while open (#547).
-  .shell {
-    --chat-dock-reserve: var(--chat-dock-bar-width);
-  }
-
-  .shell--chat-open {
-    --chat-dock-clearance: var(--chat-dock-open-height);
-    --chat-dock-reserve: var(--chat-dock-open-width);
-  }
-
   .sidebar {
     grid-area: sidebar;
     height: 100%;
@@ -315,9 +310,33 @@ a.is-active {
   }
 
   .topbar {
+    position: relative;
     justify-content: flex-end;
     padding: var(--space-3) var(--space-6);
     border-bottom: 0;
+    container: topbar / inline-size;
+  }
+
+  // The approved Calendar illustration (#729, Figma 2152:146): 550 by 130 at the top of the window, between the page
+  // heading and its actions, behind the page (main is positioned later, so it paints over it). Narrow desktops scale
+  // it down; where it would crowd the heading or actions it is left out.
+  .topbar__art {
+    display: block;
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: calc(50% - var(--topbar-art-width) / 2 - 1.25rem);
+    --topbar-art-width: min(550px, calc(100cqi - 32rem));
+    inline-size: var(--topbar-art-width);
+    block-size: auto;
+    pointer-events: none;
+    user-select: none;
+    opacity: var(--page-art-opacity);
+  }
+
+  @container topbar (width < 54rem) {
+    .topbar__art {
+      display: none;
+    }
   }
 
   .brand--compact {

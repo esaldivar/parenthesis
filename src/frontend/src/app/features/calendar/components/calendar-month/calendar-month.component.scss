@@ -1,20 +1,19 @@
 @use '../../item' as *;
 
-// Month view (#250): each week row is one grid. Its seven days sit behind everything, the full height of the row;
-// items are labelled bars across their own days, in up to three lanes under the day numbers; a busy day's "+N more"
-// takes the last row.
+// Month view (#250; Quiet Planner #729, Figma 2140:17, 2140:309 and their dark versions). Each week row is one grid:
+// the date row, the week's own parenting-time row, two lanes of items and a "+N more" row. Its seven days sit
+// behind everything, the full height of the row.
 :host {
   display: block;
   container-type: inline-size;
   // Bars stay compact (owner decision, October 23, 2026): 24px tall on every screen, the WCAG 2.2 AA minimum, rather
-  // than 44px lanes that would double the month's height. The 44px day number is the large target: it opens the week,
-  // where every item shows.
+  // than 44px lanes that would double the month's height. The 44px day number is the large target.
   --bar-h: 24px;
 }
 .month {
   display: grid;
   border: 1px solid var(--color-divider);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
   overflow: hidden;
 }
@@ -25,25 +24,33 @@
 .month__weekday {
   text-align: center;
   font-size: 0.8125rem;
-  font-weight: 600;
+  color: var(--color-text-secondary);
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-divider);
 }
 .week {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  // Lanes take room only when used, so a quiet week stays short.
-  grid-template-rows: var(--target-min) repeat(3, auto) auto;
+  // Date, parenting time, two lanes, "+N more". Lanes take room only when used, so a quiet week stays short.
+  grid-template-rows: var(--target-min) var(--bar-h) auto auto auto;
   row-gap: 2px;
+  padding-block-end: var(--space-1);
+  border-top: 1px solid var(--color-divider);
+}
+// The parenting-time row's band, across the whole week (#729).
+.week__band {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  background: var(--color-calendar-week-band);
 }
 .day {
   grid-row: 1 / -1;
   min-width: 0;
   min-height: 112px;
-  padding: 2px;
-  border-top: 1px solid var(--color-divider);
   border-inline-start: 1px solid var(--color-divider);
   position: relative;
+}
+.week__band + .day {
+  border-inline-start: 0;
 }
 .day--outside {
   background: var(--color-canvas);
@@ -51,38 +58,71 @@
 .day--outside .day__number {
   color: var(--color-text-secondary);
 }
+.day__top {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-inline-size: 0;
+}
 .day__number {
-  min-width: var(--target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
   // 44px targets on every screen size (calendar acceptance checklist).
+  min-width: var(--target-min);
   min-height: var(--target-min);
+  padding: 0;
   border: 0;
   background: transparent;
   font: inherit;
-  font-weight: 600;
+  font-size: 0.875rem;
   color: var(--color-text);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
-.day.is-today .day__number {
+.day__digit {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: 50%;
+}
+// Today: the date in a filled circle (#729).
+.day.is-today .day__digit {
   background: var(--color-action);
   color: var(--color-on-action);
+  font-weight: 700;
 }
 .day__number:focus-visible,
-.more:focus-visible {
+.more:focus-visible,
+.agenda__link:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
-// A bar: one line, its title truncated with an ellipsis (never broken letter by letter); the full title, dates and
-// status are in its accessible name and its details.
 @include item-button('.item');
 @include item-colors('.item');
+
+// Hidden unavailable time (#190): small words by the date, hollow, that open its details.
+.marker {
+  min-inline-size: 0;
+  min-block-size: 24px;
+  padding: 0 4px;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// A bar: one line, its title truncated with an ellipsis (never broken letter by letter); the full title, dates and
+// status are in its accessible name and its details.
 .bar {
   position: relative;
   z-index: 1;
   min-width: 0;
   height: var(--bar-h);
-  margin: 0 3px;
+  margin: 0 4px;
   padding: 0 var(--space-1);
   display: flex;
   align-items: center;
@@ -91,6 +131,33 @@
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
+  border-radius: 6px;
+}
+// Parenting time: a continuous band across its days, the caregiver's photo first and the children's at the end.
+.bar--parenting {
+  margin-inline: 2px;
+}
+.bar__lead {
+  flex: none;
+}
+.bar__people {
+  display: inline-flex;
+  gap: 2px;
+  margin-inline-start: auto;
+  flex: none;
+}
+// A confirmed one-day item: a line with a dot in its type's colour, no fill.
+.bar.bar--line[data-kind] {
+  border-color: transparent;
+  background: transparent;
+  padding-inline: 2px;
+}
+.bar__dot {
+  flex: none;
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  background: var(--dot, currentColor);
 }
 // A cut where the item goes on in another week: square on that side, reaching the edge, with a ‹ or › mark.
 .bar--before {
@@ -103,12 +170,15 @@
   border-start-end-radius: 0;
   border-end-end-radius: 0;
 }
+// The cut marks are icons, not text: the bar's name already says it goes on (WCAG 2.5.3).
 .bar__cut {
   flex: none;
-  font-weight: 700;
 }
 .bar__cut--after {
   margin-inline-start: auto;
+}
+.bar__people + .bar__cut--after {
+  margin-inline-start: 0;
 }
 .bar__status {
   flex: none;
@@ -118,26 +188,26 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 600;
+  font-weight: 500;
 }
-.bar__title--declined {
+.bar__title--declined,
+.bar[data-status='declined'] .bar__status {
   text-decoration: line-through;
 }
 .more {
-  grid-row: 5;
   position: relative;
   z-index: 1;
   justify-self: start;
-  min-height: 28px;
+  min-height: 24px;
   min-width: 24px;
-  margin-inline-start: 3px;
+  margin-inline-start: 4px;
   padding: 0 var(--space-1);
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
   font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: var(--color-action);
   cursor: pointer;
 }
@@ -146,24 +216,63 @@
   border: 1px dashed var(--color-outline);
 }
 
-/* Phones: the same 24px bars (the WCAG 2.2 AA target minimum; owner decision, October 23, 2026), on smaller days. Status words give way to the patterns (hatched, struck through), and the
-   accessible names keep every word. */
-@container (max-width: 599px) {
-  .day {
-    min-height: 64px;
+// Phones (#729, Figma 2140:309): name-only parenting bars, longer items as bars, the date centred, one-day items as dots
+// under the bars, and the chosen day's agenda below. Status words stay in every accessible name.
+.month--narrow {
+  .week {
+    grid-template-rows: var(--target-min) var(--bar-h) auto auto auto auto;
+    padding-block-end: 2px;
   }
-  // Keep 44px targets centered inside the padded phone cells.
-  .day__number {
-    min-width: var(--target-min);
-    width: var(--target-min);
-    margin-inline-start: calc((100% - var(--target-min)) / 2);
+  .day {
+    min-height: 0;
+  }
+  .day__top {
+    justify-content: center;
+  }
+  .marker {
+    // A hollow ring: the count and a way in are in the agenda below.
+    position: absolute;
+    inset-block-start: 4px;
+    inset-inline-end: 2px;
+    inline-size: 8px;
+    min-block-size: 8px;
+    block-size: 8px;
     padding: 0;
-    font-size: 0.875rem;
+    border-radius: 50%;
+    span {
+      display: none;
+    }
+  }
+  .day.is-chosen:not(.is-today) .day__digit {
+    background: var(--color-selected);
+    font-weight: 700;
+  }
+  .day__dots {
+    grid-row: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-block-size: 8px;
+    padding-block-start: 2px;
+    pointer-events: none;
+    position: relative;
+    z-index: 1;
+  }
+  .day__dots:has(.day__dot) {
+    display: grid;
+    grid-template-columns: repeat(3, 6px);
+    justify-content: center;
+  }
+  .day__proposed {
+    grid-column: 1 / -1;
+    font-size: 0.625rem;
+    font-weight: 700;
+    white-space: nowrap;
   }
   .bar {
     margin: 0 1px;
-    padding: 0 3px;
-    gap: 2px;
+    padding: 0 4px;
     font-size: 0.6875rem;
   }
   .bar__status,
@@ -173,6 +282,75 @@
   .more {
     margin-inline-start: 1px;
   }
+}
+.day__dot {
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  background: var(--dot);
+}
+
+// The chosen day on a phone (#729).
+.agenda {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.agenda__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.agenda__head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.agenda__proposed {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+.agenda__items {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.agenda__item {
+  display: block;
+  inline-size: 100%;
+  min-block-size: var(--target-min);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  box-shadow: inset 4px 0 0 0 currentColor;
+}
+.agenda__empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+.agenda__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.agenda__link {
+  min-block-size: var(--target-min);
+  padding: 0 var(--space-1);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-action);
+  cursor: pointer;
+}
+.agenda__hidden {
+  color: var(--color-text-secondary);
 }
 
 // A tap on a day's empty space adds on that date (#212): a pointer-only layer behind the day's own buttons.

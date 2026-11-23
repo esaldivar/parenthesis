@@ -1,4 +1,11 @@
 @use '../../item' as *;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+// The List view (#729, Quiet Planner frames 2158:642, 2158:842 and their dark versions).
 ol,
 ul {
   list-style: none;
@@ -7,19 +14,33 @@ ul {
 }
 .days {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
-h3 {
+.day {
+  display: grid;
+  gap: var(--space-1);
+}
+.day__head {
+  // Holds its screen-reader heading, so it never lengthens the page (#727).
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-calendar-date-bg);
   font-size: 1rem;
-  margin: 0 0 var(--space-2);
 }
-h3.is-today,
 .today {
   color: var(--color-action);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 .items {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 @include item-button('.item');
 @include item-colors('.item');
@@ -27,5 +48,8 @@ h3.is-today,
   display: block;
   width: 100%;
   min-height: var(--target-min);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  // The whole card is tinted by its type; a bar in the type's own colour marks its start (#729).
+  box-shadow: inset 4px 0 0 0 currentColor;
+  border-radius: var(--radius-control);
 }

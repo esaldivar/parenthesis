@@ -9,6 +9,8 @@
 </header>
 
 
+<!-- The calendar panel (#729, Quiet Planner): controls, the view and, on desktop, its key. -->
+<div class="panel" [attr.data-view]="current()">
 <div class="toolbar">
   <div class="period">
     <span class="period__nav">
@@ -16,6 +18,7 @@
         <app-icon name="chevron-left" />
       </button>
       <h2 class="period__label" aria-live="polite">{{ heading() }}</h2>
+      <span class="period__label period__short" aria-hidden="true">{{ headingShort() }}</span>
       <button mat-icon-button type="button" (click)="step(1)" [attr.aria-label]="periodLabel('next') | tr">
         <app-icon name="chevron-right" />
       </button>
@@ -125,6 +128,7 @@
         <app-calendar-week
           [class.week--empty]="shown().length === 0"
           [weekStart]="range().from"
+          [anchor]="anchor()"
           [today]="today()"
           [items]="shown()"
           (selected)="open($event)"
@@ -136,6 +140,7 @@
           @case ('month') {
             <app-calendar-month
               [date]="anchor()"
+              [anchor]="anchor()"
               [today]="today()"
               [items]="shown()"
               [label]="heading()"
@@ -148,19 +153,32 @@
             <app-calendar-list [from]="range().from" [to]="range().to" [today]="today()" [items]="shown()" (selected)="open($event)" />
           }
         }
-        <ul class="key" aria-label="{{ 'feature.calendar.key' | tr }}">
-          <li><span class="swatch" appCalendarPalette="parent-a"></span><span class="swatch" appCalendarPalette="parent-b"></span>{{ 'feature.parenting.time' | tr }}</li>
-          <li><span class="swatch" appCalendarPalette="family" data-kind="family"></span>{{ 'feature.family.event.both.parents' | tr }}</li>
-          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-category="Activity"></span>{{ 'feature.activity' | tr }}</li>
-          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="pending"></span>{{ 'feature.pending.approval' | tr }}</li>
-          <li><span class="swatch" appCalendarPalette="activity" data-kind="activity" data-status="declined"></span>{{ 'feature.declined' | tr }}</li>
-          <li><span class="swatch" appCalendarPalette="unavailable" data-kind="unavailable"></span>{{ 'feature.unavailable' | tr }}</li>
-          <li><span class="swatch" appCalendarPalette="reminder" data-kind="reminder"></span>{{ 'feature.reminder' | tr }}</li>
-          <li><span class="swatch" appCalendarPalette="task" data-kind="task"></span>{{ 'feature.task' | tr }}</li>
-        </ul>
       }
     }
   }
+</div>
+
+@if (state() === 'ready' && shown().length > 0) {
+  <!-- Desktop only: pinned under Week and List while they scroll; under the grid in Month. -->
+  <ul class="key" aria-label="{{ 'feature.calendar.key' | tr }}">
+    @for (parent of parentKeys(); track parent.palette) {
+      <li><span class="dot" [style.--dot]="'var(--color-calendar-' + parent.palette + '-fg)'"></span>{{ parent.name ? ('calendar.qp.parentingOf' | tr: { name: parent.name }) : ('feature.parenting.time' | tr) }}</li>
+    }
+    <li><span class="dot" style="--dot: var(--color-calendar-activity-fg)"></span>{{ 'feature.activity' | tr }}</li>
+    <li><span class="dot" style="--dot: var(--color-calendar-family-fg)"></span>{{ 'calendar.type.family' | tr }}</li>
+    <li><span class="dot" style="--dot: var(--color-calendar-unavailable-fg)"></span>{{ 'feature.unavailable' | tr }}</li>
+    @if (shownKinds().has('reminder')) {
+      <li><span class="dot" style="--dot: var(--color-calendar-reminder-fg)"></span>{{ 'feature.reminder' | tr }}</li>
+    }
+    @if (shownKinds().has('task')) {
+      <li><span class="dot" style="--dot: var(--color-calendar-task-fg)"></span>{{ 'feature.task' | tr }}</li>
+    }
+    @if (current() === 'week') {
+      <li><span class="box box--proposed"></span>{{ 'calendar.month.proposed' | tr }}</li>
+      <li><span class="box box--declined"></span><span class="struck">{{ 'feature.declined' | tr }}</span></li>
+    }
+  </ul>
+}
 </div>
 
 @if (filtersOpen()) {

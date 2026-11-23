@@ -1,5 +1,5 @@
 import { CalendarItem } from './calendar-items';
-import { MONTH_LANES, layOutWeek, weekOf } from './month-layout';
+import { MONTH_LANES, PARENTING_LANES, layOutWeek, weekOf } from './month-layout';
 
 /** A synthetic calendar item over `firstDate`–`lastDate` (all day unless times are given). */
 function item(id: string, firstDate: string, lastDate = firstDate, over: Partial<CalendarItem> = {}): CalendarItem {
@@ -129,5 +129,35 @@ describe('Month view bars (#250)', () => {
     expect(label).toContain(' al ');
     expect(label).toContain('Continúa la próxima semana.');
     expect(label).not.toMatch(/through|Continues/);
+  });
+
+  it('gives parenting time its own row and leaves the item lanes to everything else (#729)', () => {
+    const parenting = item('pt', '2026-10-19', '2026-10-21', { kind: 'parenting' });
+    const busy = Array.from({ length: MONTH_LANES }, (_, i) => item(`a${i}`, '2026-10-20'));
+    const { bars, more } = layOutWeek(week, [parenting, ...busy]);
+    expect(bars.find((b) => b.item.id === 'pt')).toEqual(expect.objectContaining({ row: 'parenting', lane: 0 }));
+    expect(bars.filter((b) => b.row === 'items').map((b) => b.lane)).toEqual([0, 1]);
+    expect(more).toEqual([]);
+  });
+
+  it('counts parenting time past its row behind "+N more" with the day\'s other hidden items (#729)', () => {
+    const overlapping = Array.from({ length: PARENTING_LANES + 1 }, (_, i) =>
+      item(`pt${i}`, '2026-10-21', '2026-10-21', { kind: 'parenting', status: i === 1 ? 'pending' : 'confirmed' }),
+    );
+    const { bars, more } = layOutWeek(week, [...overlapping, item('a', '2026-10-21'), item('b', '2026-10-21'), item('c', '2026-10-21')]);
+    expect(bars.filter((b) => b.row === 'parenting')).toHaveLength(PARENTING_LANES);
+    // The pending one keeps the row; the confirmed parenting time and the third item are counted.
+    expect(bars.find((b) => b.row === 'parenting')!.item.status).toBe('pending');
+    expect(more).toEqual([expect.objectContaining({ date: '2026-10-21', count: 2, pending: 0 })]);
+  });
+
+  it('keeps hidden unavailable time out of the lanes, as a marker on each day it covers (#190, #729)', () => {
+    const hidden = item('h', '2026-10-20', '2026-10-21', { kind: 'unavailable', concealed: true });
+    const { bars, concealed } = layOutWeek(week, [hidden]);
+    expect(bars).toEqual([]);
+    expect(concealed.map((c) => [c.date, c.column, c.items.map((i) => i.id)])).toEqual([
+      ['2026-10-20', 3, ['h']],
+      ['2026-10-21', 4, ['h']],
+    ]);
   });
 });

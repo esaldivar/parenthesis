@@ -70,6 +70,8 @@ describe('the calendar page', () => {
 
   const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
   const main = () => document.querySelector('app-calendar-page') as HTMLElement;
+  /** A Month bar's accessible name: its screen-reader text (#729). */
+  const barName = (bar: Element) => bar.querySelector('.visually-hidden')?.textContent ?? '';
 
   function click(label: string, within: Element = main()) {
     const match = [...within.querySelectorAll<HTMLElement>('button, a')].find((b) => text(b) === label);
@@ -428,9 +430,9 @@ describe('the calendar page', () => {
       ['6 / 8', true, false],
       ['1 / 6', false, true],
     ]);
-    expect(bars[0].getAttribute('aria-label')).toContain('Robotics camp');
-    expect(bars[0].getAttribute('aria-label')).toContain('Oct 23 – Oct 29');
-    expect(bars[1].getAttribute('aria-label')).toContain('Continues from last week.');
+    expect(barName(bars[0])).toContain('Robotics camp');
+    expect(barName(bars[0])).toContain('Oct 23 – Oct 29');
+    expect(barName(bars[1])).toContain('Continues from last week.');
     expect(text(bars[1])).toContain('Robotics camp');
 
     bars[1].click();
@@ -531,7 +533,7 @@ describe('the calendar page', () => {
       startsAt: `2026-11-${String(day).padStart(2, '0')}T06:00:00Z`,
       endsAt: `2026-11-${String(day + 1).padStart(2, '0')}T06:00:00Z`,
     })));
-    const labels = [...main().querySelectorAll('app-calendar-month button.bar')].map((bar) => bar.getAttribute('aria-label'));
+    const labels = [...main().querySelectorAll('app-calendar-month button.bar')].map(barName);
     expect(labels).toHaveLength(2);
     expect(labels[0]).toContain('Saturday, November 7, 2026');
     expect(labels[1]).toContain('Saturday, November 14, 2026');
