@@ -68,7 +68,8 @@ export class CalendarMonth extends NarrowHost {
   protected readonly selectedDay = computed(() => {
     const month = this.date().slice(0, 7);
     const chosen = this.chosen();
-    if (chosen?.startsWith(month)) return chosen;
+    // Any date the grid shows can be chosen, the neighbouring months' days included (#733).
+    if (chosen && monthGrid(this.date()).includes(chosen)) return chosen;
     if (this.anchor()?.startsWith(month)) return this.anchor()!;
     return this.today().startsWith(month) ? this.today() : startOfMonth(this.date());
   });
@@ -162,10 +163,12 @@ export class CalendarMonth extends NarrowHost {
   protected readonly tint = cardTint;
   protected readonly concealedLabel = (item: CalendarItem) => itemSummary(item, this.locale.locale());
   protected readonly displayTitle = (item: CalendarItem) => displayTitle(item, this.locale.locale());
-  /** A bar's name starts with what it shows when that differs from its title ("Sam · Unavailable"; WCAG 2.5.3). */
+  /** A bar's name starts with what it shows when that differs from its title ("Sam · Unavailable", "Mom"; WCAG 2.5.3). */
   protected readonly barLabel = (bar: MonthBar) => {
+    // Phones show only the caregiver on a parenting bar, so its name starts with them (#733).
+    if (bar.row === 'parenting') return this.narrow() ? `${this.caregiver(bar.item)}, ${bar.label}` : bar.label;
     const shown = displayTitle(bar.item, this.locale.locale());
-    return shown === bar.item.title || bar.row === 'parenting' ? bar.label : `${shown}, ${bar.label}`;
+    return shown === bar.item.title ? bar.label : `${shown}, ${bar.label}`;
   };
   /** Phones name the caregiver on a parenting bar; the title and status stay in its accessible name. */
   protected readonly caregiver = (item: CalendarItem) => item.parents[0]?.name ?? item.title;
