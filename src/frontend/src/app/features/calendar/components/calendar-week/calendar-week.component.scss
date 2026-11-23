@@ -1,7 +1,10 @@
 @use '../../item' as *;
 
+// The Week view (#729, Quiet Planner: Figma 2158:2, 2158:197 and their dark versions).
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
   container: calendar-week / inline-size;
 }
 
@@ -23,44 +26,39 @@ ul {
 }
 
 .grid {
-  --time-gutter: 56px;
-  --half-hour: 28px;
-  --hour-lines: 4;
+  --time-gutter: 64px;
+  // One hour is a 44px row (#729).
+  --half-hour: 22px;
   --week-columns: var(--time-gutter) repeat(7, minmax(0, 1fr));
 
   display: grid;
+  flex: 1 1 auto;
+  min-block-size: 0;
   grid-template-columns: var(--week-columns);
+  grid-template-rows: auto auto minmax(0, 1fr);
   border: 1px solid var(--color-divider);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
   overflow: hidden;
 }
-.grid__day-number,
-.grid__hour--extra {
-  display: none;
-}
 
 .grid__head {
-  display: grid;
-  justify-items: center;
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-divider);
-  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-3);
+  font-size: 0.9375rem;
 }
-.grid__head.is-today .grid__date {
-  background: var(--color-action);
-  color: var(--color-on-action);
-  border-radius: var(--radius-pill);
-  padding: 0 var(--space-2);
-}
-.grid__weekday {
-  font-weight: 600;
+// Today's column head, as in the approved frames: a soft band and the bold date.
+.grid__head.is-today {
+  background: var(--color-calendar-date-bg);
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  font-weight: 700;
 }
 .grid__allday-label {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
-  padding: var(--space-2) var(--space-1);
-  border-bottom: 1px solid var(--color-divider);
+  padding: var(--space-3) var(--space-2);
+  background: var(--color-calendar-date-bg);
 }
 .allday {
   grid-column: 2 / -1;
@@ -68,16 +66,27 @@ ul {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-auto-rows: minmax(var(--target-min), auto);
   gap: 4px;
-  padding: 4px;
+  padding: var(--space-2) 4px;
   min-height: calc(var(--target-min) + 8px);
-  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-calendar-date-bg);
+}
+.item--span {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+}
+.item--span app-item-card {
+  inline-size: 100%;
 }
 
 .grid__body {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: var(--week-columns);
-  height: 560px;
+  // The page lets Week fill the window on desktop (#729); elsewhere the hours scroll in a fixed box.
+  max-block-size: var(--week-body-max, 35rem);
+  min-block-size: 0;
   overflow-y: auto;
 }
 .grid__body:focus-visible {
@@ -89,20 +98,22 @@ ul {
   display: grid;
   grid-template-rows: repeat(48, var(--half-hour));
 }
+.grid__hours {
+  background-image: linear-gradient(var(--color-divider) 1px, transparent 1px);
+  background-size: 100% calc(var(--half-hour) * 2);
+}
 .grid__hours span {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
-  padding-inline-end: var(--space-1);
-  text-align: end;
-  transform: translateY(-0.5em);
+  padding: 4px var(--space-2) 0;
 }
 .daycol {
   grid-template-columns: repeat(var(--lanes), minmax(0, 1fr));
   gap: 0 2px;
-  padding: 0 2px;
+  padding: 0 4px;
   border-inline-start: 1px solid var(--color-divider);
   background-image: linear-gradient(var(--color-divider) 1px, transparent 1px);
-  background-size: 100% calc(var(--half-hour) * var(--hour-lines));
+  background-size: 100% calc(var(--half-hour) * 2);
 }
 .daycol li {
   min-width: 0;
@@ -114,15 +125,40 @@ ul {
 }
 .item--timed {
   min-height: 0;
+  padding: 3px 6px;
 }
-@media (min-width: 1024px) {
-  @container calendar-week (min-width: 720px) {
-    // Fit title, time and one attendee row into the existing shortest timed block.
-    .item--timed,
-    .item--span {
-      padding: 1px 2px;
-    }
-  }
+
+// Events at the same time (#729): "4:30 PM · 2 events", then each on its own row.
+.group {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+}
+.group__head {
+  min-block-size: 16px;
+  line-height: 16px;
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.group__items {
+  display: grid;
+  gap: 2px;
+}
+.daycol .group__items li {
+  padding: 0;
+}
+.item--grouped {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  min-height: 0;
+  padding: 0 6px;
+}
+.item--grouped app-item-card {
+  inline-size: 100%;
 }
 
 // Hidden unavailable time (#190): a thin strip at the day's edge, over the lanes, widening on hover or focus.
@@ -248,106 +284,145 @@ ul {
 .allday > li.slot-pick {
   grid-column: auto;
 }
-@container (width < 720px) {
-  .grid {
-    --time-gutter: 2.5rem;
-    --half-hour: 48px;
-    --hour-lines: 2;
-    --week-item-details: none;
-  }
 
-  .grid__head {
-    padding-block: var(--space-1);
-    font-size: 0.75rem;
-  }
-  .grid__date {
-    display: none;
-  }
-  .grid__day-number,
-  .grid__hour--extra {
-    display: block;
-  }
-  .grid__day-number {
-    min-inline-size: 1.5em;
-    text-align: center;
-  }
-  .grid__head.is-today .grid__day-number {
-    background: var(--color-action);
-    color: var(--color-on-action);
-    border-radius: var(--radius-pill);
-  }
-  .grid__allday-label,
-  .grid__hours span {
-    font-size: 0.625rem;
-    padding-inline: 2px;
-  }
-  .grid__hours span {
-    line-height: 1;
-    transform: none;
-  }
+// Phones (#729): a fixed strip of the week's days, and the chosen day's agenda sliding in under it.
+.strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding-block-end: var(--space-2);
+  border-block-end: 1px solid var(--color-divider);
+}
+.strip__day {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-block-size: var(--target-min);
+  padding: var(--space-1) 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
 
-  // Keep the all-day lanes aligned with the headers and the timed columns.
-  .allday {
-    grid-auto-rows: minmax(52px, auto);
-    gap: 2px 0;
-    padding: 2px 0;
-    min-height: 36px;
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
   }
-  .allday > li:not(.tap-add) {
-    min-width: 0;
-    padding-inline: 1px;
+}
+.strip__day[aria-pressed='true'] {
+  background: var(--color-calendar-date-bg);
+}
+.strip__weekday {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+.strip__number {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.strip__dot {
+  inline-size: 5px;
+  block-size: 5px;
+  border-radius: 50%;
+}
+.strip__dot--on {
+  background: var(--color-action);
+}
+.agenda {
+  // The strip stays put; only the agenda moves, and nothing outside it scrolls sideways.
+  overflow: hidden;
+  padding-block-start: var(--space-3);
+}
+.agenda__day {
+  display: grid;
+  gap: var(--space-2);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .agenda__day[data-slide='next'] {
+    animation: agenda-from-right 300ms ease-out;
   }
-  .item--span {
-    min-height: 0;
+  .agenda__day[data-slide='previous'] {
+    animation: agenda-from-left 300ms ease-out;
   }
-  .item {
-    padding: 1px 2px;
-    border-radius: 4px;
-    font-size: 0.6875rem;
-    line-height: 1.1;
+}
+@keyframes agenda-from-right {
+  from {
+    transform: translateX(100%);
   }
-  .item:focus-visible {
-    outline-offset: -3px;
+}
+@keyframes agenda-from-left {
+  from {
+    transform: translateX(-100%);
   }
+}
+.agenda__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.agenda__head h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+.agenda__today {
+  color: var(--color-action);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.agenda__items {
+  display: grid;
+  gap: var(--space-1);
+}
+.agenda__group {
+  display: grid;
+  gap: var(--space-1);
+}
+.agenda__time {
+  margin: var(--space-2) 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+@include qp-card('.agenda__item', $soft: true);
+.agenda__item {
+  min-block-size: 48px;
+  padding: 4px 8px 4px 12px;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.agenda__item:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.agenda__empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+.agenda__link {
+  min-block-size: var(--target-min);
+  padding: 0 var(--space-1);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-action);
+  cursor: pointer;
 
-  // Only the hours scroll. Avoid a scrollbar gutter that shifts the columns away from the headers.
-  .grid__body {
-    height: clamp(12rem, 60dvh, 35rem);
-    scrollbar-width: none;
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
   }
-  .daycol {
-    padding: 0;
-    gap: 0;
-  }
-  .daycol li.timed-slot {
-    position: absolute;
-    grid-area: auto;
-    inset-block-start: var(--slot-top);
-    inset-inline-start: var(--slot-left);
-    block-size: var(--slot-height);
-    inline-size: var(--slot-width);
-    min-width: 0;
-    padding: 0 1px 1px;
-  }
-  .daycol li.marker {
-    transition: none;
-  }
-  .daycol li.marker:hover,
-  .daycol li.marker:focus-within {
-    width: var(--slot-width);
-  }
-  .item--marker {
-    min-height: 0;
-  }
-  .item--marker span {
-    padding: 0;
-    opacity: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .slot-add__label,
-  .slot-pick__button {
-    overflow-wrap: anywhere;
-    font-size: 0.6875rem;
-  }
+}
+.agenda__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.agenda__hidden {
+  color: var(--color-text-secondary);
 }

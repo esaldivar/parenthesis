@@ -1,4 +1,11 @@
 @use '../../item' as *;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+// The List view (#729, Quiet Planner frames 2158:642, 2158:842 and their dark versions).
 ol,
 ul {
   list-style: none;
@@ -7,25 +14,43 @@ ul {
 }
 .days {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
-h3 {
-  font-size: 1rem;
-  margin: 0 0 var(--space-2);
+.day {
+  display: grid;
+  gap: var(--space-1);
 }
-h3.is-today,
+.day__head {
+  // Holds its screen-reader heading, so it never lengthens the page (#727).
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: 34px;
+  margin: 0;
+  padding: 0 15px;
+  border-radius: 7px;
+  background: var(--color-calendar-date-bg);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
 .today {
   color: var(--color-action);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 .items {
   display: grid;
-  gap: var(--space-2);
+  gap: 5px;
 }
 @include item-button('.item');
-@include item-colors('.item');
+@include qp-card('.item');
+@include qp-card('.item--soft', $soft: true);
 .item {
-  display: block;
-  width: 100%;
-  min-height: var(--target-min);
-  padding: var(--space-2) var(--space-3);
+  min-block-size: 49px;
+  padding: 6px 12px 6px 15px;
+}
+.item--soft {
+  padding-inline-start: 12px;
 }

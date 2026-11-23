@@ -2,12 +2,17 @@ import { inject } from '@angular/core';
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { CalendarPalette } from '../../calendar-palette';
-import { ChangeDetectionStrategy, Component, HostListener, computed, effect, input, output, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { AddAt, SlotPick, clearsPick, pickLabel } from '../../slot';
 import { PlainDate } from '../../../../core/dates/plain-date';
 import { addDays, dayLong, dayOfMonth, startOfWeek, weekdayShort } from '../../../../core/dates/dates';
-import { CalendarItem, onDate } from '../../calendar-items';
-import { layOutWeek } from '../../month-layout';
+import { CalendarItem, byStart, onDate } from '../../calendar-items';
+import { MonthBar, layOutWeek } from '../../month-layout';
+import { Avatar } from '../../../../shared/components/avatar/avatar';
+import { Icon } from '../../../../shared/components/icon/icon';
+import { ItemCard, cardTint, displayTitle } from '../item-card/item-card.component';
+import { itemSummary } from '../item-text/item-text.component';
+import { NarrowHost } from '../../narrow';
 
 /** The first day of the month containing `date`. */
 export const startOfMonth = (date: PlainDate): PlainDate => `${date.slice(0, 8)}01`;
@@ -18,101 +23,36 @@ export function monthGrid(date: PlainDate): PlainDate[] {
   return Array.from({ length: 42 }, (_, i) => addDays(first, i));
 }
 
+/** Items a phone's day agenda lists before "+N more" opens the week (#729). */
+const AGENDA_ITEMS = 3;
+/** Dots a phone's day shows for its items. */
+const DAY_DOTS = 3;
+
 /**
- * The Month view (#250, owner decision October 23, 2026). Each item is a labelled bar across its own days, on phones
- * as on desktops: one continuous bar per week row, continued on the next row with a mark at each cut, in up to three
- * lanes. A busy day shows "+N more" (saying how many are pending), which opens its week. Day numbers open their
- * week; a day's empty space adds there (#212, #237).
+ * The Month view (#250; Quiet Planner #729). Each week has its own parenting-time row: one continuous bar per caregiver
+ * across the days it covers, continued on the next row with a mark at each cut. Other items sit in two lanes under it,
+ * a proposal as a labelled chip ("Proposed · Dinner"); a busy day shows "+N more" (saying how many are pending), which
+ * opens its week. Hidden unavailable time is a marker by the date.
+ *
+ * Phones keep the parenting bars, by name only, and show a day's other items as dots: choosing a day lists them below
+ * the month with everyone's photos. On desktop the day number opens its week; a day's empty space adds there (#212,
+ * #237).
  */
 @Component({
   selector: 'app-calendar-month',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, CalendarPalette],
-  template: `
-    <section class="month" [attr.aria-label]="label()">
-      <div class="month__head" aria-hidden="true">
-        @for (name of weekdays(); track name) {
-          <div class="month__weekday">{{ name }}</div>
-        }
-      </div>
-      @for (week of weeks(); track week.days[0].date) {
-        <div class="week">
-          @for (day of week.days; track day.date; let i = $index) {
-            <div
-              class="day"
-              [style.grid-column]="i + 1"
-              [class.day--outside]="!day.inMonth"
-              [class.is-today]="day.isToday"
-              [class.is-picked]="pick.onDay(day.date)"
-              [attr.aria-current]="day.isToday ? 'date' : null"
-            >
-              <!-- A tap on the day's empty space adds on that date (#212). Pointer only: keyboards open the day's week. -->
-              <button type="button" class="day__add" tabindex="-1" aria-hidden="true" (click)="pick.tap({ date: day.date }, true)"></button>
-              <button type="button" class="day__number" (click)="openDay.emit(day.date)" [attr.aria-label]="day.label">
-                {{ day.number }}
-              </button>
-              @if (pick.onDay(day.date)) {
-                <div class="slot-pick">
-                  <button type="button" class="slot-pick__button" [attr.aria-label]="pickLabel(pick.at()!)" (click)="pick.confirm()">
-                    {{ 'feature.add' | tr }}
-                  </button>
-                </div>
-              }
-            </div>
-          }
-          @for (bar of week.bars; track bar.key) {
-            <button
-              type="button"
-              class="item bar"
-              [style.grid-column]="bar.start + ' / ' + bar.end"
-              [style.grid-row]="bar.lane + 2"
-              [attr.data-kind]="bar.item.kind" [appCalendarPalette]="bar.item.concealed ? 'concealed' : (bar.item.palette ?? bar.item.kind)"
-              [attr.data-category]="bar.item.category"
-              [attr.data-status]="bar.item.status"
-              [attr.data-concealed]="bar.item.concealed ? 'true' : null"
-              [class.bar--before]="bar.continuesBefore"
-              [class.bar--after]="bar.continuesAfter"
-              [attr.aria-label]="bar.label"
-              (click)="selected.emit(bar.item)"
-            >
-              @if (bar.continuesBefore) {
-                <span class="bar__cut" aria-hidden="true">‹</span>
-              }
-              @if (bar.status; as status) {
-                <span class="bar__status" aria-hidden="true">{{ status }}{{ ' ' }}</span>
-              }
-              <span class="bar__title" [class.bar__title--declined]="bar.item.status === 'declined'" aria-hidden="true">{{
-                bar.item.concealed ? ('feature.hidden.unavailable' | tr) : bar.item.title
-              }}</span>
-              @if (bar.continuesAfter) {
-                <span class="bar__cut bar__cut--after" aria-hidden="true">›</span>
-              }
-            </button>
-          }
-          @for (more of week.more; track more.date) {
-            <button
-              type="button"
-              class="more"
-              [class.more--pending]="more.pending > 0"
-              [style.grid-column]="more.column"
-              [attr.aria-label]="more.label"
-              (click)="openDay.emit(more.date)"
-            >
-              +{{ more.count }}<span class="more__word"> {{ 'feature.more' | tr }}</span>
-            </button>
-          }
-        </div>
-      }
-    </section>
-  `,
+  imports: [TranslatePipe, CalendarPalette, Avatar, Icon, ItemCard],
+  templateUrl: './calendar-month.component.html',
   styleUrl: './calendar-month.component.scss',
 })
-export class CalendarMonth {
+export class CalendarMonth extends NarrowHost {
   private readonly locale = inject(LocaleService);
   readonly date = input.required<PlainDate>();
   readonly today = input.required<PlainDate>();
   readonly items = input.required<readonly CalendarItem[]>();
   readonly label = input('Month');
+  /** The date the page is showing: a phone opens its agenda there when it's in this month (#729). */
+  readonly anchor = input<PlainDate | null>(null);
   readonly selected = output<CalendarItem>();
   /** A day was chosen: the page opens its week. */
   readonly openDay = output<PlainDate>();
@@ -123,11 +63,26 @@ export class CalendarMonth {
   protected readonly pick = new SlotPick((at) => this.add.emit(at));
   protected readonly pickLabel = pickLabel;
 
+  /** The phone's chosen day (#729); by default today in this month, or the month's first day. */
+  private readonly chosen = signal<PlainDate | null>(null);
+  protected readonly selectedDay = computed(() => {
+    const month = this.date().slice(0, 7);
+    const chosen = this.chosen();
+    // Any date the grid shows can be chosen, the neighbouring months' days included (#733).
+    if (chosen && monthGrid(this.date()).includes(chosen)) return chosen;
+    if (this.anchor()?.startsWith(month)) return this.anchor()!;
+    return this.today().startsWith(month) ? this.today() : startOfMonth(this.date());
+  });
+
   constructor() {
-    // Another month clears the highlight.
+    super();
+    // Another month clears the highlight and the chosen day.
     effect(() => {
       this.date();
-      untracked(() => this.pick.clear());
+      untracked(() => {
+        this.pick.clear();
+        this.chosen.set(null);
+      });
     });
   }
 
@@ -143,6 +98,15 @@ export class CalendarMonth {
     this.pick.clear();
   }
 
+  /** Desktop: the day number opens its week. Phones: it chooses the day for the agenda below. */
+  protected dayNumber(date: PlainDate): void {
+    if (this.narrow()) {
+      this.chosen.set(date);
+    } else {
+      this.openDay.emit(date);
+    }
+  }
+
   protected readonly weekdays = computed(() => monthGrid(this.date()).slice(0, 7).map((date) => weekdayShort(date, this.locale.locale())));
 
   protected readonly weeks = computed(() => {
@@ -152,18 +116,60 @@ export class CalendarMonth {
     return Array.from({ length: 6 }, (_, w) => {
       const dates = all.slice(w * 7, w * 7 + 7);
       const days = dates.map((date) => {
-        const count = onDate(this.items(), date).length;
+        const on = onDate(this.items(), date);
+        const count = on.length;
+        const others = on.filter((i) => i.kind !== 'parenting' && !i.concealed && i.lastDate === i.firstDate).sort(byStart);
+        const params = { date: dayLong(date, locale), count };
         return {
           date,
           number: dayOfMonth(date),
-          label: translate(count === 0 ? 'calendar.month.openWeek' : count === 1 ? 'calendar.month.openWeekOne' : 'calendar.month.openWeekMany', locale, {
-            date: dayLong(date, locale), count,
-          }),
+          label: translate(count === 0 ? 'calendar.month.openWeek' : count === 1 ? 'calendar.month.openWeekOne' : 'calendar.month.openWeekMany', locale, params),
+          chooseLabel: translate(count === 0 ? 'calendar.qp.showDay' : count === 1 ? 'calendar.qp.showDayOne' : 'calendar.qp.showDayMany', locale, params),
           inMonth: date.startsWith(month),
           isToday: date === this.today(),
+          dots: others.slice(0, DAY_DOTS).map((i) => ({ id: i.id, palette: i.palette ?? i.kind })),
+          proposed: others.filter((i) => i.status === 'pending').length,
         };
       });
-      return { days, ...layOutWeek(dates, this.items(), locale) };
+      // Phones keep parenting time and longer items as bars and show one-day items as dots (#729).
+      const items = this.narrow() ? this.items().filter((i) => i.kind === 'parenting' || i.concealed || i.lastDate > i.firstDate) : this.items();
+      return { days, ...layOutWeek(dates, items, locale) };
     });
   });
+
+  /** The phone's day agenda (#729): what's on the chosen day, people and status included. */
+  protected readonly agenda = computed(() => {
+    const date = this.selectedDay();
+    // All-day first, then proposals so the short list never hides one, then by time (#729).
+    const on = onDate(this.items(), date).sort(
+      (a, b) => Number(b.spansDays) - Number(a.spansDays) || Number(b.status === 'pending') - Number(a.status === 'pending') || byStart(a, b),
+    );
+    const shown = on.filter((i) => !i.concealed);
+    return {
+      date,
+      title: dayLong(date, this.locale.locale()),
+      // Each agenda item names its full date, as Month bars do (#250).
+      fullDate: `${dayLong(date, this.locale.locale() === 'en' ? 'en-US' : this.locale.locale())}, ${date.slice(0, 4)}`,
+      items: shown.slice(0, AGENDA_ITEMS),
+      more: Math.max(0, shown.length - AGENDA_ITEMS),
+      proposed: shown.filter((i) => i.status === 'pending').length,
+      concealed: on.filter((i) => i.concealed),
+    };
+  });
+
+  /** A confirmed single-day item reads as a line with a dot; proposals and longer items are tinted bars. */
+  protected readonly isLine = (bar: MonthBar) =>
+    bar.row === 'items' && bar.item.status !== 'pending' && bar.item.status !== 'change-pending' && bar.start + 1 === bar.end;
+  protected readonly tint = cardTint;
+  protected readonly concealedLabel = (item: CalendarItem) => itemSummary(item, this.locale.locale());
+  protected readonly displayTitle = (item: CalendarItem) => displayTitle(item, this.locale.locale());
+  /** A bar's name starts with what it shows when that differs from its title ("Sam · Unavailable", "Mom"; WCAG 2.5.3). */
+  protected readonly barLabel = (bar: MonthBar) => {
+    // Phones show only the caregiver on a parenting bar, so its name starts with them (#733).
+    if (bar.row === 'parenting') return this.narrow() ? `${this.caregiver(bar.item)}, ${bar.label}` : bar.label;
+    const shown = displayTitle(bar.item, this.locale.locale());
+    return shown === bar.item.title ? bar.label : `${shown}, ${bar.label}`;
+  };
+  /** Phones name the caregiver on a parenting bar; the title and status stay in its accessible name. */
+  protected readonly caregiver = (item: CalendarItem) => item.parents[0]?.name ?? item.title;
 }

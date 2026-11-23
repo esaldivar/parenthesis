@@ -151,7 +151,23 @@ test.describe('Mobile recovery and family time boundaries', { tag: ['@m3', '@mob
       await signIn(page, family.dad.email);
       for (const url of [`/calendar?view=week&date=${date}`, `/?week=${date}`]) {
         await page.goto(url);
-        await expect(page.locator('.slot-add__button:visible, .tap-add__button:visible').first()).toBeVisible();
+        const strip = page.locator('app-calendar-week .strip');
+        await expect(page.locator('.slot-add__button:visible, .tap-add__button:visible, app-calendar-week .strip').first()).toBeVisible();
+        if (await strip.isVisible()) {
+          // The phone Calendar week (#729): moving between days changes only the chosen day and where Add would add.
+          for (const day of ['Tuesday', 'Wednesday']) {
+            const button = strip.getByRole('button', { name: new RegExp(`${day}`) });
+            if (info.project.use.hasTouch) await button.tap();
+            else await button.click();
+            await expect(button).toHaveAttribute('aria-pressed', 'true');
+            await expect(strip.locator('[aria-pressed="true"]')).toHaveCount(1);
+            await expect(page.locator('app-calendar-week .agenda').getByRole('button', { name: new RegExp(`^Add on ${day}`) })).toBeVisible();
+          }
+          await page.keyboard.press('Escape');
+          await expect(page).not.toHaveURL(/\/calendar\/new/);
+          await evidence(page, info, `${theme}-calendar-day-moved`);
+          continue;
+        }
         for (const day of ['Tuesday', 'Wednesday']) {
           // Layout follows available container width, not whether the device supports touch.
           const agendaDay = page.locator('.agenda__day').filter({ hasText: new RegExp(`^\\s*${day.slice(0, 3)}`) });

@@ -21,12 +21,44 @@ import { ChatTranscripts } from '../../components/chat-transcripts/chat-transcri
   `,
   styles: `
     :host {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
       display: block;
       max-width: 40rem;
       min-height: 100dvh;
       margin-inline: auto;
       padding-bottom: env(safe-area-inset-bottom);
       background: var(--color-canvas);
+    }
+    /* #724: the same faint theme leaves as the Messages conversation, top right and mirrored bottom left. */
+    :host::before,
+    :host::after {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      inline-size: min(15rem, 60%);
+      aspect-ratio: 880 / 799;
+      background: url('/art/from-your-kids/photos/background-leaves.webp') center / contain no-repeat;
+      opacity: var(--leaves-opacity, 0.11);
+      pointer-events: none;
+    }
+    :host::before {
+      inset-block-start: 3rem;
+      inset-inline-end: -3rem;
+    }
+    :host::after {
+      inset-block-end: 1rem;
+      inset-inline-start: -3rem;
+      transform: scaleX(-1);
+    }
+    :host-context(html[data-theme='dark']) {
+      --leaves-opacity: 0.08;
+    }
+    @media (prefers-color-scheme: dark) {
+      :host-context(html:not([data-theme])) {
+        --leaves-opacity: 0.08;
+      }
     }
     .round {
       display: inline-grid;

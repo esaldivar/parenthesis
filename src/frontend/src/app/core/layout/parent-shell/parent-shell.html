@@ -66,6 +66,10 @@
   </aside>
 
   <header class="topbar">
+    @if (pageArt.current(); as art) {
+      <!-- Decorative page artwork (#729): drawn behind the page, desktop only. -->
+      <img class="topbar__art" [attr.data-art]="art" src="/art/calendar/kids-playing.webp" alt="" aria-hidden="true" width="550" height="130" decoding="async" />
+    }
     <a class="brand brand--compact" routerLink="/" aria-label="{{ 'feature.parenthesis.home' | tr }}">
       <app-logo [decorative]="true" />
     </a>

@@ -11,7 +11,7 @@ const midnight = (hours: number) => {
   return instant(hours - Number(offset.slice(3)));
 };
 
-test('desktop Week shows attendees without clipping short or overlapping events (#553)', {
+test('desktop Week shows attendees without clipping short or overlapping events (#553, #729)', {
   tag: ['@m4', '@regression'],
 }, async ({ page, family }, info) => {
   const { dad, familyId, kaiId } = family;
@@ -42,29 +42,34 @@ test('desktop Week shows attendees without clipping short or overlapping events 
     await page.emulateMedia({ colorScheme: theme });
     await page.setViewportSize({ width: 1152, height: 800 });
     await page.goto(`/calendar?date=${date}`);
-    await expect(multiDay.locator('.week-people app-avatar')).toHaveCount(2);
-    await expect(multiDay.locator('.week-people app-avatar[title="Dad"]')).toBeVisible();
+    await expect(multiDay.locator('.people app-avatar')).toHaveCount(2);
+    await expect(multiDay.locator('.people app-avatar[title="Dad"]')).toBeVisible();
     for (const event of [swim, allDay, multiDay]) {
-      const kai = event.locator('.week-people app-avatar[title="Kai"]');
+      const kai = event.locator('.people app-avatar[title="Kai"]');
       await expect(kai).toBeVisible();
       await expect(kai).toHaveText('K');
       await expect(kai.locator('img')).toHaveCount(0);
     }
-    await expect(noAttendees.locator('.week-people')).toHaveCount(0);
+    await expect(noAttendees.locator('.people')).toHaveCount(0);
     await expect(short).toHaveAccessibleName(/Family check-in.*(?:Dad.*Mom|Mom.*Dad).*Kai/);
-    const more = short.locator('.people-more');
+    const more = short.locator('.more');
     await expect(more).toBeVisible();
     await expect(more).toHaveText(/^\+[123]$/);
     await short.scrollIntoViewIfNeeded();
     const block = (await short.boundingBox())!;
-    for (const content of [short.locator('.title'), short.locator('.when'), more]) {
+    for (const content of [short.locator('.title'), more]) {
       const box = (await content.boundingBox())!;
       expect(box.y).toBeGreaterThanOrEqual(block.y);
       expect(box.y + box.height).toBeLessThanOrEqual(block.y + block.height);
       expect(box.x + box.width).toBeLessThanOrEqual(block.x + block.width + 1);
     }
-    expect(await short.locator('.when').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
-    expect(block.x + block.width).toBeLessThanOrEqual((await noAttendees.boundingBox())!.x + 1);
+    // Both start at 9:00 AM: grouped under that time, each on its own row, never side by side or overlapping (#729).
+    const group = page.locator('app-calendar-week li.group').filter({ hasText: 'Family check-in' });
+    await expect(group.locator('.group__head')).toHaveText(/^9:00\sAM · 2 events$/);
+    await expect(group.getByRole('button', { name: /^Parents-only schedule note/ })).toBeVisible();
+    expect(block.y + block.height).toBeLessThanOrEqual((await noAttendees.boundingBox())!.y + 1);
+    // The title keeps the room it needs; photos give way to "+N".
+    expect(await short.locator('.title').evaluate(el => el.getBoundingClientRect().width)).toBeGreaterThanOrEqual(48);
     await evidence(page, info, `week-attendees-${theme}`);
 
     await short.press('Enter');
@@ -73,7 +78,7 @@ test('desktop Week shows attendees without clipping short or overlapping events 
     await page.keyboard.press('Escape');
     await expect(short).toBeFocused();
     await page.setViewportSize({ width: 2200, height: 800 });
-    await expect(short.locator('.week-people app-avatar')).toHaveCount(3);
+    await expect(short.locator('.people app-avatar')).toHaveCount(3);
     await expect(more).toHaveCount(0);
   }
 });

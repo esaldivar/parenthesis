@@ -10,6 +10,8 @@ that points back here.
 
 ## Big projects
 
+- [ ] **Calendar item detail refinements (#730).** Review the Confirmed stamp, photo states, and required-checklist clipboard playback at phone and desktop sizes in both themes after the change reaches Development. Verify reduced motion, keyboard focus, and screen-reader announcements in the browser.
+
 - [ ] **Approved parent Diary redesign (#712).** Implementation includes newest-first desktop spreads, brass page controls, reduced-motion-aware page turns, alternating mobile sheets and a return-to-newest arrow. After deployment, review the approved Figma layouts in both themes with keyboard and a real screen reader. Live shared-entry API integration remains outside this presentation change; sample entries stay opt-in and development-only. Photos is tracked by #710 and Artwork by #714.
 - [ ] **Stationary desktop sidebar and leaf footer (#676).** Restore the full-height sidebar and visible leaf/tagline,
   with only the main desktop pane scrolling. Verify owner acceptance after the fix reaches the development site.
@@ -83,6 +85,18 @@ that points back here.
   art as a faint background. Every action, the PDF report and the attention dot are unchanged.
   - [ ] Owner check on Development: overview, an agreed fund, a proposal from the co-parent, a Child Support record
     and the empty state, on phone and desktop, in both themes and in English and Spanish.
+- [ ] **Desktop shell fills the laptop window (#727, M5).** Owner check on Development: on a laptop window in both
+  themes, Home, Records and Calendar keep the sidebar and content to the window's bottom with no empty strip.
+- [x] **Short desktop window with Messages open (#727 follow-up).** At 1024×600 the open Messages panel covers all but
+  about 28px of the content height, so a far-right late event in the Calendar week is reachable only through a 24px
+  strip above the panel. Done in #729: while Messages is open the calendar gives up the panel's width, so nothing sits
+  under it (Week shows the day agenda when that leaves too little room for seven columns).
+- [ ] **Quiet Planner calendar (#729, M5).** Month, Week and List redesign with the desktop children-playing artwork,
+  the pinned Week and List key, same-time groups, the phone day strip and agenda, and date-grouped tinted List cards.
+  Owner check on Development: desktop and phone, light and dark, with Messages open and closed, at a short desktop
+  window, and with reduced motion. Review the Figma deviations listed in the PR.
+- [ ] **Messages background leaves (#724, M5).** Faint theme leaves behind the Messages conversation and the phone
+  Transcripts screen (the compact chat stays plain). Owner check on Development in both themes on phone and desktop.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
 - [ ] **Family Memories timeline redesign (#717, M5).** Month headings on a thin rail, album-style covers, and a coral
   time-left bar with "Open to save photos" in each memory's final week; an album-sheet empty state; the memory

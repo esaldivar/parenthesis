@@ -44,7 +44,7 @@
         </p>
       }
       @if (uploadsText(); as text) {
-        <p class="muted">{{ text }}</p>
+        <p class="muted upload-availability">{{ text }}</p>
       }
       @if (finalWeek(); as warning) {
         <p class="warning" role="note"><app-icon name="alert" [size]="18" /> {{ warning }}</p>

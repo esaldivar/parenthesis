@@ -52,6 +52,9 @@ async function pickPhoto(page: Page, editor: Locator, file: Buffer, name: string
 
 const monday = nextMonday();
 const week = monday.toISOString().slice(0, 10);
+// "Dad time" is on the Tuesday. The List view shows the month of the date it opens on, so it opens on that Tuesday:
+// when next Monday is the last day of a month, the Tuesday is in the next month.
+const tuesday = addHours(monday, 24).toISOString().slice(0, 10);
 
 test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
   for (const theme of ['light', 'dark'] as const) {
@@ -116,14 +119,13 @@ test.describe('Profile photos', { tag: ['@m3', '@mobile'] }, () => {
         await expect(page.locator('.agenda .pt', { hasText: 'Dad time' }).first().locator('app-avatar[title="Kai"] img')).toBeVisible();
         await evidence(page, info, `${theme}-profile-photos-calendar`);
 
-        await page.goto(`/calendar?date=${week}`);
-        const slot = page.locator('app-calendar-week .grid').getByRole('button', { name: /^Dad time/ });
-        const attendee = slot.locator('.week-people app-avatar[title="Kai"]');
-        await expect(slot.locator('.week-people app-avatar[data-kind="parent"] img')).toBeVisible();
-        if (!phone) {
-          await expect(attendee.locator('img')).toBeVisible();
-          expect(await shownPhoto(attendee)).toBe(dadsKai);
-        }
+        await page.goto(`/calendar?date=${tuesday}`);
+        // Desktop: the time grid. Phones: the chosen day's agenda, which shows every photo too (#729).
+        const slot = page.locator(phone ? 'app-calendar-week .agenda' : 'app-calendar-week .grid').getByRole('button', { name: /^Dad time/ });
+        const attendee = slot.locator('.people app-avatar[title="Kai"]');
+        await expect(slot.locator('.people app-avatar[data-kind="parent"] img')).toBeVisible();
+        await expect(attendee.locator('img')).toBeVisible();
+        expect(await shownPhoto(attendee)).toBe(dadsKai);
         await page.getByRole('button', { name: 'List', exact: true }).click();
         const listed = page.locator('app-calendar-list').getByRole('button', { name: /^Dad time/ });
         await expect(listed.locator('app-avatar[title="Kai"] img')).toBeVisible();

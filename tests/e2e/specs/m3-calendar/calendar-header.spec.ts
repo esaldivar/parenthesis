@@ -69,7 +69,8 @@ test.describe('Calendar header and bottom navigation layering', { tag: ['@m3', '
     if (info.project.use.hasTouch) await page.setViewportSize({ width: page.viewportSize()!.width, height: 600 });
     await signIn(page, family.dad.email);
     await page.goto(`/calendar?date=${lateMonday.toISOString().slice(0, 10)}&view=month`);
-    const bar = page.locator('app-calendar-month .bar', { hasText: 'Dad time' }).first();
+    // Phones name the caregiver on the bar (#729); its accessible name keeps the title.
+    const bar = page.locator('app-calendar-month').getByRole('button', { name: /Dad time/ }).and(page.locator('.bar')).first();
     await expect(bar).toBeVisible();
     const nav = page.locator('nav.bottomnav');
     if (!info.project.use.hasTouch) {

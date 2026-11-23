@@ -167,6 +167,8 @@ describe('tasks on the calendar', () => {
     expect(text(dialog().querySelector('[role="status"]'))).toBe('Great teamwork! This task is done.');
     const confetti = dialog().querySelector('.confetti')!;
     expect(confetti.getAttribute('aria-hidden')).toBe('true');
+    expect(confetti.querySelector('.clipboard-pencil')).toBeTruthy();
+    expect(confetti.querySelectorAll('.clipboard-particles i')).toHaveLength(84);
     expect(text(dialog().querySelector('.status'))).toBe('Done');
     expect(text(dialog())).toContain('Ticked by you · Oct 21, 9:00 AM');
     expect(text(dialog())).toContain('Done by you · Oct 21, 9:00 AM');
@@ -335,7 +337,7 @@ describe('tasks on the calendar', () => {
   it('offers Mark done and Undo for a task without a checklist, with who did it', async () => {
     await open([task()]);
     await openDetails();
-    expect(text(dialog().querySelector('.status'))).toBe('To do');
+    expect(dialog().querySelector('.status')).toBeNull();
 
     button('Mark done', dialog()).click();
     (await vi.waitFor(() => http.expectOne((r) => r.method === 'POST' && r.url === `${F}/calendar/tasks/t1/done`))).flush(
@@ -348,7 +350,7 @@ describe('tasks on the calendar', () => {
     button('Undo done', dialog()).click();
     (await vi.waitFor(() => http.expectOne((r) => r.method === 'DELETE' && r.url === `${F}/calendar/tasks/t1/done`))).flush(task());
     await settle();
-    expect(text(dialog().querySelector('.status'))).toBe('To do');
+    expect(dialog().querySelector('.status')).toBeNull();
     expect(button('Mark done', dialog())).toBeTruthy();
   });
 
