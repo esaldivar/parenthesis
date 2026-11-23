@@ -4,11 +4,11 @@ import { evidence, signIn, test } from '../../support/mobile';
 // On a laptop the parent shell fills the window and only its content scrolls. Screen-reader-only labels (the home
 // cards' "See all" links) were positioned against the page instead, lengthening it, so the page scrolled and lifted
 // the whole shell above an empty strip at the window's bottom.
+// Desktop only (.desktop.spec.ts): phones and tablets scroll the page itself.
 const pages = ['/', '/calendar', '/messages', '/memories', '/from-your-kids', '/records', '/settings'];
 
 for (const theme of ['light', 'dark'] as const) {
   test(`The parent shell fills a laptop window without scrolling the page (${theme}) @m5 @regression`, async ({ page, family }, info) => {
-    test.skip(Boolean(info.project.use.hasTouch), 'Phones and tablets scroll the page itself.');
     await page.emulateMedia({ colorScheme: theme });
     await page.setViewportSize({ width: 1470, height: 745 });
     await signIn(page, family.dad.email);
