@@ -9,7 +9,8 @@ test('VoiceOver reads reminder details, confirmation choices and restores focus 
   await family.dad.json(family.dad.post(`/api/families/${family.familyId}/calendar/reminders`, {
     title, startsAt: addHours(monday, 37).toISOString(), allDay: false, childId: family.kaiId,
   }));
-  await page.goto(`/calendar?date=${isoDate(monday)}&view=list`);
+  // The List view shows the month of its date; open it on the reminder's own day, which can be next month's first.
+  await page.goto(`/calendar?date=${isoDate(addHours(monday, 24))}&view=list`);
   const opener = page.locator('app-calendar-list').getByRole('button', { name: new RegExp(title) });
   await expect(opener).toBeVisible();
   await page.bringToFront();

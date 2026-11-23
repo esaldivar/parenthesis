@@ -431,14 +431,30 @@ test.describe('The calendar in the browser', { tag: '@m3' }, () => {
       await dad.json(dad.post(events(familyId), { category: 'Activity', title: 'Piano lesson', childIds: [kaiId], startsAt: at(15), endsAt: at(16) }));
       await signIn(page, dad.email);
 
-      /** Taps 5:00 PM in Tuesday's desktop week-grid column. */
+      /**
+       * Taps 5:00 PM in Tuesday's desktop week-grid column. The grid scrolls itself to the week's first event once the
+       * events arrive, so wait for the piano lesson first. Then scroll 5:00 PM near the top of the grid; when the grid
+       * can't scroll that far, scroll the page too, so 5:00 PM sits clear of the colour key pinned to the bottom.
+       */
       async function tapFivePm(column: ReturnType<Page['locator']>) {
-        await column.evaluate((el, fraction) => {
+        await expect(column.locator('xpath=ancestor::*[contains(@class,"grid__body")]').getByText('Piano lesson').first()).toBeVisible();
+        const point = await column.evaluate((el, fraction) => {
           const scroller = el.closest('.grid__body') as HTMLElement;
           scroller.scrollTop = el.getBoundingClientRect().height * fraction - 100;
+          const target = () => {
+            const box = el.getBoundingClientRect();
+            return { x: box.x + box.width / 2, y: box.y + box.height * fraction + 4 };
+          };
+          const key = document.querySelector('.key')?.getBoundingClientRect();
+          const covered = target().y > (key ? key.top : innerHeight) - 24;
+          if (covered) {
+            let page: HTMLElement | null = scroller.parentElement;
+            while (page && !(page.scrollHeight > page.clientHeight && /(auto|scroll)/.test(getComputedStyle(page).overflowY))) page = page.parentElement;
+            (page ?? document.scrollingElement ?? document.documentElement).scrollBy(0, target().y - (key ? key.top : innerHeight) + 160);
+          }
+          return target();
         }, 17 / 24);
-        const box = (await column.boundingBox())!;
-        await page.mouse.click(box.x + box.width / 2, box.y + (box.height * 17) / 24 + 4);
+        await page.mouse.click(point.x, point.y);
       }
 
       for (const [where, url] of [

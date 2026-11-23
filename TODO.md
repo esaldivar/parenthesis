@@ -83,6 +83,8 @@ that points back here.
   art as a faint background. Every action, the PDF report and the attention dot are unchanged.
   - [ ] Owner check on Development: overview, an agreed fund, a proposal from the co-parent, a Child Support record
     and the empty state, on phone and desktop, in both themes and in English and Spanish.
+- [ ] **Messages background leaves (#724, M5).** Faint theme leaves behind the Messages conversation and the phone
+  Transcripts screen (the compact chat stays plain). Owner check on Development in both themes on phone and desktop.
 - [ ] Verify the Family Memories artwork and cards on Development at phone and desktop widths in both themes (#520).
 - [ ] **Family Memories timeline redesign (#717, M5).** Month headings on a thin rail, album-style covers, and a coral
   time-left bar with "Open to save photos" in each memory's final week; an album-sheet empty state; the memory
