@@ -10,11 +10,38 @@
   [appPanelTint]="'task'"
 >
   @if (confetti()) {
-    <div class="confetti" aria-hidden="true">
-      @for (piece of pieces; track piece) {
-        <span [style.--i]="piece"></span>
-      }
-    </div>
+    @if (hasChecklist()) {
+      <div class="confetti clipboard-celebration" aria-hidden="true">
+        <div class="clipboard-flight">
+          <div class="clipboard">
+            <div class="clipboard-clamp"></div>
+            <div class="clipboard-paper">
+              <div><b></b><span></span></div>
+              <div><b></b><span></span></div>
+              <div><b class="clipboard-last"></b><span></span></div>
+            </div>
+            <div class="clipboard-pencil"></div>
+          </div>
+        </div>
+        <div class="clipboard-particles">
+          @for (piece of clipboardPieces; track $index) {
+            <i
+              [style.--dx]="piece.x + 'px'"
+              [style.--dy]="piece.y + 'px'"
+              [style.--spin]="piece.spin + 'deg'"
+              [style.width.px]="piece.width"
+              [style.height.px]="piece.height"
+            ></i>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="confetti" aria-hidden="true">
+        @for (piece of pieces; track piece) {
+          <span [style.--i]="piece"></span>
+        }
+      </div>
+    }
   }
 
   <div class="panel__head">
@@ -28,7 +55,9 @@
     </button>
   </div>
 
-  <p class="status" [attr.data-done]="done() ? 'true' : null">{{ done() ? ('feature.done' | tr) : ('feature.to.do' | tr) }}</p>
+  @if (done()) {
+    <p class="status" data-done="true">{{ 'feature.done' | tr }}</p>
+  }
 
   <p class="notice" role="status">{{ notice() }}</p>
 

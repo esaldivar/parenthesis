@@ -29,8 +29,24 @@ import { CalendarItem } from '../../calendar-items';
 import { toFamilyLocal } from '../../time';
 
 /** How long the confetti plays before only the calm "done" state is left. */
-export const CELEBRATION_MS = 2400;
+export const CELEBRATION_MS = 3000;
 const CONFETTI_PIECES = 14;
+const CLIPBOARD_DIRECTIONS = 28;
+const CLIPBOARD_RADII = [55, 89, 126];
+
+const clipboardConfetti = CLIPBOARD_RADII.flatMap((radius, ring) =>
+  Array.from({ length: CLIPBOARD_DIRECTIONS }, (_, direction) => {
+    const angle = (direction + ring * 0.36) * 2 * Math.PI / CLIPBOARD_DIRECTIONS;
+    const distance = radius + ((direction * 17 + ring * 7) % 19) - 9;
+    return {
+      x: Math.cos(angle) * distance,
+      y: Math.sin(angle) * distance,
+      spin: (direction % 2 ? -1 : 1) * (160 + direction * 13),
+      width: 7 + direction % 6,
+      height: 5 + direction % 5,
+    };
+  }),
+);
 
 /**
  * A shared task's details, over the calendar (#73, part 3: #176). Opening it is what marks it Seen for this parent;
@@ -78,6 +94,7 @@ export class TaskDetails implements OnInit {
   protected readonly notice = signal<string | null>(null);
   protected readonly confetti = signal(false);
   protected readonly pieces = Array.from({ length: CONFETTI_PIECES }, (_, i) => i);
+  protected readonly clipboardPieces = clipboardConfetti;
 
   protected readonly due = computed(() => dayLong(this.current().dueDate, this.locale.locale()));
   protected readonly hasChecklist = computed(() => this.current().items.length > 0);

@@ -477,12 +477,12 @@ export const translations = {
   'memory.upload.unavailable': ["Adding photos isn’t available yet.", "Todavía no se pueden agregar fotos."],
   'memory.upload.limitReached': ["You’ve added all {limit} of your photos for this event. Delete one to add another.", "Ya agregaste el máximo de {limit} fotos para este evento. Elimina una para agregar otra."],
   'memory.upload.emptyWithCoParent': [
-    'No photos yet. Add up to {limit} of your own, {batch} at a time. Only you see them unless you share them.',
-    'Aún no hay fotos. Puedes agregar hasta {limit} fotos tuyas, {batch} a la vez. Solo tú puedes verlas hasta que las compartas.',
+    'No photos yet.\nAdd up to {limit} of your own, {batch} at a time. Only you can see them unless you share them.',
+    'Aún no hay fotos.\nPuedes agregar hasta {limit} fotos tuyas, {batch} a la vez. Solo tú puedes verlas hasta que las compartas.',
   ],
   'memory.upload.empty': [
-    'No photos yet. Add up to {limit} of your own, {batch} at a time. Only you see them.',
-    'Aún no hay fotos. Puedes agregar hasta {limit} fotos tuyas, {batch} a la vez. Solo tú puedes verlas.',
+    'No photos yet.\nAdd up to {limit} of your own, {batch} at a time. Only you can see them.',
+    'Aún no hay fotos.\nPuedes agregar hasta {limit} fotos tuyas, {batch} a la vez. Solo tú puedes verlas.',
   ],
   'memory.upload.quota': ["You can add {remaining} more ({used} of your {limit} used). Photos are deleted {days} days after upload.", "Puedes agregar {remaining} más ({used} de {limit} en uso). Las fotos se eliminan {days} días después de subirlas."],
   'memory.upload.roomOne': [

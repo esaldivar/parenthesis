@@ -1,6 +1,5 @@
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
-import { EventDecoration } from '../event-decoration/event-decoration.component';
 import { CalendarPalette, PanelTint } from '../../calendar-palette';
 import { A11yModule } from '@angular/cdk/a11y';
 import {
@@ -49,7 +48,7 @@ export const COMMENT_MAX = 500;
 @Component({
   selector: 'app-event-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, EventDecoration, CalendarPalette, PanelTint, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
+  imports: [TranslatePipe, CalendarPalette, PanelTint, A11yModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, RouterLink, Icon, EventPhotosSection],
   host: { '(keydown.escape)': 'closed.emit()' },
   templateUrl: './event-details.component.html',
   styleUrl: './event-details.component.scss',
