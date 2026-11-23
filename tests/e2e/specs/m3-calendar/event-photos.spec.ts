@@ -79,7 +79,7 @@ test.describe('Event photos and Family Memories', { tag: ['@m3', '@mobile'] }, (
 
       await test.step('nothing is uploaded until the parent has seen the privacy and retention note', async () => {
         await expect(photos.getByRole('heading', { name: 'Photos' })).toBeVisible();
-        await expect(photos.getByText('No photos yet. Add up to 10 of your own, 5 at a time. Only you see them unless you share them.')).toBeVisible();
+        await expect(photos.getByText('No photos yet. Add up to 10 of your own, 5 at a time. Only you can see them unless you share them.')).toBeVisible();
         // The visible button opens the system picker; the test hands the files to its input directly.
         await photos.locator('input[type=file]').setInputFiles([
           { name: 'IMG_2041.png', mimeType: 'image/png', buffer: png(220, 40, 40) },
