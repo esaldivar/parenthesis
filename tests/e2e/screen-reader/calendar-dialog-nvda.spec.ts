@@ -12,7 +12,8 @@ test('NVDA opens an event, traps dialog focus, cancels confirmation and restores
     },
   ));
   expect(event.status).toBe('Confirmed');
-  await page.goto(`/calendar?date=${monday.toISOString().slice(0, 10)}&view=list`);
+  // The List view shows the month of its date; open it on the event's own day, which can be next month's first.
+  await page.goto(`/calendar?date=${addHours(monday, 24).toISOString().slice(0, 10)}&view=list`);
   const opener = page.locator('app-calendar-list').getByRole('button', { name: new RegExp(title) });
   await expect(opener).toBeVisible();
   await page.bringToFront();
