@@ -25,6 +25,26 @@ public sealed class EmailFlowTests(ApiFactory api) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Feedback_requires_a_signed_in_user_and_emails_the_feedback_inbox()
+    {
+        const string recipient = "feedback@parenthesisfamily.com";
+        var marker = $"Calendar feedback {Guid.NewGuid()} <example>";
+        var payload = new { type = "bug", message = marker, screen = "calendar" };
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _session.PostAsync("/api/feedback", payload)).StatusCode);
+
+        using var parent = await ApiSession.SignedInAsync(api);
+        Assert.Equal(HttpStatusCode.BadRequest, (await parent.PostAsync("/api/feedback", new { type = "bug", message = " " })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await parent.PostAsync("/api/feedback", payload)).StatusCode);
+
+        var email = Assert.Single(parent.Emails.SentTo(recipient), email => email.TextBody.Contains(marker));
+        Assert.Equal("Parenthesis feedback: Bug", email.Subject);
+        Assert.Contains("Screen: calendar", email.TextBody);
+        Assert.Contains("App version:", email.TextBody);
+        Assert.Contains("&lt;example&gt;", email.HtmlBody);
+    }
+
+    [Fact]
     public async Task Sign_in_is_refused_until_the_email_is_confirmed()
     {
         var email = ApiSession.NewEmail();
