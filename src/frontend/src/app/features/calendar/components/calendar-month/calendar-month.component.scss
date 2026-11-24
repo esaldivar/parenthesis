@@ -308,14 +308,20 @@
   flex-wrap: wrap;
 }
 @media (width < 1024px) {
-  // Keep the agenda above the phone navigation until its normal position below the grid comes into view.
+  // Keep the agenda above the phone navigation until its normal position below the grid comes into view. Docking
+  // only applies on viewports tall enough to keep the month grid usable (#736); on short screens the agenda stays in
+  // flow below the grid instead of covering its rows.
   .agenda {
-    position: sticky;
-    inset-block-end: calc(var(--bottom-nav-clearance, 0px) + var(--space-1));
-    z-index: 3;
     max-block-size: min(40dvh, 17rem);
     overflow-y: auto;
     scroll-padding-block-start: 2.5rem;
+  }
+  @media (min-height: 640px) {
+    .agenda {
+      position: sticky;
+      inset-block-end: calc(var(--bottom-nav-clearance, 0px) + var(--space-1));
+      z-index: 3;
+    }
   }
   .agenda__head {
     position: sticky;
