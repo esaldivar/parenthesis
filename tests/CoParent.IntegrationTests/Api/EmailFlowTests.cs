@@ -37,7 +37,7 @@ public sealed class EmailFlowTests(ApiFactory api) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, (await parent.PostAsync("/api/feedback", new { type = "bug", message = " " })).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await parent.PostAsync("/api/feedback", payload)).StatusCode);
 
-        var email = Assert.Single(parent.Emails.SentTo(recipient).Where(email => email.TextBody.Contains(marker)));
+        var email = Assert.Single(parent.Emails.SentTo(recipient), email => email.TextBody.Contains(marker));
         Assert.Equal("Parenthesis feedback: Bug", email.Subject);
         Assert.Contains("Screen: calendar", email.TextBody);
         Assert.Contains("App version:", email.TextBody);
