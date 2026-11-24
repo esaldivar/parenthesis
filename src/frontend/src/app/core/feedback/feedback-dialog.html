@@ -1,0 +1,44 @@
+<section class="feedback-card" [class.confirmation]="sent()">
+  <img class="brand-mark" src="/brand/parenthesis-icon.svg" alt="" width="64" height="64" />
+  @if (sent()) {
+    <h2 id="feedback-heading" role="status">{{ 'feedback.thanks' | tr }}</h2>
+    <div class="coder" aria-hidden="true">
+      <img src="/brand/feedback-coder.png" alt="" width="340" height="268" />
+      <svg viewBox="0 0 340 268" aria-hidden="true">
+        <g class="tears">
+          <ellipse class="pool" cx="193" cy="105" rx="8" ry="2.7" />
+          <ellipse class="pool" cx="235" cy="107" rx="8" ry="2.7" />
+          <path class="stream" d="M193 107 Q193 118 195 125 M235 109 Q236 120 243 127" />
+          <ellipse class="drop" cx="195" cy="110" rx="2.4" ry="3.2" />
+          <ellipse class="drop" cx="238" cy="112" rx="2.4" ry="3.2" />
+        </g>
+      </svg>
+    </div>
+    <button #done mat-flat-button type="button" (click)="dialog.close()">{{ 'feedback.done' | tr }}</button>
+  } @else {
+    <h2 id="feedback-heading">{{ 'feedback.send' | tr }}</h2>
+    <p>{{ 'feedback.recipient' | tr }} <strong>feedback@parenthesisfamily.com</strong>.</p>
+    <form (submit)="send($event)" [attr.aria-busy]="sending()">
+      <fieldset [disabled]="sending()">
+        <legend>{{ 'feedback.type' | tr }}</legend>
+        <label><input type="radio" name="feedbackType" value="bug" required (change)="type.set('bug')" /> {{ 'feedback.bug' | tr }}</label>
+        <label><input type="radio" name="feedbackType" value="suggestion" required (change)="type.set('suggestion')" /> {{ 'feedback.suggestion' | tr }}</label>
+      </fieldset>
+      <label for="feedback-message">{{ 'feedback.message' | tr }}</label>
+      <textarea #entry id="feedback-message" rows="4" maxlength="4000" required [disabled]="sending()"
+        aria-describedby="feedback-privacy"
+        [placeholder]="(type() === 'bug' ? 'feedback.bugHint' : type() === 'suggestion' ? 'feedback.suggestionHint' : 'feedback.message') | tr"
+        (input)="message.set(entry.value)"></textarea>
+      <p id="feedback-privacy">{{ 'feedback.privacy' | tr }}</p>
+      @if (failed()) {
+        <p class="error" role="alert">{{ 'feedback.error' | tr }}</p>
+      }
+      <div class="actions">
+        <button mat-button type="button" [disabled]="sending()" (click)="dialog.close()">{{ 'feedback.cancel' | tr }}</button>
+        <button mat-flat-button type="submit" [disabled]="sending() || !type() || !message().trim()">
+          {{ (sending() ? 'feedback.sending' : 'feedback.send') | tr }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

@@ -22,6 +22,8 @@ import { ToastHost } from '../../../shared/components/toast/toast-host';
 import { BottomNav } from '../../../shared/directives/overlay/bottom-nav-clearance';
 import { SharedRecordsAttentionStore } from '../../shared-records/shared-records-attention.store';
 
+import { Feedback } from '../../feedback/feedback';
+
 const IGNORE_QUERY = { queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' } as const;
 const HOME_ACTIVE: IsActiveMatchOptions = { paths: 'exact', ...IGNORE_QUERY };
 const SECTION_ACTIVE: IsActiveMatchOptions = { paths: 'subset', ...IGNORE_QUERY };
@@ -46,6 +48,7 @@ export class ParentShell {
   protected activeOptions(path: string): IsActiveMatchOptions {
     return path === '/' ? HOME_ACTIVE : SECTION_ACTIVE;
   }
+  protected readonly feedback = inject(Feedback);
   protected readonly auth = inject(AuthStore);
   /** The account corner shows the parent's own photo on every screen size (#388). */
   protected readonly photos = inject(ProfilePhotos);

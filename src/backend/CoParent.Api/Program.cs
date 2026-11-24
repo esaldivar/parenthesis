@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 using CoParent.Api.Hosting;
 using CoParent.Infrastructure.DataProtection;
@@ -39,6 +41,16 @@ builder.Services
     .AddMessagingModule()
     .AddSharedRecordsModule();
 
+builder.Services.AddRateLimiter(options =>
+    options.AddPolicy(FeedbackEndpoints.RateLimitPolicy, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(10),
+            })));
+
 var app = builder.Build();
 
 // `dotnet run --project src/backend/CoParent.Api -- migrate` applies every module's migrations, then exits.
@@ -77,6 +89,7 @@ api.MapAntiforgeryTokenEndpoint();
 var family = api.MapFamilyScopedGroup();
 
 api.MapIdentityEndpoints();
+api.MapFeedbackEndpoints();
 api.MapFamiliesEndpoints(family);
 family.MapApprovalsEndpoints();
 family.MapCalendarEndpoints();
