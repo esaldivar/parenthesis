@@ -47,14 +47,14 @@ export class KidsDiary {
   private readonly sheets = viewChildren<ElementRef<HTMLElement>>('sheet');
   private readonly entryTexts = viewChildren<ElementRef<HTMLElement>>('entryText');
   private readonly reader = viewChild<ElementRef<HTMLDialogElement>>('reader');
-  /** Entries too long for their page: they scroll inside it (focusable), and a button opens the whole entry. */
+  /** Entries too long for their page: clipped, with a button that opens the whole entry (no scroll box). */
   protected readonly clipped = signal<ReadonlySet<string>>(new Set());
   /** The entry open in the reader dialog. */
   protected readonly reading = signal<KidsDiaryEntry | null>(null);
   private readerOpener: HTMLElement | null = null;
 
   constructor() {
-    // Measure each page's text: what doesn't fit scrolls inside its page and is also offered whole from a button.
+    // Measure each page's text: what doesn't fit is clipped and offered whole from a button.
     afterRenderEffect((onCleanup) => {
       const texts = this.entryTexts().map((ref) => ref.nativeElement);
       const measure = () => {

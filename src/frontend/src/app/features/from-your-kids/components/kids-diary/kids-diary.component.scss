@@ -24,10 +24,14 @@
   align-content: start;
   block-size: 20rem;
 }
-// A long entry scrolls within its own page (#712). The scroll region is keyboard-focusable only while it overflows.
+// A page holds what fits; a long entry fades out and its whole text opens from "Read the whole entry", so there is
+// no scroll box to reach by keyboard.
 .entry-text {
-  overflow-y: auto;
+  overflow: hidden;
   padding: 0.25rem 0.5rem;
+}
+.entry-text.is-clipped {
+  mask-image: linear-gradient(to bottom, #000 75%, transparent);
 }
 .read-more {
   justify-self: start;

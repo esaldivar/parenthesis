@@ -12,15 +12,8 @@
           tabindex="-1"
           [attr.aria-label]="entry.title || ('feature.diary.entry.fallback' | tr)"
         >
-          <!-- The page keeps its size: a long entry scrolls inside it, and the whole of it also opens from a button. -->
-          <div
-            class="entry-text"
-            #entryText
-            [attr.data-entry]="entry.id"
-            [attr.role]="clipped().has(entry.id) ? 'region' : null"
-            [attr.tabindex]="clipped().has(entry.id) ? 0 : null"
-            [attr.aria-label]="clipped().has(entry.id) ? (entry.title || ('feature.diary.entry.fallback' | tr)) : null"
-          >
+          <!-- The page keeps its size: a long entry is clipped, and the whole of it opens from a button. -->
+          <div class="entry-text" #entryText [attr.data-entry]="entry.id" [class.is-clipped]="clipped().has(entry.id)">
             <time [attr.datetime]="entry.createdAt">{{
               entry.createdAt | appDate: 'longDate'
             }}</time>

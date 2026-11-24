@@ -100,7 +100,7 @@ describe('KidsDiary approved design (#712)', () => {
     expect(host.querySelector('.turning-sheet')?.classList.contains('to-newer')).toBe(true);
   });
 
-  it('scrolls a long entry inside its page as a labelled, focusable region; the reader button opens it whole (#712, Web:S6845)', async () => {
+  it('has no scroll box to tab to; a long entry opens whole from a button and gives focus back (Web:S6845)', async () => {
     // jsdom has no layout: entry 2's text is taller than its page, entry 1's fits.
     const long = (el: HTMLElement) => el.dataset['entry'] === 'entry-2';
     const scrollHeight = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
@@ -112,12 +112,8 @@ describe('KidsDiary approved design (#712)', () => {
     fixture.detectChanges();
     scrollHeight.mockRestore();
     clientHeight.mockRestore();
-    // Only the overflowing page is a keyboard stop; pages themselves stay out of the tab order except for page turns.
-    const scroller = host.querySelector<HTMLElement>('.desktop-book [data-entry="entry-2"]');
-    expect(scroller?.getAttribute('role')).toBe('region');
-    expect(scroller?.getAttribute('tabindex')).toBe('0');
-    expect(scroller?.getAttribute('aria-label')).toBe('Title 2');
-    expect(host.querySelector('.desktop-book [data-entry="entry-1"]')?.hasAttribute('tabindex')).toBe(false);
+    // Pages are focusable only for page turns, never in the tab order.
+    expect(host.querySelector('.desktop-book [tabindex="0"], .desktop-book [role="region"]')).toBeNull();
     expect(host.querySelector('.desktop-book .paper')?.getAttribute('tabindex')).toBe('-1');
     const readAll = host.querySelector<HTMLButtonElement>('.read-more');
     expect(readAll?.textContent).toContain('Read the whole entry: Title 2');

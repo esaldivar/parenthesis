@@ -19,7 +19,7 @@ import { Feedback } from '../../../../core/feedback/feedback';
       @for (item of items; track item.path) {
         @if (item.path === '/settings') {
           <li>
-            <button type="button" class="feedback" (click)="feedback.open()">
+            <button #feedbackButton type="button" class="feedback" (click)="feedback.open(feedbackButton)">
               <app-icon name="messages" />
               <span>{{ 'feedback.submit' | tr }}</span>
             </button>
