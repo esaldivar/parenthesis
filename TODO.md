@@ -10,6 +10,8 @@ that points back here.
 
 ## Big projects
 
+- [ ] **Mobile Month agenda visibility (#736).** Verify on Development that the selected day stays visible above the phone navigation while viewing Month and settles below the grid when scrolling past it.
+
 - [ ] **Calendar item detail refinements (#730).** Review the Confirmed stamp, photo states, and required-checklist clipboard playback at phone and desktop sizes in both themes after the change reaches Development. Verify reduced motion, keyboard focus, and screen-reader announcements in the browser.
 
 - [ ] **Approved parent Diary redesign (#712).** Implementation includes newest-first desktop spreads, brass page controls, reduced-motion-aware page turns, alternating mobile sheets and a return-to-newest arrow. After deployment, review the approved Figma layouts in both themes with keyboard and a real screen reader. Live shared-entry API integration remains outside this presentation change; sample entries stay opt-in and development-only. Photos is tracked by #710 and Artwork by #714.

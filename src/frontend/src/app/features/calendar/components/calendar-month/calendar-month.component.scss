@@ -307,6 +307,23 @@
   gap: var(--space-2);
   flex-wrap: wrap;
 }
+@media (width < 1024px) {
+  // Keep the agenda above the phone navigation until its normal position below the grid comes into view.
+  .agenda {
+    position: sticky;
+    inset-block-end: calc(var(--bottom-nav-clearance, 0px) + var(--space-1));
+    z-index: 3;
+    max-block-size: min(40dvh, 17rem);
+    overflow-y: auto;
+    scroll-padding-block-start: 2.5rem;
+  }
+  .agenda__head {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    background: var(--color-surface);
+  }
+}
 .agenda__head h3 {
   margin: 0;
   font-size: 1rem;
