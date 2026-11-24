@@ -6,22 +6,25 @@
   <section class="desktop-book" aria-label="{{ 'feature.shared.diary' | tr }}">
     <div class="spread-pages">
       @for (entry of current(); track entry.id) {
+        <!-- A page turn moves focus here (tabindex -1: programmatic only). -->
         <article
           class="paper"
+          tabindex="-1"
           [attr.aria-label]="entry.title || ('feature.diary.entry.fallback' | tr)"
         >
-          <div
-            class="entry-scroll"
-            tabindex="0"
-            role="region"
-            [attr.aria-label]="entry.title || ('feature.diary.entry.fallback' | tr)"
-          >
+          <!-- The page keeps its size: a long entry is clipped, and the whole of it opens from a button. -->
+          <div class="entry-text" #entryText [attr.data-entry]="entry.id" [class.is-clipped]="clipped().has(entry.id)">
             <time [attr.datetime]="entry.createdAt">{{
               entry.createdAt | appDate: 'longDate'
             }}</time>
             <h3>{{ entry.title || ('feature.diary.entry.fallback' | tr) }}</h3>
             <p class="entry-body">{{ entry.body }}</p>
           </div>
+          @if (clipped().has(entry.id)) {
+            <button type="button" class="read-more" (click)="read(entry)">
+              {{ 'kids.diary.readAll' | tr }}<span class="visually-hidden">: {{ entry.title || ('feature.diary.entry.fallback' | tr) }}</span>
+            </button>
+          }
         </article>
       }
     </div>
@@ -65,6 +68,17 @@
     <p class="visually-hidden" role="status">
       {{ 'feature.diary.page.count' | tr: { page: spread() + 1, total: spreadCount() } }}
     </p>
+    <!-- The whole of a long entry: a modal dialog, so it traps focus, closes with Escape and gives focus back. -->
+    <dialog #reader class="reader" aria-labelledby="diary-reader-title" (close)="closeReader()">
+      @if (reading(); as entry) {
+        <time [attr.datetime]="entry.createdAt">{{ entry.createdAt | appDate: 'longDate' }}</time>
+        <h3 id="diary-reader-title">{{ entry.title || ('feature.diary.entry.fallback' | tr) }}</h3>
+        <p class="entry-body">{{ entry.body }}</p>
+        <form method="dialog">
+          <button type="submit" class="reader__close">{{ 'feature.close' | tr }}</button>
+        </form>
+      }
+    </dialog>
   </section>
   <section class="mobile-sheets" aria-label="{{ 'feature.shared.diary' | tr }}">
     @for (entry of ordered(); track entry.id; let i = $index) {

@@ -282,6 +282,7 @@ export const featureTranslations = {
   "feature.diary.page.count": ["Page {page} of {total}", "Página {page} de {total}"],
   "feature.diary.pages": ["Diary pages", "Páginas del diario"],
   "kids.diary.newest": ["Return to newest diary entry", "Volver a la entrada más reciente del diario"],
+  "kids.diary.readAll": ["Read the whole entry", "Leer la entrada completa"],
   "kids.diary.newer": ["Newer diary entries", "Entradas más recientes del diario"],
   "kids.diary.older": ["Older diary entries", "Entradas anteriores del diario"],
   "feature.dietary.restrictions.and.food.preferences": ["Dietary restrictions and food preferences", "Restricciones y preferencias alimentarias"],

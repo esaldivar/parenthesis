@@ -5,12 +5,14 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  afterRenderEffect,
   computed,
   effect,
   inject,
   input,
   signal,
   untracked,
+  viewChild,
   viewChildren,
 } from '@angular/core';
 import { AppDatePipe } from '../../../../core/i18n/locale-formatting';
@@ -43,8 +45,29 @@ export class KidsDiary {
   private readonly injector = inject(Injector);
   private readonly destroy = inject(DestroyRef);
   private readonly sheets = viewChildren<ElementRef<HTMLElement>>('sheet');
+  private readonly entryTexts = viewChildren<ElementRef<HTMLElement>>('entryText');
+  private readonly reader = viewChild<ElementRef<HTMLDialogElement>>('reader');
+  /** Entries too long for their page: clipped, with a button that opens the whole entry (no scroll box). */
+  protected readonly clipped = signal<ReadonlySet<string>>(new Set());
+  /** The entry open in the reader dialog. */
+  protected readonly reading = signal<KidsDiaryEntry | null>(null);
+  private readerOpener: HTMLElement | null = null;
 
   constructor() {
+    // Measure each page's text: what doesn't fit is clipped and offered whole from a button.
+    afterRenderEffect((onCleanup) => {
+      const texts = this.entryTexts().map((ref) => ref.nativeElement);
+      const measure = () => {
+        const next = new Set(texts.filter((el) => el.scrollHeight > el.clientHeight + 1).map((el) => el.dataset['entry'] ?? ''));
+        const now = this.clipped();
+        if (next.size !== now.size || [...next].some((id) => !now.has(id))) this.clipped.set(next);
+      };
+      measure();
+      if (typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(measure);
+      texts.forEach((el) => observer.observe(el));
+      onCleanup(() => observer.disconnect());
+    });
     effect(() => {
       this.entries();
       this.scope();
@@ -86,16 +109,25 @@ export class KidsDiary {
     this.turnId.update((value) => value + 1);
     afterNextRender(
       () => {
-        const papers = this.host.nativeElement.querySelectorAll<HTMLElement>(
-          '.desktop-book .entry-scroll',
-        );
-        papers.forEach((paper) => {
-          paper.scrollTop = 0;
-        });
-        papers[0]?.focus({ preventScroll: true });
+        this.host.nativeElement
+          .querySelector<HTMLElement>('.desktop-book .paper')
+          ?.focus({ preventScroll: true });
       },
       { injector: this.injector },
     );
+  }
+
+  /** Opens the whole of a long entry in the reader dialog; focus returns to its button when it closes. */
+  protected read(entry: KidsDiaryEntry): void {
+    this.readerOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.reading.set(entry);
+    afterNextRender(() => this.reader()?.nativeElement.showModal(), { injector: this.injector });
+  }
+
+  protected closeReader(): void {
+    this.reading.set(null);
+    this.readerOpener?.focus({ preventScroll: true });
+    this.readerOpener = null;
   }
 
   protected top(): void {

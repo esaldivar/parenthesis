@@ -44,7 +44,7 @@ describe('KidsDiary approved design (#712)', () => {
     await fixture.whenStable();
     expect(titles(host)).toEqual(['Title 3', 'Title 2']);
     expect(host.querySelector('[role="status"]')?.textContent).toContain('Page 2 of 3');
-    expect(document.activeElement).toBe(host.querySelector('.entry-scroll'));
+    expect(document.activeElement).toBe(host.querySelector('.desktop-book .paper'));
     click(host, 'Older diary entries');
     fixture.detectChanges();
     expect(titles(host)).toEqual(['Title 1']);
@@ -87,20 +87,49 @@ describe('KidsDiary approved design (#712)', () => {
     expect(host.querySelector('.back-to-newest, .desktop-book')).toBeNull();
   });
 
-  it('changes page-turn direction and resets the new paper scroll position', async () => {
+  it('changes page-turn direction', async () => {
     const { fixture, host } = open([entry(5), entry(4), entry(3)]);
     click(host, 'Older diary entries');
     fixture.detectChanges();
     await fixture.whenStable();
     expect(host.querySelector('.turning-sheet')).not.toBeNull();
     expect(host.querySelector('.turning-sheet')?.classList.contains('to-newer')).toBe(false);
-    const paper = host.querySelector<HTMLElement>('.entry-scroll')!;
-    paper.scrollTop = 100;
     click(host, 'Newer diary entries');
     fixture.detectChanges();
     await fixture.whenStable();
     expect(host.querySelector('.turning-sheet')?.classList.contains('to-newer')).toBe(true);
-    expect(host.querySelector('.entry-scroll')?.scrollTop).toBe(0);
+  });
+
+  it('has no scroll box to tab to; a long entry opens whole from a button and gives focus back (Web:S6845)', async () => {
+    // jsdom has no layout: entry 2's text is taller than its page, entry 1's fits.
+    const long = (el: HTMLElement) => el.dataset['entry'] === 'entry-2';
+    const scrollHeight = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
+      return long(this) ? 600 : 200;
+    });
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(276);
+    const { fixture, host } = open([entry(2), entry(1)]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    scrollHeight.mockRestore();
+    clientHeight.mockRestore();
+    // Pages are focusable only for page turns, never in the tab order.
+    expect(host.querySelector('.desktop-book [tabindex="0"], .desktop-book [role="region"]')).toBeNull();
+    expect(host.querySelector('.desktop-book .paper')?.getAttribute('tabindex')).toBe('-1');
+    const readAll = host.querySelector<HTMLButtonElement>('.read-more');
+    expect(readAll?.textContent).toContain('Read the whole entry: Title 2');
+    expect(host.querySelectorAll('.read-more')).toHaveLength(1);
+    const dialog = host.querySelector<HTMLDialogElement>('dialog.reader')!;
+    dialog.showModal = vi.fn(() => dialog.setAttribute('open', ''));
+    readAll!.focus();
+    readAll!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(dialog.showModal).toHaveBeenCalled();
+    expect(dialog.querySelector('h3')?.textContent).toBe('Title 2');
+    dialog.dispatchEvent(new Event('close'));
+    fixture.detectChanges();
+    expect(dialog.querySelector('h3')).toBeNull();
+    expect(document.activeElement).toBe(readAll);
   });
 
   it('shows the mobile return arrow only away from the newest entry and returns with reduced motion', async () => {
