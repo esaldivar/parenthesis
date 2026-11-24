@@ -137,7 +137,7 @@
 @if (narrow()) {
   @let day = agenda();
   <!-- The chosen day on a phone (#729): its items with everyone's photos; "+N more" opens its week. -->
-  <section class="agenda" aria-labelledby="month-agenda-title" aria-live="polite">
+  <section #dayAgenda class="agenda" aria-labelledby="month-agenda-title" aria-live="polite">
     <header class="agenda__head">
       <h3 id="month-agenda-title">{{ day.title }}</h3>
       @if (day.proposed) {

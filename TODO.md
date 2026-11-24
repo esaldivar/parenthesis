@@ -10,7 +10,8 @@ that points back here.
 
 ## Big projects
 
-- [ ] **Mobile Month agenda visibility (#736).** Verify on Development that the selected day stays visible above the phone navigation while viewing Month and settles below the grid when scrolling past it.
+- [ ] **Mobile Month agenda visibility (#736).** On Development, verify the separate grid and agenda scroll areas at 320px and 390px in both themes. Confirm date taps, the selected-day heading above bottom navigation, and keyboard access to the last row and agenda actions.
+- [ ] **Release 0.5.0 follow-up (#741).** Verify the combined release head clears Sonar's new-code gate after the corrective PR lands. On Development, verify both feedback entry points, email delivery and focus, and retest the desktop diary full-entry reader with keyboard and NVDA.
 
 - [ ] **Calendar item detail refinements (#730).** Review the Confirmed stamp, photo states, and required-checklist clipboard playback at phone and desktop sizes in both themes after the change reaches Development. Verify reduced motion, keyboard focus, and screen-reader announcements in the browser.
 

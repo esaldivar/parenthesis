@@ -66,8 +66,15 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(agenda.getByRole('button', { name: /^Dinner/ }).locator('app-avatar')).toHaveCount(4);
       const grid = page.locator('app-calendar-month .month');
       const bottomNav = page.locator('[data-bottom-nav]');
-      await grid.evaluate(el => el.scrollIntoView({ block: 'start' }));
+      const firstDay = grid.locator('.day__number').first();
+      await activate(firstDay, info);
+      await expect(firstDay).toHaveAttribute('aria-pressed', 'true');
       await expect(agenda.getByRole('heading', { level: 3 })).toBeInViewport();
+      await expect.poll(async () => {
+        const gridBox = await grid.boundingBox();
+        const agendaBox = await agenda.boundingBox();
+        return !!gridBox && !!agendaBox && agendaBox.y >= gridBox.y + gridBox.height - 1;
+      }).toBe(true);
       await expect.poll(async () => {
         const agendaBox = await agenda.boundingBox();
         const navBox = await bottomNav.boundingBox();
@@ -81,6 +88,17 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(outside).toHaveAttribute('aria-pressed', 'true');
       await expect(agenda.getByRole('heading', { level: 3 })).toHaveText(outsideName);
       await expect(agenda.getByRole('heading', { level: 3 })).toBeInViewport();
+
+      // On a short phone, the last week must still be selectable without the agenda covering it.
+      const viewport = page.viewportSize()!;
+      await page.setViewportSize({ width: viewport.width, height: 568 });
+      await grid.evaluate(el => el.scrollIntoView({ block: 'start' }));
+      await expect(agenda.getByRole('heading', { level: 3 })).toBeInViewport();
+      const finalWeekDay = grid.locator('.week').last().locator('.day__number').first();
+      await activate(finalWeekDay, info);
+      await expect(finalWeekDay).toHaveAttribute('aria-pressed', 'true');
+      await expect(agenda.getByRole('heading', { level: 3 })).toBeInViewport();
+      await page.setViewportSize(viewport);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await expect.poll(async () => {
         const agendaBox = await agenda.boundingBox();

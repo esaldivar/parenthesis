@@ -24,7 +24,7 @@ export class FeedbackDialog {
   protected readonly sent = signal(false);
   protected readonly failed = signal(false);
 
-  private readonly done = viewChild<ElementRef<HTMLButtonElement>>('done');
+  private readonly done = viewChild('done', { read: ElementRef });
 
   constructor() {
     afterRenderEffect(() => this.done()?.nativeElement.focus());

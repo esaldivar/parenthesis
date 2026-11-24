@@ -1,8 +1,7 @@
-import { inject } from '@angular/core';
 import { LocaleService } from '../../../../core/i18n/locale.service';
 import { TranslatePipe, translate } from '../../../../core/i18n/translations';
 import { CalendarPalette } from '../../calendar-palette';
-import { ChangeDetectionStrategy, Component, HostListener, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { AddAt, SlotPick, clearsPick, pickLabel } from '../../slot';
 import { PlainDate } from '../../../../core/dates/plain-date';
 import { addDays, dayLong, dayOfMonth, startOfWeek, weekdayShort } from '../../../../core/dates/dates';
@@ -47,6 +46,8 @@ const DAY_DOTS = 3;
 })
 export class CalendarMonth extends NarrowHost {
   private readonly locale = inject(LocaleService);
+  private readonly injector = inject(Injector);
+  private readonly dayAgenda = viewChild<ElementRef<HTMLElement>>('dayAgenda');
   readonly date = input.required<PlainDate>();
   readonly today = input.required<PlainDate>();
   readonly items = input.required<readonly CalendarItem[]>();
@@ -102,6 +103,13 @@ export class CalendarMonth extends NarrowHost {
   protected dayNumber(date: PlainDate): void {
     if (this.narrow()) {
       this.chosen.set(date);
+      afterNextRender({ write: () => {
+        const agenda = this.dayAgenda()?.nativeElement;
+        if (agenda) {
+          agenda.scrollTop = 0;
+          agenda.scrollIntoView({ block: 'nearest' });
+        }
+      } }, { injector: this.injector });
     } else {
       this.openDay.emit(date);
     }
