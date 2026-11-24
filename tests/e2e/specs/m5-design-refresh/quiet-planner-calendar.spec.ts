@@ -66,7 +66,9 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(agenda.getByRole('button', { name: /^Dinner/ }).locator('app-avatar')).toHaveCount(4);
       const grid = page.locator('app-calendar-month .month');
       const bottomNav = page.locator('[data-bottom-nav]');
-      await grid.evaluate(el => el.scrollIntoView({ block: 'start' }));
+      const firstDay = grid.locator('.day__number').first();
+      await activate(firstDay, info);
+      await expect(firstDay).toHaveAttribute('aria-pressed', 'true');
       await expect(agenda.getByRole('heading', { level: 3 })).toBeInViewport();
       await expect.poll(async () => {
         const gridBox = await grid.boundingBox();

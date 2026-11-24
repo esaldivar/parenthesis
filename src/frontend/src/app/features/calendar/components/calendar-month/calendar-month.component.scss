@@ -320,6 +320,7 @@
     max-block-size: var(--agenda-max-size);
     overflow-y: auto;
     scroll-padding-block-start: 2.5rem;
+    scroll-margin-block-end: var(--bottom-nav-clearance, 0px);
   }
   .agenda__head {
     position: sticky;
