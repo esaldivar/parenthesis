@@ -307,6 +307,28 @@
   gap: var(--space-2);
   flex-wrap: wrap;
 }
+@media (width < 1024px) {
+  // Give the grid and agenda separate scroll areas on phones so the agenda never intercepts date taps.
+  :host {
+    --agenda-max-size: min(40dvh, 17rem);
+  }
+  .month--narrow {
+    max-block-size: max(8rem, calc(100dvh - var(--bottom-nav-clearance, 0px) - var(--agenda-max-size) - var(--space-4)));
+    overflow-y: auto;
+  }
+  .agenda {
+    max-block-size: var(--agenda-max-size);
+    overflow-y: auto;
+    scroll-padding-block-start: 2.5rem;
+    scroll-margin-block-end: var(--bottom-nav-clearance, 0px);
+  }
+  .agenda__head {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    background: var(--color-surface);
+  }
+}
 .agenda__head h3 {
   margin: 0;
   font-size: 1rem;

@@ -19,14 +19,65 @@
 }
 .paper {
   min-width: 0;
+  display: grid;
+  grid-template-rows: 17.25rem auto;
+  align-content: start;
+  block-size: 20rem;
 }
-.entry-scroll {
-  height: 20rem;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #9b742c transparent;
+// A page holds what fits; a long entry fades out and its whole text opens from "Read the whole entry", so there is
+// no scroll box to reach by keyboard.
+.entry-text {
+  overflow: hidden;
   padding: 0.25rem 0.5rem;
-  overscroll-behavior: contain;
+}
+.entry-text.is-clipped {
+  mask-image: linear-gradient(to bottom, #000 75%, transparent);
+}
+.read-more {
+  justify-self: start;
+  min-block-size: 44px;
+  margin-inline-start: 0.25rem;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #68400e;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.read-more:hover {
+  background: #d9b65b30;
+}
+.reader {
+  inline-size: min(36rem, calc(100vw - 2rem));
+  max-block-size: calc(100dvh - 4rem);
+  padding: 1.5rem;
+  border: 1px solid #c9a75f;
+  border-radius: 1rem;
+  background: #fbf3df;
+  color: #493c2d;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 30%);
+}
+.reader::backdrop {
+  background: rgb(20 30 25 / 55%);
+}
+.reader .entry-body {
+  white-space: pre-wrap;
+}
+.reader__close {
+  min-block-size: 44px;
+  margin-block-start: 1rem;
+  padding: 0 1rem;
+  border: 1px solid #91621d;
+  border-radius: 999px;
+  background: transparent;
+  color: #68400e;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 time {
   display: block;
@@ -91,7 +142,9 @@ h3 {
   background: #d9b65b30;
 }
 .brass-control:focus-visible,
-.entry-scroll:focus-visible {
+.read-more:focus-visible,
+.reader__close:focus-visible,
+.paper:focus-visible {
   outline: 3px solid #76531a;
   outline-offset: 3px;
 }
@@ -196,8 +249,15 @@ h3 {
     border: 1px solid CanvasText;
   }
   h3,
-  .brass-control {
+  .brass-control,
+  .read-more,
+  .reader__close {
     color: CanvasText;
+  }
+  .reader {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
   }
   .brass-control {
     border: 1px solid ButtonText;

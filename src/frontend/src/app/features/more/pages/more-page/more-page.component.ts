@@ -6,6 +6,8 @@ import { SharedRecordsAttentionStore } from '../../../../core/shared-records/sha
 import { Icon } from '../../../../shared/components/icon/icon';
 import { PARENT_MORE_NAV } from '../../../../core/layout/navigation';
 
+import { Feedback } from '../../../../core/feedback/feedback';
+
 /** On phones: the destinations that don't fit in the bottom navigation. */
 @Component({
   selector: 'app-more-page',
@@ -15,6 +17,14 @@ import { PARENT_MORE_NAV } from '../../../../core/layout/navigation';
     <h1>{{ 'nav.more' | tr }}</h1>
     <ul>
       @for (item of items; track item.path) {
+        @if (item.path === '/settings') {
+          <li>
+            <button #feedbackButton type="button" class="feedback" (click)="feedback.open(feedbackButton)">
+              <app-icon name="messages" />
+              <span>{{ 'feedback.submit' | tr }}</span>
+            </button>
+          </li>
+        }
         <li>
           <a [routerLink]="item.path">
             <app-icon [name]="item.icon" />
@@ -48,7 +58,7 @@ import { PARENT_MORE_NAV } from '../../../../core/layout/navigation';
     li + li {
       border-top: 1px solid var(--color-divider);
     }
-    a {
+    a, .feedback {
       display: flex;
       align-items: center;
       gap: var(--space-3);
@@ -56,6 +66,13 @@ import { PARENT_MORE_NAV } from '../../../../core/layout/navigation';
       padding: var(--space-2) var(--space-4);
       color: var(--color-text);
       text-decoration: none;
+    }
+    .feedback {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      font: inherit;
+      cursor: pointer;
     }
     .dot {
       width: 0.625rem;
@@ -76,5 +93,6 @@ import { PARENT_MORE_NAV } from '../../../../core/layout/navigation';
 export class MorePage {
   protected readonly essentials = inject(EssentialsUpdatesStore);
   protected readonly records = inject(SharedRecordsAttentionStore);
+  protected readonly feedback = inject(Feedback);
   protected readonly items = PARENT_MORE_NAV;
 }

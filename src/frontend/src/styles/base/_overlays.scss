@@ -21,3 +21,8 @@
 .cdk-overlay-container .mat-overlay-transparent-backdrop {
   bottom: var(--bottom-nav-clearance, 0px);
 }
+
+.cdk-overlay-backdrop.feedback-backdrop {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}

@@ -1,0 +1,65 @@
+:host {
+  display: block;
+  max-height: inherit;
+  overflow: auto;
+  border-radius: var(--radius-card);
+}
+
+.feedback-card {
+  padding: var(--space-4);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.brand-mark {
+  display: block;
+  object-fit: contain;
+  margin: 0 auto var(--space-2);
+}
+
+h2, p { margin: 0 0 var(--space-2); }
+strong { overflow-wrap: anywhere; }
+form { margin-top: var(--space-4); }
+fieldset { border: 0; padding: 0; margin: 0 0 var(--space-3); }
+legend { margin-bottom: var(--space-1); font-weight: 600; }
+fieldset label { display: inline-flex; align-items: center; margin-inline-end: var(--space-3); }
+input { accent-color: var(--color-action); }
+textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  margin-block: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+}
+.error { color: var(--color-danger); }
+.actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2); }
+.confirmation { max-width: 20rem; margin-inline: auto; text-align: center; }
+.coder { position: relative; width: min(100%, 13rem); margin: var(--space-2) auto; }
+.coder img { display: block; width: 100%; height: auto; }
+.coder svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pool { fill: #78ddff; animation: well 3s ease-in-out infinite; }
+.stream { fill: none; stroke: #66d8ff; stroke-width: 4.5; stroke-linecap: round; stroke-dasharray: 25; animation: flow 3s ease-in-out infinite; }
+.drop { fill: #d0f5ff; animation: drip 3s linear infinite; }
+@keyframes well {
+  0%, 100% { opacity: 0; }
+  25%, 80% { opacity: 1; }
+}
+@keyframes flow {
+  0%, 22% { opacity: 0; stroke-dashoffset: 25; }
+  52%, 80% { opacity: 1; stroke-dashoffset: 0; }
+  100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes drip {
+  0%, 35% { opacity: 0; transform: translateY(0); }
+  48% { opacity: 1; }
+  70%, 100% { opacity: 0; transform: translateY(12px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tears { display: none; }
+}

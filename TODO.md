@@ -10,6 +10,9 @@ that points back here.
 
 ## Big projects
 
+- [ ] **Mobile Month agenda visibility (#736).** On Development, verify the separate grid and agenda scroll areas at 320px and 390px in both themes. Confirm date taps, the selected-day heading above bottom navigation, and keyboard access to the last row and agenda actions.
+- [ ] **Release 0.5.0 follow-up (#741).** Verify the combined release head clears Sonar's new-code gate after the corrective PR lands. On Development, verify both feedback entry points, email delivery and focus, and retest the desktop diary full-entry reader with keyboard and NVDA.
+
 - [ ] **Calendar item detail refinements (#730).** Review the Confirmed stamp, photo states, and required-checklist clipboard playback at phone and desktop sizes in both themes after the change reaches Development. Verify reduced motion, keyboard focus, and screen-reader announcements in the browser.
 
 - [ ] **Approved parent Diary redesign (#712).** Implementation includes newest-first desktop spreads, brass page controls, reduced-motion-aware page turns, alternating mobile sheets and a return-to-newest arrow. After deployment, review the approved Figma layouts in both themes with keyboard and a real screen reader. Live shared-entry API integration remains outside this presentation change; sample entries stay opt-in and development-only. Photos is tracked by #710 and Artwork by #714.
